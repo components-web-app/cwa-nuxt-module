@@ -7,9 +7,7 @@
 <script>
 export default {
   mounted() {
-    console.log('index page...')
     console.log(this.$cwa)
-  },
-  middleware: 'routeLoader'
+  }
 }
 </script>

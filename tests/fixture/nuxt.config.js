@@ -7,5 +7,7 @@ export default {
     '@nuxtjs/auth-next',
     coreModuleDist
   ],
-  middleware: ['routeLoader']
+  router: {
+    middleware: ['routeLoader']
+  }
 }
