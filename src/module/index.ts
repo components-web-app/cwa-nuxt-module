@@ -9,7 +9,7 @@ export default function (moduleOptions) {
   // Add plugin
   const { dst } = this.addTemplate({
     src: resolve(__dirname, '../../templates/plugin.js'),
-    fileName: join('auth.js'),
+    fileName: join('cwa.js'),
     options: {
       options
     }
