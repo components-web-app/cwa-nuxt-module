@@ -19,7 +19,7 @@
     "lint-fix": "yarn lint --fix",
     "release": "yarn clean && yarn build && standard-version && git push --follow-tags && npm publish",
     "start": "nuxt-ts start demo",
-    "test": "yarn lint && yarn build && nuxt build test/fixture && jest"
+    "test": "yarn lint && yarn build && nuxt build tests/fixture && jest"
   },
   "dependencies": {
     "@nuxtjs/auth-next": "^5.0.0-1589207846.e8f33bf",
@@ -28,17 +28,21 @@
     "lodash": "^4.17.15"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.9.6",
+    "@babel/preset-typescript": "^7.9.0",
     "@nuxt/types": "latest",
     "@nuxt/typescript-build": "latest",
     "@nuxt/typescript-runtime": "latest",
     "@nuxtjs/eslint-config-typescript": "latest",
     "@types/jest": "latest",
     "@types/node": "latest",
+    "babel-jest": "^26.0.1",
     "eslint": "latest",
     "get-port": "latest",
     "jest": "latest",
     "jsdom": "latest",
     "lodash.get": "latest",
+    "mock-json-schema": "^1.0.8",
     "nuxt-edge": "latest",
     "puppeteer": "latest",
     "standard-version": "latest",

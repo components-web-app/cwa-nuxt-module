@@ -6,8 +6,6 @@
 
 <script>
 export default {
-  mounted() {
-    console.log(this.$cwa)
-  }
+  mounted () {}
 }
 </script>

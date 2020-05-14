@@ -1,4 +1,3 @@
-import consola from 'consola'
 import { routeOption } from '../utils'
 
 export default async function routeLoaderMiddleware ({ route }) {
@@ -6,7 +5,8 @@ export default async function routeLoaderMiddleware ({ route }) {
   if (routeOption(route, 'cwa', false)) {
     return
   }
-  consola.log('load route')
+  console.log('will get from api')
+  // $axios.get('/any-path')
 
   // Disable middleware if no route was matched to allow 404/error page
   // const matches = []
