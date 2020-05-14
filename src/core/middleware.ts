@@ -1,8 +1,11 @@
+import consola from 'consola'
 import { routeOption } from '../utils'
 
-export default async function authMiddleware (ctx) {
+export default async function routeLoaderMiddleware ({ route, redirect }) {
+  consola.log('middleingwareigogo')
+  return redirect('/another-page')
   // Disable middleware if options: { auth: false } is set on the route
-  if (routeOption(ctx.route, 'auth', false)) {
+  if (routeOption(route, 'auth', false)) {
     return
   }
 
