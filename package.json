@@ -1,0 +1,44 @@
+{
+  "name": "@cwamodules/cwa",
+  "version": "0.0.1",
+  "description": "Nuxt Module for Silverback's Components Web Apps and API Components Bundle API",
+  "author": "Daniel West <daniel@silverback.is>",
+  "license": "MIT",
+  "main": "./dist/module/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
+    "dev": "nuxt-ts demo",
+    "lint": "node_modules/.bin/eslint --ext .ts,.js,.vue",
+    "lint-fix": "yarn lint --fix",
+    "test": "yarn lint && yarn build && node_modules/.bin/nuxt build tests/fixture && jest"
+  },
+  "dependencies": {
+    "@nuxtjs/auth-next": "^5.0.0-1589207846.e8f33bf",
+    "@nuxtjs/axios": "^5.10.3",
+    "lodash": "^4.17.15",
+    "vue-cookie": "^1.1.4"
+  },
+  "devDependencies": {
+    "@nuxt/types": "latest",
+    "@nuxt/typescript-build": "latest",
+    "@nuxt/typescript-runtime": "latest",
+    "@nuxtjs/eslint-config-typescript": "^2.0.0",
+    "@types/jest": "latest",
+    "@types/node": "latest",
+    "eslint": "latest",
+    "get-port": "^5.1.1",
+    "jest": "latest",
+    "jsdom": "latest",
+    "lodash.get": "latest",
+    "nuxt-edge": "latest",
+    "puppeteer": "latest",
+    "standard-version": "latest",
+    "typescript": "latest"
+  }
+}
