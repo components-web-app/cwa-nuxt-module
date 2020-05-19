@@ -2,9 +2,14 @@
   "name": "@cwamodules/cwa",
   "version": "0.0.1",
   "description": "Nuxt Module for Silverback's Components Web Apps and API Components Bundle API",
-  "author": "Daniel West <daniel@silverback.is>",
-  "repository": "components-web-app/cwa-nuxt-module",
   "license": "MIT",
+  "contributors": [
+    "Daniel West <daniel@silverback.is>"
+  ],
+  "repository": "https://github.com/components-web-app/cwa-nuxt-module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/module/index.js",
   "types": "./dist/index.d.ts",
   "files": [
