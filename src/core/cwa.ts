@@ -36,8 +36,7 @@ export default class Cwa {
 
   }
 
-  async initAxiosInterceptor()
-  {
+  async initAxiosInterceptor () {
     // environment: API_URL
     // e.g. https://api.website.com/
 

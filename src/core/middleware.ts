@@ -28,7 +28,6 @@ export default async function routeLoaderMiddleware ({ route, $axios, $cwa }) {
   // SSR will likely want a 301 redirect though and therefore can result in a new page load
   // for client-side, this prevents the need for an additional request
 
-
   // Just a note for later
   // Disable middleware if no route was matched to allow 404/error page
   // const matches = []
