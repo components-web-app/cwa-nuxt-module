@@ -61,7 +61,7 @@ export default class Cwa {
     return bluebird.map(paths, (path) => {
       return this.fetcher({ path })
         .then(resource => ({ resource, path }))
-    }, { concurrency: 5 })
+    }, { concurrency: this.options.concurrency || null })
       .each(({ resource, path }) => {
         this.$storage.setResource({ id: resource['@id'], name: this.getRouteName(path), isNew: false, resource })
         return callback(resource)

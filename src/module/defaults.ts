@@ -3,6 +3,7 @@ export default {
   vuex: {
     namespace: 'resources'
   },
+  fetchConcurrency: 10,
   initialState: {
     new: {},
     current: {}
