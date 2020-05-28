@@ -1,7 +1,9 @@
 <template>
   <div>
-    Hello test world...
+    State:
+    <pre>
     {{ state }}
+    </pre>
   </div>
 </template>
 
@@ -9,9 +11,8 @@
 export default {
   computed: {
     state () {
-      return this.$store.state.current
+      return this.$store.state.resources.current
     }
-  },
-  mounted () {}
+  }
 }
 </script>

@@ -1,10 +1,14 @@
+import * as bluebird from 'bluebird'
 import type { CwaOptions } from '../'
 import Storage from './storage'
+
+const getObject = data => data[0]
 
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
 
+  private fetcher
   public $storage: Storage
   public $state
 
@@ -19,6 +23,16 @@ export default class Cwa {
     // ctx.$axios
     this.ctx = ctx
 
+    /**
+     * @TODO remove isCollection / getObject once we use the real api, these are workarounds for the json-server
+     */
+    this.fetcher = async ({ path, isCollection }) => {
+      const url = `${ctx.env.API_URL}${path}`
+      console.log('Fetching %s', url)
+      const { data } = await ctx.$axios.get(url)
+      return isCollection ? data : getObject(data)
+    }
+
     // These are options passed from the /src/module/index.ts -> /templates/plugin.js
     // So they can be set and configured in the nuxt.config.js
     // Defaults should be set i /src/module/defaults.ts
@@ -30,6 +44,40 @@ export default class Cwa {
     const storage = new Storage(ctx, options)
     this.$storage = storage
     this.$state = storage.state
+  }
+
+  private getRouteName (path) {
+    return path.split('/').reduce((acc, urlPart, i, urlParts) => i === urlParts.length - 1 ? acc + '' : acc + urlPart.replace('_', ''), '')
+  }
+
+  async fetchItem (path) {
+    const resource = await this.fetcher({ path })
+    // Use the URL parts to build a resource name (could be implicit)
+    this.$storage.setResource({ id: resource['@id'], name: this.getRouteName(path), isNew: false, resource })
+    return resource
+  }
+
+  async fetchCollection (paths, callback) {
+    return bluebird.map(paths, (path) => {
+      return this.fetcher({ path })
+        .then(resource => ({ resource, path }))
+    }, { concurrency: 5 })
+      .each(({ resource, path }) => {
+        this.$storage.setResource({ id: resource['@id'], name: this.getRouteName(path), isNew: false, resource })
+        return callback(resource)
+      })
+  }
+
+  public async fetchRoute (path) {
+    const routeData = await this.fetchItem(`/routes/${path}`)
+    const pageData = await this.fetchItem(routeData.page)
+    const layoutData = await this.fetchItem(pageData.layout)
+
+    return this.fetchCollection([...pageData.componentCollections, ...layoutData.componentCollections], (componentCollection) => {
+      return this.fetchCollection(componentCollection.componentPositions, (componentPosition) => {
+        return this.fetchItem(componentPosition.component)
+      })
+    })
   }
 
   async init () {

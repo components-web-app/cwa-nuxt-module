@@ -1,3 +1,10 @@
 export default {
-  test: 'something'
+  test: 'something',
+  vuex: {
+    namespace: 'resources'
+  },
+  initialState: {
+    new: {},
+    current: {}
+  }
 }

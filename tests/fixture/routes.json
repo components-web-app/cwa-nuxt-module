@@ -1,0 +1,8 @@
+{
+  "/routes//:path": "/routes?path=/:path",
+  "/_/pages/30e23dd2-a0b4-11ea-a285-acde48001122": "/pages",
+  "/_/layouts/17e336ba-a0b4-11ea-9f4d-acde48001122": "/layouts",
+  "/_/component_collections/458d1e46-a0b4-11ea-a701-acde48001122": "/component_collections",
+  "/_/component_positions/69df6c40-a0b4-11ea-870f-acde48001122": "/component_positions",
+  "/component/html_components/69df5bc4-a0b4-11ea-a941-acde48001122": "/html_components"
+}

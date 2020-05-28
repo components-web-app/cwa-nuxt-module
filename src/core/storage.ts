@@ -34,6 +34,15 @@ export default class Storage {
         mutations: {
           SET (state, payload) {
             Vue.set(state, payload.key, payload.value)
+          },
+          SET_RESOURCE (state, payload) {
+            const stateKey = payload.isNew ? 'new' : 'current'
+            const newState = state[stateKey] ? { ...state[stateKey] } : {}
+            const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : { byId: {}, allIds: [] }
+            currentResourceState.byId[payload.id] = payload.resource
+            currentResourceState.allIds = Object.keys(currentResourceState.byId)
+            console.log(currentResourceState)
+            Vue.set(state, stateKey, { ...newState, [payload.name]: currentResourceState })
           }
         }
       }
@@ -45,6 +54,17 @@ export default class Storage {
       this.state = this.ctx.store.state[this.options.vuex.namespace]
     } else {
       Vue.set(this, 'state', {})
+    }
+  }
+
+  setResource ({ id, name, resource, isNew }) {
+    if (this._useVuex) {
+      this.ctx.store.commit(this.options.vuex.namespace + '/SET_RESOURCE', {
+        id,
+        name,
+        isNew,
+        resource
+      })
     }
   }
 
