@@ -1,11 +1,10 @@
 export default {
-  test: 'something',
   vuex: {
-    namespace: 'resources'
+    namespace: 'resources',
+    initialState: {
+      new: {},
+      current: {}
+    }
   },
-  fetchConcurrency: 10,
-  initialState: {
-    new: {},
-    current: {}
-  }
+  fetchConcurrency: 10
 }

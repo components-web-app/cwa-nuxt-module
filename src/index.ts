@@ -3,7 +3,8 @@ import _CWA from './core/cwa'
 export type CWA = _CWA
 
 export type CwaOptions = {
-  test: string
+  fetchConcurrency: number;
+  vuex: any;
 }
 
 declare module '@nuxt/types' {
