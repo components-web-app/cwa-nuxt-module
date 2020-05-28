@@ -22,6 +22,12 @@ export default async function routeLoaderMiddleware ({ route, $axios, $cwa }) {
 
   // Should we investigate cache-digest for client-side requests? https://github.com/dunglas/vulcain/blob/master/docs/cache.md#preventing-to-push-resources-already-in-cache-cache-digests-and-casper
 
+  // A route that is redirected will return the data for the redirected page withou
+  // the need to perform any further requests. It will also have a parameter redirectPath
+  // so that this front-end application can update the URL to the redirected URL.
+  // SSR will likely want a 301 redirect though and therefore can result in a new page load
+  // for client-side, this prevents the need for an additional request
+
 
   // Just a note for later
   // Disable middleware if no route was matched to allow 404/error page
