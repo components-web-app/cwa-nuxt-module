@@ -46,36 +46,32 @@ export default class Cwa {
     this.$state = storage.state
   }
 
-  private getRouteName (path) {
-    return path.split('/').reduce((acc, urlPart, i, urlParts) => i === urlParts.length - 1 ? acc + '' : acc + urlPart.replace('_', ''), '')
-  }
-
-  async fetchItem (path) {
+  async fetchItem ({path, name}) {
     const resource = await this.fetcher({ path })
     // Use the URL parts to build a resource name (could be implicit)
-    this.$storage.setResource({ id: resource['@id'], name: this.getRouteName(path), isNew: false, resource })
+    this.$storage.setResource({ id: resource['@id'], name, isNew: false, resource })
     return resource
   }
 
-  async fetchCollection (paths, callback) {
+  async fetchCollection ({paths, name}, callback) {
     return bluebird.map(paths, (path) => {
-      return this.fetcher({ path })
-        .then(resource => ({ resource, path }))
+      return this.fetcher({ path, name })
+        .then(resource => ({ resource, path, name }))
     }, { concurrency: this.options.fetchConcurrency || null })
-      .each(({ resource, path }) => {
-        this.$storage.setResource({ id: resource['@id'], name: this.getRouteName(path), isNew: false, resource })
+      .each(({ resource, path, name }) => {
+        this.$storage.setResource({ id: resource['@id'], name, isNew: false, resource })
         return callback(resource)
       })
   }
 
   public async fetchRoute (path) {
-    const routeData = await this.fetchItem(`/routes/${path}`)
-    const pageData = await this.fetchItem(routeData.page)
-    const layoutData = await this.fetchItem(pageData.layout)
+    const routeData = await this.fetchItem({path: `/routes/${path}`, name: 'routes'})
+    const pageData = await this.fetchItem({path: routeData.page, name: 'pages'})
+    const layoutData = await this.fetchItem({path: pageData.layout, name: 'layout'})
 
-    return this.fetchCollection([...pageData.componentCollections, ...layoutData.componentCollections], (componentCollection) => {
-      return this.fetchCollection(componentCollection.componentPositions, (componentPosition) => {
-        return this.fetchItem(componentPosition.component)
+    return this.fetchCollection({paths: [...pageData.componentCollections, ...layoutData.componentCollections], name: 'componentCollections'}, (componentCollection) => {
+      return this.fetchCollection({paths: componentCollection.componentPositions, name: 'componentPositions'}, (componentPosition) => {
+        return this.fetchItem({path: componentPosition.component, name: 'component'})
       })
     })
   }
