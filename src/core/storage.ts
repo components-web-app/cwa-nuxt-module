@@ -41,6 +41,7 @@ export default class Storage {
             const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : { byId: {}, allIds: [] }
             currentResourceState.byId[payload.id] = payload.resource
             currentResourceState.allIds = Object.keys(currentResourceState.byId)
+            //TODO: debug or dev mode log?
             console.log(currentResourceState)
             Vue.set(state, stateKey, { ...newState, [payload.name]: currentResourceState })
           }
