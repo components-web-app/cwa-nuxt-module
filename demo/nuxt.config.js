@@ -13,6 +13,35 @@ export default {
     coreModuleDist
   ],
   router: {
-    middleware: ['routeLoader']
+    middleware: ['auth', 'routeLoader']
+  },
+  axios: {
+    credentials: true,
+    baseURL: 'https://localhost:8443'
+  },
+  auth: {
+    redirect: {
+      login: '/login',
+      logout: '/login',
+      home: '/home',
+      callback: false
+    },
+    strategies: {
+      local: {
+        user: {
+          autoFetch: true,
+          property: ''
+        },
+        endpoints: {
+          login: { url: '/login', method: 'post' },
+          logout: { url: '/logout', method: 'post' },
+          user: { url: '/me', method: 'get' }
+        },
+        token: {
+          required: false,
+          type: false
+        }
+      }
+    }
   }
 }

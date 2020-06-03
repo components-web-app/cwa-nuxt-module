@@ -4,7 +4,9 @@
     <pre>
     {{ state }}
     </pre>
-    <router-link to="/example">Go to home</router-link>
+    <router-link to="/example">
+      Go to home
+    </router-link>
   </div>
 </template>
 

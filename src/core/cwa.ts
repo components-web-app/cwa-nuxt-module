@@ -13,7 +13,6 @@ export default class Cwa {
   public $state
 
   constructor (ctx, options) {
-
     if (process.server) {
       // WARNING DISABLE THIS IN PRODUCITON
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
@@ -33,8 +32,8 @@ export default class Cwa {
       const url = `${ctx.env.API_URL}${path}`
       console.log('Fetching %s', url)
 
-      const requestHeaders = preload ? {'Preload': preload.join(',')} : {}
-      const { data, headers } = await ctx.$axios.get(url, {headers: requestHeaders})
+      const requestHeaders = preload ? { Preload: preload.join(',') } : {}
+      const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
       this.initMercure(headers)
       return data
     }
@@ -52,45 +51,45 @@ export default class Cwa {
     this.$state = storage.state
   }
 
-  async fetchItem ({path, name, preload}: {path: string, name: string, preload?: string[]}) {
+  async fetchItem ({ path, name, preload }: {path: string, name: string, preload?: string[]}) {
     const resource = await this.fetcher({ path, preload })
     // Use the URL parts to build a resource name (could be implicit)
     this.$storage.setResource({ id: resource['@id'], name, isNew: false, resource })
     return resource
   }
 
-  async fetchCollection ({paths, name}, callback) {
+  async fetchCollection ({ paths, name }, callback) {
     return bluebird.map(paths, (path) => {
       return this.fetcher({ path, name })
         .then(resource => ({ resource, path, name }))
     }, { concurrency: this.options.fetchConcurrency || null })
-      .each(({ resource, path, name }) => {
+      .each(({ resource, name }) => {
         this.$storage.setResource({ id: resource['@id'], name, isNew: false, resource })
         return callback(resource)
       })
   }
 
   public async fetchRoute (path) {
-    const routeData = await this.fetchItem({path: `/_/routes/${path}`, name: 'routes', preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component']})
-    const pageData = await this.fetchItem({path: routeData.page, name: 'pages'})
-    const layoutData = await this.fetchItem({path: pageData.layout, name: 'layout'})
+    const routeData = await this.fetchItem({ path: `/_/routes/${path}`, name: 'routes', preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
+    const pageData = await this.fetchItem({ path: routeData.page, name: 'pages' })
+    const layoutData = await this.fetchItem({ path: pageData.layout, name: 'layout' })
 
-    return this.fetchCollection({paths: [...pageData.componentCollections, ...layoutData.componentCollections], name: 'componentCollections'}, (componentCollection) => {
-      return this.fetchCollection({paths: componentCollection.componentPositions, name: 'componentPositions'}, (componentPosition) => {
-        return this.fetchItem({path: componentPosition.component, name: 'component'})
+    return this.fetchCollection({ paths: [...pageData.componentCollections, ...layoutData.componentCollections], name: 'componentCollections' }, (componentCollection) => {
+      return this.fetchCollection({ paths: componentCollection.componentPositions, name: 'componentPositions' }, (componentPosition) => {
+        return this.fetchItem({ path: componentPosition.component, name: 'component' })
       })
     })
   }
 
-  async initMercure(headers) {
-    if (this.eventSource) return
+  async initMercure (headers) {
+    if (this.eventSource) { return }
     const link = headers.link
     if (!link) {
       console.warn('No Link header found.')
       return
     }
 
-    const match = link.match(/<(.*)>.*rel="mercure".*/);
+    const match = link.match(/<(.*)>.*rel="mercure".*/)
     if (!match || !match[1]) {
       console.log('No mercure rel in link header.')
       return
@@ -105,6 +104,10 @@ export default class Cwa {
     // TODO handle last event id
     // hub.searchParams.append('Last-Event-ID')
 
+    if (!process.client) {
+      return
+    }
+
     this.eventSource = new EventSource(hub.toString())
     this.eventSource.on('message', (e) => {
       this.$storage.setResource({
@@ -115,6 +118,11 @@ export default class Cwa {
         resource: e
       })
     })
+  }
+
+  withError (route, err) {
+    this.$storage.setState('error', `An error occured while requesting ${route.path}`)
+    console.error(err)
   }
 
   async init () {
