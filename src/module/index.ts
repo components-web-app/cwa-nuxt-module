@@ -23,8 +23,8 @@ function extendRoutes({ pagesDepth }) {
     }
     return routeObject
   }
-  this.extendRoutes((routes, resolve) => {
-    const newRoutes = createRouteObject(resolve('~cwa/core/templates/page.vue'), pagesDepth)
+  this.extendRoutes((routes) => {
+    const newRoutes = createRouteObject('~cwa/core/templates/page.vue', pagesDepth)
     routes.push(newRoutes)
   })
 }
@@ -42,6 +42,10 @@ export default function (moduleOptions) {
     }
   })
 
+  this.addLayout({
+    src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
+    fileName: join('cwa-layout.vue')
+  })
   extendRoutes.call(this, { pagesDepth: options.pagesDepth })
 
   this.options.plugins.push(resolve(this.options.buildDir, dst))
