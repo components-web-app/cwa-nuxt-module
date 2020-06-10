@@ -29,7 +29,7 @@ export default class Cwa {
     this.ctx = ctx
 
     this.fetcher = async ({ path, preload }) => {
-      const url = `${ctx.env.API_URL}${path}`
+      const url = `${process.env.baseUrl}${path}`
       console.log('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}

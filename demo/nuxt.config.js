@@ -1,6 +1,11 @@
 import coreModuleDist from '../src/module'
 
+const baseUrl = process.env.BASE_URL || 'https://localhost:8443'
+
 export default {
+  env: {
+    baseUrl
+  },
   mode: 'universal',
   buildModules: [
     '@nuxt/typescript-build',
@@ -17,7 +22,7 @@ export default {
   },
   axios: {
     credentials: true,
-    baseURL: 'https://localhost:8443'
+    baseURL: baseUrl
   },
   auth: {
     redirect: {
