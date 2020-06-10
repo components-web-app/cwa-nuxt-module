@@ -1,3 +1,4 @@
+import consola from 'consola'
 import routeLoaderMiddleware from '~cwa/core/middleware'
 import CWA from '~cwa/core/cwa'
 import Middleware from './middleware'
@@ -11,8 +12,6 @@ export default function (ctx, inject) {
   ctx.$cwa = $cwa
 
   return $cwa.init().catch(error => {
-    if (process.client) {
-      console.error('[ERROR] [AUTH]', error)
-    }
+    consola.error('[ERROR] [AUTH]', error)
   })
 }

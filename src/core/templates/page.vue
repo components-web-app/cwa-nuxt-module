@@ -18,9 +18,6 @@
   export default {
     auth: false,
     layout: 'cwa-layout',
-    mounted() {
-      this.$cwa.initMercure()
-    },
     computed: {
       state () {
         return this.$store.state.resources.current
