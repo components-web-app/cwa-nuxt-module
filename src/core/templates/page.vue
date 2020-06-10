@@ -4,6 +4,7 @@
     <pre>
     {{ state }}
     </pre>
+    <button @click="$router.push({path:'/register'})">Register page</button>
   </div>
 </template>
 
@@ -15,6 +16,6 @@
       state () {
         return this.$store.state.resources.current
       }
-    }
+    },
   }
 </script>
