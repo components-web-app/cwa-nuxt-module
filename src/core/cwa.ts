@@ -37,9 +37,20 @@ export default class Cwa {
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
       // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
       ctx.$axios.setHeader('Authorization', false)
-      const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
-      this.getMercureHub(headers)
-      return data
+      try {
+        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
+        this.getMercureHub(headers)
+        return data
+      } catch (error) {
+        // We must forward 400 errors - but SSR right now does not send a referer header which results in a 400
+        if (error.response && error.response.status && typeof error.response.data === 'object' && error.response.status !== 400) {
+          ctx.error({
+            statusCode: error.response.status,
+            message: error.response.data['hydra:description']
+          })
+        }
+        return {}
+      }
     }
 
     // These are options passed from the /src/module/index.ts -> /templates/plugin.js
