@@ -2,6 +2,7 @@ import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
 import Storage from './storage'
+import consola from 'consola'
 
 export default class Cwa {
   public ctx: any
@@ -50,6 +51,12 @@ export default class Cwa {
           ctx.error({
             statusCode: error.response.status,
             message: error.response.data['hydra:description'],
+            endpoint: url
+          })
+        } else if(error.message) {
+          ctx.error({
+            statusCode: 500,
+            message: error.message,
             endpoint: url
           })
         }
