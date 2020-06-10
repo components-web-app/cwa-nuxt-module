@@ -20,9 +20,7 @@
 
 <script>
 export default {
-  options: {
-    cwa: false
-  },
+  cwa: false,
   data () {
     return {
       login: {
