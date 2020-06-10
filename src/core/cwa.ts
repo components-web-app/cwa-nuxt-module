@@ -1,4 +1,5 @@
 import * as bluebird from 'bluebird'
+import consola from 'consola'
 import type { CwaOptions } from '../'
 import Storage from './storage'
 
@@ -30,7 +31,7 @@ export default class Cwa {
 
     this.fetcher = async ({ path, preload }) => {
       const url = `${process.env.baseUrl}${path}`
-      console.log('Fetching %s', url)
+      consola.debug('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
       // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
@@ -87,13 +88,13 @@ export default class Cwa {
     if (this.eventSource) { return }
     const link = headers.link
     if (!link) {
-      console.warn('No Link header found.')
+      consola.warn('No Link header found.')
       return
     }
 
     const match = link.match(/<(.*)>.*rel="mercure".*/)
     if (!match || !match[1]) {
-      console.log('No mercure rel in link header.')
+      consola.log('No mercure rel in link header.')
       return
     }
 
@@ -124,7 +125,7 @@ export default class Cwa {
 
   withError (route, err) {
     this.$storage.setState('error', `An error occured while requesting ${route.path}`)
-    console.error(err)
+    consola.error(err)
   }
 
   async init () {

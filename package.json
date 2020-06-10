@@ -30,7 +30,7 @@
     "@nuxtjs/auth-next": "^5.0.0-1589207846.e8f33bf",
     "@nuxtjs/axios": "^5.10.3",
     "bluebird": "^3.7.2",
-    "consola": "^2.11.3",
+    "consola": "^2.12.2",
     "json-server": "^0.16.1",
     "lodash": "^4.17.15"
   },

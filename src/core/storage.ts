@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import consola from 'consola'
 import { isUnset, decodeValue, encodeValue, getProp } from '../utils'
 
 export default class Storage {
@@ -41,8 +42,7 @@ export default class Storage {
             const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : { byId: {}, allIds: [] }
             currentResourceState.byId[payload.id] = payload.resource
             currentResourceState.allIds = Object.keys(currentResourceState.byId)
-            // TODO: debug or dev mode log?
-            console.log(currentResourceState)
+            consola.debug(currentResourceState)
             Vue.set(state, stateKey, { ...newState, [payload.name]: currentResourceState })
           }
         }

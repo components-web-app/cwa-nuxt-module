@@ -2,9 +2,8 @@ import { resolve, join } from 'path'
 import merge from 'lodash/merge'
 import defaults from './defaults'
 
-function extendRoutes({ pagesDepth }) {
-  function createRouteObject(component, depth:number, currentDepth:number = 0)
-  {
+function extendRoutes ({ pagesDepth }) {
+  function createRouteObject (component, depth:number, currentDepth:number = 0) {
     if (currentDepth > depth) {
       return null
     }
@@ -17,7 +16,7 @@ function extendRoutes({ pagesDepth }) {
     if (currentDepth === 0) {
       routeObject.path = '/' + routeObject.path
     }
-    const child = createRouteObject(component, depth, currentDepth+1)
+    const child = createRouteObject(component, depth, currentDepth + 1)
     if (child) {
       routeObject.children = [child]
     }
