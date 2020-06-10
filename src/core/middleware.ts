@@ -2,7 +2,7 @@ import { routeOption } from '../utils'
 
 // I don't know whether the $cwa property will be required, but it is injected into all contexts throughout
 // Nuxt/Vuejs components. This is the class at source /src/core/cwa.ts
-export default async function routeLoaderMiddleware ({ route, $cwa, $storage }) {
+export default async function routeLoaderMiddleware ({ route, $cwa }) {
   // Disable middleware if options: { cwa: false } is set on the route
   if (routeOption(route, 'cwa', false)) {
     return
@@ -10,9 +10,8 @@ export default async function routeLoaderMiddleware ({ route, $cwa, $storage }) 
 
   try {
     await $cwa.fetchRoute(route.path)
-  } catch(err) {
-    $storage.setState('error', `An error occured while requesting ${route.path}`)
-    console.error(err)
+  } catch (err) {
+    $cwa.withError(route, err)
     return null
   }
 

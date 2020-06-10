@@ -6,5 +6,6 @@ export default {
       current: {}
     }
   },
-  fetchConcurrency: 10
+  fetchConcurrency: 10,
+  pagesDepth: 3
 }
