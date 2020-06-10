@@ -35,6 +35,10 @@ export default class Cwa {
       consola.debug('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
+      if (process.server) {
+        Object.assign(requestHeaders, { referer: ctx.req.headers.referer })
+      }
+
       // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
       ctx.$axios.setHeader('Authorization', false)
       try {
@@ -42,14 +46,13 @@ export default class Cwa {
         this.getMercureHub(headers)
         return data
       } catch (error) {
-        // We must forward 400 errors - but SSR right now does not send a referer header which results in a 400
-        if (error.response && error.response.status && typeof error.response.data === 'object' && error.response.status !== 400) {
+        if (error.response && error.response.status && typeof error.response.data === 'object') {
           ctx.error({
             statusCode: error.response.status,
-            message: error.response.data['hydra:description']
+            message: error.response.data['hydra:description'],
+            endpoint: url
           })
         }
-        return {}
       }
     }
 
@@ -79,7 +82,7 @@ export default class Cwa {
         .then(resource => ({ resource, path }))
     }, { concurrency: this.options.fetchConcurrency || null })
       .each(({ resource }) => {
-        this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
+        resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
         return callback(resource)
       })
   }

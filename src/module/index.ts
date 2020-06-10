@@ -45,6 +45,10 @@ export default function (moduleOptions) {
     src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
     fileName: join('cwa-layout.vue')
   })
+  this.addLayout({
+    src: resolve(__dirname, '../core/templates/cwa-error.vue'),
+    fileName: join('cwa-error.vue')
+  }, 'error')
   extendRoutes.call(this, { pagesDepth: options.pagesDepth })
 
   this.options.plugins.push(resolve(this.options.buildDir, dst))
