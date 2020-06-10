@@ -9,7 +9,7 @@ export default class Cwa {
 
   // Holds the EventSource connection with mercure
   private eventSource
-  private fetcher
+  private readonly fetcher
   private lastEventId
   public $storage: Storage
   public $state
