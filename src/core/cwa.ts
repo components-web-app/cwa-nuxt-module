@@ -71,8 +71,7 @@ export default class Cwa {
 
   async fetchItem ({ path, preload }: {path: string, preload?: string[]}) {
     const resource = await this.fetcher({ path, preload })
-    // Use the URL parts to build a resource name (could be implicit)
-    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
+    resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
     return resource
   }
 
