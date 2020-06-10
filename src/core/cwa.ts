@@ -46,10 +46,6 @@ export default class Cwa {
         Object.assign(requestHeaders, { referer })
       }
 
-      // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
-      // no worky as a fix
-      // ctx.$axios.setHeader('Authorization', false)
-
       try {
         const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
         this.getMercureHub(headers)
