@@ -2,7 +2,6 @@ import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
 import Storage from './storage'
-import consola from 'consola'
 
 export default class Cwa {
   public ctx: any
@@ -103,11 +102,11 @@ export default class Cwa {
   }
 
   public async fetchRoute (path) {
-    const routeData = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
-    const pageData = await this.fetchItem({ path: routeData.page })
-    const layoutData = await this.fetchItem({ path: pageData.layout })
+    const routeResponse = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
+    const pageResponse = await this.fetchItem({ path: routeResponse.page })
+    const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 
-    return this.fetchCollection({ paths: [...pageData.componentCollections, ...layoutData.componentCollections] }, (componentCollection) => {
+    return this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
       return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
         return this.fetchItem({ path: componentPosition.component })
       })
