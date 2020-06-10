@@ -43,8 +43,8 @@ export default {
           user: { url: '/me', method: 'get' }
         },
         token: {
-          required: false,
-          type: false
+          global: false,
+          required: false
         }
       }
     }

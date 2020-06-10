@@ -12,6 +12,9 @@
 
 <script>
 export default {
+  options: {
+    auth: false
+  },
   computed: {
     state () {
       return this.$store.state.resources.current

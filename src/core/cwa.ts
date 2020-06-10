@@ -33,6 +33,8 @@ export default class Cwa {
       console.log('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
+      // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
+      ctx.$axios.setHeader('Authorization', false)
       const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
       this.initMercure(headers)
       return data
@@ -126,7 +128,6 @@ export default class Cwa {
   }
 
   async init () {
-
   }
 
   async initAxiosInterceptor () {
