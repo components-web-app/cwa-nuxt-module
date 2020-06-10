@@ -2,6 +2,33 @@ import { resolve, join } from 'path'
 import merge from 'lodash/merge'
 import defaults from './defaults'
 
+function extendRoutes({ pagesDepth }) {
+  function createRouteObject(component, depth:number, currentDepth:number = 0)
+  {
+    if (currentDepth > depth) {
+      return null
+    }
+    const routeObject = {
+      name: 'page' + currentDepth,
+      path: ':page' + currentDepth + '?',
+      component,
+      children: null
+    }
+    if (currentDepth === 0) {
+      routeObject.path = '/' + routeObject.path
+    }
+    const child = createRouteObject(component, depth, currentDepth+1)
+    if (child) {
+      routeObject.children = [child]
+    }
+    return routeObject
+  }
+  this.extendRoutes((routes, resolve) => {
+    const newRoutes = createRouteObject(resolve('~cwa/core/templates/page.vue'), pagesDepth)
+    routes.push(newRoutes)
+  })
+}
+
 export default function (moduleOptions) {
   // Merge all option sources
   const options = merge({}, defaults, moduleOptions, this.options.auth)
@@ -14,6 +41,8 @@ export default function (moduleOptions) {
       options
     }
   })
+
+  extendRoutes.call(this, { pagesDepth: options.pagesDepth })
 
   this.options.plugins.push(resolve(this.options.buildDir, dst))
 
