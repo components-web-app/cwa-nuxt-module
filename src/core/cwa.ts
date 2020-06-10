@@ -98,8 +98,11 @@ export default class Cwa {
   }
 
   public async fetchRoute (path) {
-    const routeResponse = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
-    const pageResponse = await this.fetchItem({ path: routeResponse.page })
+    const { page } = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
+    if (!page) {
+      return
+    }
+    const pageResponse = await this.fetchItem({ path: page })
     const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 
     return this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
