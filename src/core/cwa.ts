@@ -37,11 +37,20 @@ export default class Cwa {
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
       if (process.server) {
-        Object.assign(requestHeaders, { referer: ctx.req.headers.referer })
+        let referer = ctx.req.headers.referer
+        if (!referer) {
+          referer = ctx.req.socket.encrypted ? 'https' : 'http' +
+            '://' +
+            ctx.req.host +
+            ctx.route.fullPath
+        }
+        Object.assign(requestHeaders, { referer })
       }
 
       // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
-      ctx.$axios.setHeader('Authorization', false)
+      // no worky as a fix
+      // ctx.$axios.setHeader('Authorization', false)
+
       try {
         const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
         this.getMercureHub(headers)

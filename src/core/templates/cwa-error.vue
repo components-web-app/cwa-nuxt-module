@@ -16,7 +16,7 @@
       <% } %>
 
       <div class="logo">
-        <a href="https://nuxtjs.org" target="_blank" rel="noopener"><%= messages.nuxtjs %></a>
+        <a href="https://github.com/components-web-app/components-web-app" target="_blank" rel="noopener">Components Web App</a>
       </div>
     </div>
   </div>
@@ -99,5 +99,6 @@
     position: fixed;
     left: 12px;
     bottom: 12px;
+    text-align: left;
   }
 </style>
