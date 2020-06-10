@@ -10,6 +10,7 @@ export default class Cwa {
   // Holds the EventSource connection with mercure
   private eventSource
   private fetcher
+  private lastEventId
   public $storage: Storage
   public $state
 
@@ -37,7 +38,7 @@ export default class Cwa {
       // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
       ctx.$axios.setHeader('Authorization', false)
       const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
-      this.initMercure(headers)
+      this.getMercureHub(headers)
       return data
     }
 
@@ -84,35 +85,53 @@ export default class Cwa {
     })
   }
 
-  async initMercure (headers) {
-    if (this.eventSource) { return }
+  getMercureHub (headers) {
+    if (this.$state.mercureHub) { return }
+
     const link = headers.link
     if (!link) {
       consola.warn('No Link header found.')
       return
     }
 
-    const match = link.match(/<(.*)>.*rel="mercure".*/)
+    const match = link.match(/<([^>]+)>;\s+rel="mercure".*/)
     if (!match || !match[1]) {
       consola.log('No mercure rel in link header.')
       return
     }
 
-    const hub = new URL(match[1])
-    hub.searchParams.append('topic', '/_/routes/{id}')
-    hub.searchParams.append('topic', '/_/pages/{id}')
-    hub.searchParams.append('topic', '/_/layout/{id}')
-    hub.searchParams.append('topic', '/_/component_collections/{id}')
-    hub.searchParams.append('topic', '/component/html_contents/{id}')
-    // TODO handle last event id
-    // hub.searchParams.append('Last-Event-ID')
+    this.$storage.setState('mercureHub', match[1])
+  }
 
-    if (!process.client) {
-      return
+  getMercureHubURL () {
+    const hub = new URL(this.$state.mercureHub)
+
+    for (const resourceType in this.$state.current) {
+      this.$state.current[resourceType].allIds.forEach((id) => {
+        hub.searchParams.append('topic', id)
+      })
     }
 
-    this.eventSource = new EventSource(hub.toString())
-    this.eventSource.on('message', (e) => {
+    // TODO: discuss if URI templates aren't better
+    // hub.searchParams.append('topic', '/_/routes/{id}')
+    // hub.searchParams.append('topic', '/_/pages/{id}')
+    // hub.searchParams.append('topic', '/_/layout/{id}')
+    // hub.searchParams.append('topic', '/_/component_collections/{id}')
+    // hub.searchParams.append('topic', '/component/html_contents/{id}')
+
+    if (this.lastEventId) {
+      hub.searchParams.append('Last-Event-ID', this.lastEventId)
+    }
+
+    return hub.toString()
+  }
+
+  async initMercure () {
+    if (this.eventSource || !process.client) { return }
+
+    this.eventSource = new EventSource(this.getMercureHubURL())
+    this.eventSource.onmessage = (e) => {
+      this.lastEventId = e.id
       this.$storage.setResource({
         isNew: true,
         // TODO find another way of doing this, maybe add this information from the API directly
@@ -120,7 +139,7 @@ export default class Cwa {
         id: e['@id'],
         resource: e
       })
-    })
+    }
   }
 
   withError (route, err) {
