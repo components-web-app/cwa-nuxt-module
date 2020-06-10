@@ -54,32 +54,32 @@ export default class Cwa {
     this.$state = storage.state
   }
 
-  async fetchItem ({ path, name, preload }: {path: string, name: string, preload?: string[]}) {
+  async fetchItem ({ path, preload }: {path: string, preload?: string[]}) {
     const resource = await this.fetcher({ path, preload })
     // Use the URL parts to build a resource name (could be implicit)
-    this.$storage.setResource({ id: resource['@id'], name, isNew: false, resource })
+    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
     return resource
   }
 
-  async fetchCollection ({ paths, name }, callback) {
+  async fetchCollection ({ paths }, callback) {
     return bluebird.map(paths, (path) => {
-      return this.fetcher({ path, name })
-        .then(resource => ({ resource, path, name }))
+      return this.fetcher({ path })
+        .then(resource => ({ resource, path }))
     }, { concurrency: this.options.fetchConcurrency || null })
-      .each(({ resource, name }) => {
-        this.$storage.setResource({ id: resource['@id'], name, isNew: false, resource })
+      .each(({ resource }) => {
+        this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
         return callback(resource)
       })
   }
 
   public async fetchRoute (path) {
-    const routeData = await this.fetchItem({ path: `/_/routes/${path}`, name: 'routes', preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
-    const pageData = await this.fetchItem({ path: routeData.page, name: 'pages' })
-    const layoutData = await this.fetchItem({ path: pageData.layout, name: 'layout' })
+    const routeData = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
+    const pageData = await this.fetchItem({ path: routeData.page })
+    const layoutData = await this.fetchItem({ path: pageData.layout })
 
-    return this.fetchCollection({ paths: [...pageData.componentCollections, ...layoutData.componentCollections], name: 'componentCollections' }, (componentCollection) => {
-      return this.fetchCollection({ paths: componentCollection.componentPositions, name: 'componentPositions' }, (componentPosition) => {
-        return this.fetchItem({ path: componentPosition.component, name: 'component' })
+    return this.fetchCollection({ paths: [...pageData.componentCollections, ...layoutData.componentCollections] }, (componentCollection) => {
+      return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
+        return this.fetchItem({ path: componentPosition.component })
       })
     })
   }
@@ -116,7 +116,7 @@ export default class Cwa {
       this.$storage.setResource({
         isNew: true,
         // TODO find another way of doing this, maybe add this information from the API directly
-        name: e['@id'].split('/').reduce((acc, urlPart, i, urlParts) => i === urlParts.length - 1 ? acc + '' : acc + urlPart.replace('_', ''), ''),
+        name: e['@type'],
         id: e['@id'],
         resource: e
       })
