@@ -32,8 +32,22 @@ export class Storage {
         SET (state, payload) {
           Vue.set(state, payload.key, payload.value)
         },
-        RESET_RESOURCES (state) {
-
+        RESET_CURRENT_RESOURCES (state) {
+          Vue.set(state.resources, 'new', {})
+          const resetCurrentIds = (obj) => {
+            for (const resourceName in obj) {
+              const resourcesObject = obj[resourceName]
+              if (resourcesObject.typeMapping !== undefined) {
+                resetCurrentIds(resourcesObject)
+                continue
+              }
+              if (obj[resourceName].currentIds === undefined) {
+                continue
+              }
+              Vue.set(obj[resourceName], 'currentIds', [])
+            }
+          }
+          resetCurrentIds(state.resources.current)
         },
         SET_RESOURCE (state, payload) {
           const stateKey = payload.isNew ? 'new' : 'current'
@@ -58,12 +72,13 @@ export class Storage {
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
           currentResourceState.currentIds.push(payload.id)
 
-          consola.debug(payload.category, payload.name, currentResourceState)
+          const newValue = { ...categoryState, [payload.name]: currentResourceState }
           if (payload.category) {
-            Vue.set(resourcesState[stateKey], payload.category, { ...categoryState, [payload.name]: currentResourceState })
+            Vue.set(resourcesState[stateKey], payload.category, newValue)
           } else {
-            Vue.set(resourcesState, stateKey, { ...categoryState, [payload.name]: currentResourceState })
+            Vue.set(resourcesState, stateKey, newValue)
           }
+          consola.debug(payload.category, payload.name, currentResourceState)
         },
         SET_CURRENT_ROUTE (state, id) {
           const routeResources = state.resources.current.Route
@@ -126,8 +141,16 @@ export class Storage {
     return value
   }
 
+  resetCurrentResources() {
+    this.ctx.store.commit(this.options.vuex.namespace + '/RESET_CURRENT_RESOURCES')
+  }
+
   getState (key) {
     return this.state[key]
+  }
+
+  getTypeFromIri(iri, category) {
+    return this.ctx.store.getters[this.options.vuex.namespace + '/GET_TYPE_FROM_IRI']({ iri, category})
   }
 
   watchState (key, fn) {
@@ -139,10 +162,6 @@ export class Storage {
 
   removeState (key) {
     this.setState(key, undefined)
-  }
-
-  getTypeFromIri(iri, category) {
-    return this.ctx.store.getters[this.options.vuex.namespace + '/GET_TYPE_FROM_IRI']({ iri, category})
   }
 }
 

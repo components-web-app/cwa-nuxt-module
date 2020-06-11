@@ -79,6 +79,7 @@ export default class Cwa {
   }
 
   public async fetchRoute (path) {
+    this.$storage.resetCurrentResources()
     this.$storage.setState('loadingRoute', true)
     this.eventSource && this.eventSource.close()
     const routeResponse = await this.fetchItem(
@@ -142,11 +143,22 @@ export default class Cwa {
   getMercureHubURL () {
     const hub = new URL(this.$state.mercureHub)
 
-    for (const resourceType in this.$state.current) {
-      this.$state.current[resourceType].allIds.forEach((id) => {
-        hub.searchParams.append('topic', id)
-      })
+    const appendTopics = (obj) => {
+      for (const resourceType in obj) {
+        const resourcesObject = obj[resourceType]
+        if (resourcesObject.typeMapping !== undefined) {
+          appendTopics(resourcesObject)
+          continue
+        }
+        if (resourcesObject.currentIds === undefined) {
+          continue
+        }
+        resourcesObject.currentIds.forEach((id) => {
+          hub.searchParams.append('topic', id)
+        })
+      }
     }
+    appendTopics(this.$state.resources.current)
 
     if (this.lastEventId) {
       hub.searchParams.append('Last-Event-ID', this.lastEventId)
