@@ -17,7 +17,9 @@
     "templates"
   ],
   "scripts": {
-    "build": "tsc",
+    "build:css": "node-sass src/ -o dist/ ",
+    "watch:css": "yarn build:css && node-sass src/ -o dist/ -w -r",
+    "build": "build:css && tsc",
     "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
     "dev": "nuxt-ts demo",
     "lint": "eslint --ext .ts,.js,.vue .",
@@ -32,7 +34,8 @@
     "bluebird": "^3.7.2",
     "consola": "^2.12.2",
     "json-server": "^0.16.1",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.15",
+    "milligram": "^1.4.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.9.6",
@@ -44,6 +47,7 @@
     "@nuxtjs/eslint-config-typescript": "latest",
     "@types/jest": "latest",
     "@types/node": "latest",
+    "@types/node-sass": "^4.11.1",
     "babel-jest": "^26.0.1",
     "eslint": "latest",
     "get-port": "latest",
@@ -51,8 +55,10 @@
     "jsdom": "latest",
     "lodash.get": "latest",
     "mock-json-schema": "^1.0.8",
+    "node-sass": "^4.14.1",
     "nuxt-edge": "latest",
     "puppeteer": "latest",
+    "sass-loader": "^8.0.2",
     "ssl-root-cas": "^1.3.1",
     "standard-version": "latest",
     "typescript": "latest"

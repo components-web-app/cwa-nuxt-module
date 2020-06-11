@@ -1,3 +1,4 @@
+import { resolve } from 'path'
 import coreModuleDist from '../src/module'
 
 const baseUrl = process.env.BASE_URL || 'https://localhost:8443'
@@ -7,6 +8,10 @@ export default {
     baseUrl
   },
   mode: 'universal',
+  css: [
+    '../dist/core/assets/milligram',
+    '../dist/core/assets/style'
+  ],
   buildModules: [
     '@nuxt/typescript-build',
     '@nuxtjs/dotenv'

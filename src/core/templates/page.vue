@@ -1,14 +1,19 @@
 <template>
-  <div>
-    <h5>Route</h5>
-    <pre>{{ currentRoute }}</pre>
-
-    <h5>Page Metadata Object</h5>
-    <pre>{{ currentPageMetadata }}</pre>
-
-    <h5>Page Template Object (same as above if static page)</h5>
-    <pre>{{ currentPageTemplate }}</pre>
-
+  <div class="conainer">
+    <div class="row">
+      <div class="column column-33">
+        <h5>Route</h5>
+        <pre>{{ currentRoute }}</pre>
+      </div>
+      <div class="column column-33">
+        <h5>Page Metadata Object</h5>
+        <pre>{{ currentPageMetadata }}</pre>
+      </div>
+      <div class="column column-33">
+        <h5>Page Template Object (same as Metadata if static)</h5>
+        <pre>{{ currentPageTemplate }}</pre>
+      </div>
+    </div>
     <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
   </div>
 </template>
@@ -54,6 +59,27 @@
         }
         return this.currentPageMetadata
       }
+    },
+    head() {
+      return {
+        title: this.currentPageMetadata.title,
+        meta: [
+          { hid: 'description', name: 'description', content: this.currentPageMetadata.metaDescription }
+        ]
+      }
     }
   }
 </script>
+
+<style lang="sass" scoped>
+.row .column
+  display: flex
+  flex-direction: column
+  > *
+    display: flex
+  > h5
+    flex-grow: 0
+    margin: 0
+  > pre
+    flex-grow: 1
+</style>
