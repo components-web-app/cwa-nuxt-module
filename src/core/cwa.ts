@@ -9,10 +9,11 @@ export default class Cwa {
 
   // Holds the EventSource connection with mercure
   private eventSource
-  private fetcher
+  private readonly fetcher
   private lastEventId
   public $storage: Storage
   public $state
+  private currentRoute: string
 
   constructor (ctx, options) {
     if (process.server) {
@@ -20,35 +21,38 @@ export default class Cwa {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
 
-    // this class is accessible throughout the application via this.$cwa or $cwa in the context
-
-    // For auth - we are using a nuxt module https://dev.auth.nuxtjs.org/
-    // ctx.$auth
-
-    // For axios we use a nuxt module https://axios.nuxtjs.org/ so it is
-    // the same in all the contexts
-    // ctx.$axios
     this.ctx = ctx
 
     this.fetcher = async ({ path, preload }) => {
-      const url = `${process.env.baseUrl}${path}`
+      // For dynamic components the API must not what route/path the request was originally for
+      let url = `${process.env.baseUrl}${path}?path=${this.ctx.route.fullPath}`
       consola.debug('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
-      // While https://github.com/nuxt-community/auth-module/pull/726 is pending, disable the header
-      ctx.$axios.setHeader('Authorization', false)
-      const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
-      this.getMercureHub(headers)
-      return data
+
+      try {
+        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
+        this.setMercureHubFromHeaders(headers)
+        return data
+      } catch (error) {
+        if (error.response && error.response.status && typeof error.response.data === 'object') {
+          this.ctx.error({
+            statusCode: error.response.status,
+            message: error.response.data['hydra:description'],
+            endpoint: url
+          })
+        } else if(error.message) {
+          this.ctx.error({
+            statusCode: 500,
+            message: error.message,
+            endpoint: url
+          })
+        }
+      }
     }
 
-    // These are options passed from the /src/module/index.ts -> /templates/plugin.js
-    // So they can be set and configured in the nuxt.config.js
-    // Defaults should be set i /src/module/defaults.ts
     this.options = options
 
-    // Storage & State
-    // This is a class to initialise namespaced vuex storage and left in local storage if needed. Just boilerplate, can adjust as required.
     options.initialState = { }
     const storage = new Storage(ctx, options)
     this.$storage = storage
@@ -57,7 +61,9 @@ export default class Cwa {
 
   async fetchItem ({ path, preload }: {path: string, preload?: string[]}) {
     const resource = await this.fetcher({ path, preload })
-    // Use the URL parts to build a resource name (could be implicit)
+    if (!resource) {
+      return resource
+    }
     this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
     return resource
   }
@@ -68,24 +74,32 @@ export default class Cwa {
         .then(resource => ({ resource, path }))
     }, { concurrency: this.options.fetchConcurrency || null })
       .each(({ resource }) => {
-        this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
+        resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
         return callback(resource)
       })
   }
 
   public async fetchRoute (path) {
-    const routeData = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
-    const pageData = await this.fetchItem({ path: routeData.page })
-    const layoutData = await this.fetchItem({ path: pageData.layout })
+    this.$storage.setState('loadingRoute', true)
+    this.eventSource && this.eventSource.close()
+    const routeResponse = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
+    if (!routeResponse.page) {
+      return
+    }
 
-    return this.fetchCollection({ paths: [...pageData.componentCollections, ...layoutData.componentCollections] }, (componentCollection) => {
+    const pageResponse = await this.fetchItem({ path: routeResponse.page })
+    const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+
+    await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
       return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
         return this.fetchItem({ path: componentPosition.component })
       })
     })
+    this.$storage.setCurrentRoute({ id: routeResponse['@id'] })
+    this.$storage.setState('loadingRoute', false)
   }
 
-  getMercureHub (headers) {
+  setMercureHubFromHeaders (headers) {
     if (this.$state.mercureHub) { return }
 
     const link = headers.link
@@ -127,7 +141,7 @@ export default class Cwa {
   }
 
   async initMercure () {
-    if (this.eventSource || !process.client) { return }
+    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
 
     this.eventSource = new EventSource(this.getMercureHubURL())
     this.eventSource.onmessage = (e) => {
@@ -143,51 +157,14 @@ export default class Cwa {
   }
 
   withError (route, err) {
-    this.$storage.setState('error', `An error occured while requesting ${route.path}`)
+    this.$storage.setState('error', `An error occurred while requesting ${route.path}`)
     consola.error(err)
   }
 
   async init () {
-  }
-
-  async initAxiosInterceptor () {
-    // environment: API_URL
-    // e.g. https://api.website.com/
-
-    // Must use environment: VERCEL_GITLAB_COMMIT_REF with the API url
-    // to determine which API endpoint we should be using.
-    // Where VERCEL_GITLAB_COMMIT_REF is 'dev' the endpoint would be (notice '-review')
-    // Perhaps this should be configurable in the module options
-    // https://dev-review.api.website.com/
-
-    // I do not know if this interceptor should be adding jwt auth http headers or if instead we should rely on cookies.
-
-    // You probably do not want this but basically we want the baseUrl to be the API unless
-    // specifically over-ridden in the axios request options.
-    /*
-    this.ctx.$axios.interceptors.request.use(async config => {
-      const urlRegEx = new RegExp('^https?://')
-      const isFullURL = urlRegEx.test(config.url)
-      if (isFullURL) {
-        config.baseURL = null
-      }
-      const noBaseUrl = config.baseURL === null || config.baseURL === ''
-      let isApiRequest = false
-      if (!noBaseUrl) {
-        const API_URL =
-          (process.server
-            ? process.env.API_URL
-            : this.$storage.getState('apiUrl')) ||
-          // eslint-disable-next-line no-console
-          console.warn(
-            'Could not find an API_URL variable for the $axios interceptor'
-          )
-        isApiRequest = API_URL ? API_URL.startsWith(config.baseURL) : false
-      }
-      if (!isApiRequest) {
-        return config
-      }
+    // first load client side initialised here. Router middleware re initialised every route
+    if (process.client) {
+      await this.initMercure()
     }
-     */
   }
 }

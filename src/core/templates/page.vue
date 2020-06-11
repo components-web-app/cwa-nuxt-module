@@ -1,10 +1,10 @@
 <template>
   <div>
-    Hello Pagey-Mc-Page-Face
-    <pre>
-    {{ state }}
-    </pre>
-    <button @click="$router.push({path:'/register'})">Register page</button>
+    <h5>Route</h5>
+    <pre>{{ currentRoute }}</pre>
+
+    <h5>Page</h5>
+    <pre>{{ currentPage }}</pre>
   </div>
 </template>
 
@@ -12,13 +12,16 @@
   export default {
     auth: false,
     layout: 'cwa-layout',
-    mounted() {
-      this.$cwa.initMercure()
-    },
     computed: {
       state () {
         return this.$store.state.resources.current
+      },
+      currentRoute() {
+        return this.state.Route.byId[this.state.Route.currentId]
+      },
+      currentPage() {
+        return this.state.Page.byId[this.currentRoute.page]
       }
-    },
+    }
   }
 </script>
