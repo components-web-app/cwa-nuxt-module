@@ -35,7 +35,7 @@ export default class Storage {
           consola.debug(currentResourceState)
           Vue.set(state, stateKey, { ...newState, [payload.name]: currentResourceState })
         },
-        SET_CURRENT_ROUTE (state, payload) {
+        SET_LOADED_ROUTE (state, payload) {
           const stateKey = 'current'
           const name = 'Route'
           const newState = state[stateKey] ? { ...state[stateKey] } : {}
@@ -43,9 +43,9 @@ export default class Storage {
           if (!currentResourceState) {
             return
           }
-          currentResourceState.currentId = payload.id
+          currentResourceState.loadedId = payload.id
           consola.debug('Set current route ID:', payload.id)
-          Vue.set(state, stateKey, { ...newState, [payload.name]: currentResourceState })
+          Vue.set(state, stateKey, { ...newState, [name]: currentResourceState })
         }
       }
     }
@@ -66,8 +66,8 @@ export default class Storage {
     })
   }
 
-  setCurrentRoute ({ id }) {
-    this.ctx.store.commit(this.options.vuex.namespace + '/SET_CURRENT_ROUTE', {
+  setLoadedRoute ({ id }) {
+    this.ctx.store.commit(this.options.vuex.namespace + '/SET_LOADED_ROUTE', {
       id
     })
   }

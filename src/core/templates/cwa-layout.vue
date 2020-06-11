@@ -6,6 +6,7 @@
       </li>
     </ul>
     <p v-else>Loading routes</p>
+    <p>Loading route</p>
     <nuxt />
   </div>
 </template>

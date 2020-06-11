@@ -1,6 +1,6 @@
 export default {
   vuex: {
-    namespace: 'resources',
+    namespace: 'cwa',
     initialState: {
       new: {},
       current: {}

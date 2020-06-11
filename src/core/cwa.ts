@@ -81,12 +81,19 @@ export default class Cwa {
   public async fetchRoute (path) {
     this.$storage.setState('loadingRoute', true)
     this.eventSource && this.eventSource.close()
-    const routeResponse = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
-    if (!routeResponse.page) {
+    const routeResponse = await this.fetchItem(
+      {
+        path: `/_/routes/${path}`,
+        preload: [
+          '/page/layout/componentCollections/*/componentPositions/*/component',
+          '/page/componentCollections/*/componentPositions/*/component',
+          '/pageData/page/componentCollections/*/componentPositions/*/component'
+        ]
+      })
+    const pageResponse = await this.fetchPage(routeResponse)
+    if (!pageResponse) {
       return
     }
-
-    const pageResponse = await this.fetchItem({ path: routeResponse.page })
     const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 
     await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
@@ -94,8 +101,21 @@ export default class Cwa {
         return this.fetchItem({ path: componentPosition.component })
       })
     })
-    this.$storage.setCurrentRoute({ id: routeResponse['@id'] })
+    this.$storage.setLoadedRoute({ id: routeResponse['@id'] })
     this.$storage.setState('loadingRoute', false)
+  }
+
+  private async fetchPage(routeResponse)
+  {
+    let page = routeResponse.page
+    if (routeResponse.pageData) {
+      const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData })
+      page = pageDataResponse.page
+    }
+    if (!page) {
+      return null
+    }
+    return this.fetchItem({ path: page })
   }
 
   setMercureHubFromHeaders (headers) {

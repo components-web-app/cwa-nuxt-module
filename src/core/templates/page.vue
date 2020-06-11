@@ -14,10 +14,10 @@
     layout: 'cwa-layout',
     computed: {
       state () {
-        return this.$store.state.resources.current
+        return this.$cwa.$state.current
       },
       currentRoute() {
-        return this.state.Route.byId[this.state.Route.currentId]
+        return this.state.Route.byId[this.state.Route.loadedId]
       },
       currentPage() {
         return this.state.Page.byId[this.currentRoute.page]
