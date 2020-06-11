@@ -45,6 +45,7 @@
     "@nuxt/typescript-runtime": "latest",
     "@nuxtjs/dotenv": "^1.4.1",
     "@nuxtjs/eslint-config-typescript": "latest",
+    "@nuxtjs/style-resources": "^1.0.0",
     "@types/jest": "latest",
     "@types/node": "latest",
     "@types/node-sass": "^4.11.1",

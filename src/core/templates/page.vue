@@ -1,5 +1,5 @@
 <template>
-  <div class="conainer">
+  <div class="container">
     <div class="row">
       <div class="column column-33">
         <h5>Route</h5>

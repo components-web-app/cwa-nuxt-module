@@ -9,12 +9,13 @@ export default {
   },
   mode: 'universal',
   css: [
-    '../dist/core/assets/milligram',
-    '../dist/core/assets/style'
+    '../src/core/assets/milligram',
+    '../src/core/assets/style'
   ],
   buildModules: [
     '@nuxt/typescript-build',
-    '@nuxtjs/dotenv'
+    '@nuxtjs/dotenv',
+    '@nuxtjs/style-resources'
   ],
   modules: [
     '@nuxtjs/axios',
@@ -22,6 +23,9 @@ export default {
     '@nuxtjs/dotenv',
     coreModuleDist
   ],
+  styleResources: {
+    sass: '../src/core/assets/*.sass'
+  },
   router: {
     middleware: ['auth', 'routeLoader']
   },
@@ -33,7 +37,7 @@ export default {
     redirect: {
       login: '/login',
       logout: '/login',
-      home: '/home',
+      home: '/',
       callback: false
     },
     strategies: {
