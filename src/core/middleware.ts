@@ -14,4 +14,10 @@ export default async function routeLoaderMiddleware ({ route, $cwa }) {
     $cwa.withError(route, err)
     return null
   }
+
+  // Re initialise on every route
+  // Plugin will initialise first load on client side
+  if (process.client) {
+    $cwa.initMercure()
+  }
 }

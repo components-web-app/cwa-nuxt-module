@@ -1,10 +1,10 @@
 <template>
   <div>
-    <p>Hello Pagey-Mc-Page-Face</p>
+    <h5>Route</h5>
+    <pre>{{ currentRoute }}</pre>
 
-    <pre>
-    {{ state }}
-    </pre>
+    <h5>Page</h5>
+    <pre>{{ currentPage }}</pre>
   </div>
 </template>
 
@@ -15,6 +15,12 @@
     computed: {
       state () {
         return this.$store.state.resources.current
+      },
+      currentRoute() {
+        return this.state.Route.byId[this.state.Route.currentId]
+      },
+      currentPage() {
+        return this.state.Page.byId[this.currentRoute.page]
       }
     }
   }

@@ -13,6 +13,7 @@ export default class Cwa {
   private lastEventId
   public $storage: Storage
   public $state
+  private currentRoute: string
 
   constructor (ctx, options) {
     if (process.server) {
@@ -23,20 +24,11 @@ export default class Cwa {
     this.ctx = ctx
 
     this.fetcher = async ({ path, preload }) => {
-      const url = `${process.env.baseUrl}${path}`
+      // For dynamic components the API must not what route/path the request was originally for
+      let url = `${process.env.baseUrl}${path}?path=${this.ctx.route.fullPath}`
       consola.debug('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
-      if (process.server) {
-        let referer = ctx.req.headers.referer
-        if (!referer) {
-          referer = ctx.req.socket.encrypted ? 'https' : 'http' +
-            '://' +
-            ctx.req.host +
-            ctx.route.fullPath
-        }
-        Object.assign(requestHeaders, { referer })
-      }
 
       try {
         const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
@@ -44,13 +36,13 @@ export default class Cwa {
         return data
       } catch (error) {
         if (error.response && error.response.status && typeof error.response.data === 'object') {
-          ctx.error({
+          this.ctx.error({
             statusCode: error.response.status,
             message: error.response.data['hydra:description'],
             endpoint: url
           })
         } else if(error.message) {
-          ctx.error({
+          this.ctx.error({
             statusCode: 500,
             message: error.message,
             endpoint: url
@@ -69,7 +61,10 @@ export default class Cwa {
 
   async fetchItem ({ path, preload }: {path: string, preload?: string[]}) {
     const resource = await this.fetcher({ path, preload })
-    resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
+    if (!resource) {
+      return resource
+    }
+    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
     return resource
   }
 
@@ -85,18 +80,23 @@ export default class Cwa {
   }
 
   public async fetchRoute (path) {
-    const { page } = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
-    if (!page) {
+    this.$storage.setState('loadingRoute', true)
+    this.eventSource && this.eventSource.close()
+    const routeResponse = await this.fetchItem({ path: `/_/routes/${path}`, preload: ['/page/layout/componentCollections/*/componentPositions/*/component', '/page/componentCollections/*/componentPositions/*/component'] })
+    if (!routeResponse.page) {
       return
     }
-    const pageResponse = await this.fetchItem({ path: page })
+
+    const pageResponse = await this.fetchItem({ path: routeResponse.page })
     const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 
-    return this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
+    await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
       return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
         return this.fetchItem({ path: componentPosition.component })
       })
     })
+    this.$storage.setCurrentRoute({ id: routeResponse['@id'] })
+    this.$storage.setState('loadingRoute', false)
   }
 
   setMercureHubFromHeaders (headers) {
@@ -141,7 +141,7 @@ export default class Cwa {
   }
 
   async initMercure () {
-    if (this.eventSource || !process.client) { return }
+    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
 
     this.eventSource = new EventSource(this.getMercureHubURL())
     this.eventSource.onmessage = (e) => {
@@ -162,6 +162,7 @@ export default class Cwa {
   }
 
   async init () {
+    // first load client side initialised here. Router middleware re initialised every route
     if (process.client) {
       await this.initMercure()
     }
