@@ -1,12 +1,13 @@
 <template>
   <div>
+    <p v-if="$cwa.$state.loadingRoute" style="color: orange;">Loading Route</p>
+    <p v-else style="color: green;">Route Loaded</p>
     <ul v-if="routes">
       <li v-for="route of sortedRoutes">
         <nuxt-link :to="route.path">{{ route.path }}</nuxt-link>
       </li>
     </ul>
     <p v-else>Loading routes</p>
-    <p>Loading route</p>
     <nuxt />
   </div>
 </template>

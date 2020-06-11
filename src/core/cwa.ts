@@ -1,7 +1,7 @@
 import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
-import Storage from './storage'
+import { Storage, StoreCategories } from './storage'
 
 export default class Cwa {
   public ctx: any
@@ -16,7 +16,7 @@ export default class Cwa {
 
   constructor (ctx, options) {
     if (process.server) {
-      // WARNING DISABLE THIS IN PRODUCITON
+      // Todo: WARNING DISABLE THIS IN PRODUCTION
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
 
@@ -24,7 +24,7 @@ export default class Cwa {
 
     this.fetcher = async ({ path, preload }) => {
       // For dynamic components the API must not what route/path the request was originally for
-      let url = `${process.env.baseUrl}${path}?path=${this.ctx.route.fullPath}`
+      const url = `${process.env.baseUrl}${path}?path=${this.ctx.route.fullPath}`
       consola.debug('Fetching %s', url)
 
       const requestHeaders = preload ? { Preload: preload.join(',') } : {}
@@ -37,7 +37,7 @@ export default class Cwa {
         if (error.response && error.response.status && typeof error.response.data === 'object') {
           this.ctx.error({
             statusCode: error.response.status,
-            message: error.response.data['hydra:description'],
+            message: error.response.data.message || error.response.data['hydra:description'],
             endpoint: url
           })
         } else if(error.message) {
@@ -58,22 +58,22 @@ export default class Cwa {
     this.$state = storage.state
   }
 
-  async fetchItem ({ path, preload }: {path: string, preload?: string[]}) {
+  async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
     const resource = await this.fetcher({ path, preload })
     if (!resource) {
       return resource
     }
-    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
+    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], category, isNew: false, resource })
     return resource
   }
 
-  async fetchCollection ({ paths }, callback) {
+  async fetchCollection ({ paths, category }: {paths: string[], category?: string}, callback) {
     return bluebird.map(paths, (path) => {
       return this.fetcher({ path })
         .then(resource => ({ resource, path }))
     }, { concurrency: this.options.fetchConcurrency || null })
       .each(({ resource }) => {
-        resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], isNew: false, resource })
+        resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], category, isNew: false, resource })
         return callback(resource)
       })
   }
@@ -98,10 +98,10 @@ export default class Cwa {
 
     await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
       return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
-        return this.fetchItem({ path: componentPosition.component })
+        return this.fetchItem({ path: componentPosition.component, category: StoreCategories.Component })
       })
     })
-    this.$storage.setLoadedRoute({ id: routeResponse['@id'] })
+    this.$storage.setCurrentRoute(routeResponse['@id'])
     this.$storage.setState('loadingRoute', false)
   }
 
@@ -109,7 +109,10 @@ export default class Cwa {
   {
     let page = routeResponse.page
     if (routeResponse.pageData) {
-      const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData })
+      const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData, category: StoreCategories.PageData })
+      if (!pageDataResponse) {
+        return null
+      }
       page = pageDataResponse.page
     }
     if (!page) {
@@ -145,18 +148,18 @@ export default class Cwa {
       })
     }
 
-    // TODO: discuss if URI templates aren't better
-    // hub.searchParams.append('topic', '/_/routes/{id}')
-    // hub.searchParams.append('topic', '/_/pages/{id}')
-    // hub.searchParams.append('topic', '/_/layout/{id}')
-    // hub.searchParams.append('topic', '/_/component_collections/{id}')
-    // hub.searchParams.append('topic', '/component/html_contents/{id}')
-
     if (this.lastEventId) {
       hub.searchParams.append('Last-Event-ID', this.lastEventId)
     }
 
     return hub.toString()
+  }
+
+  async init () {
+    // first load client side initialised here. Router middleware re initialised every route
+    if (process.client) {
+      await this.initMercure()
+    }
   }
 
   async initMercure () {
@@ -178,12 +181,5 @@ export default class Cwa {
   withError (route, err) {
     this.$storage.setState('error', `An error occurred while requesting ${route.path}`)
     consola.error(err)
-  }
-
-  async init () {
-    // first load client side initialised here. Router middleware re initialised every route
-    if (process.client) {
-      await this.initMercure()
-    }
   }
 }

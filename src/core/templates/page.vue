@@ -3,24 +3,56 @@
     <h5>Route</h5>
     <pre>{{ currentRoute }}</pre>
 
-    <h5>Page</h5>
-    <pre>{{ currentPage }}</pre>
+    <h5>Page Metadata Object</h5>
+    <pre>{{ currentPageMetadata }}</pre>
+
+    <h5>Page Template Object (same as above if static page)</h5>
+    <pre>{{ currentPageTemplate }}</pre>
+
+    <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
   </div>
 </template>
 
 <script>
+  import { StoreCategories } from "~cwa/core/storage";
+
   export default {
     auth: false,
     layout: 'cwa-layout',
     computed: {
       state () {
-        return this.$cwa.$state.current
+        return this.$cwa.$state.resources.current
       },
       currentRoute() {
-        return this.state.Route.byId[this.state.Route.loadedId]
+        if (this.state.Route.current === undefined) {
+          console.error(`Current route is undefined`)
+          return null
+        }
+        const route = this.state.Route.byId[this.state.Route.current]
+        if (route === undefined) {
+          console.error(`Cannot find route with ID ${this.state.Route.current}`)
+          return null
+        }
+        return route
       },
-      currentPage() {
+      currentPageMetadata() {
+        if (!this.currentRoute) {
+          return
+        }
+        if (this.currentRoute.pageData) {
+          const resourceType = this.$cwa.$storage.getTypeFromIri(this.currentRoute.pageData, StoreCategories.PageData)
+          return this.state.PageData[resourceType].byId[this.currentRoute.pageData]
+        }
         return this.state.Page.byId[this.currentRoute.page]
+      },
+      currentPageTemplate() {
+        if (!this.currentRoute) {
+          return
+        }
+        if (this.currentRoute.pageData) {
+          return this.state.Page.byId[this.currentPageMetadata.page]
+        }
+        return this.currentPageMetadata
       }
     }
   }

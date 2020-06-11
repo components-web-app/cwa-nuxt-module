@@ -1,10 +1,6 @@
 export default {
   vuex: {
-    namespace: 'cwa',
-    initialState: {
-      new: {},
-      current: {}
-    }
+    namespace: 'cwa'
   },
   fetchConcurrency: 10,
   pagesDepth: 3
