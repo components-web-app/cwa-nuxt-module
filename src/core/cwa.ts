@@ -13,7 +13,6 @@ export default class Cwa {
   private lastEventId
   public $storage: Storage
   public $state
-  private currentRoute: string
 
   constructor (ctx, options) {
     if (process.server) {

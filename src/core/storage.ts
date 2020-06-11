@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import consola from 'consola'
-import { isUnset, decodeValue, encodeValue, getProp } from '../utils'
+import { getProp } from '../utils'
 
 export default class Storage {
   public ctx: any
@@ -13,10 +13,6 @@ export default class Storage {
 
     this._initState()
   }
-
-  // ------------------------------------
-  // Local state (reactive)
-  // ------------------------------------
 
   _initState () {
     // Private state is suitable to keep information not being exposed to Vuex store
