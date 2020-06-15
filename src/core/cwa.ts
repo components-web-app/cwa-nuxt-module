@@ -195,4 +195,12 @@ export default class Cwa {
     this.$storage.setState('error', `An error occurred while requesting ${route.path}`)
     consola.error(err)
   }
+
+  updateResources() {
+    this.$storage.updateResources()
+  }
+
+  get resourcesOutdated() {
+    return this.$storage.areResourcesOutdated()
+  }
 }

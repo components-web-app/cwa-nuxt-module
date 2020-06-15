@@ -48,10 +48,35 @@ export class Storage {
         SET_RESOURCE (state, payload) {
           const stateKey = payload.isNew ? 'new' : 'current'
           const newState = state.resources[stateKey] ? { ...state.resources[stateKey] } : {}
-          const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : { byId: {}, allIds: [], currentIds: [] }
+          const initialState = payload.isNew ? { byId: {}, allIds: [] } : { byId: {}, allIds: [], currentIds: [] }
+          if (payload.isNew) {
+            const currentResources = state.resources.current[payload.name]
+            if (!currentResources) {
+              consola.warn(`Not added new resource payload to store: the resource name '${payload.name}' is not currently known`)
+              return
+            }
+
+            const currentResource = currentResources.byId[payload.id]
+            if (!currentResource) {
+              consola.warn(`Not added new resource payload to store: the current resource '${payload.name}' with id '${payload.id}' does not exist`)
+              return
+            }
+
+            const removeModifiedAtTimestamp = (obj) => {
+              const newObj = Object.assign({}, obj)
+              delete newObj.modifiedAt
+              return newObj
+            }
+            if (JSON.stringify(removeModifiedAtTimestamp(currentResource)) === JSON.stringify(removeModifiedAtTimestamp(payload.resource))) {
+              consola.info(`Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`)
+              return
+            }
+          }
+          const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : initialState
+
           currentResourceState.byId[payload.id] = payload.resource
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
-          currentResourceState.currentIds.push(payload.id)
+          !payload.isNew && currentResourceState.currentIds.push(payload.id)
           consola.debug(currentResourceState)
           Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
 
@@ -74,6 +99,9 @@ export class Storage {
           }
           Vue.set(routeResources, 'current', id)
           consola.debug('Loaded route set:', id)
+        },
+        UPDATE_RESOURCES (state) {
+
         }
       },
       getters: {
@@ -91,6 +119,9 @@ export class Storage {
             return null
           }
           return typeMapping[found]
+        },
+        RESOURCES_OUTDATED: (state) => {
+          return Object.entries(state.resources.new).length !== 0
         }
       }
     }
@@ -129,12 +160,20 @@ export class Storage {
     this.ctx.store.commit(this.options.vuex.namespace + '/RESET_CURRENT_RESOURCES')
   }
 
+  updateResources() {
+    this.ctx.store.commit(this.options.vuex.namespace + '/UPDATE_RESOURCES')
+  }
+
   getState (key) {
     return this.state[key]
   }
 
   getTypeFromIri(iri, category) {
     return this.ctx.store.getters[this.options.vuex.namespace + '/GET_TYPE_FROM_IRI']({ iri, category})
+  }
+
+  areResourcesOutdated() {
+    return this.ctx.store.getters[this.options.vuex.namespace + '/RESOURCES_OUTDATED']
   }
 
   watchState (key, fn) {

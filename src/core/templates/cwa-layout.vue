@@ -2,24 +2,28 @@
   <div>
     <div class="navbar">
       <div class="container">
-      <ul v-if="routes" class="row">
-        <li v-for="route of sortedRoutes" class="column">
-          <nuxt-link :to="route.path" :class="{ selected: route.path === $route.path }">{{ route.name }}</nuxt-link>
-        </li>
-        <li class="column">
-          <button v-if="$auth.loggedIn" @click="$auth.logout('local')">Logout</button>
-          <nuxt-link v-else to="/login" tag="button">Login</nuxt-link>
-        </li>
-      </ul>
-      <ul v-else>
-        <li>
-          <span>Loading routes</span>
-        </li>
-      </ul>
+        <ul v-if="routes" class="row">
+          <li v-for="route of sortedRoutes" class="column">
+            <nuxt-link :to="route.path" :class="{ selected: route.path === $route.path }">{{ route.name }}</nuxt-link>
+          </li>
+          <li class="column">
+            <button v-if="$auth.loggedIn" @click="$auth.logout('local')">Logout</button>
+            <nuxt-link v-else to="/login" tag="button">Login</nuxt-link>
+          </li>
+        </ul>
+        <ul v-else>
+          <li>
+            <span>Loading routes</span>
+          </li>
+        </ul>
       </div>
+    </div>
+    <div class="container refresh-bar" v-if="$cwa.resourcesOutdated">
+      <span>The content on this page is outdated.</span> <button class="is-warning" @click="$cwa.updateResources()">Update page</button>
     </div>
     <div class="container">
       <p v-if="$cwa.$state.loadingRoute" style="color: orange;">Loading Route</p>
+      <p v-else-if="$cwa.$state.error" style="color: red;">{{ $cwa.$state.error }}</p>
       <p v-else style="color: green;">Route Loaded</p>
     </div>
     <nuxt />
@@ -63,6 +67,12 @@ export default {
 </script>
 
 <style lang="sass" scoped>
+.refresh-bar
+  display: flex
+  justify-content: center
+  align-items: center
+  button
+    margin: 0 0 0 1rem
 .navbar
   margin-bottom: 1.25rem
   background-color: $color-secondary
