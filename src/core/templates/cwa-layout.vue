@@ -55,7 +55,7 @@ export default {
     }
   },
   async mounted() {
-    const { data } = await this.$axios.get('/_/routes')
+    const { data } = await this.$axios.get('/_/routes', { progress: false })
     this.routes = data['hydra:member']
   },
   computed: {
