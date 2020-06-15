@@ -101,7 +101,12 @@ export class Storage {
           consola.debug('Loaded route set:', id)
         },
         UPDATE_RESOURCES (state) {
-
+          for (const [resourceName, newResourcesObject] of Object.entries(state.resources.new)) {
+            for (const [resourceId, newResource] of Object.entries(newResourcesObject.byId)) {
+              Vue.set(state.resources.current[resourceName].byId, resourceId, newResource)
+            }
+            Vue.delete(state.resources.new, resourceName)
+          }
         }
       },
       getters: {
