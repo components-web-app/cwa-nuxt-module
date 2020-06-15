@@ -12,6 +12,7 @@ export default {
     '../src/core/assets/style'
   ],
   buildModules: [
+    '@nuxt/components',
     '@nuxt/typescript-build',
     '@nuxtjs/dotenv',
     '@nuxtjs/style-resources'
@@ -19,7 +20,6 @@ export default {
   modules: [
     '@nuxtjs/axios',
     '@nuxtjs/auth-next',
-    '@nuxtjs/dotenv',
     coreModuleDist
   ],
   styleResources: {
@@ -59,5 +59,6 @@ export default {
   },
   cwa: {
     allowUnauthorizedTls: true
-  }
+  },
+  components: true
 }

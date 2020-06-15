@@ -1,6 +1,3 @@
-export const isUnset = o => typeof o === 'undefined' || o === null
-export const isSet = o => !isUnset(o)
-
 interface VueComponent { options: object, _Ctor: VueComponent }
 type match = { components: VueComponent[] }
 type Route = { matched: match[] }
@@ -21,35 +18,6 @@ export function routeOption (route: Route, key, value) {
       )
     }
   })
-}
-
-export function getMatchedComponents (route: Route, matches = []) {
-  return [].concat.apply([], route.matched.map(function (m, index) {
-    return Object.keys(m.components).map(function (key) {
-      matches.push(index)
-      return m.components[key]
-    })
-  }))
-}
-
-export function encodeValue (val) {
-  if (typeof val === 'string') {
-    return val
-  }
-  return JSON.stringify(val)
-}
-
-export function decodeValue (val) {
-  // Try to parse as json
-  if (typeof val === 'string') {
-    try {
-      return JSON.parse(val)
-    } catch (_) {
-    }
-  }
-
-  // Return as is
-  return val
 }
 
 /**

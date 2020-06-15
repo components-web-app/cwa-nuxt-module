@@ -13,7 +13,11 @@
     "types": [
       "@types/node",
       "@nuxt/types"
-    ]
+    ],
+    "noFallthroughCasesInSwitch": true,
+    // "noImplicitReturns": true,
+    "stripInternal": true,
+    "noUnusedLocals": true
   },
   "include": [
     "./src"
