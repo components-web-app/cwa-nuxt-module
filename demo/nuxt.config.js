@@ -56,5 +56,8 @@ export default {
         }
       }
     }
+  },
+  cwa: {
+    allowUnauthorizedTls: true
   }
 }

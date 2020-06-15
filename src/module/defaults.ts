@@ -3,5 +3,6 @@ export default {
     namespace: 'cwa'
   },
   fetchConcurrency: 10,
-  pagesDepth: 3
+  pagesDepth: 3,
+  allowUnauthorizedTls: false
 }

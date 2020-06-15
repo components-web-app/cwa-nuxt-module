@@ -15,8 +15,7 @@ export default class Cwa {
   public $state
 
   constructor (ctx, options) {
-    if (process.server) {
-      // Todo: WARNING DISABLE THIS IN PRODUCTION
+    if (options.allowUnauthorizedTls && ctx.isDev) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
 

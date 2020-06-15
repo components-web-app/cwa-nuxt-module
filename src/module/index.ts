@@ -30,7 +30,7 @@ function extendRoutes ({ pagesDepth }) {
 
 export default function (moduleOptions) {
   // Merge all option sources
-  const options = merge({}, defaults, moduleOptions, this.options.auth)
+  const options = merge({}, defaults, moduleOptions, this.options.cwa, this.options.auth)
 
   // Add plugin
   const { dst } = this.addTemplate({
