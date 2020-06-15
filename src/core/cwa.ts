@@ -158,7 +158,7 @@ export default class Cwa {
           continue
         }
         resourcesObject.currentIds.forEach((id) => {
-          hub.searchParams.append('topic', id)
+          hub.searchParams.append('topic', this.ctx.env.baseUrl + id)
         })
       }
     }
@@ -182,14 +182,15 @@ export default class Cwa {
     if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
 
     this.eventSource = new EventSource(this.getMercureHubURL())
-    this.eventSource.onmessage = (e) => {
-      this.lastEventId = e.id
+    this.eventSource.onmessage = (messageEvent) => {
+      const data = JSON.parse(messageEvent.data)
+      this.lastEventId = data.id
       this.$storage.setResource({
         isNew: true,
         // TODO find another way of doing this, maybe add this information from the API directly
-        name: e['@type'],
-        id: e['@id'],
-        resource: e
+        name: data['@type'],
+        id: data['@id'],
+        resource: data
       })
     }
   }
