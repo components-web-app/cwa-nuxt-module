@@ -1,5 +1,8 @@
 <template>
-  <div>
+  <div class="container">
+    <div class="notice is-danger" v-if="error">
+      {{ error }}
+    </div>
     <form @submit.prevent="userLogin">
       <div>
         <label>Username</label>
@@ -21,12 +24,14 @@
 <script>
 export default {
   cwa: false,
+  layout: 'cwa-layout',
   data () {
     return {
       login: {
         username: '',
         password: ''
-      }
+      },
+      error: null
     }
   },
   methods: {
@@ -37,6 +42,10 @@ export default {
           data: this.login
         })
         .catch((e) => {
+          if (e.response && e.response.status === 401) {
+            this.error = 'Incorrect username and/or password'
+            return
+          }
           this.error = e + ''
         })
     }
