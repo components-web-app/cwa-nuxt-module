@@ -150,10 +150,6 @@ export default class Cwa {
     const appendTopics = (obj) => {
       for (const resourceType in obj) {
         const resourcesObject = obj[resourceType]
-        if (resourcesObject.typeMapping !== undefined) {
-          appendTopics(resourcesObject)
-          continue
-        }
         if (resourcesObject.currentIds === undefined) {
           continue
         }

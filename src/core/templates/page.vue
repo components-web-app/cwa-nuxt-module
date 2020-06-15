@@ -29,7 +29,7 @@
         return this.$cwa.$state.resources.current
       },
       currentRoute() {
-        if (this.state.Route.current === undefined) {
+        if (this.state.Route === undefined || this.state.Route.current === undefined) {
           console.error(`Current route is undefined`)
           return null
         }
@@ -46,12 +46,15 @@
         }
         if (this.currentRoute.pageData) {
           const resourceType = this.$cwa.$storage.getTypeFromIri(this.currentRoute.pageData, StoreCategories.PageData)
-          return this.state.PageData[resourceType].byId[this.currentRoute.pageData]
+          if (!resourceType) {
+            return null
+          }
+          return this.state[resourceType].byId[this.currentRoute.pageData]
         }
         return this.state.Page.byId[this.currentRoute.page]
       },
       currentPageTemplate() {
-        if (!this.currentRoute) {
+        if (!this.currentRoute || !this.currentPageMetadata) {
           return
         }
         if (this.currentRoute.pageData) {
@@ -61,6 +64,9 @@
       }
     },
     head() {
+      if (!this.currentPageMetadata) {
+        return {}
+      }
       return {
         title: this.currentPageMetadata.title,
         meta: [

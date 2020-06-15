@@ -25,7 +25,8 @@ export class Storage {
       state: () => ({
         resources: {
           new: {},
-          current: {}
+          current: {},
+          categories: {}
         }
       }),
       mutations: {
@@ -36,11 +37,6 @@ export class Storage {
           Vue.set(state.resources, 'new', {})
           const resetCurrentIds = (obj) => {
             for (const resourceName in obj) {
-              const resourcesObject = obj[resourceName]
-              if (resourcesObject.typeMapping !== undefined) {
-                resetCurrentIds(resourcesObject)
-                continue
-              }
               if (obj[resourceName].currentIds === undefined) {
                 continue
               }
@@ -51,34 +47,19 @@ export class Storage {
         },
         SET_RESOURCE (state, payload) {
           const stateKey = payload.isNew ? 'new' : 'current'
-          const resourcesState = state.resources
-          const activeState = resourcesState[stateKey] ? { ...resourcesState[stateKey] } : {}
-
-          let categoryState
-          if (!payload.category) {
-            categoryState = activeState
-          } else {
-            // If a category is used, we also add typeMapping so we can find the name of the resource from the IRI
-            // This is used for Components and PageData where their name could be anything
-            if (!activeState[payload.category]) {
-              Vue.set(activeState, payload.category, { typeMapping: {} })
-            }
-            categoryState = activeState[payload.category]
-            const resourceIriPrefix = payload.id.split('/').slice(0, -1).join('/')
-            Vue.set(categoryState.typeMapping, resourceIriPrefix, payload.name)
-          }
-          const currentResourceState = categoryState[payload.name] ? { ...categoryState[payload.name] } : { byId: {}, allIds: [], currentIds: [] }
+          const newState = state.resources[stateKey] ? { ...state.resources[stateKey] } : {}
+          const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : { byId: {}, allIds: [], currentIds: [] }
           currentResourceState.byId[payload.id] = payload.resource
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
           currentResourceState.currentIds.push(payload.id)
+          consola.debug(currentResourceState)
+          Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
 
-          const newValue = { ...categoryState, [payload.name]: currentResourceState }
           if (payload.category) {
-            Vue.set(resourcesState[stateKey], payload.category, newValue)
-          } else {
-            Vue.set(resourcesState, stateKey, newValue)
+            const resourceIriPrefix = payload.id.split('/').slice(0, -1).join('/')
+            const newCategoryMapping = state.resources.categories[payload.category] ? { ...state.resources.categories[payload.category] } : {}
+            Vue.set(state.resources.categories, payload.category, { ...newCategoryMapping, [resourceIriPrefix]: payload.name })
           }
-          consola.debug(payload.category, payload.name, currentResourceState)
         },
         SET_CURRENT_ROUTE (state, id) {
           const routeResources = state.resources.current.Route
@@ -97,7 +78,10 @@ export class Storage {
       },
       getters: {
         GET_TYPE_FROM_IRI: (state) => ({ iri, category }) => {
-          const typeMapping = state.resources.current[category].typeMapping
+          const typeMapping = state.resources.categories[category]
+          if (!typeMapping) {
+            return null
+          }
           const found = Object.keys(typeMapping).find((iriPrefix: string) => {
             if (iri.startsWith(iriPrefix)) {
               return true
