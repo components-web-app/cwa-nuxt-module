@@ -28,7 +28,7 @@ export default class Cwa {
       consola.debug('Fetching %s', url)
 
       const requestHeaders = { Path: this.ctx.route.fullPath } as { Path: string, Preload?: string }
-      if  (preload) {
+      if (preload) {
         requestHeaders.Preload = preload.join(',')
       }
 
@@ -43,7 +43,7 @@ export default class Cwa {
             message: error.response.data.message || error.response.data['hydra:description'],
             endpoint: url
           })
-        } else if(error.message) {
+        } else if (error.message) {
           this.ctx.error({
             statusCode: 500,
             message: error.message,
@@ -110,8 +110,7 @@ export default class Cwa {
     this.$storage.setState('loadingRoute', false)
   }
 
-  private async fetchPage(routeResponse)
-  {
+  private async fetchPage (routeResponse) {
     let page = routeResponse.page
     if (routeResponse.pageData) {
       const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData, category: StoreCategories.PageData })
@@ -196,11 +195,11 @@ export default class Cwa {
     consola.error(err)
   }
 
-  updateResources() {
+  updateResources () {
     this.$storage.updateResources()
   }
 
-  get resourcesOutdated() {
+  get resourcesOutdated () {
     return this.$storage.areResourcesOutdated()
   }
 }

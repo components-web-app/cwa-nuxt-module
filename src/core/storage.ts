@@ -116,7 +116,7 @@ export class Storage {
         }
       },
       getters: {
-        GET_TYPE_FROM_IRI: (state) => ({ iri, category }) => {
+        GET_TYPE_FROM_IRI: state => ({ iri, category }) => {
           const typeMapping = state.resources.categories[category]
           if (!typeMapping) {
             return null
@@ -167,11 +167,11 @@ export class Storage {
     return value
   }
 
-  resetCurrentResources() {
+  resetCurrentResources () {
     this.ctx.store.commit(this.options.vuex.namespace + '/RESET_CURRENT_RESOURCES')
   }
 
-  updateResources() {
+  updateResources () {
     this.ctx.store.commit(this.options.vuex.namespace + '/UPDATE_RESOURCES')
   }
 
@@ -179,11 +179,11 @@ export class Storage {
     return this.state[key]
   }
 
-  getTypeFromIri(iri, category) {
-    return this.ctx.store.getters[this.options.vuex.namespace + '/GET_TYPE_FROM_IRI']({ iri, category})
+  getTypeFromIri (iri, category) {
+    return this.ctx.store.getters[this.options.vuex.namespace + '/GET_TYPE_FROM_IRI']({ iri, category })
   }
 
-  areResourcesOutdated() {
+  areResourcesOutdated () {
     return this.ctx.store.getters[this.options.vuex.namespace + '/RESOURCES_OUTDATED']
   }
 

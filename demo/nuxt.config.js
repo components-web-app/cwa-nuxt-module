@@ -1,4 +1,3 @@
-import { resolve } from 'path'
 import coreModuleDist from '../src/module'
 
 const baseUrl = process.env.BASE_URL || 'https://localhost:8443'
