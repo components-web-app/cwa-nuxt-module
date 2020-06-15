@@ -24,10 +24,13 @@ export default class Cwa {
 
     this.fetcher = async ({ path, preload }) => {
       // For dynamic components the API must not what route/path the request was originally for
-      const url = `${process.env.baseUrl}${path}?path=${this.ctx.route.fullPath}`
+      const url = `${process.env.baseUrl}${path}`
       consola.debug('Fetching %s', url)
 
-      const requestHeaders = preload ? { Preload: preload.join(',') } : {}
+      const requestHeaders = { Path: this.ctx.route.fullPath } as { Path: string, Preload?: string }
+      if  (preload) {
+        requestHeaders.Preload = preload.join(',')
+      }
 
       try {
         const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
@@ -88,6 +91,7 @@ export default class Cwa {
         preload: [
           '/page/layout/componentCollections/*/componentPositions/*/component',
           '/page/componentCollections/*/componentPositions/*/component',
+          '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
           '/pageData/page/componentCollections/*/componentPositions/*/component'
         ]
       })

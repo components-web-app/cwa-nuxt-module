@@ -80,6 +80,10 @@ export default {
       align-items: center
       width: auto
       flex-grow: 0
+      padding: 0
+      &:last-child
+        margin-left: auto
+        justify-self: flex-end
       a,
       span
         display: block
@@ -93,7 +97,7 @@ export default {
           background-color: $color-primary
       button
         display: block
-        margin: 0
+        margin: 0 0 0 1rem
         &:hover
           border: 1px solid $color-primary
           background: $color-initial
