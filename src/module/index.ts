@@ -46,20 +46,20 @@ const cwaModule = <Module> async function () {
     // ...nuxt.options.auth
   }
 
-  addLayout({
+  addLayout.call(this, {
     src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
     fileName: join('cwa', 'cwa-layout.vue')
   })
 
-  addLayout({
+  addLayout.call(this, {
     src: resolve(__dirname, '../core/templates/cwa-error.vue'),
     fileName: join('cwa', 'cwa-error.vue')
   }, 'error')
 
-  extendRoutes(extendRoutesFn({ pagesDepth: options.pagesDepth }))
+  extendRoutes.call(this, extendRoutesFn({ pagesDepth: options.pagesDepth }))
 
   // Add plugin
-  const { dst } = addTemplate({
+  const { dst } = addTemplate.call(this, {
     src: resolve(__dirname, '../../templates/plugin.js'),
     fileName: join('cwa', 'cwa.js'),
     options: {
