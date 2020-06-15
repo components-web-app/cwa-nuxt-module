@@ -7,6 +7,12 @@ export const StoreCategories = {
   Component: 'Component'
 }
 
+type resourcesState = {
+  byId: object,
+  allIds: string[],
+  currentIds?: string[]
+}
+
 export class Storage {
   public ctx: any
   public options: any
@@ -48,7 +54,7 @@ export class Storage {
         SET_RESOURCE (state, payload) {
           const stateKey = payload.isNew ? 'new' : 'current'
           const newState = state.resources[stateKey] ? { ...state.resources[stateKey] } : {}
-          const initialState = payload.isNew ? { byId: {}, allIds: [] } : { byId: {}, allIds: [], currentIds: [] }
+          const initialState:resourcesState = payload.isNew ? { byId: {}, allIds: [] } : { byId: {}, allIds: [], currentIds: [] }
           if (payload.isNew) {
             const currentResources = state.resources.current[payload.name]
             if (!currentResources) {
@@ -101,8 +107,8 @@ export class Storage {
           consola.debug('Loaded route set:', id)
         },
         UPDATE_RESOURCES (state) {
-          for (const [resourceName, newResourcesObject] of Object.entries(state.resources.new)) {
-            for (const [resourceId, newResource] of Object.entries(newResourcesObject.byId)) {
+          for (const [resourceName, { byId }] of Object.entries(state.resources.new) as [string, resourcesState][]) {
+            for (const [resourceId, newResource] of Object.entries(byId)) {
               Vue.set(state.resources.current[resourceName].byId, resourceId, newResource)
             }
             Vue.delete(state.resources.new, resourceName)
