@@ -12,6 +12,6 @@ export default function (ctx, inject) {
   ctx.$cwa = $cwa
 
   return $cwa.init().catch(error => {
-    consola.error('[ERROR] [AUTH]', error)
+    consola.error('[ERROR] [CWA]', error)
   })
 }

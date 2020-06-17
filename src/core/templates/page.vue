@@ -15,6 +15,7 @@
       </div>
     </div>
     <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
+    <PrimaryPageTemplate /> 
   </div>
 </template>
 

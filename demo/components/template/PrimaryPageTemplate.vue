@@ -1,11 +1,11 @@
 <template>
   <div>
-    My page template
+    PrimaryPageTemplate
   </div>
 </template>
 
 <script>
 export default {
-  name: 'DummyPageTemplate'
+  name: 'PrimaryPageTemplate'
 }
 </script>

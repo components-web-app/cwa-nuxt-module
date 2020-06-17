@@ -29,6 +29,7 @@
     "test": "yarn lint && yarn build && nuxt build tests/fixture && jest"
   },
   "dependencies": {
+    "@nuxt/components": "^0.3.4",
     "@nuxtjs/auth-next": "^5.0.0-1589207846.e8f33bf",
     "@nuxtjs/axios": "^5.10.3",
     "bluebird": "^3.7.2",
