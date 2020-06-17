@@ -1,4 +1,5 @@
 import coreModuleDist from '../src/module'
+import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 
 const baseUrl = process.env.BASE_URL || 'https://localhost:8443'
 
@@ -60,5 +61,17 @@ export default {
   cwa: {
     allowUnauthorizedTls: true
   },
-  components: true
+  components: true,
+  build: {
+    extend(config, ctx) {
+      if (!config.resolve) {
+        config.resolve = {};
+      }
+      if (!config.resolve.plugins) {
+        config.resolve.plugins = [];
+      }
+
+      config.resolve.plugins.push(new TsconfigPathsPlugin({configFile: `${__dirname}/tsconfig.json`}));
+    }
+  }
 }

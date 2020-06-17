@@ -1,8 +1,9 @@
 import { resolve, join } from 'path'
-import merge from 'lodash/merge'
-import defaults from './defaults'
+// import { Configuration as WebpackConfig, Entry as WebpackEntry } from 'webpack'
+import { Module } from '@nuxt/types'
+import { CwaOptions } from "../index"
 
-function extendRoutes ({ pagesDepth }) {
+function extendRoutesFn ({ pagesDepth }) {
   function createRouteObject (component, depth:number, currentDepth:number = 0) {
     if (currentDepth > depth) {
       return null
@@ -22,40 +23,72 @@ function extendRoutes ({ pagesDepth }) {
     }
     return routeObject
   }
-  this.extendRoutes((routes) => {
-    const newRoutes = createRouteObject('~cwa/core/templates/page.vue', pagesDepth)
+  return (routes) => {
+    const newRoutes = createRouteObject('@cwa/core/templates/page.vue', pagesDepth)
     routes.push(newRoutes)
-  })
+  }
 }
 
-export default function (moduleOptions) {
-  // Merge all option sources
-  const options = merge({}, defaults, moduleOptions, this.options.cwa, this.options.auth)
+const cwaModule = <Module> async function () {
+  const { nuxt, extendRoutes, addLayout, addTemplate } = this
+
+  const options: CwaOptions = {
+    ...{
+      vuex: {
+        namespace: 'cwa'
+      },
+      fetchConcurrency: 10,
+      pagesDepth: 3,
+      allowUnauthorizedTls: false
+    },
+    ...nuxt.options.cwa,
+    // Todo Check if we need the auth module options options and implement properly if we do
+    // ...nuxt.options.auth
+  }
+
+  addLayout.call(this, {
+    src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
+    fileName: join('cwa', 'cwa-layout.vue')
+  })
+
+  addLayout.call(this, {
+    src: resolve(__dirname, '../core/templates/cwa-error.vue'),
+    fileName: join('cwa', 'cwa-error.vue')
+  }, 'error')
+
+  extendRoutes.call(this, extendRoutesFn({ pagesDepth: options.pagesDepth }))
 
   // Add plugin
-  const { dst } = this.addTemplate({
+  const { dst } = addTemplate.call(this, {
     src: resolve(__dirname, '../../templates/plugin.js'),
-    fileName: join('cwa.js'),
+    fileName: join('cwa', 'cwa.js'),
     options: {
       options
     }
   })
-  this.options.plugins.push(resolve(this.options.buildDir, dst))
 
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
-    fileName: join('cwa-layout.vue')
-  })
-
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/cwa-error.vue'),
-    fileName: join('cwa-error.vue')
-  }, 'error')
-
-  extendRoutes.call(this, { pagesDepth: options.pagesDepth })
+  nuxt.options.plugins.push(resolve(nuxt.options.buildDir, dst))
 
   // Transpile and alias auth src
   const srcDir = resolve(__dirname, '..')
-  this.options.alias['~cwa'] = srcDir
   this.options.build.transpile.push(srcDir)
+
+  // Add Webpack entry for runtime installComponents function
+  // nuxt.hook('webpack:config', (configs: WebpackConfig[]) => {
+  //   //console.log(configs)
+  //   const filteredConfigs = configs.filter(c => ['client', 'modern', 'server'].includes(c.name!))
+  //   for (const config of filteredConfigs) {
+  //     config.resolve.alias['~cwa'] = srcDir
+  //     console.log(config)
+  //   }
+  // })
+
+  await nuxt.hook('components:dirs', (dirs) => {
+    console.log('components dirs hook', dirs)
+  })
 }
+
+// @ts-ignore
+cwaModule.meta = { name: '@cwa' }
+
+export default cwaModule
