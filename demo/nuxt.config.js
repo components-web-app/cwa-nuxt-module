@@ -1,3 +1,4 @@
+import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
 const baseUrl = process.env.BASE_URL || 'https://localhost:8443'
@@ -7,24 +8,16 @@ export default {
     baseUrl
   },
   mode: 'universal',
-  css: [
-    '../src/core/assets/milligram',
-    '../src/core/assets/style'
-  ],
   buildModules: [
     '@nuxt/typescript-build',
     '@nuxtjs/dotenv',
-    '@nuxtjs/style-resources'
+    '@nuxt/components'
   ],
   modules: [
     '@nuxtjs/axios',
     '@nuxtjs/auth-next',
-    '@nuxtjs/dotenv',
     coreModuleDist
   ],
-  styleResources: {
-    sass: '../src/core/assets/*.sass'
-  },
   router: {
     middleware: ['auth', 'routeLoader']
   },
@@ -59,5 +52,18 @@ export default {
   },
   cwa: {
     allowUnauthorizedTls: true
+  },
+  components: true,
+  build: {
+    extend (config, _) {
+      if (!config.resolve) {
+        config.resolve = {}
+      }
+      if (!config.resolve.plugins) {
+        config.resolve.plugins = []
+      }
+
+      config.resolve.plugins.push(new TsconfigPathsPlugin({ configFile: `${__dirname}/tsconfig.json` }))
+    }
   }
 }

@@ -15,11 +15,12 @@
       </div>
     </div>
     <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
+    <PrimaryPageTemplate /> 
   </div>
 </template>
 
 <script>
-  import { StoreCategories } from "~cwa/core/storage";
+  import { StoreCategories } from "@cwamodules/core/storage";
 
   export default {
     auth: false,
