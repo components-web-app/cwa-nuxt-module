@@ -26,7 +26,7 @@ declare module 'vue/types/vue' {
   }
 }
 
- // On a Vue component - the options that can be declared to customise module behaviour 
+// On a Vue component - the options that can be declared to customise module behaviour
 declare module 'vue/types/options' {
   interface ComponentOptions<V extends Vue> {
     cwa?: boolean;

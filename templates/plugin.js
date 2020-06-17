@@ -1,6 +1,6 @@
 import consola from 'consola'
-import routeLoaderMiddleware from '@cwa/core/middleware'
-import CWA from '@cwa/core/cwa'
+import routeLoaderMiddleware from '@cwamodules/core/middleware'
+import CWA from '@cwamodules/core/cwa'
 import Middleware from '../middleware'
 
 Middleware.routeLoader = routeLoaderMiddleware

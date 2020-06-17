@@ -19,7 +19,7 @@
   "scripts": {
     "build:css": "node-sass src/ -o dist/ ",
     "watch:css": "yarn build:css && node-sass src/ -o dist/ -w -r",
-    "build": "build:css && tsc",
+    "build": "yarn build:css && tsc",
     "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
     "dev": "nuxt-ts demo",
     "lint": "eslint --ext .ts,.js,.vue .",
@@ -37,6 +37,7 @@
     "consola": "^2.13.0",
     "milligram": "^1.4.0",
     "nuxt-edge": "^2.13.0-26467214.85383688",
+    "sass-resources-loader": "^2.0.3",
     "tsconfig-paths-webpack-plugin": "^3.2.0"
   },
   "devDependencies": {

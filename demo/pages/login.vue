@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <div class="notice is-danger" v-if="error">
+    <div v-if="error" class="notice is-danger">
       {{ error }}
     </div>
     <form @submit.prevent="userLogin">

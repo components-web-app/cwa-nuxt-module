@@ -20,7 +20,7 @@
 </template>
 
 <script>
-  import { StoreCategories } from "@cwa/core/storage";
+  import { StoreCategories } from "@cwamodules/core/storage";
 
   export default {
     auth: false,
