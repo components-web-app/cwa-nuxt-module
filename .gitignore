@@ -4,5 +4,5 @@ node_modules
 dist
 types
 # the lock file is currently required to prevent dependency issues
-# yarn.lock
+yarn.lock
 yarn-error.log
