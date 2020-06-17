@@ -11,7 +11,6 @@ export default {
   buildModules: [
     '@nuxt/typescript-build',
     '@nuxtjs/dotenv',
-    '@nuxtjs/style-resources',
     '@nuxt/components'
   ],
   modules: [
