@@ -14,6 +14,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "@cwamodules/*": ["../src/*"],
       "~/*": [
         "./*"
       ],
@@ -24,6 +25,7 @@
     "types": [
       "@types/node",
       "@nuxt/types",
+      "@nuxtjs/axios",
       "../src/types"
     ]
   },

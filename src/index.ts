@@ -3,7 +3,12 @@ import _CWA from './core/cwa'
 export type CWA = _CWA
 
 export type CwaOptions = {
-  test: string
+  vuex: {
+    namespace: string
+  },
+  fetchConcurrency: number,
+  pagesDepth: number,
+  allowUnauthorizedTls: boolean
 }
 
 declare module '@nuxt/types' {
@@ -21,6 +26,7 @@ declare module 'vue/types/vue' {
   }
 }
 
+// On a Vue component - the options that can be declared to customise module behaviour
 declare module 'vue/types/options' {
   interface ComponentOptions<V extends Vue> {
     cwa?: boolean;

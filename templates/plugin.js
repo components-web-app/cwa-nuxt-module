@@ -1,6 +1,7 @@
-import routeLoaderMiddleware from '~cwa/core/middleware'
-import CWA from '~cwa/core/cwa'
-import Middleware from './middleware'
+import consola from 'consola'
+import routeLoaderMiddleware from '@cwamodules/core/middleware'
+import CWA from '@cwamodules/core/cwa'
+import Middleware from '../middleware'
 
 Middleware.routeLoader = routeLoaderMiddleware
 
@@ -11,8 +12,6 @@ export default function (ctx, inject) {
   ctx.$cwa = $cwa
 
   return $cwa.init().catch(error => {
-    if (process.client) {
-      console.error('[ERROR] [AUTH]', error)
-    }
+    consola.error('[ERROR] [CWA]', error)
   })
 }

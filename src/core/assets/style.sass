@@ -1,0 +1,20 @@
+@import '../../../node_modules/milligram/src/milligram.sass'
+
+pre
+  padding: .75rem
+
+button.is-warning
+  background: $color-warning
+  color: $color-secondary
+  border-color: darken($color-warning, 5%)
+  &:hover,
+  &:active
+    background: darken($color-warning, 5%)
+
+.notice
+  margin-bottom: 1rem
+  padding: 1rem
+  background: $color-tertiary
+  &.is-danger
+    background: $color-danger
+    color: $color-tertiary

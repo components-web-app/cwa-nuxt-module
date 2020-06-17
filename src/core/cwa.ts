@@ -1,79 +1,204 @@
+import * as bluebird from 'bluebird'
+import consola from 'consola'
 import type { CwaOptions } from '../'
-import Storage from './storage'
+import { Storage, StoreCategories } from './storage'
 
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
 
+  // Holds the EventSource connection with mercure
+  private eventSource
+  private readonly fetcher
+  private lastEventId
   public $storage: Storage
   public $state
 
   constructor (ctx, options) {
-    // this class is accessible throughout the application via this.$cwa or $cwa in the context
+    if (options.allowUnauthorizedTls && ctx.isDev) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
 
-    // For auth - we are using a nuxt module https://dev.auth.nuxtjs.org/
-    // ctx.$auth
-
-    // For axios we use a nuxt module https://axios.nuxtjs.org/ so it is
-    // the same in all the contexts
-    // ctx.$axios
     this.ctx = ctx
 
-    // These are options passed from the /src/module/index.ts -> /templates/plugin.js
-    // So they can be set and configured in the nuxt.config.js
-    // Defaults should be set i /src/module/defaults.ts
+    this.fetcher = async ({ path, preload }) => {
+      // For dynamic components the API must not what route/path the request was originally for
+      const url = `${process.env.API_URL}${path}`
+      consola.debug('Fetching %s', url)
+
+      const requestHeaders = { Path: this.ctx.route.fullPath } as { Path: string, Preload?: string }
+      if (preload) {
+        requestHeaders.Preload = preload.join(',')
+      }
+
+      try {
+        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders, progress: false })
+        this.setMercureHubFromHeaders(headers)
+        return data
+      } catch (error) {
+        if (error.response && error.response.status && typeof error.response.data === 'object') {
+          this.ctx.error({
+            statusCode: error.response.status,
+            message: error.response.data.message || error.response.data['hydra:description'],
+            endpoint: url
+          })
+        } else if (error.message) {
+          this.ctx.error({
+            statusCode: 500,
+            message: error.message,
+            endpoint: url
+          })
+        }
+      }
+    }
+
     this.options = options
 
-    // Storage & State
-    // This is a class to initialise namespaced vuex storage and left in local storage if needed. Just boilerplate, can adjust as required.
     options.initialState = { }
     const storage = new Storage(ctx, options)
     this.$storage = storage
     this.$state = storage.state
   }
 
-  async init () {
-
+  async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
+    const resource = await this.fetcher({ path, preload })
+    if (!resource) {
+      return resource
+    }
+    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], category, isNew: false, resource })
+    return resource
   }
 
-  async initAxiosInterceptor () {
-    // environment: API_URL
-    // e.g. https://api.website.com/
+  async fetchCollection ({ paths, category }: {paths: string[], category?: string}, callback) {
+    return bluebird.map(paths, (path) => {
+      return this.fetcher({ path })
+        .then(resource => ({ resource, path }))
+    }, { concurrency: this.options.fetchConcurrency || null })
+      .each(({ resource }) => {
+        resource && this.$storage.setResource({ id: resource['@id'], name: resource['@type'], category, isNew: false, resource })
+        return callback(resource)
+      })
+  }
 
-    // Must use environment: VERCEL_GITLAB_COMMIT_REF with the API url
-    // to determine which API endpoint we should be using.
-    // Where VERCEL_GITLAB_COMMIT_REF is 'dev' the endpoint would be (notice '-review')
-    // Perhaps this should be configurable in the module options
-    // https://dev-review.api.website.com/
+  public async fetchRoute (path) {
+    this.$storage.resetCurrentResources()
+    this.$storage.setState('loadingRoute', true)
+    this.eventSource && this.eventSource.close()
+    const routeResponse = await this.fetchItem(
+      {
+        path: `/_/routes/${path}`,
+        preload: [
+          '/page/layout/componentCollections/*/componentPositions/*/component',
+          '/page/componentCollections/*/componentPositions/*/component',
+          '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
+          '/pageData/page/componentCollections/*/componentPositions/*/component'
+        ]
+      })
+    const pageResponse = await this.fetchPage(routeResponse)
+    if (!pageResponse) {
+      return
+    }
+    const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 
-    // I do not know if this interceptor should be adding jwt auth http headers or if instead we should rely on cookies.
+    await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
+      return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
+        return this.fetchItem({ path: componentPosition.component, category: StoreCategories.Component })
+      })
+    })
+    this.$storage.setCurrentRoute(routeResponse['@id'])
+    this.$storage.setState('loadingRoute', false)
+  }
 
-    // You probably do not want this but basically we want the baseUrl to be the API unless
-    // specifically over-ridden in the axios request options.
-    /*
-    this.ctx.$axios.interceptors.request.use(async config => {
-      const urlRegEx = new RegExp('^https?://')
-      const isFullURL = urlRegEx.test(config.url)
-      if (isFullURL) {
-        config.baseURL = null
+  private async fetchPage (routeResponse) {
+    let page = routeResponse.page
+    if (routeResponse.pageData) {
+      const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData, category: StoreCategories.PageData })
+      if (!pageDataResponse) {
+        return null
       }
-      const noBaseUrl = config.baseURL === null || config.baseURL === ''
-      let isApiRequest = false
-      if (!noBaseUrl) {
-        const API_URL =
-          (process.server
-            ? process.env.API_URL
-            : this.$storage.getState('apiUrl')) ||
-          // eslint-disable-next-line no-console
-          console.warn(
-            'Could not find an API_URL variable for the $axios interceptor'
-          )
-        isApiRequest = API_URL ? API_URL.startsWith(config.baseURL) : false
-      }
-      if (!isApiRequest) {
-        return config
+      page = pageDataResponse.page
+    }
+    if (!page) {
+      return null
+    }
+    return this.fetchItem({ path: page })
+  }
+
+  setMercureHubFromHeaders (headers) {
+    if (this.$state.mercureHub) { return }
+
+    const link = headers.link
+    if (!link) {
+      consola.warn('No Link header found.')
+      return
+    }
+
+    const match = link.match(/<([^>]+)>;\s+rel="mercure".*/)
+    if (!match || !match[1]) {
+      consola.log('No mercure rel in link header.')
+      return
+    }
+
+    this.$storage.setState('mercureHub', match[1])
+  }
+
+  getMercureHubURL () {
+    const hub = new URL(this.$state.mercureHub)
+
+    const appendTopics = (obj) => {
+      for (const resourceType in obj) {
+        const resourcesObject = obj[resourceType]
+        if (resourcesObject.currentIds === undefined) {
+          continue
+        }
+        resourcesObject.currentIds.forEach((id) => {
+          hub.searchParams.append('topic', this.ctx.env.API_URL + id)
+        })
       }
     }
-     */
+    appendTopics(this.$state.resources.current)
+
+    if (this.lastEventId) {
+      hub.searchParams.append('Last-Event-ID', this.lastEventId)
+    }
+
+    return hub.toString()
+  }
+
+  async init () {
+    // first load client side initialised here. Router middleware re initialised every route
+    if (process.client) {
+      await this.initMercure()
+    }
+  }
+
+  async initMercure () {
+    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
+
+    this.eventSource = new EventSource(this.getMercureHubURL())
+    this.eventSource.onmessage = (messageEvent) => {
+      const data = JSON.parse(messageEvent.data)
+      this.lastEventId = data.id
+      this.$storage.setResource({
+        isNew: true,
+        // TODO find another way of doing this, maybe add this information from the API directly
+        name: data['@type'],
+        id: data['@id'],
+        resource: data
+      })
+    }
+  }
+
+  withError (route, err) {
+    this.$storage.setState('error', `An error occurred while requesting ${route.path}`)
+    consola.error(err)
+  }
+
+  updateResources () {
+    this.$storage.updateResources()
+  }
+
+  get resourcesOutdated () {
+    return this.$storage.areResourcesOutdated()
   }
 }
