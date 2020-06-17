@@ -40,8 +40,6 @@ const cwaModule = <Module> async function () {
       allowUnauthorizedTls: false
     },
     ...this.options.cwa
-    // Todo Check if we need the auth module options options and implement properly if we do
-    // ...nuxt.options.auth
   }
 
   this.addLayout({
