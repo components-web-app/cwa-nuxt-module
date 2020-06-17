@@ -23,7 +23,7 @@ export default class Cwa {
 
     this.fetcher = async ({ path, preload }) => {
       // For dynamic components the API must not what route/path the request was originally for
-      const url = `${process.env.baseUrl}${path}`
+      const url = `${process.env.API_URL}${path}`
       consola.debug('Fetching %s', url)
 
       const requestHeaders = { Path: this.ctx.route.fullPath } as { Path: string, Preload?: string }
@@ -152,7 +152,7 @@ export default class Cwa {
           continue
         }
         resourcesObject.currentIds.forEach((id) => {
-          hub.searchParams.append('topic', this.ctx.env.baseUrl + id)
+          hub.searchParams.append('topic', this.ctx.env.API_URL + id)
         })
       }
     }

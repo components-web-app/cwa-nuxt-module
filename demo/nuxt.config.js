@@ -1,11 +1,12 @@
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
-const baseUrl = process.env.BASE_URL || 'https://localhost:8443'
+const API_URL_BROWSER = process.env.API_URL_BROWSER || 'https://localhost:8443'
 
 export default {
   env: {
-    baseUrl
+    API_URL: process.env.API_URL_BROWSER || API_URL_BROWSER,
+    API_URL_BROWSER: API_URL_BROWSER
   },
   mode: 'universal',
   buildModules: [
@@ -22,8 +23,7 @@ export default {
     middleware: ['auth', 'routeLoader']
   },
   axios: {
-    credentials: true,
-    baseURL: baseUrl
+    credentials: true
   },
   auth: {
     redirect: {
