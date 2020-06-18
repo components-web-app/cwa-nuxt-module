@@ -11,8 +11,7 @@ export default {
   mode: 'universal',
   buildModules: [
     '@nuxt/typescript-build',
-    '@nuxtjs/dotenv',
-    '@nuxt/components'
+    '@nuxtjs/dotenv'
   ],
   modules: [
     '@nuxtjs/axios',
@@ -53,8 +52,8 @@ export default {
   cwa: {
     allowUnauthorizedTls: true
   },
-  components: true,
   build: {
+    // this is for dev so that @cwa aliases will work
     extend (config, _) {
       if (!config.resolve) {
         config.resolve = {}

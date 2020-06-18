@@ -1,6 +1,6 @@
 import consola from 'consola'
-import routeLoaderMiddleware from '@cwamodules/core/middleware'
-import CWA from '@cwamodules/core/cwa'
+import routeLoaderMiddleware from '@cwa/nuxt-module/core/middleware'
+import CWA from '@cwa/nuxt-module/core/cwa'
 import Middleware from '../middleware'
 
 Middleware.routeLoader = routeLoaderMiddleware

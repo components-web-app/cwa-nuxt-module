@@ -24,7 +24,7 @@ function extendRoutesFn ({ pagesDepth }) {
     return routeObject
   }
   return (routes) => {
-    const newRoutes = createRouteObject('@cwamodules/core/templates/page.vue', pagesDepth)
+    const newRoutes = createRouteObject('@cwa/nuxt-module/core/templates/page.vue', pagesDepth)
     routes.push(newRoutes)
   }
 }
@@ -98,6 +98,6 @@ const cwaModule = <Module> async function () {
 }
 
 // @ts-ignore
-cwaModule.meta = { name: '@cwamodules/cwa' }
+cwaModule.meta = { name: '@cwa/nuxt-module' }
 
 export default cwaModule

@@ -15,12 +15,12 @@
       </div>
     </div>
     <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
-    <PrimaryPageTemplate /> 
+    <PrimaryPageTemplate />
   </div>
 </template>
 
 <script>
-  import { StoreCategories } from "@cwamodules/core/storage";
+  import { StoreCategories } from "@cwa/nuxt-module/core/storage";
 
   export default {
     auth: false,

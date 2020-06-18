@@ -14,7 +14,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@cwamodules/*": ["../src/*"],
+      "@cwa/nuxt-module*": ["../src/*"],
       "~/*": [
         "./*"
       ],
