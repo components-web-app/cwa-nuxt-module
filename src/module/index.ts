@@ -80,7 +80,7 @@ async function loadComponents () {
   const extensions = ['vue', 'js', 'ts', 'tsx']
   const pattern =  `**/*.{${extensions.join(',')},}`
   const componentImports = {
-    templates: [],
+    pages: [],
     components: []
   }
   const types = Object.keys(componentImports)
@@ -145,11 +145,6 @@ const cwaModule = <Module> async function () {
     },
     ...this.options.cwa
   }
-
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
-    fileName: join('cwa', 'cwa-layout.vue')
-  })
 
   this.addLayout({
     src: resolve(__dirname, '../core/templates/cwa-error.vue'),

@@ -100,6 +100,7 @@ export default class Cwa {
       return
     }
     const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+    this.$storage.setState('layout', layoutResponse.reference)
 
     await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
       return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
@@ -233,5 +234,13 @@ export default class Cwa {
 
   userHasRole(role) {
     return this.ctx.$auth.user ? this.ctx.$auth.user.roles.indexOf(role) !== -1 : false
+  }
+
+  setLayout(layout) {
+    this.$storage.setState('layout', layout)
+  }
+
+  get layout() {
+    return this.$storage.getState('layout')
   }
 }

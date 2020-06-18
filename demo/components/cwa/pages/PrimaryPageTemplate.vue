@@ -13,6 +13,12 @@
 import PageMixin from "@cwa/nuxt-module/core/mixins/PageMixin.js"
 
 export default {
-  mixins: [PageMixin]
+  mixins: [PageMixin],
+  asyncData() {
+    console.log('asyncData')
+  },
+  fetch() {
+    console.log('fetch')
+  }
 }
 </script>

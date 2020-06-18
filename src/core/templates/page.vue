@@ -1,7 +1,7 @@
 <template>
   <resource-component-loader
-    v-if="resources.Page.byId[currentPageTemplateIri]"
-    :component="resources.Page.byId[currentPageTemplateIri].uiComponent"
+    v-if="currentPageTemplateResource"
+    :component="currentPageTemplateResource.uiComponent"
     :iri="currentPageTemplateIri"
   />
 </template>
@@ -9,12 +9,14 @@
 <script>
   import consola from 'consola'
   import { StoreCategories } from "@cwa/nuxt-module/core/storage"
-  import components from '~/.nuxt/cwa/templates'
+  import components from '~/.nuxt/cwa/pages'
   import ResourceComponentLoader from './resource-component-loader'
 
   export default {
     auth: false,
-    layout: 'cwa-layout',
+    layout({ $cwa }) {
+      return $cwa.layout
+    },
     components: {
       ResourceComponentLoader,
       ...components
@@ -53,6 +55,9 @@
           return
         }
         return this.currentRoute.pageData ? this.currentPageMetadata.page : this.currentRoute.page
+      },
+      currentPageTemplateResource() {
+        return this.resources.Page.byId[this.currentPageTemplateIri]
       }
     },
     head() {
