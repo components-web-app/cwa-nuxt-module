@@ -37,7 +37,7 @@ export default {
   },
   computed: {
     resource() {
-      return this.getCollectionIriByLocation(this.location, this.pageId)
+      return this.getCollectionResourceByLocation(this.location, this.pageId)
     },
     errorMessage() {
       return `The ComponentCollection resource with location <b>${this.location}</b> was not returned by the API`
@@ -51,20 +51,22 @@ export default {
     sortedComponentPositions() {
       const positions = []
       for (const iri of this.resource.componentPositions) {
-        positions.push(this.$cwa.resources.ComponentPosition.byId[iri])
+        const postObj = this.$cwa.resources.ComponentPosition.byId[iri]
+        postObj && positions.push(postObj)
       }
       return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
     }
   },
   methods: {
-    getCollectionIriByLocation(location, page) {
+    getCollectionResourceByLocation(location, page) {
       const ComponentCollection = this.$cwa.resources.ComponentCollection
       for (const id in ComponentCollection.byId) {
         const resource = ComponentCollection.byId[id]
-        if (resource.location === location && resource.pages.indexOf(page) !== -1) {
+        if (resource && resource.location === location && resource.pages.indexOf(page) !== -1) {
           return resource
         }
       }
+      return null
     },
     async addComponentCollection() {
       this.error = null

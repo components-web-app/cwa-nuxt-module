@@ -1,5 +1,9 @@
 <template>
-  <resource-component-loader :component="resources.Page.byId[currentPageTemplateIri].uiComponent" :iri="currentPageTemplateIri" />
+  <resource-component-loader
+    v-if="resources.Page.byId[currentPageTemplateIri]"
+    :component="resources.Page.byId[currentPageTemplateIri].uiComponent"
+    :iri="currentPageTemplateIri"
+  />
 </template>
 
 <script>

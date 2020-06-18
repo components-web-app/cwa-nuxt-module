@@ -10,9 +10,9 @@
 </template>
 
 <script>
-import ResourceMixin from "@cwa/nuxt-module/core/mixins/ResourceMixin.js"
+import PageMixin from "@cwa/nuxt-module/core/mixins/PageMixin.js"
 
 export default {
-  mixins: [ResourceMixin]
+  mixins: [PageMixin]
 }
 </script>

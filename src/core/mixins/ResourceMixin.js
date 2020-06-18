@@ -1,6 +1,7 @@
+import consola from 'consola'
 import ComponentCollection from '@cwa/nuxt-module/core/templates/component-collection.vue'
 
-export default {
+export default (category) => ({
   props: {
     iri: {
       type: String,
@@ -12,8 +13,12 @@ export default {
   },
   computed: {
     resource() {
-      const type = this.$cwa.$storage.getTypeFromIri(this.iri)
+      const type = this.$cwa.$storage.getTypeFromIri(this.iri, category)
+      if (!type) {
+        consola.warn(`Could not resolve a resource type for iri ${this.iri}`)
+        return null
+      }
       return this.$cwa.resources[type].byId[this.iri]
     }
   }
-}
+})

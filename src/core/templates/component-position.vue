@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <resource-component-loader :component="component.uiComponent || component['@type']" :iri="componentPosition.component" />
-  </div>
+  <resource-component-loader v-if="component" :component="component.uiComponent || component['@type']" :iri="componentPosition.component" />
 </template>
 
 <script>
@@ -25,6 +23,9 @@ export default {
       return this.$cwa.resources.ComponentPosition.byId[this.iri]
     },
     component() {
+      if (!this.componentPosition) {
+        return null
+      }
       const componentType = this.$cwa.$storage.getTypeFromIri(this.componentPosition.component, StoreCategories.Component)
       if (!componentType) {
         return null
