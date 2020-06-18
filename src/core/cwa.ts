@@ -215,6 +215,18 @@ export default class Cwa {
     throw new ApiError('Functionality ot implemented yet')
   }
 
+  // We will need to be able to update resources and there will be a toggle to say whether we post this to the API right away
+  // updateResource(type, iri, data, realtime) {
+  //
+  // }
+
+  // We will want to have saved the resources we are trying to update in another state
+  // so we can detect there are unsaved changes to let the user know and to provide an
+  // easy way to post all the updates to the API and update the store. Do not rely on mercure
+  // as the resource may not have mercure enabled
+  // async postResourceUpdates()
+  // {}
+
   get isAdmin() {
     return this.userHasRole('ROLE_ADMIN')
   }

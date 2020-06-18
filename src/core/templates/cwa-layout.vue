@@ -23,7 +23,7 @@
     </div>
     <div class="container">
       <p v-if="$cwa.$state.loadingRoute" style="color: orange;">Loading Route</p>
-      <p v-else-if="$cwa.$state.error" style="color: red;">{{ $cwa.$state.error }}</p>
+      <p v-else-if="$cwa.$state.error" style="color: red;">{{ $cwa.$resources.error }}</p>
       <p v-else style="color: green;">Route Loaded</p>
     </div>
     <nuxt />

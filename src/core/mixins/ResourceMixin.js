@@ -2,8 +2,8 @@ import ComponentCollection from '@cwa/nuxt-module/core/templates/component-colle
 
 export default {
   props: {
-    resource: {
-      type: Object,
+    iri: {
+      type: String,
       required: true
     }
   },
@@ -11,8 +11,9 @@ export default {
     ComponentCollection
   },
   computed: {
-    iri() {
-      return this.resource['@id']
+    resource() {
+      const type = this.$cwa.$storage.getTypeFromIri(this.iri)
+      return this.$cwa.resources[type].byId[this.iri]
     }
   }
 }

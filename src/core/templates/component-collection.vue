@@ -1,6 +1,6 @@
 <template>
   <div :class="classes" v-if="resource">
-    Component Collection {{ resource }}
+    <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
   </div>
   <component-load-error :class="classes" v-else :message="errorMessage">
     <template v-if="$cwa.isAdmin">
@@ -12,10 +12,14 @@
 
 <script>
 import ComponentLoadError from "@cwa/nuxt-modulecore/templates/component-load-error.vue"
-import ApiError from "@cwa/nuxt-moduleinc/api-error";
+import ApiError from "@cwa/nuxt-moduleinc/api-error"
+import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
 
 export default {
-  components: {ComponentLoadError},
+  components: {
+    ComponentLoadError,
+    ComponentPosition
+  },
   props: {
     location: {
       type: String,
@@ -33,7 +37,7 @@ export default {
   },
   computed: {
     resource() {
-      return this.getCollectionIriByLocation(this.location)
+      return this.getCollectionIriByLocation(this.location, this.pageId)
     },
     errorMessage() {
       return `The ComponentCollection resource with location <b>${this.location}</b> was not returned by the API`
@@ -43,14 +47,21 @@ export default {
         'component-collection',
         this.resource ? [this.resource.location, this.resource.reference] : 'not-found'
       ]
+    },
+    sortedComponentPositions() {
+      const positions = []
+      for (const iri of this.resource.componentPositions) {
+        positions.push(this.$cwa.resources.ComponentPosition.byId[iri])
+      }
+      return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
     }
   },
   methods: {
-    getCollectionIriByLocation(location) {
+    getCollectionIriByLocation(location, page) {
       const ComponentCollection = this.$cwa.resources.ComponentCollection
       for (const id in ComponentCollection.byId) {
         const resource = ComponentCollection.byId[id]
-        if (resource.location === location) {
+        if (resource.location === location && resource.pages.indexOf(page) !== -1) {
           return resource
         }
       }

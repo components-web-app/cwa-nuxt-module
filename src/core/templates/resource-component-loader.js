@@ -13,17 +13,25 @@ export default {
       type: String,
       default: null
     },
-    resource: {
+    iri: {
       required: true,
-      type: Object
+      type: String
     }
   },
   render: (createElement, { props, parent }) => {
     let Comp = (parent.$options.components && parent.$options.components[props.component]) || Vue.component(props.component)
-    return Comp ? createElement(Comp, { props: { resource: props.resource }}) : createElement(ErrorComponent, {
-      props: {
-        message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.resource['@id']}</b> does not exist`
-      }
-    })
+    if (Comp) {
+      return createElement(Comp, {
+        props: {
+          iri: props.iri
+        }
+      })
+    }
+    return createElement(ErrorComponent, {
+        props: {
+          message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
+          isDanger: true
+        }
+      })
   }
 }

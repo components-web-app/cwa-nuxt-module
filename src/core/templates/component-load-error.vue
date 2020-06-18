@@ -1,5 +1,5 @@
 <template>
-  <div class="notice">
+  <div :class="['notice', { 'is-danger': isDanger }]">
     <div v-html="message"></div>
     <slot />
   </div>
@@ -11,6 +11,10 @@ export default {
     message: {
       type: String,
       required: true
+    },
+    isDanger: {
+      type: Boolean,
+      default: false
     }
   }
 }
