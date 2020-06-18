@@ -11,8 +11,7 @@ export default {
   mode: 'universal',
   buildModules: [
     '@nuxt/typescript-build',
-    '@nuxtjs/dotenv',
-    '@nuxt/components'
+    '@nuxtjs/dotenv'
   ],
   modules: [
     '@nuxtjs/axios',
@@ -53,7 +52,6 @@ export default {
   cwa: {
     allowUnauthorizedTls: true
   },
-  components: true,
   build: {
     extend (config, _) {
       if (!config.resolve) {

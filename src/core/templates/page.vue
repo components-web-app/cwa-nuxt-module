@@ -1,42 +1,36 @@
 <template>
-  <div class="container">
-    <div class="row">
-      <div class="column column-33">
-        <h5>Route</h5>
-        <pre>{{ currentRoute }}</pre>
-      </div>
-      <div class="column column-33">
-        <h5>Page Metadata Object</h5>
-        <pre>{{ currentPageMetadata }}</pre>
-      </div>
-      <div class="column column-33">
-        <h5>Page Template Object (same as Metadata if static)</h5>
-        <pre>{{ currentPageTemplate }}</pre>
-      </div>
-    </div>
-    <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
-    <PrimaryPageTemplate /> 
-  </div>
+  <resource-component-loader
+    v-if="resources.Page.byId[currentPageTemplateIri]"
+    :component="resources.Page.byId[currentPageTemplateIri].uiComponent"
+    :iri="currentPageTemplateIri"
+  />
 </template>
 
 <script>
-  import { StoreCategories } from "@cwamodules/core/storage";
+  import consola from 'consola'
+  import { StoreCategories } from "@cwa/nuxt-module/core/storage"
+  import components from '~/.nuxt/cwa/templates'
+  import ResourceComponentLoader from './resource-component-loader'
 
   export default {
     auth: false,
     layout: 'cwa-layout',
+    components: {
+      ResourceComponentLoader,
+      ...components
+    },
     computed: {
-      state () {
-        return this.$cwa.$state.resources.current
+      resources () {
+        return this.$cwa.resources
       },
       currentRoute() {
-        if (this.state.Route === undefined || this.state.Route.current === undefined) {
-          console.error(`Current route is undefined`)
+        if (this.resources.Route === undefined || this.resources.Route.current === undefined) {
+          consola.error(`Current route is undefined`)
           return null
         }
-        const route = this.state.Route.byId[this.state.Route.current]
+        const route = this.resources.Route.byId[this.resources.Route.current]
         if (route === undefined) {
-          console.error(`Cannot find route with ID ${this.state.Route.current}`)
+          consola.error(`Cannot find route with ID ${this.resources.Route.current}`)
           return null
         }
         return route
@@ -50,18 +44,15 @@
           if (!resourceType) {
             return null
           }
-          return this.state[resourceType].byId[this.currentRoute.pageData]
+          return this.resources[resourceType].byId[this.currentRoute.pageData]
         }
-        return this.state.Page.byId[this.currentRoute.page]
+        return this.resources.Page.byId[this.currentRoute.page]
       },
-      currentPageTemplate() {
+      currentPageTemplateIri() {
         if (!this.currentRoute || !this.currentPageMetadata) {
           return
         }
-        if (this.currentRoute.pageData) {
-          return this.state.Page.byId[this.currentPageMetadata.page]
-        }
-        return this.currentPageMetadata
+        return this.currentRoute.pageData ? this.currentPageMetadata.page : this.currentRoute.page
       }
     },
     head() {

@@ -121,15 +121,12 @@ export class Storage {
           if (!typeMapping) {
             return null
           }
-          const found = Object.keys(typeMapping).find((iriPrefix: string) => {
+          for (const iriPrefix in typeMapping) {
             if (iri.startsWith(iriPrefix)) {
-              return true
+              return typeMapping[iriPrefix]
             }
-          })
-          if (!found) {
-            return null
           }
-          return typeMapping[found]
+          return null
         },
         RESOURCES_OUTDATED: (state) => {
           return Object.entries(state.resources.new).length !== 0
