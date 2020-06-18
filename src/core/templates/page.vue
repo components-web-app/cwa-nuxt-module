@@ -1,33 +1,22 @@
 <template>
-  <div class="container">
-    <div class="row">
-      <div class="column column-33">
-        <h5>Route</h5>
-        <pre>{{ currentRoute }}</pre>
-      </div>
-      <div class="column column-33">
-        <h5>Page Metadata Object</h5>
-        <pre>{{ currentPageMetadata }}</pre>
-      </div>
-      <div class="column column-33">
-        <h5>Page Template Object (same as Metadata if static)</h5>
-        <pre>{{ currentPageTemplate }}</pre>
-      </div>
-    </div>
-    <h3 v-if="currentPageTemplate">Page Template UI Component To Load: {{ currentPageTemplate.uiComponent }}</h3>
-    <PrimaryPageTemplate />
-  </div>
+  <resource-component-loader :component="currentPageTemplate.uiComponent" :resource="currentPageTemplate" />
 </template>
 
 <script>
-  import { StoreCategories } from "@cwa/nuxt-module/core/storage";
+  import { StoreCategories } from "@cwa/nuxt-module/core/storage"
+  import components from '~/.nuxt/cwa/templates'
+  import ResourceComponentLoader from './resource-component-loader'
 
   export default {
     auth: false,
     layout: 'cwa-layout',
+    components: {
+      ResourceComponentLoader,
+      ...components
+    },
     computed: {
       state () {
-        return this.$cwa.$state.resources.current
+        return this.$cwa.resources
       },
       currentRoute() {
         if (this.state.Route === undefined || this.state.Route.current === undefined) {

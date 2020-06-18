@@ -201,4 +201,8 @@ export default class Cwa {
   get resourcesOutdated () {
     return this.$storage.areResourcesOutdated()
   }
+
+  get resources() {
+    return this.$state.resources.current
+  }
 }

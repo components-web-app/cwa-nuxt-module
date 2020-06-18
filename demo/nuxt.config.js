@@ -53,7 +53,6 @@ export default {
     allowUnauthorizedTls: true
   },
   build: {
-    // this is for dev so that @cwa aliases will work
     extend (config, _) {
       if (!config.resolve) {
         config.resolve = {}
