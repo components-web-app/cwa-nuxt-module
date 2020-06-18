@@ -16,9 +16,6 @@ export default {
   mixins: [PageMixin],
   asyncData() {
     console.log('asyncData')
-  },
-  fetch() {
-    console.log('fetch')
   }
 }
 </script>

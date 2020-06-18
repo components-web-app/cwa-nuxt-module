@@ -49,18 +49,20 @@
   }
 
   export default {
-    data() {
-      return {
-        routes: null
-      }
-    },
-    async mounted() {
-      const { data } = await this.$axios.get('/_/routes', { progress: false })
-      this.routes = data['hydra:member']
-    },
     computed: {
       sortedRoutes() {
-        return this.routes.sort(dynamicSort('path'))
+        return [...this.routes].sort(dynamicSort('path'))
+      },
+      routes() {
+        return this.$cwa.$storage.getState('routes')
+      }
+    },
+    async middleware({ $axios, $cwa, env }) {
+      try {
+        const { data } = await $axios.get(`${env.API_URL}/_/routes`, { progress: false })
+        $cwa.$storage.setState('routes', data['hydra:member'])
+      } catch (err) {
+        console.error(err)
       }
     }
   }

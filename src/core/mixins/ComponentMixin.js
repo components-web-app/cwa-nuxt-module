@@ -13,7 +13,7 @@ export default {
         consola.warn(`Could not resolve a resource type for iri ${this.iri} in the category ${category}`)
         return null
       }
-      consola.info(`Resolved resource type for iri ${this.iri} in the category ${category} to ${type}`)
+      consola.debug(`Resolved resource type for iri ${this.iri} in the category ${category} to ${type}`)
       return this.$cwa.resources[type].byId[this.iri]
     }
   }
