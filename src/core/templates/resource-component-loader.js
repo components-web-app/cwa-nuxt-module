@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import ErrorComponent from './resource-component-load-error'
+import ErrorComponent from './component-load-error'
 
 export default {
   functional: true,

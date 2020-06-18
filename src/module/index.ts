@@ -127,7 +127,9 @@ async function loadComponents () {
     }
   })
 
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/resource-component-load-error.vue')
+  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/component-load-error.vue')
+  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/mixins/ResourceMixin.js')
+  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/component-collection.vue')
 }
 
 const cwaModule = <Module> async function () {

@@ -2,6 +2,7 @@ import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
 import { Storage, StoreCategories } from './storage'
+import ApiError from "../inc/api-error";
 
 export default class Cwa {
   public ctx: any
@@ -204,5 +205,21 @@ export default class Cwa {
 
   get resources() {
     return this.$state.resources.current
+  }
+
+  async addResource(endpoint, data) {
+    consola.warn(`Need to implement functionality to add ${endpoint}`, data)
+    // we need to post to the API with provided data
+    // the response must be added to the store
+    // we must update mercure topics to include new resource
+    throw new ApiError('Functionality ot implemented yet')
+  }
+
+  get isAdmin() {
+    return this.userHasRole('ROLE_ADMIN')
+  }
+
+  userHasRole(role) {
+    return this.ctx.$auth.user ? this.ctx.$auth.user.roles.indexOf(role) !== -1 : false
   }
 }

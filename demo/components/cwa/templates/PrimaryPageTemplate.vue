@@ -1,6 +1,11 @@
 <template>
   <div>
-    {{ resource }}
+    <div>
+      <component-collection location="primary" :page-id="iri" />
+    </div>
+    <div>
+      <component-collection location="secondary" :page-id="iri" />
+    </div>
   </div>
 </template>
 

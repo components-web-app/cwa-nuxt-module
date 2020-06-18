@@ -1,5 +1,8 @@
 <template>
-  <div class="notice" v-html="message" />
+  <div class="notice">
+    <div v-html="message"></div>
+    <slot />
+  </div>
 </template>
 
 <script>
