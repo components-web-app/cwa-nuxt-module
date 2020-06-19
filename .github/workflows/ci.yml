@@ -47,11 +47,11 @@ jobs:
       - name: Build Module
         run: yarn build
 
-#      - name: Build Fixture
-#        run: yarn nuxt build tests/fixture
+      - name: Build Fixture
+        run: yarn nuxt build tests/fixture
 
-#      - name: Tests
-#        run: yarn jest
+      - name: Tests
+        run: yarn jest
 
       # - name: Coverage
       #   uses: codecov/codecov-action@v1

@@ -35,7 +35,7 @@ export default {
     }
   },
   methods: {
-    async userLogin () {
+    userLogin () {
       this.error = null
       return this.$auth
         .loginWith('local', {

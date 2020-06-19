@@ -1,5 +1,5 @@
 {
-  "name": "@cwamodules/cwa",
+  "name": "@cwa/nuxt-module",
   "version": "0.0.1",
   "description": "Nuxt Module for Silverback's Components Web Apps and API Components Bundle API",
   "license": "MIT",
@@ -17,7 +17,8 @@
     "templates"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && yarn copy-files",
+    "copy-files": "copyfiles -u 1 src/**/*.vue src/**/*.sass dist/",
     "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
     "dev": "nuxt-ts demo",
     "lint": "eslint --ext .ts,.js,.vue .",
@@ -53,7 +54,9 @@
     "@types/node": "^12.12.47",
     "@types/node-sass": "^4.11.1",
     "babel-jest": "^26.0.1",
-    "eslint": "^6.8.0",
+    "copyfiles": "^2.3.0",
+    "eslint": "^7.2.0",
+    "eslint-plugin-vue": "^7.0.0-alpha.6",
     "jest": "^25.5.0",
     "jsdom": "^16.2.2",
     "mock-json-schema": "^1.0.8",

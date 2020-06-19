@@ -1,9 +1,9 @@
 {
   "extends": [
-    "@nuxtjs/eslint-config-typescript"
+    "@nuxtjs/eslint-config-typescript",
+    "plugin:vue/essential"
   ],
   "rules": {
-    "require-await": 0,
-    "no-useless-constructor": 0
+    "vue/no-v-html": 0
   }
 }

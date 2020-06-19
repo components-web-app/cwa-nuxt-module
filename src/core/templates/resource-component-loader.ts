@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import ErrorComponent from './component-load-error.vue'
+import ErrorComponent from '@cwa/nuxt-module/core/templates/component-load-error.vue'
 
 export default {
   functional: true,

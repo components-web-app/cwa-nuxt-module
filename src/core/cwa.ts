@@ -73,7 +73,7 @@ export default class Cwa {
     return resource
   }
 
-  async fetchCollection ({ paths, category }: {paths: string[], category?: string}, callback) {
+  fetchCollection ({ paths, category }: {paths: string[], category?: string}, callback) {
     return bluebird.map(paths, (path) => {
       return this.fetcher({ path })
         .then(resource => ({ resource, path }))
@@ -171,14 +171,14 @@ export default class Cwa {
     return hub.toString()
   }
 
-  async init () {
+  init () {
     // first load client side initialised here. Router middleware re initialised every route
     if (process.client) {
-      await this.initMercure()
+      this.initMercure()
     }
   }
 
-  async initMercure () {
+  initMercure () {
     if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client || cwaRouteDisabled(this.ctx.route)) { return }
 
     this.eventSource = new EventSource(this.getMercureHubURL())
@@ -212,7 +212,7 @@ export default class Cwa {
     return this.$state.resources.current
   }
 
-  async addResource (endpoint, data) {
+  addResource (endpoint, data) {
     consola.warn(`Need to implement functionality to add ${endpoint}`, data)
     // we need to post to the API with provided data
     // the response must be added to the store
