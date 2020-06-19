@@ -135,14 +135,12 @@ async function loadComponents () {
 
 const cwaModule = <Module> async function () {
   const options: CwaOptions = {
-    ...{
-      vuex: {
-        namespace: 'cwa'
-      },
-      fetchConcurrency: 10,
-      pagesDepth: 3,
-      allowUnauthorizedTls: false
+    vuex: {
+      namespace: 'cwa'
     },
+    fetchConcurrency: 10,
+    pagesDepth: 3,
+    allowUnauthorizedTls: false,
     ...this.options.cwa
   }
 

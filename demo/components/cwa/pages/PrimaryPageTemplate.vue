@@ -1,5 +1,6 @@
 <template>
   <div>
+    test is: '{{ asyncDataOutput }}'
     <div>
       <component-collection location="primary" :page-id="iri" />
     </div>
@@ -14,8 +15,18 @@ import PageMixin from "@cwa/nuxt-module/core/mixins/PageMixin.js"
 
 export default {
   mixins: [PageMixin],
-  asyncData() {
-    console.log('asyncData')
+  data() {
+    return {
+      asyncDataOutput: 'asyncData NOT loaded'
+    }
+  },
+  computed: {
+    test() {
+      return this.$cwa.$storage.getState('pageTemplateState')
+    }
+  },
+  async beforeCreate() {
+    this.asyncDataOutput = await this.$axios.get('/_/routes')
   }
 }
 </script>

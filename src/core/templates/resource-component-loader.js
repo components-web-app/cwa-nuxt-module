@@ -21,11 +21,12 @@ export default {
   render: (createElement, { props, parent }) => {
     let Comp = (parent.$options.components && parent.$options.components[props.component]) || Vue.component(props.component)
     if (Comp) {
-      return createElement(Comp, {
+      const component = createElement(Comp, {
         props: {
           iri: props.iri
         }
       })
+      return component
     }
     return createElement(ErrorComponent, {
         props: {

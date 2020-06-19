@@ -1,16 +1,19 @@
 <template>
-  <resource-component-loader
-    v-if="currentPageTemplateResource"
-    :component="currentPageTemplateResource.uiComponent"
-    :iri="currentPageTemplateIri"
-  />
+  <div>
+    <resource-component-loader
+      v-if="currentPageTemplateResource"
+      :component="currentPageTemplateResource.uiComponent"
+      :iri="currentPageTemplateIri"
+    />
+  </div>
 </template>
 
 <script>
   import consola from 'consola'
-  import { StoreCategories } from "@cwa/nuxt-module/core/storage"
+  import { StoreCategories } from '@cwa/nuxt-module/core/storage'
   import components from '~/.nuxt/cwa/pages'
   import ResourceComponentLoader from './resource-component-loader'
+  import Vue from 'vue';
 
   export default {
     auth: false,

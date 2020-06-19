@@ -1,6 +1,6 @@
 import ResourceMixin from "@cwa/nuxt-module/core/mixins/ResourceMixin.js"
 
-export default {
+const mixin = {
   mixins: [ResourceMixin],
   computed: {
     resource() {
@@ -17,3 +17,5 @@ export default {
     }
   }
 }
+
+export default mixin
