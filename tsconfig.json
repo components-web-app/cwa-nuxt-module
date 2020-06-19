@@ -6,14 +6,20 @@
     "lib": [
       "dom"
     ],
+    "types": [
+      "@types/node",
+      "@nuxt/types"
+    ],
     "esModuleInterop": true,
     "strict": false,
     "declaration": true,
     "outDir": "dist",
-    "types": [
-      "@types/node",
-      "@nuxt/types"
-    ]
+    "baseUrl": ".",
+    "paths": {
+      "@cwa/nuxt-module*": [
+        "../src/*"
+      ]
+    }
   },
   "include": [
     "./src"

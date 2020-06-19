@@ -1,4 +1,3 @@
-import consola from 'consola'
 import routeLoaderMiddleware from '@cwa/nuxt-module/core/middleware'
 import CWA from '@cwa/nuxt-module/core/cwa'
 import Middleware from '../middleware'
@@ -11,7 +10,5 @@ export default function (ctx, inject) {
   inject('cwa', $cwa)
   ctx.$cwa = $cwa
 
-  return $cwa.init().catch(error => {
-    consola.error('[ERROR] [CWA]', error)
-  })
+  return $cwa.init()
 }

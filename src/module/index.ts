@@ -23,10 +23,11 @@ function extendRoutesFn ({ pagesDepth }) {
     }
     return routeObject
   }
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/page.ts')
+
+  this.nuxt.options.build!.transpile!.push(resolve(__dirname, '../core/templates/page'))
 
   return (routes) => {
-    const newRoutes = createRouteObject('@cwa/nuxt-module/core/templates/page.ts', pagesDepth)
+    const newRoutes = createRouteObject(resolve(__dirname, '../core/templates/page'), pagesDepth)
     routes.push(newRoutes)
   }
 }
@@ -64,7 +65,7 @@ function applyCss () {
   })
 }
 
-async function loadComponents () {
+function loadComponents () {
   // auto-configure components module
   if (!this.options.buildModules.includes('@nuxt/components')) {
     this.options.buildModules.push('@nuxt/components')
@@ -132,7 +133,7 @@ async function loadComponents () {
   this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/component-position.vue')
 }
 
-const cwaModule = <Module> async function () {
+const cwaModule = <Module> function () {
   const options: CwaOptions = {
     vuex: {
       namespace: 'cwa'

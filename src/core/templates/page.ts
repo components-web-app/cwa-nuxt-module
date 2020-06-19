@@ -1,5 +1,6 @@
 import consola from 'consola'
-import { StoreCategories } from '@cwa/nuxt-module/core/storage'
+import { StoreCategories } from '../storage'
+// @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 import ResourceComponentLoader from './resource-component-loader'
 
