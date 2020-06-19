@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join } from 'path'
 import coreModuleDist from '../..'
 
 const API_URL_BROWSER = process.env.API_URL_BROWSER || 'https://localhost:8443'
