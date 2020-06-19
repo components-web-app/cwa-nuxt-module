@@ -1,5 +1,5 @@
 import { resolve, join } from 'path'
-import { Component } from "@nuxt/components/dist/scan"
+import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
 
@@ -23,15 +23,15 @@ function extendRoutesFn ({ pagesDepth }) {
     }
     return routeObject
   }
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/page.vue')
+  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/page.ts')
 
   return (routes) => {
-    const newRoutes = createRouteObject('@cwa/nuxt-module/core/templates/page.vue', pagesDepth)
+    const newRoutes = createRouteObject('@cwa/nuxt-module/core/templates/page.ts', pagesDepth)
     routes.push(newRoutes)
   }
 }
 
-function applyCss() {
+function applyCss () {
   const assetsDir = resolve(__dirname, '../core/assets')
   this.options.css.push(join(assetsDir, 'style.sass'))
 
@@ -66,21 +66,21 @@ function applyCss() {
 
 async function loadComponents () {
   // auto-configure components module
-  if (this.options.buildModules.indexOf('@nuxt/components') === -1) {
+  if (!this.options.buildModules.includes('@nuxt/components')) {
     this.options.buildModules.push('@nuxt/components')
   }
 
   if (!this.options.components) {
     this.options.components = []
   } else if (this.options.components === true) {
-    this.options.components = [ '~/components' ]
+    this.options.components = ['~/components']
   }
 
   // auto-configure components module for our cwa components
   const extensions = ['vue', 'js', 'ts', 'tsx']
-  const pattern =  `**/*.{${extensions.join(',')},}`
+  const pattern = `**/*.{${extensions.join(',')},}`
   const componentImports = {
-    templates: [],
+    pages: [],
     components: []
   }
   const types = Object.keys(componentImports)
@@ -106,15 +106,14 @@ async function loadComponents () {
     }
 
     for (const component of components) {
-      let foundType = findType(component)
+      const foundType = findType(component)
       if (!foundType) {
         continue
       }
       componentImports[foundType].push(component)
     }
 
-    for (const [componentType, components] of Object.entries(componentImports))
-    {
+    for (const [componentType, components] of Object.entries(componentImports)) {
       const { dst } = this.addTemplate({
         src: resolve(__dirname, '../../templates/components.js'),
         fileName: join('cwa', `${componentType}.js`),
@@ -135,21 +134,14 @@ async function loadComponents () {
 
 const cwaModule = <Module> async function () {
   const options: CwaOptions = {
-    ...{
-      vuex: {
-        namespace: 'cwa'
-      },
-      fetchConcurrency: 10,
-      pagesDepth: 3,
-      allowUnauthorizedTls: false
+    vuex: {
+      namespace: 'cwa'
     },
+    fetchConcurrency: 10,
+    pagesDepth: 3,
+    allowUnauthorizedTls: false,
     ...this.options.cwa
   }
-
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/cwa-layout.vue'),
-    fileName: join('cwa', 'cwa-layout.vue')
-  })
 
   this.addLayout({
     src: resolve(__dirname, '../core/templates/cwa-error.vue'),

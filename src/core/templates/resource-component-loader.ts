@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import ErrorComponent from './component-load-error'
+import ErrorComponent from './component-load-error.vue'
 
 export default {
   functional: true,
@@ -28,10 +28,10 @@ export default {
       })
     }
     return createElement(ErrorComponent, {
-        props: {
-          message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
-          isDanger: true
-        }
-      })
+      props: {
+        message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
+        isDanger: true
+      }
+    })
   }
 }

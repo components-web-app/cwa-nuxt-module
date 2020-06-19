@@ -1,8 +1,9 @@
 import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
+import ApiError from '../inc/api-error'
 import { Storage, StoreCategories } from './storage'
-import ApiError from "../inc/api-error";
+import { cwaRouteDisabled } from '../utils'
 
 export default class Cwa {
   public ctx: any
@@ -22,18 +23,20 @@ export default class Cwa {
 
     this.ctx = ctx
 
-    this.fetcher = async ({ path, preload }) => {
-      // For dynamic components the API must not what route/path the request was originally for
-      const url = `${process.env.API_URL}${path}`
+    this.fetcher = async ({ path: url, preload }) => {
       consola.debug('Fetching %s', url)
 
+      // For dynamic components the API must know what route/path the request was originally for
+      // so we set a custom "Path" header
       const requestHeaders = { Path: this.ctx.route.fullPath } as { Path: string, Preload?: string }
+
+      // preload headers for vulcain
       if (preload) {
         requestHeaders.Preload = preload.join(',')
       }
 
       try {
-        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders, progress: false })
+        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
         this.setMercureHubFromHeaders(headers)
         return data
       } catch (error) {
@@ -100,6 +103,7 @@ export default class Cwa {
       return
     }
     const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+    this.$storage.setState('layout', layoutResponse.reference)
 
     await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
       return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
@@ -140,6 +144,7 @@ export default class Cwa {
       return
     }
 
+    consola.log('mercure hub set', match[1])
     this.$storage.setState('mercureHub', match[1])
   }
 
@@ -174,7 +179,7 @@ export default class Cwa {
   }
 
   async initMercure () {
-    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
+    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client || cwaRouteDisabled(this.ctx.route)) { return }
 
     this.eventSource = new EventSource(this.getMercureHubURL())
     this.eventSource.onmessage = (messageEvent) => {
@@ -203,11 +208,11 @@ export default class Cwa {
     return this.$storage.areResourcesOutdated()
   }
 
-  get resources() {
+  get resources () {
     return this.$state.resources.current
   }
 
-  async addResource(endpoint, data) {
+  async addResource (endpoint, data) {
     consola.warn(`Need to implement functionality to add ${endpoint}`, data)
     // we need to post to the API with provided data
     // the response must be added to the store
@@ -227,11 +232,19 @@ export default class Cwa {
   // async postResourceUpdates()
   // {}
 
-  get isAdmin() {
+  get isAdmin () {
     return this.userHasRole('ROLE_ADMIN')
   }
 
-  userHasRole(role) {
-    return this.ctx.$auth.user ? this.ctx.$auth.user.roles.indexOf(role) !== -1 : false
+  userHasRole (role) {
+    return this.ctx.$auth.user ? this.ctx.$auth.user.roles.includes(role) : false
+  }
+
+  setLayout (layout) {
+    this.$storage.setState('layout', layout)
+  }
+
+  get layout () {
+    return this.$storage.getState('layout')
   }
 }

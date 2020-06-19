@@ -24,7 +24,7 @@
 <script>
 export default {
   cwa: false,
-  layout: 'cwa-layout',
+  layout: 'primary',
   data () {
     return {
       login: {
