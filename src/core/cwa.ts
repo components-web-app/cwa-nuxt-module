@@ -2,8 +2,8 @@ import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
 import ApiError from '../inc/api-error'
-import { Storage, StoreCategories } from './storage'
 import { cwaRouteDisabled } from '../utils'
+import { Storage, StoreCategories } from './storage'
 
 export default class Cwa {
   public ctx: any

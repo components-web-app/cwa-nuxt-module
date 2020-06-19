@@ -1,6 +1,6 @@
 import consola from 'consola'
-import ResourceMixin from './ResourceMixin'
 import { StoreCategories } from '@cwa/nuxt-module/core/storage'
+import ResourceMixin from './ResourceMixin'
 
 const category = StoreCategories.Component
 

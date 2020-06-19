@@ -76,7 +76,7 @@ export default {
   async middleware ({ $axios, $cwa }) {
     if ($cwa.$storage.getState('routes')) { return }
     try {
-      const { data } = await $axios.get(`/_/routes`)
+      const { data } = await $axios.get('/_/routes')
       $cwa.$storage.setState('routes', data['hydra:member'])
     } catch (err) {
       consola.error(err)

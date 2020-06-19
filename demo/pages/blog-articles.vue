@@ -9,11 +9,11 @@
 <script>
 // if you want to use nuxt functions specific to pages such
 // as asyncData and middleware extend the page template
-import Page from "@cwa/nuxt-module/core/templates/page"
+import Page from '@cwa/nuxt-module/core/templates/page'
 
 export default {
   extends: Page,
-  async asyncData({ $axios }) {
+  async asyncData ({ $axios }) {
     const { data } = await $axios.get('/_/routes//')
     return {
       homeRoute: data

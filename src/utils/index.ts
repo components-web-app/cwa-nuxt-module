@@ -5,7 +5,7 @@ interface VueComponent { options: object, _Ctor: VueComponent }
 type match = { components: VueComponent[] }
 type Route = { matched: match[] }
 
-export function cwaRouteDisabled(route: Route): boolean {
+export function cwaRouteDisabled (route: Route): boolean {
   return routeOption(route, 'cwa', false)
 }
 
