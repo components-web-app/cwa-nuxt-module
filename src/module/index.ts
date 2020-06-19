@@ -1,5 +1,5 @@
 import { resolve, join } from 'path'
-import { Component } from "@nuxt/components/dist/scan"
+import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
 
@@ -31,7 +31,7 @@ function extendRoutesFn ({ pagesDepth }) {
   }
 }
 
-function applyCss() {
+function applyCss () {
   const assetsDir = resolve(__dirname, '../core/assets')
   this.options.css.push(join(assetsDir, 'style.sass'))
 
@@ -66,19 +66,19 @@ function applyCss() {
 
 async function loadComponents () {
   // auto-configure components module
-  if (this.options.buildModules.indexOf('@nuxt/components') === -1) {
+  if (!this.options.buildModules.includes('@nuxt/components')) {
     this.options.buildModules.push('@nuxt/components')
   }
 
   if (!this.options.components) {
     this.options.components = []
   } else if (this.options.components === true) {
-    this.options.components = [ '~/components' ]
+    this.options.components = ['~/components']
   }
 
   // auto-configure components module for our cwa components
   const extensions = ['vue', 'js', 'ts', 'tsx']
-  const pattern =  `**/*.{${extensions.join(',')},}`
+  const pattern = `**/*.{${extensions.join(',')},}`
   const componentImports = {
     pages: [],
     components: []
@@ -106,15 +106,14 @@ async function loadComponents () {
     }
 
     for (const component of components) {
-      let foundType = findType(component)
+      const foundType = findType(component)
       if (!foundType) {
         continue
       }
       componentImports[foundType].push(component)
     }
 
-    for (const [componentType, components] of Object.entries(componentImports))
-    {
+    for (const [componentType, components] of Object.entries(componentImports)) {
       const { dst } = this.addTemplate({
         src: resolve(__dirname, '../../templates/components.js'),
         fileName: join('cwa', `${componentType}.js`),

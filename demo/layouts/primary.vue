@@ -3,12 +3,18 @@
     <div class="navbar">
       <div class="container">
         <ul v-if="routes" class="row">
-          <li v-for="route of sortedRoutes" class="column">
-            <nuxt-link :to="route.path" :class="{ selected: route.path === $route.path }">{{ route.name }}</nuxt-link>
+          <li v-for="route of sortedRoutes" :key="route['@id']" class="column">
+            <nuxt-link :to="route.path" :class="{ selected: route.path === $route.path }">
+              {{ route.name }}
+            </nuxt-link>
           </li>
           <li class="column">
-            <button v-if="$auth.loggedIn" @click="$auth.logout('local')">Logout</button>
-            <nuxt-link v-else to="/login" tag="button">Login</nuxt-link>
+            <button v-if="$auth.loggedIn" @click="$auth.logout('local')">
+              Logout
+            </button>
+            <nuxt-link v-else to="/login" tag="button">
+              Login
+            </nuxt-link>
           </li>
         </ul>
         <ul v-else>
@@ -18,54 +24,64 @@
         </ul>
       </div>
     </div>
-    <div class="container refresh-bar" v-if="$cwa.resourcesOutdated">
-      <span>The content on this page is outdated.</span> <button class="is-warning" @click="$cwa.updateResources()">Update page</button>
+    <div v-if="$cwa.resourcesOutdated" class="container refresh-bar">
+      <span>The content on this page is outdated.</span> <button class="is-warning" @click="$cwa.updateResources()">
+        Update page
+      </button>
     </div>
     <div class="container">
-      <p v-if="$cwa.$state.loadingRoute" style="color: orange;">Loading Route</p>
-      <p v-else-if="$cwa.$state.error" style="color: red;">{{ $cwa.$resources.error }}</p>
-      <p v-else style="color: green;">Route Loaded</p>
+      <p v-if="$cwa.$state.loadingRoute" style="color: orange;">
+        Loading Route
+      </p>
+      <p v-else-if="$cwa.$state.error" style="color: red;">
+        {{ $cwa.$resources.error }}
+      </p>
+      <p v-else style="color: green;">
+        Route Loaded
+      </p>
     </div>
     <nuxt />
   </div>
 </template>
 
 <script>
-  function dynamicSort(property) {
-    let sortOrder = 1;
+import consola from 'consola'
 
-    if(property[0] === "-") {
-      sortOrder = -1;
-      property = property.substr(1);
-    }
+function dynamicSort (property) {
+  let sortOrder = 1
 
-    return function (a,b) {
-      if(sortOrder === -1){
-        return b[property].localeCompare(a[property]);
-      }else{
-        return a[property].localeCompare(b[property]);
-      }
-    }
+  if (property[0] === '-') {
+    sortOrder = -1
+    property = property.substr(1)
   }
 
-  export default {
-    computed: {
-      sortedRoutes() {
-        return [...this.routes].sort(dynamicSort('path'))
-      },
-      routes() {
-        return this.$cwa.$storage.getState('routes')
-      }
+  return function (a, b) {
+    if (sortOrder === -1) {
+      return b[property].localeCompare(a[property])
+    } else {
+      return a[property].localeCompare(b[property])
+    }
+  }
+}
+
+export default {
+  computed: {
+    sortedRoutes () {
+      return [...this.routes].sort(dynamicSort('path'))
     },
-    async middleware({ $axios, $cwa, env }) {
-      try {
-        const { data } = await $axios.get(`${env.API_URL}/_/routes`, { progress: false })
-        $cwa.$storage.setState('routes', data['hydra:member'])
-      } catch (err) {
-        console.error(err)
-      }
+    routes () {
+      return this.$cwa.$storage.getState('routes')
+    }
+  },
+  async middleware ({ $axios, $cwa, env }) {
+    try {
+      const { data } = await $axios.get(`${env.API_URL}/_/routes`, { progress: false })
+      $cwa.$storage.setState('routes', data['hydra:member'])
+    } catch (err) {
+      consola.error(err)
     }
   }
+}
 </script>
 
 <style lang="sass" scoped>

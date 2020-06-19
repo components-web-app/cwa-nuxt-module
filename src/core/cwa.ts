@@ -1,8 +1,8 @@
 import * as bluebird from 'bluebird'
 import consola from 'consola'
 import type { CwaOptions } from '../'
+import ApiError from '../inc/api-error'
 import { Storage, StoreCategories } from './storage'
-import ApiError from "../inc/api-error";
 
 export default class Cwa {
   public ctx: any
@@ -204,11 +204,11 @@ export default class Cwa {
     return this.$storage.areResourcesOutdated()
   }
 
-  get resources() {
+  get resources () {
     return this.$state.resources.current
   }
 
-  async addResource(endpoint, data) {
+  async addResource (endpoint, data) {
     consola.warn(`Need to implement functionality to add ${endpoint}`, data)
     // we need to post to the API with provided data
     // the response must be added to the store
@@ -228,19 +228,19 @@ export default class Cwa {
   // async postResourceUpdates()
   // {}
 
-  get isAdmin() {
+  get isAdmin () {
     return this.userHasRole('ROLE_ADMIN')
   }
 
-  userHasRole(role) {
-    return this.ctx.$auth.user ? this.ctx.$auth.user.roles.indexOf(role) !== -1 : false
+  userHasRole (role) {
+    return this.ctx.$auth.user ? this.ctx.$auth.user.roles.includes(role) : false
   }
 
-  setLayout(layout) {
+  setLayout (layout) {
     this.$storage.setState('layout', layout)
   }
 
-  get layout() {
+  get layout () {
     return this.$storage.getState('layout')
   }
 }

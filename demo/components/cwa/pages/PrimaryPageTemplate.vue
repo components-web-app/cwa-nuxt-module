@@ -10,23 +10,23 @@
 </template>
 
 <script>
-import PageMixin from "@cwa/nuxt-module/core/mixins/PageMixin.js"
+import PageMixin from '@cwa/nuxt-module/core/mixins/PageMixin.js'
 
 export default {
   mixins: [PageMixin],
-  data() {
+  data () {
     return {
       asyncDataOutput: 'asyncData NOT loaded'
     }
   },
   computed: {
-    test() {
+    test () {
       return this.$cwa.$storage.getState('pageTemplateState')
     }
   },
   // middleware or asyncData type functionality desired for the user to be able to create these pages nicely.
   // this will not create ssr data
-  async beforeCreate() {
+  async beforeCreate () {
     this.asyncDataOutput = await this.$axios.get(process.client ? process.env.API_URL_BROWSER : process.env.API_URL + '/_/routes')
   }
 }
