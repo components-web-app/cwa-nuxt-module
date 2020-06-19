@@ -3,9 +3,7 @@
   "version": "0.0.1",
   "description": "Nuxt Module for Silverback's Components Web Apps and API Components Bundle API",
   "license": "MIT",
-  "contributors": [
-    "Daniel West <daniel@silverback.is>"
-  ],
+  "author": "Daniel West <daniel@silverback.is>",
   "repository": "https://github.com/components-web-app/cwa-nuxt-module",
   "publishConfig": {
     "access": "public"
@@ -36,7 +34,6 @@
     "css-loader": "^3.6.0",
     "milligram": "^1.4.0",
     "node-sass": "^4.14.1",
-    "nuxt-edge": "^2.13.0-26467214.85383688",
     "postcss-loader": "^3.0.0",
     "sass-loader": "^8.0.2",
     "sass-resources-loader": "^2.0.3",
@@ -56,6 +53,7 @@
     "eslint": "^7.2.0",
     "eslint-plugin-vue": "^7.0.0-alpha.6",
     "jsdom": "^16.2.2",
+    "nuxt-edge": "^2.13.0-26467214.85383688",
     "ssl-root-cas": "^1.3.1",
     "standard-version": "^8.0.0",
     "typescript": "~3.8.3"
