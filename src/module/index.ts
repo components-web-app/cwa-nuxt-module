@@ -23,10 +23,10 @@ function extendRoutesFn ({ pagesDepth }) {
     }
     return routeObject
   }
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/page.vue')
+  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/page.ts')
 
   return (routes) => {
-    const newRoutes = createRouteObject('@cwa/nuxt-module/core/templates/page.vue', pagesDepth)
+    const newRoutes = createRouteObject('@cwa/nuxt-module/core/templates/page.ts', pagesDepth)
     routes.push(newRoutes)
   }
 }

@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin.js'
+import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
 export default {
   mixins: [ComponentMixin]
 }

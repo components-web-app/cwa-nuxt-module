@@ -32,7 +32,6 @@
     "@nuxt/components": "^0.3.4",
     "@nuxtjs/auth-next": "latest",
     "@nuxtjs/axios": "^5.11.0",
-    "@nuxtjs/dotenv": "^1.4.1",
     "bluebird": "^3.7.2",
     "consola": "^2.13.0",
     "css-loader": "^3.6.0",

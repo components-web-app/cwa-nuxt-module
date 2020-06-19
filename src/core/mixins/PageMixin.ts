@@ -1,4 +1,4 @@
-import ResourceMixin from '@cwa/nuxt-module/core/mixins/ResourceMixin.js'
+import ResourceMixin from './ResourceMixin'
 
 const mixin = {
   mixins: [ResourceMixin],

@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import PageMixin from '@cwa/nuxt-module/core/mixins/PageMixin.js'
+import PageMixin from '@cwa/nuxt-module/core/mixins/PageMixin'
 
 export default {
   mixins: [PageMixin],

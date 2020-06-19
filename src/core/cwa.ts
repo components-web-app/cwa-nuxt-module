@@ -33,7 +33,7 @@ export default class Cwa {
       }
 
       try {
-        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders, progress: false })
+        const { data, headers } = await ctx.$axios.get(url, { headers: requestHeaders })
         this.setMercureHubFromHeaders(headers)
         return data
       } catch (error) {

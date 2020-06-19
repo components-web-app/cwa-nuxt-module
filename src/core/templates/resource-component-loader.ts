@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import ErrorComponent from './component-load-error'
+import ErrorComponent from './component-load-error.vue'
 
 export default {
   functional: true,
@@ -21,18 +21,17 @@ export default {
   render: (createElement, { props, parent }) => {
     let Comp = (parent.$options.components && parent.$options.components[props.component]) || Vue.component(props.component)
     if (Comp) {
-      const component = createElement(Comp, {
+      return createElement(Comp, {
         props: {
           iri: props.iri
         }
       })
-      return component
     }
     return createElement(ErrorComponent, {
-        props: {
-          message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
-          isDanger: true
-        }
-      })
+      props: {
+        message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
+        isDanger: true
+      }
+    })
   }
 }

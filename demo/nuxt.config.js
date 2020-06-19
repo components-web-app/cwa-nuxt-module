@@ -5,14 +5,13 @@ const API_URL_BROWSER = process.env.API_URL_BROWSER || 'https://localhost:8443'
 const API_URL = process.env.API_URL || API_URL_BROWSER
 
 export default {
-  env: {
+  publicRuntimeConfig: {
     API_URL,
     API_URL_BROWSER
   },
   mode: 'universal',
   buildModules: [
-    '@nuxt/typescript-build',
-    '@nuxtjs/dotenv'
+    '@nuxt/typescript-build'
   ],
   modules: [
     '@nuxtjs/axios',
@@ -24,8 +23,7 @@ export default {
   },
   axios: {
     credentials: true,
-    baseUrl: API_URL,
-    browserBaseURL: API_URL_BROWSER
+    progress: false
   },
   auth: {
     redirect: {
