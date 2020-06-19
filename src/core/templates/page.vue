@@ -13,7 +13,6 @@
   import { StoreCategories } from '@cwa/nuxt-module/core/storage'
   import components from '~/.nuxt/cwa/pages'
   import ResourceComponentLoader from './resource-component-loader'
-  import Vue from 'vue';
 
   export default {
     auth: false,

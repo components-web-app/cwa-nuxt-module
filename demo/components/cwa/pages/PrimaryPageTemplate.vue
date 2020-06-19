@@ -1,6 +1,5 @@
 <template>
   <div>
-    test is: '{{ asyncDataOutput }}'
     <div>
       <component-collection location="primary" :page-id="iri" />
     </div>
@@ -25,8 +24,10 @@ export default {
       return this.$cwa.$storage.getState('pageTemplateState')
     }
   },
+  // middleware or asyncData type functionality desired for the user to be able to create these pages nicely.
+  // this will not create ssr data
   async beforeCreate() {
-    this.asyncDataOutput = await this.$axios.get('/_/routes')
+    this.asyncDataOutput = await this.$axios.get(process.client ? process.env.API_URL_BROWSER : process.env.API_URL + '/_/routes')
   }
 }
 </script>
