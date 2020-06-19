@@ -5,13 +5,13 @@
     <resource-component-loader v-bind="resourceComponentLoaderProps" />
   </div>
 </template>
+
 <script>
+// if you want to use nuxt functions specific to pages such
+// as asyncData and middleware extend the page template
 import Page from "@cwa/nuxt-module/core/templates/page"
-import ResourceComponentLoader from "../../src/core/templates/resource-component-loader";
 
 export default {
-  components: {ResourceComponentLoader},
-  auth: false,
   extends: Page,
   async asyncData({ $axios }) {
     const { data } = await $axios.get('/_/routes//')

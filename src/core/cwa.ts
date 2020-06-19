@@ -3,6 +3,7 @@ import consola from 'consola'
 import type { CwaOptions } from '../'
 import ApiError from '../inc/api-error'
 import { Storage, StoreCategories } from './storage'
+import { cwaRouteDisabled } from '../utils'
 
 export default class Cwa {
   public ctx: any
@@ -22,12 +23,14 @@ export default class Cwa {
 
     this.ctx = ctx
 
-    this.fetcher = async ({ path, preload }) => {
-      // For dynamic components the API must not what route/path the request was originally for
-      const url = `${process.env.API_URL}${path}`
+    this.fetcher = async ({ path: url, preload }) => {
       consola.debug('Fetching %s', url)
 
+      // For dynamic components the API must know what route/path the request was originally for
+      // so we set a custom "Path" header
       const requestHeaders = { Path: this.ctx.route.fullPath } as { Path: string, Preload?: string }
+
+      // preload headers for vulcain
       if (preload) {
         requestHeaders.Preload = preload.join(',')
       }
@@ -141,6 +144,7 @@ export default class Cwa {
       return
     }
 
+    consola.log('mercure hub set', match[1])
     this.$storage.setState('mercureHub', match[1])
   }
 
@@ -175,7 +179,7 @@ export default class Cwa {
   }
 
   async initMercure () {
-    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
+    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client || cwaRouteDisabled(this.ctx.route)) { return }
 
     this.eventSource = new EventSource(this.getMercureHubURL())
     this.eventSource.onmessage = (messageEvent) => {
