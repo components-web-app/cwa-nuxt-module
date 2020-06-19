@@ -17,9 +17,7 @@
     "templates"
   ],
   "scripts": {
-    "build:css": "node-sass src/ -o dist/ ",
-    "watch:css": "yarn build:css && node-sass src/ -o dist/ -w -r",
-    "build": "yarn build:css && tsc",
+    "build": "tsc",
     "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
     "dev": "nuxt-ts demo",
     "lint": "eslint --ext .ts,.js,.vue .",
