@@ -1,5 +1,5 @@
 import ComponentCollection from '@cwa/nuxt-module/core/templates/component-collection.vue'
-import ContextMenuMixin from "./ContextMenuMixin";
+import ContextMenuMixin from './ContextMenuMixin'
 
 export default {
   mixins: [ContextMenuMixin],

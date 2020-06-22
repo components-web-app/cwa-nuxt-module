@@ -25,7 +25,7 @@
       </div>
     </div>
     <div v-if="$cwa.resourcesOutdated" class="container refresh-bar">
-      <span>The content on this page is outdated.</span> <button class="is-warning" @click="$cwa.updateResources()">
+      <span>The content on this page is outdated.</span> <button class="is-warning" @click="$cwa.mergeNewResources()">
         Update page
       </button>
     </div>
