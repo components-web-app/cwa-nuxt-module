@@ -158,7 +158,7 @@ export default class Cwa {
           continue
         }
         resourcesObject.currentIds.forEach((id) => {
-          hub.searchParams.append('topic', this.ctx.env.API_URL + id)
+          hub.searchParams.append('topic', this.ctx.$config.API_URL + id)
         })
       }
     }
