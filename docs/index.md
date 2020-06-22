@@ -4,46 +4,27 @@ title: Home
 nav_order: -9999
 ---
 
-# CWA Modules Documentation
-{: .no_toc }
+# CWA Nuxt Module Documentation
 
-## Table of contents
-{: .no_toc .text-delta }
+>__A Nuxt module to create a Components Web App. Designed to be used with the [API Components Bundle](https://github.com/components-web-app/api-components-bundle) (or any other API implementing the same specification).__
 
-* TOC
-{:toc}
+### **[See it in action: Components Web App](https://github.com/components-web-app/components-web-app)**
 
-## Setup notes, to do and discuss
-- decide on linting tools and configuration
-- decide on a test framework - Jest/Ava?
-- choose and configure compiling
-- how do we test with a dummy/test application using the features we build?
-- should we test by spinning up the API Component Bundle real API or simulate responses?. If we spin up API Component Bundle, in CI can we test with multiple versions if we decide to support major version releases
-- CI integration
-- Testing the real application will require a dummy database. Do we need to dockerise for local testing or can we run the test application using sqlite?
+## Introduction
+This module has been designed to provide a "plug-and-play" implementation for the API Components Bundle. You can get started right away with Docker and Kubernetes deployment using the [Components Web App](https://github.com/components-web-app/components-web-app) package of simply include this module in your application.
 
-## Server
-### No longer required - logouts will pass to API which will delete the refresh token. THe application should implement session timeout system after a period of inactivity.
-This isn't actually a Nuxt module in itself. But it is useful to have some server utilities that we can easily use in our application's `/server/index.spec` file. You can see an example of how we were using this in version 1 [here](https://github.com/silverbackis/ComponentsWebApp/blob/master/app/server/index.spec).
+We chose Nuxt (VueJs with SSR rendering) because we believe it is a fantastic, fun, east to learn and flexible framework. We also choose this as the first (and possibly only) front-end framework for ethical reasons too. Also, we do not wish to support React (by Facebook) or Angular (by Google) for ethical reasons.
 
-The main reason to have this is to provide JWT authentication management. We should be storing refresh tokens for the user's current 'ExpressJS' session and ensuring that the user never gets the refresh token. You can see the v1 server file [here](https://github.com/silverbackis/CWAModules/blob/master/packages/server/src/index.spec).
+## Contributors ✨
 
-We also have utilities here to save cookies as seen [here](https://github.com/silverbackis/CWAModules/blob/master/packages/server/src/utilities.js).
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
-The `getFormId` should really be in the `@cwa-modules/core` package.
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<!-- markdownlint-enable -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
-## Core
-This is the main Nuxt module which is to handle communication with the API and storage of the resources. The v1 package can be found [here](https://github.com/silverbackis/CWAModules/tree/master/packages/core/lib)
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
 
-### Configuration
-The configuration options should allow a user to override the Vuex store's namespace.
-
-We can prepend configuration to other modules (e.g. the nuxt auth module) by using similar methods as used [here](https://github.com/nuxt-community/pwa-module/blob/dev/lib/module.js)
-
-### Plugins
-We currently automatically include the `vue-cookie` plugin as this is helpful in our components to dealing with the JWT authentication cookies.
-
-We can also include mixins that are useful across any Nuxt component, although the mixin that was configured in v1 should not be implemented and instead we should include these mixins when necessary for v2.
-
-### Main features
-Primarily this package should provide middleware which is loading 
