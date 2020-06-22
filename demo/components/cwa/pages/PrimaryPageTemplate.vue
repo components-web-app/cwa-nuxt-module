@@ -1,10 +1,10 @@
 <template>
   <div>
     <div>
-      <component-collection location="primary" :page-id="iri" />
+      <component-collection location="primary" v-bind="componentCollectionProps" />
     </div>
     <div>
-      <component-collection location="secondary" :page-id="iri" />
+      <component-collection location="secondary" v-bind="componentCollectionProps" />
     </div>
   </div>
 </template>

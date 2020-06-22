@@ -1,6 +1,6 @@
 export default {
   methods: {
-    getContextMenuData() {
+    getContextMenuData () {
       let data = null
       if (typeof this.contextMenuData === 'object') {
         data = Object.assign({}, this.contextMenuData)
@@ -17,20 +17,26 @@ export default {
         component: this
       }
     },
-    populateContextMenu() {
+    populateContextMenu () {
       this.$root.$once('contextmenu.show', () => {
         const dataObject = this.getContextMenuData()
         if (!dataObject) {
           return
         }
-        this.$root.$emit('contextmenu.addData', this.getContextMenuData())
+        this.$root.$emit('context-menu-add-data', this.getContextMenuData())
       })
+    },
+    initContextmenu () {
+      this.$el.addEventListener('contextmenu', this.populateContextMenu)
+    },
+    destroyContextMenu () {
+      this.$el.removeEventListener('contextmenu', this.populateContextMenu)
     }
   },
-  mounted() {
-    this.$el.addEventListener('contextmenu', this.populateContextMenu)
+  mounted () {
+    this.initContextmenu()
   },
-  beforeDestroy() {
-    this.$el.removeEventListener('contextmenu', this.populateContextMenu)
+  beforeDestroy () {
+    this.destroyContextMenu()
   }
 }

@@ -39,6 +39,31 @@ export class Storage {
         SET (state, payload) {
           Vue.set(state, payload.key, payload.value)
         },
+        DELETE_RESOURCE (state, payload) {
+          ['new', 'current'].forEach((stateName) => {
+            const resourceState = state.resources[stateName]
+            if (!resourceState) {
+              return
+            }
+            const namedResources = resourceState[payload.name]
+            if (!namedResources) {
+              return
+            }
+
+            const allIdsIndex = namedResources.allIds.indexOf(payload.id)
+            if (allIdsIndex !== -1) {
+              namedResources.allIds.slice(allIdsIndex, 1)
+              Vue.delete(namedResources.byId, payload.id)
+
+              if (namedResources.currentIds && namedResources.currentIds[payload.id]) {
+                const currentIdsIndex = namedResources.currentIds.indexOf(payload.id)
+                if (currentIdsIndex) {
+                  namedResources.currentIds.slice(currentIdsIndex, 1)
+                }
+              }
+            }
+          })
+        },
         RESET_CURRENT_RESOURCES (state) {
           Vue.set(state.resources, 'new', {})
           const resetCurrentIds = (obj) => {
@@ -106,7 +131,7 @@ export class Storage {
           Vue.set(routeResources, 'current', id)
           consola.debug('Loaded route set:', id)
         },
-        UPDATE_RESOURCES (state) {
+        MERGE_NEW_RESOURCES (state) {
           for (const [resourceName, { byId }] of Object.entries(state.resources.new) as [string, resourcesState][]) {
             for (const [resourceId, newResource] of Object.entries(byId)) {
               Vue.set(state.resources.current[resourceName].byId, resourceId, newResource)
@@ -141,11 +166,19 @@ export class Storage {
     this.state = this.ctx.store.state[this.options.vuex.namespace]
   }
 
-  setResource ({ id, name, resource, isNew, category }: { id: string, name: string, resource: object, isNew: boolean, category?: string }) {
-    this.ctx.store.commit(this.options.vuex.namespace + '/SET_RESOURCE', {
+  deleteResource ({ id, name, category }) {
+    this.ctx.store.commit(this.options.vuex.namespace + '/DELETE_RESOURCE', {
       id,
       name,
-      isNew,
+      category
+    })
+  }
+
+  setResource ({ resource, isNew, category }: { resource: object, isNew?: boolean, category?: string }) {
+    this.ctx.store.commit(this.options.vuex.namespace + '/SET_RESOURCE', {
+      id: resource['@id'],
+      name: resource['@type'],
+      isNew: isNew || false,
       resource,
       category
     })
@@ -168,8 +201,8 @@ export class Storage {
     this.ctx.store.commit(this.options.vuex.namespace + '/RESET_CURRENT_RESOURCES')
   }
 
-  updateResources () {
-    this.ctx.store.commit(this.options.vuex.namespace + '/UPDATE_RESOURCES')
+  mergeNewResources () {
+    this.ctx.store.commit(this.options.vuex.namespace + '/MERGE_NEW_RESOURCES')
   }
 
   getState (key) {

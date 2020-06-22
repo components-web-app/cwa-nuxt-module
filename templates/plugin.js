@@ -10,5 +10,5 @@ export default function (ctx, inject) {
   inject('cwa', $cwa)
   ctx.$cwa = $cwa
 
-  return $cwa.init()
+  return $cwa
 }

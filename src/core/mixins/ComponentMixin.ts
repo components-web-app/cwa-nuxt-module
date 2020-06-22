@@ -6,10 +6,10 @@ const category = StoreCategories.Component
 
 export default {
   mixins: [ResourceMixin],
-  data() {
+  data () {
     return {
       defaultContextMenuData: {
-        'Delete': {
+        Delete: {
           callback: this.deleteSelf
         }
       }
@@ -25,12 +25,12 @@ export default {
       consola.debug(`Resolved resource type for iri ${this.iri} in the category ${category} to ${type}`)
       return this.$cwa.resources[type].byId[this.iri]
     },
-    contextMenuCategory() {
-      return  `Component (${this.resource.uiComponent || this.resource['@type']})`
+    contextMenuCategory () {
+      return `Component (${this.resource.uiComponent || this.resource['@type']})`
     }
   },
   methods: {
-    deleteSelf() {
+    deleteSelf () {
       this.$cwa.deleteResource(this.iri)
     }
   }

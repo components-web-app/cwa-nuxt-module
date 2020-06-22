@@ -1,8 +1,13 @@
 <template>
   <ul v-show="$cwa.isAdmin && showing" class="context-menu" @click.stop :style="menuStyle">
     <template v-for="(items,category) in menuData">
-      <li class="header" :key="category">{{ category }}</li>
-      <li v-for="({ label, options: { active } }, index) in items" :key="`${label}-${index}`"><a href="#" @click="doCallback(category, index)" :class="{ disabled: active }">{{ label }}</a></li>
+      <template v-if="loading">
+        <li class="header">Loading...</li>
+      </template>
+      <template v-else>
+        <li class="header" :key="category">{{ category }}</li>
+        <li v-for="({ label, options: { active } }, index) in items" :key="`${label}-${index}`"><a href="#" @click="doCallback(category, index)" :class="{ disabled: active }">{{ label }}</a></li>
+      </template>
     </template>
   </ul>
 </template>
@@ -16,7 +21,8 @@ export default {
       widthOffset: 10,
       left: 0,
       top: 0,
-      menuData: {}
+      menuData: {},
+      loading: false
     }
   },
   computed: {
@@ -47,6 +53,9 @@ export default {
     },
     open(event) {
       this.menuData = {}
+      if (!this.$cwa.isAdmin) {
+        return
+      }
       this.$root.$emit('contextmenu.show', this)
       if (Object.keys(this.menuData).length === 0) {
         return
@@ -76,23 +85,25 @@ export default {
       this.$set(this.menuData, resolvedCategory, newData)
     },
     async doCallback(category, index) {
+      this.loading = true
       const itemData = this.menuData[category][index]
       this.$set(itemData.options, 'active', true)
       await itemData.options.callback.call(itemData.component)
       this.$set(itemData.options, 'active', false)
       this.showing = false
+      this.loading = false
     }
   },
   mounted() {
     window.addEventListener('contextmenu', this.open)
     window.addEventListener('click', this.close)
     this.$el.addEventListener('contextmenu', (e) => { e.stopPropagation(); e.preventDefault() })
-    this.$root.$on('contextmenu.addData', this.addContextMenuData)
+    this.$root.$on('context-menu-add-data', this.addContextMenuData)
   },
   beforeDestroy() {
     window.removeEventListener('contextmenu', this.open)
     window.removeEventListener('click', this.close)
-    this.$root.$off('contextmenu.addData', this.addContextMenuData)
+    this.$root.$off('context-menu-add-data', this.addContextMenuData)
   }
 }
 </script>

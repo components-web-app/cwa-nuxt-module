@@ -8,6 +8,12 @@ const mixin = {
     },
     layout () {
       return this.$cwa.resources.Layout.byId[this.resource.layout]
+    },
+    componentCollectionProps () {
+      return {
+        pageId: this.iri,
+        pageReference: this.resource.reference
+      }
     }
   },
   watch: {
