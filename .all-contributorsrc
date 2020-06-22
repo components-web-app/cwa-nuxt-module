@@ -10,6 +10,19 @@
   "imageSize": 60,
   "commit": true,
   "commitConvention": "none",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "soyuka",
+      "name": "Antoine Bluchet",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/1321971?v=4",
+      "profile": "https://soyuka.me/",
+      "contributions": [
+        "code",
+        "ideas",
+        "review",
+        "test"
+      ]
+    }
+  ],
   "contributorsPerLine": 6
 }
