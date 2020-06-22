@@ -2,7 +2,7 @@
 
 #### A Nuxt module to create a Components Web App. Designed to be used with the [API Components Bundle](https://github.com/components-web-app/api-components-bundle) (or any other API implementing the same specification).
 
-### **[Read the documentation](https://docs.acb.silverback.is)**
+### **[Read the documentation](https://components-web-app.github.io/cwa-nuxt-module/)**
 
 ### **[See it in action: Components Web App](https://github.com/components-web-app/components-web-app)**
 
