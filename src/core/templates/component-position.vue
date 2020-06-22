@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import { StoreCategories } from "@cwa/nuxt-module/core/storage.ts"
+import { StoreCategories } from "@cwa/nuxt-module/core/storage"
 import ResourceComponentLoader from './resource-component-loader'
 import components from '~/.nuxt/cwa/components'
 
