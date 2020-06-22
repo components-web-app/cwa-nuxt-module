@@ -23,7 +23,9 @@
     "lint-fix": "yarn lint --fix",
     "release": "yarn clean && yarn build && standard-version && git push --follow-tags && npm publish",
     "start": "nuxt-ts start demo",
-    "test": "yarn lint && yarn build && nuxt build tests/fixture"
+    "test": "yarn lint && yarn build && nuxt build tests/fixture",
+    "contrib:add": "all-contributors add",
+    "contrib:generate": "all-contributors generate"
   },
   "dependencies": {
     "@nuxt/components": "^0.3.4",
@@ -48,6 +50,7 @@
     "@nuxtjs/eslint-config-typescript": "^1.0.2",
     "@types/node": "^12.12.47",
     "@types/node-sass": "^4.11.1",
+    "all-contributors-cli": "^6.16.0",
     "copyfiles": "^2.3.0",
     "eslint": "^7.2.0",
     "eslint-plugin-vue": "^7.0.0-alpha.6",
