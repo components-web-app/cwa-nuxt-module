@@ -2,7 +2,7 @@
   <ul v-show="$cwa.isAdmin && showing" class="context-menu" @click.stop :style="menuStyle">
     <template v-for="(items,category) in menuData">
       <li class="header" :key="category">{{ category }}</li>
-      <li v-for="({ label, options, component }, index) in items" :key="`${label}-${index}`"><a href="#" @click="options.callback.call(component)">{{ label }}</a></li>
+      <li v-for="({ label, options: { active } }, index) in items" :key="`${label}-${index}`"><a href="#" @click="doCallback(category, index)" :class="{ disabled: active }">{{ label }}</a></li>
     </template>
   </ul>
 </template>
@@ -74,6 +74,13 @@ export default {
         })
       }
       this.$set(this.menuData, resolvedCategory, newData)
+    },
+    async doCallback(category, index) {
+      const itemData = this.menuData[category][index]
+      this.$set(itemData.options, 'active', true)
+      await itemData.options.callback.call(itemData.component)
+      this.$set(itemData.options, 'active', false)
+      this.showing = false
     }
   },
   mounted() {
@@ -113,6 +120,8 @@ export default {
     a
       display: block
       padding: .5rem
+      &.active
+        opacity: .5
       &:hover
         background: $color-primary
         color: $color-initial
