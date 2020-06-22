@@ -29,14 +29,14 @@
         Update page
       </button>
     </div>
-    <div class="container">
-      <p v-if="$cwa.$state.loadingRoute" style="color: orange;">
+    <div class="container loading-message">
+      <p v-if="$cwa.$state.loadingRoute" class="loading">
         Loading Route
       </p>
-      <p v-else-if="$cwa.$state.error" style="color: red;">
+      <p v-else-if="$cwa.$state.error" class="error">
         {{ $cwa.$resources.error }}
       </p>
-      <p v-else style="color: green;">
+      <p v-else class="loaded">
         Route Loaded
       </p>
     </div>
@@ -47,30 +47,31 @@
 <script>
 import consola from 'consola'
 
-function dynamicSort (property) {
-  let sortOrder = 1
-
-  if (property[0] === '-') {
-    sortOrder = -1
-    property = property.substr(1)
-  }
-
-  return function (a, b) {
-    if (sortOrder === -1) {
-      return b[property].localeCompare(a[property])
-    } else {
-      return a[property].localeCompare(b[property])
-    }
-  }
-}
-
 export default {
   computed: {
     sortedRoutes () {
-      return [...this.routes].sort(dynamicSort('path'))
+      return [...this.routes].sort(this.dynamicSort('path'))
     },
     routes () {
       return this.$cwa.$storage.getState('routes')
+    }
+  },
+  methods: {
+    dynamicSort (property) {
+      let sortOrder = 1
+
+      if (property[0] === '-') {
+        sortOrder = -1
+        property = property.substr(1)
+      }
+
+      return function (a, b) {
+        if (sortOrder === -1) {
+          return b[property].localeCompare(a[property])
+        } else {
+          return a[property].localeCompare(b[property])
+        }
+      }
     }
   },
   async middleware ({ $axios, $cwa }) {
@@ -86,6 +87,13 @@ export default {
 </script>
 
 <style lang="sass" scoped>
+  .loading-message
+    .loading
+      color: $color-warning
+    .error
+      color: $color-danger
+    .loaded
+      color: $color-success
   .refresh-bar
     display: flex
     justify-content: center
