@@ -5,6 +5,25 @@ import ApiError from '../inc/api-error'
 import { cwaRouteDisabled } from '../utils'
 import { Storage, StoreCategories } from './storage'
 
+function getAxiosError(error)
+{
+  if (error.response && error.response.status && typeof error.response.data === 'object') {
+    return {
+      statusCode: error.response.status,
+      message: error.response.data.message || error.response.data['hydra:description']
+    }
+  } else if(error.message) {
+    return {
+      statusCode: 500,
+      message: error.message
+    }
+  }
+  return {
+    statusCode: 500,
+    message: error
+  }
+}
+
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
@@ -40,19 +59,9 @@ export default class Cwa {
         this.setMercureHubFromHeaders(headers)
         return data
       } catch (error) {
-        if (error.response && error.response.status && typeof error.response.data === 'object') {
-          this.ctx.error({
-            statusCode: error.response.status,
-            message: error.response.data.message || error.response.data['hydra:description'],
-            endpoint: url
-          })
-        } else if (error.message) {
-          this.ctx.error({
-            statusCode: 500,
-            message: error.message,
-            endpoint: url
-          })
-        }
+        this.ctx.error(Object.assign({}, getAxiosError(error), {
+          endpoint: url
+        }))
       }
     }
 
@@ -64,12 +73,16 @@ export default class Cwa {
     this.$state = storage.state
   }
 
+  private saveResource(resource: any, category?: string) {
+    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], category, isNew: false, resource })
+  }
+
   async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
     const resource = await this.fetcher({ path, preload })
     if (!resource) {
       return resource
     }
-    this.$storage.setResource({ id: resource['@id'], name: resource['@type'], category, isNew: false, resource })
+    this.saveResource(resource, category)
     return resource
   }
 
@@ -212,12 +225,20 @@ export default class Cwa {
     return this.$state.resources.current
   }
 
-  addResource (endpoint, data) {
-    consola.warn(`Need to implement functionality to add ${endpoint}`, data)
-    // we need to post to the API with provided data
-    // the response must be added to the store
-    // we must update mercure topics to include new resource
-    throw new ApiError('Functionality ot implemented yet')
+  async addResource (endpoint: string, data: any, category?: string) {
+    const postData = async () => {
+      try {
+        return await this.ctx.$axios.$post(endpoint, data)
+      }catch (error) {
+        const axiosError = getAxiosError(error)
+        consola.error(axiosError)
+        throw new ApiError(axiosError.message)
+      }
+    }
+
+    const newResource = await postData()
+    this.saveResource(newResource, category)
+    this.initMercure()
   }
 
   // We will need to be able to update resources and there will be a toggle to say whether we post this to the API right away
@@ -227,7 +248,7 @@ export default class Cwa {
   // so we can detect there are unsaved changes to let the user know and to provide an
   // easy way to post all the updates to the API and update the store. Do not rely on mercure
   // as the resource may not have mercure enabled
-  async postResourceUpdates() {}
+  async submitResourceUpdates() {}
 
   async deleteResource() {}
 
