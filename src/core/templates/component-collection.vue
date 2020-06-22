@@ -14,10 +14,10 @@
 </template>
 
 <script>
-import ComponentLoadError from "@cwa/nuxt-modulecore/templates/component-load-error.vue"
+import ComponentLoadError from "@cwa/nuxt-module/core/templates/component-load-error.vue"
 import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
 import ContextMenuMixin from "@cwa/nuxt-module/core/mixins/ContextMenuMixin"
-import ApiRequestMixin from "@cwa/nuxt-modulecore/mixins/ApiRequestMixin"
+import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
 
 export default {
   mixins: [ContextMenuMixin, ApiRequestMixin],
