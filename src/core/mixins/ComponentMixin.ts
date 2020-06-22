@@ -8,7 +8,11 @@ export default {
   mixins: [ResourceMixin],
   data() {
     return {
-      contextMenuCategory: 'component'
+      defaultContextMenuData: {
+        'Delete': {
+          callback: this.deleteSelf
+        }
+      }
     }
   },
   computed: {
@@ -20,6 +24,14 @@ export default {
       }
       consola.debug(`Resolved resource type for iri ${this.iri} in the category ${category} to ${type}`)
       return this.$cwa.resources[type].byId[this.iri]
+    },
+    contextMenuCategory() {
+      return  `Component (${this.resource.uiComponent || this.resource['@type']})`
+    }
+  },
+  methods: {
+    deleteSelf() {
+      this.$cwa.deleteResource(this.iri)
     }
   }
 }

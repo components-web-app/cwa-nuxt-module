@@ -13,13 +13,15 @@ export default {
   computed: {
     contextMenuData() {
       return {
-        'Do something': this.doSomething
+        'Edit': {
+          callback: this.showEditView
+        }
       }
     }
   },
   methods: {
-    doSomething() {
-      alert('this was something')
+    showEditView() {
+      alert('this will trigger edit view...')
     }
   }
 }

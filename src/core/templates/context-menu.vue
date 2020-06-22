@@ -2,7 +2,7 @@
   <ul v-show="$cwa.isAdmin && showing" class="context-menu" @click.stop :style="menuStyle">
     <template v-for="(items,category) in menuData">
       <li class="header" :key="category">{{ category }}</li>
-      <li v-for="({ label, fn, component }, index) in items" :key="`${label}-${index}`"><a href="#" @click="fn.call(component)">{{ label }}</a></li>
+      <li v-for="({ label, options, component }, index) in items" :key="`${label}-${index}`"><a href="#" @click="options.callback.call(component)">{{ label }}</a></li>
     </template>
   </ul>
 </template>
@@ -66,10 +66,10 @@ export default {
     addContextMenuData({ category, data, component }) {
       const resolvedCategory = category || 'default'
       let newData = this.menuData[resolvedCategory] ? this.menuData[resolvedCategory] : []
-      for (const [label, callFn] of Object.entries(data)) {
+      for (const [label, options] of Object.entries(data)) {
         newData.push({
           label,
-          fn: callFn,
+          options,
           component
         })
       }
@@ -79,6 +79,7 @@ export default {
   mounted() {
     window.addEventListener('contextmenu', this.open)
     window.addEventListener('click', this.close)
+    this.$el.addEventListener('contextmenu', (e) => { e.stopPropagation(); e.preventDefault() })
     this.$root.$on('contextmenu.addData', this.addContextMenuData)
   },
   beforeDestroy() {

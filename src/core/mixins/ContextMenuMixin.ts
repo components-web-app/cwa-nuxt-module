@@ -5,6 +5,9 @@ export default {
       if (typeof this.contextMenuData === 'object') {
         data = Object.assign({}, this.contextMenuData)
       }
+      if (typeof this.defaultContextMenuData === 'object') {
+        data = Object.assign(data || {}, this.defaultContextMenuData)
+      }
       if (!data) {
         return null
       }

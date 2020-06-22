@@ -40,7 +40,7 @@ export default {
   },
   computed: {
     contextMenuCategory() {
-      return this.resource ? `Component Collection ${this.resource.reference}` : `Component Collection @ ${this.location}`
+      return `Component Collection (${this.resource ? this.resource.reference : this.location})`
     },
     resource() {
       return this.getCollectionResourceByLocation(this.location, this.pageId)
@@ -62,14 +62,21 @@ export default {
       }
       return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
     },
-    contextMenuData() {
+    defaultContextMenuData() {
       if (!this.resource) {
         return {
-          'Create component collection': this.addComponentCollection
+          'Create component collection': {
+            callback: this.addComponentCollection
+          }
         }
       }
       return {
-        'Add component': this.addComponent
+        'Add component': {
+          callback: this.addComponent
+        },
+        'Delete component collection': {
+          callback: this.deleteSelf
+        }
       }
     }
   },
@@ -100,6 +107,9 @@ export default {
     },
     addComponent() {
       alert('this will add a component to collection ' + this.resource['@id'])
+    },
+    async deleteSelf() {
+      await this.$cwa.deleteResource(this.resource['@id'])
     }
   }
 }
