@@ -3,7 +3,8 @@
     <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
   </div>
   <component-load-error :class="classes" v-else :message="errorMessage">
-    <template v-if="$cwa.isAdmin">
+    <!-- v-if causes ssr mis-matched render -->
+    <template v-show="$cwa.isAdmin">
       <button @click="addComponentCollection">+ Add</button>
       <div v-if="addError" class="notice is-danger">{{ addError }}</div>
     </template>
@@ -14,8 +15,15 @@
 import ComponentLoadError from "@cwa/nuxt-modulecore/templates/component-load-error.vue"
 import ApiError from "@cwa/nuxt-moduleinc/api-error"
 import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
+import ContextMenuMixin from "@cwa/nuxt-module/core/mixins/ContextMenuMixin";
 
 export default {
+  mixins: [ContextMenuMixin],
+  data() {
+    return {
+      addError: null
+    }
+  },
   components: {
     ComponentLoadError,
     ComponentPosition
@@ -30,12 +38,10 @@ export default {
       required: true
     }
   },
-  data() {
-    return {
-      addError: null
-    }
-  },
   computed: {
+    contextMenuCategory() {
+      return this.resource ? `Component Collection ${this.resource.reference}` : `Component Collection @ ${this.location}`
+    },
     resource() {
       return this.getCollectionResourceByLocation(this.location, this.pageId)
     },
@@ -55,6 +61,16 @@ export default {
         postObj && positions.push(postObj)
       }
       return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
+    },
+    contextMenuData() {
+      if (!this.resource) {
+        return {
+          'Create component collection': this.addComponentCollection
+        }
+      }
+      return {
+        'Add component': this.addComponent
+      }
     }
   },
   methods: {
@@ -81,6 +97,9 @@ export default {
         }
         throw err
       }
+    },
+    addComponent() {
+      alert('this will add a component to collection ' + this.resource['@id'])
     }
   }
 }

@@ -3,6 +3,7 @@ import { StoreCategories } from '../storage'
 // @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 import ResourceComponentLoader from './resource-component-loader'
+import ContextMenu from './context-menu.vue'
 
 export default {
   auth: false,
@@ -11,6 +12,7 @@ export default {
   },
   components: {
     ResourceComponentLoader,
+    ContextMenu,
     ...components
   },
   computed: {
@@ -70,8 +72,13 @@ export default {
     }
   },
   render(h) {
-    return h(this.$options.components.ResourceComponentLoader, {
-      props: this.resourceComponentLoaderProps
-    })
+    return h(
+      'div',
+      {},
+      [
+        h(this.$options.components.ResourceComponentLoader, { props: this.resourceComponentLoaderProps }),
+        h(this.$options.components.ContextMenu, { props: {} })
+      ]
+    )
   }
 }

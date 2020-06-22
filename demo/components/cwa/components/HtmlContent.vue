@@ -9,6 +9,18 @@
 <script>
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
 export default {
-  mixins: [ComponentMixin]
+  mixins: [ComponentMixin],
+  computed: {
+    contextMenuData() {
+      return {
+        'Do something': this.doSomething
+      }
+    }
+  },
+  methods: {
+    doSomething() {
+      alert('this was something')
+    }
+  }
 }
 </script>

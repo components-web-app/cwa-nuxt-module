@@ -6,6 +6,11 @@ const category = StoreCategories.Component
 
 export default {
   mixins: [ResourceMixin],
+  data() {
+    return {
+      contextMenuCategory: 'component'
+    }
+  },
   computed: {
     resource () {
       const type = this.$cwa.$storage.getTypeFromIri(this.iri, category)
