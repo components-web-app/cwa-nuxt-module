@@ -32,6 +32,7 @@ export default {
       home: '/',
       callback: false
     },
+    defaultStrategy: 'local',
     strategies: {
       local: {
         user: {
@@ -45,7 +46,8 @@ export default {
         },
         token: {
           global: false,
-          required: false
+          required: false,
+          type: false
         }
       }
     }

@@ -1,5 +1,5 @@
 <template>
-  <ul v-show="$cwa.isAdmin && showing" class="context-menu" @click.stop :style="menuStyle">
+  <ul v-if="$cwa.isAdmin && showing" class="context-menu" @click.stop :style="menuStyle">
     <template v-for="(items,category) in menuData">
       <template v-if="loading">
         <li class="header">Loading...</li>
@@ -53,9 +53,6 @@ export default {
     },
     open(event) {
       this.menuData = {}
-      if (!this.$cwa.isAdmin) {
-        return
-      }
       this.$root.$emit('contextmenu.show', this)
       if (Object.keys(this.menuData).length === 0) {
         return

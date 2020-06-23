@@ -30,7 +30,7 @@
       </button>
     </div>
     <div class="container loading-message">
-      <p v-if="$cwa.$state.loadingRoute" class="loading">
+      <p v-if="$cwa.loadingRoute" class="loading">
         Loading Route
       </p>
       <p v-else-if="$cwa.$state.error" class="error">

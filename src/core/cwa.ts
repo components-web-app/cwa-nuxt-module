@@ -4,7 +4,7 @@ import ApiError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import { cwaRouteDisabled } from '../utils'
 import { Storage } from './storage'
-import Fetcher from './fetcher'
+import { Fetcher } from './fetcher'
 
 export default class Cwa {
   public ctx: any
@@ -72,6 +72,10 @@ export default class Cwa {
 
   get layout () {
     return this.$storage.getState('layout')
+  }
+
+  get loadingRoute () {
+    return this.$state[Fetcher.loadingRouteKey]
   }
 
   setLayout (layout) {

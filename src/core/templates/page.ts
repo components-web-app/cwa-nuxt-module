@@ -1,18 +1,21 @@
 import consola from 'consola'
+import Vue from 'vue'
 import { StoreCategories } from '../storage'
 // @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 import ResourceComponentLoader from './resource-component-loader'
 import ContextMenu from './context-menu.vue'
+import ClientOnly from 'vue-client-only'
 
 export default {
-  auth: false,
+  auth: 'guest',
   layout({ $cwa }) {
     return $cwa.layout
   },
   components: {
     ResourceComponentLoader,
     ContextMenu,
+    ClientOnly,
     ...components
   },
   computed: {
@@ -77,7 +80,9 @@ export default {
       {},
       [
         h(this.$options.components.ResourceComponentLoader, { props: this.resourceComponentLoaderProps }),
-        h(this.$options.components.ContextMenu, { props: {} })
+        h(this.$options.components.ClientOnly, {}, [
+          h(this.$options.components.ContextMenu, { props: {} })
+        ])
       ]
     )
   }

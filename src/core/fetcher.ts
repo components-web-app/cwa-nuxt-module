@@ -4,10 +4,10 @@ import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import Storage, { StoreCategories } from './storage'
 
-export default class Fetcher {
+export class Fetcher {
   // Holds the EventSource connection with mercure
-  private eventSource
-  private lastEventId
+  private eventSource?: EventSource
+  private lastEventId?: string
   private ctx: {
     $axios: NuxtAxiosInstance,
     error: any,
@@ -18,6 +18,8 @@ export default class Fetcher {
   private options: {
     fetchConcurrency: number
   }
+
+  public static readonly loadingRouteKey = 'loadingRoute'
 
   constructor ({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
@@ -36,7 +38,7 @@ export default class Fetcher {
 
     // For dynamic components the API must know what route/path the request was originally for
     // so we set a custom "Path" header
-    const requestHeaders = { Path: url } as { Path: string, Preload?: string }
+    const requestHeaders = { Path: this.ctx.storage.getState(Fetcher.loadingRouteKey) } as { Path: string, Preload?: string }
 
     // preload headers for Vulcain
     if (preload) {
@@ -77,7 +79,7 @@ export default class Fetcher {
 
   public async fetchRoute (path) {
     this.ctx.storage.resetCurrentResources()
-    this.ctx.storage.setState('loadingRoute', true)
+    this.ctx.storage.setState(Fetcher.loadingRouteKey, path)
     this.eventSource && this.eventSource.close()
     const routeResponse = await this.fetchItem(
       {
@@ -102,7 +104,7 @@ export default class Fetcher {
       })
     })
     this.ctx.storage.setCurrentRoute(routeResponse['@id'])
-    this.ctx.storage.setState('loadingRoute', false)
+    this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
   }
 
   private async fetchPage (routeResponse) {
@@ -179,3 +181,5 @@ export default class Fetcher {
     return hub.toString()
   }
 }
+
+export default Fetcher

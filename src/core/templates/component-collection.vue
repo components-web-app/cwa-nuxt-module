@@ -6,10 +6,10 @@
   </div>
   <component-load-error :class="classes" v-else :message="errorMessage">
     <!-- v-if causes ssr mis-matched render -->
-    <template v-show="$cwa.isAdmin">
+    <client-only v-if="$cwa.isAdmin">
       <button @click="addComponentCollection">+ Add</button>
       <div v-if="requestError" class="notice is-danger">{{ requestError }}</div>
-    </template>
+    </client-only>
   </component-load-error>
 </template>
 
