@@ -6,8 +6,8 @@ export type CwaOptions = {
   vuex: {
     namespace: string
   },
-  fetchConcurrency: number,
   pagesDepth: number,
+  fetchConcurrency: number,
   allowUnauthorizedTls: boolean
 }
 

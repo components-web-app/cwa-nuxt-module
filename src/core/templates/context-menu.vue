@@ -52,11 +52,16 @@ export default {
       return [top, left];
     },
     open(event) {
+      if (!this.$cwa.isAdmin) {
+        return
+      }
+
       this.menuData = {}
       this.$root.$emit('contextmenu.show', this)
       if (Object.keys(this.menuData).length === 0) {
         return
       }
+
       event.preventDefault()
       this.showing = true
 
