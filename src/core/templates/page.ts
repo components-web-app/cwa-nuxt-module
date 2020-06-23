@@ -1,5 +1,4 @@
 import consola from 'consola'
-import Vue from 'vue'
 import { StoreCategories } from '../storage'
 // @ts-ignore
 import components from '~/.nuxt/cwa/pages'
@@ -8,7 +7,7 @@ import ContextMenu from './context-menu.vue'
 import ClientOnly from 'vue-client-only'
 
 export default {
-  auth: 'guest',
+  auth: false,
   layout({ $cwa }) {
     return $cwa.layout
   },
