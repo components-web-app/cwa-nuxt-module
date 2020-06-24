@@ -91,6 +91,11 @@ export class Fetcher {
           '/pageData/page/componentCollections/*/componentPositions/*/component'
         ]
       })
+
+    if (!routeResponse) {
+      return
+    }
+
     const pageResponse = await this.fetchPage(routeResponse)
     if (!pageResponse) {
       return
@@ -146,8 +151,16 @@ export class Fetcher {
 
   public initMercure (currentResources) {
     if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
+    let hubUrl = null
 
-    this.eventSource = new EventSource(this.getMercureHubURL(currentResources))
+    try {
+      hubUrl = this.getMercureHubURL(currentResources)
+    } catch (err) {
+      consola.error('Could not get mercure hub url.')
+      return
+    }
+
+    this.eventSource = new EventSource(hubUrl)
     this.eventSource.onmessage = (messageEvent) => {
       const data = JSON.parse(messageEvent.data)
       this.lastEventId = data.id
