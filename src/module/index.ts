@@ -3,47 +3,34 @@ import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
 
-function extendRoutesFn () {
-  this.nuxt.options.build!.transpile!.push(resolve(__dirname, '../core/templates/page'))
-  return (routes) => {
+function extendRoutesFn ({ pagesDepth }) {
+  function createRouteObject (component, depth:number, currentDepth:number = 0) {
+    if (currentDepth > depth) {
+      return null
+    }
     const routeObject = {
-      name: 'page0',
-      path: '/:page0*',
-      component: resolve(__dirname, '../core/templates/page'),
+      name: 'page' + currentDepth,
+      path: ':page' + currentDepth + '*',
+      component,
       children: null
     }
-    routes.push(routeObject)
+    if (currentDepth === 0) {
+      routeObject.path = '/' + routeObject.path
+    }
+    const child = createRouteObject(component, depth, currentDepth + 1)
+    if (child) {
+      routeObject.children = [child]
+    }
+    return routeObject
+  }
+
+  this.nuxt.options.build!.transpile!.push(resolve(__dirname, '../core/templates/page'))
+
+  return (routes) => {
+    const newRoutes = createRouteObject(resolve(__dirname, '../core/templates/page'), pagesDepth)
+    routes.push(newRoutes)
   }
 }
-
-// function extendRoutesFn ({ pagesDepth }) {
-//   function createRouteObject (component, depth:number, currentDepth:number = 0) {
-//     if (currentDepth > depth) {
-//       return null
-//     }
-//     const routeObject = {
-//       name: 'page' + currentDepth,
-//       path: ':page' + currentDepth + '*',
-//       component,
-//       children: null
-//     }
-//     if (currentDepth === 0) {
-//       routeObject.path = '/' + routeObject.path
-//     }
-//     const child = createRouteObject(component, depth, currentDepth + 1)
-//     if (child) {
-//       routeObject.children = [child]
-//     }
-//     return routeObject
-//   }
-//
-//   this.nuxt.options.build!.transpile!.push(resolve(__dirname, '../core/templates/page'))
-//
-//   return (routes) => {
-//     const newRoutes = createRouteObject(resolve(__dirname, '../core/templates/page'), pagesDepth)
-//     routes.push(newRoutes)
-//   }
-// }
 
 function applyCss () {
   const assetsDir = resolve(__dirname, '../core/assets')
