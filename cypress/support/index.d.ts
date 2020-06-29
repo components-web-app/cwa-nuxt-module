@@ -9,6 +9,5 @@ declare namespace Cypress {
      * @example cy.navigate('greeting')
     */
     navigate(...args: any): Chainable<Element>
-    waitForNuxt(): Chainable<Element>
   }
 }
