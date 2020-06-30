@@ -1,6 +1,6 @@
 {
   "name": "@cwa/nuxt-module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Nuxt Module for Silverback's Components Web Apps and API Components Bundle API",
   "license": "MIT",
   "author": "Daniel West <daniel@silverback.is>",
