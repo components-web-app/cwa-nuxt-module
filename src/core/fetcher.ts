@@ -2,6 +2,7 @@ import * as bluebird from 'bluebird'
 import consola from 'consola'
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
+import DebugTimer from '../utils/DebugTimer'
 import Storage, { StoreCategories } from './storage'
 
 export class Fetcher {
@@ -20,6 +21,7 @@ export class Fetcher {
   }
 
   public static readonly loadingRouteKey = 'loadingRoute'
+  private timer: DebugTimer;
 
   constructor ({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
@@ -31,10 +33,12 @@ export class Fetcher {
     this.options = {
       fetchConcurrency
     }
+    this.timer = new DebugTimer()
   }
 
   private async fetcher ({ path: url, preload }: { path: string, preload?: string[] }) {
-    consola.debug('Fetching %s', url)
+    consola.debug(`Fetching ${url}`)
+    this.timer.start(`Fetching ${url}`)
 
     // For dynamic components the API must know what route/path the request was originally for
     // so we set a custom "Path" header
@@ -54,7 +58,10 @@ export class Fetcher {
       this.ctx.error(Object.assign({}, AxiosErrorParser(error), {
         endpoint: url
       }))
+    } finally {
+      this.timer.end(`Fetching ${url}`)
     }
+    consola.debug(`Fetched ${url}`)
   }
 
   private async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
@@ -78,6 +85,7 @@ export class Fetcher {
   }
 
   public async fetchRoute (path) {
+    this.timer.start(`Fetch route ${path}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, path)
     this.eventSource && this.eventSource.close()
@@ -91,6 +99,11 @@ export class Fetcher {
           '/pageData/page/componentCollections/*/componentPositions/*/component'
         ]
       })
+
+    if (!routeResponse) {
+      return
+    }
+
     const pageResponse = await this.fetchPage(routeResponse)
     if (!pageResponse) {
       return
@@ -105,6 +118,8 @@ export class Fetcher {
     })
     this.ctx.storage.setCurrentRoute(routeResponse['@id'])
     this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+    this.timer.end(`Fetch route ${path}`)
+    this.timer.print()
   }
 
   private async fetchPage (routeResponse) {
@@ -146,8 +161,16 @@ export class Fetcher {
 
   public initMercure (currentResources) {
     if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
+    let hubUrl = null
 
-    this.eventSource = new EventSource(this.getMercureHubURL(currentResources))
+    try {
+      hubUrl = this.getMercureHubURL(currentResources)
+    } catch (err) {
+      consola.error('Could not get mercure hub url.')
+      return
+    }
+
+    this.eventSource = new EventSource(hubUrl)
     this.eventSource.onmessage = (messageEvent) => {
       const data = JSON.parse(messageEvent.data)
       this.lastEventId = data.id

@@ -108,7 +108,7 @@ export class Storage {
           currentResourceState.byId[payload.id] = payload.resource
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
           !payload.isNew && currentResourceState.currentIds.push(payload.id)
-          consola.debug(currentResourceState)
+          // consola.trace(currentResourceState)
           Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
 
           if (payload.category) {

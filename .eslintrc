@@ -1,7 +1,8 @@
 {
   "extends": [
     "@nuxtjs/eslint-config-typescript",
-    "plugin:vue/essential"
+    "plugin:vue/essential",
+    "plugin:cypress/recommended"
   ],
   "rules": {
     "vue/no-v-html": 0

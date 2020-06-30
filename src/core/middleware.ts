@@ -1,4 +1,5 @@
 import { cwaRouteDisabled } from '../utils'
+import DebugTimer from '../utils/DebugTimer'
 
 // I don't know whether the $cwa property will be required, but it is injected into all contexts throughout
 // Nuxt/Vuejs components. This is the class at source /src/core/cwa.ts
@@ -7,6 +8,9 @@ export default async function routeLoaderMiddleware ({ route, $cwa }) {
   if (cwaRouteDisabled(route)) {
     return
   }
+
+  const timer = new DebugTimer()
+  timer.start('CWA middleware')
 
   try {
     await $cwa.fetchRoute(route.path)
@@ -20,4 +24,7 @@ export default async function routeLoaderMiddleware ({ route, $cwa }) {
   if (process.client) {
     $cwa.initMercure()
   }
+
+  timer.end('CWA middleware')
+  timer.print()
 }

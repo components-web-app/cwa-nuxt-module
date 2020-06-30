@@ -53,11 +53,11 @@ export default {
       return this.currentRoute.pageData ? this.currentPageMetadata.page : this.currentRoute.page
     },
     currentPageTemplateResource() {
-      return this.resources.Page.byId[this.currentPageTemplateIri]
+      return this.resources?.Page?.byId[this.currentPageTemplateIri]
     },
     resourceComponentLoaderProps() {
       return {
-        component: this.currentPageTemplateResource.uiComponent,
+        component: this.currentPageTemplateResource?.uiComponent,
         iri: this.currentPageTemplateIri
       }
     }

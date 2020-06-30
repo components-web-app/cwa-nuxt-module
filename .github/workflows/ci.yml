@@ -1,70 +1,83 @@
 name: ci
 
-on:
-  push:
-    branches:
-      - master
-      - dev
-  pull_request: ~
+on: [push]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        node: [10]
+        node: [12.x]
       fail-fast: true
-
     steps:
-      - name: Setup Node.js
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node }}
-
-      - name: Install required packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install libgbm-dev
-          sudo apt-get install xvfb
-      - name: checkout
-        uses: actions/checkout@master
-
-      - name: cache node_modules
+          node-version: ${{ matrix.node}}
+      - name: Cache Node.js modules
         uses: actions/cache@v1
         with:
-          path: node_modules
-          key: ${{ matrix.os }}-node-v${{ matrix.node }}-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/yarn.lock')) }}
-
+          path: ~/.yarn
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
       - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: yarn
-
+        run: yarn --frozen-lockfile
       - name: Lint
         run: yarn lint
+      - name: Unit tests
+        run: yarn test
+        env:
+          CI: true
 
-      - name: Build Module
-        run: yarn build
+  e2e:
+    runs-on: ubuntu-16.04
+    container: cypress/included:4.9.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node}}
+      - name: Cache Node.js modules
+        uses: actions/cache@v1
+        with:
+          path: ~/.yarn
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Start API
+        env:
+          API_PORT: 3100
+          API_URL: http://localhost:3100
+          NODE_TLS_REJECT_UNAUTHORIZED: 0
+        run: |
+          yarn api &
+          yarn run demo:build
+          yarn run demo:start &
+          npx wait-on 'http://localhost:3000'
+          curl -XGET localhost:3000
+      - name: Run E2E
+        run: yarn e2e
 
-      - name: Build Fixture
-        run: yarn nuxt build tests/fixture
-
-#      - name: Tests
-#        run: yarn jest
-
-      # - name: Coverage
-      #   uses: codecov/codecov-action@v1
-
+  deploy-next:
+    if: github.ref == 'refs/heads/dev'
+    needs: [test,e2e]
+    runs-on: ubuntu-latest
+    steps:
       - name: Publish Next
         run: |
-            if [ "$GIT_REF" = "refs/heads/dev" ] ; then
-              node ./scripts/bump-next
-              yarn clean
-              yarn build
-              echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
-              npm publish
-            fi
+            node ./scripts/bump-next
+            yarn clean
+            yarn build
+            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+            npm publish
         env:
             GIT_REF: ${{ github.ref }}
             NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}

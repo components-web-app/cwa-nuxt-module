@@ -1,13 +1,11 @@
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
-const API_URL_BROWSER = process.env.API_URL_BROWSER || 'https://localhost:8443'
-const API_URL = process.env.API_URL || API_URL_BROWSER
+const API_URL = process.env.API_URL || 'https://localhost:8443'
 
 export default {
   publicRuntimeConfig: {
-    API_URL,
-    API_URL_BROWSER
+    API_URL
   },
   mode: 'universal',
   buildModules: [
