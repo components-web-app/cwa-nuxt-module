@@ -48,23 +48,23 @@
 import consola from 'consola'
 
 export default {
-  data() {
+  data () {
     return {
       routes: []
     }
   },
-  async mounted() {
+  computed: {
+    sortedRoutes () {
+      return [...this.routes].sort(this.dynamicSort('path'))
+    }
+  },
+  async mounted () {
     if (this.$cwa.$storage.getState('routes')) { return }
     try {
       const { data } = await this.$axios.get('/_/routes')
       this.routes = data['hydra:member']
     } catch (err) {
       consola.error(err)
-    }
-  },
-  computed: {
-    sortedRoutes () {
-      return [...this.routes].sort(this.dynamicSort('path'))
     }
   },
   methods: {
