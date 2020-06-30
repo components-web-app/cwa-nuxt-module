@@ -57,11 +57,11 @@ jobs:
         env:
           API_PORT: 3100
           API_URL: http://localhost:3100
+          NODE_TLS_REJECT_UNAUTHORIZED: 0
         run: |
           yarn api &
-          yarn run dev &
-          # wait for nuxt to build
-          sleep 30
+          yarn run demo:build
+          yarn run demo:start &
           npx wait-on 'http://localhost:3000'
           curl -XGET localhost:3000
       - name: Run E2E
