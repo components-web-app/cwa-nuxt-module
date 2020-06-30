@@ -66,19 +66,18 @@ jobs:
       - name: Run E2E
         run: yarn e2e
 
-  deploy:
-    runs-on: ubuntu-latest
+  deploy-next:
+    if: github.ref == 'refs/heads/dev'
     needs: [test,e2e]
+    runs-on: ubuntu-latest
     steps:
       - name: Publish Next
         run: |
-            if [ "$GIT_REF" = "refs/heads/dev" ] ; then
-              node ./scripts/bump-next
-              yarn clean
-              yarn build
-              echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
-              npm publish
-            fi
+            node ./scripts/bump-next
+            yarn clean
+            yarn build
+            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+            npm publish
         env:
             GIT_REF: ${{ github.ref }}
             NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
