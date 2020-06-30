@@ -74,12 +74,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+      - name: Update package name and version number
+        run: node ./scripts/bump-next
+      - name: Build
+        run: |
+          yarn clean
+          yarn build
       - name: Publish Next
         run: |
-            node ./scripts/bump-next
-            yarn install
-            yarn clean
-            yarn build
             echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
             npm publish
         env:
