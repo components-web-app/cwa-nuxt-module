@@ -20,15 +20,15 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: yarn --frozen-lockfile
-      # - name: Publish Next
-      #   run: |
-      #       if [ "$GIT_REF" = "refs/heads/dev" ] ; then
-      #         node ./scripts/bump-next
-      #         yarn clean
-      #         yarn build
-      #         echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
-      #         npm publish
-      #       fi
-      #   env:
-      #       GIT_REF: ${{ github.ref }}
-      #       NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
+      - name: Publish Next
+        run: |
+            if [ "$GIT_REF" = "refs/heads/dev" ] ; then
+              node ./scripts/bump-next
+              yarn clean
+              yarn build
+              echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+              npm publish
+            fi
+        env:
+            GIT_REF: ${{ github.ref }}
+            NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
