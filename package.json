@@ -30,7 +30,7 @@
     "@nuxtjs/auth-next": "^5.0.0-1589207846.e8f33bf",
     "@nuxtjs/axios": "^5.10.3",
     "consola": "^2.11.3",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.19"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.9.6",
