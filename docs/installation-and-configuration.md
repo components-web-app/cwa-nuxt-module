@@ -61,7 +61,7 @@ export default {
   modules: [
     '@nuxtjs/axios',
     '@nuxtjs/auth-next',
-    '@cwamodules/cwa-next'
+    '@cwamodules/nuxt-module-next'
   ],
   router: {
     middleware: ['auth', 'routeLoader']
@@ -106,9 +106,6 @@ export default {
 
       config.resolve.plugins.push(new TsconfigPathsPlugin({ configFile: `${__dirname}/tsconfig.json` }))
     }
-  },
-  alias: {
-    '@cwa/nuxt-module': join(__dirname, 'node_modules/@cwamodules/cwa-next/dist')
   }
 }
 ```
@@ -132,7 +129,6 @@ tsconfig.json
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@cwa/nuxt-module": ["./node_modules/@cwamodules/cwa-next/dist/*"],
       "~/*": [
         "./*"
       ],
