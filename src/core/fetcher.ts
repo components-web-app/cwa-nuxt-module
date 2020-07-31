@@ -85,6 +85,7 @@ export class Fetcher {
   }
 
   public async fetchRoute (path) {
+    this.timer.reset()
     this.timer.start(`Fetch route ${path}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, path)

@@ -1,9 +1,8 @@
 ---
 layout: default
-parent: Components
+parent: Getting Started
 nav_order: 1
 ---
-
 # Components
 
 Getting started with components is easy with this module. You will have a `/components` directory for your nuxt application. Your CCWA specific components will live in a sub-directory. Create for following folder structure:
