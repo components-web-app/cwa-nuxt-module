@@ -13,7 +13,7 @@
         <input v-model="login.password" type="password">
       </div>
       <div>
-        <button type="submit">
+        <button type="submit" :disabled="submitting">
           Submit
         </button>
       </div>
@@ -31,13 +31,15 @@ export default {
         username: '',
         password: ''
       },
-      error: null
+      error: null,
+      submitting: false
     }
   },
   methods: {
-    userLogin () {
+    async userLogin () {
+      this.submitting = true
       this.error = null
-      return this.$auth
+      await this.$auth
         .loginWith('local', {
           data: this.login
         })
@@ -48,6 +50,12 @@ export default {
           }
           this.error = e + ''
         })
+      this.submitting = false
+    }
+  },
+  header () {
+    return {
+      title: 'Login'
     }
   }
 }
