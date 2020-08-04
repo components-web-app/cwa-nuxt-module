@@ -123,7 +123,11 @@ export default class Cwa {
   async updateResource (endpoint: string, data: any, category?: string) {
     const doRequest = async () => {
       try {
-        return await this.ctx.$axios.patch(endpoint, data)
+        return await this.ctx.$axios.$patch(endpoint, data, {
+          headers: {
+            'Content-Type': 'application/merge-patch+json'
+          }
+        })
       } catch (error) {
         Cwa.handleRequestError(error)
       }

@@ -33,7 +33,7 @@ function extendRoutesFn ({ pagesDepth }) {
 }
 
 function applyCss () {
-  const assetsDir = resolve(__dirname, '../core/assets')
+  const assetsDir = resolve(__dirname, '../core/assets/sass')
   this.options.css.push(join(assetsDir, 'style.sass'))
 
   this.extendBuild((config, _) => {
