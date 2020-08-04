@@ -1,13 +1,13 @@
 <template>
   <div class="container login-page">
+    <div class="logo">
+      <cwa-logo />
+      <h1>Admin</h1>
+    </div>
     <div v-if="error" class="notice is-danger">
       {{ error }}
     </div>
     <form @submit.prevent="userLogin">
-      <div class="logo">
-        <cwa-logo />
-        <h1>Admin</h1>
-      </div>
       <div>
         <label>Username</label>
         <input v-model="login.username" type="text">
@@ -84,8 +84,6 @@ export default {
 </script>
 
 <style lang="sass">
-html
-  background: $background-light
 .login-page
   padding: 2rem
   .logo

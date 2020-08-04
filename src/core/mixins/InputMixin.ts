@@ -13,11 +13,13 @@ export default {
     return {
       inputValue: null,
       debouncedFn: null,
-      outdated: false
+      outdated: false,
+      error: null
     }
   },
   watch: {
     inputValue () {
+      this.error = null
       if (this.resource[this.field] === this.inputValue) {
         return
       }
@@ -34,8 +36,12 @@ export default {
   },
   methods: {
     async update () {
-      await this.$cwa.updateResource(this.iri, { [this.field]: this.inputValue }, this.category || null)
-      this.outdated = false
+      try {
+        await this.$cwa.updateResource(this.iri, { [this.field]: this.inputValue }, this.category || null)
+        this.outdated = false
+      } catch (error) {
+        this.error = error
+      }
     }
   }
 }

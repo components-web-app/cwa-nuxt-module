@@ -1,7 +1,12 @@
 <template>
   <div>
     <input v-model="inputValue" @dblclick="$emit('hide')">
-    <span v-if="outdated">saving...</span>
+    <div v-if="outdated">
+      <span v-if="!error">saving...</span>
+      <div v-else class="notice is-danger">
+        {{ error }}
+      </div>
+    </div>
   </div>
 </template>
 
