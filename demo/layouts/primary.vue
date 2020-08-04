@@ -30,14 +30,8 @@
       </button>
     </div>
     <div class="container loading-message">
-      <p v-if="$cwa.loadingRoute" class="loading">
-        Loading Route
-      </p>
-      <p v-else-if="$cwa.$state.error" class="error">
-        {{ $cwa.$resources.error }}
-      </p>
-      <p v-else class="loaded">
-        Route Loaded
+      <p v-if="$cwa.$state.error" class="error">
+        {{ $cwa.$state.error }}
       </p>
     </div>
     <nuxt />
@@ -90,12 +84,8 @@ export default {
 
 <style lang="sass" scoped>
   .loading-message
-    .loading
-      color: $color-warning
     .error
       color: $color-danger
-    .loaded
-      color: $color-success
   .refresh-bar
     display: flex
     justify-content: center

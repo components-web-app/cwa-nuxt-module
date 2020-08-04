@@ -1,0 +1,51 @@
+@import '../../../../node_modules/milligram/src/milligram'
+@import "button"
+@import "form"
+
+@font-face
+  font-family: 'lemonmilk-bold'
+  src: url('../fonts/lemonmilk-bold.woff2') format('woff2'),
+  url('../fonts/lemonmilk-bold.woff') format('woff')
+  font-weight: normal
+  font-style: normal
+
+html
+  font-size: .65rem
+  background: $background-light
+
+pre
+  padding: .75rem
+
+button
+  &.is-warning
+    background: $color-warning
+    color: $color-secondary
+    border-color: darken($color-warning, 5%)
+    &:hover,
+    &:active
+      background: darken($color-warning, 5%)
+  &.is-dark
+    background: $color-secondary
+    color: $color-tertiary
+    border-color: $color-secondary
+    &:hover,
+    &:active
+      background: darken($color-secondary, 5%)
+  &.is-light
+    background: $color-tertiary
+    color: $color-secondary
+    border-color: $color-secondary
+    &:hover,
+    &:active
+      background: darken($color-tertiary, 5%)
+
+
+.notice
+  margin-bottom: 1rem
+  padding: 1rem
+  background: $color-tertiary
+  font-weight: $font-weight-normal
+  &.is-danger
+    background: $color-danger
+    color: $color-tertiary
+    font-weight: $font-weight-semi-bold

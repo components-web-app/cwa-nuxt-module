@@ -42,6 +42,9 @@ export default class DebugTimer {
    * @param {string} name - Label, e.g. "loading file".
    */
   end (name) {
+    if (!this.data[name]) {
+      return
+    }
     this.data[name].end = Date.now()
     this.data[name].total = this.data[name].end - this.data[name].start
   }
