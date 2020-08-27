@@ -1,6 +1,5 @@
 <template>
   <div>
-    <h4>My custom HtmlContent component. See the HTML below. That was easy!</h4>
     <div v-if="!editing" @dblclick="showEditView" v-html="resource.html" />
     <text-input v-else :iri="iri" field="html" @hide="editing = false" />
   </div>

@@ -38,7 +38,7 @@ export default class Cwa {
       {
         $axios: this.ctx.$axios,
         error: this.ctx.error,
-        apiUrl: this.ctx.$config.API_URL,
+        apiUrl: this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL,
         storage
       },
       {
