@@ -1,30 +1,42 @@
 <template>
+  <!-- if the collection exists -->
   <div :class="classes" v-if="resource">
-    <error-component v-if="!sortedComponentPositions.length" message="No components exist in this collection" />
-    <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
-    <div v-if="requestError" class="notice is-danger">{{ requestError }}</div>
-  </div>
-  <component-load-error :class="classes" v-else :message="errorMessage">
-    <!-- v-if causes ssr mis-matched render -->
+    <!-- if there are no components -->
     <client-only v-if="$cwa.isAdmin">
-      <button @click="addComponentCollection">+ Add</button>
-      <div v-if="requestError" class="notice is-danger">{{ requestError }}</div>
+      <component-load-error v-if="!sortedComponentPositions.length">
+        <button @click="displayComponents">
+          + component
+        </button>
+      </component-load-error>
     </client-only>
-  </component-load-error>
+    <!-- else we loop through components -->
+    <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
+
+    <components-list v-if="showComponentsList" @close="showComponentsList = false" @added="componentAdded" :add-data="componentPostData" />
+  </div>
+  <!-- else the collection does not exist -->
+  <client-only v-else-if="$cwa.isAdmin">
+    <component-load-error :class="classes">
+      <!-- v-if causes ssr mis-matched render -->
+      <button @click="addComponentCollection">
+        + {{ location}} collection
+      </button>
+    </component-load-error>
+  </client-only>
 </template>
 
-<script>
-import ComponentLoadError from "@cwa/nuxt-module/core/templates/component-load-error.vue"
+<script lang="ts">
 import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
+import ComponentsList from '@cwa/nuxt-module/core/templates/components-list.vue'
 import ContextMenuMixin from "@cwa/nuxt-module/core/mixins/ContextMenuMixin"
 import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
 
 export default {
   mixins: [ContextMenuMixin, ApiRequestMixin],
   components: {
-    ComponentLoadError,
     ComponentPosition,
-    ErrorComponent: () => import('./component-load-error')
+    ComponentsList,
+    ComponentLoadError: () => import('./component-load-error.vue')
   },
   props: {
     location: {
@@ -40,28 +52,43 @@ export default {
       required: true
     }
   },
+  data() {
+    return {
+      apiRequestCategory: {
+        collection: 'collection'
+      },
+      showComponentsList: false,
+      reloading: false
+    }
+  },
   computed: {
+    componentPostData() {
+      return {
+        componentPositions: [
+          {
+            componentCollection: this.resource['@id']
+          }
+        ]
+      }
+    },
     contextMenuCategory() {
       return `Component Collection (${this.resource ? this.resource.reference : this.location})`
     },
     resource() {
       return this.getCollectionResourceByLocation(this.location, this.pageId)
     },
-    errorMessage() {
-      return `The ComponentCollection resource with location <b>${this.location}</b> was not returned by the API`
-    },
     classes() {
       return [
         'component-collection',
         this.resource ? [this.resource.location, this.resource.reference] : 'not-found',
-        { 'is-deleting': this.apiBusy }
+        { 'is-deleting': this.apiBusy, 'is-reloading': this.reloading }
       ]
     },
     sortedComponentPositions() {
       const positions = []
       for (const iri of this.resource.componentPositions) {
-        const postObj = this.$cwa.resources.ComponentPosition.byId[iri]
-        postObj && positions.push(postObj)
+        const position = this.$cwa.resources.ComponentPosition.byId[iri]
+        position && positions.push(position)
       }
       return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
     },
@@ -75,7 +102,7 @@ export default {
       }
       return {
         'Add component': {
-          callback: this.addComponent
+          callback: this.displayComponents
         },
         'Delete component collection': {
           callback: this.deleteSelf
@@ -95,7 +122,7 @@ export default {
       return null
     },
     async addComponentCollection() {
-      this.startApiRequest()
+      this.startApiRequest(this.apiRequestCategory.collection)
       try {
         await this.$cwa.createResource('/_/component_collections', {
           reference: `${this.pageReference}_${this.location}`,
@@ -103,28 +130,48 @@ export default {
           pages: [this.pageId]
         })
       } catch (err) {
-        this.handleApiError(err)
+        this.handleApiError(err, this.apiRequestCategory.collection)
       }
       this.completeApiRequest()
     },
     async deleteSelf() {
       this.startApiRequest()
       try {
-        await this.$cwa.deleteResource(this.resource['@id'], this.resource['@type'])
+        await this.$cwa.deleteResource(this.resource['@id'])
       } catch (err) {
         this.handleApiError(err)
       }
       this.completeApiRequest()
     },
-    addComponent() {
-      alert('this will add a component to collection ' + this.resource['@id'])
+    async displayComponents() {
+      this.showComponentsList = true
+    },
+    componentAdded() {
+      this.showComponentsList = false
+      this.reloadCollection()
+    },
+    async reloadCollection() {
+      this.reloading = true
+      await this.$cwa.fetcher.fetchComponentCollection(this.resource['@id'])
+      this.reloading = false
     }
   }
 }
 </script>
 
 <style lang="sass" scoped>
+@keyframes loading
+  0%
+    opacity: 1
+  50%
+    opacity: .5
+  100%
+    opacity: 1
 .component-collection
+  transition: opacity .3s
+  opacity: 1
   &.is-deleting
     opacity: .5
+  &.is-reloading
+    animation: loading normal 1s infinite ease-in-out
 </style>

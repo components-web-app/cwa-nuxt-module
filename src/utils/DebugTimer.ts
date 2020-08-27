@@ -29,8 +29,7 @@ export default class DebugTimer {
    */
   start (name) {
     if (this.data[name]) {
-      consola.warn(`Timer for ${name} already exists`)
-      return
+      consola.info(`Timer for ${name} already exists. Previous timing will be lost`)
     }
     this.data[name] = {
       start: Date.now()
@@ -60,6 +59,7 @@ export default class DebugTimer {
     }
 
     consola.debug(str)
+    this.reset()
     return str
   }
 }

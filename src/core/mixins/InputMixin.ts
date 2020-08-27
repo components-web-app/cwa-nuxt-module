@@ -1,3 +1,4 @@
+import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
 import debounce from 'lodash.debounce'
 import ComponentMixin from './ComponentMixin'
 
@@ -41,6 +42,11 @@ export default {
         this.outdated = false
       } catch (error) {
         this.error = error
+        const notification: NotificationEvent = {
+          message: error,
+          level: NotificationLevels.ERROR
+        }
+        this.$root.$emit('cwa-notification', notification)
       }
     }
   }

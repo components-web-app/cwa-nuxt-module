@@ -1,6 +1,6 @@
 <template>
-  <div :class="['notice', { 'is-danger': isDanger }]">
-    <div v-html="message"></div>
+  <div class="component-load-error">
+    <div v-if="message" v-html="message" :class="['notice', { 'is-danger': isDanger }]"></div>
     <slot />
   </div>
 </template>
@@ -10,7 +10,8 @@ export default {
   props: {
     message: {
       type: String,
-      required: true
+      required: false,
+      default: null
     },
     isDanger: {
       type: Boolean,

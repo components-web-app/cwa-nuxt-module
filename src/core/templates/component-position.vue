@@ -1,5 +1,5 @@
 <template>
-  <resource-component-loader v-if="component" :component="component.uiComponent || component['@type']" :iri="componentPosition.component" />
+  <resource-component-loader v-if="component" :component="component.uiComponent || component['@type']" :iri="componentPosition.component" @deleted="$emit('deleted')" />
 </template>
 
 <script>
@@ -16,6 +16,21 @@ export default {
     iri: {
       type: String,
       required: true
+    }
+  },
+  data() {
+    return {
+      componentLoadFailed: false
+    }
+  },
+  async mounted() {
+    if (!this.component) {
+      if (this.$cwa.isUser) {
+        await this.$cwa.fetcher.fetchComponent(this.componentPosition.component)
+      }
+      if (!this.component) {
+        this.componentLoadFailed = true
+      }
     }
   },
   computed: {

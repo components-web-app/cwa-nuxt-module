@@ -1,16 +1,15 @@
+import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
 
 export default {
   data () {
     return {
-      requestError: null,
       apiBusy: false
     }
   },
   methods: {
     startApiRequest () {
       this.apiBusy = true
-      this.requestError = null
       this.destroyContextMenu()
     },
     completeApiRequest () {
@@ -20,11 +19,15 @@ export default {
       })
     },
     handleApiError (error) {
-      if (error instanceof ApiError) {
-        this.requestError = error.message
-        return
+      if (!(error instanceof ApiError)) {
+        throw error
       }
-      throw error
+      const notification: NotificationEvent = {
+        message: error.statusCode + ': ' + error.message,
+        level: NotificationLevels.ERROR,
+        endpoint: error.endpoint
+      }
+      this.$root.$emit('cwa-notification', notification)
     }
   }
 }

@@ -54,7 +54,7 @@ export default {
     allowUnauthorizedTls: true
   },
   build: {
-    extend (config, _) {
+    extend (config) {
       if (!config.resolve) {
         config.resolve = {}
       }

@@ -6,7 +6,7 @@
       </template>
       <template v-else>
         <li class="header" :key="category">{{ category }}</li>
-        <li v-for="({ label, options: { active } }, index) in items" :key="`${label}-${index}`"><a href="#" @click="doCallback(category, index)" :class="{ disabled: active }">{{ label }}</a></li>
+        <li v-for="({ label, options: { active } }, index) in items" :key="`${label}-${index}`"><a href="#" @click.prevent="doCallback(category, index)" :class="{ disabled: active }">{{ label }}</a></li>
       </template>
     </template>
   </ul>

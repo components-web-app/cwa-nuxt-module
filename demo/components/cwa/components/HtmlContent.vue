@@ -1,7 +1,8 @@
 <template>
   <div>
-    <div v-if="!editing" @dblclick="showEditView" v-html="resource.html" />
+    <div v-if="!editing" @dblclick="showEditView" v-html="displayHtml" />
     <text-input v-else :iri="iri" field="html" @hide="editing = false" />
+    published: {{ published }}
   </div>
 </template>
 
@@ -23,6 +24,9 @@ export default {
           callback: this.showEditView
         }
       }
+    },
+    displayHtml () {
+      return this.resource.html || (this.$cwa.isAdmin ? '<p style="font-style: italic">No content</p>' : '')
     }
   },
   methods: {

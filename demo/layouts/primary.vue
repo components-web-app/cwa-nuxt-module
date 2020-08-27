@@ -35,13 +35,16 @@
       </p>
     </div>
     <nuxt />
+    <cwa-api-notifications class="cwa-notifications" />
   </div>
 </template>
 
 <script>
 import consola from 'consola'
+import CwaApiNotifications from '@cwa/nuxt-module/core/templates/cwa-api-notifications/cwa-api-notifications.vue'
 
 export default {
+  components: { CwaApiNotifications },
   data () {
     return {
       routes: []
@@ -131,4 +134,10 @@ export default {
             border: 1px solid $color-primary
             background: $color-initial
             color: $color-primary
+  .cwa-notifications
+    position: absolute
+    bottom: 1rem
+    right: 1rem
+    width: 70vw
+    max-width: 500px
 </style>

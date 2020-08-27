@@ -50,12 +50,22 @@ export class Fetcher {
     }
 
     try {
-      const { data, headers } = await this.ctx.$axios.get(url, { headers: requestHeaders })
+      const { headers, data } = await this.ctx.$axios.get(url, { headers: requestHeaders })
+      this.setDocsUrlFromHeaders(headers)
       this.setMercureHubFromHeaders(headers)
       return data
     } catch (error) {
+      const sanitisedError = AxiosErrorParser(error)
+
+      // for publishable components - when getting a collection the position and component id will exist.
+      // SSR is not authorized to view so it will return a 404. We know it exists as an ID is there
+      // By not throwing an error we can re-fetch client-side
+      if (sanitisedError.statusCode === 404) {
+        return
+      }
+
       // Display error page
-      this.ctx.error(Object.assign({}, AxiosErrorParser(error), {
+      this.ctx.error(Object.assign({}, sanitisedError, {
         endpoint: url
       }))
     } finally {
@@ -64,7 +74,7 @@ export class Fetcher {
     consola.debug(`Fetched ${url}`)
   }
 
-  private async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
+  public async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
     const resource = await this.fetcher({ path, preload })
     if (!resource) {
       return resource
@@ -73,9 +83,9 @@ export class Fetcher {
     return resource
   }
 
-  private fetchCollection ({ paths, category }: {paths: string[], category?: string}, callback) {
+  private fetchCollection ({ paths, preload, category }: {paths: string[], preload?: string[], category?: string}, callback) {
     return bluebird.map(paths, (path) => {
-      return this.fetcher({ path })
+      return this.fetcher({ path, preload })
         .then(resource => ({ resource, path }))
     }, { concurrency: this.options.fetchConcurrency || null })
       .each(({ resource }) => {
@@ -112,15 +122,31 @@ export class Fetcher {
     const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
     this.ctx.storage.setState('layout', layoutResponse.reference)
 
-    await this.fetchCollection({ paths: [...pageResponse.componentCollections, ...layoutResponse.componentCollections] }, (componentCollection) => {
-      return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
-        return this.fetchItem({ path: componentPosition.component, category: StoreCategories.Component })
-      })
-    })
+    await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
     this.ctx.storage.setCurrentRoute(routeResponse['@id'])
     this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
     this.timer.end(`Fetch route ${path}`)
     this.timer.print()
+  }
+
+  private fetchComponentCollections (paths) {
+    return this.fetchCollection({ paths, preload: ['/componentPositions/*/component'] }, (componentCollection) => {
+      return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
+        return this.fetchComponent(componentPosition.component)
+      })
+    })
+  }
+
+  public async fetchComponentCollection (path) {
+    this.timer.reset()
+    await this.fetchComponentCollections([path])
+    this.initMercure(this.ctx.storage.state.resources.current)
+  }
+
+  public async fetchComponent (path) {
+    this.timer.reset()
+    await this.fetchItem({ path, category: StoreCategories.Component })
+    this.initMercure(this.ctx.storage.state.resources.current)
   }
 
   private async fetchPage (routeResponse) {
@@ -138,6 +164,28 @@ export class Fetcher {
     return this.fetchItem({ path: page })
   }
 
+  private setDocsUrlFromHeaders (headers) {
+    if (this.ctx.storage.state.docsUrl) { return }
+
+    const link = headers.link
+    if (!link) {
+      consola.warn('No Link header found while saving documentation url.')
+      return
+    }
+
+    const matches = /<(.+)>; rel="http:\/\/www.w3.org\/ns\/hydra\/core#apiDocumentation"/.exec(
+      link
+    )
+    if (matches === null) {
+      consola.error(
+        'The "Link" HTTP header is not of the type "http://www.w3.org/ns/hydra/core#apiDocumentation".'
+      )
+    }
+
+    consola.log('docs url set', matches[1])
+    this.ctx.storage.setState('docsUrl', matches[1])
+  }
+
   /**
    * Mercure
    */
@@ -146,22 +194,23 @@ export class Fetcher {
 
     const link = headers.link
     if (!link) {
-      consola.warn('No Link header found.')
+      consola.warn('No Link header found while saving mercure hub.')
       return
     }
 
-    const match = link.match(/<([^>]+)>;\s+rel="mercure".*/)
-    if (!match || !match[1]) {
+    const matches = link.match(/<([^>]+)>;\s+rel="mercure".*/)
+    if (!matches || !matches[1]) {
       consola.log('No mercure rel in link header.')
       return
     }
 
-    consola.log('mercure hub set', match[1])
-    this.ctx.storage.setState('mercureHub', match[1])
+    consola.log('mercure hub set', matches[1])
+    this.ctx.storage.setState('mercureHub', matches[1])
   }
 
   public initMercure (currentResources) {
-    if ((this.eventSource && this.eventSource.readyState !== 2) || !process.client) { return }
+    if (!process.client) { return }
+
     let hubUrl = null
 
     try {
@@ -171,10 +220,23 @@ export class Fetcher {
       return
     }
 
+    // Refresh the topics
+    if (this.eventSource && this.eventSource.readyState !== 2) {
+      if (this.eventSource.url === hubUrl) {
+        return
+      }
+      consola.info('Closing Mercure event source to re-open with latest topics')
+      this.eventSource.close()
+    }
+
     this.eventSource = new EventSource(hubUrl)
-    this.eventSource.onmessage = (messageEvent) => {
+    this.eventSource.onmessage = (messageEvent: MessageEvent) => {
       const data = JSON.parse(messageEvent.data)
-      this.lastEventId = data.id
+      if (Object.keys(data).length === 1 && data['@id']) {
+        this.ctx.storage.deleteResource(data['@id'])
+        return
+      }
+      this.lastEventId = messageEvent.lastEventId
       this.ctx.storage.setResource({
         isNew: true,
         resource: data
