@@ -1,4 +1,4 @@
-import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
+import { NotificationEvent, NotificationLevels } from '../templates/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
 
 export default {

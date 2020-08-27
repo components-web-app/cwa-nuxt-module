@@ -1,5 +1,5 @@
-import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
 import debounce from 'lodash.debounce'
+import { NotificationEvent, NotificationLevels } from '../templates/cwa-api-notifications/types'
 import ComponentMixin from './ComponentMixin'
 
 export default {
