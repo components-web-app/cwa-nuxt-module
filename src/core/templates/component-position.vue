@@ -1,5 +1,9 @@
 <template>
-  <resource-component-loader v-if="component" :component="component.uiComponent || component['@type']" :iri="componentPosition.component" @deleted="$emit('deleted')" />
+  <resource-component-loader
+    v-if="component" :component="component.uiComponent || component['@type']"
+    :iri="componentPosition.component"
+    @deleted="$emit('deleted')"
+  />
 </template>
 
 <script>

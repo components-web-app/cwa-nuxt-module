@@ -10,7 +10,13 @@
       </component-load-error>
     </client-only>
     <!-- else we loop through components -->
-    <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
+    <component
+      :is="$cwa.isAdmin ? 'draggable' : 'div'" v-model="sortedComponentPositions"
+      :group="`collection-${resource['@id']}`"
+      @change="draggableChanged"
+    >
+      <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
+    </component>
 
     <components-list v-if="showComponentsList" @close="showComponentsList = false" @added="componentAdded" :add-data="componentPostData" />
   </div>
@@ -36,7 +42,8 @@ export default {
   components: {
     ComponentPosition,
     ComponentsList,
-    ComponentLoadError: () => import('./component-load-error.vue')
+    ComponentLoadError: () => import('./component-load-error.vue'),
+    Draggable: () => import('vuedraggable'),
   },
   props: {
     location: {
@@ -58,7 +65,8 @@ export default {
         collection: 'collection'
       },
       showComponentsList: false,
-      reloading: false
+      reloading: false,
+      previousSortedComponentPositions: null
     }
   },
   computed: {
@@ -84,13 +92,30 @@ export default {
         { 'is-deleting': this.apiBusy, 'is-reloading': this.reloading }
       ]
     },
-    sortedComponentPositions() {
-      const positions = []
-      for (const iri of this.resource.componentPositions) {
-        const position = this.$cwa.resources.ComponentPosition.byId[iri]
-        position && positions.push(position)
+    sortedComponentPositions: {
+      get() {
+        const positions = []
+        for (const iri of this.resource.componentPositions) {
+          const position = this.$cwa.resources.ComponentPosition.byId[iri]
+          position && positions.push(position)
+        }
+        return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
+      },
+      set: function (newIriArray) {
+        this.previousSortedComponentPositions = []
+        this.sortedComponentPositions.forEach(iri => {
+          this.previousSortedComponentPositions.push({
+            iri,
+            sortValue: this.$cwa.resources.ComponentPosition.byId[iri].sortValue
+          })
+        })
+
+        for (const [index, iri] of newIriArray.entries()) {
+          const position = this.$cwa.resources.ComponentPosition.byId[iri]
+          const newPosition = Object.assign({}, position, {sortValue: index})
+          this.$cwa.saveResource(newPosition)
+        }
       }
-      return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
     },
     defaultContextMenuData() {
       if (!this.resource) {
@@ -153,6 +178,13 @@ export default {
     async reloadCollection() {
       this.reloading = true
       await this.$cwa.fetcher.fetchComponentCollection(this.resource['@id'])
+      this.reloading = false
+    },
+    async draggableChanged({ moved }) {
+      this.reloading = true
+      const previousPosition = this.previousSortedComponentPositions[moved.newIndex]
+      await this.$cwa.updateResource(moved.element, { sortValue: previousPosition.sortValue })
+      this.previousSortedComponentPositions = null
       this.reloading = false
     }
   }

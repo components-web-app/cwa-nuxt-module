@@ -209,7 +209,7 @@ export class Fetcher {
   }
 
   public initMercure (currentResources) {
-    if (!process.client) { return }
+    if (!process.client || !currentResources.length) { return }
 
     let hubUrl = null
 
