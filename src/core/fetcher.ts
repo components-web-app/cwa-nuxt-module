@@ -145,8 +145,9 @@ export class Fetcher {
 
   public async fetchComponent (path) {
     this.timer.reset()
-    await this.fetchItem({ path, category: StoreCategories.Component })
+    const component = await this.fetchItem({ path, category: StoreCategories.Component })
     this.initMercure(this.ctx.storage.state.resources.current)
+    return component
   }
 
   private async fetchPage (routeResponse) {

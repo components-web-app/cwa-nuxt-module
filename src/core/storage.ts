@@ -119,7 +119,9 @@ export class Storage {
 
           currentResourceState.byId[payload.id] = payload.resource
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
-          !payload.isNew && currentResourceState.currentIds.push(payload.id)
+          if (!payload.isNew && !currentResourceState.currentIds.includes(payload.id)) {
+            currentResourceState.currentIds.push(payload.id)
+          }
           // consola.trace(currentResourceState)
           Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
 
@@ -188,9 +190,12 @@ export class Storage {
   }
 
   setResource ({ resource, isNew, category }: { resource: object, isNew?: boolean, category?: string }) {
+    const id = resource['@id']
+    category = category || this.getCategoryFromIri(id)
+    const name = resource['@type'] || this.getTypeFromIri(id, category)
     this.ctx.store.commit(this.options.vuex.namespace + '/SET_RESOURCE', {
-      id: resource['@id'],
-      name: resource['@type'],
+      id,
+      name,
       isNew: isNew || false,
       resource,
       category

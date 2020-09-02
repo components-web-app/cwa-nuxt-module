@@ -1,12 +1,9 @@
-import { StoreCategories } from '../storage'
 import ResourceMixin from './ResourceMixin'
 import ContextMenuMixin from './ContextMenuMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 
-const category = StoreCategories.Component
-
 export default {
-  mixins: [ResourceMixin(category), ContextMenuMixin, ApiRequestMixin],
+  mixins: [ResourceMixin, ContextMenuMixin, ApiRequestMixin],
   computed: {
     metadata () {
       return this.resource._metadata || {}

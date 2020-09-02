@@ -51,7 +51,7 @@ export default class Cwa {
     }
   }
 
-  private initMercure () {
+  initMercure () {
     !cwaRouteDisabled(this.ctx.route) && this.fetcher.initMercure(this.$state.resources.current)
   }
 
@@ -98,7 +98,6 @@ export default class Cwa {
   /**
    * API Requests
    */
-
   private static handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
     consola.error(axiosError)
@@ -164,6 +163,8 @@ export default class Cwa {
 
     // the resource may be different - publishable resources return the new draft resource
     const newResource = await doRequest()
+    // we may get a different resource back if it is 'publishable'
+    newResource['@id'] = endpoint
     this.saveResource(newResource, category)
     this.initMercure()
     return newResource
