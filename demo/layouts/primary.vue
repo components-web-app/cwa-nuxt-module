@@ -2,12 +2,7 @@
   <div>
     <div class="navbar">
       <div class="container">
-        <ul v-if="routes" class="row">
-          <li v-for="route of sortedRoutes" :key="route['@id']" class="column">
-            <nuxt-link :to="route.path" :class="{ selected: route.path === $route.path }">
-              {{ route.name }}
-            </nuxt-link>
-          </li>
+        <ul class="row">
           <li class="column">
             <button v-if="$auth.loggedIn" @click="$auth.logout('local')">
               Logout
@@ -15,11 +10,6 @@
             <nuxt-link v-else to="/login" tag="button">
               Login
             </nuxt-link>
-          </li>
-        </ul>
-        <ul v-else>
-          <li>
-            <span>Loading routes</span>
           </li>
         </ul>
       </div>
@@ -40,30 +30,10 @@
 </template>
 
 <script>
-import consola from 'consola'
 import CwaApiNotifications from '@cwa/nuxt-module/core/templates/cwa-api-notifications/cwa-api-notifications.vue'
 
 export default {
   components: { CwaApiNotifications },
-  data () {
-    return {
-      routes: []
-    }
-  },
-  computed: {
-    sortedRoutes () {
-      return [...this.routes].sort(this.dynamicSort('path'))
-    }
-  },
-  async mounted () {
-    if (this.$cwa.$storage.getState('routes')) { return }
-    try {
-      const { data } = await this.$axios.get('/_/routes')
-      this.routes = data['hydra:member']
-    } catch (err) {
-      consola.error(err)
-    }
-  },
   methods: {
     dynamicSort (property) {
       let sortOrder = 1
@@ -97,7 +67,6 @@ export default {
       margin: 0 0 0 1rem
   .navbar
     margin-bottom: 1.25rem
-    background-color: $color-secondary
     padding: 0 .75rem
     ul.row
       list-style-type: none

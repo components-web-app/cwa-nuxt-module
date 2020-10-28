@@ -3,6 +3,7 @@ import consola from 'consola'
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
+import ApiRequestError from '../inc/api-error'
 import Storage, { StoreCategories } from './storage'
 
 export class Fetcher {
@@ -60,18 +61,13 @@ export class Fetcher {
       // for publishable components - when getting a collection the position and component id will exist.
       // SSR is not authorized to view so it will return a 404. We know it exists as an ID is there
       // By not throwing an error we can re-fetch client-side
-      if (sanitisedError.statusCode === 404) {
-        return
-      }
-
-      // Display error page
-      this.ctx.error(Object.assign({}, sanitisedError, {
-        endpoint: url
-      }))
+      // However, when fetching a route that does not exist, we need an error...
+      // Changed this functionality here to throw an exception so it can be handled by the calling function
+      throw new ApiRequestError(sanitisedError.message, sanitisedError.statusCode, sanitisedError.endpoint)
     } finally {
       this.timer.end(`Fetching ${url}`)
+      consola.debug(`Fetched ${url}`)
     }
-    consola.debug(`Fetched ${url}`)
   }
 
   public async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
@@ -100,33 +96,35 @@ export class Fetcher {
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, path)
     this.eventSource && this.eventSource.close()
-    const routeResponse = await this.fetchItem(
-      {
-        path: `/_/routes/${path}`,
-        preload: [
-          '/page/layout/componentCollections/*/componentPositions/*/component',
-          '/page/componentCollections/*/componentPositions/*/component',
-          '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
-          '/pageData/page/componentCollections/*/componentPositions/*/component'
-        ]
-      })
+    try {
+      const routeResponse = await this.fetchItem(
+        {
+          path: `/_/routes/${path}`,
+          preload: [
+            '/page/layout/componentCollections/*/componentPositions/*/component',
+            '/page/componentCollections/*/componentPositions/*/component',
+            '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
+            '/pageData/page/componentCollections/*/componentPositions/*/component'
+          ]
+        })
 
-    if (!routeResponse) {
-      return
+      const pageResponse = await this.fetchPage(routeResponse)
+      if (!pageResponse) {
+        return
+      }
+      const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+      this.ctx.storage.setState('layout', layoutResponse.reference)
+
+      await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
+      this.ctx.storage.setCurrentRoute(routeResponse['@id'])
+      this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+    } catch (error) {
+      // Display error page
+      this.ctx.error(error)
+    } finally {
+      this.timer.end(`Fetch route ${path}`)
+      this.timer.print()
     }
-
-    const pageResponse = await this.fetchPage(routeResponse)
-    if (!pageResponse) {
-      return
-    }
-    const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
-    this.ctx.storage.setState('layout', layoutResponse.reference)
-
-    await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
-    this.ctx.storage.setCurrentRoute(routeResponse['@id'])
-    this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
-    this.timer.end(`Fetch route ${path}`)
-    this.timer.print()
   }
 
   private fetchComponentCollections (paths) {

@@ -1,6 +1,6 @@
 import consola from 'consola'
 import type { CwaOptions } from '../'
-import ApiError from '../inc/api-error'
+import ApiRequestError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import { cwaRouteDisabled } from '../utils'
 import MissingDataError from '../inc/missing-data-error'
@@ -101,7 +101,7 @@ export default class Cwa {
   private static handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
     consola.error(axiosError)
-    throw new ApiError(axiosError.message, axiosError.statusCode, axiosError.endpoint)
+    throw new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint)
   }
 
   async getApiDocumentation () {

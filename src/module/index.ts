@@ -145,9 +145,14 @@ const cwaModule = <Module> function () {
   }
 
   this.addLayout({
-    src: resolve(__dirname, '../core/templates/cwa-error.vue'),
-    fileName: join('cwa', 'cwa-error.vue')
+    src: resolve(__dirname, '../core/templates/layouts/cwa-error.vue'),
+    fileName: join('cwa', 'layouts', 'cwa-error.vue')
   }, 'error')
+
+  this.addLayout({
+    src: resolve(__dirname, '../core/templates/layouts/cwa-default.vue'),
+    fileName: join('cwa', 'layouts', 'cwa-default.vue')
+  }, 'cwa-default')
 
   this.extendRoutes(extendRoutesFn.call(this, { pagesDepth: options.pagesDepth }))
 
