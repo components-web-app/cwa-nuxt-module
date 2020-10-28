@@ -1,7 +1,7 @@
 <template>
-  <div class="__nuxt-error-page">
-    <div class="error">
-      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" fill="#DBE1EC" viewBox="0 0 48 48">
+  <div class="cwa-error-page">
+    <div class="container">
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" fill="currentColor" viewBox="0 0 48 48">
         <path d="M22 30h4v4h-4zm0-16h4v12h-4zm1.99-10C12.94 4 4 12.95 4 24s8.94 20 19.99 20S44 35.05 44 24 35.04 4 23.99 4zM24 40c-8.84 0-16-7.16-16-16S15.16 8 24 8s16 7.16 16 16-7.16 16-16 16z" />
       </svg>
 
@@ -10,28 +10,31 @@
         {{ error.endpoint }}
       </p>
       <p v-if="statusCode === 404" class="description">
-        <NuxtLink v-if="$cwa.isAdmin" class="error-link" to="/">Go to admin</NuxtLink>
-        <NuxtLink v-else class="error-link" to="/"><%= messages.back_to_home %></NuxtLink>
+        <NuxtLink class="error-link" to="/"><%= messages.back_to_home %></NuxtLink>
       </p>
       <% if(debug) { %>
       <p class="description" v-else><%= messages.client_error_details %></p>
       <% } %>
-
+    </div>
+    <div class="footer">
       <div class="logo">
-        <a href="https://cwa.rocks" target="_blank" rel="noopener">
+        <cwa-nuxt-link to="https://cwa.rocks" target="_blank" rel="noopener">
           <cwa-logo class="cwa-logo" />
           <span class="sr-only">Components Web App</span>
-        </a>
+        </cwa-nuxt-link>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import CwaLogo from '@cwa/nuxt-module/core/templates/cwa-logo.vue'
+import CwaLogo from '@cwa/nuxt-module/core/templates/components/cwa-logo.vue'
+import CwaNuxtLink from '@cwa/nuxt-module/core/templates/components/cwa-nuxt-link.vue'
+
 export default {
   name: 'NuxtError',
-  components: {CwaLogo},
+  components: {CwaNuxtLink, CwaLogo},
+  layout: 'cwa-default',
   props: {
     error: {
       type: Object,
@@ -60,57 +63,17 @@ export default {
 }
 </script>
 
-<style>
-.__nuxt-error-page .cwa-logo {
-  width: auto;
-  height: 30px;
-}
-  .__nuxt-error-page {
-    padding: 1rem;
-    background: #F7F8FB;
-    color: #47494E;
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    font-family: sans-serif;
-    font-weight: 100 !important;
-    -ms-text-size-adjust: 100%;
-    -webkit-text-size-adjust: 100%;
-    -webkit-font-smoothing: antialiased;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  }
-  .__nuxt-error-page .error {
-    max-width: 450px;
-  }
-  .__nuxt-error-page .title {
-    font-size: 1.5rem;
-    margin-top: 15px;
-    color: #47494E;
-    margin-bottom: 8px;
-  }
-  .__nuxt-error-page .description {
-    color: #7F828B;
-    line-height: 21px;
-    margin-bottom: 10px;
-  }
-  .__nuxt-error-page .description.url {
-    font-size: 12px
-  }
-  .__nuxt-error-page a {
-    color: #7F828B !important;
-    text-decoration: none;
-  }
-  .__nuxt-error-page .logo {
-    position: fixed;
-    left: 50%;
-    bottom: 12px;
-    text-align: left;
-    transform: translateX(-50%);
-  }
+<style lang="sass">
+.cwa-error-page
+  display: flex
+  flex-direction: column
+  text-align: center
+  height: 100%
+  > .container
+    padding-top: 5rem
+    flex-grow: 1
+  .cwa-logo
+    width: auto
+    height: 30px
+    margin-bottom: 2rem
 </style>

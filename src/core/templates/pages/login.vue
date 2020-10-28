@@ -18,7 +18,7 @@
           <input v-model="login.password" type="password" placeholder="******">
         </div>
         <div>
-          <button class="is-dark" type="submit" :disabled="submitting">
+          <button class="is-light" type="submit" :disabled="submitting">
             <span>Login</span>
             <span class="icon">
               <svg width="26px" height="34px" viewBox="0 0 26 34" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -35,8 +35,9 @@
             </span>
           </button>
         </div>
-        <div>
-          <span>Forgot your password?</span>
+        <div class="login-nav">
+          <nuxt-link to="/">< Back to website</nuxt-link>
+          <nuxt-link to="/">Forgot your password?</nuxt-link>
         </div>
       </form>
     </div>
@@ -44,10 +45,10 @@
 </template>
 
 <script>
-import CwaLogo from '../cwa-logo.vue'
+import CwaLogo from '../components/cwa-logo.vue'
 export default {
   cwa: false,
-  layout: 'cwa-default',
+  layout: 'cwa-empty',
   components: {CwaLogo},
   data () {
     return {
@@ -127,4 +128,13 @@ export default {
       margin-right: calc(-.5em - 1px)
       svg
         width: 1em
+  .login-nav
+    margin-top: 2rem
+    padding-top: 1rem
+    display: flex
+    justify-content: space-between
+    border-top: 1px solid rgba($color-text-light, .6)
+    a
+      &:not(:hover)
+        opacity: .6
 </style>

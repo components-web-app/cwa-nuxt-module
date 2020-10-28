@@ -1,0 +1,38 @@
+@import ../../../../../node_modules/milligram/src/Button
+
+.button,
+button,
+input[type='button'],
+input[type='reset'],
+input[type='submit']
+  text-transform: none
+  height: 2.5em
+  line-height: 1.5
+  vertical-align: top
+  padding-top: calc(.5em - 1px)
+  padding-bottom: calc(.5em - 1px)
+  justify-content: center
+  align-items: center
+  display: inline-flex
+  border-radius: 1.4rem
+  &.is-warning
+    background: $color-warning
+    color: $color-secondary
+    border-color: darken($color-warning, 5%)
+    &:hover,
+    &:active
+      background: darken($color-warning, 5%)
+  &.is-dark
+    background: $background-dark
+    color: $color-text-light
+    border-color: $background-dark
+    &:hover,
+    &:active
+      background: darken($background-dark, 5%)
+  &.is-light
+    background: $background-light
+    color: $background-dark
+    border-color: $background-light
+    &:hover,
+    &:active
+      background: darken($background-light, 5%)

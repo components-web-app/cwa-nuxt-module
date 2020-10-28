@@ -141,6 +141,8 @@ const cwaModule = <Module> function () {
     fetchConcurrency: 10,
     pagesDepth: 3,
     allowUnauthorizedTls: false,
+    websiteName: 'Unnamed CWA Site',
+    version: null,
     ...this.options.cwa
   }
 
@@ -153,6 +155,11 @@ const cwaModule = <Module> function () {
     src: resolve(__dirname, '../core/templates/layouts/cwa-default.vue'),
     fileName: join('cwa', 'layouts', 'cwa-default.vue')
   }, 'cwa-default')
+
+  this.addLayout({
+    src: resolve(__dirname, '../core/templates/layouts/cwa-empty.vue'),
+    fileName: join('cwa', 'layouts', 'cwa-empty.vue')
+  }, 'cwa-empty')
 
   this.extendRoutes(extendRoutesFn.call(this, { pagesDepth: options.pagesDepth }))
 

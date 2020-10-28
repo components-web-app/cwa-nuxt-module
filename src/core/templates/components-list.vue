@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts">
-import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
+import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
 import {StoreCategories} from "../storage";
 import ApiError from "../../inc/api-error";
 

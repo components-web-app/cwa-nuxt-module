@@ -1,5 +1,6 @@
 <template>
   <div>
+    <cwa-admin-bar />
     <div class="navbar">
       <div class="container">
         <ul class="row">
@@ -14,11 +15,13 @@
         </ul>
       </div>
     </div>
+
     <div v-if="$cwa.resourcesOutdated" class="container refresh-bar">
       <span>The content on this page is outdated.</span> <button class="is-warning" @click="$cwa.mergeNewResources()">
         Update page
       </button>
     </div>
+
     <div class="container loading-message">
       <p v-if="$cwa.$state.error" class="error">
         {{ $cwa.$state.error }}
@@ -30,10 +33,11 @@
 </template>
 
 <script>
-import CwaApiNotifications from '@cwa/nuxt-module/core/templates/cwa-api-notifications/cwa-api-notifications.vue'
+import CwaApiNotifications from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/cwa-api-notifications.vue'
+import CwaAdminBar from '@cwa/nuxt-modulecore/templates/components/cwa-admin-bar.vue'
 
 export default {
-  components: { CwaApiNotifications },
+  components: { CwaAdminBar, CwaApiNotifications },
   methods: {
     dynamicSort (property) {
       let sortOrder = 1

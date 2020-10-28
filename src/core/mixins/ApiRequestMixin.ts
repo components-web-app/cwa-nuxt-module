@@ -1,4 +1,4 @@
-import { NotificationEvent, NotificationLevels } from '../templates/cwa-api-notifications/types'
+import { NotificationEvent, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
 
 export default {

@@ -1,61 +1,23 @@
-@import '~milligram/src/milligram'
-@import "button"
-@import "form"
+// @import ~milligram/src/_Blockquote
+// @import ~milligram/src/_Code
+// @import ~milligram/src/_Divider
+@import ~milligram/src/_List
+@import ~milligram/src/_Spacing
+// @import ~milligram/src/_Table
+@import ~milligram/src/_Typography
+// @import ~milligram/src/_Image
+// @import ~milligram/src/_Utility
 
-@font-face
-  font-family: 'lemonmilk'
-  src: url('../fonts/lemonmilk-bold.woff2') format('woff2'),
-  url('../fonts/lemonmilk-bold.woff') format('woff')
-  font-weight: $font-weight-bold
-  font-style: normal
+@import "milligram/Grid"
+@import "milligram/Base"
+@import "milligram/Button"
+@import "milligram/Form"
+@import "milligram/Link"
 
-@font-face
-  font-family: 'lemonmilk'
-  src: url('../fonts/lemonmilk-medium.woff2') format('woff2'),
-  url('../fonts/lemonmilk-medium.woff') format('woff')
-  font-weight: $font-weight-semi-bold
-  font-style: normal
-
-@font-face
-  font-family: 'lemonmilk'
-  src: url('../fonts/lemonmilk-regular.woff2') format('woff2'),
-  url('../fonts/lemonmilk-regular.woff') format('woff')
-  font-weight: $font-weight-normal
-  font-style: normal
-
-html
-  font-size: .65rem
-  background: $background-light
-
-body
-  margin: 0
+@import "Fonts"
 
 pre
   padding: .75rem
-
-button
-  &.is-warning
-    background: $color-warning
-    color: $color-secondary
-    border-color: darken($color-warning, 5%)
-    &:hover,
-    &:active
-      background: darken($color-warning, 5%)
-  &.is-dark
-    background: $color-secondary
-    color: $color-tertiary
-    border-color: $color-secondary
-    &:hover,
-    &:active
-      background: darken($color-secondary, 5%)
-  &.is-light
-    background: $color-tertiary
-    color: $color-secondary
-    border-color: $color-secondary
-    &:hover,
-    &:active
-      background: darken($color-tertiary, 5%)
-
 
 .notice
   margin-bottom: 1rem
@@ -77,3 +39,6 @@ button
   width: 1px
   height: 1px
   overflow: hidden
+
+section.page
+  padding: 2rem 0

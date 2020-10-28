@@ -1,5 +1,5 @@
 import debounce from 'lodash.debounce'
-import { NotificationEvent, NotificationLevels } from '../templates/cwa-api-notifications/types'
+import { NotificationEvent, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
 import ComponentMixin from './ComponentMixin'
 
 export default {
