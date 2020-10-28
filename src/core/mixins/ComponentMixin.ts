@@ -1,37 +1,35 @@
-import consola from 'consola'
-import { StoreCategories } from '../storage'
 import ResourceMixin from './ResourceMixin'
-
-const category = StoreCategories.Component
+import ContextMenuMixin from './ContextMenuMixin'
+import ApiRequestMixin from './ApiRequestMixin'
 
 export default {
-  mixins: [ResourceMixin],
-  data () {
-    return {
-      defaultContextMenuData: {
-        Delete: {
-          callback: this.deleteSelf
+  mixins: [ResourceMixin, ContextMenuMixin, ApiRequestMixin],
+  computed: {
+    metadata () {
+      return this.resource._metadata || {}
+    },
+    publishable () {
+      return 'published' in this.metadata
+    },
+    published () {
+      return this.publishable ? this.metadata.published : true
+    },
+    defaultContextMenuData () {
+      return {
+        'Delete component': {
+          callback: this.delete
         }
       }
     }
   },
-  computed: {
-    resource () {
-      const type = this.$cwa.$storage.getTypeFromIri(this.iri, category)
-      if (!type) {
-        consola.warn(`Could not resolve a resource type for iri ${this.iri} in the category ${category}`)
-        return null
-      }
-      consola.debug(`Resolved resource type for iri ${this.iri} in the category ${category} to ${type}`)
-      return this.$cwa.resources[type].byId[this.iri]
-    },
-    contextMenuCategory () {
-      return `Component (${this.resource.uiComponent || this.resource['@type']})`
-    }
-  },
   methods: {
-    deleteSelf () {
-      this.$cwa.deleteResource(this.iri)
+    async delete () {
+      try {
+        await this.$cwa.deleteResource(this.iri)
+        this.$emit('deleted')
+      } catch (error) {
+        this.handleApiError(error)
+      }
     }
   }
 }

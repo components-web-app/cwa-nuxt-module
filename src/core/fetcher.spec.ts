@@ -19,7 +19,11 @@ describe('fetcher', () => {
         return state[key]
       }),
       state: {
-        mercureHub: null
+        mercureHub: null,
+        resources: {
+          new: {},
+          current: {}
+        }
       },
       setResource: jest.fn(),
       setCurrentRoute: jest.fn()

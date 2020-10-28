@@ -10,7 +10,7 @@
 <script>
 // if you want to use nuxt functions specific to pages such
 // as asyncData and middleware extend the page template
-import Page from '@cwa/nuxt-module/core/templates/page'
+import Page from '@cwa/nuxt-module/core/templates/page.ts'
 
 export default {
   extends: Page

@@ -29,8 +29,7 @@ export default class DebugTimer {
    */
   start (name) {
     if (this.data[name]) {
-      consola.warn(`Timer for ${name} already exists`)
-      return
+      consola.info(`Timer for ${name} already exists. Previous timing will be lost`)
     }
     this.data[name] = {
       start: Date.now()
@@ -42,6 +41,9 @@ export default class DebugTimer {
    * @param {string} name - Label, e.g. "loading file".
    */
   end (name) {
+    if (!this.data[name]) {
+      return
+    }
     this.data[name].end = Date.now()
     this.data[name].total = this.data[name].end - this.data[name].start
   }
@@ -57,6 +59,7 @@ export default class DebugTimer {
     }
 
     consola.debug(str)
+    this.reset()
     return str
   }
 }

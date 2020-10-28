@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "tsc && yarn copy-files",
-    "copy-files": "copyfiles -u 1 src/**/*.vue src/**/*.sass dist/",
+    "copy-files": "copyfiles -u 1 src/**/*.vue src/**/*.sass src/core/assets/fonts/* dist/",
     "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
     "dev": "nuxt-ts demo",
     "lint": "eslint --ext .ts,.js,.vue .",
@@ -38,13 +38,16 @@
     "bluebird": "^3.7.2",
     "consola": "^2.13.0",
     "css-loader": "^3.6.0",
+    "lodash.debounce": "^4.0.8",
     "milligram": "^1.4.0",
+    "moment": "^2.27.0",
     "node-sass": "^4.14.1",
     "postcss-loader": "^3.0.0",
     "sass-loader": "^8.0.2",
     "sass-resources-loader": "^2.0.3",
     "style-loader": "^1.2.1",
-    "tsconfig-paths-webpack-plugin": "^3.2.0"
+    "tsconfig-paths-webpack-plugin": "^3.2.0",
+    "vuedraggable": "^2.24.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.9.6",
@@ -53,6 +56,7 @@
     "@nuxt/typescript-build": "^0.6.6",
     "@nuxt/typescript-runtime": "^0.4.6",
     "@nuxtjs/eslint-config-typescript": "^1.0.2",
+    "@nuxtjs/style-resources": "^1.0.0",
     "@types/node": "^12.12.47",
     "@types/node-sass": "^4.11.1",
     "all-contributors-cli": "^6.16.0",
@@ -66,8 +70,11 @@
     "jsdom": "^16.2.2",
     "mock-json-schema": "^1.0.8",
     "nuxt-edge": "^2.13.0-26467214.85383688",
+    "quill": "^1.3.7",
     "ssl-root-cas": "^1.3.1",
     "standard-version": "^8.0.0",
+    "stylus": "^0.54.8",
+    "stylus-loader": "^3.0.2",
     "typescript": "~3.8.3"
   }
 }

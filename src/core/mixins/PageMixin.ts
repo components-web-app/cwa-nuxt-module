@@ -1,7 +1,9 @@
-import ResourceMixin from './ResourceMixin'
+import ComponentCollection from '../templates/component-collection.vue'
+import IriMixin from './IriMixin'
 
 const mixin = {
-  mixins: [ResourceMixin],
+  components: { ComponentCollection },
+  mixins: [IriMixin],
   computed: {
     resource () {
       return this.$cwa.resources.Page.byId[this.iri]

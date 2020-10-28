@@ -40,29 +40,41 @@ export class Storage {
           Vue.set(state, payload.key, payload.value)
         },
         DELETE_RESOURCE (state, payload) {
-          ['new', 'current'].forEach((stateName) => {
-            const resourceState = state.resources[stateName]
-            if (!resourceState) {
-              return
-            }
-            const namedResources = resourceState[payload.name]
-            if (!namedResources) {
-              return
-            }
+          const doDeleteResource = (state, payload) => {
+            ['new', 'current'].forEach((stateName) => {
+              const resourceState = state.resources[stateName]
+              if (!resourceState) {
+                return
+              }
+              const namedResources = resourceState[payload.name]
+              if (!namedResources) {
+                return
+              }
 
-            const allIdsIndex = namedResources.allIds.indexOf(payload.id)
-            if (allIdsIndex !== -1) {
-              namedResources.allIds.slice(allIdsIndex, 1)
-              Vue.delete(namedResources.byId, payload.id)
+              const allIdsIndex = namedResources.allIds.indexOf(payload.id)
+              if (allIdsIndex !== -1) {
+                if (payload.category === StoreCategories.Component) {
+                  const componentPositions = namedResources.byId[payload.id]?.componentPositions
+                  if (componentPositions) {
+                    componentPositions.forEach((positionIri) => {
+                      doDeleteResource(state, { id: positionIri, name: 'ComponentPosition', category: 'Default' })
+                    })
+                  }
+                }
 
-              if (namedResources.currentIds && namedResources.currentIds[payload.id]) {
-                const currentIdsIndex = namedResources.currentIds.indexOf(payload.id)
-                if (currentIdsIndex) {
-                  namedResources.currentIds.slice(currentIdsIndex, 1)
+                namedResources.allIds.slice(allIdsIndex, 1)
+                Vue.delete(namedResources.byId, payload.id)
+
+                if (namedResources.currentIds && namedResources.currentIds[payload.id]) {
+                  const currentIdsIndex = namedResources.currentIds.indexOf(payload.id)
+                  if (currentIdsIndex) {
+                    namedResources.currentIds.slice(currentIdsIndex, 1)
+                  }
                 }
               }
-            }
-          })
+            })
+          }
+          doDeleteResource(state, payload)
         },
         RESET_CURRENT_RESOURCES (state) {
           Vue.set(state.resources, 'new', {})
@@ -107,15 +119,16 @@ export class Storage {
 
           currentResourceState.byId[payload.id] = payload.resource
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
-          !payload.isNew && currentResourceState.currentIds.push(payload.id)
+          if (!payload.isNew && !currentResourceState.currentIds.includes(payload.id)) {
+            currentResourceState.currentIds.push(payload.id)
+          }
           // consola.trace(currentResourceState)
           Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
 
-          if (payload.category) {
-            const resourceIriPrefix = payload.id.split('/').slice(0, -1).join('/')
-            const newCategoryMapping = state.resources.categories[payload.category] ? { ...state.resources.categories[payload.category] } : {}
-            Vue.set(state.resources.categories, payload.category, { ...newCategoryMapping, [resourceIriPrefix]: payload.name })
-          }
+          const category = payload.category || 'Default'
+          const resourceIriPrefix = payload.id.split('/').slice(0, -1).join('/')
+          const newCategoryMapping = state.resources.categories[category] ? { ...state.resources.categories[category] } : {}
+          Vue.set(state.resources.categories, category, { ...newCategoryMapping, [resourceIriPrefix]: payload.name })
         },
         SET_CURRENT_ROUTE (state, id) {
           const routeResources = state.resources.current.Route
@@ -166,7 +179,9 @@ export class Storage {
     this.state = this.ctx.store.state[this.options.vuex.namespace]
   }
 
-  deleteResource ({ id, name, category }) {
+  deleteResource (id) {
+    const category = this.getCategoryFromIri(id)
+    const name = this.getTypeFromIri(id, category)
     this.ctx.store.commit(this.options.vuex.namespace + '/DELETE_RESOURCE', {
       id,
       name,
@@ -175,9 +190,12 @@ export class Storage {
   }
 
   setResource ({ resource, isNew, category }: { resource: object, isNew?: boolean, category?: string }) {
+    const id = resource['@id']
+    category = category || this.getCategoryFromIri(id)
+    const name = resource['@type'] || this.getTypeFromIri(id, category)
     this.ctx.store.commit(this.options.vuex.namespace + '/SET_RESOURCE', {
-      id: resource['@id'],
-      name: resource['@type'],
+      id,
+      name,
       isNew: isNew || false,
       resource,
       category
@@ -207,6 +225,16 @@ export class Storage {
 
   getState (key) {
     return this.state[key]
+  }
+
+  getCategoryFromIri (iri: string) {
+    if (iri.startsWith('/component/')) {
+      return StoreCategories.Component
+    }
+    if (iri.startsWith('/page_data/')) {
+      return StoreCategories.PageData
+    }
+    return 'Default'
   }
 
   getTypeFromIri (iri, category) {

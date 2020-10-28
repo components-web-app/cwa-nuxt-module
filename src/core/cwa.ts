@@ -3,13 +3,14 @@ import type { CwaOptions } from '../'
 import ApiError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import { cwaRouteDisabled } from '../utils'
+import MissingDataError from '../inc/missing-data-error'
 import { Storage } from './storage'
 import { Fetcher } from './fetcher'
 
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
-  private fetcher: Fetcher;
+  public fetcher: Fetcher;
   public $storage: Storage
   public $state
 
@@ -25,7 +26,6 @@ export default class Cwa {
     /**
      * init storage
      */
-
     options.initialState = {}
     const storage = new Storage(ctx, options)
     this.$storage = storage
@@ -38,7 +38,7 @@ export default class Cwa {
       {
         $axios: this.ctx.$axios,
         error: this.ctx.error,
-        apiUrl: this.ctx.$config.API_URL,
+        apiUrl: this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL,
         storage
       },
       {
@@ -51,7 +51,7 @@ export default class Cwa {
     }
   }
 
-  private initMercure () {
+  initMercure () {
     !cwaRouteDisabled(this.ctx.route) && this.fetcher.initMercure(this.$state.resources.current)
   }
 
@@ -98,11 +98,24 @@ export default class Cwa {
   /**
    * API Requests
    */
-
   private static handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
     consola.error(axiosError)
-    throw new ApiError(axiosError.message)
+    throw new ApiError(axiosError.message, axiosError.statusCode, axiosError.endpoint)
+  }
+
+  async getApiDocumentation () {
+    if (!this.$state.docsUrl) {
+      throw new MissingDataError('Cannot fetch API documentation. The docs URL has not been saved')
+    }
+    const resolved = await Promise.all([
+      this.ctx.$axios.$get(this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL),
+      this.ctx.$axios.$get(this.$state.docsUrl)
+    ])
+    return {
+      entrypoint: resolved[0],
+      docs: resolved[1]
+    }
   }
 
   async createResource (endpoint: string, data: any, category?: string) {
@@ -120,10 +133,29 @@ export default class Cwa {
     return newResource
   }
 
+  async refreshResource (endpoint: string, category?: string) {
+    const doRequest = async () => {
+      try {
+        return await this.ctx.$axios.$get(endpoint)
+      } catch (error) {
+        Cwa.handleRequestError(error)
+      }
+    }
+
+    const newResource = await doRequest()
+    this.saveResource(newResource, category)
+    this.initMercure()
+    return newResource
+  }
+
   async updateResource (endpoint: string, data: any, category?: string) {
     const doRequest = async () => {
       try {
-        return await this.ctx.$axios.patch(endpoint, data)
+        return await this.ctx.$axios.$patch(endpoint, data, {
+          headers: {
+            'Content-Type': 'application/merge-patch+json'
+          }
+        })
       } catch (error) {
         Cwa.handleRequestError(error)
       }
@@ -131,12 +163,14 @@ export default class Cwa {
 
     // the resource may be different - publishable resources return the new draft resource
     const newResource = await doRequest()
+    // we may get a different resource back if it is 'publishable'
+    newResource['@id'] = endpoint
     this.saveResource(newResource, category)
     this.initMercure()
     return newResource
   }
 
-  async deleteResource (id: string, name: string, category?: string) {
+  async deleteResource (id: string) {
     const doRequest = async () => {
       try {
         return await this.ctx.$axios.delete(id)
@@ -146,7 +180,7 @@ export default class Cwa {
     }
 
     await doRequest()
-    this.$storage.deleteResource({ id, category, name })
+    this.$storage.deleteResource(id)
   }
 
   /**
@@ -157,7 +191,11 @@ export default class Cwa {
     return this.userHasRole('ROLE_ADMIN')
   }
 
+  get isUser () {
+    return this.ctx.$auth.user
+  }
+
   userHasRole (role) {
-    return this.ctx.$auth.user ? this.ctx.$auth.user.roles.includes(role) : false
+    return this.isUser ? this.ctx.$auth.user.roles.includes(role) : false
   }
 }

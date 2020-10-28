@@ -30,24 +30,21 @@
       </button>
     </div>
     <div class="container loading-message">
-      <p v-if="$cwa.loadingRoute" class="loading">
-        Loading Route
-      </p>
-      <p v-else-if="$cwa.$state.error" class="error">
-        {{ $cwa.$resources.error }}
-      </p>
-      <p v-else class="loaded">
-        Route Loaded
+      <p v-if="$cwa.$state.error" class="error">
+        {{ $cwa.$state.error }}
       </p>
     </div>
     <nuxt />
+    <cwa-api-notifications class="cwa-notifications" />
   </div>
 </template>
 
 <script>
 import consola from 'consola'
+import CwaApiNotifications from '@cwa/nuxt-module/core/templates/cwa-api-notifications/cwa-api-notifications.vue'
 
 export default {
+  components: { CwaApiNotifications },
   data () {
     return {
       routes: []
@@ -90,12 +87,8 @@ export default {
 
 <style lang="sass" scoped>
   .loading-message
-    .loading
-      color: $color-warning
     .error
       color: $color-danger
-    .loaded
-      color: $color-success
   .refresh-bar
     display: flex
     justify-content: center
@@ -141,4 +134,10 @@ export default {
             border: 1px solid $color-primary
             background: $color-initial
             color: $color-primary
+  .cwa-notifications
+    position: absolute
+    bottom: 1rem
+    right: 1rem
+    width: 70vw
+    max-width: 500px
 </style>

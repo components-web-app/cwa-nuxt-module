@@ -18,19 +18,25 @@ export default {
       }
     },
     populateContextMenu () {
-      this.$root.$once('contextmenu.show', () => {
-        const dataObject = this.getContextMenuData()
-        if (!dataObject) {
-          return
-        }
-        this.$root.$emit('context-menu-add-data', this.getContextMenuData())
-      })
+      this.removeContextMenuShowListener()
+      this.$root.$once('contextmenu.show', this.contextMenuShowListener)
+    },
+    contextMenuShowListener () {
+      const dataObject = this.getContextMenuData()
+      if (!dataObject) {
+        return
+      }
+      this.$root.$emit('context-menu-add-data', this.getContextMenuData())
+    },
+    removeContextMenuShowListener () {
+      this.$root.$off('contextmenu.show', this.contextMenuShowListener)
     },
     initContextmenu () {
       this.$el.addEventListener('contextmenu', this.populateContextMenu)
     },
     destroyContextMenu () {
       this.$el.removeEventListener('contextmenu', this.populateContextMenu)
+      this.removeContextMenuShowListener()
     }
   },
   mounted () {

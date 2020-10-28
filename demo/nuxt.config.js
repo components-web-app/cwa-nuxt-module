@@ -8,13 +8,18 @@ export default {
     API_URL
   },
   mode: 'universal',
+  css: ['~/assets/sass/main.sass'],
   buildModules: [
     '@nuxt/typescript-build'
   ],
   modules: [
+    '@nuxtjs/style-resources',
     '@nuxtjs/axios',
     '@nuxtjs/auth-next',
     coreModuleDist
+  ],
+  plugins: [
+    { src: '~/plugins/quill', ssr: false }
   ],
   router: {
     middleware: ['auth', 'routeLoader']
@@ -54,7 +59,7 @@ export default {
     allowUnauthorizedTls: true
   },
   build: {
-    extend (config, _) {
+    extend (config) {
       if (!config.resolve) {
         config.resolve = {}
       }
@@ -64,5 +69,8 @@ export default {
 
       config.resolve.plugins.push(new TsconfigPathsPlugin({ configFile: `${__dirname}/tsconfig.json` }))
     }
+  },
+  styleResources: {
+    sass: ['~/assets/sass/vars/*.sass']
   }
 }
