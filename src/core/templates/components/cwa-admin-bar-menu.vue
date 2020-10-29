@@ -132,7 +132,10 @@ export default {
   },
   computed: {
     cwaModuleVersionText() {
-      return this.$cwa.version ? ` v${this.$cwa.version}` : ''
+      const version = this.$cwa.version ? ` v${this.$cwa.version}` : ''
+      return version.length > 10
+        ? `${version.substr(0, 7)}...${version.substr(-3)}`
+        : version
     },
     cwaModuleVersionLink() {
       const base = 'https://github.com/components-web-app/cwa-nuxt-module'
