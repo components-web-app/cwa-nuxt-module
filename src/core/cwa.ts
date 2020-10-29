@@ -14,7 +14,10 @@ export default class Cwa {
   public $storage: Storage
   public $state
   public websiteName: string
-  public version: any
+  public package: {
+    name: string,
+    version: string
+  }
 
   constructor (ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
@@ -22,7 +25,7 @@ export default class Cwa {
     }
 
     this.websiteName = options.websiteName
-    this.version = options.version
+    this.package = options.package
 
     this.ctx = ctx
 

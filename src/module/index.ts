@@ -1,4 +1,5 @@
 import { resolve, join } from 'path'
+import fs from 'fs'
 import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
@@ -134,6 +135,12 @@ function loadComponents () {
 }
 
 const cwaModule = <Module> function () {
+  const { version, name } = JSON.parse(
+    fs.readFileSync(
+      join(__dirname, '../../package.json'),
+      'utf8'
+    )
+  )
   const options: CwaOptions = {
     vuex: {
       namespace: 'cwa'
@@ -142,7 +149,10 @@ const cwaModule = <Module> function () {
     pagesDepth: 3,
     allowUnauthorizedTls: false,
     websiteName: 'Unnamed CWA Site',
-    version: null,
+    package: {
+      name,
+      version
+    },
     ...this.options.cwa
   }
 

@@ -84,7 +84,7 @@
                     <cwa-nuxt-link to="https://cwa.rocks">About CWA</cwa-nuxt-link>
                   </li>
                   <li>
-                    <cwa-nuxt-link :to="cwaModuleVersionLink">CWA Module{{ cwaModuleVersionText }}</cwa-nuxt-link>
+                    <cwa-nuxt-link :to="cwaModuleVersionLink">CWA Module <span class="small">{{ cwaModuleVersionText }}</span></cwa-nuxt-link>
                   </li>
                   <li>
                     <cwa-nuxt-link :to="$config.API_URL">API documentation</cwa-nuxt-link>
@@ -132,14 +132,15 @@ export default {
   },
   computed: {
     cwaModuleVersionText() {
-      const version = this.$cwa.version ? ` v${this.$cwa.version}` : ''
-      return version.length > 10
-        ? `${version.substr(0, 7)}...${version.substr(-3)}`
+      const version = this.$cwa.package.version
+      const truncated = version.length > 9
+        ? `${version.substr(0, 3)}..${version.substr(-4)}`
         : version
+      const nextPostfix = this.$cwa.package.name.substr(-4) === 'next' ? ' (unstable)' : ''
+      return truncated + nextPostfix
     },
     cwaModuleVersionLink() {
-      const base = 'https://github.com/components-web-app/cwa-nuxt-module'
-      return base + (this.$cwa.version ? `/releases/tag/${this.$cwa.version}` : '')
+      return `https://www.npmjs.com/package/${this.$cwa.package.name}/v/${this.$cwa.package.version}`
     }
   },
   methods: {
@@ -205,6 +206,8 @@ export default {
           opacity: .6
           &:hover
             opacity: 1
+          .small
+            font-size: .8em
         > li
           margin: 0
           > ul
@@ -216,7 +219,7 @@ export default {
 
         &.menu-links-right
           padding-right: 30px
-          font-size: 1.4rem
+          font-size: 1.45rem
         &.menu-links-left
           font-size: 1.7rem
           li
