@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "tsc && yarn copy-files",
-    "copy-files": "copyfiles -u 1 src/**/*.vue src/**/*.sass src/core/assets/fonts/* src/core/assets/images/* dist/",
+    "copy-files": "copyfiles -u 1 src/**/*.vue src/**/*.sass src/core/assets/fonts/**/* src/core/assets/images/* dist/",
     "clean": "rm -rf dist && rm -rf tests/fixture/.nuxt && rm -rf demo/.nuxt",
     "dev": "nuxt-ts demo",
     "lint": "eslint --ext .ts,.js,.vue .",

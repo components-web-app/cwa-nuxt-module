@@ -3,11 +3,10 @@
     <div class="container">
       <cwa-grid-header title="Pages" />
       <div class="row row-wrap grid">
-        <div class="column no-items-found">
-          <div class="not-found-icon">
-            <nuxt-error-icon />
+        <div class="column">
+          <div class="grid-loading">
+            <cwa-loader />
           </div>
-          Sorry, no items found
         </div>
       </div>
       <div class="row pagination-bar">
@@ -32,15 +31,17 @@
   </cwa-footer-logo>
 </template>
 
-<script>
-import commonMixin from './commonMixin'
+<script lang="ts">
 import CwaFooterLogo from '../../components/cwa-footer-logo'
 import CwaGridHeader from '../../components/cwa-grid-header'
 import NuxtErrorIcon from '../../components/nuxt-error-icon'
+import CwaLoader from "../../cwa-loader.vue";
 
 export default {
-  components: {NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
-  mixins: [commonMixin]
+  auth: false,
+  cwa: false,
+  layout: 'cwa-default',
+  components: {CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo}
 }
 </script>
 
