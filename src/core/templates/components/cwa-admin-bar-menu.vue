@@ -14,15 +14,7 @@
           <nav class="menu-columns">
             <ul class="menu-links-left">
               <li>
-                <cwa-nuxt-link>
-                  <span class="icon">
-                    <img src="../../assets/images/icon-builder.svg" alt="Builder Icon" />
-                  </span>
-                  <span>Builder</span>
-                </cwa-nuxt-link>
-              </li>
-              <li>
-                <cwa-nuxt-link>
+                <cwa-nuxt-link to="/_cwa/layouts">
                   <span class="icon">
                     <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
                   </span>
@@ -181,7 +173,7 @@ export default {
       transition: opacity 0.2s ease-in-out
     .menu-header
       text-align: center
-      color: $color-text-light
+      color: $cwa-color-text-light
       opacity: .6
       font-size: 1.5rem
       margin-bottom: 3rem
@@ -204,7 +196,8 @@ export default {
         a
           color: inherit
           opacity: .6
-          &:hover
+          &:hover,
+          &.nuxt-link-active
             opacity: 1
           .small
             font-size: .8em
@@ -213,7 +206,7 @@ export default {
           > ul
             margin-bottom: 2rem
             > li
-              color: $color-text-light
+              color: $cwa-color-text-light
           &:last-child > ul
             margin-bottom: 0
 

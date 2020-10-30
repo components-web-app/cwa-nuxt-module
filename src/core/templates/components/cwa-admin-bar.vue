@@ -10,10 +10,7 @@
       </div>
       <div class="center">
         <div class="icons">
-          <cwa-nuxt-link>
-            <img src="../../assets/images/icon-builder.svg" alt="Magic Wand Icon - Builder" />
-          </cwa-nuxt-link>
-          <cwa-nuxt-link>
+          <cwa-nuxt-link to="/_cwa/layouts">
             <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
           </cwa-nuxt-link>
           <cwa-nuxt-link>
@@ -44,9 +41,10 @@ export default {
 
 <style lang="sass">
 .cwa-admin-bar
+  font-family: $cwa-font-family
   padding: 2rem
   background: $cwa-navbar-background
-  color: $color-text-light
+  color: $cwa-color-text-light
   display: flex
   justify-content: space-between
   align-items: center
@@ -74,7 +72,7 @@ export default {
         color: white
         top: 50%
         left: 50%
-        transform: translate(-50%, -25%)
+        transform: translate(-50%, -35%)
         font-size: .8em
         font-weight: $font-weight-bold
       .triangle
@@ -100,10 +98,12 @@ export default {
   .center
     flex-grow: 1
     justify-content: center
+    +mobile
+      display: none
     .icons
       display: flex
       width: 100%
-      max-width: 370px
+      max-width: 340px
       justify-content: space-between
       align-items: center
       > a
@@ -113,6 +113,6 @@ export default {
         opacity: .6
         &:hover
           opacity: .8
-        &.selected
+        &.nuxt-link-active
           opacity: 1
 </style>

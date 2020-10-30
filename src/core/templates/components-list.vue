@@ -79,5 +79,5 @@ export default {
 <style lang="sass" scoped>
 .available-components-list
   padding: 1rem
-  border: 1px solid $color-primary
+  border: 1px solid $cwa-color-primary
 </style>

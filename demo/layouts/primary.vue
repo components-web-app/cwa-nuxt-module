@@ -99,14 +99,14 @@ export default {
         a
           &:hover,
           &.selected
-            background-color: $color-primary
+            background-color: $cwa-color-primary
         button
           display: block
           margin: 0 0 0 1rem
           &:hover
-            border: 1px solid $color-primary
-            background: $color-initial
-            color: $color-primary
+            border: 1px solid $cwa-color-primary
+            background: $cwa-color-initial
+            color: $cwa-color-primary
   .cwa-notifications
     position: absolute
     bottom: 1rem

@@ -118,8 +118,8 @@ export default {
   list-style: none
   margin: 0
   padding: 0
-  box-shadow: 1px 1px 2px 1px $color-quaternary
-  background: $color-initial
+  box-shadow: 1px 1px 2px 1px $cwa-color-quaternary
+  background: $cwa-color-initial
   min-width: 150px
   li
     margin: 0
@@ -127,15 +127,15 @@ export default {
       padding: .5rem
       text-transform: capitalize
       font-size: 1rem
-      color: $color-secondary
+      color: $cwa-color-secondary
       font-weight: $font-weight-bold
-      background: $color-tertiary
+      background: $cwa-color-tertiary
     a
       display: block
       padding: .5rem
       &.active
         opacity: .5
       &:hover
-        background: $color-primary
-        color: $color-initial
+        background: $cwa-color-primary
+        color: $cwa-color-initial
 </style>

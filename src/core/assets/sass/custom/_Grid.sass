@@ -152,13 +152,19 @@
       align-self: center
 
 // Larger than mobile screen
-@media (min-width: 40.0rem) // Safari desktop has a bug using `rem`, but Safari mobile works
+.row.is-mobile
+  flex-direction: row
+  margin-left: -1.0rem
+  width: calc(100% + 2.0rem)
+  .column
+    margin-bottom: inherit
+    padding: 0 1.0rem
 
+@media (min-width: 40.0rem) // Safari desktop has a bug using `rem`, but Safari mobile works
   .row
     flex-direction: row
     margin-left: -1.0rem
     width: calc(100% + 2.0rem)
-
     .column
       margin-bottom: inherit
       padding: 0 1.0rem

@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-error-page">
+  <cwa-footer-logo class="cwa-error-page">
     <div class="container">
       <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" fill="currentColor" viewBox="0 0 48 48">
         <path d="M22 30h4v4h-4zm0-16h4v12h-4zm1.99-10C12.94 4 4 12.95 4 24s8.94 20 19.99 20S44 35.05 44 24 35.04 4 23.99 4zM24 40c-8.84 0-16-7.16-16-16S15.16 8 24 8s16 7.16 16 16-7.16 16-16 16z" />
@@ -16,24 +16,17 @@
       <p class="description" v-else><%= messages.client_error_details %></p>
       <% } %>
     </div>
-    <div class="footer">
-      <div class="logo">
-        <cwa-nuxt-link to="https://cwa.rocks" target="_blank" rel="noopener">
-          <cwa-logo class="cwa-logo" />
-          <span class="sr-only">Components Web App</span>
-        </cwa-nuxt-link>
-      </div>
-    </div>
-  </div>
+  </cwa-footer-logo>
 </template>
 
 <script>
 import CwaLogo from '@cwa/nuxt-module/core/templates/components/cwa-logo.vue'
 import CwaNuxtLink from '@cwa/nuxt-module/core/templates/components/cwa-nuxt-link.vue'
+import CwaFooterLogo from '@cwa/nuxt-module/core/templates/components/cwa-footer-logo.vue'
 
 export default {
   name: 'NuxtError',
-  components: {CwaNuxtLink, CwaLogo},
+  components: {CwaFooterLogo, CwaNuxtLink, CwaLogo},
   layout: 'cwa-default',
   props: {
     error: {
@@ -65,15 +58,5 @@ export default {
 
 <style lang="sass">
 .cwa-error-page
-  display: flex
-  flex-direction: column
   text-align: center
-  height: 100%
-  > .container
-    padding-top: 5rem
-    flex-grow: 1
-  .cwa-logo
-    width: auto
-    height: 30px
-    margin-bottom: 2rem
 </style>

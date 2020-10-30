@@ -113,7 +113,7 @@ export default {
     font-size: 1.5rem
     &::placeholder
       font-style: italic
-      color: $color-text-light
+      color: $cwa-color-text-light
   button
     margin-top: 1rem
     font-size: 1.7rem
@@ -133,7 +133,7 @@ export default {
     padding-top: 1rem
     display: flex
     justify-content: space-between
-    border-top: 1px solid rgba($color-text-light, .6)
+    border-top: 1px solid rgba($cwa-color-text-light, .6)
     a
       &:not(:hover)
         opacity: .6

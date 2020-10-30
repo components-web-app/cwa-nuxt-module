@@ -52,12 +52,12 @@ export default {
 <style lang="sass" scoped>
 li.notification
   position: relative
-  border-left: 4px solid $color-primary
+  border-left: 4px solid $cwa-color-primary
   padding-left: 1rem
   transition: all 1.2s
   overflow: hidden
   &.highlighted
-    background: $color-primary
+    background: $cwa-color-primary
     color: $white
   &.error
     border-color: $color-danger
@@ -72,7 +72,7 @@ li.notification
   .endpoint
     font-weight: $font-weight-normal
   .timestamp
-    color: $color-text-light
+    color: $cwa-color-text-light
     font-weight: $font-weight-bold
     font-size: .8em
     .clear-notification

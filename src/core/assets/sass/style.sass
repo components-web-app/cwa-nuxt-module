@@ -8,11 +8,11 @@
 // @import ~milligram/src/_Image
 // @import ~milligram/src/_Utility
 
-@import "milligram/Grid"
-@import "milligram/Base"
-@import "milligram/Button"
-@import "milligram/Form"
-@import "milligram/Link"
+@import "custom/Grid"
+@import "custom/Base"
+@import "custom/Button"
+@import "custom/Form"
+@import "custom/Link"
 
 @import "Fonts"
 
@@ -22,15 +22,16 @@ pre
 .notice
   margin-bottom: 1rem
   padding: 1rem
-  background: $color-tertiary
+  background: $cwa-color-tertiary
   font-weight: $font-weight-normal
   &.is-danger
-    background: $color-danger
-    color: $color-tertiary
+    background: $cwa-danger
+    color: $cwa-color-tertiary
     font-weight: $font-weight-semi-bold
 
-.column.column-narrow
+.column.is-narrow
   width: auto
+  flex-grow: 0
 
 .sr-only
   position: absolute

@@ -58,7 +58,7 @@ export default {
   cwa: {
     allowUnauthorizedTls: true,
     // version: '1.0.0',
-    websiteName: 'CWA Demo Site'
+    websiteName: 'CWA Test'
   },
   build: {
     extend (config) {

@@ -23,12 +23,16 @@ export default {
 </script>
 
 <style lang="sass">
+html
+  background: $cwa-color-primary
+  font-family: $cwa-font-family
+
 .cwa-default-layout
   display: flex
   flex-direction: column
   height: 100vh
-  background: $background-dark
-  color: $color-text-light
+  background: $cwa-background-dark
+  color: $cwa-color-text-light
   > .top
     flex-grow: 0
     z-index: 3
@@ -36,8 +40,13 @@ export default {
     flex-grow: 1
     z-index: 2
   a
-    color: $color-text-light
+    color: $cwa-color-text-light
     &:hover,
     &:focus
-      color: $color-primary
+      color: $cwa-color-primary
+  h1
+    font-size: 3rem
+    font-weight: $font-weight-light
+    letter-spacing: .05em
+    color: $white
 </style>

@@ -1,10 +1,12 @@
-import { resolve, join } from 'path'
+import { resolve, join, basename } from 'path'
 import fs from 'fs'
+import consola from 'consola'
 import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
 
 function extendRoutesFn ({ pagesDepth }) {
+  // recursive function
   function createRouteObject (component, depth:number, currentDepth:number = 0) {
     if (currentDepth > depth) {
       return null
@@ -25,11 +27,12 @@ function extendRoutesFn ({ pagesDepth }) {
     return routeObject
   }
 
+  // transpile
   this.nuxt.options.build!.transpile!.push(resolve(__dirname, '../core/templates/page'))
 
+  // return the function
   return (routes) => {
-    const newRoutes = createRouteObject(resolve(__dirname, '../core/templates/page'), pagesDepth)
-    routes.push(newRoutes)
+    routes.push(createRouteObject(resolve(__dirname, '../core/templates/page'), pagesDepth))
   }
 }
 
@@ -170,6 +173,30 @@ const cwaModule = <Module> function () {
     src: resolve(__dirname, '../core/templates/layouts/cwa-empty.vue'),
     fileName: join('cwa', 'layouts', 'cwa-empty.vue')
   }, 'cwa-empty')
+
+  this.extendRoutes((routes: any[]) => {
+    function getRouteObjects (baseDir: string, pathParts: string[] = ['_cwa']) {
+      const newRoutes = []
+      const files = fs.readdirSync(baseDir)
+      files.forEach((filename: string) => {
+        const filePath = join(baseDir, filename)
+        const stat = fs.lstatSync(filePath)
+        if (stat.isDirectory()) {
+          pathParts.push(filename)
+          return newRoutes.push(...getRouteObjects(filePath), pathParts)
+        }
+        const name = basename(filename, '.vue')
+        newRoutes.push({
+          name,
+          path: `/${pathParts.join('/')}/${name}`,
+          component: resolve(filePath),
+          children: null
+        })
+      })
+      return newRoutes
+    }
+    routes.push(...getRouteObjects(resolve(__dirname, '../core/templates/pages/_cwa')))
+  })
 
   this.extendRoutes(extendRoutesFn.call(this, { pagesDepth: options.pagesDepth }))
 

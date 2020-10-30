@@ -93,7 +93,7 @@ export default {
           color: inherit
         &[data-value='primary']::before
           content: 'Primary'
-          color: $color-primary
+          color: $cwa-color-primary
         &[data-value='success']::before
           content: 'Success'
           color: $color-success

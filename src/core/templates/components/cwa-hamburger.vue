@@ -124,7 +124,7 @@ export default {
     display: block
     position: relative
     fill: none
-    stroke: $color-text-light
+    stroke: $cwa-color-text-light
     margin: 0 auto
     stroke-linecap: round
     stroke-width: 5px

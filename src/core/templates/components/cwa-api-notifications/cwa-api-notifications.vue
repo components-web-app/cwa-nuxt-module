@@ -3,7 +3,7 @@
     <div class="api-notifications">
       <p class="notification-title row">
         <span class="column">Notifications ({{ notifications.length }})</span>
-        <span class="column column-narrow">
+        <span class="column is-narrow">
           <a class="show-hide-link" href="#" @click.prevent="expandNotifications = !expandNotifications">{{ expandNotifications ? 'hide' : 'show' }}</a>
         </span>
       </p>
@@ -58,7 +58,7 @@ export default {
 
 <style lang="sass" scoped>
 .api-notifications
-  box-shadow: 1px 0 5px rgba($background-dark, .4)
+  box-shadow: 1px 0 5px rgba($cwa-background-dark, .4)
   font-size: 1.5rem
   display: flex
   flex-direction: column
@@ -66,12 +66,12 @@ export default {
   .notification-title
     padding: .75rem
     font-weight: $font-weight-bold
-    background: $background-dark
+    background: $cwa-background-dark
     color: $white
     margin: 0
     width: 100%
     .show-hide-link
-      color: $background-light
+      color: $cwa-background-light
       font-size: .8em
       margin-left: 2rem
   .notifications-body
