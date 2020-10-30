@@ -1,6 +1,5 @@
 import { resolve, join, basename } from 'path'
 import fs from 'fs'
-import consola from 'consola'
 import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
