@@ -1,7 +1,7 @@
 <template>
   <cwa-footer-logo class="cwa-layouts-page">
     <div class="container">
-      <cwa-grid-header title="Layouts" />
+      <cwa-grid-header title="Pages" />
       <div class="row row-wrap grid">
         <div class="column no-items-found">
           <div class="not-found-icon">

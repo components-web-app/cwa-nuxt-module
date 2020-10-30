@@ -31,6 +31,7 @@ export default {
     flex-grow: 1
     padding-top: 5rem
   .footer
+    margin-top: 4rem
     text-align: center
     .cwa-logo
       width: auto

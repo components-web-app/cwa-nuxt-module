@@ -1,7 +1,7 @@
 <template>
   <div class="cwa-admin-bar-menu">
     <transition name="menu">
-      <div v-if="showMenu" class="menu">
+      <div v-if="showMenu" class="menu" @click.stop>
         <div class="menu-header">
           <div>
             <cwa-logo class="cwa-logo" />
@@ -22,7 +22,7 @@
                 </cwa-nuxt-link>
               </li>
               <li>
-                <cwa-nuxt-link>
+                <cwa-nuxt-link to="/_cwa/pages">
                   <span class="icon">
                     <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
                   </span>

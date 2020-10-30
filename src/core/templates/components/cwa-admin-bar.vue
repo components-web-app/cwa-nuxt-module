@@ -13,7 +13,7 @@
           <cwa-nuxt-link to="/_cwa/layouts">
             <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
           </cwa-nuxt-link>
-          <cwa-nuxt-link>
+          <cwa-nuxt-link to="/_cwa/pages">
             <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
           </cwa-nuxt-link>
           <cwa-nuxt-link>

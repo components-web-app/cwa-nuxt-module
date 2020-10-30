@@ -1,5 +1,5 @@
 <template>
-  <a class="cwa-hamburger" :class="{'show-open': open, 'css-animate': !gsapEnabled}" @click="toggleMenu">
+  <a class="cwa-hamburger" :class="{'show-open': open, 'css-animate': !gsapEnabled}" @click.stop="toggleMenu">
     <span class="sr-only">Menu</span>
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -90,9 +90,15 @@ export default {
   },
   methods: {
     toggleMenu() {
-      this.open = !this.open
+      if (!this.open) {
+        this.open = true
+        document.addEventListener('click', this.toggleMenu)
+        this.animateButton()
+      } else {
+        document.removeEventListener('click', this.toggleMenu)
+        this.close()
+      }
       this.$emit(toggleEmitEventName, this.open)
-      this.animateButton()
     },
     animateButton() {
       if (!this.gsapEnabled) {

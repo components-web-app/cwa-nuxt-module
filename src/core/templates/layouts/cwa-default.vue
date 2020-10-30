@@ -27,11 +27,15 @@ html
   background: $cwa-color-primary
   font-family: $cwa-font-family
 
+body,
+#__nuxt,
+#__layout
+  min-height: 100vh
+
 .cwa-default-layout
+  height: 100vh
   display: flex
   flex-direction: column
-  height: 100vh
-  background: $cwa-background-dark
   color: $cwa-color-text-light
   > .top
     flex-grow: 0
@@ -39,6 +43,7 @@ html
   > .page
     flex-grow: 1
     z-index: 2
+    background: $cwa-background-dark
   a
     color: $cwa-color-text-light
     &:hover,
