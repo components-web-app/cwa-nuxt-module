@@ -32,16 +32,15 @@
   </cwa-footer-logo>
 </template>
 
-<script lang="ts">
+<script>
+import commonMixin from './commonMixin'
 import CwaFooterLogo from '../../components/cwa-footer-logo'
 import CwaGridHeader from '../../components/cwa-grid-header'
 import NuxtErrorIcon from '../../components/nuxt-error-icon'
 
 export default {
-  auth: false,
-  cwa: false,
-  layout: 'cwa-default',
-  components: {NuxtErrorIcon, CwaGridHeader, CwaFooterLogo}
+  components: {NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
+  mixins: [commonMixin]
 }
 </script>
 

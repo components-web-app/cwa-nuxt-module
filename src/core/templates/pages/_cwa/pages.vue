@@ -31,17 +31,16 @@
   </cwa-footer-logo>
 </template>
 
-<script lang="ts">
+<script>
+import commonMixin from './commonMixin'
 import CwaFooterLogo from '../../components/cwa-footer-logo'
 import CwaGridHeader from '../../components/cwa-grid-header'
 import NuxtErrorIcon from '../../components/nuxt-error-icon'
 import CwaLoader from "../../cwa-loader.vue";
 
 export default {
-  auth: false,
-  cwa: false,
-  layout: 'cwa-default',
-  components: {CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo}
+  components: {CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
+  mixins: [commonMixin]
 }
 </script>
 
