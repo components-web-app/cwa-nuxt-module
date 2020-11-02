@@ -1,24 +1,38 @@
 <template>
   <div class="row row-wrap grid">
-    <div class="column">
+    <div v-if="isLoading" class="column">
       <div class="grid-loading">
         <cwa-loader />
       </div>
     </div>
-    <div class="column no-items-found">
+    <div v-else-if="!hasSlot" class="column no-items-found">
       <div class="not-found-icon">
         <nuxt-error-icon />
       </div>
       Sorry, no items found
     </div>
+    <slot />
   </div>
 </template>
 
 <script>
-import CwaLoader from '../cwa-loader'
+import CwaLoader from './cwa-loader'
 import NuxtErrorIcon from './nuxt-error-icon'
 export default {
-  components: {NuxtErrorIcon, CwaLoader}
+  components: {NuxtErrorIcon, CwaLoader},
+  props: {
+    isLoading: {
+      type: Boolean,
+      required: true
+    }
+  },
+  computed: {
+    hasSlot() {
+      const ss = this.$scopedSlots
+      const nodes = ss && ss.default && ss.default()
+      return nodes && nodes.length
+    }
+  }
 }
 </script>
 
@@ -41,11 +55,10 @@ export default {
     opacity: 0
     padding: 3rem 0
     animation: no-items-fade-in 1s
-    animation-delay: .2s
     animation-fill-mode: forwards
     .not-found-icon > svg
       animation: rotate-180 2s
-      animation-delay: 1.2s
+      animation-delay: .6s
       animation-fill-mode: forwards
       transform-origin: 50% 50%
       opacity: 0

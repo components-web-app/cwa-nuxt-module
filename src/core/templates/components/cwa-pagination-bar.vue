@@ -1,5 +1,5 @@
 <template>
-  <div class="row pagination-bar">
+  <div class="row pagination-bar is-mobile">
     <div class="column page-numbers">
       <a>1</a>
       <a>2</a>
@@ -7,12 +7,12 @@
       <a>4</a>
     </div>
     <div class="column is-narrow">
-      <div class="row">
+      <div class="row is-mobile">
         <div class="column">
-          <a><img src="../assets/images/arrow-left.svg" alt="Left Arrow - Previous Page" /></a>
+          <a><img src="../../assets/images/arrow-left.svg" alt="Left Arrow - Previous Page" /></a>
         </div>
         <div class="column">
-          <a><img src="../assets/images/arrow-right.svg" alt="Right Arrow - Next Page" /></a>
+          <a><img src="../../assets/images/arrow-right.svg" alt="Right Arrow - Next Page" /></a>
         </div>
       </div>
     </div>

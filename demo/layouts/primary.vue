@@ -34,7 +34,7 @@
 
 <script>
 import CwaApiNotifications from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/cwa-api-notifications.vue'
-import CwaAdminBar from '@cwa/nuxt-modulecore/templates/components/cwa-admin-bar.vue'
+import CwaAdminBar from '@cwa/nuxt-module/core/templates/components/cwa-admin-bar.vue'
 
 export default {
   components: { CwaAdminBar, CwaApiNotifications },

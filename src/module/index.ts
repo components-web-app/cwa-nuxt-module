@@ -1,5 +1,7 @@
 import { resolve, join, basename } from 'path'
 import fs from 'fs'
+import _set from 'lodash/set'
+import _get from 'lodash/get'
 import { Component } from '@nuxt/components/dist/scan'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
@@ -173,28 +175,51 @@ const cwaModule = <Module> function () {
     fileName: join('cwa', 'layouts', 'cwa-empty.vue')
   }, 'cwa-empty')
 
+  // Add CWA Pages
   this.extendRoutes((routes: any[]) => {
-    function getRouteObjects (baseDir: string, pathParts: string[] = ['_cwa']) {
-      const newRoutes = []
+    // construct route objects with parts as keys for nesting
+    function getRouteObjects (baseDir: string, newRoutes: any = {}, pathParts: string[] = ['_cwa']) {
       const files = fs.readdirSync(baseDir)
       files.forEach((filename: string) => {
         const filePath = join(baseDir, filename)
+        const isNameRouteParam = filename.substring(0, 1) === '_'
+        const name = basename(filename, '.vue').replace(/^_/, '')
         const stat = fs.lstatSync(filePath)
         if (stat.isDirectory()) {
-          pathParts.push(filename)
-          return newRoutes.push(...getRouteObjects(filePath), pathParts)
+          getRouteObjects(filePath, newRoutes, [...pathParts, name])
+          return
         }
-        const name = basename(filename, '.vue')
-        newRoutes.push({
-          name,
-          path: `/${pathParts.join('/')}/${name}`,
+        if (filename.substr(-3) !== 'vue') {
+          return
+        }
+        const newObjectPath = [...pathParts, name]
+        const newRouteObject = {
+          name: newObjectPath.join('_'),
+          path: `/${pathParts.join('/')}/${(isNameRouteParam ? ':' : '') + name}`,
           component: resolve(filePath),
-          children: null
-        })
+          children: _get(newRoutes, newObjectPath) ?? null
+        }
+        _set(newRoutes, newObjectPath, newRouteObject)
       })
       return newRoutes
     }
-    routes.push(...getRouteObjects(resolve(__dirname, '../core/templates/pages/_cwa')))
+    const newRoutesAsObject = getRouteObjects(resolve(__dirname, '../core/templates/pages/_cwa'))
+
+    function childrenToValues (object) {
+      if (object.children) {
+        object.children = Object.values(object.children)
+        object.children.forEach((nestedRoute) => {
+          childrenToValues(nestedRoute)
+        })
+      }
+    }
+    const newRoutes = []
+    Object.values(newRoutesAsObject._cwa).forEach((newRoute: any) => {
+      childrenToValues(newRoute)
+      newRoutes.push(newRoute)
+    })
+
+    routes.push(...newRoutes)
   })
 
   this.extendRoutes(extendRoutesFn.call(this, { pagesDepth: options.pagesDepth }))

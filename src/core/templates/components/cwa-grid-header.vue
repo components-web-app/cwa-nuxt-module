@@ -5,7 +5,7 @@
         <h1>{{ title }}</h1>
       </div>
       <div class="column is-narrow">
-        <cwa-add-button />
+        <cwa-add-button @click="$emit('add')" />
       </div>
     </div>
     <div class="cwa-filter-bar row">
@@ -17,6 +17,8 @@
           <select name="order" v-model="order">
             <option value="created=desc">New - Old</option>
             <option value="created=asc">Old - New</option>
+            <option value="title=asc">A - Z</option>
+            <option value="title=desc">Z - A</option>
           </select>
         </div>
       </div>
@@ -36,9 +38,20 @@ export default {
   },
   data() {
     return {
-      search: null,
+      search: '',
       order: 'created=desc'
     }
+  },
+  mounted() {
+    this.$watch(vm => [vm.search, vm.order], val => {
+      this.$emit('filter', {
+        search: this.search,
+        order: this.order
+      })
+    }, {
+      deep: false,
+      immediate: true
+    })
   }
 }
 </script>

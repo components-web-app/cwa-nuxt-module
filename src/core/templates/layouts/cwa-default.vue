@@ -39,10 +39,8 @@ body,
   color: $cwa-color-text-light
   > .top
     flex-grow: 0
-    z-index: 3
   > .page
     flex-grow: 1
-    z-index: 2
     background: $cwa-background-dark
   a
     color: $cwa-color-text-light
