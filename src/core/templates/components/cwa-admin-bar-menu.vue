@@ -76,10 +76,10 @@
                     <cwa-nuxt-link to="https://cwa.rocks">About CWA</cwa-nuxt-link>
                   </li>
                   <li>
-                    <cwa-nuxt-link :to="cwaModuleVersionLink">CWA Module <span class="small">{{ cwaModuleVersionText }}</span></cwa-nuxt-link>
+                    <cwa-nuxt-link :to="cwaModuleVersionLink">CWA <span class="small">{{ cwaModuleVersionText }}</span></cwa-nuxt-link>
                   </li>
                   <li>
-                    <cwa-nuxt-link :to="$config.API_URL">API documentation</cwa-nuxt-link>
+                    <cwa-nuxt-link :to="$config.API_URL">API <span class="small">{{ apiVersionText }}</span></cwa-nuxt-link>
                   </li>
                 </ul>
               </li>
@@ -119,17 +119,23 @@ export default {
         {
           text: 'Users'
         }
-      ]
+      ],
+      apiVersion: '--'
     }
   },
+  async mounted() {
+    const apiDocs = await this.$axios.$get('/docs.json')
+    const matches = apiDocs.info.version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
+    this.apiVersion = matches ? matches[1] : '??'
+  },
   computed: {
+    apiVersionText() {
+      const unstablePostfix = this.apiVersion.substr(0,3) === 'dev' ? ' (unstable)' : ''
+      return this.truncateVersion(this.apiVersion) + unstablePostfix
+    },
     cwaModuleVersionText() {
-      const version = this.$cwa.package.version
-      const truncated = version.length > 9
-        ? `${version.substr(0, 3)}..${version.substr(-4)}`
-        : version
-      const nextPostfix = this.$cwa.package.name.substr(-4) === 'next' ? ' (unstable)' : ''
-      return truncated + nextPostfix
+      const unstablePostfix = this.$cwa.package.name.substr(-4) === 'next' ? ' (unstable)' : ''
+      return this.truncateVersion(this.$cwa.package.version) + unstablePostfix
     },
     cwaModuleVersionLink() {
       return `https://www.npmjs.com/package/${this.$cwa.package.name}/v/${this.$cwa.package.version}`
@@ -138,6 +144,12 @@ export default {
   methods: {
     toggleMenu(showMenu) {
       this.showMenu = showMenu
+    },
+    truncateVersion(version) {
+      const truncated = version.length > 9
+        ? `${version.substr(0, 3)}..${version.substr(-4)}`
+        : version
+      return truncated
     }
   }
 }

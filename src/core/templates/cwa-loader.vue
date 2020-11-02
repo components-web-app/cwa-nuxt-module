@@ -7,16 +7,10 @@
 </template>
 
 <style lang="sass">
-$green: $cwa-success
-$red: $cwa-danger
-$yellow: $cwa-warning
-
-$width: 5rem
-
 .cwa-loader
   position: relative
   margin: 6rem auto
-  width: $width
+  width: 5rem
   &:before
     content: ''
     display: block
@@ -35,7 +29,7 @@ $width: 5rem
     .path
       stroke-dasharray: 1, 200
       stroke-dashoffset: 0
-      animation: dash 1.7s ease-in-out infinite, color 7s ease-in-out infinite
+      animation: dash 1.7s ease-in-out infinite, color 8s ease-in-out infinite
       stroke-linecap: round
 
 @keyframes rotate
@@ -55,13 +49,16 @@ $width: 5rem
 
 @keyframes color
   100%,
-  0%
-    stroke: $yellow
-  40%
-    stroke: $red
-  66%
-    stroke: $green
+  0%,
+  10%
+    stroke: $cwa-warning
+  30%,
+  35%
+    stroke: $cwa-danger
+  50%,
+  60%
+    stroke: $cwa-success
   80%,
-  90%
-    stroke: $red
+  85%
+    stroke: $cwa-danger
 </style>
