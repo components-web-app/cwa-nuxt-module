@@ -35,9 +35,13 @@
             </span>
           </button>
         </div>
-        <div class="login-nav">
-          <nuxt-link to="/">< Back to website</nuxt-link>
-          <nuxt-link to="/">Forgot your password?</nuxt-link>
+        <div class="login-nav row">
+          <div class="column is-narrow">
+            <nuxt-link to="/">< Back to website</nuxt-link>
+          </div>
+          <div class="column is-narrow">
+            <nuxt-link to="/">Forgot your password?</nuxt-link>
+          </div>
         </div>
       </form>
     </div>
@@ -88,7 +92,7 @@ export default {
 
 <style lang="sass">
 .login-page
-  padding: 2rem
+  padding: 4rem 2rem
   min-height: 100vh
   display: flex
   align-items: center
@@ -101,9 +105,14 @@ export default {
       +font-lemonmilk
       font-size: 2.2rem
       margin-top: 1.5rem
+      +mobile
+        font-size: 1.8rem
     svg
       max-width: 300px
       height: auto
+    +mobile
+      svg
+       max-width: 180px
   label
     letter-spacing: .08em
   input
@@ -116,8 +125,8 @@ export default {
       color: $cwa-color-text-light
   button
     margin-top: 1rem
-    font-size: 1.7rem
-    height: 3.5em
+    font-size: 1.5rem
+    height: 3em
     .icon
       height: 1.5em
       width: 1.5em
@@ -128,13 +137,20 @@ export default {
       margin-right: calc(-.5em - 1px)
       svg
         width: 1em
+    +tablet
+      font-size: 1.7rem
+      height: 3.5em
   .login-nav
     margin-top: 2rem
     padding-top: 1rem
-    display: flex
     justify-content: space-between
-    border-top: 1px solid rgba($cwa-color-text-light, .6)
+    width: 100%
     a
+      display: inline-block
+      padding: 1rem 0
       &:not(:hover)
         opacity: .6
+    +mobile
+      font-size: 1.4rem
+      flex-direction: column-reverse
 </style>

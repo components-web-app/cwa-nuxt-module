@@ -2,89 +2,91 @@
   <div class="cwa-admin-bar-menu">
     <transition name="menu">
       <div v-if="showMenu" class="menu" @click.stop>
-        <div class="menu-header">
-          <div>
-            <cwa-logo class="cwa-logo" />
+        <div class="menu-scroll">
+          <div class="menu-header">
+            <div>
+              <cwa-logo class="cwa-logo" />
+            </div>
+            <span>
+              {{ $cwa.websiteName }}
+            </span>
           </div>
-          <span>
-            {{ $cwa.websiteName }}
-          </span>
-        </div>
-        <div class="menu-columns-aligner">
-          <nav class="menu-columns">
-            <ul class="menu-links-left">
-              <li>
-                <cwa-nuxt-link to="/_cwa/layouts">
-                  <span class="icon">
-                    <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
-                  </span>
-                  <span>Layouts</span>
-                </cwa-nuxt-link>
-              </li>
-              <li>
-                <cwa-nuxt-link to="/_cwa/pages">
-                  <span class="icon">
-                    <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
-                  </span>
-                  <span>Pages</span>
-                </cwa-nuxt-link>
-              </li>
-              <li>
-                <cwa-nuxt-link>
-                  <span class="icon">
-                    <img src="../../assets/images/icon-components.svg" alt="Components Icon" />
-                  </span>
-                  <span>Components</span>
-                </cwa-nuxt-link>
-              </li>
-              <li>
-                <cwa-nuxt-link>
-                  <span class="icon">
-                    <img src="../../assets/images/icon-users.svg" alt="Users Icon" />
-                  </span>
-                  <span>Users</span>
-                </cwa-nuxt-link>
-              </li>
-            </ul>
-            <ul class="menu-links-right">
-              <li>
-                Global Settings
-                <ul>
-                  <li>
-                    <cwa-nuxt-link>Domain</cwa-nuxt-link>
-                  </li>
-                  <li>
-                    <cwa-nuxt-link>Redirects</cwa-nuxt-link>
-                  </li>
-                </ul>
-              </li>
-              <li>
-                Account
-                <ul>
-                  <li>
-                    <cwa-nuxt-link>My account</cwa-nuxt-link>
-                  </li>
-                  <li>
-                    <a href="#" @click.prevent="$auth.logout('local')">Sign out</a>
-                  </li>
-                </ul>
-              </li>
-              <li>
-                CWA
-                <ul>
-                  <li>
-                    <cwa-nuxt-link to="https://cwa.rocks">About CWA</cwa-nuxt-link>
-                  </li>
-                  <li>
-                    <cwa-nuxt-link :to="cwaModuleVersionLink">CWA <span class="small">{{ cwaModuleVersionText }}</span></cwa-nuxt-link>
-                  </li>
-                  <li>
-                    <cwa-nuxt-link :to="$config.API_URL">API <span class="small">{{ apiVersionText }}</span></cwa-nuxt-link>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </nav>
+          <div class="menu-columns-aligner">
+            <nav class="menu-columns">
+              <ul class="menu-links-left">
+                <li>
+                  <cwa-nuxt-link to="/_cwa/layouts">
+                    <span class="icon">
+                      <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
+                    </span>
+                    <span>Layouts</span>
+                  </cwa-nuxt-link>
+                </li>
+                <li>
+                  <cwa-nuxt-link to="/_cwa/pages">
+                    <span class="icon">
+                      <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
+                    </span>
+                    <span>Pages</span>
+                  </cwa-nuxt-link>
+                </li>
+                <li>
+                  <cwa-nuxt-link>
+                    <span class="icon">
+                      <img src="../../assets/images/icon-components.svg" alt="Components Icon" />
+                    </span>
+                    <span>Components</span>
+                  </cwa-nuxt-link>
+                </li>
+                <li>
+                  <cwa-nuxt-link>
+                    <span class="icon">
+                      <img src="../../assets/images/icon-users.svg" alt="Users Icon" />
+                    </span>
+                    <span>Users</span>
+                  </cwa-nuxt-link>
+                </li>
+              </ul>
+              <ul class="menu-links-right">
+                <li>
+                  Global Settings
+                  <ul>
+                    <li>
+                      <cwa-nuxt-link>Domain</cwa-nuxt-link>
+                    </li>
+                    <li>
+                      <cwa-nuxt-link>Redirects</cwa-nuxt-link>
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  Account
+                  <ul>
+                    <li>
+                      <cwa-nuxt-link>My account</cwa-nuxt-link>
+                    </li>
+                    <li>
+                      <a href="#" @click.prevent="$auth.logout('local')">Sign out</a>
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  CWA
+                  <ul>
+                    <li>
+                      <cwa-nuxt-link to="https://cwa.rocks">About CWA</cwa-nuxt-link>
+                    </li>
+                    <li>
+                      <cwa-nuxt-link :to="cwaModuleVersionLink">CWA <span class="small">{{ cwaModuleVersionText }}</span></cwa-nuxt-link>
+                    </li>
+                    <li>
+                      <cwa-nuxt-link :to="$config.API_URL">API <span class="small">{{ apiVersionText }}</span></cwa-nuxt-link>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
       </div>
     </transition>
@@ -146,10 +148,9 @@ export default {
       this.showMenu = showMenu
     },
     truncateVersion(version) {
-      const truncated = version.length > 9
+      return version.length > 9
         ? `${version.substr(0, 3)}..${version.substr(-4)}`
         : version
-      return truncated
     }
   }
 }
@@ -158,6 +159,7 @@ export default {
 <style lang="sass">
 .cwa-admin-bar-menu
   position: relative
+  z-index: 100
   > .hamburger-holder
     z-index: 2
   > .menu
@@ -171,7 +173,6 @@ export default {
     transform: scale(1)
     transition: all .2s
     transform-origin: 100% 0
-    padding: 2.5rem 6rem 6rem
     &:after
       top: 0
       left: 0
@@ -183,6 +184,13 @@ export default {
       opacity: 1
       box-shadow: 0 0 10px 0 black
       transition: opacity 0.2s ease-in-out
+    .menu-scroll
+      max-height: 90vh
+      overflow: auto
+      padding: 2.5rem 4rem 4rem
+      +tablet
+        padding: 2.5rem 6rem 6rem
+
     .menu-header
       text-align: center
       color: $cwa-color-text-light
@@ -200,6 +208,8 @@ export default {
       justify-content: space-between
       max-width: 450px
       width: 100%
+      +mobile
+        flex-direction: column
 
       ul
         list-style: none
@@ -225,6 +235,8 @@ export default {
         &.menu-links-right
           padding-right: 30px
           font-size: 1.45rem
+          +mobile
+            margin-top: 3rem
         &.menu-links-left
           font-size: 1.7rem
           li

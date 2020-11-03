@@ -7,7 +7,12 @@ export default {
   publicRuntimeConfig: {
     API_URL
   },
-  mode: 'universal',
+  head: {
+    meta: [
+      { charset: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+    ]
+  },
   css: ['~/assets/sass/main.sass'],
   buildModules: [
     '@nuxt/typescript-build'
