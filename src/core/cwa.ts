@@ -126,6 +126,12 @@ export default class Cwa {
     }
   }
 
+  private processResource (resource, category) {
+    this.saveResource(resource, category)
+    this.initMercure()
+    return resource
+  }
+
   async createResource (endpoint: string, data: any, category?: string) {
     const doRequest = async () => {
       try {
@@ -135,10 +141,7 @@ export default class Cwa {
       }
     }
 
-    const newResource = await doRequest()
-    this.saveResource(newResource, category)
-    this.initMercure()
-    return newResource
+    return this.processResource(await doRequest(), category)
   }
 
   async refreshResource (endpoint: string, category?: string) {
@@ -150,10 +153,7 @@ export default class Cwa {
       }
     }
 
-    const newResource = await doRequest()
-    this.saveResource(newResource, category)
-    this.initMercure()
-    return newResource
+    return this.processResource(await doRequest(), category)
   }
 
   async updateResource (endpoint: string, data: any, category?: string) {
@@ -173,9 +173,7 @@ export default class Cwa {
     const newResource = await doRequest()
     // we may get a different resource back if it is 'publishable'
     newResource['@id'] = endpoint
-    this.saveResource(newResource, category)
-    this.initMercure()
-    return newResource
+    return this.processResource(await doRequest(), category)
   }
 
   async deleteResource (id: string) {

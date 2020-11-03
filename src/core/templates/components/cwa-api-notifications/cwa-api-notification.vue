@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts">
-import {Notification, NotificationLevels} from "./types";
+import {TimestampedNotification, NotificationLevels} from "./types";
 import { PropType } from 'vue'
 import Timestamp from "../../timestamp.vue";
 
@@ -19,7 +19,7 @@ export default {
   components: { Timestamp },
   props: {
     notification: {
-      type: Object as PropType<Notification>,
+      type: Object as PropType<TimestampedNotification>,
       required: true
     }
   },

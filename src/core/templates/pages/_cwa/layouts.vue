@@ -17,7 +17,7 @@
 
 <script>
 import debounce from 'lodash.debounce'
-import commonMixin from './commonMixin'
+import commonMixin from './common-mixin'
 import CwaFooterLogo from '../../components/cwa-footer-logo'
 import CwaGridHeader from '../../components/cwa-grid-header'
 import NuxtErrorIcon from '../../components/nuxt-error-icon'

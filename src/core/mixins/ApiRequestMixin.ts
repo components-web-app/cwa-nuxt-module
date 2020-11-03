@@ -1,4 +1,4 @@
-import { NotificationEvent, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
+import { Notification, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
 
 export default {
@@ -22,7 +22,7 @@ export default {
       if (!(error instanceof ApiError)) {
         throw error
       }
-      const notification: NotificationEvent = {
+      const notification: Notification = {
         message: error.statusCode + ': ' + error.message,
         level: NotificationLevels.ERROR,
         endpoint: error.endpoint

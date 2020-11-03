@@ -5,6 +5,7 @@ button,
 input[type='button'],
 input[type='reset'],
 input[type='submit']
+  transition: color .2s, background .2s, border .2s
   text-transform: none
   height: 2.5em
   line-height: 1.5
@@ -14,7 +15,12 @@ input[type='submit']
   justify-content: center
   align-items: center
   display: inline-flex
-  border-radius: 1.4rem
+  border-radius: 2rem
+  font-size: 1.5rem
+  &:hover,
+  &:active
+    border-color: darken($color-primary, 5%)
+    background: darken($color-primary, 5%)
   &.is-warning
     background: $cwa-warning
     color: $cwa-color-secondary

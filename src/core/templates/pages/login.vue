@@ -92,7 +92,7 @@ export default {
 
 <style lang="sass">
 .login-page
-  padding: 4rem 2rem
+  padding: 4rem
   min-height: 100vh
   display: flex
   align-items: center

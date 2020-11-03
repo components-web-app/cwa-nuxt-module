@@ -1,18 +1,24 @@
+export const NotificationEvents = {
+  add: 'cwa-notification.add',
+  remove: 'cwa-notification.remove',
+  clear: 'cwa-notification.clear'
+}
+
 export const NotificationLevels = {
   ERROR: 1,
   WARNING: 2,
   INFO: 3
 }
 
-export interface NotificationEvent {
+export interface Notification {
   message: string,
   level: number,
-  endpoint?: string
+  endpoint?: string,
+  field?: string,
+  category?: string
 }
 
-export interface Notification extends NotificationEvent {
+export interface TimestampedNotification extends Notification {
   id: number,
-  message: string,
-  timestamp: Date,
-  level: number
+  timestamp: Date
 }
