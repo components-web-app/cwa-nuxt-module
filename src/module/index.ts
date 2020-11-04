@@ -159,6 +159,16 @@ const cwaModule = <Module> function () {
     },
     ...this.options.cwa
   }
+  this.nuxt.hook('build:templates', ({ templateVars: { layouts } }) => {
+    options.layouts = Object.keys(layouts)
+      .filter(
+        key => key !== 'error' && key.substr(0, 4) !== 'cwa-'
+      )
+      .reduce((obj, key) => {
+        obj[key] = layouts[key]
+        return obj
+      }, {})
+  })
 
   this.addLayout({
     src: resolve(__dirname, '../core/templates/layouts/cwa-error.vue'),

@@ -13,19 +13,11 @@ export default class Cwa {
   public fetcher: Fetcher;
   public $storage: Storage
   public $state
-  public websiteName: string
-  public package: {
-    name: string,
-    version: string
-  }
 
   constructor (ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
-
-    this.websiteName = options.websiteName
-    this.package = options.package
 
     this.ctx = ctx
 

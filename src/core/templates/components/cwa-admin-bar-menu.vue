@@ -8,7 +8,7 @@
               <cwa-logo class="cwa-logo" />
             </div>
             <span>
-              {{ $cwa.websiteName }}
+              {{ $cwa.options.websiteName }}
             </span>
           </div>
           <div class="menu-columns-aligner">
@@ -136,11 +136,11 @@ export default {
       return this.truncateVersion(this.apiVersion) + unstablePostfix
     },
     cwaModuleVersionText() {
-      const unstablePostfix = this.$cwa.package.name.substr(-4) === 'next' ? ' (unstable)' : ''
-      return this.truncateVersion(this.$cwa.package.version) + unstablePostfix
+      const unstablePostfix = this.$cwa.options.package.name.substr(-4) === 'next' ? ' (unstable)' : ''
+      return this.truncateVersion(this.$cwa.options.package.version) + unstablePostfix
     },
     cwaModuleVersionLink() {
-      return `https://www.npmjs.com/package/${this.$cwa.package.name}/v/${this.$cwa.package.version}`
+      return `https://www.npmjs.com/package/${this.$cwa.options.package.name}/v/${this.$cwa.options.package.version}`
     }
   },
   methods: {

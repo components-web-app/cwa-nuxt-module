@@ -10,6 +10,7 @@
     <div class="row fields-container">
       <div class="column">
         <admin-input id="layout-reference" label="Reference" v-model="component.reference" :required="true" />
+        {{ $cwa.options.layouts }}
         <admin-input id="layout-ui" label="UI Component" v-model="component.uiComponent" :required="true" />
       </div>
       <div class="column">
@@ -26,7 +27,7 @@
     </div>
     <div class="row buttons-row">
       <div class="column">
-        <button>Create</button>
+        <button @click="submit">Create</button>
       </div>
       <div v-if="!isNew" class="column is-narrow">
         <button class="is-dark is-delete">Delete</button>
@@ -51,16 +52,27 @@ export default {
       component: {}
     }
   },
-  computed: {
-    isNew() {
-      return this.$route.params.id === 'add'
-    }
-  },
   async mounted() {
     if (this.isNew) {
       return
     }
     this.component = await this.$axios.$get(this.iri)
+  },
+  computed: {
+    isNew() {
+      return this.$route.params.id === 'add'
+    }
+  },
+  methods: {
+    async submit() {
+      const classNames = this.component.classNames.split(',')
+      const newResource = await this.$cwa.createResource('/_/layouts', {
+        reference: this.component.reference,
+        uiComponent: this.component.uiComponent,
+        classNames
+      })
+      this.$emit('close')
+    }
   }
 }
 </script>

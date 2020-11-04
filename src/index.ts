@@ -8,7 +8,13 @@ export type CwaOptions = {
   },
   pagesDepth: number,
   fetchConcurrency: number,
-  allowUnauthorizedTls: boolean
+  allowUnauthorizedTls: boolean,
+  layouts?: {[key: string]: string},
+  websiteName: string,
+  package: {
+    name: string,
+    version: string
+  }
 }
 
 declare module '@nuxt/types' {
