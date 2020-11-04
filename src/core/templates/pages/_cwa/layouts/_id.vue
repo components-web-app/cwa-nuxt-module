@@ -9,14 +9,13 @@
     </div>
     <div class="row fields-container">
       <div class="column">
-        <admin-input id="layout-reference" label="Reference" v-model="component.reference" :required="true" />
-        {{ $cwa.options.layouts }}
-        <admin-input id="layout-ui" label="UI Component" v-model="component.uiComponent" :required="true" />
+        <cwa-admin-text id="layout-reference" label="Reference" v-model="component.reference" :required="true" />
+        <cwa-admin-select id="layout-ui" label="UI Component" v-model="component.uiComponent" :required="true" :options="$cwa.options.layouts" />
       </div>
       <div class="column">
         <div class="right-column-aligner">
           <div>
-            <admin-input id="layout-classNames" label="Style classes" v-model="component.classNames" :required="true" />
+            <cwa-admin-text id="layout-classNames" label="Style classes" v-model="component.classNames" :required="true" />
           </div>
           <div v-if="!isNew" class="timestamps">
             <div>Updated: 00/00/00 @ 00:00 GMT</div>
@@ -39,12 +38,13 @@
 <script>
 import commonMixin from '../common-mixin'
 import CwaModal from '../../../components/cwa-modal'
-import AdminInput from '../../../components/admin/admin-input'
+import CwaAdminText from '../../../components/admin/input/cwa-admin-text'
 import StatusIcon from '../../../components/admin/status-icon'
 import ErrorNotifications from '../../../components/admin/error-notifications'
+import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select'
 
 export default {
-  components: {ErrorNotifications, StatusIcon, AdminInput, CwaModal},
+  components: {CwaAdminSelect, ErrorNotifications, StatusIcon, CwaAdminText, CwaModal},
   mixins: [commonMixin],
   data() {
     return {

@@ -1,19 +1,7 @@
-<template>
-  <div class="cwa-input">
-    <label :for="id">{{ label }}</label>
-    <div>
-      <input
-        type="text"
-        :id="id"
-        :value="value"
-        :required="required"
-        @input="updateValue($event.target.value)" />
-    </div>
-  </div>
-</template>
-
 <script>
+import CwaInputWrapper from './cwa-input-wrapper'
 export default {
+  components: {CwaInputWrapper},
   props: {
     id: {
       type: String,
