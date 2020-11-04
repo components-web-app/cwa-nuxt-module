@@ -7,7 +7,7 @@
         :required="required"
         @input="updateValue($event.target.value)">
         <option :value="null" disabled>Please select</option>
-        <option v-for="(key, value) in options" :key="key" :value="key">{{ value }}</option>
+        <option v-for="(key, value) in options" :key="key" :value="key">{{ isOptionsArray ? key : value }}</option>
       </select>
     </div>
   </cwa-input-wrapper>
@@ -19,8 +19,14 @@ export default {
   mixins: [CwaInputMixin],
   props: {
     options: {
-      type: Object,
+      type: [Object,Array],
       required: true
+    }
+  },
+  computed: {
+    isOptionsArray()
+    {
+      return Array.isArray(this.options)
     }
   }
 }

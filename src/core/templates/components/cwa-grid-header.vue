@@ -15,10 +15,10 @@
       <div class="column is-narrow">
         <div class="select">
           <select name="order" v-model="order">
-            <option value="created=desc">New - Old</option>
-            <option value="created=asc">Old - New</option>
-            <option value="title=asc">A - Z</option>
-            <option value="title=desc">Z - A</option>
+            <option value="createdAt=desc">New - Old</option>
+            <option value="createdAt=asc">Old - New</option>
+            <option value="reference=asc">A - Z</option>
+            <option value="reference=desc">Z - A</option>
           </select>
         </div>
       </div>
@@ -39,7 +39,7 @@ export default {
   data() {
     return {
       search: '',
-      order: 'created=desc'
+      order: 'createdAt=desc'
     }
   },
   mounted() {

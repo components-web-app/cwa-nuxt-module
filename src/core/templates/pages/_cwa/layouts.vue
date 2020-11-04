@@ -1,13 +1,14 @@
 <template>
   <cwa-footer-logo class="cwa-layouts-page">
     <div class="container">
-      <cwa-grid-header title="Layouts" @filter="updateFilters" @add="addNewLayout" />
+      <cwa-grid-header title="Layouts" @filter="updateFilters" @add="showLayout" />
       <cwa-grid-loader :is-loading="loadingData">
-        <ul v-if="layouts.length">
-          <li v-for="layout of layouts" :key="layout['@id']">
-            {{ layout }}
-          </li>
-        </ul>
+        <li v-for="layout of layouts" :key="layout['@id']" class="column column-33">
+          <nuxt-link :to="{ name: '_cwa_layouts_iri', params: { iri: layout['@id'] }}">
+            <p>{{ layout.reference }}</p>
+            <p>{{ layout.uiComponent }}</p>
+          </nuxt-link>
+        </li>
       </cwa-grid-loader>
       <cwa-pagination-bar />
     </div>
@@ -24,9 +25,10 @@ import NuxtErrorIcon from '../../components/nuxt-error-icon'
 import CwaLoader from '../../components/cwa-loader'
 import CwaGridLoader from '../../components/cwa-grid-loader'
 import CwaPaginationBar from '../../components/cwa-pagination-bar'
+import CwaNuxtLink from '../../components/cwa-nuxt-link'
 
 export default {
-  components: {CwaPaginationBar, CwaGridLoader, CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
+  components: {CwaNuxtLink, CwaPaginationBar, CwaGridLoader, CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
   mixins: [commonMixin],
   data() {
     return {
@@ -60,12 +62,18 @@ export default {
       this.loadingData = false
       this.layouts = data['hydra:member']
     },
-    addNewLayout() {
-      this.$router.push({ name: '_cwa_layouts_id', params: { id: 'add' }})
+    showLayout(iri = 'add') {
+      this.$router.push({ name: '_cwa_layouts_iri', params: { iri }})
     },
-    closeModal() {
-      this.$router.push({ name: '_cwa_layouts' })
+    async closeModal() {
+      await this.$router.push({ name: '_cwa_layouts' })
+      await this.loadData()
     }
   }
 }
 </script>
+
+<style lang="sass">
+.layouts-grid
+  list-style: none
+</style>
