@@ -89,13 +89,13 @@ export default {
       } else {
         await this.$cwa.updateResource(this.iri, data)
       }
-      this.$emit('close')
+      this.$emit('change')
       // this.loading = false
     },
     async deleteLayout() {
       this.loading = true
       await this.$cwa.deleteResource(this.iri)
-      this.$emit('close')
+      this.$emit('change')
       // this.loading = false
     }
   }

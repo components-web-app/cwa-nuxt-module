@@ -5,7 +5,7 @@
         <h1>{{ title }}</h1>
       </div>
       <div class="column is-narrow">
-        <cwa-add-button @click="$emit('add')" />
+        <cwa-add-button @click="$emit('add')" :highlight="highlightAddButton" />
       </div>
     </div>
     <div class="cwa-filter-bar row cwa-input">
@@ -34,6 +34,11 @@ export default {
     title: {
       type: String,
       required: true
+    },
+    highlightAddButton: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   data() {

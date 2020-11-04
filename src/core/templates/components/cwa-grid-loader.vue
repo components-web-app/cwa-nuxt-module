@@ -5,7 +5,7 @@
         <cwa-loader />
       </div>
     </div>
-    <div v-else-if="!hasSlot" class="no-items-found">
+    <div v-else-if="!totalItems" class="no-items-found">
       <div class="not-found-icon">
         <nuxt-error-icon />
       </div>
@@ -26,13 +26,11 @@ export default {
     isLoading: {
       type: Boolean,
       required: true
-    }
-  },
-  computed: {
-    hasSlot() {
-      const ss = this.$scopedSlots
-      const nodes = ss && ss.default && ss.default()
-      return nodes && nodes.length
+    },
+    totalItems: {
+      type: Number,
+      required: false,
+      default: null
     }
   }
 }

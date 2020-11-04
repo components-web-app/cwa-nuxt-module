@@ -1,18 +1,18 @@
 <template>
   <cwa-footer-logo class="cwa-layouts-page">
     <div class="container">
-      <cwa-grid-header title="Layouts" @filter="updateFilters" @add="showLayout" />
-      <cwa-grid-loader :is-loading="loadingData">
+      <cwa-grid-header title="Layouts" @filter="updateFilters" @add="showLayout" :highlight-add-button="!layouts.length" />
+      <cwa-grid-loader :is-loading="loadingData" :total-items="layouts.length">
         <li v-for="layout of layouts" :key="layout['@id']" class="column column-33">
-          <nuxt-link :to="{ name: '_cwa_layouts_iri', params: { iri: layout['@id'] }}">
-            <p>{{ layout.reference }}</p>
-            <p>{{ layout.uiComponent }}</p>
+          <nuxt-link :to="{ name: '_cwa_layouts_iri', params: { iri: layout['@id'] }}" class="layout-grid-item">
+            <p class="title">{{ layout.reference }}</p>
+            <p class="subtitle">{{ layout.uiComponent }}</p>
           </nuxt-link>
         </li>
       </cwa-grid-loader>
       <cwa-pagination-bar />
     </div>
-    <nuxt-child @close="closeModal" />
+    <nuxt-child @close="closeModal" @change="reloadAndClose" />
   </cwa-footer-logo>
 </template>
 
@@ -65,15 +65,44 @@ export default {
     showLayout(iri = 'add') {
       this.$router.push({ name: '_cwa_layouts_iri', params: { iri }})
     },
+    async reloadAndClose() {
+      await this.loadData()
+      await this.closeModal()
+    },
     async closeModal() {
       await this.$router.push({ name: '_cwa_layouts' })
-      await this.loadData()
     }
   }
 }
 </script>
 
 <style lang="sass">
-.layouts-grid
-  list-style: none
+.cwa-layouts-page
+  .layout-grid-item
+    position: relative
+    background: $cwa-navbar-background
+    padding: 2rem 7rem 2rem 2rem
+    display: block
+    color: $cwa-color-text-light
+    &:after
+      content: ''
+      position: absolute
+      top: 0
+      right: 0
+      width: 7rem
+      height: 100%
+      background: url("../../../assets/images/icon-layout.svg") 0 50% no-repeat
+      opacity: .6
+      transition: .25s
+    &:hover,
+    &:focus
+      color: $white
+      &:after
+        opacity: 1
+    p
+      margin: 0
+      &.title
+        font-size: 2rem
+      &.subtitle
+        font-size: inherit
 </style>
