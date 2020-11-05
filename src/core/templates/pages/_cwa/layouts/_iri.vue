@@ -10,13 +10,21 @@
     <section class="details-section">
       <div class="row fields-container">
         <div class="column">
-          <cwa-admin-text id="layout-reference" label="Reference" v-model="component.reference" :required="true" :notifications="notifications.reference" />
-          <cwa-admin-select id="layout-ui" label="UI Component" v-model="component.uiComponent" :required="true" :notifications="notifications.uiComponent" :options="Object.keys($cwa.options.layouts)" />
+          <cwa-admin-text
+            label="Reference"
+            v-model="component.reference"
+            v-bind="inputProps('reference')"
+          />
         </div>
         <div class="column">
           <div class="right-column-aligner">
             <div>
-              <cwa-admin-text id="layout-classNames" label="Style classes" v-model="component.classNames" :required="true" :notifications="notifications.classNames" />
+              <cwa-admin-select
+                label="UI Component"
+                v-model="component.uiComponent"
+                :options="Object.keys($cwa.options.layouts)"
+                v-bind="inputProps('uiComponent')"
+              />
             </div>
             <div v-if="!isNew" class="timestamps">
               <div>Updated: {{ formatDate(parseDateString(component.modifiedAt)) }} UTC</div>
@@ -118,6 +126,13 @@ export default {
     },
     saved() {
       return JSON.stringify(this.component) ===  JSON.stringify(this.savedComponent)
+    },
+    inputProps() {
+      return key => ({
+        id: `layout-${key}`,
+        required: true,
+        notifications: this.notifications[key]
+      })
     }
   },
   methods: {
