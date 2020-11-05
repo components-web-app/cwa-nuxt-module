@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts">
-import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
+import { NotificationEvents, NotificationLevels, Notification } from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
 import {StoreCategories} from "../storage";
 import ApiError from "../../inc/api-error";
 
@@ -63,11 +63,13 @@ export default {
         if (!(error instanceof ApiError)) {
           throw error
         }
-        const notification: NotificationEvent = {
+        const notification: Notification = {
+          code: 'components-list',
+          title: 'An error occurred',
           message: error.message,
           level: NotificationLevels.ERROR
         }
-        this.$root.$emit('cwa-notification', notification)
+        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
       }
       this.addingComponent = false
       this.$emit('added')

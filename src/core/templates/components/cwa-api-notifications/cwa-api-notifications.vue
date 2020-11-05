@@ -19,38 +19,15 @@
 </template>
 
 <script lang="ts">
-import {NotificationEvent, Notification} from "./types";
-import CwaApiNotification from "./cwa-api-notification.vue";
+import CwaApiNotification from "./cwa-api-notification.vue"
+import ApiNotificationsMixin from "../../../mixins/ApiNotificationsMixin"
 
 export default {
+  mixins: [ApiNotificationsMixin],
   components: {CwaApiNotification},
   data() {
     return {
-      notifications: [] as Notification[],
       expandNotifications: false as boolean
-    }
-  },
-  mounted() {
-    this.$root.$on('cwa-notification', this.addNotification)
-  },
-  beforeDestroy() {
-    this.$root.$off('cwa-notification', this.addNotification)
-  },
-  methods: {
-    addNotification(notificationEvent: NotificationEvent): Notification
-    {
-      const timestamp = new Date()
-      const notification = {
-        ...notificationEvent,
-        timestamp,
-        id: timestamp.getTime()
-      }
-      this.notifications.unshift(notification)
-      this.expandNotifications = true
-      return notification
-    },
-    removeNotification(index) {
-      this.notifications.splice(index, 1)
     }
   }
 }

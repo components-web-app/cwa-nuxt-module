@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import consola from 'consola'
 import type { CwaOptions } from '../'
 import ApiRequestError from '../inc/api-error'
@@ -13,19 +14,14 @@ export default class Cwa {
   public fetcher: Fetcher;
   public $storage: Storage
   public $state
-  public websiteName: string
-  public package: {
-    name: string,
-    version: string
-  }
+  public $eventBus
 
   constructor (ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
 
-    this.websiteName = options.websiteName
-    this.package = options.package
+    this.$eventBus = new Vue()
 
     this.ctx = ctx
 
@@ -106,10 +102,11 @@ export default class Cwa {
   /**
    * API Requests
    */
-  private static handleRequestError (error) {
+  private handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
-    consola.error(axiosError)
-    throw new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint)
+    const exception = new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint, axiosError.violations)
+    this.$eventBus.$emit('cwa-api-error', exception)
+    throw exception
   }
 
   async getApiDocumentation () {
@@ -126,19 +123,22 @@ export default class Cwa {
     }
   }
 
+  private processResource (resource, category) {
+    this.saveResource(resource, category)
+    this.initMercure()
+    return resource
+  }
+
   async createResource (endpoint: string, data: any, category?: string) {
     const doRequest = async () => {
       try {
         return await this.ctx.$axios.$post(endpoint, data)
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 
-    const newResource = await doRequest()
-    this.saveResource(newResource, category)
-    this.initMercure()
-    return newResource
+    return this.processResource(await doRequest(), category)
   }
 
   async refreshResource (endpoint: string, category?: string) {
@@ -146,14 +146,11 @@ export default class Cwa {
       try {
         return await this.ctx.$axios.$get(endpoint)
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 
-    const newResource = await doRequest()
-    this.saveResource(newResource, category)
-    this.initMercure()
-    return newResource
+    return this.processResource(await doRequest(), category)
   }
 
   async updateResource (endpoint: string, data: any, category?: string) {
@@ -165,7 +162,7 @@ export default class Cwa {
           }
         })
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 
@@ -173,9 +170,7 @@ export default class Cwa {
     const newResource = await doRequest()
     // we may get a different resource back if it is 'publishable'
     newResource['@id'] = endpoint
-    this.saveResource(newResource, category)
-    this.initMercure()
-    return newResource
+    return this.processResource(await doRequest(), category)
   }
 
   async deleteResource (id: string) {
@@ -183,7 +178,7 @@ export default class Cwa {
       try {
         return await this.ctx.$axios.delete(id)
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 

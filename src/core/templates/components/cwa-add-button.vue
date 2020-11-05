@@ -1,8 +1,20 @@
 <template>
-  <a class="cwa-add-button is-pulsing" @click="$emit('click')">
+  <a :class="['cwa-add-button', { 'is-pulsing': highlight }]" @click="$emit('click')">
     <img src="../../assets/images/icon-add.svg" alt="Plus icon" />
   </a>
 </template>
+
+<script>
+export default {
+  props: {
+    highlight: {
+      type: Boolean,
+      default: false,
+      required: false
+    }
+  }
+}
+</script>
 
 <style lang="sass">
 @keyframes shadow-pulse
@@ -29,21 +41,25 @@
   > img
     position: relative
     transform: translate3d(0,0,0)
+  &:before
+    position: absolute
+    content: ''
+    top: 50%
+    left: 50%
+    width: 100%
+    height: 100%
+    background: $cwa-color-primary
+    border-radius: 50%
+    animation: shadow-pulse 1.7s infinite
+    animation-timing-function: cubic-bezier(.61,-0.39,.41,1.42)
+    transform-origin: 50% 50%
+    transform: translate(-50%, -50%) scale(1.15)
+    backface-visibility: hidden
+    opacity: 0
+    transition: opacity .2s
   &.is-pulsing
     &:before
-      position: absolute
-      content: ''
-      top: 50%
-      left: 50%
-      width: 100%
-      height: 100%
-      background: $cwa-color-primary
-      border-radius: 50%
-      animation: shadow-pulse 1.7s infinite
-      animation-timing-function: cubic-bezier(.61,-0.39,.41,1.42)
-      transform-origin: 50% 50%
-      transform: translate(-50%, -50%) scale(1.15)
-      backface-visibility: hidden
+      opacity: 1
     > img
       animation: plus-pulse 1.7s infinite linear
       animation-delay: .85s

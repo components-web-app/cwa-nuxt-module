@@ -1,5 +1,5 @@
 import debounce from 'lodash.debounce'
-import { NotificationEvent, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
+import { NotificationEvents, Notification, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
 import ComponentMixin from './ComponentMixin'
 
 export default {
@@ -7,6 +7,11 @@ export default {
   props: {
     field: {
       required: true,
+      type: String
+    },
+    notificationCategory: {
+      required: false,
+      default: null,
       type: String
     }
   },
@@ -40,13 +45,18 @@ export default {
       try {
         await this.$cwa.updateResource(this.iri, { [this.field]: this.inputValue }, this.category || null)
         this.outdated = false
-      } catch (error) {
-        this.error = error
-        const notification: NotificationEvent = {
-          message: error,
-          level: NotificationLevels.ERROR
+      } catch (message) {
+        this.error = message
+        const notification: Notification = {
+          code: 'input-error',
+          title: 'Input Error',
+          message,
+          level: NotificationLevels.ERROR,
+          endpoint: this.iri,
+          field: this.field,
+          category: this.notificationCategory
         }
-        this.$root.$emit('cwa-notification', notification)
+        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
       }
     }
   }

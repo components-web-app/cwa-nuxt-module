@@ -2,11 +2,8 @@
   <client-only>
     <div v-if="$cwa.isAdmin" class="cwa-admin-bar">
       <div class="left">
-        <div class="status-icon"></div>
-        <a class="errors" href="#">
-          <div class="triangle"></div>
-          <span class="total">1</span>
-        </a>
+        <status-icon :status="-2" />
+        <error-notifications />
       </div>
       <div class="center">
         <div class="icons">
@@ -34,8 +31,10 @@
 <script>
 import CwaAdminBarMenu from "./cwa-admin-bar-menu"
 import CwaNuxtLink from "./cwa-nuxt-link";
+import StatusIcon from './admin/status-icon'
+import ErrorNotifications from './admin/error-notifications'
 export default {
-  components: {CwaNuxtLink, CwaAdminBarMenu}
+  components: {ErrorNotifications, StatusIcon, CwaNuxtLink, CwaAdminBarMenu}
 }
 </script>
 
@@ -52,49 +51,6 @@ export default {
   z-index: 1000
   > div
     display: flex
-  .left
-    .status-icon
-      width: 20px
-      height: 20px
-      border-radius: 50%
-      background: $cwa-success
-      background-clip: content-box
-      border: 3px solid transparent
-      box-shadow: 0 0 0 1px $cwa-success
-    .errors
-      position: relative
-      width: .95em
-      height: .95em
-      margin: 0 1.8rem
-      .total
-        position: absolute
-        z-index: 2
-        color: white
-        top: 50%
-        left: 50%
-        transform: translate(-50%, -35%)
-        font-size: .8em
-        font-weight: $font-weight-bold
-      .triangle
-        z-index: 1
-        position: relative
-        background-color: $cwa-danger
-        transform: rotate(-60deg) skewX(-30deg) scale(1,.866)
-        &:before,
-        &:after
-          content: ''
-          position: absolute
-          background-color: inherit
-        &:before
-          transform: rotate(-135deg) skewX(-45deg) scale(1.414,.707) translate(0,-50%)
-        &:after
-          transform: rotate(135deg) skewY(-45deg) scale(.707,1.414) translate(50%,0)
-      .triangle,
-      .triangle:before,
-      .triangle:after
-        width: 100%
-        height: 100%
-        border-top-right-radius: 30%
   .center
     flex-grow: 1
     justify-content: center

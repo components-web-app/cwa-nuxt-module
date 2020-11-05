@@ -1,17 +1,19 @@
 <template>
-  <div class="row row-wrap grid">
-    <div v-if="isLoading" class="column">
+  <div class="grid-loader">
+    <div v-if="isLoading">
       <div class="grid-loading">
         <cwa-loader />
       </div>
     </div>
-    <div v-else-if="!hasSlot" class="column no-items-found">
+    <div v-else-if="!totalItems" class="no-items-found">
       <div class="not-found-icon">
         <nuxt-error-icon />
       </div>
       Sorry, no items found
     </div>
-    <slot />
+    <ul class="row row-wrap grid" v-else>
+      <slot />
+    </ul>
   </div>
 </template>
 
@@ -24,13 +26,11 @@ export default {
     isLoading: {
       type: Boolean,
       required: true
-    }
-  },
-  computed: {
-    hasSlot() {
-      const ss = this.$scopedSlots
-      const nodes = ss && ss.default && ss.default()
-      return nodes && nodes.length
+    },
+    totalItems: {
+      type: Number,
+      required: false,
+      default: null
     }
   }
 }
@@ -49,7 +49,7 @@ export default {
   100%
     opacity: .5
 
-.grid
+.grid-loader
   .no-items-found
     text-align: center
     opacity: 0
@@ -62,4 +62,6 @@ export default {
       animation-fill-mode: forwards
       transform-origin: 50% 50%
       opacity: 0
+  .grid
+    margin-top: 2.5rem
 </style>
