@@ -50,7 +50,17 @@ export default {
   },
   methods: {
     updateFilters(filters) {
-      this.filters = filters
+      const newFilters = {}
+      if (filters.order) {
+        for (const [key, value] of Object.entries(filters.order)) {
+          newFilters[`order[${key}]`] = value
+        }
+      }
+      if (filters.search) {
+        newFilters[`reference`] = filters.search
+        newFilters[`uiComponent`] = filters.search
+      }
+      this.filters = newFilters
     },
     async loadData() {
       this.loadingData = true

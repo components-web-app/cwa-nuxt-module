@@ -102,6 +102,7 @@ export default {
       return
     }
     this.component = await this.$axios.$get(this.iri)
+    this.component?.uiClassNames = this.component?.uiClassNames?.join(', ')
     this.loading = false
     this.savedComponent = Object.assign({}, this.component)
   },
@@ -144,11 +145,11 @@ export default {
     async submit() {
       this.loading = true
       this.notifications = {}
-      const classNames = this.component?.classNames?.split(',')
+      const uiClassNames = this.component?.uiClassNames?.split(',').map(item => (item.trim()))
       const data = {
         reference: this.component.reference,
         uiComponent: this.component.uiComponent,
-        classNames
+        uiClassNames
       }
       try {
         if (this.isNew) {
