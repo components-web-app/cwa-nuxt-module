@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-input">
+  <div :class="['cwa-input', { 'has-error': hasError }]">
     <label :for="id">{{ label }}</label>
     <slot />
   </div>
@@ -15,6 +15,10 @@ export default {
     label: {
       type: String,
       required: true
+    },
+    hasError: {
+      type: Boolean,
+      default: false
     }
   }
 }

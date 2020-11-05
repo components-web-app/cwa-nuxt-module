@@ -57,7 +57,7 @@ export default {
       }
 
       this.menuData = {}
-      this.$root.$emit('contextmenu.show', this)
+      this.$cwa.$eventBus.$emit('contextmenu.show', this)
       if (Object.keys(this.menuData).length === 0) {
         return
       }
@@ -100,7 +100,7 @@ export default {
     window.addEventListener('contextmenu', this.open)
     window.addEventListener('click', this.close)
     this.$el.addEventListener('contextmenu', (e) => { e.stopPropagation(); e.preventDefault() })
-    this.$root.$on('context-menu-add-data', this.addContextMenuData)
+    this.$cwa.$eventBus.$on('context-menu-add-data', this.addContextMenuData)
   },
   beforeDestroy() {
     window.removeEventListener('contextmenu', this.open)

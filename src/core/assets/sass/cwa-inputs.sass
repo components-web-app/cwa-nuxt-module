@@ -6,8 +6,9 @@
     opacity: .6
   input[type=text],
   select
-    border: none
+    border: 1px solid rgba(black, .3)
     background-color: rgba(black, .3)
+    background-clip: padding-box
     color: $cwa-color-text-light
     padding: .2rem 3.8rem .3rem 1.0rem
     height: 3.4rem
@@ -34,6 +35,10 @@
       background: url("../images/icon-dropdown.svg") 50% 50% no-repeat
       opacity: .6
       pointer-events: none
+  &.has-error
+    input[type=text],
+    select
+      border-color: $cwa-danger
 
 .cwa-input
   +cwa-input-style

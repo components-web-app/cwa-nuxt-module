@@ -45,7 +45,7 @@ export default {
   },
   mounted() {
     this.$emit(toggleEmitEventName, this.open)
-    this.$root.$on(closeMenuListenEvent, this.close)
+    this.$cwa.$eventBus.$on(closeMenuListenEvent, this.close)
 
     if (!this.gsapEnabled) {
       return

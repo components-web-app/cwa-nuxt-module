@@ -18,7 +18,7 @@ input[type='submit']
   border-radius: 2rem
   font-size: 1.5rem
   &:hover,
-  &:active
+  &:focus
     border-color: darken($color-primary, 5%)
     background: darken($color-primary, 5%)
   &.is-warning
@@ -26,19 +26,19 @@ input[type='submit']
     color: $cwa-color-secondary
     border-color: darken($cwa-warning, 5%)
     &:hover,
-    &:active
+    &:focus
       background: darken($cwa-warning, 5%)
   &.is-dark
     background: $cwa-background-dark
     color: $cwa-color-text-light
     border-color: $cwa-background-dark
     &:hover,
-    &:active
+    &:focus
       background: darken($cwa-background-dark, 5%)
   &.is-light
     background: $cwa-background-light
     color: $cwa-background-dark
     border-color: $cwa-background-light
     &:hover,
-    &:active
+    &:focus
       background: darken($cwa-background-light, 5%)

@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import consola from 'consola'
 import type { CwaOptions } from '../'
 import ApiRequestError from '../inc/api-error'
@@ -13,11 +14,14 @@ export default class Cwa {
   public fetcher: Fetcher;
   public $storage: Storage
   public $state
+  public $eventBus
 
   constructor (ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
+
+    this.$eventBus = new Vue()
 
     this.ctx = ctx
 
@@ -98,10 +102,11 @@ export default class Cwa {
   /**
    * API Requests
    */
-  private static handleRequestError (error) {
+  private handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
-    consola.error(axiosError)
-    throw new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint)
+    const exception = new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint, axiosError.violations)
+    this.$eventBus.$emit('cwa-api-error', exception)
+    throw exception
   }
 
   async getApiDocumentation () {
@@ -129,7 +134,7 @@ export default class Cwa {
       try {
         return await this.ctx.$axios.$post(endpoint, data)
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 
@@ -141,7 +146,7 @@ export default class Cwa {
       try {
         return await this.ctx.$axios.$get(endpoint)
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 
@@ -157,7 +162,7 @@ export default class Cwa {
           }
         })
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 
@@ -173,7 +178,7 @@ export default class Cwa {
       try {
         return await this.ctx.$axios.delete(id)
       } catch (error) {
-        Cwa.handleRequestError(error)
+        this.handleRequestError(error)
       }
     }
 

@@ -19,14 +19,14 @@ export default {
     },
     populateContextMenu () {
       this.removeContextMenuShowListener()
-      this.$root.$once('contextmenu.show', this.contextMenuShowListener)
+      this.$cwa.$eventBus.$once('contextmenu.show', this.contextMenuShowListener)
     },
     contextMenuShowListener () {
       const dataObject = this.getContextMenuData()
       if (!dataObject) {
         return
       }
-      this.$root.$emit('context-menu-add-data', this.getContextMenuData())
+      this.$cwa.$eventBus.$emit('context-menu-add-data', this.getContextMenuData())
     },
     removeContextMenuShowListener () {
       this.$root.$off('contextmenu.show', this.contextMenuShowListener)

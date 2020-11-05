@@ -67,7 +67,7 @@ export default {
           message: error.message,
           level: NotificationLevels.ERROR
         }
-        this.$root.$emit(NotificationEvents.add, notification)
+        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
       }
       this.addingComponent = false
       this.$emit('added')

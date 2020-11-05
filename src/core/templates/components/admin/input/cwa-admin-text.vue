@@ -1,5 +1,5 @@
 <template>
-  <cwa-input-wrapper :id="id" :label="label">
+  <cwa-input-wrapper :id="id" :label="label" :has-error="hasError">
     <div>
       <input
         type="text"

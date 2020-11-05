@@ -27,7 +27,7 @@ export default {
         level: NotificationLevels.ERROR,
         endpoint: error.endpoint
       }
-      this.$root.$emit('cwa-notification', notification)
+      this.$cwa.$eventBus.$emit('cwa-notification', notification)
     }
   }
 }

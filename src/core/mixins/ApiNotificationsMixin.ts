@@ -1,5 +1,10 @@
 import Vue from 'vue'
-import { Notification, NotificationEvents, TimestampedNotification } from '../templates/components/cwa-api-notifications/types'
+import {
+  Notification,
+  NotificationEvents,
+  RemoveNotificationEvent,
+  TimestampedNotification
+} from '../templates/components/cwa-api-notifications/types'
 
 export default Vue.extend({
   data () {
@@ -8,13 +13,22 @@ export default Vue.extend({
     }
   },
   mounted () {
-    this.$root.$on(NotificationEvents.add, this.addNotification)
+    this.$cwa.$eventBus.$on(NotificationEvents.add, this.addNotification)
+    this.$cwa.$eventBus.$on(NotificationEvents.remove, this.removeNotification)
   },
   beforeDestroy () {
     this.$root.$off(NotificationEvents.add, this.addNotification)
+    this.$root.$off(NotificationEvents.remove, this.removeNotification)
   },
   methods: {
+    isSupportedCategory (category) {
+      const listenCategories = this.listenCategories || []
+      return (!category && !listenCategories.length) || listenCategories.includes(category)
+    },
     addNotification (notificationEvent: Notification): TimestampedNotification {
+      if (!this.isSupportedCategory(notificationEvent.category)) {
+        return
+      }
       const timestamp = new Date()
       const notification = {
         ...notificationEvent,
@@ -25,7 +39,14 @@ export default Vue.extend({
       this.expandNotifications = true
       return notification
     },
-    removeNotification (index) {
+    removeNotification (event: RemoveNotificationEvent) {
+      if (!this.isSupportedCategory(event.category)) {
+        return
+      }
+      const index = this.notifications.findIndex((obj: Notification) => (obj.code === event.code))
+      if (index === -1) {
+        return
+      }
       this.notifications.splice(index, 1)
     }
   }

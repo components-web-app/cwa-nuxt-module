@@ -2,7 +2,7 @@
   <client-only>
     <div v-if="$cwa.isAdmin" class="cwa-admin-bar">
       <div class="left">
-        <status-icon />
+        <status-icon :status="-2" />
         <error-notifications />
       </div>
       <div class="center">

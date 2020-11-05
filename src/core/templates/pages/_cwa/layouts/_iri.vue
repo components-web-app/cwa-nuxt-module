@@ -1,8 +1,8 @@
 <template>
   <cwa-modal @close="$emit('close')" class="layout-details-page">
     <div class="status-bar">
-      <status-icon />
-      <error-notifications />
+      <status-icon :status="saved ? 1 : 0" :category="unsavedCategory" />
+      <error-notifications :listen-categories="[unsavedCategory, violationsCategory]" />
     </div>
     <div>
       <h2>Layout Details</h2>
@@ -10,13 +10,13 @@
     <section class="details-section">
       <div class="row fields-container">
         <div class="column">
-          <cwa-admin-text id="layout-reference" label="Reference" v-model="component.reference" :required="true" />
-          <cwa-admin-select id="layout-ui" label="UI Component" v-model="component.uiComponent" :required="true" :options="Object.keys($cwa.options.layouts)" />
+          <cwa-admin-text id="layout-reference" label="Reference" v-model="component.reference" :required="true" :notifications="notifications.reference" />
+          <cwa-admin-select id="layout-ui" label="UI Component" v-model="component.uiComponent" :required="true" :notifications="notifications.uiComponent" :options="Object.keys($cwa.options.layouts)" />
         </div>
         <div class="column">
           <div class="right-column-aligner">
             <div>
-              <cwa-admin-text id="layout-classNames" label="Style classes" v-model="component.classNames" :required="true" />
+              <cwa-admin-text id="layout-classNames" label="Style classes" v-model="component.classNames" :required="true" :notifications="notifications.classNames" />
             </div>
             <div v-if="!isNew" class="timestamps">
               <div>Updated: {{ formatDate(parseDateString(component.modifiedAt)) }} UTC</div>
@@ -42,7 +42,7 @@
   </cwa-modal>
 </template>
 
-<script>
+<script lang="ts">
 import CommonMixin from '../common-mixin'
 import CwaModal from '../../../components/cwa-modal'
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text'
@@ -51,6 +51,14 @@ import ErrorNotifications from '../../../components/admin/error-notifications'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select'
 import ApiDateParserMixin from '../../../../mixins/ApiDateParserMixin'
 import CwaLoader from '../../../components/cwa-loader'
+import {
+  NotificationEvents,
+  Notification,
+  NotificationLevels,
+  RemoveNotificationEvent
+} from '../../../components/cwa-api-notifications/types'
+import {Violation} from "../../../../../utils/AxiosErrorParser"
+import ApiRequestError from "../../../../../inc/api-error"
 
 export default {
   components: {CwaLoader, CwaAdminSelect, ErrorNotifications, StatusIcon, CwaAdminText, CwaModal},
@@ -59,7 +67,20 @@ export default {
     return {
       iri: decodeURIComponent(this.$route.params.iri),
       component: {},
-      loading: true
+      loading: true,
+      savedComponent: {},
+      unsavedCategory: 'layouts',
+      violationsCategory: 'layouts.violations',
+      fieldMapping: {
+        reference: {
+          label: 'Reference',
+          id: 'layout-reference',
+          required: true
+        }
+      },
+      notifications: {}
+    } as {
+      notifications: {[key: string]: Notification[]}
     }
   },
   async mounted() {
@@ -69,34 +90,78 @@ export default {
     }
     this.component = await this.$axios.$get(this.iri)
     this.loading = false
+    this.savedComponent = Object.assign({}, this.component)
+  },
+  watch: {
+    saved(isSaved) {
+      if (!isSaved) {
+        const notification: Notification = {
+          code: 'unsaved',
+          title: 'Layout not saved',
+          message: 'Your changes are not saved',
+          level: NotificationLevels.WARNING,
+          category: this.unsavedCategory
+        }
+        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
+        return
+      }
+      const event: RemoveNotificationEvent = {
+        code: 'unsaved',
+        category: this.unsavedCategory
+      }
+      this.$cwa.$eventBus.$emit(NotificationEvents.remove, event)
+    }
   },
   computed: {
     isNew() {
       return this.$route.params.iri === 'add'
+    },
+    saved() {
+      return JSON.stringify(this.component) ===  JSON.stringify(this.savedComponent)
     }
   },
   methods: {
     async submit() {
       this.loading = true
+      this.notifications = {}
       const classNames = this.component?.classNames?.split(',')
       const data = {
         reference: this.component.reference,
         uiComponent: this.component.uiComponent,
         classNames
       }
-      if (this.isNew) {
-        await this.$cwa.createResource('/_/layouts', data)
-      } else {
-        await this.$cwa.updateResource(this.iri, data)
+      try {
+        if (this.isNew) {
+          await this.$cwa.createResource('/_/layouts', data)
+        } else {
+          await this.$cwa.updateResource(this.iri, data)
+        }
+        this.$emit('change')
+      } catch (error) {
+        if (!(error instanceof ApiRequestError)) {
+          throw error
+        }
+        error.violations.forEach((violation: Violation) => {
+          const notification: Notification = {
+            code: violation.propertyPath,
+            title: violation.propertyPath,
+            message: violation.message,
+            level: NotificationLevels.ERROR,
+            category: this.violationsCategory
+          }
+          const fieldNotifications = this.notifications[violation.propertyPath] || []
+          fieldNotifications.push(notification)
+          this.notifications[violation.propertyPath] = fieldNotifications
+        })
       }
-      this.$emit('change')
-      // this.loading = false
+
+      this.loading = false
     },
     async deleteLayout() {
       this.loading = true
       await this.$cwa.deleteResource(this.iri)
       this.$emit('change')
-      // this.loading = false
+      this.loading = false
     }
   }
 }
@@ -124,7 +189,8 @@ export default {
   .buttons-row
     margin-top: 2.5rem
     button.is-delete
-      &:hover
+      &:hover,
+      &:focus
         border-color: $cwa-danger
         background: $cwa-danger
         color: $white

@@ -54,7 +54,7 @@ export default {
           field: this.field,
           category: this.notificationCategory
         }
-        this.$root.$emit(NotificationEvents.add, notification)
+        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
       }
     }
   }
