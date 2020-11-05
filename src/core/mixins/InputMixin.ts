@@ -48,6 +48,8 @@ export default {
       } catch (message) {
         this.error = message
         const notification: Notification = {
+          code: 'input-error',
+          title: 'Input Error',
           message,
           level: NotificationLevels.ERROR,
           endpoint: this.iri,

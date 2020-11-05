@@ -23,6 +23,8 @@ export default {
         throw error
       }
       const notification: Notification = {
+        code: 'cwa-api-error',
+        title: 'API Error',
         message: error.statusCode + ': ' + error.message,
         level: NotificationLevels.ERROR,
         endpoint: error.endpoint

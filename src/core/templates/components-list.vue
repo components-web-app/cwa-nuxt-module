@@ -64,6 +64,8 @@ export default {
           throw error
         }
         const notification: Notification = {
+          code: 'components-list',
+          title: 'An error occurred',
           message: error.message,
           level: NotificationLevels.ERROR
         }

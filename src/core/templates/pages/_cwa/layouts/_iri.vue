@@ -15,15 +15,20 @@
             v-model="component.reference"
             v-bind="inputProps('reference')"
           />
+          <cwa-admin-select
+            label="UI Component"
+            v-model="component.uiComponent"
+            :options="Object.keys($cwa.options.layouts)"
+            v-bind="inputProps('uiComponent')"
+          />
         </div>
         <div class="column">
           <div class="right-column-aligner">
             <div>
-              <cwa-admin-select
-                label="UI Component"
-                v-model="component.uiComponent"
-                :options="Object.keys($cwa.options.layouts)"
-                v-bind="inputProps('uiComponent')"
+              <cwa-admin-text
+                label="Style classes"
+                v-model="component.uiClassNames"
+                v-bind="inputProps('uiClassNames')"
               />
             </div>
             <div v-if="!isNew" class="timestamps">
