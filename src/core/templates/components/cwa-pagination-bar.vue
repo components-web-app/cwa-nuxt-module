@@ -1,5 +1,5 @@
 <template>
-  <div v-if="total" class="row pagination-bar is-mobile">
+  <div v-if="total > 1" class="row pagination-bar is-mobile">
     <div class="column page-numbers">
       <template v-if="showFirstPageLink">
         <a @click.prevent="changePage(1)" href="#">1</a> <span>..</span>
@@ -32,10 +32,9 @@ export default {
   props: {
     total: {
       type: Number,
-      required: false,
-      default: null,
+      required: true,
       validator: function (value) {
-        return value === null || value >= 0
+        return value >= 1
       }
     },
     displayMax: {
@@ -111,6 +110,9 @@ export default {
   methods: {
     updateFromCurrentRoute() {
       this.current = (this.$route.query[this.pageParameter] || 1) / 1
+      if (this.current > this.total) {
+        this.changePage(1)
+      }
     },
     changePage(newPage) {
       if (newPage < 1 || newPage > this.total) {

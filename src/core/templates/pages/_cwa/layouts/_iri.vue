@@ -1,7 +1,7 @@
 <template>
   <cwa-modal @close="$emit('close')" class="layout-details-page">
     <div class="status-bar">
-      <status-icon :status="saved ? 1 : 0" :category="unsavedCategory" />
+      <status-icon :status="saved ? 1 : 0" />
       <error-notifications :listen-categories="[unsavedCategory, violationsCategory]" />
     </div>
     <div>
@@ -79,18 +79,13 @@ export default {
   data() {
     return {
       iri: decodeURIComponent(this.$route.params.iri),
-      component: {},
+      component: {
+        reference: this.$route.query.reference || null
+      },
       loading: true,
       savedComponent: {},
       unsavedCategory: 'layouts',
       violationsCategory: 'layouts.violations',
-      fieldMapping: {
-        reference: {
-          label: 'Reference',
-          id: 'layout-reference',
-          required: true
-        }
-      },
       notifications: {}
     } as {
       notifications: {[key: string]: Notification[]}

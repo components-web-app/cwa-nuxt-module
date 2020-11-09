@@ -8,11 +8,6 @@ export default {
     status: {
       type: Number,
       required: true
-    },
-    category: {
-      type: String,
-      required: false,
-      default: null
     }
   },
   computed: {

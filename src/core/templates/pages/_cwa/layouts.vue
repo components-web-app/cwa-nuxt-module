@@ -43,7 +43,7 @@ export default {
       layouts: [],
       loadDataDebouncedFn: null,
       currentPage: 1,
-      totalPages: null,
+      totalPages: 1,
       pageParameter: 'page',
       orderParameter: 'order',
       searchFields: ['reference', 'uiComponent'],
@@ -74,7 +74,7 @@ export default {
         return
       }
       this.loadingData = true
-      this.totalPages = null
+      this.totalPages = 1
       this.lastQuerystring = queryString
       const { data } = await this.$axios.get(endpoint)
       this.loadingData = false
@@ -82,9 +82,9 @@ export default {
 
       const hydraView = data['hydra:view']
       if (!hydraView) {
-        this.totalPages = null
+        this.totalPages = 1
       } else {
-        this.totalPages = hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1 || null
+        this.totalPages = hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1 || 1
       }
     },
     showLayout(iri = 'add') {
