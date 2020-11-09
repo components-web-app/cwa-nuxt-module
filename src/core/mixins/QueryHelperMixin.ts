@@ -7,7 +7,7 @@ export default {
             return true
           }
           for (const prefix of queryPrefixes) {
-            if (key.match(new RegExp(`^${prefix}\\[([a-zA-Z0-9]+)\]$`, 'i'))) {
+            if (key.match(new RegExp(`^${prefix}\\[([a-zA-Z0-9]+)]$`, 'i'))) {
               return true
             }
           }

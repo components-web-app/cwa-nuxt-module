@@ -1,7 +1,13 @@
 <template>
   <div v-if="total" class="row pagination-bar is-mobile">
     <div class="column page-numbers">
+      <template v-if="showFirstPageLink">
+        <a @click.prevent="changePage(1)" href="#">1</a> <span>..</span>
+      </template>
       <a v-for="page in displayPages" :key="`page${page}`" @click.prevent="changePage(page)" :class="{'selected': current === page}" href="#">{{ page }}</a>
+      <template v-if="showLastPageLink">
+        <span>..</span> <a @click.prevent="changePage(total)" href="#">{{ total }}</a>
+      </template>
     </div>
     <div class="column is-narrow">
       <div class="row is-mobile">
@@ -44,7 +50,9 @@ export default {
   },
   data() {
     return {
-      current: 1
+      current: 1,
+      showFirstPageLink: false,
+      showLastPageLink: false
     }
   },
   mounted() {
@@ -72,7 +80,8 @@ export default {
       let lowest = this.current
       let highest = this.current
       let displayCounter = 1
-      while(displayCounter < this.displayMax) {
+      let actualMax = this.displayMax
+      while(displayCounter < actualMax) {
         displayCounter++
         if ((displayCounter % 2 === 0 || highest >= this.total) && lowest > 1) {
           lowest--
@@ -83,6 +92,18 @@ export default {
           highest++
           displayPages.push(highest)
         }
+      }
+      if (displayPages[0] !== 1) {
+        this.showFirstPageLink = true
+        displayPages.splice(0, 1)
+      } else {
+        this.showFirstPageLink = false
+      }
+      if (displayPages[displayPages.length - 1] !== this.total) {
+        this.showLastPageLink = true
+        displayPages.splice(-1)
+      } else {
+        this.showLastPageLink = false
       }
       return displayPages
     }
@@ -114,7 +135,16 @@ export default {
 .pagination-bar
   margin-top: 2rem
   color: $white
+  user-select: none
+  cursor: default
+  span
+    opacity: 0.6
+    margin: 0 -.5rem
+    font-size: .8em
+    z-index: 0
+    pointer-events: none
   a
+    z-index: 1
     opacity: 0.6
     &[disabled]
       opacity: .2

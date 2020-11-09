@@ -17,7 +17,7 @@
           </nuxt-link>
         </li>
       </cwa-grid-loader>
-      <cwa-pagination-bar :total="totalPages" :page-parameter="pageParameter" :display-max="4" />
+      <cwa-pagination-bar :total="totalPages" :page-parameter="pageParameter" :display-max="5" />
     </div>
     <nuxt-child @close="closeModal" @change="reloadAndClose" />
   </cwa-footer-logo>
