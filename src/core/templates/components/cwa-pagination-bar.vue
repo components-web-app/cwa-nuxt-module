@@ -17,28 +17,42 @@
 </template>
 
 <script>
+import VueRouter from 'vue-router'
+import QueryHelperMixin from '../../mixins/QueryHelperMixin'
+const { isNavigationFailure, NavigationFailureType } = VueRouter
+
 export default {
+  mixins: [QueryHelperMixin],
   props: {
     total: {
       type: Number,
       required: false,
       default: null,
       validator: function (value) {
-        return value === null || value >= 1
-      }
-    },
-    current: {
-      type: Number,
-      required: false,
-      default: null,
-      validator: function (value) {
-        return value >= 1
+        return value === null || value >= 0
       }
     },
     displayMax: {
       type: Number,
       required: false,
       default: null
+    },
+    pageParameter: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      current: 1
+    }
+  },
+  mounted() {
+    this.updateFromCurrentRoute()
+  },
+  watch: {
+    '$route.query'() {
+      this.updateFromCurrentRoute()
     }
   },
   computed: {
@@ -74,11 +88,23 @@ export default {
     }
   },
   methods: {
+    updateFromCurrentRoute() {
+      this.current = (this.$route.query[this.pageParameter] || 1) / 1
+    },
     changePage(newPage) {
       if (newPage < 1 || newPage > this.total) {
         return
       }
-      this.$emit('change', newPage)
+      this.current = newPage
+      const query = Object.assign({}, this.$route.query, {
+        [this.pageParameter]: newPage
+      })
+      this.$router.replace({ query }).catch(failure => {
+        if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
+          return
+        }
+        throw failure
+      })
     }
   }
 }

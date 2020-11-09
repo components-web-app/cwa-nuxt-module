@@ -24,8 +24,9 @@
 </template>
 
 <script>
-import CwaAddButton from './cwa-add-button'
+import debounce from 'lodash.debounce'
 import VueRouter from 'vue-router'
+import CwaAddButton from './cwa-add-button'
 import QueryHelperMixin from '../../mixins/QueryHelperMixin'
 const { isNavigationFailure, NavigationFailureType } = VueRouter
 
@@ -50,6 +51,10 @@ export default {
       type: String,
       required: true
     },
+    pageParameter: {
+      type: String,
+      required: true
+    },
     orderOptions: {
       type: Array,
       default() {
@@ -66,36 +71,42 @@ export default {
     return {
       search: '',
       order: this.orderOptions[0][1],
-      filterQuery: {}
+      filterQuery: {},
+      debouncedSearchFn: null,
+      initialised: false
     }
   },
   mounted() {
     this.updateFromCurrentRoute()
+    this.initialised = true
   },
   watch: {
     '$route.query'() {
       this.updateFromCurrentRoute()
     },
     order(newParameter, oldParameter) {
+      if (!this.initialised || JSON.stringify(newParameter) === JSON.stringify(oldParameter)) {
+        return
+      }
       const oldEntries = Object.entries(oldParameter)
       const oldParam = `${this.orderParameter}[${oldEntries[0][0]}]`
       if (this.filterQuery[oldParam]) {
-        this.$delete(this.filterQuery, oldParam)
+        this.$set(this.filterQuery, oldParam, '')
       }
 
       const entries = Object.entries(newParameter)
       this.$set(this.filterQuery, `${this.orderParameter}[${entries[0][0]}]`, entries[0][1])
       this.updateQuerystring()
     },
-    search(newSearch) {
-      if (!newSearch) {
-        this.$delete(this.filterQuery, 'reference')
-        this.$delete(this.filterQuery, 'uiComponent')
-      } else {
-        this.$set(this.filterQuery, 'reference', newSearch)
-        this.$set(this.filterQuery, 'uiComponent', newSearch)
+    search(newSearch, oldSearch) {
+      if (!this.initialised || newSearch === oldSearch) {
+        return
       }
-      this.updateQuerystring()
+      if (this.debouncedSearchFn) {
+        this.debouncedSearchFn.cancel()
+      }
+      this.debouncedSearchFn = debounce(this.updateSearchParams, 250)
+      this.debouncedSearchFn()
     }
   },
   computed: {
@@ -108,7 +119,15 @@ export default {
   },
   methods: {
     updateQuerystring() {
-      const query = Object.assign({}, this.$route.query, this.filterQuery)
+      let query = Object.assign({}, this.$route.query, this.filterQuery)
+      if(JSON.stringify(query) !== JSON.stringify(this.$route.query)) {
+        this.$set(query, this.pageParameter, 1)
+      }
+      Object.keys(this.filterQuery).forEach(key => {
+        if (this.filterQuery[key] === '') {
+          this.$delete(query, key)
+        }
+      })
       this.$router.replace({ query }).catch(failure => {
         if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
           return
@@ -137,6 +156,17 @@ export default {
           this.$set(this.order, matches[1], this.filterQuery[key])
         }
       })
+    },
+    updateSearchParams() {
+      this.searchFields.forEach(key => {
+        if (!key) {
+          this.$set(this.filterQuery, key, '')
+        } else {
+          this.$set(this.filterQuery, key, this.search)
+        }
+      })
+
+      this.updateQuerystring()
     }
   }
 }

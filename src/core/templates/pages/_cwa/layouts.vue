@@ -7,6 +7,7 @@
         :highlight-add-button="!layouts.length"
         :order-parameter="orderParameter"
         :search-fields="searchFields"
+        :page-parameter="pageParameter"
       />
       <cwa-grid-loader :is-loading="loadingData" :total-items="layouts.length">
         <li v-for="layout of layouts" :key="layout['@id']" class="column column-33">
@@ -16,14 +17,13 @@
           </nuxt-link>
         </li>
       </cwa-grid-loader>
-      <cwa-pagination-bar :total="totalPages" :current="currentPage" :display-max="4" @change="changePage" />
+      <cwa-pagination-bar :total="totalPages" :page-parameter="pageParameter" :display-max="4" />
     </div>
     <nuxt-child @close="closeModal" @change="reloadAndClose" />
   </cwa-footer-logo>
 </template>
 
 <script>
-import debounce from 'lodash.debounce'
 import commonMixin from './common-mixin'
 import CwaFooterLogo from '../../components/cwa-footer-logo'
 import CwaGridHeader from '../../components/cwa-grid-header'
@@ -41,12 +41,13 @@ export default {
     return {
       loadingData: false,
       layouts: [],
-      filters: null,
       loadDataDebouncedFn: null,
       currentPage: 1,
       totalPages: null,
+      pageParameter: 'page',
       orderParameter: 'order',
-      searchFields: ['reference', 'uiComponent']
+      searchFields: ['reference', 'uiComponent'],
+      lastQuerystring: null
     }
   },
   watch: {
@@ -54,37 +55,27 @@ export default {
       immediate: true,
       deep: true,
       handler() {
-        this.loadingData = true
-        if (this.loadDataDebouncedFn) {
-          this.loadDataDebouncedFn.cancel()
-        }
-        this.loadDataDebouncedFn = debounce(this.loadData, 500)
-        this.loadDataDebouncedFn()
+        this.loadData()
       }
-    },
-    currentPage() {
-      this.loadData()
     }
   },
   created() {
     this.loadData()
   },
   methods: {
-    changePage(newPage) {
-      this.currentPage = newPage
-    },
-    updateFilters(filters) {
-      const newFilters = {}
-      this.filters = newFilters
-    },
-    async loadData() {
-      this.loadingData = true
-      const passthroughQuery = this.getFilteredQuery(this.searchFields, [this.orderParameter])
-
+    async loadData(forceReload = false) {
+      const passthroughQuery = this.getFilteredQuery([this.pageParameter, ...this.searchFields], [this.orderParameter])
       const queryString = Object.keys(passthroughQuery).map((key) => {
         return encodeURIComponent(key) + '=' + encodeURIComponent(passthroughQuery[key])
       }).join('&')
       const endpoint = `/_/layouts?${queryString}`
+      if (!forceReload && queryString === this.lastQuerystring) {
+        this.loadingData = false
+        return
+      }
+      this.loadingData = true
+      this.totalPages = null
+      this.lastQuerystring = queryString
       const { data } = await this.$axios.get(endpoint)
       this.loadingData = false
       this.layouts = data['hydra:member']
@@ -93,14 +84,14 @@ export default {
       if (!hydraView) {
         this.totalPages = null
       } else {
-        this.totalPages = hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1
+        this.totalPages = hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1 || null
       }
     },
     showLayout(iri = 'add') {
       this.$router.push({ name: '_cwa_layouts_iri', params: { iri }})
     },
     async reloadAndClose() {
-      await this.loadData()
+      await this.loadData(true)
       await this.closeModal()
     },
     async closeModal() {
