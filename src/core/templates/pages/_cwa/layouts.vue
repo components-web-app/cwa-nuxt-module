@@ -88,14 +88,14 @@ export default {
       }
     },
     showLayout(iri = 'add') {
-      this.$router.push({ name: '_cwa_layouts_iri', params: { iri }})
+      this.$router.push({ name: '_cwa_layouts_iri', params: { iri }, query: this.$route.query })
     },
     async reloadAndClose() {
       await this.loadData(true)
       await this.closeModal()
     },
     async closeModal() {
-      await this.$router.push({ name: '_cwa_layouts' })
+      await this.$router.push({ name: '_cwa_layouts', query: this.$route.query })
     }
   }
 }
