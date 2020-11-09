@@ -24,7 +24,7 @@ export default {
       required: false,
       default: null,
       validator: function (value) {
-        return value >= 1
+        return value === null || value >= 1
       }
     },
     current: {

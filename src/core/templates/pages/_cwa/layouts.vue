@@ -1,7 +1,13 @@
 <template>
   <cwa-footer-logo class="cwa-layouts-page">
     <div class="container">
-      <cwa-grid-header title="Layouts" @filter="updateFilters" @add="showLayout" :highlight-add-button="!layouts.length" />
+      <cwa-grid-header
+        title="Layouts"
+        @add="showLayout"
+        :highlight-add-button="!layouts.length"
+        :order-parameter="orderParameter"
+        :search-fields="searchFields"
+      />
       <cwa-grid-loader :is-loading="loadingData" :total-items="layouts.length">
         <li v-for="layout of layouts" :key="layout['@id']" class="column column-33">
           <nuxt-link :to="{ name: '_cwa_layouts_iri', params: { iri: layout['@id'] }}" class="layout-grid-item">
@@ -26,32 +32,42 @@ import CwaLoader from '../../components/cwa-loader'
 import CwaGridLoader from '../../components/cwa-grid-loader'
 import CwaPaginationBar from '../../components/cwa-pagination-bar'
 import CwaNuxtLink from '../../components/cwa-nuxt-link'
+import QueryHelperMixin from '../../../mixins/QueryHelperMixin'
 
 export default {
   components: {CwaNuxtLink, CwaPaginationBar, CwaGridLoader, CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
-  mixins: [commonMixin],
+  mixins: [commonMixin, QueryHelperMixin],
   data() {
     return {
-      loadingData: true,
+      loadingData: false,
       layouts: [],
       filters: null,
       loadDataDebouncedFn: null,
       currentPage: 1,
-      totalPages: null
+      totalPages: null,
+      orderParameter: 'order',
+      searchFields: ['reference', 'uiComponent']
     }
   },
   watch: {
-    filters(_, oldFilters) {
-      this.loadingData = true
-      if (this.loadDataDebouncedFn) {
-        this.loadDataDebouncedFn.cancel()
+    '$route.query': {
+      immediate: true,
+      deep: true,
+      handler() {
+        this.loadingData = true
+        if (this.loadDataDebouncedFn) {
+          this.loadDataDebouncedFn.cancel()
+        }
+        this.loadDataDebouncedFn = debounce(this.loadData, 500)
+        this.loadDataDebouncedFn()
       }
-      this.loadDataDebouncedFn = debounce(this.loadData, oldFilters ? 500 : 0)
-      this.loadDataDebouncedFn()
     },
     currentPage() {
       this.loadData()
     }
+  },
+  created() {
+    this.loadData()
   },
   methods: {
     changePage(newPage) {
@@ -59,24 +75,14 @@ export default {
     },
     updateFilters(filters) {
       const newFilters = {}
-      if (filters.order) {
-        for (const [key, value] of Object.entries(filters.order)) {
-          newFilters[`order[${key}]`] = value
-        }
-      }
-      if (filters.search) {
-        newFilters[`reference`] = filters.search
-        newFilters[`uiComponent`] = filters.search
-      }
       this.filters = newFilters
     },
     async loadData() {
       this.loadingData = true
-      const filters = Object.assign({
-        page: this.currentPage
-      }, this.filters)
-      const queryString = Object.keys(filters).map((key) => {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(filters[key])
+      const passthroughQuery = this.getFilteredQuery(this.searchFields, [this.orderParameter])
+
+      const queryString = Object.keys(passthroughQuery).map((key) => {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(passthroughQuery[key])
       }).join('&')
       const endpoint = `/_/layouts?${queryString}`
       const { data } = await this.$axios.get(endpoint)
@@ -87,7 +93,7 @@ export default {
       if (!hydraView) {
         this.totalPages = null
       } else {
-        this.totalPages = hydraView['hydra:last'].split('page=')[1].split('&')[0] / 1
+        this.totalPages = hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1
       }
     },
     showLayout(iri = 'add') {
