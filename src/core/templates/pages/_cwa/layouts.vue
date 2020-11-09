@@ -10,7 +10,7 @@
           </nuxt-link>
         </li>
       </cwa-grid-loader>
-      <cwa-pagination-bar />
+      <cwa-pagination-bar :total="totalPages" :current="currentPage" :display-max="4" @change="changePage" />
     </div>
     <nuxt-child @close="closeModal" @change="reloadAndClose" />
   </cwa-footer-logo>
@@ -35,7 +35,9 @@ export default {
       loadingData: true,
       layouts: [],
       filters: null,
-      loadDataDebouncedFn: null
+      loadDataDebouncedFn: null,
+      currentPage: 1,
+      totalPages: null
     }
   },
   watch: {
@@ -46,9 +48,15 @@ export default {
       }
       this.loadDataDebouncedFn = debounce(this.loadData, oldFilters ? 500 : 0)
       this.loadDataDebouncedFn()
+    },
+    currentPage() {
+      this.loadData()
     }
   },
   methods: {
+    changePage(newPage) {
+      this.currentPage = newPage
+    },
     updateFilters(filters) {
       const newFilters = {}
       if (filters.order) {
@@ -64,13 +72,23 @@ export default {
     },
     async loadData() {
       this.loadingData = true
-      const queryString = Object.keys(this.filters).map((key) => {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(this.filters[key])
+      const filters = Object.assign({
+        page: this.currentPage
+      }, this.filters)
+      const queryString = Object.keys(filters).map((key) => {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(filters[key])
       }).join('&')
       const endpoint = `/_/layouts?${queryString}`
       const { data } = await this.$axios.get(endpoint)
       this.loadingData = false
       this.layouts = data['hydra:member']
+
+      const hydraView = data['hydra:view']
+      if (!hydraView) {
+        this.totalPages = null
+      } else {
+        this.totalPages = hydraView['hydra:last'].split('page=')[1].split('&')[0] / 1
+      }
     },
     showLayout(iri = 'add') {
       this.$router.push({ name: '_cwa_layouts_iri', params: { iri }})
