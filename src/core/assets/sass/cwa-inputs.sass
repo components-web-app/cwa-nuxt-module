@@ -19,6 +19,7 @@
       color: rgba($cwa-color-text-light, .6)
   .select
     position: relative
+    margin-bottom: 1.5rem
     &:hover
       &::before
         opacity: 1
@@ -43,5 +44,6 @@
 .cwa-input
   +cwa-input-style
   &:last-child
-    input
+    input,
+    .select
       margin-bottom: 0

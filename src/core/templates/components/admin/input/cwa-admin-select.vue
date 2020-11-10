@@ -6,8 +6,13 @@
         :value="value"
         :required="required"
         @input="updateValue($event.target.value)">
-        <option :value="null" disabled>Please select</option>
-        <option v-for="(key, value) in options" :key="key" :value="key">{{ isOptionsArray ? key : value }}</option>
+        <option :value="null" disabled :selected="value === null">Please select</option>
+        <option
+          v-for="(value, key) in options"
+          :key="isOptionsArray ? value : key"
+          :value="isOptionsArray ? value : key">
+          {{ value }}
+        </option>
       </select>
     </div>
   </cwa-input-wrapper>

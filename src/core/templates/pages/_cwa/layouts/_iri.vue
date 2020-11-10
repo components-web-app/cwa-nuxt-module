@@ -21,7 +21,7 @@
     </template>
     <template slot="right">
       <cwa-admin-text
-        label="Style classes"
+        label="Style Classes"
         v-model="component.uiClassNames"
         v-bind="inputProps('uiClassNames')"
       />

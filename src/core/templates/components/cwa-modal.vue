@@ -62,16 +62,16 @@ $modal-breakpoint: $tablet
     justify-content: center
     box-shadow: 10px 12px 35px 8px rgba(black, .6)
     max-width: 800px
+    background: $cwa-navbar-background
     +from($modal-breakpoint)
       margin: 0 auto
       max-height: calc(100vh - #{$modal-content-spacing-tablet})
     .modal-card
-      background: $cwa-navbar-background
-      padding: 2rem 3rem 5rem 3rem
       width: 100%
       display: flex
       flex-wrap: wrap
       justify-content: center
+      padding: 2rem 3rem 0 3rem
       .close-bar
         width: 100%
         display: flex
@@ -96,6 +96,7 @@ $modal-breakpoint: $tablet
       .modal-card-inner
         width: 100%
         max-width: 600px
+        margin-bottom: 5rem
         h2
           font-size: 2.8rem
           color: $white

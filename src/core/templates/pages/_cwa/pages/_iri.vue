@@ -2,6 +2,7 @@
   <iri-modal-view
     title="Page Details"
     v-bind="iriModalProps"
+    :show-loader="isLoading || layoutsLoading"
     @close="$emit('close')"
     @submit="saveLayout"
     @delete="deleteComponent"
@@ -12,16 +13,32 @@
         v-model="component.reference"
         v-bind="inputProps('reference')"
       />
+      <cwa-admin-text
+        label="Page Title"
+        v-model="component.title"
+        v-bind="inputProps('title')"
+      />
+      <cwa-admin-select
+        label="Layout"
+        v-model="component.layout"
+        :options="layouts"
+        v-bind="inputProps('layout')"
+      />
       <cwa-admin-select
         label="UI Component"
         v-model="component.uiComponent"
-        :options="Object.keys($cwa.options.layouts)"
+        :options="Object.keys(pageComponents)"
         v-bind="inputProps('uiComponent')"
       />
     </template>
     <template slot="right">
       <cwa-admin-text
-        label="Style classes"
+        label="Meta Description"
+        v-model="component.uiClassNames"
+        v-bind="inputProps('metaDescription')"
+      />
+      <cwa-admin-text
+        label="Style Classes"
         v-model="component.uiClassNames"
         v-bind="inputProps('uiClassNames')"
       />
@@ -36,7 +53,9 @@ import {
   Notification,
   NotificationLevels
 } from '../../../components/cwa-api-notifications/types'
-import IriPageMixin, {notificationCategories} from "../IriPageMixin";
+import IriPageMixin, {notificationCategories} from "../IriPageMixin"
+// @ts-ignore
+import pageComponents from '~/.nuxt/cwa/pages'
 
 
 const unsavedNotification: Notification = {
@@ -51,14 +70,30 @@ const postEndpoint = '/_/pages'
 export default {
   components: {CwaAdminSelect, CwaAdminText},
   mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
+  data() {
+    return {
+      layouts: [],
+      layoutsLoading: false,
+      pageComponents
+    }
+  },
+  async mounted() {
+    this.layoutsLoading = true
+    const response = await this.$axios.$get('/_/layouts?order[reference]=asc')
+    this.layouts = response['hydra:member'].reduce((obj, layout) => {
+      obj[layout['@id']] = layout.reference
+      return obj
+    }, {})
+    this.layoutsLoading = false
+  },
   methods: {
     async saveLayout() {
       const uiClassNames = this.component?.uiClassNames?.split(',').map(item => (item.trim()))
-      const data = {
-        reference: this.component.reference,
-        uiComponent: this.component.uiComponent,
+      const data = Object.assign({
+        title: ''
+      }, this.component, {
         uiClassNames
-      }
+      })
       await this.sendRequest(data)
     }
   }
