@@ -29,6 +29,13 @@ export default Vue.extend({
       if (!this.isSupportedCategory(notificationEvent.category)) {
         return
       }
+      // remove old notification if code already exists
+      this.notifications.forEach((notification: Notification, index) => {
+        if (notification.code === notificationEvent.code) {
+          this.notifications.splice(index, 1)
+        }
+      })
+
       const timestamp = new Date()
       const notification = {
         ...notificationEvent,

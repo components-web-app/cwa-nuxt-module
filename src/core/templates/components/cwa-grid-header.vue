@@ -70,7 +70,7 @@ export default {
   data() {
     return {
       search: '',
-      order: this.orderOptions[0][1],
+      order: {},
       filterQuery: {},
       debouncedSearchFn: null,
       initialised: false
@@ -85,13 +85,16 @@ export default {
       this.updateFromCurrentRoute()
     },
     order(newParameter, oldParameter) {
-      if (!this.initialised || JSON.stringify(newParameter) === JSON.stringify(oldParameter)) {
+      if (JSON.stringify(newParameter) === JSON.stringify(oldParameter)) {
         return
       }
+
       const oldEntries = Object.entries(oldParameter)
-      const oldParam = `${this.orderParameter}[${oldEntries[0][0]}]`
-      if (this.filterQuery[oldParam]) {
-        this.$set(this.filterQuery, oldParam, '')
+      if (oldEntries.length) {
+        const oldParam = `${this.orderParameter}[${oldEntries[0][0]}]`
+        if (this.filterQuery[oldParam]) {
+          this.$set(this.filterQuery, oldParam, '')
+        }
       }
 
       const entries = Object.entries(newParameter)
@@ -99,12 +102,13 @@ export default {
       this.updateQuerystring()
     },
     search(newSearch, oldSearch) {
-      if (!this.initialised || newSearch === oldSearch) {
+      if (newSearch === oldSearch) {
         return
       }
       if (this.debouncedSearchFn) {
         this.debouncedSearchFn.cancel()
       }
+      this.$emit('pending', true)
       this.debouncedSearchFn = debounce(this.updateSearchParams, 250)
       this.debouncedSearchFn()
     }
@@ -133,15 +137,17 @@ export default {
           return
         }
         throw failure
+      }).finally(() => {
+        this.$emit('pending', false)
       })
     },
     updateFromCurrentRoute() {
-      if (Object.keys(this.$route.query).length === 0) {
+      this.filterQuery = this.getFilteredQuery(this.searchFields, [this.orderParameter])
+      if (Object.keys(this.filterQuery).length === 0) {
         this.search = ''
         this.order = this.orderOptions[0][1]
         return
       }
-      this.filterQuery = this.getFilteredQuery(this.searchFields, [this.orderParameter])
 
       Object.keys(this.filterQuery).forEach(key => {
         const isSearch = this.searchFields.indexOf(key) !== -1

@@ -54,7 +54,7 @@ export default {
   },
   computed: {
     hasError() {
-      return this.notifications && this.notifications.length
+      return this.notifications && this.notifications.length > 0
     }
   },
   methods: {

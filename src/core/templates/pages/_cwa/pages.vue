@@ -1,24 +1,32 @@
 <template>
-  <cwa-footer-logo class="cwa-layouts-page">
-    <div class="container">
-      <cwa-grid-header title="Pages" />
-      <cwa-grid-loader :is-loading="true" />
-      <cwa-pagination-bar />
-    </div>
+  <cwa-footer-logo class="cwa-pages-page">
+    <grid-page
+      title="Pages"
+      ref="gridPage"
+      endpoint="/_/pages"
+      @load="updateData"
+      @add="showAddPage"
+    >
+      <li v-for="page of data" :key="page['@id']" class="column column-33">
+        <nuxt-link :to="addRouteProps(page['@id'])" class="page-grid-item">
+          <p class="title">{{ page.reference }}</p>
+          <p class="subtitle">{{ page.uiComponent }}</p>
+        </nuxt-link>
+      </li>
+    </grid-page>
+    <nuxt-child @close="closeModal" @change="reloadAndClose" />
   </cwa-footer-logo>
 </template>
 
 <script>
-import commonMixin from './common-mixin'
-import CwaFooterLogo from '../../components/cwa-footer-logo'
-import CwaGridHeader from '../../components/cwa-grid-header'
-import NuxtErrorIcon from '../../components/nuxt-error-icon'
-import CwaLoader from '../../components/cwa-loader'
-import CwaGridLoader from '../../components/cwa-grid-loader'
-import CwaPaginationBar from '../../components/cwa-pagination-bar'
+import GridPageMixin from './GridPageMixin'
 
 export default {
-  components: {CwaPaginationBar, CwaGridLoader, CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
-  mixins: [commonMixin]
+  mixins: [GridPageMixin('_cwa_pages', '_cwa_pages_iri')]
 }
 </script>
+
+<style lang="sass">
+.cwa-pages-page
+
+</style>

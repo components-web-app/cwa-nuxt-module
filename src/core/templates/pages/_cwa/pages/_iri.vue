@@ -1,6 +1,6 @@
 <template>
   <iri-modal-view
-    title="Layout Details"
+    title="Page Details"
     v-bind="iriModalProps"
     @close="$emit('close')"
     @submit="saveLayout"
@@ -41,12 +41,12 @@ import IriPageMixin, {notificationCategories} from "../IriPageMixin";
 
 const unsavedNotification: Notification = {
   code: 'unsaved',
-  title: 'Layout not saved',
+  title: 'Page not saved',
   message: 'Your changes are not saved',
   level: NotificationLevels.WARNING,
   category: notificationCategories.unsaved
 }
-const postEndpoint = '/_/layouts'
+const postEndpoint = '/_/pages'
 
 export default {
   components: {CwaAdminSelect, CwaAdminText},
