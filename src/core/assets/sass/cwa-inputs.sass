@@ -5,7 +5,8 @@
     font-weight: $font-weight-light
     opacity: .6
   input[type=text],
-  select
+  select,
+  textarea
     border: 1px solid rgba(black, .3)
     background-color: rgba(black, .3)
     background-clip: padding-box
@@ -17,6 +18,10 @@
       color: $white
     &::placeholder
       color: rgba($cwa-color-text-light, .6)
+  textarea
+    padding: .5rem 3.8rem .8rem 1.0rem
+    resize: none
+    height: 5em
   .select
     position: relative
     margin-bottom: 1.5rem
@@ -45,5 +50,6 @@
   +cwa-input-style
   &:last-child
     input,
+    textarea,
     .select
       margin-bottom: 0

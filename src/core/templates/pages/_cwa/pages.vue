@@ -4,6 +4,7 @@
       title="Pages"
       ref="gridPage"
       endpoint="/_/pages"
+      :search-fields="['reference', 'uiComponent', 'title', 'layout.reference']"
       @load="updateData"
       @add="showAddPage"
     >

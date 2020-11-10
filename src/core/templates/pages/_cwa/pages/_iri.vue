@@ -34,7 +34,8 @@
     <template slot="right">
       <cwa-admin-text
         label="Meta Description"
-        v-model="component.uiClassNames"
+        :is-textarea="true"
+        v-model="component.metaDescription"
         v-bind="inputProps('metaDescription')"
       />
       <cwa-admin-text

@@ -37,6 +37,12 @@ export default {
     title: {
       type: String,
       required: true
+    },
+    searchFields: {
+      type: Array,
+      default() {
+        return ['reference', 'uiComponent']
+      }
     }
   },
   data() {
@@ -48,7 +54,6 @@ export default {
       totalPages: 1,
       pageParameter: 'page',
       orderParameter: 'order',
-      searchFields: ['reference', 'uiComponent'],
       lastQuerystring: null,
       searchPending: false
     }

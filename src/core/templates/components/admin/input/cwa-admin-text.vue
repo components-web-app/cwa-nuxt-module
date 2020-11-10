@@ -1,7 +1,14 @@
 <template>
   <cwa-input-wrapper :id="id" :label="label" :has-error="hasError">
     <div>
+      <textarea
+        v-if="isTextarea"
+        :id="id"
+        :required="required"
+        @input="updateValue($event.target.value)"
+      >{{ value }}</textarea>
       <input
+        v-else
         type="text"
         :id="id"
         :value="value"
@@ -14,6 +21,12 @@
 <script>
 import CwaInputMixin from './cwa-input-mixin'
 export default {
-  mixins: [CwaInputMixin]
+  mixins: [CwaInputMixin],
+  props: {
+    isTextarea: {
+      type: Boolean,
+      default: false
+    }
+  }
 }
 </script>
