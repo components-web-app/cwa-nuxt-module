@@ -17,6 +17,12 @@ export type CwaOptions = {
   }
 }
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    cwa?: boolean
+  }
+}
+
 declare module '@nuxt/types' {
   interface Context {
     $cwa: CWA;

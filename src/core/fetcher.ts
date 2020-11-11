@@ -37,6 +37,10 @@ export class Fetcher {
     this.timer = new DebugTimer()
   }
 
+  public get apiUrl () {
+    return this.ctx.apiUrl
+  }
+
   private async fetcher ({ path: url, preload }: { path: string, preload?: string[] }) {
     consola.debug(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)

@@ -1,6 +1,6 @@
 <template>
-  <client-only>
-    <div v-if="$cwa.isAdmin" class="cwa-admin-bar">
+  <client-only v-if="$cwa.isAdmin">
+    <div class="cwa-admin-bar">
       <div class="left">
         <status-icon :status="-2" />
         <error-notifications />

@@ -4,9 +4,9 @@ export default Vue.extend({
   auth: false,
   cwa: false,
   layout: 'cwa-default',
-  mounted() {
-    if (!this.$cwa.isAdmin) {
-      this.$router.push('/')
+  middleware({ $cwa, redirect }) {
+    if (process.client && !$cwa.isAdmin) {
+      return redirect('/login')
     }
   }
 })
