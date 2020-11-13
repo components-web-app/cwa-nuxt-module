@@ -5,7 +5,7 @@ button,
 input[type='button'],
 input[type='reset'],
 input[type='submit']
-  transition: color .2s, background .2s, border .2s
+  transition: color .2s, background .2s, border .2s, opacity .2s
   text-transform: none
   height: 2.5em
   line-height: 1.5
@@ -36,9 +36,17 @@ input[type='submit']
     &:focus
       background: darken($cwa-background-dark, 5%)
   &.is-light
-    background: $cwa-background-light
-    color: $cwa-background-dark
-    border-color: $cwa-background-light
-    &:hover,
-    &:focus
-      background: darken($cwa-background-light, 5%)
+    &.button-outline
+      color: $white
+      border-color: $white
+      opacity: .6
+      &:hover,
+      &:focus
+        opacity: 1
+    &:not(.button-outline)
+      background: $cwa-background-light
+      color: $cwa-background-dark
+      border-color: $cwa-background-light
+      &:hover,
+      &:focus
+        background: darken($cwa-background-light, 5%)
