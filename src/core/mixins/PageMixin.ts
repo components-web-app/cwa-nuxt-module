@@ -6,10 +6,10 @@ const mixin = {
   mixins: [IriMixin],
   computed: {
     resource () {
-      return this.$cwa.resources.Page.byId[this.iri]
+      return this.$cwa.resources.Page?.byId[this.iri]
     },
     layout () {
-      return this.$cwa.resources.Layout.byId[this.resource.layout]
+      return this.$cwa.resources.Layout?.byId[this.resource.layout]
     },
     componentCollectionProps () {
       return {
@@ -20,7 +20,7 @@ const mixin = {
   },
   watch: {
     'layout.reference': {
-      handler () { return this.$cwa.setLayout(this.layout.reference) },
+      handler () { return this.$cwa.setLayout(this.layout?.reference) },
       immediate: true
     }
   }

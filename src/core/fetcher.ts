@@ -94,6 +94,36 @@ export class Fetcher {
       })
   }
 
+  public async fetchPage (pageIri) {
+    this.timer.reset()
+    this.timer.start(`Fetch page ${pageIri}`)
+    this.ctx.storage.resetCurrentResources()
+    this.ctx.storage.setState(Fetcher.loadingRouteKey, pageIri)
+    this.eventSource && this.eventSource.close()
+    try {
+      const pageResponse = await this.fetchItem(
+        {
+          path: pageIri,
+          preload: [
+            '/layout/componentCollections/*/componentPositions/*/component',
+            '/componentCollections/*/componentPositions/*/component'
+          ]
+        })
+
+      const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+      this.ctx.storage.setState('layout', layoutResponse.reference)
+
+      await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
+      this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+    } catch (error) {
+      // Display error page
+      this.ctx.error(error)
+    } finally {
+      this.timer.end(`Fetch page ${pageIri}`)
+      this.timer.print()
+    }
+  }
+
   public async fetchRoute (path) {
     this.timer.reset()
     this.timer.start(`Fetch route ${path}`)
@@ -112,7 +142,7 @@ export class Fetcher {
           ]
         })
 
-      const pageResponse = await this.fetchPage(routeResponse)
+      const pageResponse = await this.fetchPageByRouteResponse(routeResponse)
       if (!pageResponse) {
         return
       }
@@ -152,7 +182,7 @@ export class Fetcher {
     return component
   }
 
-  private async fetchPage (routeResponse) {
+  private async fetchPageByRouteResponse (routeResponse) {
     let page = routeResponse.page
     if (routeResponse.pageData) {
       const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData, category: StoreCategories.PageData })
@@ -185,8 +215,10 @@ export class Fetcher {
       )
     }
 
-    consola.log('docs url set', matches[1])
-    this.ctx.storage.setState('docsUrl', matches[1])
+    const docsUrl = matches[1]
+
+    consola.log('docs url set', docsUrl)
+    this.ctx.storage.setState('docsUrl', docsUrl)
   }
 
   /**

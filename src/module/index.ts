@@ -203,9 +203,10 @@ const cwaModule = <Module> function () {
           return
         }
         const newObjectPath = [...pathParts, name]
+        const path = `/${pathParts.join('/')}/${(isNameRouteParam ? ':' : '') + name}`
         const newRouteObject = {
           name: newObjectPath.join('_'),
-          path: `/${pathParts.join('/')}/${(isNameRouteParam ? ':' : '') + name}`,
+          path,
           component: resolve(filePath),
           children: _get(newRoutes, newObjectPath) ?? null
         }
@@ -214,7 +215,6 @@ const cwaModule = <Module> function () {
       return newRoutes
     }
     const newRoutesAsObject = getRouteObjects(resolve(__dirname, '../core/templates/pages/_cwa'))
-
     function childrenToValues (object) {
       if (object.children) {
         object.children = Object.values(object.children)
@@ -224,11 +224,17 @@ const cwaModule = <Module> function () {
       }
     }
     const newRoutes = []
-    Object.values(newRoutesAsObject._cwa).forEach((newRoute: any) => {
-      childrenToValues(newRoute)
-      newRoutes.push(newRoute)
-    })
-
+    const processRoutes = (object) => {
+      Object.values(object).forEach((newRoute: any) => {
+        childrenToValues(newRoute)
+        if (newRoute.name === undefined) {
+          processRoutes(newRoute)
+          return
+        }
+        newRoutes.push(newRoute)
+      })
+    }
+    processRoutes(newRoutesAsObject._cwa)
     routes.push(...newRoutes)
   })
 

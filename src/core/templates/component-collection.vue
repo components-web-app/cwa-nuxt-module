@@ -94,6 +94,9 @@ export default {
     },
     sortedComponentPositions: {
       get() {
+        if (!this.$cwa.resources.ComponentPosition) {
+          return []
+        }
         const positions = []
         for (const iri of this.resource.componentPositions) {
           const position = this.$cwa.resources.ComponentPosition.byId[iri]
@@ -137,7 +140,10 @@ export default {
   },
   methods: {
     getCollectionResourceByLocation(location, pageId) {
-      const ComponentCollection = this.$cwa.resources.ComponentCollection
+      const ComponentCollection = this.$cwa.resources?.ComponentCollection
+      if (!ComponentCollection) {
+        return
+      }
       for (const id in ComponentCollection.byId) {
         const resource = ComponentCollection.byId[id]
         if (resource && resource.location === location && resource.pages.indexOf(pageId) !== -1) {
