@@ -57,6 +57,7 @@ import {
 import IriPageMixin, {notificationCategories} from "../IriPageMixin"
 // @ts-ignore
 import pageComponents from '~/.nuxt/cwa/pages'
+import LoadLayoutsMixin from "../LoadLayoutsMixin";
 
 
 const unsavedNotification: Notification = {
@@ -70,22 +71,11 @@ const postEndpoint = '/_/pages'
 
 export default {
   components: {CwaAdminSelect, CwaAdminText},
-  mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
+  mixins: [IriPageMixin(unsavedNotification, postEndpoint), LoadLayoutsMixin],
   data() {
     return {
-      layouts: [],
-      layoutsLoading: false,
       pageComponents
     }
-  },
-  async mounted() {
-    this.layoutsLoading = true
-    const response = await this.$axios.$get('/_/layouts?order[reference]=asc')
-    this.layouts = response['hydra:member'].reduce((obj, layout) => {
-      obj[layout['@id']] = layout.reference
-      return obj
-    }, {})
-    this.layoutsLoading = false
   },
   methods: {
     async saveLayout() {

@@ -4,3 +4,23 @@
   font-family: $font-family-lemonmilk
   text-transform: uppercase
   letter-spacing: .2em
+
+a.cwa-grid-item
+  display: block
+  position: relative
+  background: $cwa-grid-item-background
+  border: 1px solid $cwa-grid-item-border-color
+  padding: 2rem
+  color: $cwa-color-text-light
+  p
+    margin: 0
+    &.title
+      font-size: 2rem
+    &.subtitle
+      font-size: .8em
+      font-weight: $font-weight-light
+  &:hover,
+  &:focus
+    color: $white
+    &:after
+      opacity: 1
