@@ -3,15 +3,16 @@
     <div class="select">
       <select
         :id="id"
-        :value="value"
         :required="required"
         @input="updateValue($event.target.value)">
         <option :value="null" disabled :selected="value === null">Please select</option>
         <option
-          v-for="(value, key) in options"
-          :key="isOptionsArray ? value : key"
-          :value="isOptionsArray ? value : key">
-          {{ value }}
+          v-for="(opVal, key) in options"
+          :key="isOptionsArray ? opVal : key"
+          :value="isOptionsArray ? opVal : key"
+          :selected="value === (isOptionsArray ? opVal : key)"
+        >
+          {{ opVal }}
         </option>
       </select>
     </div>
