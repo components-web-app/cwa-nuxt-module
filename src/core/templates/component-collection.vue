@@ -1,12 +1,12 @@
 <template>
   <!-- if the collection exists -->
-  <div :class="classes" v-if="resource">
+  <div :class="[{'is-admin': $cwa.isAdmin, 'is-empty': !sortedComponentPositions.length}, ...classes]" v-if="resource">
     <!-- if there are no components -->
     <client-only v-if="$cwa.isAdmin">
       <component-load-error v-if="!sortedComponentPositions.length">
-        <button @click="displayComponents">
-          + component
-        </button>
+        <div class="add-button-holder" @click="displayComponents">
+          <cwa-add-button :highlight="true"></cwa-add-button>
+        </div>
       </component-load-error>
     </client-only>
     <!-- else we loop through components -->
@@ -20,26 +20,20 @@
 
     <components-list v-if="showComponentsList" @close="showComponentsList = false" @added="componentAdded" :add-data="componentPostData" />
   </div>
-  <!-- else the collection does not exist -->
-  <client-only v-else-if="$cwa.isAdmin">
-    <component-load-error :class="classes">
-      <!-- v-if causes ssr mis-matched render -->
-      <button @click="addComponentCollection">
-        + {{ location}} collection
-      </button>
-    </component-load-error>
-  </client-only>
 </template>
 
 <script lang="ts">
+import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
 import ComponentsList from '@cwa/nuxt-module/core/templates/components-list.vue'
 import ContextMenuMixin from "@cwa/nuxt-module/core/mixins/ContextMenuMixin"
 import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
+import CwaAddButton from "./components/cwa-add-button.vue";
 
 export default {
   mixins: [ContextMenuMixin, ApiRequestMixin],
   components: {
+    CwaAddButton,
     ComponentPosition,
     ComponentsList,
     ComponentLoadError: () => import('./component-load-error.vue'),
@@ -57,6 +51,11 @@ export default {
     pageReference: {
       type: String,
       required: true
+    }
+  },
+  async mounted() {
+    if (!this.resource && this.$cwa.isAdmin) {
+      await this.addComponentCollection()
     }
   },
   data() {
@@ -88,7 +87,7 @@ export default {
     classes() {
       return [
         'component-collection',
-        this.resource ? [this.resource.location, this.resource.reference] : 'not-found',
+        this.resource ? [this.resource.location, slugify(this.resource.reference.toLowerCase())] : 'not-found',
         { 'is-deleting': this.apiBusy, 'is-reloading': this.reloading }
       ]
     },
@@ -212,4 +211,10 @@ export default {
     opacity: .5
   &.is-reloading
     animation: loading normal 1s infinite ease-in-out
+  &.is-admin.is-empty
+    border: 1px dashed $cwa-grid-item-border-color
+  .add-button-holder
+    display: flex
+    justify-content: center
+    padding: 2rem
 </style>
