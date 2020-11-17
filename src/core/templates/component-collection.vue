@@ -87,7 +87,9 @@ export default {
     classes() {
       return [
         'component-collection',
-        this.resource ? [this.resource.location, slugify(this.resource.reference.toLowerCase())] : 'not-found',
+        this.resource ? [this.resource.location, slugify(this.resource.reference, {
+          lower: true
+        })] : 'not-found',
         { 'is-deleting': this.apiBusy, 'is-reloading': this.reloading }
       ]
     },

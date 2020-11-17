@@ -20,7 +20,7 @@ const mixin = {
   },
   watch: {
     'layout.reference': {
-      handler () { return this.$cwa.setLayout(this.layout?.reference) },
+      handler () { return this.$cwa.setLayout(this.layout?.uiComponent) },
       immediate: true
     }
   }

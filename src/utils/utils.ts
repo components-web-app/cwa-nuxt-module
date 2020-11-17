@@ -4,10 +4,29 @@ type match = { components: VueComponent[] }
 type Route = { matched: match[] }
 
 export function cwaRouteDisabled (route: Route): boolean {
-  return routeOption(route, 'cwa', false)
+  return routeOptionEquals(route, 'cwa', false)
 }
 
-export function routeOption (route: Route, key, value) {
+export function routeOption (route: Route, key: string) {
+  const values = []
+  route.matched.forEach((m) => {
+    Object.values(m.components).forEach((component) => {
+      if (process.client) {
+        return component.options && component.options[key] && values.push(component.options[key])
+      } else {
+        Object.values(component._Ctor).forEach(
+          ctor => ctor.options && ctor.options[key] && values.push(ctor.options[key])
+        )
+      }
+    })
+  })
+  if (!values.length) {
+    return null
+  }
+  return values[values.length - 1]
+}
+
+export function routeOptionEquals (route: Route, key, value) {
   return route.matched.some((m) => {
     return Object.values(m.components).some(component =>
       process.client ? component.options && component.options[key] === value

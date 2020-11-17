@@ -27,17 +27,16 @@
         {{ $cwa.$state.error }}
       </p>
     </div>
+
     <nuxt />
-    <cwa-api-notifications class="cwa-notifications" />
   </div>
 </template>
 
 <script>
-import CwaApiNotifications from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/cwa-api-notifications.vue'
 import CwaAdminBar from '@cwa/nuxt-module/core/templates/components/cwa-admin-bar.vue'
 
 export default {
-  components: { CwaAdminBar, CwaApiNotifications },
+  components: { CwaAdminBar },
   methods: {
     dynamicSort (property) {
       let sortOrder = 1
@@ -107,10 +106,4 @@ export default {
             border: 1px solid $cwa-color-primary
             background: $cwa-color-initial
             color: $cwa-color-primary
-  .cwa-notifications
-    position: absolute
-    bottom: 1rem
-    right: 1rem
-    width: 70vw
-    max-width: 500px
 </style>
