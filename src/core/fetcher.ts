@@ -111,7 +111,7 @@ export class Fetcher {
         })
 
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
-      this.ctx.storage.setState('layout', layoutResponse.uiComponent)
+      this.ctx.storage.setState('layout', layoutResponse['@id'])
 
       await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
@@ -147,7 +147,7 @@ export class Fetcher {
         return
       }
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
-      this.ctx.storage.setState('layout', layoutResponse.reference)
+      this.ctx.storage.setState('layout', layoutResponse['@id'])
 
       await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
       this.ctx.storage.setCurrentRoute(routeResponse['@id'])

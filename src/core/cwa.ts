@@ -82,10 +82,6 @@ export default class Cwa {
     return this.$state[Fetcher.loadingRouteKey]
   }
 
-  setLayout (layout) {
-    this.$storage.setState('layout', layout)
-  }
-
   withError (route, err) {
     this.$storage.setState('error', `An error occurred while requesting ${route.path}`)
     consola.error(err)

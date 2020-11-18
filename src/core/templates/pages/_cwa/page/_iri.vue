@@ -7,7 +7,7 @@ export default {
   mixins: [CommonMixin],
   // define this as the common mixin will want to use the cwa default layout
   layout({ $cwa }) {
-    return $cwa.layout
+    return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
   },
   computed: {
     currentPageMetadata() {

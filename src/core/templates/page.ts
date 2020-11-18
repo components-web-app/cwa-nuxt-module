@@ -9,7 +9,7 @@ import ClientOnly from 'vue-client-only'
 export default {
   auth: false,
   layout({ $cwa }) {
-    return $cwa.layout
+    return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
   },
   components: {
     ResourceComponentLoader,
@@ -78,6 +78,7 @@ export default {
       'div',
       {},
       [
+
         h(this.$options.components.ResourceComponentLoader, { props: this.resourceComponentLoaderProps }),
         h(this.$options.components.ClientOnly, {}, [
           h(this.$options.components.ContextMenu, { props: {} })

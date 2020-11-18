@@ -13,15 +13,10 @@ const mixin = {
     },
     componentCollectionProps () {
       return {
-        pageId: this.iri,
-        pageReference: this.resource.reference
+        locationResourceId: this.iri,
+        locationResourceReference: this.resource.reference,
+        isPage: true
       }
-    }
-  },
-  watch: {
-    'layout.reference': {
-      handler () { return this.$cwa.setLayout(this.layout?.uiComponent) },
-      immediate: true
     }
   }
 }

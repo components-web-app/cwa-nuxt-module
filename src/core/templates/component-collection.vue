@@ -44,12 +44,16 @@ export default {
       type: String,
       required: true
     },
-    pageId: {
+    locationResourceId: {
       type: String,
       required: true
     },
-    pageReference: {
+    locationResourceReference: {
       type: String,
+      required: true
+    },
+    isPage: {
+      type: Boolean,
       required: true
     }
   },
@@ -69,6 +73,9 @@ export default {
     }
   },
   computed: {
+    resourceTypeKey() {
+      return this.isPage ? 'pages' : 'layouts'
+    },
     componentPostData() {
       return {
         componentPositions: [
@@ -82,7 +89,7 @@ export default {
       return `Component Collection (${this.resource ? this.resource.reference : this.location})`
     },
     resource() {
-      return this.getCollectionResourceByLocation(this.location, this.pageId)
+      return this.getCollectionResourceByLocation(this.location, this.locationResourceId)
     },
     classes() {
       return [
@@ -140,14 +147,14 @@ export default {
     }
   },
   methods: {
-    getCollectionResourceByLocation(location, pageId) {
+    getCollectionResourceByLocation(location, locationResourceId) {
       const ComponentCollection = this.$cwa.resources?.ComponentCollection
       if (!ComponentCollection) {
         return
       }
       for (const id in ComponentCollection.byId) {
         const resource = ComponentCollection.byId[id]
-        if (resource && resource.location === location && resource.pages.indexOf(pageId) !== -1) {
+        if (resource && resource.location === location && resource[this.resourceTypeKey].indexOf(locationResourceId) !== -1) {
           return resource
         }
       }
@@ -157,9 +164,9 @@ export default {
       this.startApiRequest(this.apiRequestCategory.collection)
       try {
         await this.$cwa.createResource('/_/component_collections', {
-          reference: `${this.pageReference}_${this.location}`,
+          reference: `${this.locationResourceReference}_${this.location}`,
           location: this.location,
-          pages: [this.pageId]
+          [this.resourceTypeKey]: [this.locationResourceId]
         })
       } catch (err) {
         this.handleApiError(err, this.apiRequestCategory.collection)
