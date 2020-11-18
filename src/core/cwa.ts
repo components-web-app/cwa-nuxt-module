@@ -55,6 +55,14 @@ export default class Cwa {
     }
   }
 
+  public isEditMode () {
+    return this.isAdmin && this.$storage.getState('editMode')
+  }
+
+  public setEditMode (enabled: boolean) {
+    this.$storage.setState('editMode', enabled)
+  }
+
   initMercure () {
     !cwaRouteDisabled(this.ctx.route) && this.fetcher.initMercure(this.$state.resources.current)
   }
@@ -101,7 +109,7 @@ export default class Cwa {
   private handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
     const exception = new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint, axiosError.violations)
-    this.$eventBus.$emit('cwa-api-error', exception)
+    this.$eventBus.$emit('cwa:api-error', exception)
     throw exception
   }
 

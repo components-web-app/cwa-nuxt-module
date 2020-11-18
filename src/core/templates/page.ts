@@ -3,7 +3,7 @@ import { StoreCategories } from '../storage'
 // @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 import ResourceComponentLoader from './resource-component-loader'
-import ContextMenu from './context-menu.vue'
+import CwaAdminDialog from './components/admin/cwa-admin-dialog.vue'
 import ClientOnly from 'vue-client-only'
 
 export default {
@@ -13,7 +13,7 @@ export default {
   },
   components: {
     ResourceComponentLoader,
-    ContextMenu,
+    CwaAdminDialog,
     ClientOnly,
     ...components
   },
@@ -81,7 +81,7 @@ export default {
 
         h(this.$options.components.ResourceComponentLoader, { props: this.resourceComponentLoaderProps }),
         h(this.$options.components.ClientOnly, {}, [
-          h(this.$options.components.ContextMenu, { props: {} })
+          h(this.$options.components.CwaAdminDialog, { props: {} })
         ])
       ]
     )

@@ -9,6 +9,10 @@ export default {
   layout({ $cwa }) {
     return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
   },
+  mounted() {
+    this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'page')
+    this.$cwa.setEditMode(true)
+  },
   computed: {
     currentPageMetadata() {
       return this.resources.Page?.byId[this.currentPageTemplateIri]

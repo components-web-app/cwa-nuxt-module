@@ -1,7 +1,7 @@
 export const NotificationEvents = {
-  add: 'cwa-notification.add',
-  remove: 'cwa-notification.remove',
-  clear: 'cwa-notification.clear'
+  add: 'cwa:notification:add',
+  remove: 'cwa:notification:remove',
+  clear: 'cwa:notification:clear'
 }
 
 export const NotificationLevels = {

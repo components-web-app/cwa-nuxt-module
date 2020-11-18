@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import CwaInputMixin from './cwa-input-mixin'
+import CwaInputMixin from './CwaInputMixin'
 export default {
   mixins: [CwaInputMixin],
   props: {

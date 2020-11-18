@@ -5,6 +5,9 @@
     "plugin:cypress/recommended"
   ],
   "rules": {
-    "vue/no-v-html": 0
+    "vue/no-v-html": 0,
+    "vue/custom-event-name-casing": ["error", {
+      "ignores": ["/^cwa:[a-z]+(?:-[a-z]+)*:[a-z]+(?:-[a-z]+)*$/u"]
+    }]
   }
 }

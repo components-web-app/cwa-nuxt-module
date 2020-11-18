@@ -2,7 +2,7 @@
   <!-- if the collection exists -->
   <div :class="[{'is-admin': $cwa.isAdmin, 'is-empty': !sortedComponentPositions.length}, ...classes]" v-if="resource">
     <!-- if there are no components -->
-    <client-only v-if="$cwa.isAdmin">
+    <client-only v-if="$cwa.isEditMode()">
       <component-load-error v-if="!sortedComponentPositions.length">
         <div class="add-button-holder" @click="displayComponents">
           <cwa-add-button :highlight="true"></cwa-add-button>
@@ -17,15 +17,12 @@
     >
       <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
     </component>
-
-    <components-list v-if="showComponentsList" @close="showComponentsList = false" @added="componentAdded" :add-data="componentPostData" />
   </div>
 </template>
 
 <script lang="ts">
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
-import ComponentsList from '@cwa/nuxt-module/core/templates/components-list.vue'
 import ContextMenuMixin from "@cwa/nuxt-module/core/mixins/ContextMenuMixin"
 import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
 import CwaAddButton from "./components/cwa-add-button.vue";
@@ -35,7 +32,6 @@ export default {
   components: {
     CwaAddButton,
     ComponentPosition,
-    ComponentsList,
     ComponentLoadError: () => import('./component-load-error.vue'),
     Draggable: () => import('vuedraggable'),
   },

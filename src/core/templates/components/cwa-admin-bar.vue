@@ -1,26 +1,35 @@
 <template>
   <client-only v-if="$cwa.isAdmin">
     <div class="cwa-admin-bar">
-      <div class="left">
-        <status-icon :status="-2" />
-        <error-notifications />
-      </div>
-      <div class="center">
-        <div class="icons">
-          <cwa-nuxt-link to="/_cwa/layouts">
-            <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
-          </cwa-nuxt-link>
-          <cwa-nuxt-link to="/_cwa/pages">
-            <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
-          </cwa-nuxt-link>
-          <cwa-nuxt-link>
-            <img src="../../assets/images/icon-components.svg" alt="Components Icon" />
-          </cwa-nuxt-link>
-          <cwa-nuxt-link>
-            <img src="../../assets/images/icon-users.svg" alt="Users Icon" />
-          </cwa-nuxt-link>
+      <template v-if="currentView === 'page'">
+        <div class="left">
+          <div class="status">
+            <status-icon :status="-2" />
+            <error-notifications />
+          </div>
+          <div class="controls">
+            <cwa-admin-toggle id="edit-mode" label="Edit mode" v-model="editMode" />
+          </div>
         </div>
-      </div>
+      </template>
+      <template v-if="currentView === 'admin'">
+        <div class="center">
+          <div class="icons">
+            <cwa-nuxt-link to="/_cwa/layouts">
+              <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
+            </cwa-nuxt-link>
+            <cwa-nuxt-link to="/_cwa/pages">
+              <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
+            </cwa-nuxt-link>
+            <cwa-nuxt-link>
+              <img src="../../assets/images/icon-components.svg" alt="Components Icon" />
+            </cwa-nuxt-link>
+            <cwa-nuxt-link>
+              <img src="../../assets/images/icon-users.svg" alt="Users Icon" />
+            </cwa-nuxt-link>
+          </div>
+        </div>
+      </template>
       <div class="right">
         <cwa-admin-bar-menu />
       </div>
@@ -33,8 +42,35 @@ import CwaAdminBarMenu from "./cwa-admin-bar-menu"
 import CwaNuxtLink from "./cwa-nuxt-link";
 import StatusIcon from './admin/status-icon'
 import ErrorNotifications from './admin/error-notifications'
+import CwaAdminToggle from './admin/input/cwa-admin-toggle'
 export default {
-  components: {ErrorNotifications, StatusIcon, CwaNuxtLink, CwaAdminBarMenu}
+  components: {CwaAdminToggle, ErrorNotifications, StatusIcon, CwaNuxtLink, CwaAdminBarMenu},
+  data() {
+    return {
+      currentView: 'admin'
+    }
+  },
+  mounted() {
+    this.$cwa.$eventBus.$on('cwa:admin-bar:change-view', this.changeView)
+  },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off('cwa:admin-bar:change-view', this.changeView)
+  },
+  computed: {
+    editMode: {
+      set(value) {
+        this.$cwa.setEditMode(value)
+      },
+      get() {
+        return this.$cwa.isEditMode()
+      }
+    }
+  },
+  methods: {
+    changeView(viewName) {
+      this.currentView = viewName
+    }
+  }
 }
 </script>
 
@@ -51,6 +87,13 @@ export default {
   z-index: 1000
   > div
     display: flex
+  .left
+    align-items: center
+    .controls
+      margin-left: 1em
+      label
+        margin-left: .7em
+        font-size: .85em
   .center
     flex-grow: 1
     justify-content: center

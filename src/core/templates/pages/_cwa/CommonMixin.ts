@@ -12,6 +12,8 @@ export default Vue.extend({
       await this.$destroy(this.$root)
       // now we have no interference - we redirect.
       await this.$router.push('/login')
+      return
     }
+    this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'admin')
   }
 })

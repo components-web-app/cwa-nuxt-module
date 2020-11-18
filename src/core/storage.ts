@@ -29,6 +29,7 @@ export class Storage {
     const storeModule = {
       namespaced: true,
       state: () => ({
+        editMode: false,
         resources: {
           new: {},
           current: {},
@@ -122,7 +123,7 @@ export class Storage {
           if (!payload.isNew && !currentResourceState.currentIds.includes(payload.id)) {
             currentResourceState.currentIds.push(payload.id)
           }
-          // consola.trace(currentResourceState)
+
           Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
 
           const category = payload.category || 'Default'

@@ -1,7 +1,6 @@
-<script lang="ts">
 import {Notification, NotificationEvents, RemoveNotificationEvent} from "../../cwa-api-notifications/types";
 
-import CwaInputWrapper from './cwa-input-wrapper'
+import CwaInputWrapper from './cwa-input-wrapper.vue'
 export default {
   components: {CwaInputWrapper},
   props: {
@@ -64,4 +63,3 @@ export default {
     }
   }
 }
-</script>

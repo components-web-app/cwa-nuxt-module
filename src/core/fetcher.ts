@@ -177,9 +177,17 @@ export class Fetcher {
 
   public async fetchComponent (path) {
     this.timer.reset()
-    const component = await this.fetchItem({ path, category: StoreCategories.Component })
-    this.initMercure(this.ctx.storage.state.resources.current)
-    return component
+    try {
+      const component = await this.fetchItem({ path, category: StoreCategories.Component })
+      this.initMercure(this.ctx.storage.state.resources.current)
+      return component
+    } catch (error) {
+      // may be a draft component without a published version - only accessible to admin, therefore only available client-side
+      if (error instanceof ApiRequestError && error.statusCode === 404) {
+        return
+      }
+      throw error
+    }
   }
 
   private async fetchPageByRouteResponse (routeResponse) {
