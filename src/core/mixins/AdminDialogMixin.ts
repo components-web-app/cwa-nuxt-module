@@ -8,34 +8,32 @@ export default {
       if (typeof this.defaultContextMenuData === 'object') {
         data = Object.assign(data || {}, this.defaultContextMenuData)
       }
-      if (!data) {
-        return null
-      }
       return {
         category: this.contextMenuCategory || null,
         data,
-        component: this
+        component: this,
+        resource: this.resource
       }
     },
     populateContextMenu () {
       this.removeContextMenuShowListener()
-      this.$cwa.$eventBus.$once('contextmenu.show', this.contextMenuShowListener)
+      this.$cwa.$eventBus.$once('cwa:admin-dialog:show', this.contextMenuShowListener)
     },
     contextMenuShowListener () {
       const dataObject = this.getContextMenuData()
       if (!dataObject) {
         return
       }
-      this.$cwa.$eventBus.$emit('context-menu-add-data', this.getContextMenuData())
+      this.$cwa.$eventBus.$emit('cwa:admin-dialog:add-component', this.getContextMenuData())
     },
     removeContextMenuShowListener () {
-      this.$root.$off('contextmenu.show', this.contextMenuShowListener)
+      this.$cwa.$eventBus.$off('cwa:admin-dialog:show', this.contextMenuShowListener)
     },
     initContextmenu () {
-      this.$el.addEventListener('contextmenu', this.populateContextMenu)
+      this.$el.addEventListener('click', this.populateContextMenu)
     },
     destroyContextMenu () {
-      this.$el.removeEventListener('contextmenu', this.populateContextMenu)
+      this.$el.removeEventListener('click', this.populateContextMenu)
       this.removeContextMenuShowListener()
     }
   },

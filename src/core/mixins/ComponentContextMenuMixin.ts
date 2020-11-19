@@ -1,5 +1,5 @@
 import IriMixin from './IriMixin'
-import ContextMenuMixin from './ContextMenuMixin'
+import ContextMenuMixin from './AdminDialogMixin'
 
 export default {
   mixins: [IriMixin, ContextMenuMixin],

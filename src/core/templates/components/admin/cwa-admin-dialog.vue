@@ -1,5 +1,5 @@
 <template>
-  <ul v-if="$cwa.isAdmin && showing" class="context-menu" @click.stop :style="menuStyle">
+  <ul v-if="$cwa.isEditMode && showing" class="context-menu" @click.stop :style="menuStyle">
     <template v-for="(items,category) in menuData">
       <template v-if="loading">
         <li class="header">Loading...</li>
@@ -52,12 +52,16 @@ export default {
       return [top, left];
     },
     open(event) {
-      if (!this.$cwa.isAdmin) {
+      if (this.showing) {
+        this.showing = false
+        return
+      }
+      if (!this.$cwa.isEditMode) {
         return
       }
 
       this.menuData = {}
-      this.$cwa.$eventBus.$emit('contextmenu.show', this)
+      this.$cwa.$eventBus.$emit('cwa:admin-dialog:show', this)
       if (Object.keys(this.menuData).length === 0) {
         return
       }
@@ -88,15 +92,13 @@ export default {
     }
   },
   mounted() {
-    window.addEventListener('contextmenu', this.open)
-    window.addEventListener('click', this.close)
+    window.addEventListener('click', this.open)
     this.$el.addEventListener('contextmenu', (e) => { e.stopPropagation(); e.preventDefault() })
-    this.$cwa.$eventBus.$on('cwa-admin-dialog.add-component', this.addComponent)
+    this.$cwa.$eventBus.$on('cwa:admin-dialog:add-component', this.addComponent)
   },
   beforeDestroy() {
-    window.removeEventListener('contextmenu', this.open)
-    window.removeEventListener('click', this.close)
-    this.$root.$off('cwa-admin-dialog.add-component', this.addComponent)
+    window.removeEventListener('click', this.open)
+    this.$cwa.$eventBus.$off('cwa:admin-dialog:add-component', this.addComponent)
   }
 }
 </script>

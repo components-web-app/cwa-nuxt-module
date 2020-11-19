@@ -47,7 +47,7 @@ export default {
   components: {CwaAdminToggle, ErrorNotifications, StatusIcon, CwaNuxtLink, CwaAdminBarMenu},
   data() {
     return {
-      currentView: 'admin'
+      currentView: 'page'
     }
   },
   mounted() {

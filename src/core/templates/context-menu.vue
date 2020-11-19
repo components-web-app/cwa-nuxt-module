@@ -105,7 +105,7 @@ export default {
   beforeDestroy() {
     window.removeEventListener('contextmenu', this.open)
     window.removeEventListener('click', this.close)
-    this.$root.$off('context-menu-add-data', this.addContextMenuData)
+    this.$cwa.$eventBus.$off('context-menu-add-data', this.addContextMenuData)
   }
 }
 </script>

@@ -109,7 +109,7 @@ export default class Cwa {
   private handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
     const exception = new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint, axiosError.violations)
-    this.$eventBus.$emit('cwa:api-error', exception)
+    this.$eventBus.$emit('cwa:api:error', exception)
     throw exception
   }
 

@@ -12,7 +12,13 @@
 import CwaInputMixin from './CwaInputMixin'
 
 export default {
-  mixins: [CwaInputMixin]
+  mixins: [CwaInputMixin],
+  props: {
+    value: {
+      type: Boolean,
+      required: true
+    }
+  }
 }
 </script>
 

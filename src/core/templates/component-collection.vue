@@ -11,8 +11,9 @@
     </client-only>
     <!-- else we loop through components -->
     <component
-      :is="$cwa.isAdmin ? 'draggable' : 'div'" v-model="sortedComponentPositions"
+      :is="$cwa.isEditMode() ? 'draggable' : 'div'"
       :group="`collection-${resource['@id']}`"
+      v-model="sortedComponentPositions"
       @change="draggableChanged"
     >
       <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
@@ -23,12 +24,12 @@
 <script lang="ts">
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
-import ContextMenuMixin from "@cwa/nuxt-module/core/mixins/ContextMenuMixin"
+import AdminDialogMixin from "@cwa/nuxt-module/core/mixins/AdminDialogMixin"
 import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
-import CwaAddButton from "./components/cwa-add-button.vue";
+import CwaAddButton from './components/cwa-add-button.vue'
 
 export default {
-  mixins: [ContextMenuMixin, ApiRequestMixin],
+  mixins: [AdminDialogMixin, ApiRequestMixin],
   components: {
     CwaAddButton,
     ComponentPosition,

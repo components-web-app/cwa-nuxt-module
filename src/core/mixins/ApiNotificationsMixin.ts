@@ -17,8 +17,8 @@ export default Vue.extend({
     this.$cwa.$eventBus.$on(NotificationEvents.remove, this.removeNotification)
   },
   beforeDestroy () {
-    this.$root.$off(NotificationEvents.add, this.addNotification)
-    this.$root.$off(NotificationEvents.remove, this.removeNotification)
+    this.$cwa.$eventBus.$off(NotificationEvents.add, this.addNotification)
+    this.$cwa.$eventBus.$off(NotificationEvents.remove, this.removeNotification)
   },
   methods: {
     isSupportedCategory (category) {

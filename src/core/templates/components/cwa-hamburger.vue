@@ -81,7 +81,7 @@ export default {
     this.timeline.to('.stage-two', 0.1, { morphSVG: '.end-two' }, 'end')
   },
   beforeDestroy() {
-    this.$root.$off(closeMenuListenEvent, this.close)
+    this.$cwa.$eventBus.$off(closeMenuListenEvent, this.close)
   },
   computed: {
     gsapEnabled() {

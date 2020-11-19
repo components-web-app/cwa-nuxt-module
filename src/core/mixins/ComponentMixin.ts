@@ -1,9 +1,9 @@
 import ResourceMixin from './ResourceMixin'
-import ContextMenuMixin from './ContextMenuMixin'
+import AdminDialogMixin from './AdminDialogMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 
 export default {
-  mixins: [ResourceMixin, ContextMenuMixin, ApiRequestMixin],
+  mixins: [ResourceMixin, AdminDialogMixin, ApiRequestMixin],
   computed: {
     metadata () {
       return this.resource._metadata || {}
