@@ -10,11 +10,11 @@ export default {
   methods: {
     startApiRequest () {
       this.apiBusy = true
-      this.destroyContextMenu()
+      this.destroyAdminDialogListener()
     },
     completeApiRequest () {
       this.$nextTick(() => {
-        this.initContextmenu()
+        this.initAdminDialogListener()
         this.apiBusy = false
       })
     },

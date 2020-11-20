@@ -41,6 +41,7 @@ export default {
   > img
     position: relative
     transform: translate3d(0,0,0)
+    user-select: none
   &:before
     position: absolute
     content: ''

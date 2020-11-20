@@ -11,7 +11,7 @@ const mixin = {
       return {
         locationResourceId: this.$cwa.layout,
         locationResourceReference: this.layout.reference, // this.resource.reference,
-        isPage: false
+        locationResourceType: 'layouts'
       }
     }
   }

@@ -18,7 +18,7 @@ const mixin = {
       return {
         locationResourceId: this.iri,
         locationResourceReference: this.resource.reference,
-        isPage: true
+        locationResourceType: 'pages'
       }
     }
   }

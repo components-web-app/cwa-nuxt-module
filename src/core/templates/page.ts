@@ -3,7 +3,7 @@ import { StoreCategories } from '../storage'
 // @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 import ResourceComponentLoader from './resource-component-loader'
-import CwaAdminDialog from './components/admin/cwa-admin-dialog.vue'
+import CwaAdminDialog from './components/admin/dialog/cwa-admin-dialog.vue'
 import ClientOnly from 'vue-client-only'
 
 export default {

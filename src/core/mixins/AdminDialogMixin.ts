@@ -1,46 +1,45 @@
 export default {
   methods: {
-    getContextMenuData () {
-      let data = null
-      if (typeof this.contextMenuData === 'object') {
-        data = Object.assign({}, this.contextMenuData)
-      }
-      if (typeof this.defaultContextMenuData === 'object') {
-        data = Object.assign(data || {}, this.defaultContextMenuData)
-      }
+    getAdminDialogItem () {
+      // let data = null
+      // if (typeof this.contextMenuData === 'object') {
+      //   data = Object.assign({}, this.contextMenuData)
+      // }
+      // if (typeof this.defaultContextMenuData === 'object') {
+      //   data = Object.assign(data || {}, this.defaultContextMenuData)
+      // }
       return {
-        category: this.contextMenuCategory || null,
-        data,
-        component: this,
+        name: this.adminDialogName || null,
         resource: this.resource
       }
     },
     populateContextMenu () {
-      this.removeContextMenuShowListener()
       this.$cwa.$eventBus.$once('cwa:admin-dialog:show', this.contextMenuShowListener)
+      // we should only be populating when the element is clicked and the show event is called
+      // if we click, but this results in the context menu hiding (it is already shown)
+      // we should remove the event listener to prevent it being fired if the next click
+      // is not on this component
+      setTimeout(() => {
+        this.removeAdminDialogShowListener()
+      }, 0)
     },
     contextMenuShowListener () {
-      const dataObject = this.getContextMenuData()
-      if (!dataObject) {
-        return
-      }
-      this.$cwa.$eventBus.$emit('cwa:admin-dialog:add-component', this.getContextMenuData())
+      this.$cwa.$eventBus.$emit('cwa:admin-dialog:add-item', this.getAdminDialogItem())
     },
-    removeContextMenuShowListener () {
+    removeAdminDialogShowListener () {
       this.$cwa.$eventBus.$off('cwa:admin-dialog:show', this.contextMenuShowListener)
     },
-    initContextmenu () {
+    initAdminDialogListener () {
       this.$el.addEventListener('click', this.populateContextMenu)
     },
-    destroyContextMenu () {
+    destroyAdminDialogListener () {
       this.$el.removeEventListener('click', this.populateContextMenu)
-      this.removeContextMenuShowListener()
     }
   },
   mounted () {
-    this.initContextmenu()
+    this.initAdminDialogListener()
   },
   beforeDestroy () {
-    this.destroyContextMenu()
+    this.destroyAdminDialogListener()
   }
 }
