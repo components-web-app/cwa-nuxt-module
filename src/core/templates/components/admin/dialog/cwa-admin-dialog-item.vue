@@ -3,14 +3,14 @@
     <div class="header">
       {{ item.name || 'Unnamed' }}
       <span class="icons">
-            <span class="icon is-layouts">
-              <span>0</span>
+            <span v-if="locations.layouts" class="icon is-layouts">
+              <span>{{ locations.layouts }}</span>
             </span>
-            <span class="icon is-pages">
-              <span>0</span>
+            <span v-if="locations.pages" class="icon is-pages">
+              <span>{{ locations.pages }}</span>
             </span>
-            <span class="icon is-components">
-              <span>0</span>
+            <span v-if="locations.components" class="icon is-components">
+              <span>{{ locations.components }}</span>
             </span>
           </span>
     </div>
@@ -26,6 +26,42 @@ export default {
     item: {
       type: Object,
       required: true
+    }
+  },
+  computed: {
+    locations() {
+      const resource = this.item.resource
+      const totals = {
+        layouts: 0,
+        pages: 0,
+        components: 0
+      }
+      if (resource['@type'] === 'ComponentCollection') {
+        this.addCollectionTotals(resource, totals)
+      } else {
+        if (resource.componentPositions) {
+          resource.componentPositions.forEach((positionIri) => {
+            const componentPosition = this.$cwa.resources.ComponentPosition.byId[positionIri]
+            const componentCollection = this.$cwa.resources.ComponentCollection.byId[componentPosition.componentCollection]
+            this.addCollectionTotals(componentCollection, totals)
+          })
+        }
+      }
+
+      return totals
+    }
+  },
+  methods: {
+    addCollectionTotals(resource, totals) {
+      if (resource.layouts) {
+        totals.layouts += resource.layouts.length
+      }
+      if (resource.pages) {
+        totals.pages += resource.pages.length
+      }
+      if (resource.components) {
+        totals.components += resource.components.length
+      }
     }
   }
 }

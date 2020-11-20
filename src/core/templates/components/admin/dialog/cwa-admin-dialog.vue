@@ -38,7 +38,7 @@ export default {
   },
   methods: {
     positionMenu(clickY, clickX, element, useOffset = true) {
-      const topOffset = 10 + (useOffset ? 15 : 0)
+      const topOffset = 10 + (useOffset ? 10 : 0)
       const elementHeight = element.offsetHeight
       const elementWidth = element.offsetWidth
 
