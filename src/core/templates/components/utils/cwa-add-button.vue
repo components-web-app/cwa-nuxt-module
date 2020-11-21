@@ -1,6 +1,6 @@
 <template>
   <a :class="['cwa-add-button', { 'is-pulsing': highlight }]" @click="$emit('click')">
-    <img src="../../assets/images/icon-add.svg" alt="Plus icon" />
+    <img src="../../../assets/images/icon-add.svg" alt="Plus icon" />
   </a>
 </template>
 

@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import CwaLogo from '../components/cwa-logo.vue'
+import CwaLogo from '../components/utils/cwa-logo.vue'
 export default {
   cwa: false,
   layout: 'cwa-empty',

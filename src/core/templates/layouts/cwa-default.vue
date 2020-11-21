@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import CwaAdminBar from '@cwa/nuxt-module/core/templates/components/cwa-admin-bar.vue'
+import CwaAdminBar from '@cwa/nuxt-module/core/templates/components/admin/cwa-admin-bar.vue'
 export default {
   components: {CwaAdminBar},
   props: {

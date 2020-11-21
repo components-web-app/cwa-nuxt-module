@@ -42,8 +42,8 @@
 </template>
 
 <script lang="ts">
-import CwaLoader from "./cwa-loader.vue";
-import CwaModal from "./cwa-modal.vue";
+import CwaLoader from "./utils/cwa-loader.vue";
+import CwaModal from "./utils/cwa-modal.vue";
 import StatusIcon from "./admin/status-icon.vue";
 import ErrorNotifications from "./admin/error-notifications.vue";
 import ApiDateParserMixin from "../../mixins/ApiDateParserMixin";

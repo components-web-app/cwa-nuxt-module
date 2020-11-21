@@ -18,8 +18,8 @@
 </template>
 
 <script>
-import CwaLoader from './cwa-loader'
-import NuxtErrorIcon from './nuxt-error-icon'
+import CwaLoader from '../utils/cwa-loader'
+import NuxtErrorIcon from '../utils/nuxt-error-icon'
 export default {
   components: {NuxtErrorIcon, CwaLoader},
   props: {

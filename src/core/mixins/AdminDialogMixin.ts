@@ -9,7 +9,8 @@ export default {
       //   data = Object.assign(data || {}, this.defaultContextMenuData)
       // }
       return {
-        name: this.adminDialogName || null,
+        name: this.adminDialog?.name,
+        component: this.adminDialog?.component,
         resource: this.resource
       }
     },

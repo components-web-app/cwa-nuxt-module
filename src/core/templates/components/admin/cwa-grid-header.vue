@@ -26,8 +26,8 @@
 <script>
 import debounce from 'lodash.debounce'
 import VueRouter from 'vue-router'
-import CwaAddButton from './cwa-add-button'
-import QueryHelperMixin from '../../mixins/QueryHelperMixin'
+import CwaAddButton from '../utils/cwa-add-button'
+import QueryHelperMixin from '../../../mixins/QueryHelperMixin'
 const { isNavigationFailure, NavigationFailureType } = VueRouter
 
 export default {

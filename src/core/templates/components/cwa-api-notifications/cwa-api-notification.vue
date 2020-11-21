@@ -13,7 +13,7 @@
 <script lang="ts">
 import {TimestampedNotification, NotificationLevels} from "./types";
 import { PropType } from 'vue'
-import Timestamp from "../../timestamp.vue";
+import Timestamp from "../utils/timestamp.vue";
 
 export default {
   components: { Timestamp },

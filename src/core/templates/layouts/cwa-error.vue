@@ -25,10 +25,10 @@
 </template>
 
 <script>
-import CwaLogo from '@cwa/nuxt-module/core/templates/components/cwa-logo.vue'
-import CwaNuxtLink from '@cwa/nuxt-module/core/templates/components/cwa-nuxt-link.vue'
-import CwaFooterLogo from '@cwa/nuxt-module/core/templates/components/cwa-footer-logo.vue'
-import NuxtErrorIcon from '@cwa/nuxt-module/core/templates/components/nuxt-error-icon.vue'
+import CwaLogo from '@cwa/nuxt-module/core/templates/components/utils/cwa-logo.vue'
+import CwaNuxtLink from '@cwa/nuxt-module/core/templates/components/utils/cwa-nuxt-link.vue'
+import CwaFooterLogo from '@cwa/nuxt-module/core/templates/components/utils/cwa-footer-logo.vue'
+import NuxtErrorIcon from '@cwa/nuxt-module/core/templates/components/utils/nuxt-error-icon.vue'
 
 export default {
   name: 'NuxtError',

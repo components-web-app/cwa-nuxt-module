@@ -16,16 +16,16 @@
         <div class="center">
           <div class="icons">
             <cwa-nuxt-link to="/_cwa/layouts">
-              <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
+              <img src="../../../assets/images/icon-layout.svg" alt="Layouts Icon" />
             </cwa-nuxt-link>
             <cwa-nuxt-link to="/_cwa/pages">
-              <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
+              <img src="../../../assets/images/icon-pages.svg" alt="Pages Icon" />
             </cwa-nuxt-link>
             <cwa-nuxt-link>
-              <img src="../../assets/images/icon-components.svg" alt="Components Icon" />
+              <img src="../../../assets/images/icon-components.svg" alt="Components Icon" />
             </cwa-nuxt-link>
             <cwa-nuxt-link>
-              <img src="../../assets/images/icon-users.svg" alt="Users Icon" />
+              <img src="../../../assets/images/icon-users.svg" alt="Users Icon" />
             </cwa-nuxt-link>
           </div>
         </div>
@@ -39,10 +39,10 @@
 
 <script>
 import CwaAdminBarMenu from "./cwa-admin-bar-menu"
-import CwaNuxtLink from "./cwa-nuxt-link";
-import StatusIcon from './admin/status-icon'
-import ErrorNotifications from './admin/error-notifications'
-import CwaAdminToggle from './admin/input/cwa-admin-toggle'
+import CwaNuxtLink from "../utils/cwa-nuxt-link";
+import StatusIcon from './status-icon'
+import ErrorNotifications from './error-notifications'
+import CwaAdminToggle from './input/cwa-admin-toggle'
 export default {
   components: {CwaAdminToggle, ErrorNotifications, StatusIcon, CwaNuxtLink, CwaAdminBarMenu},
   data() {

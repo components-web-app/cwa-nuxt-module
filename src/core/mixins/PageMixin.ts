@@ -1,4 +1,4 @@
-import ComponentCollection from '../templates/component-collection.vue'
+import ComponentCollection from '../templates/components/core/component-collection.vue'
 import IriMixin from './IriMixin'
 
 const mixin = {

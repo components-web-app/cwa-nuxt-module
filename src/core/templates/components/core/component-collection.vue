@@ -23,10 +23,10 @@
 
 <script lang="ts">
 import slugify from 'slugify'
-import ComponentPosition from '@cwa/nuxt-module/core/templates/component-position.vue'
+import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import AdminDialogMixin from "@cwa/nuxt-module/core/mixins/AdminDialogMixin"
 import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
-import CwaAddButton from './components/cwa-add-button.vue'
+import CwaAddButton from '../utils/cwa-add-button.vue'
 
 export default {
   mixins: [AdminDialogMixin, ApiRequestMixin],
@@ -49,7 +49,6 @@ export default {
       type: String,
       required: true
     },
-    //
     locationResourceType: {
       type: String,
       required: true,
@@ -65,7 +64,11 @@ export default {
       },
       reloading: false,
       previousSortedComponentPositions: null,
-      lastClickEvent: null
+      lastClickEvent: null,
+      adminDialog: {
+        name: 'Component Group',
+        component: () => import('../admin/dialog/resources/component-collection.vue')
+      }
     }
   },
   async mounted() {
@@ -74,9 +77,6 @@ export default {
     }
   },
   computed: {
-    adminDialogName() {
-      return `Component Group`
-    },
     resource() {
       return this.getCollectionResourceByLocation(this.location, this.locationResourceId)
     },
@@ -156,7 +156,6 @@ export default {
         top: boundingBox.top + boundingBox.height,
         left: boundingBox.left + boundingBox.width / 2
       }
-      console.log(targetElement.width, position)
       this.$cwa.$eventBus.$emit('cwa:admin-dialog:position', position)
     },
     getCollectionResourceByLocation(location, locationResourceId) {

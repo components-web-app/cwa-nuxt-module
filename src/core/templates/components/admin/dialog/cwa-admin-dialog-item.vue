@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-admin-dialog-item">
+  <li class="cwa-admin-dialog-item">
     <div class="header">
       {{ item.name || 'Unnamed' }}
       <span class="icons">
@@ -14,10 +14,10 @@
             </span>
           </span>
     </div>
-    <div>
-      {{ item.resource['@type']}}
+    <div class="item" v-if="item.component">
+      <component :is="item.component" />
     </div>
-  </div>
+  </li>
 </template>
 
 <script>
@@ -69,6 +69,8 @@ export default {
 
 <style lang="sass">
 .cwa-admin-dialog-item
+  &:not(:last-child)
+    margin-bottom: 1rem
   .header
     background: $cwa-grid-item-background
     padding: .5rem

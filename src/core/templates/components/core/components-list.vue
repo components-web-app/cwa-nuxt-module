@@ -16,8 +16,8 @@
 
 <script lang="ts">
 import { NotificationEvents, NotificationLevels, Notification } from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
-import {StoreCategories} from "../storage";
-import ApiError from "../../inc/api-error";
+import {StoreCategories} from "../../../storage";
+import ApiError from "../../../../inc/api-error";
 
 export default {
   props: {

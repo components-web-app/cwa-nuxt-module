@@ -17,14 +17,14 @@
 </template>
 
 <script>
-import CwaGridHeader from '../../components/cwa-grid-header'
-import NuxtErrorIcon from '../../components/nuxt-error-icon'
-import CwaLoader from '../../components/cwa-loader'
-import CwaGridLoader from '../../components/cwa-grid-loader'
+import CwaGridHeader from './cwa-grid-header'
+import NuxtErrorIcon from '../utils/nuxt-error-icon'
+import CwaLoader from '../utils/cwa-loader'
+import CwaGridLoader from './cwa-grid-loader'
 import CwaPaginationBar from '../../components/cwa-pagination-bar'
-import CwaNuxtLink from '../../components/cwa-nuxt-link'
+import CwaNuxtLink from '../utils/cwa-nuxt-link'
 import QueryHelperMixin from '../../../mixins/QueryHelperMixin'
-import CwaFooterLogo from '../cwa-footer-logo'
+import CwaFooterLogo from '../utils/cwa-footer-logo'
 
 export default {
   components: {CwaNuxtLink, CwaPaginationBar, CwaGridLoader, CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},

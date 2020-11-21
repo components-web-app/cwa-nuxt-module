@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="!editing" @dblclick="showEditView" v-html="displayHtml" />
+    <div v-if="!editing" v-html="displayHtml" />
     <quill-input v-else :iri="displayIri" field="html" @hide="editing = false" />
   </div>
 </template>
@@ -13,17 +13,14 @@ export default {
   mixins: [ComponentMixin],
   data () {
     return {
-      editing: false
+      editing: false,
+      adminDialog: {
+        name: 'HTML Content',
+        component: () => import('../admin-dialog/HtmlContent.vue')
+      }
     }
   },
   computed: {
-    contextMenuData () {
-      return {
-        Edit: {
-          callback: this.showEditView
-        }
-      }
-    },
     displayHtml () {
       return this.resource.html || (this.$cwa.isAdmin ? '<p style="font-style: italic">No content</p>' : '')
     }

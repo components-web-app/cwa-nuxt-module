@@ -1,10 +1,8 @@
 <template>
-  <div v-if="$cwa.isEditMode && showing" class="cwa-admin-dialog" @click.stop :style="menuStyle">
+  <div v-if="$cwa.isEditMode() && showing" class="cwa-admin-dialog" @click.stop :style="menuStyle">
     <div class="arrow" :class="{'is-down': arrowIsDown}" :style="{left: `${arrowLeft}px`}"></div>
     <ul>
-      <li v-for="item in menuItems" :key="item.resource['@id']">
-        <cwa-admin-dialog-item :item="item" />
-      </li>
+      <cwa-admin-dialog-item v-for="item in menuItems" :key="item.resource['@id']" :item="item" />
     </ul>
   </div>
 </template>
@@ -17,6 +15,7 @@ export default {
   data() {
     return {
       showing: false,
+      invisible: false,
       heightMargin: 10,
       widthMargin: 10,
       left: 0,
@@ -32,7 +31,8 @@ export default {
     menuStyle() {
       return {
         left: `${this.left}px`,
-        top: `${this.top}px`
+        top: `${this.top}px`,
+        opacity: this.invisible ? '0' : '1'
       }
     }
   },
@@ -82,12 +82,14 @@ export default {
       }
 
       event.preventDefault()
+      this.invisible = true
       this.showing = true
       await this.positionDialog({ top: event.clientY, left: event.clientX })
       this.$cwa.$eventBus.$emit('cwa:admin-dialog:shown', this.menuItems)
       this.menuItems.forEach(item => {
         this.$cwa.$eventBus.$emit('cwa:admin-dialog:shown-item', item)
       })
+      this.invisible = false
     },
     positionDialog({ top, left }, useOffset = true) {
       return new Promise((resolve) => {
@@ -111,8 +113,8 @@ export default {
     close() {
       this.showing = false
     },
-    addItem({ name, resource }) {
-      this.menuItems.push({ name, resource })
+    addItem({ name, resource, component }) {
+      this.menuItems.push({ name, resource, component })
     },
     setScope(scope) {
       this.scope = scope
