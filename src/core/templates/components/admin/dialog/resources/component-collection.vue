@@ -32,13 +32,12 @@ export default {
     async selectedComponent(newComponent) {
       // get the component for the dialog from the ui component
       const component = await components[newComponent]().component
-      console.log(component)
       const componentInstance = new (Vue.extend(component))({
         propsData: {
           iri: 'new'
         }
       })
-      this.selectedComponentDialogComponent = componentInstance.adminDialog.component
+      this.selectedComponentDialogComponent = componentInstance.adminDialog?.component
     }
   },
   computed: {
