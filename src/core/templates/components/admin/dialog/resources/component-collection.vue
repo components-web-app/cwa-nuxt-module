@@ -5,7 +5,11 @@
       :options="componentOptions"
       v-model="selectedComponent"
     />
-    <component v-if="selectedComponentDialogComponent" :is="selectedComponentDialogComponent" />
+    <component
+      v-if="selectedComponentDialogComponent"
+      :is="selectedComponentDialogComponent"
+      :component-collection="resource['@id']"
+    />
   </div>
 </template>
 
@@ -16,6 +20,12 @@ import components from '~/.nuxt/cwa/components'
 import CwaAdminSelect from '../../input/cwa-admin-select.vue'
 
 export default {
+  props: {
+    resource: {
+      type: Object,
+      required: true
+    }
+  },
   data() {
     return {
       loadingComponents: false,

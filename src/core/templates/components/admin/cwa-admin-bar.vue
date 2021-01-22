@@ -89,6 +89,8 @@ export default {
     display: flex
   .left
     align-items: center
+    .status
+      display: flex
     .controls
       margin-left: 1em
       label

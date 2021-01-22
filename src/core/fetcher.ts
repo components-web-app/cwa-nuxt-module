@@ -4,7 +4,7 @@ import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiRequestError from '../inc/api-error'
-import Storage, { StoreCategories } from './storage'
+import Storage, { resourcesState, StoreCategories } from './storage'
 
 export class Fetcher {
   // Holds the EventSource connection with mercure
@@ -119,6 +119,7 @@ export class Fetcher {
       // Display error page
       this.ctx.error(error)
     } finally {
+      this.initMercure(this.ctx.storage.state.resources.current)
       this.timer.end(`Fetch page ${pageIri}`)
       this.timer.print()
     }
@@ -156,6 +157,7 @@ export class Fetcher {
       // Display error page
       this.ctx.error(error)
     } finally {
+      this.initMercure(this.ctx.storage.state.resources.current)
       this.timer.end(`Fetch route ${path}`)
       this.timer.print()
     }
@@ -169,18 +171,10 @@ export class Fetcher {
     })
   }
 
-  public async fetchComponentCollection (path) {
-    this.timer.reset()
-    await this.fetchComponentCollections([path])
-    this.initMercure(this.ctx.storage.state.resources.current)
-  }
-
   public async fetchComponent (path) {
     this.timer.reset()
     try {
-      const component = await this.fetchItem({ path, category: StoreCategories.Component })
-      this.initMercure(this.ctx.storage.state.resources.current)
-      return component
+      return await this.fetchItem({ path, category: StoreCategories.Component })
     } catch (error) {
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
       if (error instanceof ApiRequestError && error.statusCode === 404) {
@@ -251,15 +245,16 @@ export class Fetcher {
     this.ctx.storage.setState('mercureHub', matches[1])
   }
 
-  public initMercure (currentResources) {
-    if (!process.client || !currentResources.length) { return }
+  public initMercure (currentResources: { any: resourcesState }) {
+    const currentResourcesCategories = Object.values(currentResources)
+    if (!process.client || !currentResourcesCategories.length) { return }
 
     let hubUrl = null
 
     try {
-      hubUrl = this.getMercureHubURL(currentResources)
+      hubUrl = this.getMercureHubURL(currentResourcesCategories)
     } catch (err) {
-      consola.error('Could not get mercure hub url.')
+      consola.error('Could not get mercure hub url.', err.message)
       return
     }
 
@@ -272,6 +267,7 @@ export class Fetcher {
       this.eventSource.close()
     }
 
+    consola.info(`Created Mercure EventSource for "${hubUrl}"`)
     this.eventSource = new EventSource(hubUrl)
     this.eventSource.onmessage = (messageEvent: MessageEvent) => {
       const data = JSON.parse(messageEvent.data)
@@ -287,21 +283,20 @@ export class Fetcher {
     }
   }
 
-  private getMercureHubURL (currentResources) {
+  private getMercureHubURL (currentResources: resourcesState[]) {
     const hub = new URL(this.ctx.storage.state.mercureHub)
 
-    const appendTopics = (obj) => {
-      for (const resourceType in obj) {
-        const resourcesObject = obj[resourceType]
-        if (resourcesObject.currentIds === undefined) {
-          continue
-        }
-        resourcesObject.currentIds.forEach((id) => {
-          hub.searchParams.append('topic', this.ctx.apiUrl + id)
-        })
+    for (const resourcesObject of currentResources) {
+      if (resourcesObject.currentIds === undefined) {
+        continue
       }
+      resourcesObject.currentIds.forEach((id) => {
+        hub.searchParams.append('topic', this.ctx.apiUrl + id)
+      })
     }
-    appendTopics(currentResources)
+    if (hub.searchParams.get('topic') === null) {
+      throw new Error('No current resources/topics.')
+    }
 
     if (this.lastEventId) {
       hub.searchParams.append('Last-Event-ID', this.lastEventId)

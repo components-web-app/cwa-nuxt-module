@@ -1,7 +1,7 @@
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
-const API_URL = process.env.API_URL || 'https://localhost:8443'
+const API_URL = 'http://something-else' || process.env.API_URL || 'https://localhost:8443'
 
 export default {
   publicRuntimeConfig: {

@@ -7,7 +7,7 @@ export const StoreCategories = {
   Component: 'Component'
 }
 
-type resourcesState = {
+export type resourcesState = {
   byId: object,
   allIds: string[],
   currentIds?: string[]

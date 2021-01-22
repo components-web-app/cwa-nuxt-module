@@ -63,8 +63,8 @@ export default class Cwa {
     this.$storage.setState('editMode', enabled)
   }
 
-  initMercure () {
-    !cwaRouteDisabled(this.ctx.route) && this.fetcher.initMercure(this.$state.resources.current)
+  initMercure (force: boolean = false) {
+    (force || !cwaRouteDisabled(this.ctx.route)) && this.fetcher.initMercure(this.$state.resources.current)
   }
 
   public fetchRoute (path) {

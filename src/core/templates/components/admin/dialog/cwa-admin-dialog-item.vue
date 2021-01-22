@@ -3,19 +3,19 @@
     <div class="header">
       {{ item.name || 'Unnamed' }}
       <span class="icons">
-            <span v-if="locations.layouts" class="icon is-layouts">
-              <span>{{ locations.layouts }}</span>
-            </span>
-            <span v-if="locations.pages" class="icon is-pages">
-              <span>{{ locations.pages }}</span>
-            </span>
-            <span v-if="locations.components" class="icon is-components">
-              <span>{{ locations.components }}</span>
-            </span>
-          </span>
+        <span v-if="locations.layouts" class="icon is-layouts">
+          <span>{{ locations.layouts }}</span>
+        </span>
+        <span v-if="locations.pages" class="icon is-pages">
+          <span>{{ locations.pages }}</span>
+        </span>
+        <span v-if="locations.components" class="icon is-components">
+          <span>{{ locations.components }}</span>
+        </span>
+      </span>
     </div>
     <div class="item" v-if="item.component">
-      <component :is="item.component" />
+      <component :is="item.component" :resource="item.resource" />
     </div>
   </li>
 </template>
