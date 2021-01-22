@@ -6,7 +6,7 @@
     </div>
     <div class="cwa-input">
       <button class="is-size-6 submit-button" :disabled="submitting" @click="submitRequest">
-        Create
+        {{ submitButtonLabel }}
       </button>
     </div>
   </div>
@@ -19,15 +19,26 @@ import CommaDelimitedArrayBuilder from '../../../../src/utils/CommaDelimitedArra
 export default {
   mixins: [ApiRequestMixin],
   props: {
+    resource: {
+      type: Object,
+      required: false,
+      default: null
+    },
     componentCollection: {
       type: String,
-      required: true
+      required: false,
+      default: null
     }
   },
   data () {
     return {
-      uiClassNames: null,
+      uiClassNames: this.resource?.uiClassNames?.join(', '),
       submitting: false
+    }
+  },
+  computed: {
+    submitButtonLabel () {
+      return this.resource ? 'Update' : 'Create'
     }
   },
   methods: {
@@ -35,22 +46,26 @@ export default {
       this.submitting = true
       try {
         const uiClassNames = CommaDelimitedArrayBuilder(this.uiClassNames)
-        await this.$cwa.createResource('/component/html_contents', {
-          componentPositions: [
-            {
-              componentCollection: this.componentCollection
-            }
-          ],
+        const updateData = {
           uiClassNames
-        })
+        }
+        if (this.resource) {
+          await this.$cwa.updateResource(this.resource['@id'], updateData)
+        } else {
+          const createData = Object.assign({
+            componentPositions: [
+              {
+                componentCollection: this.componentCollection
+              }
+            ]
+          }, updateData)
+          await this.$cwa.createResource(this.resource?.['@id'] || '/component/html_contents', createData)
+        }
       } catch (error) {
         this.handleApiError(error)
       } finally {
         this.submitting = false
       }
-    },
-    async reloadComponentCollection () {
-
     }
   }
 }

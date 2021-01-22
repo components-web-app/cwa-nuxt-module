@@ -23,6 +23,7 @@ export class Fetcher {
 
   public static readonly loadingRouteKey = 'loadingRoute'
   private timer: DebugTimer;
+  private initMercureTimeout?: any = null;
 
   constructor ({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
@@ -35,6 +36,10 @@ export class Fetcher {
       fetchConcurrency
     }
     this.timer = new DebugTimer()
+  }
+
+  private get currentResources () {
+    return this.ctx.storage.state.resources.current
   }
 
   public get apiUrl () {
@@ -74,12 +79,20 @@ export class Fetcher {
     }
   }
 
-  public async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
+  public async fetchItem ({ path, preload }: {path: string, preload?: string[], category?: string}) {
     const resource = await this.fetcher({ path, preload })
     if (!resource) {
       return resource
     }
+
+    const category = this.ctx.storage.getCategoryFromIri(path)
+
+    const currentResource = this.currentResources?.[category]?.byId?.[path]
     this.ctx.storage.setResource({ resource, category })
+
+    if (!currentResource) {
+      this.initMercure(this.currentResources)
+    }
     return resource
   }
 
@@ -119,7 +132,7 @@ export class Fetcher {
       // Display error page
       this.ctx.error(error)
     } finally {
-      this.initMercure(this.ctx.storage.state.resources.current)
+      this.initMercure(this.currentResources)
       this.timer.end(`Fetch page ${pageIri}`)
       this.timer.print()
     }
@@ -157,7 +170,7 @@ export class Fetcher {
       // Display error page
       this.ctx.error(error)
     } finally {
-      this.initMercure(this.ctx.storage.state.resources.current)
+      this.initMercure(this.currentResources)
       this.timer.end(`Fetch route ${path}`)
       this.timer.print()
     }
@@ -246,41 +259,46 @@ export class Fetcher {
   }
 
   public initMercure (currentResources: { any: resourcesState }) {
-    const currentResourcesCategories = Object.values(currentResources)
-    if (!process.client || !currentResourcesCategories.length) { return }
-
-    let hubUrl = null
-
-    try {
-      hubUrl = this.getMercureHubURL(currentResourcesCategories)
-    } catch (err) {
-      consola.error('Could not get mercure hub url.', err.message)
-      return
+    if (this.initMercureTimeout) {
+      clearTimeout(this.initMercureTimeout)
     }
+    this.initMercureTimeout = setTimeout(() => {
+      const currentResourcesCategories = Object.values(currentResources)
+      if (!process.client || !currentResourcesCategories.length) { return }
 
-    // Refresh the topics
-    if (this.eventSource && this.eventSource.readyState !== 2) {
-      if (this.eventSource.url === hubUrl) {
+      let hubUrl = null
+
+      try {
+        hubUrl = this.getMercureHubURL(currentResourcesCategories)
+      } catch (err) {
+        consola.error('Could not get mercure hub url.', err.message)
         return
       }
-      consola.info('Closing Mercure event source to re-open with latest topics')
-      this.eventSource.close()
-    }
 
-    consola.info(`Created Mercure EventSource for "${hubUrl}"`)
-    this.eventSource = new EventSource(hubUrl)
-    this.eventSource.onmessage = (messageEvent: MessageEvent) => {
-      const data = JSON.parse(messageEvent.data)
-      if (Object.keys(data).length === 1 && data['@id']) {
-        this.ctx.storage.deleteResource(data['@id'])
-        return
+      // Refresh the topics
+      if (this.eventSource && this.eventSource.readyState !== 2) {
+        if (this.eventSource.url === hubUrl) {
+          return
+        }
+        consola.info('Closing Mercure event source to re-open with latest topics')
+        this.eventSource.close()
       }
-      this.lastEventId = messageEvent.lastEventId
-      this.ctx.storage.setResource({
-        isNew: true,
-        resource: data
-      })
-    }
+
+      consola.info(`Created Mercure EventSource for "${hubUrl}"`)
+      this.eventSource = new EventSource(hubUrl)
+      this.eventSource.onmessage = (messageEvent: MessageEvent) => {
+        const data = JSON.parse(messageEvent.data)
+        if (Object.keys(data).length === 1 && data['@id']) {
+          this.ctx.storage.deleteResource(data['@id'])
+          return
+        }
+        this.lastEventId = messageEvent.lastEventId
+        this.ctx.storage.setResource({
+          isNew: true,
+          resource: data
+        })
+      }
+    }, 100)
   }
 
   private getMercureHubURL (currentResources: resourcesState[]) {

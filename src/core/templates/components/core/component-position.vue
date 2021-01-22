@@ -45,6 +45,7 @@ export default {
   },
   async mounted () {
     if (!this.component) {
+      // check if no published version, only a draft
       if (this.$cwa.isUser) {
         await this.$cwa.fetcher.fetchComponent(this.componentPosition.component)
       }
