@@ -262,13 +262,11 @@ export class Fetcher {
     if (this.initMercureTimeout) {
       clearTimeout(this.initMercureTimeout)
     }
-    this.initMercureTimeout = setTimeout((url: string) => {
+    this.initMercureTimeout = setTimeout(() => {
       const currentResourcesCategories = Object.values(currentResources)
-      // || !currentResourcesCategories.length
       if (!process.client) { return }
 
       let hubUrl = null
-
       try {
         hubUrl = this.getMercureHubURL(currentResourcesCategories)
       } catch (err) {
@@ -287,7 +285,19 @@ export class Fetcher {
 
       consola.info(`Created Mercure EventSource for "${hubUrl}"`)
       this.eventSource = new EventSource(hubUrl)
+      // will be in context of EventSource if not using call
+      // eslint-disable-next-line no-useless-call
       this.eventSource.onmessage = (messageEvent: MessageEvent) => {
+        this.handleMercureMessage(messageEvent)
+      }
+    }, 100)
+  }
+
+  private handleMercureMessage (messageEvent: MessageEvent) {
+    // if we are updating an object, we can receive the message before we have updated our store
+    // and then we think there is an update which there isn't...
+    return new Promise((resolve) => {
+      const processMessage = () => {
         const data = JSON.parse(messageEvent.data)
         if (Object.keys(data).length === 1 && data['@id']) {
           this.ctx.storage.deleteResource(data['@id'])
@@ -295,37 +305,70 @@ export class Fetcher {
         }
         this.lastEventId = messageEvent.lastEventId
 
-        let force = false
+        // we listen to all of these in case we are adding to an existing component collection
+        const force = this.forceComponentPositionPersist(data)
 
-        if (data['@type'] === 'ComponentPosition') {
-          // we listen to all of these in case we are adding to an existing component collection
-          if (!this.currentResources.ComponentCollection.currentIds.includes(data.componentCollection)) {
-            consola.info('New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.')
-            return
-          }
-          if (!this.currentResources.ComponentPosition.currentIds.includes(data['@id'])) {
-            const collectionIri = data.componentCollection
-            const componentCollectionResource = this.currentResources.ComponentCollection.byId[collectionIri]
-            if (componentCollectionResource) {
-              force = true
-              this.ctx.storage.setResource({
-                resource: {
-                  ...componentCollectionResource,
-                  componentPositions: [...componentCollectionResource.componentPositions, data['@id']]
-                },
-                isNew: true
-              })
-            }
-          }
-        }
-
+        // force option will add the resource into new even if there is not an existing resource
+        // with the same ID to merge it into
         this.ctx.storage.setResource({
           isNew: true,
           resource: data,
           force
         })
+        resolve()
       }
-    }, 100)
+
+      // Must wait for existing api requests to happen and storage to update or we think something has changed when
+      // it is this application changing it
+      const apiRequestInProgress = this.ctx.storage.getState('apiRequestInProgress')
+      if (!apiRequestInProgress) {
+        consola.info('Invoking Mercure message handler. No request in progress.')
+        processMessage()
+        return
+      }
+      consola.info('Mercure message handler waiting for current request to complete...')
+      const unwatchFn = this.ctx.storage.watchState('apiRequestInProgress', (newValue) => {
+        if (!newValue) {
+          consola.info('Request complete. Invoking Mercure message handler')
+          processMessage()
+          unwatchFn()
+        }
+      })
+    })
+  }
+
+  private forceComponentPositionPersist (data) {
+    if (data['@type'] !== 'ComponentPosition') {
+      return false
+    }
+
+    if (!this.currentResources.ComponentCollection.currentIds.includes(data.componentCollection)) {
+      consola.info('New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.')
+      return false
+    }
+
+    // We do not need to adapt behaviour if the ComponentPosition already exists
+    if (this.currentResources.ComponentPosition.currentIds.includes(data['@id'])) {
+      return false
+    }
+
+    const collectionIri = data.componentCollection
+    // Check if this ComponentCollection resource is current
+    const componentCollectionResource = this.currentResources.ComponentCollection.byId[collectionIri]
+    if (!componentCollectionResource) {
+      return false
+    }
+
+    // Update the ComponentCollection resource to include new position
+    // Mercure will not publish this, the resource is not updated in the database
+    this.ctx.storage.setResource({
+      resource: {
+        ...componentCollectionResource,
+        componentPositions: [...componentCollectionResource.componentPositions, data['@id']]
+      },
+      isNew: true
+    })
+    return true
   }
 
   private getMercureHubURL (currentResources: resourcesState[]) {

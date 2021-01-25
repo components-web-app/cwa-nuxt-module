@@ -29,6 +29,7 @@ export class Storage {
     const storeModule = {
       namespaced: true,
       state: () => ({
+        apiRequestInProgress: false,
         editMode: false,
         resources: {
           new: {},
@@ -80,6 +81,7 @@ export class Storage {
         RESET_CURRENT_RESOURCES (state) {
           Vue.set(state.resources, 'new', {})
           const resetCurrentIds = (obj) => {
+            // of not in? Object.values() ?
             for (const resourceName in obj) {
               if (obj[resourceName].currentIds === undefined) {
                 continue
@@ -108,12 +110,15 @@ export class Storage {
                 return
               }
 
-              const removeModifiedAtTimestamp = (obj) => {
+              const cleanResourceForComparison = (obj) => {
                 const newObj = Object.assign({}, obj)
+                // remove modified at timestamp
                 delete newObj.modifiedAt
+                // remove null values
+                Object.keys(newObj).forEach(k => newObj[k] === null && delete newObj[k])
                 return newObj
               }
-              if (JSON.stringify(removeModifiedAtTimestamp(currentResource)) === JSON.stringify(removeModifiedAtTimestamp(payload.resource))) {
+              if (JSON.stringify(cleanResourceForComparison(currentResource)) === JSON.stringify(cleanResourceForComparison(payload.resource))) {
                 consola.info(`Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`)
                 return
               }
@@ -170,6 +175,8 @@ export class Storage {
           if (!typeMapping) {
             return null
           }
+
+          // check if this should be 'of' not 'in'
           for (const iriPrefix in typeMapping) {
             if (iri.startsWith(iriPrefix)) {
               return typeMapping[iriPrefix]
@@ -216,6 +223,10 @@ export class Storage {
 
   setCurrentRoute (id) {
     this.ctx.store.commit(this.options.vuex.namespace + '/SET_CURRENT_ROUTE', id)
+  }
+
+  setApiRequestInProgress (requestInProgress: boolean) {
+    this.setState('apiRequestInProgress', requestInProgress)
   }
 
   setState (key, value) {

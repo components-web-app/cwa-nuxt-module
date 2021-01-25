@@ -128,52 +128,48 @@ export default class Cwa {
     }
   }
 
+  private initNewRequest (requestFn: Function, { eventName, eventParams }: {eventName: string, eventParams: any}) {
+    this.$storage.setApiRequestInProgress(true)
+    return () => {
+      try {
+        return requestFn()
+      } catch (error) {
+        this.handleRequestError(error)
+      } finally {
+        this.$eventBus.$emit(eventName, eventParams)
+      }
+    }
+  }
+
   private processResource (resource, category) {
     this.saveResource(resource, category)
     this.initMercure()
+    this.$storage.setApiRequestInProgress(false)
     return resource
   }
 
   async createResource (endpoint: string, data: any, category?: string) {
-    const doRequest = async () => {
-      try {
-        return await this.ctx.$axios.$post(endpoint, data)
-      } catch (error) {
-        this.handleRequestError(error)
-      } finally {
-        this.$eventBus.$emit(API_EVENTS.created, endpoint)
-      }
-    }
+    const doRequest = this.initNewRequest(async () => {
+      return await this.ctx.$axios.$post(endpoint, data)
+    }, { eventName: API_EVENTS.created, eventParams: endpoint })
     return this.processResource(await doRequest(), category)
   }
 
   async refreshResource (endpoint: string, category?: string) {
-    const doRequest = async () => {
-      try {
-        return await this.ctx.$axios.$get(endpoint)
-      } catch (error) {
-        this.handleRequestError(error)
-      } finally {
-        this.$eventBus.$emit(API_EVENTS.refreshed, endpoint)
-      }
-    }
+    const doRequest = this.initNewRequest(async () => {
+      return await this.ctx.$axios.$get(endpoint)
+    }, { eventName: API_EVENTS.refreshed, eventParams: endpoint })
     return this.processResource(await doRequest(), category)
   }
 
   async updateResource (endpoint: string, data: any, category?: string) {
-    const doRequest = async () => {
-      try {
-        return await this.ctx.$axios.$patch(endpoint, data, {
-          headers: {
-            'Content-Type': 'application/merge-patch+json'
-          }
-        })
-      } catch (error) {
-        this.handleRequestError(error)
-      } finally {
-        this.$eventBus.$emit(API_EVENTS.updated, endpoint)
-      }
-    }
+    const doRequest = this.initNewRequest(async () => {
+      return await this.ctx.$axios.$patch(endpoint, data, {
+        headers: {
+          'Content-Type': 'application/merge-patch+json'
+        }
+      })
+    }, { eventName: API_EVENTS.updated, eventParams: endpoint })
 
     // the resource may be different - publishable resources return the new draft resource
     const newResource = await doRequest()
@@ -183,15 +179,9 @@ export default class Cwa {
   }
 
   async deleteResource (id: string) {
-    const doRequest = async () => {
-      try {
-        return await this.ctx.$axios.delete(id)
-      } catch (error) {
-        this.handleRequestError(error)
-      } finally {
-        this.$eventBus.$emit(API_EVENTS.deleted, id)
-      }
-    }
+    const doRequest = this.initNewRequest(async () => {
+      return await this.ctx.$axios.delete(id)
+    }, { eventName: API_EVENTS.deleted, eventParams: id })
     await doRequest()
     this.$storage.deleteResource(id)
   }
