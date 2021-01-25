@@ -7,6 +7,7 @@ import { cwaRouteDisabled } from '../utils'
 import MissingDataError from '../inc/missing-data-error'
 import { Storage } from './storage'
 import { Fetcher } from './fetcher'
+import { API_EVENTS } from './events'
 
 export default class Cwa {
   public ctx: any
@@ -109,7 +110,7 @@ export default class Cwa {
   private handleRequestError (error) {
     const axiosError = AxiosErrorParser(error)
     const exception = new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint, axiosError.violations)
-    this.$eventBus.$emit('cwa:api:error', exception)
+    this.$eventBus.$emit(API_EVENTS.error, exception)
     throw exception
   }
 
@@ -139,9 +140,10 @@ export default class Cwa {
         return await this.ctx.$axios.$post(endpoint, data)
       } catch (error) {
         this.handleRequestError(error)
+      } finally {
+        this.$eventBus.$emit(API_EVENTS.created, endpoint)
       }
     }
-
     return this.processResource(await doRequest(), category)
   }
 
@@ -151,9 +153,10 @@ export default class Cwa {
         return await this.ctx.$axios.$get(endpoint)
       } catch (error) {
         this.handleRequestError(error)
+      } finally {
+        this.$eventBus.$emit(API_EVENTS.refreshed, endpoint)
       }
     }
-
     return this.processResource(await doRequest(), category)
   }
 
@@ -167,6 +170,8 @@ export default class Cwa {
         })
       } catch (error) {
         this.handleRequestError(error)
+      } finally {
+        this.$eventBus.$emit(API_EVENTS.updated, endpoint)
       }
     }
 
@@ -183,9 +188,10 @@ export default class Cwa {
         return await this.ctx.$axios.delete(id)
       } catch (error) {
         this.handleRequestError(error)
+      } finally {
+        this.$eventBus.$emit(API_EVENTS.deleted, id)
       }
     }
-
     await doRequest()
     this.$storage.deleteResource(id)
   }

@@ -42,6 +42,9 @@ export default {
         if (resource.componentPositions) {
           resource.componentPositions.forEach((positionIri) => {
             const componentPosition = this.$cwa.resources.ComponentPosition.byId[positionIri]
+            if (!componentPosition?.componentCollection) {
+              return
+            }
             const componentCollection = this.$cwa.resources.ComponentCollection.byId[componentPosition.componentCollection]
             this.addCollectionTotals(componentCollection, totals)
           })

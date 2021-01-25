@@ -10,6 +10,8 @@
 <script>
 import consola from 'consola'
 import CwaAdminDialogItem from './cwa-admin-dialog-item'
+import { API_EVENTS } from '@cwa/nuxt-module/core/events'
+
 export default {
   components: {CwaAdminDialogItem},
   data() {
@@ -118,6 +120,12 @@ export default {
     },
     setScope(scope) {
       this.scope = scope
+    },
+    filterDeletedMenuItem(id) {
+      this.menuItems = this.menuItems.filter(({ resource }) => {
+        return resource['@id'] !== id
+      })
+      this.close()
     }
   },
   mounted() {
@@ -125,11 +133,17 @@ export default {
     this.$el.addEventListener('contextmenu', (e) => { e.stopPropagation(); e.preventDefault() })
     this.$cwa.$eventBus.$on('cwa:admin-dialog:add-item', this.addItem)
     this.$cwa.$eventBus.$on('cwa:admin-dialog:position', this.positionDialogListener)
+    this.$cwa.$eventBus.$on(API_EVENTS.deleted, this.filterDeletedMenuItem)
+    this.$cwa.$eventBus.$on(API_EVENTS.created, this.close)
+    this.$cwa.$eventBus.$on(API_EVENTS.updated, this.close)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.open)
     this.$cwa.$eventBus.$off('cwa:admin-dialog:add-item', this.addItem)
     this.$cwa.$eventBus.$off('cwa:admin-dialog:position', this.positionDialogListener)
+    this.$cwa.$eventBus.$off(API_EVENTS.deleted, this.filterDeletedMenuItem)
+    this.$cwa.$eventBus.$off(API_EVENTS.created, this.close)
+    this.$cwa.$eventBus.$off(API_EVENTS.updated, this.close)
   }
 }
 </script>

@@ -9,6 +9,11 @@
         {{ submitButtonLabel }}
       </button>
     </div>
+    <div v-if="resource" class="cwa-input">
+      <button class="is-size-6 submit-button" :disabled="submitting" @click="deleteResource">
+        Delete
+      </button>
+    </div>
   </div>
 </template>
 
@@ -42,6 +47,16 @@ export default {
     }
   },
   methods: {
+    async deleteResource () {
+      this.submitting = true
+      try {
+        await this.$cwa.deleteResource(this.resource['@id'])
+      } catch (error) {
+        this.handleApiError(error)
+      } finally {
+        this.submitting = false
+      }
+    },
     async submitRequest () {
       this.submitting = true
       try {
@@ -75,5 +90,5 @@ export default {
 .cwa-admin-dialog-form
   .submit-button
     width: 100%
-    margin: 0
+    margin: 1rem 0 0
 </style>
