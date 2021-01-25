@@ -100,20 +100,23 @@ export class Storage {
               return
             }
 
-            const currentResource = currentResources.byId[payload.id]
-            if (!currentResource) {
-              consola.warn(`Not added new resource payload to store: the current resource '${payload.name}' with id '${payload.id}' does not exist`)
-              return
-            }
+            if (!payload.force) {
+              const currentResource = currentResources.byId[payload.id]
 
-            const removeModifiedAtTimestamp = (obj) => {
-              const newObj = Object.assign({}, obj)
-              delete newObj.modifiedAt
-              return newObj
-            }
-            if (JSON.stringify(removeModifiedAtTimestamp(currentResource)) === JSON.stringify(removeModifiedAtTimestamp(payload.resource))) {
-              consola.info(`Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`)
-              return
+              if (!currentResource) {
+                consola.warn(`Not added new resource payload to store: the current resource '${payload.name}' with id '${payload.id}' does not exist`)
+                return
+              }
+
+              const removeModifiedAtTimestamp = (obj) => {
+                const newObj = Object.assign({}, obj)
+                delete newObj.modifiedAt
+                return newObj
+              }
+              if (JSON.stringify(removeModifiedAtTimestamp(currentResource)) === JSON.stringify(removeModifiedAtTimestamp(payload.resource))) {
+                consola.info(`Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`)
+                return
+              }
             }
           }
           const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : initialState
@@ -149,6 +152,13 @@ export class Storage {
           for (const [resourceName, { byId }] of Object.entries(state.resources.new) as [string, resourcesState][]) {
             for (const [resourceId, newResource] of Object.entries(byId)) {
               Vue.set(state.resources.current[resourceName].byId, resourceId, newResource)
+
+              const maintainedIdentifierKeys = ['allIds', 'currentIds']
+              for (const idKey of maintainedIdentifierKeys) {
+                if (!state.resources.current[resourceName][idKey].includes(resourceId)) {
+                  state.resources.current[resourceName][idKey].push(resourceId)
+                }
+              }
             }
             Vue.delete(state.resources.new, resourceName)
           }
@@ -190,7 +200,7 @@ export class Storage {
     })
   }
 
-  setResource ({ resource, isNew, category }: { resource: object, isNew?: boolean, category?: string }) {
+  setResource ({ resource, isNew, category, force }: { resource: object, isNew?: boolean, category?: string, force?: boolean }) {
     const id = resource['@id']
     category = category || this.getCategoryFromIri(id)
     const name = resource['@type'] || this.getTypeFromIri(id, category)
@@ -199,7 +209,8 @@ export class Storage {
       name,
       isNew: isNew || false,
       resource,
-      category
+      category,
+      force
     })
   }
 

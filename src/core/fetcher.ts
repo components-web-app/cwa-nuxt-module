@@ -262,9 +262,10 @@ export class Fetcher {
     if (this.initMercureTimeout) {
       clearTimeout(this.initMercureTimeout)
     }
-    this.initMercureTimeout = setTimeout(() => {
+    this.initMercureTimeout = setTimeout((url: string) => {
       const currentResourcesCategories = Object.values(currentResources)
-      if (!process.client || !currentResourcesCategories.length) { return }
+      // || !currentResourcesCategories.length
+      if (!process.client) { return }
 
       let hubUrl = null
 
@@ -293,9 +294,35 @@ export class Fetcher {
           return
         }
         this.lastEventId = messageEvent.lastEventId
+
+        let force = false
+
+        if (data['@type'] === 'ComponentPosition') {
+          // we listen to all of these in case we are adding to an existing component collection
+          if (!this.currentResources.ComponentCollection.currentIds.includes(data.componentCollection)) {
+            consola.info('New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.')
+            return
+          }
+          if (!this.currentResources.ComponentPosition.currentIds.includes(data['@id'])) {
+            const collectionIri = data.componentCollection
+            const componentCollectionResource = this.currentResources.ComponentCollection.byId[collectionIri]
+            if (componentCollectionResource) {
+              force = true
+              this.ctx.storage.setResource({
+                resource: {
+                  ...componentCollectionResource,
+                  componentPositions: [...componentCollectionResource.componentPositions, data['@id']]
+                },
+                isNew: true
+              })
+            }
+          }
+        }
+
         this.ctx.storage.setResource({
           isNew: true,
-          resource: data
+          resource: data,
+          force
         })
       }
     }, 100)
@@ -304,6 +331,7 @@ export class Fetcher {
   private getMercureHubURL (currentResources: resourcesState[]) {
     const hub = new URL(this.ctx.storage.state.mercureHub)
 
+    hub.searchParams.append('topic', `${this.ctx.apiUrl}/_/component_positions/{id}`)
     for (const resourcesObject of currentResources) {
       if (resourcesObject.currentIds === undefined) {
         continue

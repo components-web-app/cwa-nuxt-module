@@ -199,7 +199,6 @@ export default class Cwa {
   /**
    * User / security
    */
-
   get isAdmin () {
     return this.userHasRole('ROLE_ADMIN')
   }
