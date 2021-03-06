@@ -5,12 +5,14 @@ import coreModuleDist from '../src/module'
 
 const API_URL = 'http://something-else' || process.env.API_URL || 'https://localhost:8443'
 
+const https = process.env.DISABLE_HTTPS ? null : {
+  key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
+  cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
+}
+
 export default {
   server: {
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
-      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
-    }
+    https
   },
   publicRuntimeConfig: {
     API_URL

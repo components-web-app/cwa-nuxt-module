@@ -58,6 +58,7 @@ jobs:
           API_PORT: 3100
           API_URL: http://localhost:3100
           NODE_TLS_REJECT_UNAUTHORIZED: 0
+          DISABLE_HTTPS: true
         run: |
           yarn api &
           yarn run demo:build
