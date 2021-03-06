@@ -2,7 +2,7 @@ import Cwa from './cwa'
 
 describe('Cwa', () => {
   it('should call fetcher fetchRoute', async () => {
-    const store = { registerModule: jest.fn(), state: { cwa: {} }, commit: jest.fn() }
+    const store = { registerModule: jest.fn(), state: { cwa: { resources: { current: {}, new: {} } } }, commit: jest.fn() }
     const $axios = { get: jest.fn() }
 
     const cwa = new Cwa({

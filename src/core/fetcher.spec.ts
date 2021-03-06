@@ -26,7 +26,10 @@ describe('fetcher', () => {
         }
       },
       setResource: jest.fn(),
-      setCurrentRoute: jest.fn()
+      setCurrentRoute: jest.fn(),
+      getCategoryFromIri: jest.fn(() => {
+        return 'Default'
+      })
     }
 
     const fetcher = new Fetcher({ $axios, error, apiUrl, storage }, { fetchConcurrency: 1 })
