@@ -1,9 +1,17 @@
+import path from 'path'
+import fs from 'fs'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
 const API_URL = 'http://something-else' || process.env.API_URL || 'https://localhost:8443'
 
 export default {
+  server: {
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
+    }
+  },
   publicRuntimeConfig: {
     API_URL
   },
