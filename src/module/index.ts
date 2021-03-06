@@ -2,9 +2,25 @@ import { resolve, join, basename } from 'path'
 import fs from 'fs'
 import _set from 'lodash/set'
 import _get from 'lodash/get'
-import { Component } from '@nuxt/components/dist/scan'
+// import { Component } from '@nuxt/components/dist'
 import { Module } from '@nuxt/types'
 import { CwaOptions } from '../index'
+
+// Working out how to include type from package instead...
+interface Component {
+  pascalName: string;
+  kebabName: string;
+  import: string;
+  asyncImport: string;
+  export: string;
+  filePath: string;
+  shortPath: string;
+  async?: boolean;
+  chunkName: string;
+  /** @deprecated */
+  global: boolean;
+  level: number;
+}
 
 function extendRoutesFn ({ pagesDepth }) {
   // recursive function
