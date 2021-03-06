@@ -4,7 +4,7 @@ import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiRequestError from '../inc/api-error'
-import Storage, { StoreCategories } from './storage'
+import Storage, { resourcesState, StoreCategories } from './storage'
 
 export class Fetcher {
   // Holds the EventSource connection with mercure
@@ -23,6 +23,7 @@ export class Fetcher {
 
   public static readonly loadingRouteKey = 'loadingRoute'
   private timer: DebugTimer;
+  private initMercureTimeout?: any = null;
 
   constructor ({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
@@ -35,6 +36,10 @@ export class Fetcher {
       fetchConcurrency
     }
     this.timer = new DebugTimer()
+  }
+
+  private get currentResources () {
+    return this.ctx.storage.state.resources.current
   }
 
   public get apiUrl () {
@@ -74,12 +79,20 @@ export class Fetcher {
     }
   }
 
-  public async fetchItem ({ path, preload, category }: {path: string, preload?: string[], category?: string}) {
+  public async fetchItem ({ path, preload }: {path: string, preload?: string[], category?: string}) {
     const resource = await this.fetcher({ path, preload })
     if (!resource) {
       return resource
     }
+
+    const category = this.ctx.storage.getCategoryFromIri(path)
+
+    const currentResource = this.currentResources?.[category]?.byId?.[path]
     this.ctx.storage.setResource({ resource, category })
+
+    if (!currentResource) {
+      this.initMercure(this.currentResources)
+    }
     return resource
   }
 
@@ -119,6 +132,7 @@ export class Fetcher {
       // Display error page
       this.ctx.error(error)
     } finally {
+      this.initMercure(this.currentResources)
       this.timer.end(`Fetch page ${pageIri}`)
       this.timer.print()
     }
@@ -156,6 +170,7 @@ export class Fetcher {
       // Display error page
       this.ctx.error(error)
     } finally {
+      this.initMercure(this.currentResources)
       this.timer.end(`Fetch route ${path}`)
       this.timer.print()
     }
@@ -169,18 +184,10 @@ export class Fetcher {
     })
   }
 
-  public async fetchComponentCollection (path) {
-    this.timer.reset()
-    await this.fetchComponentCollections([path])
-    this.initMercure(this.ctx.storage.state.resources.current)
-  }
-
   public async fetchComponent (path) {
     this.timer.reset()
     try {
-      const component = await this.fetchItem({ path, category: StoreCategories.Component })
-      this.initMercure(this.ctx.storage.state.resources.current)
-      return component
+      return await this.fetchItem({ path, category: StoreCategories.Component })
     } catch (error) {
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
       if (error instanceof ApiRequestError && error.statusCode === 404) {
@@ -251,57 +258,134 @@ export class Fetcher {
     this.ctx.storage.setState('mercureHub', matches[1])
   }
 
-  public initMercure (currentResources) {
-    if (!process.client || !currentResources.length) { return }
-
-    let hubUrl = null
-
-    try {
-      hubUrl = this.getMercureHubURL(currentResources)
-    } catch (err) {
-      consola.error('Could not get mercure hub url.')
-      return
+  public initMercure (currentResources: { any: resourcesState }) {
+    if (this.initMercureTimeout) {
+      clearTimeout(this.initMercureTimeout)
     }
+    this.initMercureTimeout = setTimeout(() => {
+      const currentResourcesCategories = Object.values(currentResources)
+      if (!process.client) { return }
 
-    // Refresh the topics
-    if (this.eventSource && this.eventSource.readyState !== 2) {
-      if (this.eventSource.url === hubUrl) {
+      let hubUrl = null
+      try {
+        hubUrl = this.getMercureHubURL(currentResourcesCategories)
+      } catch (err) {
+        consola.error('Could not get mercure hub url.', err.message)
         return
       }
-      consola.info('Closing Mercure event source to re-open with latest topics')
-      this.eventSource.close()
-    }
 
-    this.eventSource = new EventSource(hubUrl)
-    this.eventSource.onmessage = (messageEvent: MessageEvent) => {
-      const data = JSON.parse(messageEvent.data)
-      if (Object.keys(data).length === 1 && data['@id']) {
-        this.ctx.storage.deleteResource(data['@id'])
-        return
+      // Refresh the topics
+      if (this.eventSource && this.eventSource.readyState !== 2) {
+        if (this.eventSource.url === hubUrl) {
+          return
+        }
+        consola.info('Closing Mercure event source to re-open with latest topics')
+        this.eventSource.close()
       }
-      this.lastEventId = messageEvent.lastEventId
-      this.ctx.storage.setResource({
-        isNew: true,
-        resource: data
-      })
-    }
+
+      consola.info(`Created Mercure EventSource for "${hubUrl}"`)
+      this.eventSource = new EventSource(hubUrl)
+      // will be in context of EventSource if not using call
+      // eslint-disable-next-line no-useless-call
+      this.eventSource.onmessage = (messageEvent: MessageEvent) => {
+        this.handleMercureMessage(messageEvent)
+      }
+    }, 100)
   }
 
-  private getMercureHubURL (currentResources) {
+  private handleMercureMessage (messageEvent: MessageEvent) {
+    // if we are updating an object, we can receive the message before we have updated our store
+    // and then we think there is an update which there isn't...
+    return new Promise((resolve) => {
+      const processMessage = () => {
+        const data = JSON.parse(messageEvent.data)
+        if (Object.keys(data).length === 1 && data['@id']) {
+          this.ctx.storage.deleteResource(data['@id'])
+          return
+        }
+        this.lastEventId = messageEvent.lastEventId
+
+        // we listen to all of these in case we are adding to an existing component collection
+        const force = this.forceComponentPositionPersist(data)
+
+        // force option will add the resource into new even if there is not an existing resource
+        // with the same ID to merge it into
+        this.ctx.storage.setResource({
+          isNew: true,
+          resource: data,
+          force
+        })
+        resolve()
+      }
+
+      // Must wait for existing api requests to happen and storage to update or we think something has changed when
+      // it is this application changing it
+      const apiRequestInProgress = this.ctx.storage.getState('apiRequestInProgress')
+      if (!apiRequestInProgress) {
+        consola.info('Invoking Mercure message handler. No request in progress.')
+        processMessage()
+        return
+      }
+      consola.info('Mercure message handler waiting for current request to complete...')
+      const unwatchFn = this.ctx.storage.watchState('apiRequestInProgress', (newValue) => {
+        if (!newValue) {
+          consola.info('Request complete. Invoking Mercure message handler')
+          processMessage()
+          unwatchFn()
+        }
+      })
+    })
+  }
+
+  private forceComponentPositionPersist (data) {
+    if (data['@type'] !== 'ComponentPosition') {
+      return false
+    }
+
+    if (!this.currentResources.ComponentCollection.currentIds.includes(data.componentCollection)) {
+      consola.info('New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.')
+      return false
+    }
+
+    // We do not need to adapt behaviour if the ComponentPosition already exists
+    if (this.currentResources.ComponentPosition.currentIds.includes(data['@id'])) {
+      return false
+    }
+
+    const collectionIri = data.componentCollection
+    // Check if this ComponentCollection resource is current
+    const componentCollectionResource = this.currentResources.ComponentCollection.byId[collectionIri]
+    if (!componentCollectionResource) {
+      return false
+    }
+
+    // Update the ComponentCollection resource to include new position
+    // Mercure will not publish this, the resource is not updated in the database
+    this.ctx.storage.setResource({
+      resource: {
+        ...componentCollectionResource,
+        componentPositions: [...componentCollectionResource.componentPositions, data['@id']]
+      },
+      isNew: true
+    })
+    return true
+  }
+
+  private getMercureHubURL (currentResources: resourcesState[]) {
     const hub = new URL(this.ctx.storage.state.mercureHub)
 
-    const appendTopics = (obj) => {
-      for (const resourceType in obj) {
-        const resourcesObject = obj[resourceType]
-        if (resourcesObject.currentIds === undefined) {
-          continue
-        }
-        resourcesObject.currentIds.forEach((id) => {
-          hub.searchParams.append('topic', this.ctx.apiUrl + id)
-        })
+    hub.searchParams.append('topic', `${this.ctx.apiUrl}/_/component_positions/{id}`)
+    for (const resourcesObject of currentResources) {
+      if (resourcesObject.currentIds === undefined) {
+        continue
       }
+      resourcesObject.currentIds.forEach((id) => {
+        hub.searchParams.append('topic', this.ctx.apiUrl + id)
+      })
     }
-    appendTopics(currentResources)
+    if (hub.searchParams.get('topic') === null) {
+      throw new Error('No current resources/topics.')
+    }
 
     if (this.lastEventId) {
       hub.searchParams.append('Last-Event-ID', this.lastEventId)

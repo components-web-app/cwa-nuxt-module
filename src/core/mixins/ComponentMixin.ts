@@ -13,23 +13,6 @@ export default {
     },
     published () {
       return this.publishable ? this.metadata.published : true
-    },
-    defaultContextMenuData () {
-      return {
-        'Delete component': {
-          callback: this.delete
-        }
-      }
-    }
-  },
-  methods: {
-    async delete () {
-      try {
-        await this.$cwa.deleteResource(this.iri)
-        this.$emit('deleted')
-      } catch (error) {
-        this.handleApiError(error)
-      }
     }
   }
 }

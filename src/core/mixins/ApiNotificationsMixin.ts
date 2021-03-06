@@ -43,7 +43,7 @@ export default Vue.extend({
         id: timestamp.getTime()
       }
       this.notifications.unshift(notification)
-      this.expandNotifications = true
+      this.showErrors = true
       return notification
     },
     removeNotification (event: RemoveNotificationEvent) {

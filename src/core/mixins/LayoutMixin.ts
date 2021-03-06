@@ -1,5 +1,5 @@
-import CwaAdminBar from '../templates/components/cwa-admin-bar.vue'
-import ComponentCollection from '../templates/component-collection.vue'
+import CwaAdminBar from '../templates/components/admin/cwa-admin-bar.vue'
+import ComponentCollection from '../templates/components/core/component-collection.vue'
 
 const mixin = {
   components: { ComponentCollection, CwaAdminBar },
@@ -11,7 +11,7 @@ const mixin = {
       return {
         locationResourceId: this.$cwa.layout,
         locationResourceReference: this.layout.reference, // this.resource.reference,
-        isPage: false
+        locationResourceType: 'layouts'
       }
     }
   }

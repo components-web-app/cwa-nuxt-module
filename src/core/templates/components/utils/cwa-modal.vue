@@ -90,7 +90,7 @@ $modal-breakpoint: $tablet
           position: absolute
           width: 100%
           height: 100%
-          background: url("../../assets/images/icon-add.svg") 50% 50% no-repeat
+          background: url("../../../assets/images/icon-add.svg") 50% 50% no-repeat
           transform: rotate(45deg) scale(1.6)
           transform-origin: 50% 50%
       .modal-card-inner

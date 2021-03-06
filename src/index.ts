@@ -2,6 +2,11 @@ import _CWA from './core/cwa'
 
 export type CWA = _CWA
 
+export type AdminDialogOptions = {
+  name: string,
+  component: () => Promise<Function>
+}
+
 export type CwaOptions = {
   vuex: {
     namespace: string
@@ -35,6 +40,7 @@ declare module '@nuxt/types' {
 declare module 'vue/types/vue' {
   interface Vue {
     $cwa: CWA;
+    adminDialog?: AdminDialogOptions
   }
 }
 

@@ -1,11 +1,11 @@
 <template>
   <div class="cwa-error-notifications" v-if="!!notifications.length">
-    <a class="icon" href="#" @click.prevent="showMenu = !showMenu">
+    <a class="icon" href="#" @click.prevent.stop="toggleShowErrors">
       <div class="triangle"></div>
       <span class="total">{{ totalNotifications }}</span>
     </a>
     <transition name="fade">
-      <ul v-if="showMenu" class="errors-list">
+      <ul v-if="showErrors" class="errors-list" @click.stop>
         <li v-for="(notification, index) of notifications" :key="`notification-${index}`">
           <p class="error-title">{{ notification.title }}</p>
           <p class="error-description">{{ notification.message }}</p>
@@ -28,24 +28,26 @@ export default {
   },
   data() {
     return {
-      showMenu: false
+      showErrors: false
     }
   },
-  // watch: {
-  //   totalNotifications(newNotifications, oldNotifications) {
-  //     if (!oldNotifications && newNotifications) {
-  //       this.$nextTick(() => {
-  //         this.showMenu = true
-  //       })
-  //     }
-  //     if (!newNotifications) {
-  //       this.showMenu = false
-  //     }
-  //   }
-  // },
+  mounted() {
+    document.addEventListener('click', this.hideErrors)
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.hideErrors)
+  },
   computed: {
     totalNotifications() {
       return this.notifications.length
+    }
+  },
+  methods: {
+    toggleShowErrors() {
+      this.showErrors = !this.showErrors
+    },
+    hideErrors() {
+      this.showErrors = false
     }
   }
 }

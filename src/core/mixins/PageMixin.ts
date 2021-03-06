@@ -1,4 +1,4 @@
-import ComponentCollection from '../templates/component-collection.vue'
+import ComponentCollection from '../templates/components/core/component-collection.vue'
 import IriMixin from './IriMixin'
 
 const mixin = {
@@ -18,7 +18,7 @@ const mixin = {
       return {
         locationResourceId: this.iri,
         locationResourceReference: this.resource.reference,
-        isPage: true
+        locationResourceType: 'pages'
       }
     }
   }

@@ -15,7 +15,7 @@ export default function (error): AxiosError {
   if (error.response && error.response.status && typeof error.response.data === 'object') {
     return {
       statusCode: error.response.status,
-      message: error.response.data.message || error.response.data['hydra:description'],
+      message: error.response.data.message || error.response.data.detail || error.response.data['hydra:description'],
       violations: error.response.data.violations,
       endpoint
     }

@@ -17,7 +17,7 @@
                 <li>
                   <cwa-nuxt-link to="/_cwa/layouts">
                     <span class="icon">
-                      <img src="../../assets/images/icon-layout.svg" alt="Layouts Icon" />
+                      <img src="../../../assets/images/icon-layout.svg" alt="Layouts Icon" />
                     </span>
                     <span>Layouts</span>
                   </cwa-nuxt-link>
@@ -25,7 +25,7 @@
                 <li>
                   <cwa-nuxt-link to="/_cwa/pages">
                     <span class="icon">
-                      <img src="../../assets/images/icon-pages.svg" alt="Pages Icon" />
+                      <img src="../../../assets/images/icon-pages.svg" alt="Pages Icon" />
                     </span>
                     <span>Pages</span>
                   </cwa-nuxt-link>
@@ -33,7 +33,7 @@
                 <li>
                   <cwa-nuxt-link>
                     <span class="icon">
-                      <img src="../../assets/images/icon-components.svg" alt="Components Icon" />
+                      <img src="../../../assets/images/icon-components.svg" alt="Components Icon" />
                     </span>
                     <span>Components</span>
                   </cwa-nuxt-link>
@@ -41,7 +41,7 @@
                 <li>
                   <cwa-nuxt-link>
                     <span class="icon">
-                      <img src="../../assets/images/icon-users.svg" alt="Users Icon" />
+                      <img src="../../../assets/images/icon-users.svg" alt="Users Icon" />
                     </span>
                     <span>Users</span>
                   </cwa-nuxt-link>
@@ -97,9 +97,9 @@
 </template>
 
 <script>
-import CwaHamburger from './cwa-hamburger.vue'
-import CwaLogo from "./cwa-logo"
-import CwaNuxtLink from './cwa-nuxt-link.vue'
+import CwaHamburger from '../utils/cwa-hamburger.vue'
+import CwaLogo from "../utils/cwa-logo"
+import CwaNuxtLink from '../utils/cwa-nuxt-link.vue'
 export default {
   components: {CwaLogo, CwaHamburger, CwaNuxtLink},
   data(){

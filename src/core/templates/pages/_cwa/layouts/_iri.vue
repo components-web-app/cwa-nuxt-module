@@ -37,6 +37,7 @@ import {
   NotificationLevels
 } from '../../../components/cwa-api-notifications/types'
 import IriPageMixin, {notificationCategories} from "../IriPageMixin";
+import CommaDelimitedArrayBuilder from '../../../../../utils/CommaDelimitedArrayBuilder';
 
 
 const unsavedNotification: Notification = {
@@ -53,7 +54,7 @@ export default {
   mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
   methods: {
     async saveLayout() {
-      const uiClassNames = this.component?.uiClassNames?.split(',').map(item => (item.trim()))
+      const uiClassNames = CommaDelimitedArrayBuilder(this.component?.uiClassNames)
       const data = {
         reference: this.component.reference,
         uiComponent: this.component.uiComponent,

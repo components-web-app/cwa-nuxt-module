@@ -12,6 +12,7 @@ export default {
   mounted() {
     this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'page')
     this.$cwa.setEditMode(true)
+    this.$cwa.initMercure(true)
   },
   computed: {
     currentPageMetadata() {
