@@ -57,6 +57,7 @@
     "@nuxt/types": "^0.7.9",
     "@nuxt/typescript-build": "^0.6.6",
     "@nuxt/typescript-runtime": "^0.4.6",
+    "@nuxt/vue-app-edge": "^2.16.0-26916516.94fff623",
     "@nuxtjs/eslint-config-typescript": "^1.0.2",
     "@nuxtjs/style-resources": "^1.0.0",
     "@types/node": "^12.12.47",
