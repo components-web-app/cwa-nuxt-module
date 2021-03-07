@@ -57,7 +57,7 @@ export default {
     },
     resourceComponentLoaderProps() {
       return {
-        component: this.currentPageTemplateResource?.uiComponent,
+        component: `CwaPages${this.currentPageTemplateResource?.uiComponent}`,
         iri: this.currentPageTemplateIri
       }
     }

@@ -95,7 +95,7 @@ function loadComponents () {
   if (!this.options.components) {
     this.options.components = []
   } else if (this.options.components === true) {
-    this.options.components = ['~/components']
+    this.options.components = [{ path: '~/components/cwa', prefix: 'cwa' }]
   }
 
   // auto-configure components module for our cwa components

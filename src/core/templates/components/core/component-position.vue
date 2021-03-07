@@ -1,7 +1,7 @@
 <template>
   <resource-component-loader
     v-if="component"
-    :component="component.uiComponent || component['@type']"
+    :component="`CwaComponents${component.uiComponent || component['@type']}`"
     :iri="componentPosition.component"
     @deleted="$emit('deleted')"
   />
