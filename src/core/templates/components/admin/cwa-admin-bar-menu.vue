@@ -39,7 +39,7 @@
                   </cwa-nuxt-link>
                 </li>
                 <li>
-                  <cwa-nuxt-link>
+                  <cwa-nuxt-link to="/_cwa/users">
                     <span class="icon">
                       <img src="../../../assets/images/icon-users.svg" alt="Users Icon" />
                     </span>

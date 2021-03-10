@@ -4,7 +4,7 @@
     v-bind="iriModalProps"
     :show-loader="isLoading || layoutsLoading"
     @close="$emit('close')"
-    @submit="saveLayout"
+    @submit="savePage"
     @delete="deleteComponent"
   >
     <template slot="left">
@@ -78,7 +78,7 @@ export default {
     }
   },
   methods: {
-    async saveLayout() {
+    async savePage() {
       const uiClassNames = this.component?.uiClassNames?.split(',').map(item => (item.trim()))
       const data = Object.assign({
         title: ''

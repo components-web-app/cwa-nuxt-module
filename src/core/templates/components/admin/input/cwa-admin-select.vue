@@ -4,15 +4,15 @@
       <select
         :id="id"
         :required="required"
-        @input="updateValue($event.target.value)">
+        v-model="currentValue">
         <option :value="null" disabled :selected="value === null">Please select</option>
         <option
           v-for="(opVal, key) in options"
-          :key="isOptionsArray ? opVal : key"
-          :value="isOptionsArray ? opVal : key"
-          :selected="value === (isOptionsArray ? opVal : key)"
+          :key="opVal"
+          :value="opVal"
+          :selected="value === opVal"
         >
-          {{ opVal }}
+          {{ isOptionsArray ? opVal : key }}
         </option>
       </select>
     </div>
@@ -27,6 +27,19 @@ export default {
     options: {
       type: [Object,Array],
       required: true
+    }
+  },
+  data() {
+    return {
+      currentValue: this.value
+    }
+  },
+  watch: {
+    value(newValue) {
+      this.currentValue = newValue
+    },
+    currentValue(newValue) {
+      this.updateValue(newValue)
     }
   },
   computed: {

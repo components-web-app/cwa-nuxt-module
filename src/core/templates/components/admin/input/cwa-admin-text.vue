@@ -9,7 +9,7 @@
       >{{ value }}</textarea>
       <input
         v-else
-        type="text"
+        :type="type"
         :id="id"
         :value="value"
         :required="required"
@@ -26,6 +26,10 @@ export default {
     isTextarea: {
       type: Boolean,
       default: false
+    },
+    type: {
+      type: String,
+      default: 'text'
     }
   }
 }

@@ -130,9 +130,9 @@ export default class Cwa {
 
   private initNewRequest (requestFn: Function, { eventName, eventParams }: {eventName: string, eventParams: any}) {
     this.$storage.setApiRequestInProgress(true)
-    return () => {
+    return async () => {
       try {
-        return requestFn()
+        return await requestFn()
       } catch (error) {
         this.handleRequestError(error)
       } finally {

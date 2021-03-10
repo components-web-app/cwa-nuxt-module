@@ -21,10 +21,10 @@
             <cwa-nuxt-link to="/_cwa/pages">
               <img src="../../../assets/images/icon-pages.svg" alt="Pages Icon" />
             </cwa-nuxt-link>
-            <cwa-nuxt-link>
+            <cwa-nuxt-link to="/_cwa/components">
               <img src="../../../assets/images/icon-components.svg" alt="Components Icon" />
             </cwa-nuxt-link>
-            <cwa-nuxt-link>
+            <cwa-nuxt-link to="/_cwa/users">
               <img src="../../../assets/images/icon-users.svg" alt="Users Icon" />
             </cwa-nuxt-link>
           </div>

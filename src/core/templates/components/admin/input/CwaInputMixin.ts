@@ -14,7 +14,7 @@ export default {
       default: null
     },
     value: {
-      type: String,
+      type: [String,Boolean,Array],
       required: false,
       default: null
     },
