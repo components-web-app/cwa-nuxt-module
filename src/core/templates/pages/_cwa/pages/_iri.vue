@@ -50,28 +50,16 @@
 <script lang="ts">
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select'
-import {
-  Notification,
-  NotificationLevels
-} from '../../../components/cwa-api-notifications/types'
-import IriPageMixin, {notificationCategories} from "../IriPageMixin"
+import IriPageMixin from "../IriPageMixin"
 // @ts-ignore
 import pageComponents from '~/.nuxt/cwa/pages'
 import LoadLayoutsMixin from "../LoadLayoutsMixin";
 
-
-const unsavedNotification: Notification = {
-  code: 'unsaved',
-  title: 'Page not saved',
-  message: 'Your changes are not saved',
-  level: NotificationLevels.WARNING,
-  category: notificationCategories.unsaved
-}
 const postEndpoint = '/_/pages'
 
 export default {
   components: {CwaAdminSelect, CwaAdminText},
-  mixins: [IriPageMixin(unsavedNotification, postEndpoint), LoadLayoutsMixin],
+  mixins: [IriPageMixin(postEndpoint), LoadLayoutsMixin],
   data() {
     return {
       pageComponents

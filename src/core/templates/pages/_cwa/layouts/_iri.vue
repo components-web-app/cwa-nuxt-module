@@ -32,25 +32,14 @@
 <script lang="ts">
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
-import {
-  Notification,
-  NotificationLevels
-} from '../../../components/cwa-api-notifications/types'
-import IriPageMixin, {notificationCategories} from "../IriPageMixin";
+import IriPageMixin from "../IriPageMixin";
 import CommaDelimitedArrayBuilder from '../../../../../utils/CommaDelimitedArrayBuilder';
 
-const unsavedNotification: Notification = {
-  code: 'unsaved',
-  title: 'Layout not saved',
-  message: 'Your changes are not saved',
-  level: NotificationLevels.WARNING,
-  category: notificationCategories.unsaved
-}
 const postEndpoint = '/_/layouts'
 
 export default {
   components: {CwaAdminSelect, CwaAdminText},
-  mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
+  mixins: [IriPageMixin(postEndpoint)],
   methods: {
     async saveLayout() {
       const uiClassNames = CommaDelimitedArrayBuilder(this.component?.uiClassNames)

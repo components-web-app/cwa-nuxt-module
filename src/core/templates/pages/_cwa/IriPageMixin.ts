@@ -11,11 +11,10 @@ import ApiRequestError from "../../../../inc/api-error";
 import {Violation} from "../../../../utils/AxiosErrorParser"
 
 export const notificationCategories = {
-  unsaved: 'iri-modal.unsaved',
   violations: 'iri-modal.violations'
 }
 
-export default (unsavedNotification: Notification, postEndpoint: string) => Vue.extend({
+export default (postEndpoint: string) => Vue.extend({
   mixins: [CommonMixin],
   components: { IriModalView },
   data() {
@@ -34,7 +33,6 @@ export default (unsavedNotification: Notification, postEndpoint: string) => Vue.
       savedComponent: any,
       isLoading: boolean,
       notificationCategories: {
-        unsaved: string,
         violations: string
       },
       notifications: {[key: string]: Notification[]}
@@ -49,19 +47,6 @@ export default (unsavedNotification: Notification, postEndpoint: string) => Vue.
     this.component.uiClassNames = this.component?.uiClassNames?.join(', ')
     this.isLoading = false
     this.savedComponent = Object.assign({}, this.component)
-  },
-  watch: {
-    isSaved(value) {
-      if (!value) {
-        this.$cwa.$eventBus.$emit(NotificationEvents.add, unsavedNotification)
-        return
-      }
-      const event: RemoveNotificationEvent = {
-        code: 'unsaved',
-        category: this.notificationCategories.unsaved
-      }
-      this.$cwa.$eventBus.$emit(NotificationEvents.remove, event)
-    }
   },
   computed: {
     isNew() {

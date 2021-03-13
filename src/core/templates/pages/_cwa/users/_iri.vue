@@ -45,24 +45,13 @@
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
 import CwaAdminMultiselect from '../../../components/admin/input/cwa-admin-multiselect.vue'
-import {
-  Notification,
-  NotificationLevels
-} from '../../../components/cwa-api-notifications/types'
-import IriPageMixin, {notificationCategories} from "../IriPageMixin";
+import IriPageMixin from "../IriPageMixin";
 
-const unsavedNotification: Notification = {
-  code: 'unsaved',
-  title: 'Layout not saved',
-  message: 'Your changes are not saved',
-  level: NotificationLevels.WARNING,
-  category: notificationCategories.unsaved
-}
 const postEndpoint = '/users'
 
 export default {
   components: {CwaAdminSelect, CwaAdminText, CwaAdminMultiselect},
-  mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
+  mixins: [IriPageMixin(postEndpoint)],
   methods: {
     async saveUser() {
       const data = Object.assign({}, this.component)
