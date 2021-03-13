@@ -58,7 +58,7 @@ const unsavedNotification: Notification = {
   level: NotificationLevels.WARNING,
   category: notificationCategories.unsaved
 }
-const postEndpoint = '/_/layouts'
+const postEndpoint = '/users'
 
 export default {
   components: {CwaAdminSelect, CwaAdminText, CwaAdminMultiselect},
