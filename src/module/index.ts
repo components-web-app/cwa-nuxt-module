@@ -219,7 +219,8 @@ const cwaModule = <Module> function () {
           return
         }
         const newObjectPath = [...pathParts, name]
-        const path = `/${pathParts.join('/')}/${(isNameRouteParam ? ':' : '') + name}`
+        const postfix = isNameRouteParam ? `:${name}([a-zA-Z0-9/\\-%]+)` : name
+        const path = `/${pathParts.join('/')}/${postfix}`
         const newRouteObject = {
           name: newObjectPath.join('_'),
           path,

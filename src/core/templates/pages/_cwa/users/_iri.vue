@@ -41,8 +41,9 @@
 </template>
 
 <script lang="ts">
-import CwaAdminText from '../../../components/admin/input/cwa-admin-text'
-import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select'
+import Multiselect from 'vue-multiselect';
+import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
+import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
 import {
   Notification,
   NotificationLevels
@@ -59,7 +60,7 @@ const unsavedNotification: Notification = {
 const postEndpoint = '/_/layouts'
 
 export default {
-  components: {CwaAdminSelect, CwaAdminText},
+  components: {CwaAdminSelect, CwaAdminText, Multiselect},
   mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
   methods: {
     async saveUser() {

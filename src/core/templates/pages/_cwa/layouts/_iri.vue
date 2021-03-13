@@ -30,15 +30,14 @@
 </template>
 
 <script lang="ts">
-import CwaAdminText from '../../../components/admin/input/cwa-admin-text'
-import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select'
+import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
+import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
 import {
   Notification,
   NotificationLevels
 } from '../../../components/cwa-api-notifications/types'
 import IriPageMixin, {notificationCategories} from "../IriPageMixin";
 import CommaDelimitedArrayBuilder from '../../../../../utils/CommaDelimitedArrayBuilder';
-
 
 const unsavedNotification: Notification = {
   code: 'unsaved',
