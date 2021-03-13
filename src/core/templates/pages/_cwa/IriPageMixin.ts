@@ -74,7 +74,8 @@ export default (unsavedNotification: Notification, postEndpoint: string) => Vue.
       return key => ({
         id: `component-${key}`,
         required: true,
-        notifications: this.notifications[key]
+        notifications: this.notifications[key],
+        isLoading: this.isLoading
       })
     },
     iriModalProps() {

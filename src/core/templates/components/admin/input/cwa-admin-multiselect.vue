@@ -4,8 +4,7 @@
       <select
         :id="id"
         :required="required"
-        v-model="currentValue"
-        @change="selectChanged">
+        v-model="currentValue">
         <option :value="null" disabled :selected="value === null">Please select</option>
         <option
           v-for="(opVal, key) in options"
@@ -21,8 +20,10 @@
 </template>
 
 <script>
+import Multiselect from 'vue-multiselect';
 import CwaInputMixin from './CwaInputMixin'
 export default {
+  components: {Multiselect},
   mixins: [CwaInputMixin],
   props: {
     options: {
@@ -38,17 +39,15 @@ export default {
   watch: {
     value(newValue) {
       this.currentValue = newValue
+    },
+    currentValue(newValue) {
+      this.updateValue(newValue)
     }
   },
   computed: {
     isOptionsArray()
     {
       return Array.isArray(this.options)
-    }
-  },
-  methods: {
-    selectChanged() {
-      this.updateValue(this.currentValue)
     }
   }
 }

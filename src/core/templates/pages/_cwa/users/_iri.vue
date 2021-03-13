@@ -31,19 +31,20 @@
         :options="{ Yes: true, No: false }"
         v-bind="inputProps('enabled')"
       />
-      <cwa-admin-text
+      <cwa-admin-select
         label="Roles"
-        v-model="component.roles"
+        v-model="highestRole"
         v-bind="inputProps('roles')"
+        :options="{ 'Super Admin': 'ROLE_SUPER_ADMIN', 'Admin': 'ROLE_ADMIN', 'User': 'ROLE_USER' }"
       />
     </template>
   </iri-modal-view>
 </template>
 
 <script lang="ts">
-import Multiselect from 'vue-multiselect';
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
+import CwaAdminMultiselect from '../../../components/admin/input/cwa-admin-multiselect.vue'
 import {
   Notification,
   NotificationLevels
@@ -60,12 +61,35 @@ const unsavedNotification: Notification = {
 const postEndpoint = '/_/layouts'
 
 export default {
-  components: {CwaAdminSelect, CwaAdminText, Multiselect},
+  components: {CwaAdminSelect, CwaAdminText, CwaAdminMultiselect},
   mixins: [IriPageMixin(unsavedNotification, postEndpoint)],
   methods: {
     async saveUser() {
       const data = Object.assign({}, this.component)
       await this.sendRequest(data)
+    }
+  },
+  computed: {
+    highestRole: {
+      get() {
+        if (!this.component.roles) {
+          return null
+        }
+        let highestIndex = null
+        const roleHierarchy = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER']
+        for(const role of this.component.roles) {
+          const foundIndex = roleHierarchy.indexOf(role)
+          if (foundIndex !== -1) {
+            if (highestIndex === null || foundIndex < highestIndex) {
+              highestIndex = foundIndex
+            }
+          }
+        }
+        return highestIndex !== null ? roleHierarchy[highestIndex] : null
+      },
+      set(value) {
+        this.component.roles = [value]
+      }
     }
   }
 }
