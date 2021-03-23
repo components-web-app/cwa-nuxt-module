@@ -7,8 +7,8 @@ export default Vue.extend({
   async mounted() {
     // has to be on mounted as needs to be checked client-side
     if (!this.$cwa.isAdmin) {
-      // this is so any components on the page that may be changing the URL re removed
-      // the grid page filters will be doing this
+      // this is so any components on the page that may be changing the URL eg remove
+      // the search filters that will be doing this for a list
       await this.$destroy(this.$root)
       // now we have no interference - we redirect.
       await this.$router.push('/login')
