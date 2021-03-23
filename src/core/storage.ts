@@ -171,15 +171,16 @@ export class Storage {
       },
       getters: {
         GET_TYPE_FROM_IRI: state => ({ iri, category }) => {
+          if (!iri) {
+            return null
+          }
           const typeMapping = state.resources.categories[category]
           if (!typeMapping) {
             return null
           }
-
-          // check if this should be 'of' not 'in'
-          for (const iriPrefix in typeMapping) {
-            if (iri.startsWith(iriPrefix)) {
-              return typeMapping[iriPrefix]
+          for (const mappingKey of Object.keys(typeMapping)) {
+            if (iri.startsWith(mappingKey)) {
+              return typeMapping[mappingKey]
             }
           }
           return null
