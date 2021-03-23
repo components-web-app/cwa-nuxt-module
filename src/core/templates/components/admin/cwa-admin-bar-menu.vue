@@ -127,7 +127,6 @@ export default {
   },
   async mounted() {
     const { data: apiDocs } = await this.$axios.get(`/docs.json`)
-    console.log(apiDocs.info.version.match(/([a-zA-Z0-9\-@\.]+)$/))
     const matches = apiDocs.info.version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
     this.apiVersion = matches ? matches[1] : '??'
   },

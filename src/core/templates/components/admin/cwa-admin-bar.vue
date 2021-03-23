@@ -3,18 +3,17 @@
     <div class="cwa-admin-bar">
       <template v-if="currentView === 'page'">
         <div class="left">
-          <div class="status">
-            <status-icon :status="-2" />
-            <error-notifications />
-          </div>
           <div class="controls">
             <cwa-admin-toggle id="edit-mode" label="Edit mode" v-model="editMode" />
           </div>
         </div>
       </template>
-      <template v-if="currentView === 'admin'">
+      <template>
         <div class="center">
           <div class="icons">
+            <cwa-nuxt-link :to="builderLink" exact :class="builderClass">
+              <img src="../../../assets/images/icon-builder.svg" alt="Builder Icon" />
+            </cwa-nuxt-link>
             <cwa-nuxt-link to="/_cwa/layouts">
               <img src="../../../assets/images/icon-layout.svg" alt="Layouts Icon" />
             </cwa-nuxt-link>
@@ -64,6 +63,12 @@ export default {
       get() {
         return this.$cwa.isEditMode()
       }
+    },
+    builderLink() {
+      return this.currentView === 'admin' ? '/' : this.$route.path
+    },
+    builderClass() {
+      return this.currentView !== 'admin' ? 'nuxt-link-exact-active nuxt-link-active' : ''
     }
   },
   methods: {
@@ -76,6 +81,7 @@ export default {
 
 <style lang="sass">
 .cwa-admin-bar
+  position: relative
   font-family: $cwa-font-family
   padding: 2rem
   background: $cwa-navbar-background
@@ -89,16 +95,15 @@ export default {
     display: flex
   .left
     align-items: center
-    .status
-      display: flex
-    .controls
-      margin-left: 1em
-      label
-        margin-left: .7em
-        font-size: .85em
+    .controls label
+      font-size: .85em
   .center
-    flex-grow: 1
+    position: absolute
     justify-content: center
+    top: 0
+    left: 50%
+    transform: translateX(-50%)
+    height: 100%
     +mobile
       display: none
     .icons
@@ -110,7 +115,7 @@ export default {
       > a
         transition: opacity .25s
         display: block
-        margin: 0 1rem
+        margin: 0 1.5rem
         opacity: .6
         &:hover
           opacity: .8

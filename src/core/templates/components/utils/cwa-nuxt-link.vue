@@ -19,6 +19,11 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    exact: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   computed: {
@@ -39,7 +44,8 @@ export default {
       }
       return {
         tag: this.domTag,
-        to: this.to
+        to: this.to,
+        exact: this.exact
       }
     },
     domTag() {
