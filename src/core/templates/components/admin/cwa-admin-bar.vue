@@ -1,9 +1,9 @@
 <template>
   <client-only v-if="$cwa.isAdmin">
     <div class="cwa-admin-bar">
-      <template v-if="currentView === 'page'">
+      <template>
         <div class="left">
-          <div class="controls">
+          <div v-if="currentView === 'page'" class="controls">
             <cwa-admin-toggle id="edit-mode" label="Edit mode" v-model="editMode" />
           </div>
         </div>

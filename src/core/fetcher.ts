@@ -85,11 +85,14 @@ export class Fetcher {
       return resource
     }
 
-    const category = this.ctx.storage.getCategoryFromIri(path)
-
-    const currentResource = this.currentResources?.[category]?.byId?.[path]
+    // we could be returned a draft instead with a different IRI.
+    // although a fix in the API means we shouldn't - component position
+    // will return what we are authorized to see
+    const iri = resource['@id']
+    const category = this.ctx.storage.getCategoryFromIri(iri)
     this.ctx.storage.setResource({ resource, category })
 
+    const currentResource = this.currentResources?.[category]?.byId?.[iri]
     if (!currentResource) {
       this.initMercure(this.currentResources)
     }
