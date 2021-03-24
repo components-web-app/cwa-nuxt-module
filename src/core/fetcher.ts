@@ -115,7 +115,7 @@ export class Fetcher {
     this.timer.start(`Fetch page ${pageIri}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, pageIri)
-    this.eventSource && this.eventSource.close()
+    this.closeMercure()
     try {
       const pageResponse = await this.fetchItem(
         {
@@ -259,6 +259,13 @@ export class Fetcher {
 
     consola.log('mercure hub set', matches[1])
     this.ctx.storage.setState('mercureHub', matches[1])
+  }
+
+  public closeMercure () {
+    if (this.eventSource) {
+      this.eventSource.close()
+      consola.info('Mercure eventSource closed')
+    }
   }
 
   public initMercure (currentResources: { any: resourcesState }) {

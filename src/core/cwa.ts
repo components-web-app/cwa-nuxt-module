@@ -148,9 +148,25 @@ export default class Cwa {
     return resource
   }
 
-  async createResource (endpoint: string, data: any, category?: string) {
+  private refreshEndpointsArray (refreshEndpoints: string[]) {
+    const promises = []
+    for (const refreshEndpoint of refreshEndpoints) {
+      promises.push(this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
+        this.saveResource(refreshResource, null)
+        this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
+      }))
+    }
+    return Promise.all(promises)
+  }
+
+  async createResource (endpoint: string, data: any, category?: string, refreshEndpoints?: string[]) {
     const doRequest = this.initNewRequest(async () => {
-      return await this.ctx.$axios.$post(endpoint, data)
+      this.fetcher.closeMercure()
+      const resource = await this.ctx.$axios.$post(endpoint, data)
+      if (refreshEndpoints && refreshEndpoints.length) {
+        await this.refreshEndpointsArray(refreshEndpoints)
+      }
+      return resource
     }, { eventName: API_EVENTS.created, eventParams: endpoint })
     return this.processResource(await doRequest(), category)
   }

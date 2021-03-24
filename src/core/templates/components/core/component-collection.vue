@@ -117,23 +117,6 @@ export default {
         }
       }
     }
-    // defaultContextMenuData() {
-    //   if (!this.resource) {
-    //     return {
-    //       'Create component collection': {
-    //         callback: this.addComponentCollection
-    //       }
-    //     }
-    //   }
-    //   return {
-    //     'Add component': {
-    //       callback: this.displayComponents
-    //     },
-    //     'Delete component collection': {
-    //       callback: this.deleteSelf
-    //     }
-    //   }
-    // }
   },
   methods: {
     addMenuItemShownListener(event) {
@@ -163,8 +146,7 @@ export default {
       if (!ComponentCollection) {
         return
       }
-      for (const id in ComponentCollection.byId) {
-        const resource = ComponentCollection.byId[id]
+      for (const resource of Object.values(ComponentCollection.byId) as { location?: string }[]) {
         if (resource && resource.location === location && resource[this.locationResourceType].indexOf(locationResourceId) !== -1) {
           return resource
         }
@@ -178,7 +160,7 @@ export default {
           reference: `${this.locationResourceReference}_${this.location}`,
           location: this.location,
           [this.locationResourceType]: [this.locationResourceId]
-        })
+        }, null, [this.locationResourceId])
       } catch (err) {
         this.handleApiError(err)
       }
