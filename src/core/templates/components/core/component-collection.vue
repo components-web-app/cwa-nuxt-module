@@ -214,8 +214,6 @@ export default {
   &.is-reloading
     animation: loading normal 1s infinite ease-in-out
   &.is-empty
-    &.is-editing
-      border: 1px dashed $cwa-grid-item-border-color
     &:not(.is-editing)
       display: none
   .add-button-holder

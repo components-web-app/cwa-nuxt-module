@@ -247,17 +247,17 @@ export class Fetcher {
 
     const link = headers.link
     if (!link) {
-      consola.warn('No Link header found while saving mercure hub.')
+      consola.warn('No Link header found while saving Mercure hub.')
       return
     }
 
     const matches = link.match(/<([^>]+)>;\s+rel="mercure".*/)
     if (!matches || !matches[1]) {
-      consola.log('No mercure rel in link header.')
+      consola.log('No Mercure rel in link header.')
       return
     }
 
-    consola.log('mercure hub set', matches[1])
+    consola.log('Mercure hub set', matches[1])
     this.ctx.storage.setState('mercureHub', matches[1])
   }
 
@@ -280,7 +280,7 @@ export class Fetcher {
       try {
         hubUrl = this.getMercureHubURL(currentResourcesCategories)
       } catch (err) {
-        consola.error('Could not get mercure hub url.', err.message)
+        consola.error('Could not get Mercure hub url.', err.message)
         return
       }
 
