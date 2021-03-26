@@ -75,8 +75,7 @@ export default {
       pendingComponents: [],
       savedStatus: 99, // 0 orange, 1 green, -1 danger
       warningNotificationsShowing: false,
-      showHighlightOverlay: false,
-      highlightOverlayElement: null
+      showHighlightOverlay: false
     } as {
       expanded: boolean
       components: Array<ComponentManagerAddEvent>
@@ -84,7 +83,6 @@ export default {
       savedStatus: Number
       warningNotificationsShowing: boolean
       showHighlightOverlay: boolean
-      highlightOverlayDom: Element
     }
   },
   computed: {
