@@ -1,15 +1,20 @@
 <template>
   <cwa-footer-logo class="cwa-layouts-page">
     <grid-page
-      title="Layouts"
       ref="gridPage"
+      title="Layouts"
       endpoint="/_/layouts"
       @load="updateData"
       @add="showAddPage"
     >
       <li v-for="layout of data" :key="layout['@id']" class="column column-33">
-        <nuxt-link :to="addRouteProps(layout['@id'])" class="cwa-grid-item layout-grid-item">
-          <p class="title">{{ layout.reference }}</p>
+        <nuxt-link
+          :to="addRouteProps(layout['@id'])"
+          class="cwa-grid-item layout-grid-item"
+        >
+          <p class="title">
+            {{ layout.reference }}
+          </p>
           <p class="subtitle">UI: {{ layout.uiComponent }}</p>
         </nuxt-link>
       </li>

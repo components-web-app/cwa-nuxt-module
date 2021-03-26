@@ -1,10 +1,10 @@
 <template>
   <div class="cwa-modal is-active">
-    <div class="modal-background" @click="close"></div>
+    <div class="modal-background" @click="close" />
     <div class="modal-content">
       <div class="modal-card">
         <div class="close-bar">
-          <button class="modal-close" aria-label="close" @click="close"></button>
+          <button class="modal-close" aria-label="close" @click="close" />
         </div>
         <div class="modal-card-inner">
           <slot />

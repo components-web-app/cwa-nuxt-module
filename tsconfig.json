@@ -8,6 +8,7 @@
     ],
     "types": [
       "@types/node",
+      "@types/jest",
       "@nuxt/types",
       "@nuxt/components/dist",
       "@nuxtjs/auth-next"

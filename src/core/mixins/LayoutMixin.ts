@@ -4,10 +4,10 @@ import ComponentCollection from '../templates/components/core/component-collecti
 const mixin = {
   components: { ComponentCollection, CwaAdminBar },
   computed: {
-    layout () {
+    layout() {
       return this.$cwa.resources.Layout.byId[this.$cwa.layout]
     },
-    componentCollectionProps () {
+    componentCollectionProps() {
       return {
         locationResourceId: this.$cwa.layout,
         locationResourceReference: this.layout.reference, // this.resource.reference,

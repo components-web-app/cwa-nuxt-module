@@ -14,7 +14,7 @@
         </span>
       </span>
     </div>
-    <div class="item" v-if="item.component">
+    <div v-if="item.component" class="item">
       <component :is="item.component" :resource="item.resource" />
     </div>
   </li>
@@ -38,17 +38,18 @@ export default {
       }
       if (resource['@type'] === 'ComponentCollection') {
         this.addCollectionTotals(resource, totals)
-      } else {
-        if (resource.componentPositions) {
-          resource.componentPositions.forEach((positionIri) => {
-            const componentPosition = this.$cwa.resources.ComponentPosition.byId[positionIri]
-            if (!componentPosition?.componentCollection) {
-              return
-            }
-            const componentCollection = this.$cwa.resources.ComponentCollection.byId[componentPosition.componentCollection]
-            this.addCollectionTotals(componentCollection, totals)
-          })
-        }
+      } else if (resource.componentPositions) {
+        resource.componentPositions.forEach((positionIri) => {
+          const componentPosition = this.$cwa.resources.ComponentPosition.byId[
+            positionIri
+          ]
+          if (!componentPosition?.componentCollection) {
+            return
+          }
+          const componentCollection = this.$cwa.resources.ComponentCollection
+            .byId[componentPosition.componentCollection]
+          this.addCollectionTotals(componentCollection, totals)
+        })
       }
 
       return totals

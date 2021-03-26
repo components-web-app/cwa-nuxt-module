@@ -4,17 +4,17 @@ import IriMixin from './IriMixin'
 const mixin = {
   components: { ComponentCollection },
   mixins: [IriMixin],
-  mounted () {
+  mounted() {
     this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'page')
   },
   computed: {
-    resource () {
+    resource() {
       return this.$cwa.resources.Page?.byId[this.iri]
     },
-    layout () {
+    layout() {
       return this.$cwa.resources.Layout?.byId[this.resource.layout]
     },
-    componentCollectionProps () {
+    componentCollectionProps() {
       return {
         locationResourceId: this.iri,
         locationResourceReference: this.resource.reference,

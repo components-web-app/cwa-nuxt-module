@@ -9,11 +9,6 @@ export default {
   layout({ $cwa }) {
     return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
   },
-  mounted() {
-    this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'page')
-    this.$cwa.setEditMode(true)
-    this.$cwa.initMercure(true)
-  },
   computed: {
     currentPageMetadata() {
       return this.resources.Page?.byId[this.currentPageTemplateIri]
@@ -21,6 +16,11 @@ export default {
     currentPageTemplateIri() {
       return decodeURIComponent(this.$route.params.iri)
     }
+  },
+  mounted() {
+    this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'page')
+    this.$cwa.setEditMode(true)
+    this.$cwa.initMercure(true)
   }
 }
 </script>

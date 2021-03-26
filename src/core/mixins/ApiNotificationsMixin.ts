@@ -7,25 +7,28 @@ import {
 } from '../templates/components/cwa-api-notifications/types'
 
 export default Vue.extend({
-  data () {
+  data() {
     return {
       notifications: [] as TimestampedNotification[]
     }
   },
-  mounted () {
+  mounted() {
     this.$cwa.$eventBus.$on(NotificationEvents.add, this.addNotification)
     this.$cwa.$eventBus.$on(NotificationEvents.remove, this.removeNotification)
   },
-  beforeDestroy () {
+  beforeDestroy() {
     this.$cwa.$eventBus.$off(NotificationEvents.add, this.addNotification)
     this.$cwa.$eventBus.$off(NotificationEvents.remove, this.removeNotification)
   },
   methods: {
-    isSupportedCategory (category) {
+    isSupportedCategory(category) {
       const listenCategories = this.listenCategories || []
-      return (!category && !listenCategories.length) || listenCategories.includes(category)
+      return (
+        (!category && !listenCategories.length) ||
+        listenCategories.includes(category)
+      )
     },
-    addNotification (notificationEvent: Notification): TimestampedNotification {
+    addNotification(notificationEvent: Notification): TimestampedNotification {
       if (!this.isSupportedCategory(notificationEvent.category)) {
         return
       }
@@ -46,11 +49,13 @@ export default Vue.extend({
       this.showErrors = true
       return notification
     },
-    removeNotification (event: RemoveNotificationEvent) {
+    removeNotification(event: RemoveNotificationEvent) {
       if (!this.isSupportedCategory(event.category)) {
         return
       }
-      const index = this.notifications.findIndex((obj: Notification) => (obj.code === event.code))
+      const index = this.notifications.findIndex(
+        (obj: Notification) => obj.code === event.code
+      )
       if (index === -1) {
         return
       }

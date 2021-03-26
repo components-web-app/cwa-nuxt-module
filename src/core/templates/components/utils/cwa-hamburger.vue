@@ -1,5 +1,9 @@
 <template>
-  <a class="cwa-hamburger" :class="{'show-open': open, 'css-animate': !gsapEnabled}" @click.stop="toggleMenu">
+  <a
+    class="cwa-hamburger"
+    :class="{ 'show-open': open, 'css-animate': !gsapEnabled }"
+    @click.stop="toggleMenu"
+  >
     <span class="sr-only">Menu</span>
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -34,6 +38,11 @@ export default {
     return {
       timeline: null,
       open: false
+    }
+  },
+  computed: {
+    gsapEnabled() {
+      return !!this.$gsap
     }
   },
   watch: {
@@ -73,7 +82,7 @@ export default {
     this.timeline.to(
       '.stage-line',
       0.3,
-      { scaleX: 0, ease: "back.in(1.7)" },
+      { scaleX: 0, ease: 'back.in(1.7)' },
       'start'
     )
 
@@ -82,11 +91,6 @@ export default {
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(closeMenuListenEvent, this.close)
-  },
-  computed: {
-    gsapEnabled() {
-      return !!this.$gsap
-    }
   },
   methods: {
     toggleMenu() {

@@ -1,5 +1,5 @@
 <template>
-  <cwa-modal @close="$emit('close')" class="layout-details-page">
+  <cwa-modal class="layout-details-page" @close="$emit('close')">
     <div class="status-bar">
       <status-icon :status="isSaved ? 1 : 0" />
       <error-notifications :listen-categories="notificationCategories" />
@@ -18,18 +18,28 @@
               <slot name="right" />
             </div>
             <div v-if="!isNew" class="timestamps">
-              <div>Updated: {{ formatDate(parseDateString(component.modifiedAt)) }} UTC</div>
-              <div>Created: {{ formatDate(parseDateString(component.createdAt)) }} UTC</div>
+              <div>
+                Updated:
+                {{ formatDate(parseDateString(component.modifiedAt)) }} UTC
+              </div>
+              <div>
+                Created:
+                {{ formatDate(parseDateString(component.createdAt)) }} UTC
+              </div>
             </div>
           </div>
         </div>
       </div>
       <div class="row buttons-row">
         <div class="column">
-          <button @click="$emit('submit')">{{ isNew ? 'Create' : 'Save' }}</button>
+          <button @click="$emit('submit')">
+            {{ isNew ? 'Create' : 'Save' }}
+          </button>
         </div>
         <div v-if="!isNew" class="column is-narrow">
-          <button @click="$emit('delete')" class="is-dark is-delete">Delete</button>
+          <button class="is-dark is-delete" @click="$emit('delete')">
+            Delete
+          </button>
         </div>
       </div>
       <transition name="fade">
@@ -42,14 +52,14 @@
 </template>
 
 <script lang="ts">
-import CwaLoader from "./utils/cwa-loader.vue";
-import CwaModal from "./utils/cwa-modal.vue";
-import StatusIcon from "./admin/status-icon.vue";
-import ErrorNotifications from "./admin/error-notifications.vue";
-import ApiDateParserMixin from "../../mixins/ApiDateParserMixin";
+import ApiDateParserMixin from '../../mixins/ApiDateParserMixin'
+import CwaLoader from './utils/cwa-loader.vue'
+import CwaModal from './utils/cwa-modal.vue'
+import StatusIcon from './admin/status-icon.vue'
+import ErrorNotifications from './admin/error-notifications.vue'
 export default {
+  components: { ErrorNotifications, StatusIcon, CwaModal, CwaLoader },
   mixins: [ApiDateParserMixin],
-  components: {ErrorNotifications, StatusIcon, CwaModal, CwaLoader},
   props: {
     title: {
       type: String,

@@ -2,15 +2,23 @@
   <div class="cwa-admin-dialog-form">
     <div class="cwa-input">
       <label for="ui-classes">Style Classes</label>
-      <input id="ui-classes" v-model="uiClassNames" type="text">
+      <input id="ui-classes" v-model="uiClassNames" type="text" />
     </div>
     <div class="cwa-input">
-      <button class="is-size-6 submit-button" :disabled="submitting" @click="submitRequest">
+      <button
+        class="is-size-6 submit-button"
+        :disabled="submitting"
+        @click="submitRequest"
+      >
         {{ submitButtonLabel }}
       </button>
     </div>
     <div v-if="resource" class="cwa-input">
-      <button class="is-size-6 submit-button" :disabled="submitting" @click="deleteResource">
+      <button
+        class="is-size-6 submit-button"
+        :disabled="submitting"
+        @click="deleteResource"
+      >
         Delete
       </button>
     </div>
@@ -35,19 +43,19 @@ export default {
       default: null
     }
   },
-  data () {
+  data() {
     return {
       uiClassNames: this.resource?.uiClassNames?.join(', '),
       submitting: false
     }
   },
   computed: {
-    submitButtonLabel () {
+    submitButtonLabel() {
       return this.resource ? 'Update' : 'Create'
     }
   },
   methods: {
-    async deleteResource () {
+    async deleteResource() {
       this.submitting = true
       try {
         await this.$cwa.deleteResource(this.resource['@id'])
@@ -57,7 +65,7 @@ export default {
         this.submitting = false
       }
     },
-    async submitRequest () {
+    async submitRequest() {
       this.submitting = true
       try {
         const uiClassNames = CommaDelimitedArrayBuilder(this.uiClassNames)
@@ -67,14 +75,20 @@ export default {
         if (this.resource) {
           await this.$cwa.updateResource(this.resource['@id'], updateData)
         } else {
-          const createData = Object.assign({
-            componentPositions: [
-              {
-                componentCollection: this.componentCollection
-              }
-            ]
-          }, updateData)
-          await this.$cwa.createResource(this.resource?.['@id'] || '/component/html_contents', createData)
+          const createData = Object.assign(
+            {
+              componentPositions: [
+                {
+                  componentCollection: this.componentCollection
+                }
+              ]
+            },
+            updateData
+          )
+          await this.$cwa.createResource(
+            this.resource?.['@id'] || '/component/html_contents',
+            createData
+          )
         }
       } catch (error) {
         this.handleApiError(error)

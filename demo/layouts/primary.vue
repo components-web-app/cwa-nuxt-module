@@ -13,23 +13,31 @@
       </div>
 
       <div>
-        <component-collection location="top" v-bind="componentCollectionProps" />
+        <component-collection
+          location="top"
+          v-bind="componentCollectionProps"
+        />
       </div>
 
       <nuxt />
     </div>
     <div class="bottom">
-      <component-collection location="bottom" v-bind="componentCollectionProps" />
+      <component-collection
+        location="bottom"
+        v-bind="componentCollectionProps"
+      />
     </div>
+    <cwa-component-manager />
   </div>
 </template>
 
 <script>
 import LayoutMixin from '@cwa/nuxt-module/core/mixins/LayoutMixin'
 import CwaRefreshBar from '@cwa/nuxt-module/core/templates/components/admin/cwa-refresh-bar.vue'
+import CwaComponentManager from '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager.vue'
 
 export default {
-  components: { CwaRefreshBar },
+  components: { CwaComponentManager, CwaRefreshBar },
   mixins: [LayoutMixin]
 }
 </script>

@@ -1,5 +1,9 @@
 import debounce from 'lodash.debounce'
-import { NotificationEvents, Notification, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
+import {
+  NotificationEvents,
+  Notification,
+  NotificationLevels
+} from '../templates/components/cwa-api-notifications/types'
 import ComponentMixin from './ComponentMixin'
 
 export default {
@@ -15,7 +19,7 @@ export default {
       type: String
     }
   },
-  data () {
+  data() {
     return {
       inputValue: null,
       debouncedFn: null,
@@ -24,7 +28,7 @@ export default {
     }
   },
   watch: {
-    inputValue () {
+    inputValue() {
       this.error = null
       if (this.resource[this.field] === this.inputValue) {
         return
@@ -37,13 +41,17 @@ export default {
       this.debouncedFn()
     }
   },
-  mounted () {
+  mounted() {
     this.inputValue = this.resource[this.field]
   },
   methods: {
-    async update () {
+    async update() {
       try {
-        await this.$cwa.updateResource(this.iri, { [this.field]: this.inputValue }, this.category || null)
+        await this.$cwa.updateResource(
+          this.iri,
+          { [this.field]: this.inputValue },
+          this.category || null
+        )
         this.outdated = false
       } catch (message) {
         this.error = message

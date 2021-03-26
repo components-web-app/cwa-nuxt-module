@@ -32,13 +32,18 @@ describe('fetcher', () => {
       })
     }
 
-    const fetcher = new Fetcher({ $axios, error, apiUrl, storage }, { fetchConcurrency: 1 })
+    const fetcher = new Fetcher(
+      { $axios, error, apiUrl, storage },
+      { fetchConcurrency: 1 }
+    )
     await fetcher.fetchRoute('/')
 
     expect(storage.resetCurrentResources).toHaveBeenCalled()
     expect(storage.setState).toHaveBeenCalledWith(Fetcher.loadingRouteKey, '/')
     expect(storage.getState).toHaveBeenCalledWith(Fetcher.loadingRouteKey)
     expect(storage.setResource).toHaveBeenCalledTimes(6)
-    expect(storage.setCurrentRoute).toHaveBeenCalledWith('/_/routes/a76a56f1-ab30-49c9-873b-d70b4e1d3946')
+    expect(storage.setCurrentRoute).toHaveBeenCalledWith(
+      '/_/routes/a76a56f1-ab30-49c9-873b-d70b4e1d3946'
+    )
   })
 })

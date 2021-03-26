@@ -1,22 +1,35 @@
 <template>
   <!-- if the collection exists -->
-  <div :class="[{'is-editing': $cwa.isEditMode(), 'is-empty': !sortedComponentPositions.length}, ...classes]" v-if="resource">
+  <div
+    v-if="resource"
+    :class="[
+      {
+        'is-editing': $cwa.isEditMode,
+        'is-empty': !sortedComponentPositions.length
+      },
+      ...classes
+    ]"
+  >
     <!-- if there are no components -->
-    <client-only v-if="$cwa.isEditMode()">
+    <client-only v-if="$cwa.isEditMode">
       <component-load-error v-if="!sortedComponentPositions.length">
         <div class="add-button-holder">
-          <cwa-add-button :highlight="true" @click.native="addMenuItemShownListener"></cwa-add-button>
+          <cwa-add-button :highlight="true" />
         </div>
       </component-load-error>
     </client-only>
     <!-- else we loop through components -->
     <component
-      :is="$cwa.isEditMode() ? 'draggable' : 'div'"
-      :group="`collection-${resource['@id']}`"
+      :is="$cwa.isEditMode ? 'draggable' : 'div'"
       v-model="sortedComponentPositions"
+      :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
     >
-      <component-position v-for="iri in sortedComponentPositions" :iri="iri" :key="iri" />
+      <component-position
+        v-for="iri in sortedComponentPositions"
+        :key="iri"
+        :iri="iri"
+      />
     </component>
   </div>
 </template>
@@ -24,18 +37,21 @@
 <script lang="ts">
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
-import AdminDialogMixin from "@cwa/nuxt-module/core/mixins/AdminDialogMixin"
-import ApiRequestMixin from "@cwa/nuxt-module/core/mixins/ApiRequestMixin"
+import ApiRequestMixin from '@cwa/nuxt-module/core/mixins/ApiRequestMixin'
+import {
+  ComponentManagerMixin,
+  ComponentManagerComponent
+} from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import CwaAddButton from '../utils/cwa-add-button.vue'
 
 export default {
-  mixins: [AdminDialogMixin, ApiRequestMixin],
   components: {
     CwaAddButton,
     ComponentPosition,
     ComponentLoadError: () => import('./component-load-error.vue'),
-    Draggable: () => import('vuedraggable'),
+    Draggable: () => import('vuedraggable')
   },
+  mixins: [ApiRequestMixin, ComponentManagerMixin],
   props: {
     location: {
       type: String,
@@ -53,7 +69,7 @@ export default {
       type: String,
       required: true,
       validate(value) {
-        return ['pages', 'layouts', 'components'].indexOf(value) !== -1
+        return ['pages', 'layouts', 'components'].includes(value)
       }
     }
   },
@@ -64,28 +80,41 @@ export default {
       },
       reloading: false,
       previousSortedComponentPositions: null,
-      lastClickEvent: null,
-      adminDialog: {
-        name: 'Component Group',
-        component: () => import('../admin/dialog/resources/component-collection.vue')
-      }
-    }
-  },
-  async mounted() {
-    if (!this.resource && this.$cwa.isAdmin) {
-      await this.addComponentCollection()
+      componentManager: {
+        name: 'Component Collection',
+        tabs: [
+          {
+            label: 'My Tab',
+            component: () =>
+              import('../admin/dialog/resources/component-collection.vue')
+          },
+          {
+            label: 'Another Tab Same Content',
+            component: () =>
+              import('../admin/dialog/resources/component-collection.vue')
+          }
+        ]
+      } as ComponentManagerComponent
     }
   },
   computed: {
     resource() {
-      return this.getCollectionResourceByLocation(this.location, this.locationResourceId)
+      return this.getCollectionResourceByLocation(
+        this.location,
+        this.locationResourceId
+      )
     },
     classes() {
       return [
         'component-collection',
-        this.resource ? [this.resource.location, slugify(this.resource.reference, {
-          lower: true
-        })] : 'not-found',
+        this.resource
+          ? [
+              this.resource.location,
+              slugify(this.resource.reference, {
+                lower: true
+              })
+            ]
+          : 'not-found',
         { 'is-deleting': this.apiBusy, 'is-reloading': this.reloading }
       ]
     },
@@ -99,11 +128,13 @@ export default {
           const position = this.$cwa.resources.ComponentPosition.byId[iri]
           position && positions.push(position)
         }
-        return positions.sort((a, b) => (a.sortValue > b.sortValue) ? 1 : -1).map(({ '@id': id }) => id)
+        return positions
+          .sort((a, b) => (a.sortValue > b.sortValue ? 1 : -1))
+          .map(({ '@id': id }) => id)
       },
-      set: function (newIriArray) {
+      set(newIriArray) {
         this.previousSortedComponentPositions = []
-        this.sortedComponentPositions.forEach(iri => {
+        this.sortedComponentPositions.forEach((iri) => {
           this.previousSortedComponentPositions.push({
             iri,
             sortValue: this.$cwa.resources.ComponentPosition.byId[iri].sortValue
@@ -112,42 +143,31 @@ export default {
 
         for (const [index, iri] of newIriArray.entries()) {
           const position = this.$cwa.resources.ComponentPosition.byId[iri]
-          const newPosition = Object.assign({}, position, {sortValue: index})
+          const newPosition = Object.assign({}, position, { sortValue: index })
           this.$cwa.saveResource(newPosition)
         }
       }
     }
   },
+  async mounted() {
+    if (!this.resource && this.$cwa.isAdmin) {
+      await this.addComponentCollection()
+    }
+  },
   methods: {
-    addMenuItemShownListener(event) {
-      this.lastClickEvent = event
-      this.$cwa.$eventBus.$once('cwa:admin-dialog:shown-item', this.positionAdminDialog)
-      setTimeout(() => {
-        this.$cwa.$eventBus.$off('cwa:admin-dialog:shown-item', this.positionAdminDialog)
-      }, 5)
-    },
-    positionAdminDialog() {
-      const event = this.lastClickEvent
-      let targetElement = event.target
-      event.path.forEach((el) => {
-        if (el.tagName === 'A') {
-          targetElement = el
-        }
-      })
-      const boundingBox = targetElement.getBoundingClientRect()
-      const position = {
-        top: boundingBox.top + boundingBox.height,
-        left: boundingBox.left + boundingBox.width / 2
-      }
-      this.$cwa.$eventBus.$emit('cwa:admin-dialog:position', position)
-    },
     getCollectionResourceByLocation(location, locationResourceId) {
       const ComponentCollection = this.$cwa.resources?.ComponentCollection
       if (!ComponentCollection) {
         return
       }
-      for (const resource of Object.values(ComponentCollection.byId) as { location?: string }[]) {
-        if (resource && resource.location === location && resource[this.locationResourceType].indexOf(locationResourceId) !== -1) {
+      for (const resource of Object.values(ComponentCollection.byId) as {
+        location?: string
+      }[]) {
+        if (
+          resource &&
+          resource.location === location &&
+          resource[this.locationResourceType].includes(locationResourceId)
+        ) {
           return resource
         }
       }
@@ -156,11 +176,16 @@ export default {
     async addComponentCollection() {
       this.startApiRequest()
       try {
-        await this.$cwa.createResource('/_/component_collections', {
-          reference: `${this.locationResourceReference}_${this.location}`,
-          location: this.location,
-          [this.locationResourceType]: [this.locationResourceId]
-        }, null, [this.locationResourceId])
+        await this.$cwa.createResource(
+          '/_/component_collections',
+          {
+            reference: `${this.locationResourceReference}_${this.location}`,
+            location: this.location,
+            [this.locationResourceType]: [this.locationResourceId]
+          },
+          null,
+          [this.locationResourceId]
+        )
       } catch (err) {
         this.handleApiError(err)
       }
@@ -175,22 +200,14 @@ export default {
       }
       this.completeApiRequest()
     },
-    // async displayComponents() {
-    //   this.showComponentsList = true
-    // },
-    // componentAdded() {
-    //   this.showComponentsList = false
-    //   this.reloadCollection()
-    // },
-    // async reloadCollection() {
-    //   this.reloading = true
-    //   await this.$cwa.fetcher.fetchComponentCollection(this.resource['@id'])
-    //   this.reloading = false
-    // },
     async draggableChanged({ moved }) {
       this.reloading = true
-      const previousPosition = this.previousSortedComponentPositions[moved.newIndex]
-      await this.$cwa.updateResource(moved.element, { sortValue: previousPosition.sortValue })
+      const previousPosition = this.previousSortedComponentPositions[
+        moved.newIndex
+      ]
+      await this.$cwa.updateResource(moved.element, {
+        sortValue: previousPosition.sortValue
+      })
       this.previousSortedComponentPositions = null
       this.reloading = false
     }

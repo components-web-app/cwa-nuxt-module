@@ -1,5 +1,8 @@
 <template>
-  <a :class="['cwa-add-button', 'is-pulsing', { 'is-pulsing': highlight }]" @click="$emit('click')">
+  <a
+    :class="['cwa-add-button', { 'is-pulsing': highlight }]"
+    @click="$emit('click')"
+  >
     <img src="../../../assets/images/icon-add.svg" alt="Plus icon" />
   </a>
 </template>
@@ -25,14 +28,14 @@ export default {
   40%
     opacity: 1
   50%
-    transform: scale(1.05)
-    box-shadow: 0 0 2px 2px $cwa-color-primary
+    transform: scale(1.02)
+    box-shadow: 0 0 5px 1px $cwa-color-primary
   65%
     opacity: 1
   100%
     opacity: 0
     transform: scale(1.1)
-    box-shadow: 0 0 3px 1px $cwa-color-primary
+    box-shadow: 0 0 2px 1px $cwa-color-primary
 
 @keyframes after-shadow-animation
   0%
@@ -42,13 +45,13 @@ export default {
   40%
     opacity: 1
   50%
-    transform: scale(1.15)
+    transform: scale(1.12)
     box-shadow: 0 0 4px 2px $cwa-color-primary
   65%
     opacity: 1
   100%
     opacity: 0
-    transform: scale(1.4)
+    transform: scale(1.36)
     box-shadow: 0 0 6px 2px $cwa-color-primary
 
 @keyframes plus-pulse
@@ -80,7 +83,6 @@ export default {
   white-space: nowrap
   cursor: pointer
   display: block
-  background: $cwa-color-primary
   border-radius: 50%
   z-index: 2
   > img
@@ -92,6 +94,7 @@ export default {
   &::after
     +radial-border
   &.is-pulsing
+    background: $cwa-color-primary
     &:before,
     &:after
       opacity: 1

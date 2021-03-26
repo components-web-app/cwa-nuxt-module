@@ -2,8 +2,14 @@
   <label :for="id" :class="['cwa-admin-toggle', { 'is-checked': !!value }]">
     <span class="label">{{ label }}</span>
     <div class="switch">
-      <input :id="id" :checked="value" :required="required" type="checkbox" @change="updateValue($event.target.checked)" />
-      <span class="slider"></span>
+      <input
+        :id="id"
+        :checked="value"
+        :required="required"
+        type="checkbox"
+        @change="updateValue($event.target.checked)"
+      />
+      <span class="slider" />
     </div>
   </label>
 </template>
@@ -77,7 +83,6 @@ export default {
         &:before
           transform: translateX(calc(2.5em / 2 - 2px))
           background-color: $cwa-warning
-
 
       &:focus + .slider
         box-shadow: 0 0 1px #2196F3

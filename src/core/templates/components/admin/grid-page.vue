@@ -7,27 +7,34 @@
       :search-fields="searchFields"
       :page-parameter="pageParameter"
       @add="showLayout"
-      @pending="isPending => { searchPending = isPending }"
+      @pending="
+        (isPending) => {
+          searchPending = isPending
+        }
+      "
     />
-    <cwa-grid-loader :is-loading="loadingData || searchPending" :total-items="data.length">
+    <cwa-grid-loader
+      :is-loading="loadingData || searchPending"
+      :total-items="data.length"
+    >
       <slot />
     </cwa-grid-loader>
-    <cwa-pagination-bar :total="totalPages" :page-parameter="pageParameter" :display-max="5" />
+    <cwa-pagination-bar
+      :total="totalPages"
+      :page-parameter="pageParameter"
+      :display-max="5"
+    />
   </div>
 </template>
 
 <script>
-import CwaGridHeader from './cwa-grid-header'
-import NuxtErrorIcon from '../utils/nuxt-error-icon'
-import CwaLoader from '../utils/cwa-loader'
-import CwaGridLoader from './cwa-grid-loader'
 import CwaPaginationBar from '../../components/cwa-pagination-bar'
-import CwaNuxtLink from '../utils/cwa-nuxt-link'
 import QueryHelperMixin from '../../../mixins/QueryHelperMixin'
-import CwaFooterLogo from '../utils/cwa-footer-logo'
+import CwaGridLoader from './cwa-grid-loader'
+import CwaGridHeader from './cwa-grid-header'
 
 export default {
-  components: {CwaNuxtLink, CwaPaginationBar, CwaGridLoader, CwaLoader, NuxtErrorIcon, CwaGridHeader, CwaFooterLogo},
+  components: { CwaPaginationBar, CwaGridLoader, CwaGridHeader },
   mixins: [QueryHelperMixin],
   props: {
     endpoint: {
@@ -72,10 +79,19 @@ export default {
   },
   methods: {
     async loadData(forceReload = false) {
-      const passthroughQuery = this.getFilteredQuery([this.pageParameter, ...this.searchFields], [this.orderParameter])
-      const queryString = Object.keys(passthroughQuery).map((key) => {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(passthroughQuery[key])
-      }).join('&')
+      const passthroughQuery = this.getFilteredQuery(
+        [this.pageParameter, ...this.searchFields],
+        [this.orderParameter]
+      )
+      const queryString = Object.keys(passthroughQuery)
+        .map((key) => {
+          return (
+            encodeURIComponent(key) +
+            '=' +
+            encodeURIComponent(passthroughQuery[key])
+          )
+        })
+        .join('&')
       const endpoint = `${this.endpoint}?${queryString}`
       if (!forceReload && queryString === this.lastQuerystring) {
         return
@@ -99,7 +115,8 @@ export default {
         if (!hydraView) {
           this.totalPages = 1
         } else {
-          this.totalPages = hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1 || 1
+          this.totalPages =
+            hydraView['hydra:last']?.split('page=')[1]?.split('&')[0] / 1 || 1
         }
         this.loadingData = false
       } catch (error) {

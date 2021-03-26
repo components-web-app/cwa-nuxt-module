@@ -1,8 +1,12 @@
-import {Notification, NotificationEvents, RemoveNotificationEvent} from "../../cwa-api-notifications/types";
+import {
+  Notification,
+  NotificationEvents,
+  RemoveNotificationEvent
+} from '../../cwa-api-notifications/types'
 
 import CwaInputWrapper from './cwa-input-wrapper.vue'
 export default {
-  components: {CwaInputWrapper},
+  components: { CwaInputWrapper },
   props: {
     id: {
       type: String,
@@ -14,7 +18,7 @@ export default {
       default: null
     },
     value: {
-      type: [String,Boolean,Array],
+      type: [String, Boolean, Array],
       required: false,
       default: null
     },
@@ -27,9 +31,11 @@ export default {
       type: Array,
       required: false,
       default: null,
-      validator (notifications) {
-        if (!(notifications !== null && Array.isArray(notifications))) return false
-        notifications.forEach((item: Notification) => {})
+      validator(notifications) {
+        if (!(notifications !== null && Array.isArray(notifications))) {
+          return false
+        }
+        // notifications.forEach((item: Notification) => {})
         return true
       }
     }
@@ -59,7 +65,7 @@ export default {
     }
   },
   methods: {
-    updateValue: function (value) {
+    updateValue(value) {
       this.$emit('input', value)
     }
   }

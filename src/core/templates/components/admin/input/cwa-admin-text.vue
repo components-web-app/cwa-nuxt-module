@@ -4,16 +4,18 @@
       <textarea
         v-if="isTextarea"
         :id="id"
+        v-model="value"
         :required="required"
         @input="updateValue($event.target.value)"
-      >{{ value }}</textarea>
+      />
       <input
         v-else
-        :type="type"
         :id="id"
+        :type="type"
         :value="value"
         :required="required"
-        @input="updateValue($event.target.value)" />
+        @input="updateValue($event.target.value)"
+      />
     </div>
   </cwa-input-wrapper>
 </template>

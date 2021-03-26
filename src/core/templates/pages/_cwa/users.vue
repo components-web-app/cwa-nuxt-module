@@ -1,17 +1,24 @@
 <template>
   <cwa-footer-logo class="cwa-users-page">
     <grid-page
-      title="Users"
       ref="gridPage"
+      title="Users"
       endpoint="/users"
       :search-fields="['username', 'emailAddress']"
       @load="updateData"
       @add="showAddPage"
     >
       <li v-for="user of data" :key="user['@id']" class="column column-33">
-        <nuxt-link :to="addRouteProps(user['@id'])" class="cwa-grid-item user-grid-item">
-          <p class="title">{{ user.username }}</p>
-          <p class="subtitle">{{ user.enabled ? 'enabled' : 'disabled' }}</p>
+        <nuxt-link
+          :to="addRouteProps(user['@id'])"
+          class="cwa-grid-item user-grid-item"
+        >
+          <p class="title">
+            {{ user.username }}
+          </p>
+          <p class="subtitle">
+            {{ user.enabled ? 'enabled' : 'disabled' }}
+          </p>
         </nuxt-link>
       </li>
     </grid-page>

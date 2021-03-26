@@ -8,23 +8,27 @@ import { CwaOptions } from '../index'
 
 // Working out how to include type from package instead...
 interface Component {
-  pascalName: string;
-  kebabName: string;
-  import: string;
-  asyncImport: string;
-  export: string;
-  filePath: string;
-  shortPath: string;
-  async?: boolean;
-  chunkName: string;
+  pascalName: string
+  kebabName: string
+  import: string
+  asyncImport: string
+  export: string
+  filePath: string
+  shortPath: string
+  async?: boolean
+  chunkName: string
   /** @deprecated */
-  global: boolean;
-  level: number;
+  global: boolean
+  level: number
 }
 
-function extendRoutesFn ({ pagesDepth }) {
+function extendRoutesFn({ pagesDepth }) {
   // recursive function
-  function createRouteObject (component, depth:number, currentDepth:number = 0) {
+  function createRouteObject(
+    component,
+    depth: number,
+    currentDepth: number = 0
+  ) {
     if (currentDepth > depth) {
       return null
     }
@@ -45,15 +49,22 @@ function extendRoutesFn ({ pagesDepth }) {
   }
 
   // transpile
-  this.nuxt.options.build!.transpile!.push(resolve(__dirname, '../core/templates/page'))
+  this.nuxt.options.build!.transpile!.push(
+    resolve(__dirname, '../core/templates/page')
+  )
 
   // return the function
   return (routes) => {
-    routes.push(createRouteObject(resolve(__dirname, '../core/templates/page'), pagesDepth))
+    routes.push(
+      createRouteObject(
+        resolve(__dirname, '../core/templates/page'),
+        pagesDepth
+      )
+    )
   }
 }
 
-function applyCss () {
+function applyCss() {
   const assetsDir = resolve(__dirname, '../core/assets/sass')
   this.options.css.push(join(assetsDir, 'style.sass'))
 
@@ -65,7 +76,10 @@ function applyCss () {
     const sassResourcesLoader = {
       loader: 'sass-resources-loader',
       options: {
-        resources: [join(assetsDir, 'vars/*.sass'), join(assetsDir, '_mixins.sass')]
+        resources: [
+          join(assetsDir, 'vars/*.sass'),
+          join(assetsDir, '_mixins.sass')
+        ]
       }
     }
 
@@ -81,12 +95,14 @@ function applyCss () {
         ]
       })
     } else {
-      config.module.rules[sassRuleIdx].oneOf.forEach(rule => (rule.use as unknown as any[]).push(sassResourcesLoader))
+      config.module.rules[sassRuleIdx].oneOf.forEach((rule) =>
+        ((rule.use as unknown) as any[]).push(sassResourcesLoader)
+      )
     }
   })
 }
 
-function loadComponents () {
+function loadComponents() {
   // auto-configure components module
   if (!this.options.buildModules.includes('@nuxt/components')) {
     this.options.buildModules.push('@nuxt/components')
@@ -121,7 +137,7 @@ function loadComponents () {
   this.nuxt.hook('components:extend', (components: Component[]) => {
     const findType = (component: Component) => {
       for (const componentType of types) {
-        if (component.kebabName.startsWith(`lazy-cwa-${componentType}`)) {
+        if (component.kebabName.startsWith(`cwa-${componentType}`)) {
           return componentType
         }
       }
@@ -134,8 +150,9 @@ function loadComponents () {
       }
       componentImports[foundType].push(component)
     }
-
-    for (const [componentType, components] of Object.entries(componentImports)) {
+    for (const [componentType, components] of Object.entries(
+      componentImports
+    )) {
       const { dst } = this.addTemplate({
         src: resolve(__dirname, '../../templates/components.js'),
         fileName: join('cwa', `${componentType}.js`),
@@ -148,18 +165,23 @@ function loadComponents () {
     }
   })
 
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/components/core/component-load-error.vue')
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/mixins/ResourceMixin.js')
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/components/core/component-collection.vue')
-  this.nuxt.options.build!.transpile!.push('@cwa/nuxt-module/core/templates/components/core/component-position.vue')
+  this.nuxt.options.build!.transpile!.push(
+    '@cwa/nuxt-module/core/templates/components/core/component-load-error.vue'
+  )
+  this.nuxt.options.build!.transpile!.push(
+    '@cwa/nuxt-module/core/mixins/ResourceMixin.js'
+  )
+  this.nuxt.options.build!.transpile!.push(
+    '@cwa/nuxt-module/core/templates/components/core/component-collection.vue'
+  )
+  this.nuxt.options.build!.transpile!.push(
+    '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
+  )
 }
 
-const cwaModule = <Module> function () {
+const cwaModule = <Module>function () {
   const { version, name } = JSON.parse(
-    fs.readFileSync(
-      join(__dirname, '../../package.json'),
-      'utf8'
-    )
+    fs.readFileSync(join(__dirname, '../../package.json'), 'utf8')
   )
   const options: CwaOptions = {
     vuex: {
@@ -177,34 +199,45 @@ const cwaModule = <Module> function () {
   }
   this.nuxt.hook('build:templates', ({ templateVars: { layouts } }) => {
     options.layouts = Object.keys(layouts)
-      .filter(
-        key => key !== 'error' && key.substr(0, 4) !== 'cwa-'
-      )
+      .filter((key) => key !== 'error' && key.substr(0, 4) !== 'cwa-')
       .reduce((obj, key) => {
         obj[key] = layouts[key]
         return obj
       }, {})
   })
 
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/layouts/cwa-error.vue'),
-    fileName: join('cwa', 'layouts', 'cwa-error.vue')
-  }, 'error')
+  this.addLayout(
+    {
+      src: resolve(__dirname, '../core/templates/layouts/cwa-error.vue'),
+      fileName: join('cwa', 'layouts', 'cwa-error.vue')
+    },
+    'error'
+  )
 
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/layouts/cwa-default.vue'),
-    fileName: join('cwa', 'layouts', 'cwa-default.vue')
-  }, 'cwa-default')
+  this.addLayout(
+    {
+      src: resolve(__dirname, '../core/templates/layouts/cwa-default.vue'),
+      fileName: join('cwa', 'layouts', 'cwa-default.vue')
+    },
+    'cwa-default'
+  )
 
-  this.addLayout({
-    src: resolve(__dirname, '../core/templates/layouts/cwa-empty.vue'),
-    fileName: join('cwa', 'layouts', 'cwa-empty.vue')
-  }, 'cwa-empty')
+  this.addLayout(
+    {
+      src: resolve(__dirname, '../core/templates/layouts/cwa-empty.vue'),
+      fileName: join('cwa', 'layouts', 'cwa-empty.vue')
+    },
+    'cwa-empty'
+  )
 
   // Add CWA Pages
   this.extendRoutes((routes: any[]) => {
     // construct route objects with parts as keys for nesting
-    function getRouteObjects (baseDir: string, newRoutes: any = {}, pathParts: string[] = ['_cwa']) {
+    function getRouteObjects(
+      baseDir: string,
+      newRoutes: any = {},
+      pathParts: string[] = ['_cwa']
+    ) {
       const files = fs.readdirSync(baseDir)
       files.forEach((filename: string) => {
         const filePath = join(baseDir, filename)
@@ -231,8 +264,10 @@ const cwaModule = <Module> function () {
       })
       return newRoutes
     }
-    const newRoutesAsObject = getRouteObjects(resolve(__dirname, '../core/templates/pages/_cwa'))
-    function childrenToValues (object) {
+    const newRoutesAsObject = getRouteObjects(
+      resolve(__dirname, '../core/templates/pages/_cwa')
+    )
+    function childrenToValues(object) {
       if (object.children) {
         object.children = Object.values(object.children)
         object.children.forEach((nestedRoute) => {
@@ -255,7 +290,9 @@ const cwaModule = <Module> function () {
     routes.push(...newRoutes)
   })
 
-  this.extendRoutes(extendRoutesFn.call(this, { pagesDepth: options.pagesDepth }))
+  this.extendRoutes(
+    extendRoutesFn.call(this, { pagesDepth: options.pagesDepth })
+  )
 
   // Add plugin
   const { dst } = this.addTemplate({

@@ -1,10 +1,10 @@
 import consola from 'consola'
+import ClientOnly from 'vue-client-only'
 import { StoreCategories } from '../storage'
 // @ts-ignore
-import components from '~/.nuxt/cwa/pages'
 import ResourceComponentLoader from './resource-component-loader'
-import CwaAdminDialog from './components/admin/dialog/cwa-admin-dialog.vue'
-import ClientOnly from 'vue-client-only'
+// @ts-ignore
+import components from '~/.nuxt/cwa/pages'
 
 export default {
   auth: false,
@@ -13,22 +13,26 @@ export default {
   },
   components: {
     ResourceComponentLoader,
-    CwaAdminDialog,
     ClientOnly,
     ...components
   },
   computed: {
-    resources () {
+    resources() {
       return this.$cwa.resources
     },
     currentRoute() {
-      if (this.resources.Route === undefined || this.resources.Route.current === undefined) {
-        consola.error(`Current route is undefined`)
+      if (
+        this.resources.Route === undefined ||
+        this.resources.Route.current === undefined
+      ) {
+        consola.error('Current route is undefined')
         return null
       }
       const route = this.resources.Route.byId[this.resources.Route.current]
       if (route === undefined) {
-        consola.error(`Cannot find route with ID ${this.resources.Route.current}`)
+        consola.error(
+          `Cannot find route with ID ${this.resources.Route.current}`
+        )
         return null
       }
       return route
@@ -38,7 +42,10 @@ export default {
         return
       }
       if (this.currentRoute.pageData) {
-        const resourceType = this.$cwa.$storage.getTypeFromIri(this.currentRoute.pageData, StoreCategories.PageData)
+        const resourceType = this.$cwa.$storage.getTypeFromIri(
+          this.currentRoute.pageData,
+          StoreCategories.PageData
+        )
         if (!resourceType) {
           return null
         }
@@ -50,7 +57,9 @@ export default {
       if (!this.currentRoute || !this.currentPageMetadata) {
         return
       }
-      return this.currentRoute.pageData ? this.currentPageMetadata.page : this.currentRoute.page
+      return this.currentRoute.pageData
+        ? this.currentPageMetadata.page
+        : this.currentRoute.page
     },
     currentPageTemplateResource() {
       return this.resources?.Page?.byId[this.currentPageTemplateIri]
@@ -69,21 +78,19 @@ export default {
     return {
       title: this.currentPageMetadata.title,
       meta: [
-        { hid: 'description', name: 'description', content: this.currentPageMetadata.metaDescription }
+        {
+          hid: 'description',
+          name: 'description',
+          content: this.currentPageMetadata.metaDescription
+        }
       ]
     }
   },
   render(h) {
-    return h(
-      'div',
-      {},
-      [
-
-        h(this.$options.components.ResourceComponentLoader, { props: this.resourceComponentLoaderProps }),
-        h(this.$options.components.ClientOnly, {}, [
-          h(this.$options.components.CwaAdminDialog, { props: {} })
-        ])
-      ]
-    )
+    return h('div', {}, [
+      h(this.$options.components.ResourceComponentLoader, {
+        props: this.resourceComponentLoaderProps
+      })
+    ])
   }
 }

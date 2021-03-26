@@ -17,7 +17,10 @@
                 <li>
                   <cwa-nuxt-link to="/_cwa/layouts">
                     <span class="icon">
-                      <img src="../../../assets/images/icon-layout.svg" alt="Layouts Icon" />
+                      <img
+                        src="../../../assets/images/icon-layout.svg"
+                        alt="Layouts Icon"
+                      />
                     </span>
                     <span>Layouts</span>
                   </cwa-nuxt-link>
@@ -25,7 +28,10 @@
                 <li>
                   <cwa-nuxt-link to="/_cwa/pages">
                     <span class="icon">
-                      <img src="../../../assets/images/icon-pages.svg" alt="Pages Icon" />
+                      <img
+                        src="../../../assets/images/icon-pages.svg"
+                        alt="Pages Icon"
+                      />
                     </span>
                     <span>Pages</span>
                   </cwa-nuxt-link>
@@ -33,7 +39,10 @@
                 <li>
                   <cwa-nuxt-link>
                     <span class="icon">
-                      <img src="../../../assets/images/icon-components.svg" alt="Components Icon" />
+                      <img
+                        src="../../../assets/images/icon-components.svg"
+                        alt="Components Icon"
+                      />
                     </span>
                     <span>Components</span>
                   </cwa-nuxt-link>
@@ -41,7 +50,10 @@
                 <li>
                   <cwa-nuxt-link to="/_cwa/users">
                     <span class="icon">
-                      <img src="../../../assets/images/icon-users.svg" alt="Users Icon" />
+                      <img
+                        src="../../../assets/images/icon-users.svg"
+                        alt="Users Icon"
+                      />
                     </span>
                     <span>Users</span>
                   </cwa-nuxt-link>
@@ -66,7 +78,9 @@
                       <cwa-nuxt-link>My account</cwa-nuxt-link>
                     </li>
                     <li>
-                      <a href="#" @click.prevent="$auth.logout('local')">Sign out</a>
+                      <a href="#" @click.prevent="$auth.logout('local')"
+                        >Sign out</a
+                      >
                     </li>
                   </ul>
                 </li>
@@ -74,13 +88,20 @@
                   CWA
                   <ul>
                     <li>
-                      <cwa-nuxt-link to="https://cwa.rocks">About CWA</cwa-nuxt-link>
+                      <cwa-nuxt-link to="https://cwa.rocks">
+                        About CWA
+                      </cwa-nuxt-link>
                     </li>
                     <li>
-                      <cwa-nuxt-link :to="cwaModuleVersionLink">CWA <span class="small">{{ cwaModuleVersionText }}</span></cwa-nuxt-link>
+                      <cwa-nuxt-link :to="cwaModuleVersionLink">
+                        CWA
+                        <span class="small">{{ cwaModuleVersionText }}</span>
+                      </cwa-nuxt-link>
                     </li>
                     <li>
-                      <cwa-nuxt-link :to="$config.API_URL">API <span class="small">{{ apiVersionText }}</span></cwa-nuxt-link>
+                      <cwa-nuxt-link :to="$config.API_URL">
+                        API <span class="small">{{ apiVersionText }}</span>
+                      </cwa-nuxt-link>
                     </li>
                   </ul>
                 </li>
@@ -98,11 +119,17 @@
 
 <script>
 import CwaHamburger from '../utils/cwa-hamburger.vue'
-import CwaLogo from "../utils/cwa-logo"
+import CwaLogo from '../utils/cwa-logo'
 import CwaNuxtLink from '../utils/cwa-nuxt-link.vue'
 export default {
-  components: {CwaLogo, CwaHamburger, CwaNuxtLink},
-  data(){
+  components: { CwaLogo, CwaHamburger, CwaNuxtLink },
+  props: {
+    forceHide: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
     return {
       showMenu: false,
       leftLinks: [
@@ -125,27 +152,43 @@ export default {
       apiVersion: '--'
     }
   },
-  async mounted() {
-    const { data: apiDocs } = await this.$axios.get(`/docs.json`)
-    const matches = apiDocs.info.version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
-    this.apiVersion = matches ? matches[1] : '??'
-  },
   computed: {
     apiVersionText() {
-      const unstablePostfix = this.apiVersion.substr(0,3) === 'dev' ? ' (unstable)' : ''
+      const unstablePostfix =
+        this.apiVersion.substr(0, 3) === 'dev' ? ' (unstable)' : ''
       return this.truncateVersion(this.apiVersion) + unstablePostfix
     },
     cwaModuleVersionText() {
-      const unstablePostfix = this.$cwa.options.package.name.substr(-4) === 'next' ? ' (unstable)' : ''
-      return this.truncateVersion(this.$cwa.options.package.version) + unstablePostfix
+      const unstablePostfix =
+        this.$cwa.options.package.name.substr(-4) === 'next'
+          ? ' (unstable)'
+          : ''
+      return (
+        this.truncateVersion(this.$cwa.options.package.version) +
+        unstablePostfix
+      )
     },
     cwaModuleVersionLink() {
       return `https://www.npmjs.com/package/${this.$cwa.options.package.name}/v/${this.$cwa.options.package.version}`
     }
   },
+  watch: {
+    forceHide: {
+      handler(isForcedHide) {
+        if (isForcedHide) {
+          this.showMenu = false
+        }
+      }
+    }
+  },
+  async mounted() {
+    const { data: apiDocs } = await this.$axios.get('/docs.json')
+    const matches = apiDocs.info.version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
+    this.apiVersion = matches ? matches[1] : '??'
+  },
   methods: {
     toggleMenu(showMenu) {
-      this.showMenu = showMenu
+      this.showMenu = this.forceHide ? false : showMenu
     },
     truncateVersion(version) {
       return version.length > 9

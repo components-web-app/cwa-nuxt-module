@@ -1,6 +1,6 @@
-export default (commaDelimitedStr?:string): string[]|null => {
+export default (commaDelimitedStr?: string): string[] | null => {
   if (!commaDelimitedStr) {
     return null
   }
-  return commaDelimitedStr.split(',').map(item => (item.trim()))
+  return commaDelimitedStr.split(',').map((item) => item.trim())
 }

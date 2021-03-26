@@ -3,8 +3,8 @@
 </template>
 
 <script>
-import CwaDefault from "./cwa-default"
+import CwaDefault from './cwa-default'
 export default {
-  components: {CwaDefault}
+  components: { CwaDefault }
 }
 </script>

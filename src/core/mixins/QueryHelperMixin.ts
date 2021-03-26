@@ -1,6 +1,6 @@
 export default {
   methods: {
-    getFilteredQuery (staticParams: string[], queryPrefixes: string[]) {
+    getFilteredQuery(staticParams: string[], queryPrefixes: string[]) {
       return Object.keys(this.$route.query)
         .filter((key) => {
           if (staticParams.includes(key)) {

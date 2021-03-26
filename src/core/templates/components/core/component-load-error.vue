@@ -1,6 +1,10 @@
 <template>
   <div class="component-load-error">
-    <div v-if="message" v-html="message" :class="['notice', { 'is-danger': isDanger }]"></div>
+    <div
+      v-if="message"
+      :class="['notice', { 'is-danger': isDanger }]"
+      v-html="message"
+    />
     <slot />
   </div>
 </template>

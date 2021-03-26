@@ -4,13 +4,23 @@
       <p class="notification-title row">
         <span class="column">Notifications ({{ notifications.length }})</span>
         <span class="column is-narrow">
-          <a class="show-hide-link" href="#" @click.prevent="expandNotifications = !expandNotifications">{{ expandNotifications ? 'hide' : 'show' }}</a>
+          <a
+            class="show-hide-link"
+            href="#"
+            @click.prevent="expandNotifications = !expandNotifications"
+            >{{ expandNotifications ? 'hide' : 'show' }}</a
+          >
         </span>
       </p>
-      <div class="notifications-body" v-show="expandNotifications">
+      <div v-show="expandNotifications" class="notifications-body">
         <ul class="notification-list">
           <transition-group name="list" tag="li">
-            <cwa-api-notification v-for="(notification, index) of notifications" :key="notification.id" :notification="notification" @remove="removeNotification(index)" />
+            <cwa-api-notification
+              v-for="(notification, index) of notifications"
+              :key="notification.id"
+              :notification="notification"
+              @remove="removeNotification(index)"
+            />
           </transition-group>
         </ul>
       </div>
@@ -19,12 +29,12 @@
 </template>
 
 <script lang="ts">
-import CwaApiNotification from "./cwa-api-notification.vue"
-import ApiNotificationsMixin from "../../../mixins/ApiNotificationsMixin"
+import ApiNotificationsMixin from '../../../mixins/ApiNotificationsMixin'
+import CwaApiNotification from './cwa-api-notification.vue'
 
 export default {
+  components: { CwaApiNotification },
   mixins: [ApiNotificationsMixin],
-  components: {CwaApiNotification},
   data() {
     return {
       expandNotifications: false as boolean

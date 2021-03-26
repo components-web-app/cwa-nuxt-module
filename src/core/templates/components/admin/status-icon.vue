@@ -1,5 +1,5 @@
 <template>
-  <div :class="['status-icon', className]"></div>
+  <div :class="['status-icon', className]" />
 </template>
 
 <script>

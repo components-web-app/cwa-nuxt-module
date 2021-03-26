@@ -3,7 +3,7 @@ import DebugTimer from '../utils/DebugTimer'
 
 // I don't know whether the $cwa property will be required, but it is injected into all contexts throughout
 // Nuxt/Vuejs components. This is the class at source /src/core/cwa.ts
-export default async function routeLoaderMiddleware ({ route, $cwa }) {
+export default async function routeLoaderMiddleware({ route, $cwa }) {
   const pageParam = routeOption(route, 'pageIriParam')
   if (pageParam) {
     try {

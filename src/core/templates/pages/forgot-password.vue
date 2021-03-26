@@ -8,13 +8,17 @@
         </nuxt-link>
       </div>
     </div>
-    <form v-else @submit.prevent="submitRequest" class="login-form">
+    <form v-else class="login-form" @submit.prevent="submitRequest">
       <div v-if="error" class="notice is-danger">
         {{ error }}
       </div>
       <div>
         <label>Username</label>
-        <input v-model="username" type="text" placeholder="E.g. you.rock@cwa.rocks">
+        <input
+          v-model="username"
+          type="text"
+          placeholder="E.g. you.rock@cwa.rocks"
+        />
       </div>
       <div>
         <button class="is-light" type="submit" :disabled="submitting">
@@ -23,7 +27,7 @@
       </div>
       <div class="login-nav row">
         <div class="column is-narrow">
-          <nuxt-link to="/login">< Back to login</nuxt-link>
+          <nuxt-link to="/login"> &lt; Back to login </nuxt-link>
         </div>
       </div>
     </form>
@@ -31,14 +35,14 @@
 </template>
 
 <script>
-import CwaAdminAccessLayout from '../components/admin/cwa-admin-access-layout.vue'
 import consola from 'consola'
+import CwaAdminAccessLayout from '../components/admin/cwa-admin-access-layout.vue'
 export default {
   auth: false,
   cwa: false,
+  components: { CwaAdminAccessLayout },
   layout: 'cwa-empty',
-  components: {CwaAdminAccessLayout},
-  data () {
+  data() {
     return {
       username: '',
       error: null,
@@ -47,8 +51,13 @@ export default {
       success: false
     }
   },
+  computed: {
+    pageTitle() {
+      return this.success ? 'Check your emails' : 'Password Recovery'
+    }
+  },
   methods: {
-    async submitRequest () {
+    async submitRequest() {
       if (!this.username) {
         this.error = 'Please enter a username'
         return
@@ -57,9 +66,13 @@ export default {
       this.error = null
       try {
         const query = new URLSearchParams({
-          'password_redirect': this.passwordRedirect || ''
+          password_redirect: this.passwordRedirect || ''
         }).toString()
-        await this.$axios.get(`/password/reset/request/${encodeURIComponent(this.username)}?${query}`)
+        await this.$axios.get(
+          `/password/reset/request/${encodeURIComponent(
+            this.username
+          )}?${query}`
+        )
         this.success = true
       } catch (err) {
         if (err.response.status === 404) {
@@ -73,12 +86,7 @@ export default {
       }
     }
   },
-  computed: {
-    pageTitle() {
-      return this.success ? 'Check your emails' : 'Password Recovery'
-    }
-  },
-  header () {
+  header() {
     return {
       title: 'Forgot Password'
     }

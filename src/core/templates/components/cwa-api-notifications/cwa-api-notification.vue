@@ -1,19 +1,28 @@
 <template>
-  <li :class="['notification', getClassByLevel(notification.level), {highlighted: isHighlighted} ]">
-    <p class="message">{{ notification.message }}</p>
+  <li
+    :class="[
+      'notification',
+      getClassByLevel(notification.level),
+      { highlighted: isHighlighted }
+    ]"
+  >
+    <p class="message">
+      {{ notification.message }}
+    </p>
     <div class="timestamp">
-      <div v-if="notification.endpoint" class="endpoint">{{ notification.endpoint }}</div>
-      <timestamp  :timestamp="notification.timestamp" />
-      <a href="#" @click="$emit('remove')" class="clear-notification">remove</a>
+      <div v-if="notification.endpoint" class="endpoint">
+        {{ notification.endpoint }}
+      </div>
+      <timestamp :timestamp="notification.timestamp" />
+      <a href="#" class="clear-notification" @click="$emit('remove')">remove</a>
     </div>
-
   </li>
 </template>
 
 <script lang="ts">
-import {TimestampedNotification, NotificationLevels} from "./types";
 import { PropType } from 'vue'
-import Timestamp from "../utils/timestamp.vue";
+import Timestamp from '../utils/timestamp.vue'
+import { TimestampedNotification, NotificationLevels } from './types'
 
 export default {
   components: { Timestamp },
@@ -37,7 +46,7 @@ export default {
   },
   methods: {
     getClassByLevel(level) {
-      switch(level) {
+      switch (level) {
         case NotificationLevels.ERROR:
           return 'error'
         case NotificationLevels.WARNING:

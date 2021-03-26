@@ -3,12 +3,15 @@ import fs from 'fs'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
-const API_URL = 'http://something-else' || process.env.API_URL || 'https://localhost:8443'
+const API_URL =
+  'http://something-else' || process.env.API_URL || 'https://localhost:8443'
 
-const https = process.env.DISABLE_HTTPS ? null : {
-  key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
-  cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
-}
+const https = process.env.DISABLE_HTTPS
+  ? null
+  : {
+      key: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.key')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'ssl/localhost.crt'))
+    }
 
 export default {
   server: {
@@ -24,18 +27,14 @@ export default {
     ]
   },
   css: ['~/assets/sass/main.sass'],
-  buildModules: [
-    '@nuxt/typescript-build'
-  ],
+  buildModules: ['@nuxt/typescript-build'],
   modules: [
     '@nuxtjs/style-resources',
     '@nuxtjs/axios',
     '@nuxtjs/auth-next',
     coreModuleDist
   ],
-  plugins: [
-    { src: '~/plugins/quill', ssr: false }
-  ],
+  plugins: [{ src: '~/plugins/quill', ssr: false }],
   router: {
     middleware: ['auth', 'routeLoader']
   },
@@ -52,7 +51,7 @@ export default {
     },
     defaultStrategy: 'local',
     strategies: {
-      local: {
+      cookie: {
         user: {
           autoFetch: true,
           property: ''
@@ -76,7 +75,7 @@ export default {
     websiteName: 'CWA Test'
   },
   build: {
-    extend (config) {
+    extend(config) {
       if (!config.resolve) {
         config.resolve = {}
       }
@@ -84,7 +83,11 @@ export default {
         config.resolve.plugins = []
       }
 
-      config.resolve.plugins.push(new TsconfigPathsPlugin({ configFile: `${__dirname}/tsconfig.json` }))
+      config.resolve.plugins.push(
+        new TsconfigPathsPlugin({
+          configFile: path.join(__dirname, 'tsconfig.json')
+        })
+      )
     }
   },
   styleResources: {

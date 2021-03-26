@@ -11,9 +11,9 @@ export class Fetcher {
   private eventSource?: EventSource
   private lastEventId?: string
   private ctx: {
-    $axios: NuxtAxiosInstance,
-    error: any,
-    apiUrl: string,
+    $axios: NuxtAxiosInstance
+    error: any
+    apiUrl: string
     storage: Storage
   }
 
@@ -22,10 +22,10 @@ export class Fetcher {
   }
 
   public static readonly loadingRouteKey = 'loadingRoute'
-  private timer: DebugTimer;
-  private initMercureTimeout?: any = null;
+  private timer: DebugTimer
+  private initMercureTimeout?: any = null
 
-  constructor ({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
+  constructor({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
       $axios,
       error,
@@ -38,21 +38,29 @@ export class Fetcher {
     this.timer = new DebugTimer()
   }
 
-  private get currentResources () {
+  private get currentResources() {
     return this.ctx.storage.state.resources.current
   }
 
-  public get apiUrl () {
+  public get apiUrl() {
     return this.ctx.apiUrl
   }
 
-  private async fetcher ({ path: url, preload }: { path: string, preload?: string[] }) {
+  private async fetcher({
+    path: url,
+    preload
+  }: {
+    path: string
+    preload?: string[]
+  }) {
     consola.debug(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
 
     // For dynamic components the API must know what route/path the request was originally for
     // so we set a custom "Path" header
-    const requestHeaders = { Path: this.ctx.storage.getState(Fetcher.loadingRouteKey) } as { Path: string, Preload?: string }
+    const requestHeaders = {
+      Path: this.ctx.storage.getState(Fetcher.loadingRouteKey)
+    } as { Path: string; Preload?: string }
 
     // preload headers for Vulcain
     if (preload) {
@@ -60,7 +68,9 @@ export class Fetcher {
     }
 
     try {
-      const { headers, data } = await this.ctx.$axios.get(url, { headers: requestHeaders })
+      const { headers, data } = await this.ctx.$axios.get(url, {
+        headers: requestHeaders
+      })
       this.setDocsUrlFromHeaders(headers)
       this.setMercureHubFromHeaders(headers)
       return data
@@ -72,14 +82,25 @@ export class Fetcher {
       // By not throwing an error we can re-fetch client-side
       // However, when fetching a route that does not exist, we need an error...
       // Changed this functionality here to throw an exception so it can be handled by the calling function
-      throw new ApiRequestError(sanitisedError.message, sanitisedError.statusCode, sanitisedError.endpoint)
+      throw new ApiRequestError(
+        sanitisedError.message,
+        sanitisedError.statusCode,
+        sanitisedError.endpoint
+      )
     } finally {
       this.timer.end(`Fetching ${url}`)
       consola.debug(`Fetched ${url}`)
     }
   }
 
-  public async fetchItem ({ path, preload }: {path: string, preload?: string[], category?: string}) {
+  public async fetchItem({
+    path,
+    preload
+  }: {
+    path: string
+    preload?: string[]
+    category?: string
+  }) {
     const resource = await this.fetcher({ path, preload })
     if (!resource) {
       return resource
@@ -99,37 +120,54 @@ export class Fetcher {
     return resource
   }
 
-  private fetchCollection ({ paths, preload, category }: {paths: string[], preload?: string[], category?: string}, callback) {
-    return bluebird.map(paths, (path) => {
-      return this.fetcher({ path, preload })
-        .then(resource => ({ resource, path }))
-    }, { concurrency: this.options.fetchConcurrency || null })
+  private fetchCollection(
+    {
+      paths,
+      preload,
+      category
+    }: { paths: string[]; preload?: string[]; category?: string },
+    callback
+  ) {
+    return bluebird
+      .map(
+        paths,
+        (path) => {
+          return this.fetcher({ path, preload }).then((resource) => ({
+            resource,
+            path
+          }))
+        },
+        { concurrency: this.options.fetchConcurrency || null }
+      )
       .each(({ resource }) => {
-        resource && this.ctx.storage.setResource({ category, isNew: false, resource })
+        resource &&
+          this.ctx.storage.setResource({ category, isNew: false, resource })
         return callback(resource)
       })
   }
 
-  public async fetchPage (pageIri) {
+  public async fetchPage(pageIri) {
     this.timer.reset()
     this.timer.start(`Fetch page ${pageIri}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, pageIri)
     this.closeMercure()
     try {
-      const pageResponse = await this.fetchItem(
-        {
-          path: pageIri,
-          preload: [
-            '/layout/componentCollections/*/componentPositions/*/component',
-            '/componentCollections/*/componentPositions/*/component'
-          ]
-        })
+      const pageResponse = await this.fetchItem({
+        path: pageIri,
+        preload: [
+          '/layout/componentCollections/*/componentPositions/*/component',
+          '/componentCollections/*/componentPositions/*/component'
+        ]
+      })
 
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
       this.ctx.storage.setState('layout', layoutResponse['@id'])
 
-      await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
+      await this.fetchComponentCollections([
+        ...pageResponse.componentCollections,
+        ...layoutResponse.componentCollections
+      ])
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
     } catch (error) {
       // Display error page
@@ -141,23 +179,22 @@ export class Fetcher {
     }
   }
 
-  public async fetchRoute (path) {
+  public async fetchRoute(path) {
     this.timer.reset()
     this.timer.start(`Fetch route ${path}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, path)
     this.eventSource && this.eventSource.close()
     try {
-      const routeResponse = await this.fetchItem(
-        {
-          path: `/_/routes/${path}`,
-          preload: [
-            '/page/layout/componentCollections/*/componentPositions/*/component',
-            '/page/componentCollections/*/componentPositions/*/component',
-            '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
-            '/pageData/page/componentCollections/*/componentPositions/*/component'
-          ]
-        })
+      const routeResponse = await this.fetchItem({
+        path: `/_/routes/${path}`,
+        preload: [
+          '/page/layout/componentCollections/*/componentPositions/*/component',
+          '/page/componentCollections/*/componentPositions/*/component',
+          '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
+          '/pageData/page/componentCollections/*/componentPositions/*/component'
+        ]
+      })
 
       const pageResponse = await this.fetchPageByRouteResponse(routeResponse)
       if (!pageResponse) {
@@ -166,7 +203,10 @@ export class Fetcher {
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
       this.ctx.storage.setState('layout', layoutResponse['@id'])
 
-      await this.fetchComponentCollections([...pageResponse.componentCollections, ...layoutResponse.componentCollections])
+      await this.fetchComponentCollections([
+        ...pageResponse.componentCollections,
+        ...layoutResponse.componentCollections
+      ])
       this.ctx.storage.setCurrentRoute(routeResponse['@id'])
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
     } catch (error) {
@@ -179,15 +219,21 @@ export class Fetcher {
     }
   }
 
-  private fetchComponentCollections (paths) {
-    return this.fetchCollection({ paths, preload: ['/componentPositions/*/component'] }, (componentCollection) => {
-      return this.fetchCollection({ paths: componentCollection.componentPositions }, (componentPosition) => {
-        return this.fetchComponent(componentPosition.component)
-      })
-    })
+  private fetchComponentCollections(paths) {
+    return this.fetchCollection(
+      { paths, preload: ['/componentPositions/*/component'] },
+      (componentCollection) => {
+        return this.fetchCollection(
+          { paths: componentCollection.componentPositions },
+          (componentPosition) => {
+            return this.fetchComponent(componentPosition.component)
+          }
+        )
+      }
+    )
   }
 
-  public async fetchComponent (path) {
+  public async fetchComponent(path) {
     this.timer.reset()
     try {
       return await this.fetchItem({ path, category: StoreCategories.Component })
@@ -200,10 +246,13 @@ export class Fetcher {
     }
   }
 
-  private async fetchPageByRouteResponse (routeResponse) {
+  private async fetchPageByRouteResponse(routeResponse) {
     let page = routeResponse.page
     if (routeResponse.pageData) {
-      const pageDataResponse = await this.fetchItem({ path: routeResponse.pageData, category: StoreCategories.PageData })
+      const pageDataResponse = await this.fetchItem({
+        path: routeResponse.pageData,
+        category: StoreCategories.PageData
+      })
       if (!pageDataResponse) {
         return null
       }
@@ -215,8 +264,10 @@ export class Fetcher {
     return this.fetchItem({ path: page })
   }
 
-  private setDocsUrlFromHeaders (headers) {
-    if (this.ctx.storage.state.docsUrl) { return }
+  private setDocsUrlFromHeaders(headers) {
+    if (this.ctx.storage.state.docsUrl) {
+      return
+    }
 
     const link = headers.link
     if (!link) {
@@ -235,15 +286,17 @@ export class Fetcher {
 
     const docsUrl = matches[1]
 
-    consola.log('docs url set', docsUrl)
+    consola.debug('docs url set', docsUrl)
     this.ctx.storage.setState('docsUrl', docsUrl)
   }
 
   /**
    * Mercure
    */
-  private setMercureHubFromHeaders (headers) {
-    if (this.ctx.storage.state.mercureHub) { return }
+  private setMercureHubFromHeaders(headers) {
+    if (this.ctx.storage.state.mercureHub) {
+      return
+    }
 
     const link = headers.link
     if (!link) {
@@ -257,24 +310,26 @@ export class Fetcher {
       return
     }
 
-    consola.log('Mercure hub set', matches[1])
+    consola.debug('Mercure hub set', matches[1])
     this.ctx.storage.setState('mercureHub', matches[1])
   }
 
-  public closeMercure () {
+  public closeMercure() {
     if (this.eventSource) {
       this.eventSource.close()
       consola.info('Mercure eventSource closed')
     }
   }
 
-  public initMercure (currentResources: { any: resourcesState }) {
+  public initMercure(currentResources: { any: resourcesState }) {
     if (this.initMercureTimeout) {
       clearTimeout(this.initMercureTimeout)
     }
     this.initMercureTimeout = setTimeout(() => {
       const currentResourcesCategories = Object.values(currentResources)
-      if (!process.client) { return }
+      if (!process.client) {
+        return
+      }
 
       let hubUrl = null
       try {
@@ -289,7 +344,9 @@ export class Fetcher {
         if (this.eventSource.url === hubUrl) {
           return
         }
-        consola.info('Closing Mercure event source to re-open with latest topics')
+        consola.info(
+          'Closing Mercure event source to re-open with latest topics'
+        )
         this.eventSource.close()
       }
 
@@ -303,7 +360,7 @@ export class Fetcher {
     }, 100)
   }
 
-  private handleMercureMessage (messageEvent: MessageEvent) {
+  private handleMercureMessage(messageEvent: MessageEvent) {
     // if we are updating an object, we can receive the message before we have updated our store
     // and then we think there is an update which there isn't...
     return new Promise((resolve) => {
@@ -330,41 +387,59 @@ export class Fetcher {
 
       // Must wait for existing api requests to happen and storage to update or we think something has changed when
       // it is this application changing it
-      const apiRequestInProgress = this.ctx.storage.getState('apiRequestInProgress')
+      const apiRequestInProgress = this.ctx.storage.getState(
+        'apiRequestInProgress'
+      )
       if (!apiRequestInProgress) {
-        consola.info('Invoking Mercure message handler. No request in progress.')
+        consola.info(
+          'Invoking Mercure message handler. No request in progress.'
+        )
         processMessage()
         return
       }
-      consola.info('Mercure message handler waiting for current request to complete...')
-      const unwatchFn = this.ctx.storage.watchState('apiRequestInProgress', (newValue) => {
-        if (!newValue) {
-          consola.info('Request complete. Invoking Mercure message handler')
-          processMessage()
-          unwatchFn()
+      consola.info(
+        'Mercure message handler waiting for current request to complete...'
+      )
+      const unwatchFn = this.ctx.storage.watchState(
+        'apiRequestInProgress',
+        (newValue) => {
+          if (!newValue) {
+            consola.info('Request complete. Invoking Mercure message handler')
+            processMessage()
+            unwatchFn()
+          }
         }
-      })
+      )
     })
   }
 
-  private forceComponentPositionPersist (data) {
+  private forceComponentPositionPersist(data) {
     if (data['@type'] !== 'ComponentPosition') {
       return false
     }
 
-    if (!this.currentResources.ComponentCollection.currentIds.includes(data.componentCollection)) {
-      consola.info('New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.')
+    if (
+      !this.currentResources.ComponentCollection.currentIds.includes(
+        data.componentCollection
+      )
+    ) {
+      consola.info(
+        'New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.'
+      )
       return false
     }
 
     // We do not need to adapt behaviour if the ComponentPosition already exists
-    if (this.currentResources.ComponentPosition.currentIds.includes(data['@id'])) {
+    if (
+      this.currentResources.ComponentPosition.currentIds.includes(data['@id'])
+    ) {
       return false
     }
 
     const collectionIri = data.componentCollection
     // Check if this ComponentCollection resource is current
-    const componentCollectionResource = this.currentResources.ComponentCollection.byId[collectionIri]
+    const componentCollectionResource = this.currentResources
+      .ComponentCollection.byId[collectionIri]
     if (!componentCollectionResource) {
       return false
     }
@@ -374,17 +449,23 @@ export class Fetcher {
     this.ctx.storage.setResource({
       resource: {
         ...componentCollectionResource,
-        componentPositions: [...componentCollectionResource.componentPositions, data['@id']]
+        componentPositions: [
+          ...componentCollectionResource.componentPositions,
+          data['@id']
+        ]
       },
       isNew: true
     })
     return true
   }
 
-  private getMercureHubURL (currentResources: resourcesState[]) {
+  private getMercureHubURL(currentResources: resourcesState[]) {
     const hub = new URL(this.ctx.storage.state.mercureHub)
 
-    hub.searchParams.append('topic', `${this.ctx.apiUrl}/_/component_positions/{id}`)
+    hub.searchParams.append(
+      'topic',
+      `${this.ctx.apiUrl}/_/component_positions/{id}`
+    )
     for (const resourcesObject of currentResources) {
       if (resourcesObject.currentIds === undefined) {
         continue

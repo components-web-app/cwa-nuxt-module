@@ -2,8 +2,14 @@
   <cwa-admin-access-layout title="Reset password">
     <p>Hi {{ $route.params.username }}</p>
     <p>This page is not complete</p>
-    <p>We need to build the form component and use that here to load the form component in and submit it.</p>
-    <p>Please contact your website administrator for more information or so they can reset your password</p>
+    <p>
+      We need to build the form component and use that here to load the form
+      component in and submit it.
+    </p>
+    <p>
+      Please contact your website administrator for more information or so they
+      can reset your password
+    </p>
     <div>
       <nuxt-link to="/login" class="button is-light">
         <span>Back to login</span>
@@ -18,9 +24,9 @@ import CwaAdminAccessLayout from '../components/admin/cwa-admin-access-layout.vu
 export default {
   auth: false,
   cwa: false,
+  components: { CwaAdminAccessLayout },
   layout: 'cwa-empty',
-  components: {CwaAdminAccessLayout},
-  header () {
+  header() {
     return {
       title: 'Reset Password'
     }

@@ -11,7 +11,7 @@
       </div>
       Sorry, no items found
     </div>
-    <ul class="row row-wrap grid" v-else>
+    <ul v-else class="row row-wrap grid">
       <slot />
     </ul>
   </div>
@@ -21,7 +21,7 @@
 import CwaLoader from '../utils/cwa-loader'
 import NuxtErrorIcon from '../utils/nuxt-error-icon'
 export default {
-  components: {NuxtErrorIcon, CwaLoader},
+  components: { NuxtErrorIcon, CwaLoader },
   props: {
     isLoading: {
       type: Boolean,

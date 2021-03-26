@@ -12,7 +12,7 @@
 <script>
 import CwaAdminBar from '@cwa/nuxt-module/core/templates/components/admin/cwa-admin-bar.vue'
 export default {
-  components: {CwaAdminBar},
+  components: { CwaAdminBar },
   props: {
     hideAdmin: {
       type: Boolean,

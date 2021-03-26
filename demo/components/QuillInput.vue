@@ -1,8 +1,6 @@
 <template>
   <div>
-    <button class="button-outline" @click="$emit('hide')">
-      Close editor
-    </button>
+    <button class="button-outline" @click="$emit('hide')">Close editor</button>
     <div ref="quill" v-html="quillModel" />
     <div v-if="outdated && !error">
       <span>saving...</span>
@@ -15,7 +13,7 @@ import InputMixin from '@cwa/nuxt-module/core/mixins/InputMixin'
 
 export default {
   mixins: [InputMixin],
-  data () {
+  data() {
     return {
       editor: null,
       editorOptions: {
@@ -30,7 +28,12 @@ export default {
                 }
               ],
               ['bold', 'italic', 'underline'],
-              [{ align: '' }, { align: 'center' }, { align: 'justify' }, { align: 'right' }],
+              [
+                { align: '' },
+                { align: 'center' },
+                { align: 'justify' },
+                { align: 'right' }
+              ],
               [{ list: 'ordered' }, { list: 'bullet' }],
               ['link'],
               ['clean']
@@ -42,7 +45,7 @@ export default {
       quillModel: null
     }
   },
-  async mounted () {
+  async mounted() {
     this.quillModel = this.inputValue ? this.inputValue.trim() : this.inputValue
     const { default: Quill } = await import('quill')
     this.editor = new Quill(this.$refs.quill, this.editorOptions)

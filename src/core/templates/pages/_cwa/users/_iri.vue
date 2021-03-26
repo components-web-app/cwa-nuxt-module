@@ -8,34 +8,38 @@
   >
     <template slot="left">
       <cwa-admin-text
-        label="Username"
         v-model="component.username"
+        label="Username"
         v-bind="inputProps('username')"
       />
       <cwa-admin-text
-        label="Email"
         v-model="component.emailAddress"
+        label="Email"
         v-bind="inputProps('emailAddress')"
       />
       <cwa-admin-text
+        v-model="component.plainPassword"
         label="New Password"
         type="password"
-        v-model="component.plainPassword"
         v-bind="inputProps('plainPassword')"
       />
     </template>
     <template slot="right">
       <cwa-admin-select
-        label="Enabled"
         v-model="component.enabled"
+        label="Enabled"
         :options="{ Yes: true, No: false }"
         v-bind="inputProps('enabled')"
       />
       <cwa-admin-select
-        label="Roles"
         v-model="highestRole"
+        label="Roles"
         v-bind="inputProps('roles')"
-        :options="{ 'Super Admin': 'ROLE_SUPER_ADMIN', 'Admin': 'ROLE_ADMIN', 'User': 'ROLE_USER' }"
+        :options="{
+          'Super Admin': 'ROLE_SUPER_ADMIN',
+          Admin: 'ROLE_ADMIN',
+          User: 'ROLE_USER'
+        }"
       />
     </template>
   </iri-modal-view>
@@ -44,20 +48,13 @@
 <script lang="ts">
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
-import CwaAdminMultiselect from '../../../components/admin/input/cwa-admin-multiselect.vue'
-import IriPageMixin from "../IriPageMixin";
+import IriPageMixin from '../IriPageMixin'
 
 const postEndpoint = '/users'
 
 export default {
-  components: {CwaAdminSelect, CwaAdminText, CwaAdminMultiselect},
+  components: { CwaAdminSelect, CwaAdminText },
   mixins: [IriPageMixin(postEndpoint)],
-  methods: {
-    async saveUser() {
-      const data = Object.assign({}, this.component)
-      await this.sendRequest(data)
-    }
-  },
   computed: {
     highestRole: {
       get() {
@@ -66,7 +63,7 @@ export default {
         }
         let highestIndex = null
         const roleHierarchy = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER']
-        for(const role of this.component.roles) {
+        for (const role of this.component.roles) {
           const foundIndex = roleHierarchy.indexOf(role)
           if (foundIndex !== -1) {
             if (highestIndex === null || foundIndex < highestIndex) {
@@ -79,6 +76,12 @@ export default {
       set(value) {
         this.component.roles = [value]
       }
+    }
+  },
+  methods: {
+    async saveUser() {
+      const data = Object.assign({}, this.component)
+      await this.sendRequest(data)
     }
   }
 }

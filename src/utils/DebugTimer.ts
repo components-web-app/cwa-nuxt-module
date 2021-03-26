@@ -13,13 +13,13 @@ import consola from 'consola'
  * effortlessly print all the timer results at once to the console.
  */
 export default class DebugTimer {
-  private data: any;
+  private data: any
 
-  constructor () {
+  constructor() {
     this.reset()
   }
 
-  reset () {
+  reset() {
     this.data = {}
   }
 
@@ -27,9 +27,11 @@ export default class DebugTimer {
    * Begin the timer.
    * @param {string} name - Label, e.g. "loading file".
    */
-  start (name) {
+  start(name) {
     if (this.data[name]) {
-      consola.info(`Timer for ${name} already exists. Previous timing will be lost`)
+      consola.info(
+        `Timer for ${name} already exists. Previous timing will be lost`
+      )
     }
     this.data[name] = {
       start: Date.now()
@@ -40,7 +42,7 @@ export default class DebugTimer {
    * End the timer.
    * @param {string} name - Label, e.g. "loading file".
    */
-  end (name) {
+  end(name) {
     if (!this.data[name]) {
       return
     }
@@ -52,7 +54,7 @@ export default class DebugTimer {
    * Print the results to the console.
    * @returns {str} - The formatted result, same as those printed to console.
    */
-  print () {
+  print() {
     let str = 'DebugTimer Results:\r\n'
     for (const name in this.data) {
       str += `${name}: ${this.data[name].total} ms \r\n`

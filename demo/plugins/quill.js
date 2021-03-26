@@ -14,10 +14,14 @@ const SizeClass = new Parchment.Attributor.Class('size', 'is-size', {
 })
 Quill.register(SizeClass, true)
 
-const ThemeColorClass = new Parchment.Attributor.Class('theme-color', 'has-color', {
-  scope: Parchment.Scope.INLINE,
-  whitelist: ['primary', 'success']
-})
+const ThemeColorClass = new Parchment.Attributor.Class(
+  'theme-color',
+  'has-color',
+  {
+    scope: Parchment.Scope.INLINE,
+    whitelist: ['primary', 'success']
+  }
+)
 Quill.register(ThemeColorClass, true)
 
 // class conflict with has-text above
@@ -30,7 +34,7 @@ Quill.register(AlignClass)
 const Inline = Quill.import('blots/inline')
 
 class LinkBlot extends Inline {
-  static create (value) {
+  static create(value) {
     const node = super.create(value)
     node.setAttribute('href', this.sanitize(value))
     node.setAttribute('rel', 'noopener noreferrer')
@@ -39,15 +43,15 @@ class LinkBlot extends Inline {
     return node
   }
 
-  static formats (domNode) {
+  static formats(domNode) {
     return domNode.getAttribute('href')
   }
 
-  static sanitize (url) {
+  static sanitize(url) {
     return sanitize(url, this.PROTOCOL_WHITELIST) ? url : this.SANITIZED_URL
   }
 
-  format (name, value) {
+  format(name, value) {
     if (name !== this.statics.blotName || !value) {
       super.format(name, value)
     } else {

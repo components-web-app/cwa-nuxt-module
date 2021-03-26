@@ -8,8 +8,8 @@ export const StoreCategories = {
 }
 
 export type resourcesState = {
-  byId: object,
-  allIds: string[],
+  byId: object
+  allIds: string[]
   currentIds?: string[]
 }
 
@@ -18,14 +18,14 @@ export class Storage {
   public options: any
   public state: any
 
-  constructor (ctx, options) {
+  constructor(ctx, options) {
     this.ctx = ctx
     this.options = options
 
     this._initState()
   }
 
-  _initState () {
+  _initState() {
     const storeModule = {
       namespaced: true,
       state: () => ({
@@ -38,12 +38,12 @@ export class Storage {
         }
       }),
       mutations: {
-        SET (state, payload) {
+        SET(state, payload) {
           Vue.set(state, payload.key, payload.value)
         },
-        DELETE_RESOURCE (state, payload) {
+        DELETE_RESOURCE(state, payload) {
           const doDeleteResource = (state, payload) => {
-            ['new', 'current'].forEach((stateName) => {
+            ;['new', 'current'].forEach((stateName) => {
               const resourceState = state.resources[stateName]
               if (!resourceState) {
                 return
@@ -56,10 +56,15 @@ export class Storage {
               const allIdsIndex = namedResources.allIds.indexOf(payload.id)
               if (allIdsIndex !== -1) {
                 if (payload.category === StoreCategories.Component) {
-                  const componentPositions = namedResources.byId[payload.id]?.componentPositions
+                  const componentPositions =
+                    namedResources.byId[payload.id]?.componentPositions
                   if (componentPositions) {
                     componentPositions.forEach((positionIri) => {
-                      doDeleteResource(state, { id: positionIri, name: 'ComponentPosition', category: 'Default' })
+                      doDeleteResource(state, {
+                        id: positionIri,
+                        name: 'ComponentPosition',
+                        category: 'Default'
+                      })
                     })
                   }
                 }
@@ -67,8 +72,13 @@ export class Storage {
                 namedResources.allIds.slice(allIdsIndex, 1)
                 Vue.delete(namedResources.byId, payload.id)
 
-                if (namedResources.currentIds && namedResources.currentIds[payload.id]) {
-                  const currentIdsIndex = namedResources.currentIds.indexOf(payload.id)
+                if (
+                  namedResources.currentIds &&
+                  namedResources.currentIds[payload.id]
+                ) {
+                  const currentIdsIndex = namedResources.currentIds.indexOf(
+                    payload.id
+                  )
                   if (currentIdsIndex) {
                     namedResources.currentIds.slice(currentIdsIndex, 1)
                   }
@@ -78,7 +88,7 @@ export class Storage {
           }
           doDeleteResource(state, payload)
         },
-        RESET_CURRENT_RESOURCES (state) {
+        RESET_CURRENT_RESOURCES(state) {
           Vue.set(state.resources, 'new', {})
           const resetCurrentIds = (obj) => {
             // of not in? Object.values() ?
@@ -91,14 +101,20 @@ export class Storage {
           }
           resetCurrentIds(state.resources.current)
         },
-        SET_RESOURCE (state, payload) {
+        SET_RESOURCE(state, payload) {
           const stateKey = payload.isNew ? 'new' : 'current'
-          const newState = state.resources[stateKey] ? { ...state.resources[stateKey] } : {}
-          const initialState:resourcesState = payload.isNew ? { byId: {}, allIds: [] } : { byId: {}, allIds: [], currentIds: [] }
+          const newState = state.resources[stateKey]
+            ? { ...state.resources[stateKey] }
+            : {}
+          const initialState: resourcesState = payload.isNew
+            ? { byId: {}, allIds: [] }
+            : { byId: {}, allIds: [], currentIds: [] }
           if (payload.isNew) {
             const currentResources = state.resources.current[payload.name]
             if (!currentResources) {
-              consola.warn(`Not added new resource payload to store: the resource name '${payload.name}' is not currently known`)
+              consola.warn(
+                `Not added new resource payload to store: the resource name '${payload.name}' is not currently known`
+              )
               return
             }
 
@@ -106,7 +122,9 @@ export class Storage {
               const currentResource = currentResources.byId[payload.id]
 
               if (!currentResource) {
-                consola.warn(`Not added new resource payload to store: the current resource '${payload.name}' with id '${payload.id}' does not exist`)
+                consola.warn(
+                  `Not added new resource payload to store: the current resource '${payload.name}' with id '${payload.id}' does not exist`
+                )
                 return
               }
 
@@ -115,31 +133,51 @@ export class Storage {
                 // remove modified at timestamp
                 delete newObj.modifiedAt
                 // remove null values
-                Object.keys(newObj).forEach(k => newObj[k] === null && delete newObj[k])
+                Object.keys(newObj).forEach(
+                  (k) => newObj[k] === null && delete newObj[k]
+                )
                 return newObj
               }
-              if (JSON.stringify(cleanResourceForComparison(currentResource)) === JSON.stringify(cleanResourceForComparison(payload.resource))) {
-                consola.info(`Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`)
+              if (
+                JSON.stringify(cleanResourceForComparison(currentResource)) ===
+                JSON.stringify(cleanResourceForComparison(payload.resource))
+              ) {
+                consola.info(
+                  `Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`
+                )
                 return
               }
             }
           }
-          const currentResourceState = newState[payload.name] ? { ...newState[payload.name] } : initialState
+          const currentResourceState = newState[payload.name]
+            ? { ...newState[payload.name] }
+            : initialState
 
           currentResourceState.byId[payload.id] = payload.resource
           currentResourceState.allIds = Object.keys(currentResourceState.byId)
-          if (!payload.isNew && !currentResourceState.currentIds.includes(payload.id)) {
+          if (
+            !payload.isNew &&
+            !currentResourceState.currentIds.includes(payload.id)
+          ) {
             currentResourceState.currentIds.push(payload.id)
           }
 
-          Vue.set(state.resources, stateKey, { ...newState, [payload.name]: currentResourceState })
+          Vue.set(state.resources, stateKey, {
+            ...newState,
+            [payload.name]: currentResourceState
+          })
 
           const category = payload.category || 'Default'
           const resourceIriPrefix = payload.id.split('/').slice(0, -1).join('/')
-          const newCategoryMapping = state.resources.categories[category] ? { ...state.resources.categories[category] } : {}
-          Vue.set(state.resources.categories, category, { ...newCategoryMapping, [resourceIriPrefix]: payload.name })
+          const newCategoryMapping = state.resources.categories[category]
+            ? { ...state.resources.categories[category] }
+            : {}
+          Vue.set(state.resources.categories, category, {
+            ...newCategoryMapping,
+            [resourceIriPrefix]: payload.name
+          })
         },
-        SET_CURRENT_ROUTE (state, id) {
+        SET_CURRENT_ROUTE(state, id) {
           const routeResources = state.resources.current.Route
           const defaultWarning = `Could not set loaded route to '${id}':`
           if (routeResources === undefined) {
@@ -153,14 +191,24 @@ export class Storage {
           Vue.set(routeResources, 'current', id)
           consola.debug('Loaded route set:', id)
         },
-        MERGE_NEW_RESOURCES (state) {
-          for (const [resourceName, { byId }] of Object.entries(state.resources.new) as [string, resourcesState][]) {
+        MERGE_NEW_RESOURCES(state) {
+          for (const [resourceName, { byId }] of Object.entries(
+            state.resources.new
+          ) as [string, resourcesState][]) {
             for (const [resourceId, newResource] of Object.entries(byId)) {
-              Vue.set(state.resources.current[resourceName].byId, resourceId, newResource)
+              Vue.set(
+                state.resources.current[resourceName].byId,
+                resourceId,
+                newResource
+              )
 
               const maintainedIdentifierKeys = ['allIds', 'currentIds']
               for (const idKey of maintainedIdentifierKeys) {
-                if (!state.resources.current[resourceName][idKey].includes(resourceId)) {
+                if (
+                  !state.resources.current[resourceName][idKey].includes(
+                    resourceId
+                  )
+                ) {
                   state.resources.current[resourceName][idKey].push(resourceId)
                 }
               }
@@ -170,7 +218,7 @@ export class Storage {
         }
       },
       getters: {
-        GET_TYPE_FROM_IRI: state => ({ iri, category }) => {
+        GET_TYPE_FROM_IRI: (state) => ({ iri, category }) => {
           if (!iri) {
             return null
           }
@@ -198,7 +246,7 @@ export class Storage {
     this.state = this.ctx.store.state[this.options.vuex.namespace]
   }
 
-  deleteResource (id) {
+  deleteResource(id) {
     const category = this.getCategoryFromIri(id)
     const name = this.getTypeFromIri(id, category)
     this.ctx.store.commit(this.options.vuex.namespace + '/DELETE_RESOURCE', {
@@ -208,7 +256,17 @@ export class Storage {
     })
   }
 
-  setResource ({ resource, isNew, category, force }: { resource: object, isNew?: boolean, category?: string, force?: boolean }) {
+  setResource({
+    resource,
+    isNew,
+    category,
+    force
+  }: {
+    resource: object
+    isNew?: boolean
+    category?: string
+    force?: boolean
+  }) {
     const id = resource['@id']
     category = category || this.getCategoryFromIri(id)
     const name = resource['@type'] || this.getTypeFromIri(id, category)
@@ -222,15 +280,18 @@ export class Storage {
     })
   }
 
-  setCurrentRoute (id) {
-    this.ctx.store.commit(this.options.vuex.namespace + '/SET_CURRENT_ROUTE', id)
+  setCurrentRoute(id) {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/SET_CURRENT_ROUTE',
+      id
+    )
   }
 
-  setApiRequestInProgress (requestInProgress: boolean) {
+  setApiRequestInProgress(requestInProgress: boolean) {
     this.setState('apiRequestInProgress', requestInProgress)
   }
 
-  setState (key, value) {
+  setState(key, value) {
     this.ctx.store.commit(this.options.vuex.namespace + '/SET', {
       key,
       value
@@ -239,19 +300,21 @@ export class Storage {
     return value
   }
 
-  resetCurrentResources () {
-    this.ctx.store.commit(this.options.vuex.namespace + '/RESET_CURRENT_RESOURCES')
+  resetCurrentResources() {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/RESET_CURRENT_RESOURCES'
+    )
   }
 
-  mergeNewResources () {
+  mergeNewResources() {
     this.ctx.store.commit(this.options.vuex.namespace + '/MERGE_NEW_RESOURCES')
   }
 
-  getState (key) {
+  getState(key) {
     return this.state[key]
   }
 
-  getCategoryFromIri (iri: string) {
+  getCategoryFromIri(iri: string) {
     if (iri.startsWith('/component/')) {
       return StoreCategories.Component
     }
@@ -261,22 +324,26 @@ export class Storage {
     return 'Default'
   }
 
-  getTypeFromIri (iri, category) {
-    return this.ctx.store.getters[this.options.vuex.namespace + '/GET_TYPE_FROM_IRI']({ iri, category })
+  getTypeFromIri(iri, category) {
+    return this.ctx.store.getters[
+      this.options.vuex.namespace + '/GET_TYPE_FROM_IRI'
+    ]({ iri, category })
   }
 
-  areResourcesOutdated () {
-    return this.ctx.store.getters[this.options.vuex.namespace + '/RESOURCES_OUTDATED']
+  areResourcesOutdated() {
+    return this.ctx.store.getters[
+      this.options.vuex.namespace + '/RESOURCES_OUTDATED'
+    ]
   }
 
-  watchState (key, fn) {
+  watchState(key, fn) {
     return this.ctx.store.watch(
-      state => getProp(state[this.options.vuex.namespace], key),
+      (state) => getProp(state[this.options.vuex.namespace], key),
       fn
     )
   }
 
-  removeState (key) {
+  removeState(key) {
     this.setState(key, undefined)
   }
 }

@@ -3,10 +3,13 @@
     <div class="select">
       <select
         :id="id"
-        :required="required"
         v-model="currentValue"
-        @change="selectChanged">
-        <option :value="null" disabled :selected="value === null">Please select</option>
+        :required="required"
+        @change="selectChanged"
+      >
+        <option :value="null" disabled :selected="value === null">
+          Please select
+        </option>
         <option
           v-for="(opVal, key) in options"
           :key="opVal"
@@ -26,7 +29,7 @@ export default {
   mixins: [CwaInputMixin],
   props: {
     options: {
-      type: [Object,Array],
+      type: [Object, Array],
       required: true
     }
   },
@@ -35,15 +38,14 @@ export default {
       currentValue: this.value
     }
   },
+  computed: {
+    isOptionsArray() {
+      return Array.isArray(this.options)
+    }
+  },
   watch: {
     value(newValue) {
       this.currentValue = newValue
-    }
-  },
-  computed: {
-    isOptionsArray()
-    {
-      return Array.isArray(this.options)
     }
   },
   methods: {

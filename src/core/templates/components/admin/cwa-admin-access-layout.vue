@@ -13,7 +13,7 @@
 <script>
 import CwaLogo from '../utils/cwa-logo.vue'
 export default {
-  components: {CwaLogo},
+  components: { CwaLogo },
   props: {
     title: {
       type: String,

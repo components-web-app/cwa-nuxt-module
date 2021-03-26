@@ -1,24 +1,25 @@
-import { Notification, NotificationLevels } from '../templates/components/cwa-api-notifications/types'
+import {
+  Notification,
+  NotificationLevels
+} from '../templates/components/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
 
 export default {
-  data () {
+  data() {
     return {
       apiBusy: false
     }
   },
   methods: {
-    startApiRequest () {
+    startApiRequest() {
       this.apiBusy = true
-      this.destroyAdminDialogListener()
     },
-    completeApiRequest () {
+    completeApiRequest() {
       this.$nextTick(() => {
-        this.initAdminDialogListener()
         this.apiBusy = false
       })
     },
-    handleApiError (error) {
+    handleApiError(error) {
       if (!(error instanceof ApiError)) {
         throw error
       }

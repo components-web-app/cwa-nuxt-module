@@ -2,7 +2,9 @@ import routeLoaderMiddleware from './middleware'
 
 describe('middleware', () => {
   it('should not call fetchRoute because cwa is disabled', async () => {
-    const route = { matched: [{ components: [{ _Ctor: { 0: { options: { cwa: false } } } }] }] }
+    const route = {
+      matched: [{ components: [{ _Ctor: { 0: { options: { cwa: false } } } }] }]
+    }
     const $cwa = { fetchRoute: jest.fn() }
 
     await routeLoaderMiddleware({ $cwa, route })
@@ -22,9 +24,15 @@ describe('middleware', () => {
   })
 
   it('should call fetchRoute', async () => {
-    const err = new TypeError()
+    const err = new TypeError('An error message')
     const route = { matched: [{ components: [{ _Ctor: {} }] }], path: '/' }
-    const $cwa = { fetchRoute: jest.fn(() => { throw err }), withError: jest.fn(), initMercure: jest.fn() }
+    const $cwa = {
+      fetchRoute: jest.fn(() => {
+        throw err
+      }),
+      withError: jest.fn(),
+      initMercure: jest.fn()
+    }
 
     await routeLoaderMiddleware({ $cwa, route })
 

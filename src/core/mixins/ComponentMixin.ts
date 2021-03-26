@@ -1,17 +1,17 @@
+import ComponentManagerMixin from './ComponentManagerMixin'
 import ResourceMixin from './ResourceMixin'
-import AdminDialogMixin from './AdminDialogMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 
 export default {
-  mixins: [ResourceMixin, AdminDialogMixin, ApiRequestMixin],
+  mixins: [ResourceMixin, ApiRequestMixin, ComponentManagerMixin],
   computed: {
-    metadata () {
+    metadata() {
       return this.resource._metadata || {}
     },
-    publishable () {
+    publishable() {
       return 'published' in this.metadata
     },
-    published () {
+    published() {
       return this.publishable ? this.metadata.published : true
     }
   }

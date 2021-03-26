@@ -1,7 +1,12 @@
 <template>
   <div>
     <div v-if="!editing" v-html="displayHtml" />
-    <quill-input v-else :iri="displayIri" field="html" @hide="editing = false" />
+    <quill-input
+      v-else
+      :iri="displayIri"
+      field="html"
+      @hide="editing = false"
+    />
   </div>
 </template>
 
@@ -11,22 +16,32 @@ import QuillInput from '~/components/QuillInput'
 export default {
   components: { QuillInput },
   mixins: [ComponentMixin],
-  data () {
+  data() {
     return {
       editing: false,
-      adminDialog: {
+      componentManager: {
         name: 'HTML Content',
-        component: () => import('../admin-dialog/HtmlContent.vue')
+        tabs: [
+          {
+            label: 'Tab label',
+            component: () => import('../admin-dialog/HtmlContent.vue')
+          }
+        ]
       }
     }
   },
   computed: {
-    displayHtml () {
-      return this.resource.html || (this.$cwa.isAdmin ? '<p style="font-style: italic">No content</p>' : '')
+    displayHtml() {
+      return (
+        this.resource.html ||
+        (this.$cwa.isAdmin
+          ? '<p style="font-style: italic">No content</p>'
+          : '')
+      )
     }
   },
   methods: {
-    showEditView () {
+    showEditView() {
       this.editing = true
     }
   }

@@ -1,9 +1,9 @@
 <template>
   <component :is="domTag" v-if="isExternal" v-bind="linkProps">
-    <slot></slot>
+    <slot />
   </component>
   <nuxt-link v-else v-bind="linkProps">
-    <slot></slot>
+    <slot />
   </nuxt-link>
 </template>
 

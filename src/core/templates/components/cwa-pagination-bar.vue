@@ -2,20 +2,42 @@
   <div v-if="total > 1" class="row pagination-bar is-mobile">
     <div class="column page-numbers">
       <template v-if="showFirstPageLink">
-        <a @click.prevent="changePage(1)" href="#">1</a> <span>..</span>
+        <a href="#" @click.prevent="changePage(1)">1</a> <span>..</span>
       </template>
-      <a v-for="page in displayPages" :key="`page${page}`" @click.prevent="changePage(page)" :class="{'selected': current === page}" href="#">{{ page }}</a>
+      <a
+        v-for="page in displayPages"
+        :key="`page${page}`"
+        :class="{ selected: current === page }"
+        href="#"
+        @click.prevent="changePage(page)"
+        >{{ page }}</a
+      >
       <template v-if="showLastPageLink">
-        <span>..</span> <a @click.prevent="changePage(total)" href="#">{{ total }}</a>
+        <span>..</span>
+        <a href="#" @click.prevent="changePage(total)">{{ total }}</a>
       </template>
     </div>
     <div class="column is-narrow">
       <div class="row is-mobile">
         <div class="column">
-          <a :disabled="isFirst" @click.prevent="changePage(current-1)" href="#"><img src="../../assets/images/arrow-left.svg" alt="Left Arrow - Previous Page" /></a>
+          <a
+            :disabled="isFirst"
+            href="#"
+            @click.prevent="changePage(current - 1)"
+            ><img
+              src="../../assets/images/arrow-left.svg"
+              alt="Left Arrow - Previous Page"
+          /></a>
         </div>
         <div class="column">
-          <a :disabled="isLast" @click.prevent="changePage(current+1)" href="#"><img src="../../assets/images/arrow-right.svg" alt="Right Arrow - Next Page" /></a>
+          <a
+            :disabled="isLast"
+            href="#"
+            @click.prevent="changePage(current + 1)"
+            ><img
+              src="../../assets/images/arrow-right.svg"
+              alt="Right Arrow - Next Page"
+          /></a>
         </div>
       </div>
     </div>
@@ -33,7 +55,7 @@ export default {
     total: {
       type: Number,
       required: true,
-      validator: function (value) {
+      validator(value) {
         return value >= 1
       }
     },
@@ -54,14 +76,6 @@ export default {
       showLastPageLink: false
     }
   },
-  mounted() {
-    this.updateFromCurrentRoute()
-  },
-  watch: {
-    '$route.query'() {
-      this.updateFromCurrentRoute()
-    }
-  },
   computed: {
     isFirst() {
       return this.current === 1
@@ -70,7 +84,7 @@ export default {
       return this.current === this.total
     },
     displayPages() {
-      const allPages = Array.from(Array(this.total), (_,x) => x+1)
+      const allPages = Array.from(Array(this.total), (_, x) => x + 1)
       if (!this.displayMax) {
         return allPages
       }
@@ -79,19 +93,27 @@ export default {
       let lowest = this.current
       let highest = this.current
       let displayCounter = 1
-      let actualMax = this.displayMax
-      while(displayCounter < actualMax) {
+      const actualMax = this.displayMax
+      while (displayCounter < actualMax) {
         displayCounter++
         if ((displayCounter % 2 === 0 || highest >= this.total) && lowest > 1) {
           lowest--
           displayPages.unshift(lowest)
           continue
         }
-        if(highest < this.total) {
+        if (highest < this.total) {
           highest++
           displayPages.push(highest)
         }
       }
+      return displayPages
+    }
+  },
+  watch: {
+    '$route.query'() {
+      this.updateFromCurrentRoute()
+    },
+    displayPages(displayPages) {
       if (displayPages[0] !== 1) {
         this.showFirstPageLink = true
         displayPages.splice(0, 1)
@@ -104,8 +126,10 @@ export default {
       } else {
         this.showLastPageLink = false
       }
-      return displayPages
     }
+  },
+  mounted() {
+    this.updateFromCurrentRoute()
   },
   methods: {
     updateFromCurrentRoute() {
@@ -122,7 +146,7 @@ export default {
       const query = Object.assign({}, this.$route.query, {
         [this.pageParameter]: newPage
       })
-      this.$router.replace({ query }).catch(failure => {
+      this.$router.replace({ query }).catch((failure) => {
         if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
           return
         }

@@ -1,26 +1,29 @@
 const util = require('util')
 const fs = require('fs')
+const path = require('path')
 const express = require('express')
-const FIXTURES_DIRECTORY = `${__dirname}/../fixtures`
+const FIXTURES_DIRECTORY = path.resolve(__dirname, `..`, `fixtures`)
 const readdir = util.promisify(fs.readdir)
 
-function createRoutesFromDirectory (directory, withRoutes = {}) {
-  return readdir(`${FIXTURES_DIRECTORY}/${directory}`)
-    .then((routes) => {
-      return Promise.all(routes.map(route => readdir(`${FIXTURES_DIRECTORY}/${directory}/${route}`)))
-        .then((resources) => {
-          return routes.reduce((prev, curr, i) => {
-            const path = `${directory}/${curr}/${resources[i]}`
+function createRoutesFromDirectory(directory, withRoutes = {}) {
+  return readdir(path.join(FIXTURES_DIRECTORY, directory)).then((routes) => {
+    return Promise.all(
+      routes.map((route) =>
+        readdir(`${FIXTURES_DIRECTORY}/${directory}/${route}`)
+      )
+    ).then((resources) => {
+      return routes.reduce((prev, curr, i) => {
+        const path = `${directory}/${curr}/${resources[i]}`
 
-            prev[decodeURIComponent(`/${path}`)] = (_, res) => {
-              res.type('application/json+ld')
-              res.sendFile(`${path}`, { root: FIXTURES_DIRECTORY })
-            }
+        prev[decodeURIComponent(`/${path}`)] = (_, res) => {
+          res.type('application/json+ld')
+          res.sendFile(`${path}`, { root: FIXTURES_DIRECTORY })
+        }
 
-            return prev
-          }, withRoutes)
-        })
+        return prev
+      }, withRoutes)
     })
+  })
 }
 
 /**
@@ -28,7 +31,7 @@ function createRoutesFromDirectory (directory, withRoutes = {}) {
  * For now it reads the `_` and `component` directories
  * and declares routes matching file names
  */
-function createApi () {
+function createApi() {
   const app = express()
 
   return createRoutesFromDirectory('_')
@@ -47,8 +50,7 @@ function createApi () {
 module.exports = createApi
 
 if (process.env.API_PORT) {
-  createApi()
-    .then((app) => {
-      app.listen(process.env.API_PORT)
-    })
+  createApi().then((app) => {
+    app.listen(process.env.API_PORT)
+  })
 }

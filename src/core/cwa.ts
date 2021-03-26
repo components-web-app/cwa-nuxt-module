@@ -12,12 +12,12 @@ import { API_EVENTS } from './events'
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
-  public fetcher: Fetcher;
+  public fetcher: Fetcher
   public $storage: Storage
   public $state
   public $eventBus
 
-  constructor (ctx, options) {
+  constructor(ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
@@ -56,70 +56,83 @@ export default class Cwa {
     }
   }
 
-  public isEditMode () {
+  public get isEditMode() {
     return this.isAdmin && this.$storage.getState('editMode')
   }
 
-  public setEditMode (enabled: boolean) {
+  public setEditMode(enabled: boolean) {
     this.$storage.setState('editMode', enabled)
   }
 
-  initMercure (force: boolean = false) {
-    (force || !cwaRouteDisabled(this.ctx.route)) && this.fetcher.initMercure(this.$state.resources.current)
+  initMercure(force: boolean = false) {
+    ;(force || !cwaRouteDisabled(this.ctx.route)) &&
+      this.fetcher.initMercure(this.$state.resources.current)
   }
 
-  public fetchRoute (path) {
+  public fetchRoute(path) {
     return this.fetcher.fetchRoute(path)
   }
 
   /**
    * Storage
    */
-  get resourcesOutdated () {
+  get resourcesOutdated() {
     return this.$storage.areResourcesOutdated()
   }
 
-  get resources () {
+  get resources() {
     return this.$state.resources.current
   }
 
-  get layout () {
+  get layout() {
     return this.$storage.getState('layout')
   }
 
-  get loadingRoute () {
+  get loadingRoute() {
     return this.$state[Fetcher.loadingRouteKey]
   }
 
-  withError (route, err) {
-    this.$storage.setState('error', `An error occurred while requesting ${route.path}`)
+  withError(route, err) {
+    this.$storage.setState(
+      'error',
+      `An error occurred while requesting ${route.path}`
+    )
     consola.error(err)
   }
 
-  mergeNewResources () {
+  mergeNewResources() {
     this.$storage.mergeNewResources()
   }
 
-  saveResource (resource: any, category?: string, isNew?: boolean) {
+  saveResource(resource: any, category?: string, isNew?: boolean) {
     this.$storage.setResource({ category, isNew, resource })
   }
 
   /**
    * API Requests
    */
-  private handleRequestError (error) {
+  private handleRequestError(error) {
     const axiosError = AxiosErrorParser(error)
-    const exception = new ApiRequestError(axiosError.message, axiosError.statusCode, axiosError.endpoint, axiosError.violations)
+    const exception = new ApiRequestError(
+      axiosError.message,
+      axiosError.statusCode,
+      axiosError.endpoint,
+      axiosError.violations
+    )
     this.$eventBus.$emit(API_EVENTS.error, exception)
     throw exception
   }
 
-  async getApiDocumentation () {
+  async getApiDocumentation() {
     if (!this.$state.docsUrl) {
-      throw new MissingDataError('Cannot fetch API documentation. The docs URL has not been saved')
+      throw new MissingDataError(
+        'Cannot fetch API documentation. The docs URL has not been saved'
+      )
     }
     const resolved = await Promise.all([
-      this.ctx.$axios.$get(this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL),
+      this.ctx.$axios.$get(
+        this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
+      ),
       this.ctx.$axios.$get(this.$state.docsUrl)
     ])
     return {
@@ -128,7 +141,10 @@ export default class Cwa {
     }
   }
 
-  private initNewRequest (requestFn: Function, { eventName, eventParams }: {eventName: string, eventParams: any}) {
+  private initNewRequest(
+    requestFn: Function,
+    { eventName, eventParams }: { eventName: string; eventParams: any }
+  ) {
     this.$storage.setApiRequestInProgress(true)
     return async () => {
       try {
@@ -141,51 +157,67 @@ export default class Cwa {
     }
   }
 
-  private processResource (resource, category) {
+  private processResource(resource, category) {
     this.saveResource(resource, category)
     this.initMercure()
     this.$storage.setApiRequestInProgress(false)
     return resource
   }
 
-  private refreshEndpointsArray (refreshEndpoints: string[]) {
+  private refreshEndpointsArray(refreshEndpoints: string[]) {
     const promises = []
     for (const refreshEndpoint of refreshEndpoints) {
-      promises.push(this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
-        this.saveResource(refreshResource, null)
-        this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
-      }))
+      promises.push(
+        this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
+          this.saveResource(refreshResource, null)
+          this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
+        })
+      )
     }
     return Promise.all(promises)
   }
 
-  async createResource (endpoint: string, data: any, category?: string, refreshEndpoints?: string[]) {
-    const doRequest = this.initNewRequest(async () => {
-      this.fetcher.closeMercure()
-      const resource = await this.ctx.$axios.$post(endpoint, data)
-      if (refreshEndpoints && refreshEndpoints.length) {
-        await this.refreshEndpointsArray(refreshEndpoints)
-      }
-      return resource
-    }, { eventName: API_EVENTS.created, eventParams: endpoint })
-    return this.processResource(await doRequest(), category)
-  }
-
-  async refreshResource (endpoint: string, category?: string) {
-    const doRequest = this.initNewRequest(async () => {
-      return await this.ctx.$axios.$get(endpoint)
-    }, { eventName: API_EVENTS.refreshed, eventParams: endpoint })
-    return this.processResource(await doRequest(), category)
-  }
-
-  async updateResource (endpoint: string, data: any, category?: string) {
-    const doRequest = this.initNewRequest(async () => {
-      return await this.ctx.$axios.$patch(endpoint, data, {
-        headers: {
-          'Content-Type': 'application/merge-patch+json'
+  async createResource(
+    endpoint: string,
+    data: any,
+    category?: string,
+    refreshEndpoints?: string[]
+  ) {
+    const doRequest = this.initNewRequest(
+      async () => {
+        this.fetcher.closeMercure()
+        const resource = await this.ctx.$axios.$post(endpoint, data)
+        if (refreshEndpoints && refreshEndpoints.length) {
+          await this.refreshEndpointsArray(refreshEndpoints)
         }
-      })
-    }, { eventName: API_EVENTS.updated, eventParams: endpoint })
+        return resource
+      },
+      { eventName: API_EVENTS.created, eventParams: endpoint }
+    )
+    return this.processResource(await doRequest(), category)
+  }
+
+  async refreshResource(endpoint: string, category?: string) {
+    const doRequest = this.initNewRequest(
+      async () => {
+        return await this.ctx.$axios.$get(endpoint)
+      },
+      { eventName: API_EVENTS.refreshed, eventParams: endpoint }
+    )
+    return this.processResource(await doRequest(), category)
+  }
+
+  async updateResource(endpoint: string, data: any, category?: string) {
+    const doRequest = this.initNewRequest(
+      async () => {
+        return await this.ctx.$axios.$patch(endpoint, data, {
+          headers: {
+            'Content-Type': 'application/merge-patch+json'
+          }
+        })
+      },
+      { eventName: API_EVENTS.updated, eventParams: endpoint }
+    )
 
     // the resource may be different - publishable resources return the new draft resource
     const newResource = await doRequest()
@@ -194,10 +226,13 @@ export default class Cwa {
     return this.processResource(await doRequest(), category)
   }
 
-  async deleteResource (id: string) {
-    const doRequest = this.initNewRequest(async () => {
-      return await this.ctx.$axios.delete(id)
-    }, { eventName: API_EVENTS.deleted, eventParams: id })
+  async deleteResource(id: string) {
+    const doRequest = this.initNewRequest(
+      async () => {
+        return await this.ctx.$axios.delete(id)
+      },
+      { eventName: API_EVENTS.deleted, eventParams: id }
+    )
     await doRequest()
     this.$storage.deleteResource(id)
   }
@@ -205,15 +240,15 @@ export default class Cwa {
   /**
    * User / security
    */
-  get isAdmin () {
+  get isAdmin() {
     return this.userHasRole('ROLE_ADMIN')
   }
 
-  get isUser () {
+  get user() {
     return this.ctx.$auth.user
   }
 
-  userHasRole (role) {
-    return this.isUser ? this.ctx.$auth.user.roles.includes(role) : false
+  userHasRole(role) {
+    return this.user ? this.user.roles.includes(role) : false
   }
 }

@@ -4,6 +4,13 @@ export default Vue.extend({
   auth: false,
   cwa: false,
   layout: 'cwa-default',
+  watch: {
+    '$auth.user'(newUser) {
+      if (newUser === false) {
+        this.$router.push(`/`)
+      }
+    }
+  },
   async mounted() {
     // has to be on mounted as needs to be checked client-side
     if (!this.$cwa.isAdmin) {

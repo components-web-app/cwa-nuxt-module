@@ -6,7 +6,8 @@
     @deleted="$emit('deleted')"
   />
   <div v-else-if="componentPosition.pageDataProperty">
-    The property [{{ componentPosition.pageDataProperty }}] will be added here from page data
+    The property [{{ componentPosition.pageDataProperty }}] will be added here
+    from page data
   </div>
 </template>
 
@@ -26,35 +27,39 @@ export default {
       required: true
     }
   },
-  data () {
+  data() {
     return {
       componentLoadFailed: false
     }
   },
   computed: {
-    componentPosition () {
+    componentPosition() {
       return this.$cwa.resources.ComponentPosition.byId[this.iri]
     },
-    component () {
+    component() {
       if (!this.componentPosition) {
         return null
       }
-      const componentType = this.$cwa.$storage.getTypeFromIri(this.componentPosition.component, StoreCategories.Component)
+      const componentType = this.$cwa.$storage.getTypeFromIri(
+        this.componentPosition.component,
+        StoreCategories.Component
+      )
       if (!componentType) {
         return null
       }
-      return this.$cwa.resources[componentType].byId[this.componentPosition.component]
+      return this.$cwa.resources[componentType].byId[
+        this.componentPosition.component
+      ]
     }
   },
-  async mounted () {
+  async mounted() {
     if (!this.component) {
       // check if no published version, only a draft
-      if (this.$cwa.isUser && this.componentPosition.component) {
+      if (this.$cwa.user && this.componentPosition.component) {
         await this.$cwa.fetcher.fetchComponent(this.componentPosition.component)
       }
       if (!this.component) {
         if (!this.componentPosition.pageDataProperty && this.$cwa.isAdmin) {
-          console.log('fetching again', this.componentPosition['@id'])
           await this.$cwa.fetcher.fetchComponent(this.componentPosition['@id'])
         }
         this.componentLoadFailed = true

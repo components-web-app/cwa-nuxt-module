@@ -18,7 +18,7 @@
 import CwaNuxtLink from './cwa-nuxt-link'
 import CwaLogo from './cwa-logo'
 export default {
-  components: {CwaLogo, CwaNuxtLink}
+  components: { CwaLogo, CwaNuxtLink }
 }
 </script>
 

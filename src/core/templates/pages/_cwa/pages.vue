@@ -1,8 +1,8 @@
 <template>
   <cwa-footer-logo class="cwa-pages-page">
     <grid-page
-      title="Pages"
       ref="gridPage"
+      title="Pages"
       endpoint="/_/pages"
       :search-fields="['reference', 'uiComponent', 'title', 'layout.reference']"
       @load="updateData"
@@ -11,11 +11,19 @@
       <li v-for="page of data" :key="page['@id']" class="column column-33">
         <div class="cwa-grid-item page-grid-item">
           <nuxt-link :to="addRouteProps(page['@id'])">
-            <p class="title">{{ page.reference }}</p>
+            <p class="title">
+              {{ page.reference }}
+            </p>
             <p class="subtitle">UI: {{ page.uiComponent }}</p>
-            <p class="subtitle">Layout: {{ layouts ? (layouts[page.layout] || 'Unknown') : 'Loading' }}</p>
+            <p class="subtitle">
+              Layout:
+              {{ layouts ? layouts[page.layout] || 'Unknown' : 'Loading' }}
+            </p>
           </nuxt-link>
-          <nuxt-link :to="{ name: '_cwa_page_iri', params: { iri: page['@id'] } }" class="builder-link">
+          <nuxt-link
+            :to="{ name: '_cwa_page_iri', params: { iri: page['@id'] } }"
+            class="builder-link"
+          >
             <img src="../../../assets/images/icon-builder.svg" />
             <span>Builder</span>
           </nuxt-link>

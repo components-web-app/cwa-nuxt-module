@@ -2,12 +2,12 @@
   <div>
     <cwa-admin-select
       id="component"
-      :options="componentOptions"
       v-model="selectedComponent"
+      :options="componentOptions"
     />
     <component
-      v-if="selectedComponentDialogComponent"
       :is="selectedComponentDialogComponent"
+      v-if="selectedComponentDialogComponent"
       :component-collection="resource['@id']"
     />
   </div>
@@ -16,10 +16,11 @@
 <script lang="ts">
 import Vue from 'vue'
 import consola from 'consola'
-import components from '~/.nuxt/cwa/components'
 import CwaAdminSelect from '../../input/cwa-admin-select.vue'
+import components from '~/.nuxt/cwa/components'
 
 export default {
+  components: { CwaAdminSelect },
   props: {
     resource: {
       type: Object,
@@ -34,9 +35,10 @@ export default {
       selectedComponentDialogComponent: null
     }
   },
-  components: {CwaAdminSelect},
-  async mounted() {
-    this.availableComponents = await this.fetchComponents()
+  computed: {
+    componentOptions() {
+      return Object.keys(this.availableComponents)
+    }
   },
   watch: {
     async selectedComponent(newComponent) {
@@ -47,28 +49,32 @@ export default {
           iri: 'new'
         }
       })
-      this.selectedComponentDialogComponent = componentInstance.adminDialog?.component
+      this.selectedComponentDialogComponent =
+        componentInstance.adminDialog?.component
     }
   },
-  computed: {
-    componentOptions() {
-      return Object.keys(this.availableComponents)
-    }
+  async mounted() {
+    this.availableComponents = await this.fetchComponents()
   },
   methods: {
     getUiComponent(resourceName) {
-      const uiComponent = components[resourceName]
+      const searchKey = `CwaComponents${resourceName}`
+      const uiComponent = components[searchKey]
       if (!uiComponent) {
-        consola.error(`UI component not found for API component named ${resourceName}`)
+        consola.error(
+          `UI component not found for API component named ${resourceName}. Searched for key ${searchKey}`
+        )
         return
       }
-      return components[resourceName]
+      return components[searchKey]
     },
     async fetchComponents() {
       const loadedComponents = {}
       this.loadingComponents = true
       const data = await this.$cwa.getApiDocumentation()
-      for (const [key, endpoint] of Object.entries(data.entrypoint) as string[][]) {
+      for (const [key, endpoint] of Object.entries(
+        data.entrypoint
+      ) as string[][]) {
         if (endpoint.startsWith('/component/')) {
           const resourceName = key[0].toUpperCase() + key.slice(1)
           if (!this.getUiComponent(resourceName)) {
