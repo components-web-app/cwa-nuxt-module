@@ -27,7 +27,7 @@
 
 <script>
 import ApiRequestMixin from '@cwa/nuxt-module/core/mixins/ApiRequestMixin'
-import CommaDelimitedArrayBuilder from '../../../../src/utils/CommaDelimitedArrayBuilder'
+import CommaDelimitedArrayBuilder from '@cwa/nuxt-module/utils/CommaDelimitedArrayBuilder'
 
 export default {
   mixins: [ApiRequestMixin],

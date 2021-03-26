@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import HeightMatcherMixin from '@cwa/nuxt-modulecore/mixins/HeightMatcherMixin'
+import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
 import CwaNuxtLink from '../utils/cwa-nuxt-link'
 import TransitionExpand from '../utils/transition-expand.vue'
 import CwaAdminBarMenu from './cwa-admin-bar-menu'
