@@ -20,6 +20,12 @@ export interface ComponentManagerAddEvent {
 }
 
 export const ComponentManagerMixin = {
+  data() {
+    return {
+      highlightElementAdded: false,
+      addedRelativePosition: false
+    }
+  },
   computed: {
     componentManager(): ComponentManagerComponent {
       return {
@@ -60,12 +66,24 @@ export const ComponentManagerMixin = {
     },
     managerComponentListener(iri) {
       if (iri === this.computedIri) {
-        !this.$el.classList.contains('cwa-manager-highlighted') &&
-          this.$el.classList.add('cwa-manager-highlighted')
+        if (!this.highlightElement) {
+          if (this.$el.style.position === '') {
+            this.$el.style.position = 'relative'
+            this.addedRelativePosition = true
+          }
+          this.highlightElement = document.createElement('div')
+          this.highlightElement.classList.add('cwa-manager-highlight')
+          this.$el.appendChild(this.highlightElement)
+        }
         return
       }
-      this.$el.classList.contains('cwa-manager-highlighted') &&
-        this.$el.classList.remove('cwa-manager-highlighted')
+      if (this.highlightElement) {
+        this.highlightElement.parentNode.removeChild(this.highlightElement)
+        this.highlightElement = null
+        if (this.addedRelativePosition) {
+          this.$el.style.position = ''
+        }
+      }
     }
   },
   mounted() {

@@ -170,20 +170,57 @@ export default {
 </script>
 
 <style lang="sass">
-@keyframes border-rotate
-  to
-    --angle: 360deg
+@keyframes cwa-manager-highlight-before-animation
+  0%
+    opacity: 0
+    box-shadow: none
+  40%
+    opacity: 1
+  50%
+    box-shadow: inset 0 0 3px 1px $cwa-color-primary
+  65%
+    opacity: 1
+  100%
+    opacity: 0
+    box-shadow: inset 0 0 5px 0 $cwa-color-primary
 
-@property --angle
-  syntax: '<angle>'
-  initial-value: 0deg
-  inherits: false
+@keyframes cwa-manager-highlight-after-animation
+  0%
+    opacity: 0
+    width: 100%
+    height: 100%
+    box-shadow: none
+  50%
+    opacity: 1
+    width: calc(100% - 2px)
+    height: calc(100% - 2px)
+    box-shadow: inset 0 0 2px 1px $cwa-warning
+  100%
+    opacity: 0
+    width: calc(100% - 6px)
+    height: calc(100% - 6px)
+    box-shadow: inset 0 0 8px 1px $cwa-warning
 
-.cwa-manager-highlighted
-  --angle: 0deg
-  border: 4px solid
-  border-image: conic-gradient(from var(--angle), $cwa-color-primary, $color-warning, $cwa-color-primary) 1
-  animation: 3s border-rotate ease-in-out infinite
+=absolute-overlay
+  position: absolute
+  top: 50%
+  left: 50%
+  width: 100%
+  height: 100%
+  transform: translate3d(-50%, -50%, 0)
+  pointer-events: none
+  backface-visibility: hidden
+
+.cwa-manager-highlight
+  +absolute-overlay
+  &::before
+    +absolute-overlay
+    content: ''
+    animation: cwa-manager-highlight-before-animation 2.2s infinite linear
+  &::after
+    +absolute-overlay
+    content: ''
+    animation: cwa-manager-highlight-after-animation 2.2s infinite linear
 
 .cwa-components-manager
   position: relative

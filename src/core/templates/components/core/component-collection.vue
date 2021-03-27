@@ -221,6 +221,36 @@ export default {
 </script>
 
 <style lang="sass">
+@keyframes cwa-manager-highlight-before-animation-collection
+  0%
+    opacity: 0
+    box-shadow: none
+  40%
+    opacity: 1
+  50%
+    box-shadow: inset 0 0 3px 1px $cwa-warning
+  65%
+    opacity: 1
+  100%
+    opacity: 0
+    box-shadow: inset 0 0 5px 0 $cwa-warning
+
+@keyframes cwa-manager-highlight-after-animation-collection
+  0%
+    opacity: 0
+    width: 100%
+    height: 100%
+    box-shadow: none
+  50%
+    opacity: 1
+    width: calc(100% - 2px)
+    height: calc(100% - 2px)
+    box-shadow: inset 0 0 2px 1px $cwa-success
+  100%
+    opacity: 0
+    width: calc(100% - 10px)
+    height: calc(100% - 10px)
+    box-shadow: inset 0 0 8px 1px $cwa-success
 @keyframes loading
   0%
     opacity: 1
@@ -242,4 +272,9 @@ export default {
     display: flex
     justify-content: center
     padding: 2rem
+  > .cwa-manager-highlight
+    &::before
+      animation: cwa-manager-highlight-before-animation-collection 2.2s infinite linear
+    &::after
+      animation: cwa-manager-highlight-after-animation-collection 2.2s infinite linear
 </style>

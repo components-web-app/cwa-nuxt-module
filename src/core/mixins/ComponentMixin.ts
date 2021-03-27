@@ -25,6 +25,14 @@ export default {
           priority: 0
         },
         {
+          label: 'Order',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/sort-order.vue'
+            ),
+          priority: 100
+        },
+        {
           label: 'Info',
           component: () =>
             import(
