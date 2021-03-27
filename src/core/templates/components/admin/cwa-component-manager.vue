@@ -177,12 +177,10 @@ export default {
   40%
     opacity: 1
   50%
-    box-shadow: inset 0 0 3px 1px $cwa-color-primary
-  65%
-    opacity: 1
+    box-shadow: inset 0 0 1px 1px $cwa-color-primary
   100%
     opacity: 0
-    box-shadow: inset 0 0 5px 0 $cwa-color-primary
+    box-shadow: inset 0 0 2px 1px $cwa-color-primary
 
 @keyframes cwa-manager-highlight-after-animation
   0%
@@ -192,14 +190,14 @@ export default {
     box-shadow: none
   50%
     opacity: 1
-    width: calc(100% - 2px)
-    height: calc(100% - 2px)
-    box-shadow: inset 0 0 2px 1px $cwa-warning
+    width: calc(100% - 4px)
+    height: calc(100% - 4px)
+    box-shadow: inset 0 0 3px 1px $cwa-warning
   100%
     opacity: 0
     width: calc(100% - 6px)
     height: calc(100% - 6px)
-    box-shadow: inset 0 0 8px 1px $cwa-warning
+    box-shadow: inset 0 0 1px 1px $cwa-warning
 
 =absolute-overlay
   position: absolute
@@ -216,11 +214,11 @@ export default {
   &::before
     +absolute-overlay
     content: ''
-    animation: cwa-manager-highlight-before-animation 2.2s infinite linear
+    animation: cwa-manager-highlight-before-animation 2s infinite linear
   &::after
     +absolute-overlay
     content: ''
-    animation: cwa-manager-highlight-after-animation 2.2s infinite linear
+    animation: cwa-manager-highlight-after-animation 2s infinite linear
 
 .cwa-components-manager
   position: relative

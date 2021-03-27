@@ -228,12 +228,10 @@ export default {
   40%
     opacity: 1
   50%
-    box-shadow: inset 0 0 3px 1px $cwa-warning
-  65%
-    opacity: 1
+    box-shadow: inset 0 0 2px 1px $cwa-warning
   100%
     opacity: 0
-    box-shadow: inset 0 0 5px 0 $cwa-warning
+    box-shadow: inset 0 0 1px 1px $cwa-warning
 
 @keyframes cwa-manager-highlight-after-animation-collection
   0%
@@ -245,12 +243,12 @@ export default {
     opacity: 1
     width: calc(100% - 2px)
     height: calc(100% - 2px)
-    box-shadow: inset 0 0 2px 1px $cwa-success
+    box-shadow: inset 0 0 3px 1px $cwa-warning
   100%
     opacity: 0
     width: calc(100% - 10px)
     height: calc(100% - 10px)
-    box-shadow: inset 0 0 8px 1px $cwa-success
+    box-shadow: inset 0 0 1px 1px $cwa-warning
 @keyframes loading
   0%
     opacity: 1
@@ -274,7 +272,7 @@ export default {
     padding: 2rem
   > .cwa-manager-highlight
     &::before
-      animation: cwa-manager-highlight-before-animation-collection 2.2s infinite linear
+      animation-name: cwa-manager-highlight-before-animation-collection
     &::after
-      animation: cwa-manager-highlight-after-animation-collection 2.2s infinite linear
+      animation-name: cwa-manager-highlight-after-animation-collection
 </style>
