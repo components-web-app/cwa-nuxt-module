@@ -30,6 +30,7 @@
 
 <script lang="ts">
 import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin.ts'
+import { COMPONENT_MANAGER_EVENTS } from '../../../../events'
 
 export default {
   props: {
@@ -67,9 +68,24 @@ export default {
       }
     }
   },
+  mounted() {
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.component,
+      this.resetTabSelector
+    )
+  },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.component,
+      this.resetTabSelector
+    )
+  },
   methods: {
     showTab(newIndex) {
       this.selectedTabIndex = newIndex
+    },
+    resetTabSelector() {
+      this.showTab(0)
     }
   }
 }
