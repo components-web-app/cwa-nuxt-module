@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import { ADMIN_BAR_EVENTS } from '../../../events'
 
 export default Vue.extend({
   auth: false,
@@ -21,6 +22,6 @@ export default Vue.extend({
       await this.$router.push('/login')
       return
     }
-    this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'admin')
+    this.$cwa.$eventBus.$emit(ADMIN_BAR_EVENTS.changeView, 'admin')
   }
 })

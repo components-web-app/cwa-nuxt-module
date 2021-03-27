@@ -20,7 +20,7 @@
     </client-only>
     <!-- else we loop through components -->
     <component
-      :is="$cwa.isEditMode ? 'draggable' : 'div'"
+      :is="$cwa.isEditMode ? 'div' : 'div'"
       v-model="sortedComponentPositions"
       :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
@@ -42,11 +42,10 @@ import {
   ComponentManagerMixin,
   ComponentManagerComponent
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
-import CwaAddButton from '../utils/cwa-add-button.vue'
 
 export default {
   components: {
-    CwaAddButton,
+    CwaAddButton: () => import('../utils/cwa-add-button.vue'),
     ComponentPosition,
     ComponentLoadError: () => import('./component-load-error.vue'),
     Draggable: () => import('vuedraggable')
@@ -79,25 +78,31 @@ export default {
         collection: 'collection'
       },
       reloading: false,
-      previousSortedComponentPositions: null,
-      componentManager: {
-        name: 'Component Collection',
-        tabs: [
-          {
-            label: 'My Tab',
-            component: () =>
-              import('../admin/dialog/resources/component-collection.vue')
-          },
-          {
-            label: 'Another Tab Same Content',
-            component: () =>
-              import('../admin/dialog/resources/component-collection.vue')
-          }
-        ]
-      } as ComponentManagerComponent
+      previousSortedComponentPositions: null
     }
   },
   computed: {
+    componentManager(): ComponentManagerComponent {
+      return {
+        name: 'Collection',
+        tabs: [
+          {
+            label: 'Add Component',
+            component: () =>
+              import(
+                '../admin/cwa-component-manager/tabs/component-collection/component.vue'
+              )
+          },
+          {
+            label: 'Info',
+            component: () =>
+              import(
+                '../admin/cwa-component-manager/tabs/component-collection/info.vue'
+              )
+          }
+        ]
+      }
+    },
     resource() {
       return this.getCollectionResourceByLocation(
         this.location,

@@ -3,6 +3,7 @@ import {
   NotificationLevels
 } from '../templates/components/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
+import { API_EVENTS, NOTIFICATION_EVENTS } from '../events'
 
 export default {
   data() {
@@ -24,13 +25,13 @@ export default {
         throw error
       }
       const notification: Notification = {
-        code: 'cwa:api:error',
+        code: API_EVENTS.error,
         title: 'API Error',
         message: error.statusCode + ': ' + error.message,
         level: NotificationLevels.ERROR,
         endpoint: error.endpoint
       }
-      this.$cwa.$eventBus.$emit('cwa:notification:add', notification)
+      this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
     }
   }
 }

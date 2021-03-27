@@ -16,7 +16,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import consola from 'consola'
-import CwaAdminSelect from '../../input/cwa-admin-select.vue'
+import CwaAdminSelect from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-select.vue'
 import components from '~/.nuxt/cwa/components'
 
 export default {

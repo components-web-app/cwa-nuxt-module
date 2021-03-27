@@ -1,8 +1,17 @@
 import consola from 'consola'
+import { COMPONENT_MANAGER_EVENTS } from '../events'
+
+export const EVENTS = COMPONENT_MANAGER_EVENTS
+
+export interface ComponentManagerTab {
+  label: string
+  component: Function
+  priority?: number
+}
 
 export interface ComponentManagerComponent {
   name: string
-  tabs: Array<{ label: string; component: Function }>
+  tabs: Array<ComponentManagerTab>
 }
 
 export interface ComponentManagerAddEvent {
@@ -11,14 +20,13 @@ export interface ComponentManagerAddEvent {
 }
 
 export const ComponentManagerMixin = {
-  data() {
-    return {
-      componentManager: {}
-    } as {
-      componentManager: ComponentManagerComponent
-    }
-  },
   computed: {
+    componentManager(): ComponentManagerComponent {
+      return {
+        name: 'Unnamed',
+        tabs: []
+      }
+    },
     computedIri() {
       return this.resource['@id']
     }
@@ -32,16 +40,13 @@ export const ComponentManagerMixin = {
         )
         return
       }
-      this.$cwa.$eventBus.$emit('cwa:component-manager:add-component', {
+      this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
         resource: this.resource
       } as ComponentManagerAddEvent)
     },
     initComponentManagerShowListener() {
-      this.$cwa.$eventBus.$once(
-        'cwa:component-manager:show',
-        this.componentManagerShowListener
-      )
+      this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)
       // we should only be populating when the element is clicked and the show event is called
       // if we click, but this results in the manager hiding (it is already shown)
       // we should remove the event listener to prevent it being fired if the next click
@@ -51,10 +56,7 @@ export const ComponentManagerMixin = {
       }, 0)
     },
     removeComponentManagerShowListener() {
-      this.$cwa.$eventBus.$off(
-        'cwa:component-manager:show',
-        this.componentManagerShowListener
-      )
+      this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
     managerComponentListener(iri) {
       if (iri === this.computedIri) {
@@ -68,17 +70,11 @@ export const ComponentManagerMixin = {
   },
   mounted() {
     this.$el.addEventListener('click', this.initComponentManagerShowListener)
-    this.$cwa.$eventBus.$on(
-      'cwa:component-manager:component',
-      this.managerComponentListener
-    )
+    this.$cwa.$eventBus.$on(EVENTS.component, this.managerComponentListener)
   },
   beforeDestroy() {
     this.$el.removeEventListener('click', this.initComponentManagerShowListener)
-    this.$cwa.$eventBus.$off(
-      'cwa:component-manager:component',
-      this.managerComponentListener
-    )
+    this.$cwa.$eventBus.$off(EVENTS.component, this.managerComponentListener)
   }
 }
 

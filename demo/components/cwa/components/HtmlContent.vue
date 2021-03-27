@@ -18,16 +18,7 @@ export default {
   mixins: [ComponentMixin],
   data() {
     return {
-      editing: false,
-      componentManager: {
-        name: 'HTML Content',
-        tabs: [
-          {
-            label: 'Tab label',
-            component: () => import('../admin-dialog/HtmlContent.vue')
-          }
-        ]
-      }
+      editing: false
     }
   },
   computed: {

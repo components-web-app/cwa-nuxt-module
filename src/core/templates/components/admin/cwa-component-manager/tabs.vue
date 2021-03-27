@@ -2,7 +2,7 @@
   <div class="cwa-manager-tabs">
     <ul class="row">
       <li
-        v-for="(tab, index) of tabs"
+        v-for="(tab, index) of orderedTabs"
         :key="loopKey('tab', index)"
         :class="[
           'column',
@@ -18,7 +18,7 @@
       <div class="tab-content">
         <component
           :is="tab.component"
-          v-for="(tab, index) of tabs"
+          v-for="(tab, index) of orderedTabs"
           v-show="index === selectedTabIndex"
           :key="loopKey('tab-content', index)"
           :resource="resource"
@@ -28,7 +28,9 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin.ts'
+
 export default {
   props: {
     tabs: {
@@ -47,6 +49,15 @@ export default {
     }
   },
   computed: {
+    orderedTabs() {
+      return [...this.tabs].sort(
+        (itemA: ComponentManagerTab, itemB: ComponentManagerTab) => {
+          const priorityA = itemA.priority || 0
+          const priorityB = itemB.priority || 0
+          return priorityA - priorityB
+        }
+      )
+    },
     resourceId() {
       return this?.resource['@id'] || 'new'
     },

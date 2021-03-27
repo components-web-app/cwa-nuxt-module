@@ -65,6 +65,7 @@
 import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
 import CwaNuxtLink from '../utils/cwa-nuxt-link'
 import TransitionExpand from '../utils/transition-expand.vue'
+import { COMPONENT_MANAGER_EVENTS, ADMIN_BAR_EVENTS } from '../../../events.ts'
 import CwaAdminBarMenu from './cwa-admin-bar-menu'
 import CwaAdminToggle from './input/cwa-admin-toggle'
 
@@ -104,16 +105,16 @@ export default {
     }
   },
   mounted() {
-    this.$cwa.$eventBus.$on('cwa:admin-bar:change-view', this.changeView)
+    this.$cwa.$eventBus.$on(ADMIN_BAR_EVENTS.changeView, this.changeView)
     this.$cwa.$eventBus.$on(
-      'cwa:component-manager:showing',
+      COMPONENT_MANAGER_EVENTS.showing,
       this.componentManagerShowingListener
     )
   },
   beforeDestroy() {
-    this.$cwa.$eventBus.$off('cwa:admin-bar:change-view', this.changeView)
+    this.$cwa.$eventBus.$off(ADMIN_BAR_EVENTS.changeView, this.changeView)
     this.$cwa.$eventBus.$off(
-      'cwa:component-manager:showing',
+      COMPONENT_MANAGER_EVENTS.showing,
       this.componentManagerShowingListener
     )
   },

@@ -1,9 +1,9 @@
 import {
   Notification,
-  NotificationEvents,
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
 
+import { NOTIFICATION_EVENTS } from '../../../../events'
 import CwaInputWrapper from './cwa-input-wrapper.vue'
 export default {
   components: { CwaInputWrapper },
@@ -48,13 +48,13 @@ export default {
             code: notification.code,
             category: notification.category
           }
-          this.$cwa.$eventBus.$emit(NotificationEvents.remove, removeEvent)
+          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
         })
       }
       if (newNotifications && newNotifications.length) {
         newNotifications.forEach((notification: Notification) => {
           notification.title = this.label
-          this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
+          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
         })
       }
     }

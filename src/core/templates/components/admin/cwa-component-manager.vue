@@ -49,7 +49,10 @@
 
 <script lang="ts">
 import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
-import { ComponentManagerAddEvent } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
+import {
+  ComponentManagerAddEvent,
+  EVENTS
+} from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import consola from 'consola'
 import TransitionExpand from '../utils/transition-expand.vue'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
@@ -107,7 +110,7 @@ export default {
   },
   watch: {
     isShowing(newValue) {
-      this.$cwa.$eventBus.$emit('cwa:component-manager:showing', newValue)
+      this.$cwa.$eventBus.$emit(EVENTS.showing, newValue)
       if (!newValue) {
         this.toggleComponent(null)
         if (this.expanded) {
@@ -121,31 +124,25 @@ export default {
   },
   mounted() {
     window.addEventListener('click', this.show)
-    this.$cwa.$eventBus.$on(
-      'cwa:component-manager:add-component',
-      this.addComponent
-    )
+    this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.show)
-    this.$cwa.$eventBus.$emit('cwa:component-manager:showing', false)
-    this.$cwa.$eventBus.$off(
-      'cwa:component-manager:add-component',
-      this.addComponent
-    )
+    this.$cwa.$eventBus.$emit(EVENTS.showing, false)
+    this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
   },
   methods: {
     toggleComponent(iri?: string) {
-      this.$cwa.$eventBus.$emit('cwa:component-manager:component', iri)
+      this.$cwa.$eventBus.$emit(EVENTS.component, iri)
     },
     hide() {
-      this.$cwa.$eventBus.$emit('cwa:component-manager:hide')
+      this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
     },
     show() {
       this.pendingComponents = []
       if (this.showingCriteria) {
-        this.$cwa.$eventBus.$emit('cwa:component-manager:show')
+        this.$cwa.$eventBus.$emit(EVENTS.show)
       }
       // the show event above should be listened to and add-component event emitted to populate components by now
       if (!this.pendingComponents.length) {
@@ -156,10 +153,7 @@ export default {
       this.components = this.pendingComponents
       this.$nextTick(() => {
         this.expanded = this.showingCriteria
-        this.$cwa.$eventBus.$emit(
-          'cwa:component-manager:showing',
-          this.showingCriteria
-        )
+        this.$cwa.$eventBus.$emit(EVENTS.showing, this.showingCriteria)
       })
     },
     addComponent({ data, resource }: ComponentManagerAddEvent) {

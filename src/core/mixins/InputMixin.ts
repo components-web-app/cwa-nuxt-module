@@ -1,9 +1,9 @@
 import debounce from 'lodash.debounce'
 import {
-  NotificationEvents,
   Notification,
   NotificationLevels
 } from '../templates/components/cwa-api-notifications/types'
+import { NOTIFICATION_EVENTS } from '../events'
 import ComponentMixin from './ComponentMixin'
 
 export default {
@@ -64,7 +64,7 @@ export default {
           field: this.field,
           category: this.notificationCategory
         }
-        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
+        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
       }
     }
   }

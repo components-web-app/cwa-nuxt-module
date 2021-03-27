@@ -22,12 +22,12 @@
 
 <script lang="ts">
 import {
-  NotificationEvents,
   NotificationLevels,
   Notification
 } from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
 import { StoreCategories } from '../../../storage'
 import ApiError from '../../../../inc/api-error'
+import { NOTIFICATION_EVENTS } from '../../../events'
 
 export default {
   props: {
@@ -85,7 +85,7 @@ export default {
           message: error.message,
           level: NotificationLevels.ERROR
         }
-        this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
+        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
       }
       this.addingComponent = false
       this.$emit('added')

@@ -2,11 +2,11 @@ import Vue from 'vue'
 import IriModalView from '../../components/iri-modal-view.vue'
 import {
   Notification,
-  NotificationEvents,
   NotificationLevels
 } from '../../components/cwa-api-notifications/types'
 import ApiRequestError from '../../../../inc/api-error'
 import { Violation } from '../../../../utils/AxiosErrorParser'
+import { NOTIFICATION_EVENTS } from '../../../events'
 import CommonMixin from './CommonMixin'
 
 export const notificationCategories = {
@@ -102,7 +102,7 @@ export default (postEndpoint: string) =>
               level: NotificationLevels.ERROR,
               category: this.notificationCategories.violations
             }
-            this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
+            this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
           }
         }
 
@@ -117,7 +117,7 @@ export default (postEndpoint: string) =>
             level: NotificationLevels.ERROR,
             category: this.notificationCategories.violations
           }
-          this.$cwa.$eventBus.$emit(NotificationEvents.add, notification)
+          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
           const fieldNotifications =
             this.notifications[violation.propertyPath] || []
           fieldNotifications.push(notification)

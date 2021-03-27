@@ -1,6 +1,7 @@
 <script lang="ts">
 import CommonMixin from '../CommonMixin'
 import page from '../../../page'
+import { ADMIN_BAR_EVENTS } from '../../../../events'
 export default {
   extends: page,
   pageIriParam: 'iri',
@@ -18,7 +19,7 @@ export default {
     }
   },
   mounted() {
-    this.$cwa.$eventBus.$emit('cwa:admin-bar:change-view', 'page')
+    this.$cwa.$eventBus.$emit(ADMIN_BAR_EVENTS.changeView, 'page')
     this.$cwa.setEditMode(true)
     this.$cwa.initMercure(true)
   }

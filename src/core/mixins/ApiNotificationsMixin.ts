@@ -1,10 +1,10 @@
 import Vue from 'vue'
 import {
   Notification,
-  NotificationEvents,
   RemoveNotificationEvent,
   TimestampedNotification
 } from '../templates/components/cwa-api-notifications/types'
+import { NOTIFICATION_EVENTS } from '../events'
 
 export default Vue.extend({
   data() {
@@ -13,12 +13,15 @@ export default Vue.extend({
     }
   },
   mounted() {
-    this.$cwa.$eventBus.$on(NotificationEvents.add, this.addNotification)
-    this.$cwa.$eventBus.$on(NotificationEvents.remove, this.removeNotification)
+    this.$cwa.$eventBus.$on(NOTIFICATION_EVENTS.add, this.addNotification)
+    this.$cwa.$eventBus.$on(NOTIFICATION_EVENTS.remove, this.removeNotification)
   },
   beforeDestroy() {
-    this.$cwa.$eventBus.$off(NotificationEvents.add, this.addNotification)
-    this.$cwa.$eventBus.$off(NotificationEvents.remove, this.removeNotification)
+    this.$cwa.$eventBus.$off(NOTIFICATION_EVENTS.add, this.addNotification)
+    this.$cwa.$eventBus.$off(
+      NOTIFICATION_EVENTS.remove,
+      this.removeNotification
+    )
   },
   methods: {
     isSupportedCategory(category) {
