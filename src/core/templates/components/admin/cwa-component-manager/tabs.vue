@@ -24,6 +24,7 @@
             :key="loopKey('tab-content', index)"
             :resource="resource"
             :context="tab.context"
+            @draggable="toggleDraggable"
           />
         </div>
       </div>
@@ -108,6 +109,9 @@ export default {
     },
     resetTabSelector() {
       this.showTab(0)
+    },
+    toggleDraggable(isDraggable) {
+      this.$emit('draggable', isDraggable)
     }
   }
 }

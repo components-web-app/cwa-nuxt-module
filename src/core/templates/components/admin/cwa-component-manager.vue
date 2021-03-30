@@ -17,7 +17,11 @@
             </div>
             <template v-else>
               <div class="top">
-                <tabs :tabs="componentTabs" :resource="componentResource" />
+                <tabs
+                  :tabs="componentTabs"
+                  :resource="componentResource"
+                  @draggable="toggleDraggable"
+                />
               </div>
               <div class="bottom row">
                 <div v-if="showStatusTab" class="column is-narrow">
@@ -50,20 +54,21 @@
 </template>
 
 <script lang="ts">
-import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
+import consola from 'consola'
+import HeightMatcherMixin from '../../../mixins/HeightMatcherMixin'
 import {
   ComponentManagerAddEvent,
   ComponentTabContext,
   ComponentManagerTab,
-  EVENTS
-} from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
-import consola from 'consola'
+  EVENTS,
+  StatusTabContext
+} from '../../../mixins/ComponentManagerMixin'
 import TransitionExpand from '../utils/transition-expand.vue'
-import { StatusTabContext } from '../../../mixins/ComponentManagerMixin'
 import {
   NOTIFICATION_EVENTS,
   STATUS_EVENTS,
-  ResetStatusEvent
+  ResetStatusEvent,
+  DraggableEvent
 } from '../../../events'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
@@ -189,6 +194,20 @@ export default {
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
   },
   methods: {
+    toggleDraggable(isDraggable) {
+      let closestCollection = null
+      if (this.components) {
+        for (const component of this.components) {
+          if (component.resource['@type'] === 'ComponentCollection') {
+            closestCollection = component.resource['@id']
+          }
+        }
+      }
+      this.$cwa.$eventBus.$emit(EVENTS.draggable, {
+        isDraggable,
+        collection: closestCollection
+      } as DraggableEvent)
+    },
     getStatusTab(
       statusTabContext: StatusTabContext
     ): ComponentManagerTab | null {

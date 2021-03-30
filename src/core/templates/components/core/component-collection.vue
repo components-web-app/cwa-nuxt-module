@@ -22,7 +22,7 @@
     </client-only>
     <!-- else we loop through components -->
     <component
-      :is="$cwa.isEditMode ? 'div' : 'div'"
+      :is="isDraggable ? 'draggable' : 'div'"
       v-model="sortedComponentPositions"
       :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
@@ -49,7 +49,7 @@ import {
   ComponentManagerMixin,
   ComponentManagerComponent
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
-import { COMPONENT_MANAGER_EVENTS } from '../../../events'
+import { COMPONENT_MANAGER_EVENTS, DraggableEvent } from '../../../events'
 import { NewComponentEvent } from '../admin/cwa-component-manager/types'
 
 export default {
@@ -88,7 +88,8 @@ export default {
       },
       reloading: false,
       previousSortedComponentPositions: null,
-      newComponentEvent: null
+      newComponentEvent: null,
+      isDraggable: false
     }
   },
   computed: {
@@ -196,6 +197,10 @@ export default {
       COMPONENT_MANAGER_EVENTS.selectComponent,
       this.handleSelectComponentEvent
     )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.draggable,
+      this.handleDraggableEvent
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -205,6 +210,10 @@ export default {
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.selectComponent,
       this.handleSelectComponentEvent
+    )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.draggable,
+      this.handleDraggableEvent
     )
   },
   methods: {
@@ -275,6 +284,12 @@ export default {
       })
       this.previousSortedComponentPositions = null
       this.reloading = false
+    },
+    handleDraggableEvent(event: DraggableEvent) {
+      if (!event.collection || event.collection !== this.resource['@id']) {
+        return
+      }
+      this.isDraggable = event.isDraggable
     }
   }
 }

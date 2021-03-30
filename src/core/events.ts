@@ -1,5 +1,10 @@
 const prefix = 'cwa'
 
+export interface DraggableEvent {
+  isDraggable: boolean
+  collection?: string
+}
+
 export interface ResetStatusEvent {
   category: string
 }
@@ -26,7 +31,8 @@ export const COMPONENT_MANAGER_EVENTS = {
   newComponent: `${prefix}:${componentManagerCategory}:new-component`,
   hide: `${prefix}:${componentManagerCategory}:hide`,
   show: `${prefix}:${componentManagerCategory}:show`,
-  showTabs: `${prefix}:${componentManagerCategory}:show-tabs`
+  showTabs: `${prefix}:${componentManagerCategory}:show-tabs`,
+  draggable: `${prefix}:${componentManagerCategory}:draggable`
 }
 
 export const ADMIN_BAR_EVENTS = {
