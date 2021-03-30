@@ -50,9 +50,13 @@ export default {
     }
   },
   mounted() {
+    const value = this.resource[this.field]
+    const requiresNormalizing =
+      typeof value === 'string' || typeof value === 'object' || value === null
     // clone any value so we are not mutating the store
-    this.inputValue =
-      JSON.parse(JSON.stringify(this.resource[this.field])) || null
+    this.inputValue = requiresNormalizing
+      ? JSON.parse(JSON.stringify(value)) || null
+      : value
   },
   methods: {
     async update() {

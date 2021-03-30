@@ -1,5 +1,6 @@
 <template>
   <div :class="['html-component', resource.uiClassNames]">
+    <!-- eslint-disable-next-line vue/no-v-html -->
     <div v-if="!editing" v-html="displayHtml" />
     <quill-input
       v-else

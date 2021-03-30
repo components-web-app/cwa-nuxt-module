@@ -8,7 +8,7 @@
           field="uiComponent"
           label="Interface"
           :options="[
-            { label: 'Default', value: resource['@type'] },
+            { label: 'Default', value: null },
             ...context.UiComponents
           ]"
         />

@@ -1,6 +1,7 @@
 <template>
   <div :class="['html-component', resource.uiClassNames]">
-    <cwa-logo />
+    <cwa-logo class="cwa-logo" />
+    <!-- eslint-disable-next-line vue/no-v-html -->
     <div v-if="!editing" v-html="displayHtml" />
     <quill-input
       v-else
@@ -19,3 +20,9 @@ export default {
   mixins: [HtmlContent]
 }
 </script>
+
+<style lang="sass">
+.html-component
+  .cwa-logo
+    max-width: 100%
+</style>

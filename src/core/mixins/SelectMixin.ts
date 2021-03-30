@@ -15,8 +15,8 @@ export default {
       return Array.isArray(this.options)
     },
     hasNullOption() {
-      return !!this.normalizedOptions.find((op) => {
-        return op.value === null
+      return !!this.normalizedOptions.find(({ value }) => {
+        return value === null
       })
     },
     normalizedOptions() {

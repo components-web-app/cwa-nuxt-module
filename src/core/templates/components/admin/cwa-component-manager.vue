@@ -196,7 +196,7 @@ export default {
         return null
       }
       return {
-        label: 'Status',
+        label: 'Publish',
         component: async () =>
           await import(
             '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/publishable-status.vue'

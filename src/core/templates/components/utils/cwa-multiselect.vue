@@ -90,7 +90,9 @@ export default {
   },
   methods: {
     toggleOption(value) {
-      const currentIndex = this.currentValue.indexOf(value)
+      const currentIndex = !this.currentValue
+        ? -1
+        : this.currentValue.indexOf(value)
       if (currentIndex !== -1) {
         this.currentValue.splice(currentIndex, 1)
         return
