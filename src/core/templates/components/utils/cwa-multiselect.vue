@@ -81,7 +81,7 @@ export default {
     },
     optionIsSelected() {
       return (op) => {
-        return this.currentValue.includes(op.value)
+        return this.currentValue && this.currentValue.includes(op.value)
       }
     },
     normalizedCurrentValue() {
