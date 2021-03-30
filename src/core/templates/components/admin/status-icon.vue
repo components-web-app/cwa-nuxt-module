@@ -2,26 +2,79 @@
   <div :class="['status-icon', className]" />
 </template>
 
-<script>
+<script lang="ts">
+import { STATUS_EVENTS, StatusEvent, ResetStatusEvent } from '../../../events'
+
 export default {
   props: {
     status: {
       type: Number,
-      required: true
+      required: false,
+      default: 99
+    },
+    category: {
+      type: String,
+      required: false,
+      default: null
+    }
+  },
+  data() {
+    return {
+      fieldStatuses: {}
     }
   },
   computed: {
     className() {
-      if (this.status === 1) {
+      if (this.autoStatus === 1) {
         return 'is-success'
       }
-      if (this.status === -1) {
+      if (this.autoStatus === -1) {
         return 'is-error'
       }
-      if (this.status === 0) {
+      if (this.autoStatus === 0) {
         return 'is-warning'
       }
       return null
+    },
+    objectFieldStatus() {
+      let status = 99
+      for (const fieldStatus of Object.values(
+        this.fieldStatuses
+      ) as Array<number>) {
+        if (fieldStatus < status) {
+          status = fieldStatus
+        }
+      }
+      return status
+    },
+    autoStatus() {
+      return Math.min(this.objectFieldStatus, this.status)
+    }
+  },
+  mounted() {
+    this.$cwa.$eventBus.$on(STATUS_EVENTS.change, this.handleStatusNotification)
+    this.$cwa.$eventBus.$on(STATUS_EVENTS.reset, this.resetStatus)
+  },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(
+      STATUS_EVENTS.change,
+      this.handleStatusNotification
+    )
+    this.$cwa.$eventBus.$off(STATUS_EVENTS.reset, this.resetStatus)
+  },
+  methods: {
+    handleStatusNotification(event: StatusEvent) {
+      if (!this.category) {
+        return
+      }
+      if (this.category === event.category) {
+        this.$set(this.fieldStatuses, event.field, event.status)
+      }
+    },
+    resetStatus(event: ResetStatusEvent) {
+      if (this.category === event.category) {
+        this.fieldStatuses = {}
+      }
     }
   }
 }

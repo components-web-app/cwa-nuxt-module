@@ -4,6 +4,7 @@ import _set from 'lodash/set'
 import _get from 'lodash/get'
 // import { Component } from '@nuxt/components/dist'
 import { Module } from '@nuxt/types'
+import consola from 'consola'
 import { CwaOptions } from '../index'
 
 // Working out how to include type from package instead...
@@ -102,10 +103,72 @@ function applyCss() {
   })
 }
 
-function loadComponents() {
-  // auto-configure components module
-  if (!this.options.buildModules.includes('@nuxt/components')) {
-    this.options.buildModules.push('@nuxt/components')
+async function loadComponents() {
+  const requiredModules = [
+    ['@nuxtjs/style-resources', {}],
+    [
+      '@nuxtjs/axios',
+      {
+        credentials: true,
+        progress: false
+      }
+    ],
+    [
+      '@nuxtjs/auth',
+      {
+        redirect: {
+          login: '/login',
+          logout: '/login',
+          home: '/',
+          callback: false
+        },
+        defaultStrategy: 'local',
+        strategies: {
+          cookie: {
+            user: {
+              autoFetch: true,
+              property: ''
+            },
+            endpoints: {
+              login: { url: '/login', method: 'post' },
+              logout: { url: '/logout', method: 'post' },
+              user: { url: '/me', method: 'get' }
+            },
+            token: {
+              global: false,
+              required: false,
+              type: false
+            }
+          }
+        }
+      }
+    ],
+    ['@nuxtjs/svg', {}]
+  ]
+  for (const module of requiredModules) {
+    try {
+      await this.addModule(module)
+    } catch (error) {
+      if (error.code !== 'MODULE_NOT_FOUND') {
+        throw error
+      }
+      const nextModule = [module[0] + '-next', module[1]]
+      consola.info(`Trying to add ${nextModule[0]} instead...`)
+      await this.addModule(nextModule)
+      consola.info(`Successfully added${nextModule[0]}`)
+    }
+  }
+
+  // Need to check if this is the correct way of adding a build module from within a module
+  const requiredBuildModules = ['@nuxt/components']
+  for (const module of requiredBuildModules) {
+    // auto-configure components module
+    if (
+      !this.options.buildModules.includes(module) &&
+      !this.options.buildModules.includes(module + '-next')
+    ) {
+      this.options.buildModules.push(module)
+    }
   }
 
   if (!this.options.components) {
@@ -179,7 +242,7 @@ function loadComponents() {
   )
 }
 
-const cwaModule = <Module>function () {
+const cwaModule = <Module>async function () {
   const { version, name } = JSON.parse(
     fs.readFileSync(join(__dirname, '../../package.json'), 'utf8')
   )
@@ -306,7 +369,7 @@ const cwaModule = <Module>function () {
 
   applyCss.call(this)
 
-  loadComponents.call(this)
+  await loadComponents.call(this)
 }
 
 // @ts-ignore

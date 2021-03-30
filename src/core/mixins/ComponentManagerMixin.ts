@@ -3,15 +3,31 @@ import { COMPONENT_MANAGER_EVENTS } from '../events'
 
 export const EVENTS = COMPONENT_MANAGER_EVENTS
 
+export interface ComponentTabContext {
+  UiComponents?: Array<string>
+  UiClassNames?: Array<string>
+}
+
+export interface StatusTabContext {
+  enabled?: boolean
+}
+
+export interface ComponentManagerComponentContext {
+  componentTab?: ComponentTabContext
+  statusTab?: StatusTabContext
+}
+
 export interface ComponentManagerTab {
   label: string
   component: Function
   priority?: number
+  context?: object
 }
 
 export interface ComponentManagerComponent {
   name: string
   tabs: Array<ComponentManagerTab>
+  context?: ComponentManagerComponentContext
 }
 
 export interface ComponentManagerAddEvent {
@@ -88,11 +104,44 @@ export const ComponentManagerMixin = {
   },
   mounted() {
     this.$el.addEventListener('click', this.initComponentManagerShowListener)
-    this.$cwa.$eventBus.$on(EVENTS.component, this.managerComponentListener)
+    this.$cwa.$eventBus.$on(
+      EVENTS.selectComponent,
+      this.managerComponentListener
+    )
+    // will exist with a resource mixin
+    if (this.isNew) {
+      this.$el.click()
+
+      function elementInViewport(el) {
+        let top = el.offsetTop
+        let left = el.offsetLeft
+        const width = el.offsetWidth
+        const height = el.offsetHeight
+
+        while (el.offsetParent) {
+          el = el.offsetParent
+          top += el.offsetTop
+          left += el.offsetLeft
+        }
+
+        return (
+          top >= window.pageYOffset &&
+          left >= window.pageXOffset &&
+          top + height <= window.pageYOffset + window.innerHeight &&
+          left + width <= window.pageXOffset + window.innerWidth
+        )
+      }
+      if (!elementInViewport(this.$el)) {
+        this.$el.scrollIntoView(true)
+      }
+    }
   },
   beforeDestroy() {
     this.$el.removeEventListener('click', this.initComponentManagerShowListener)
-    this.$cwa.$eventBus.$off(EVENTS.component, this.managerComponentListener)
+    this.$cwa.$eventBus.$off(
+      EVENTS.selectComponent,
+      this.managerComponentListener
+    )
   }
 }
 

@@ -12,7 +12,9 @@
   >
     <!-- if there are no components -->
     <client-only v-if="$cwa.isEditMode">
-      <component-load-error v-if="!sortedComponentPositions.length">
+      <component-load-error
+        v-if="!sortedComponentPositions.length && !this.newComponentEvent"
+      >
         <div class="add-button-holder">
           <cwa-add-button :highlight="true" />
         </div>
@@ -30,6 +32,11 @@
         :key="iri"
         :iri="iri"
       />
+      <component
+        :is="newComponentEvent.component"
+        v-if="newComponentIri"
+        :iri="newComponentIri"
+      />
     </component>
   </div>
 </template>
@@ -42,6 +49,8 @@ import {
   ComponentManagerMixin,
   ComponentManagerComponent
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
+import { COMPONENT_MANAGER_EVENTS } from '../../../events'
+import { NewComponentEvent } from '../admin/cwa-component-manager/types'
 
 export default {
   components: {
@@ -78,7 +87,8 @@ export default {
         collection: 'collection'
       },
       reloading: false,
-      previousSortedComponentPositions: null
+      previousSortedComponentPositions: null,
+      newComponentEvent: null
     }
   },
   computed: {
@@ -152,14 +162,64 @@ export default {
           this.$cwa.saveResource(newPosition)
         }
       }
+    },
+    newComponentIri() {
+      return this.newComponentEvent
+        ? `${this.newComponentEvent.endpoint}/new`
+        : null
+    }
+  },
+  watch: {
+    newComponentEvent(event) {
+      if (!event) {
+        // should we remove the data or keep it in case we want to continue adding??
+        // if we keep then the below 'setResource' call will need to be enhanced so as to not override
+        return
+      }
+      this.$cwa.$storage.setResource({
+        resource: {
+          '@id': this.newComponentIri,
+          '@type': event.name
+        }
+      })
     }
   },
   async mounted() {
     if (!this.resource && this.$cwa.isAdmin) {
       await this.addComponentCollection()
     }
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.handleNewComponentEvent
+    )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.selectComponent,
+      this.handleSelectComponentEvent
+    )
+  },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.handleNewComponentEvent
+    )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.selectComponent,
+      this.handleSelectComponentEvent
+    )
   },
   methods: {
+    handleSelectComponentEvent(iri?: string) {
+      if (this.newComponentEvent && this.newComponentIri !== iri) {
+        this.newComponentEvent = null
+      }
+    },
+    handleNewComponentEvent(event: NewComponentEvent) {
+      if (event.collection !== this.resource['@id']) {
+        return
+      }
+
+      this.newComponentEvent = event
+    },
     getCollectionResourceByLocation(location, locationResourceId) {
       const ComponentCollection = this.$cwa.resources?.ComponentCollection
       if (!ComponentCollection) {
@@ -224,14 +284,24 @@ export default {
 @keyframes cwa-manager-highlight-before-animation-collection
   0%
     opacity: 0
+    width: calc(100% - 10px)
+    height: calc(100% - 10px)
     box-shadow: none
   40%
     opacity: 1
-  50%
-    box-shadow: inset 0 0 2px 1px $cwa-warning
+    box-shadow: 0 0 14px  $cwa-color-primary
+    width: 100%
+    height: 100%
+  80%
+    opacity: 0
+    box-shadow: 0 0 20px 0 $cwa-color-primary
+    width: calc(100% + 4px)
+    height: calc(100% + 4px)
   100%
     opacity: 0
-    box-shadow: inset 0 0 1px 1px $cwa-warning
+    width: calc(100% + 4px)
+    height: calc(100% + 4px)
+    box-shadow: none
 
 @keyframes cwa-manager-highlight-after-animation-collection
   0%
@@ -239,16 +309,22 @@ export default {
     width: 100%
     height: 100%
     box-shadow: none
-  50%
+  40%
     opacity: 1
-    width: calc(100% - 2px)
-    height: calc(100% - 2px)
-    box-shadow: inset 0 0 3px 1px $cwa-warning
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 1px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary, 0 0 4px 0 $cwa-color-primary
+  80%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 10px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary
   100%
     opacity: 0
-    width: calc(100% - 10px)
-    height: calc(100% - 10px)
-    box-shadow: inset 0 0 1px 1px $cwa-warning
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: none
+
 @keyframes loading
   0%
     opacity: 1

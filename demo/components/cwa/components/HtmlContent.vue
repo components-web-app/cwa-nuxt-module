@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="['html-component', resource.uiClassNames]">
     <div v-if="!editing" v-html="displayHtml" />
     <quill-input
       v-else
@@ -18,7 +18,13 @@ export default {
   mixins: [ComponentMixin],
   data() {
     return {
-      editing: false
+      editing: false,
+      componentManagerContext: {
+        componentTab: {
+          UiClassNames: ['is-feature', 'has-cwa-color'],
+          UiComponents: [{ label: 'Logo Layout', value: 'HtmlContentWithLogo' }]
+        }
+      }
     }
   },
   computed: {
@@ -38,3 +44,14 @@ export default {
   }
 }
 </script>
+
+<style lang="sass">
+.html-component
+  padding: .5rem
+  &.is-feature
+    padding: 1rem .5rem
+    font-size: 2.1rem
+    text-align: center
+  &.has-cwa-color
+    color: $cwa-color-primary
+</style>

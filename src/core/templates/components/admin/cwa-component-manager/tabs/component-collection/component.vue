@@ -3,36 +3,30 @@
     <cwa-admin-select
       id="component"
       v-model="selectedComponent"
+      label="Add"
       :options="componentOptions"
-    />
-    <component
-      :is="selectedComponentDialogComponent"
-      v-if="selectedComponentDialogComponent"
-      :component-collection="resource['@id']"
+      :wrapper="wrapperComponent"
     />
   </div>
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
 import consola from 'consola'
-import CwaAdminSelect from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-select.vue'
+import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
+import { NewComponentEvent } from '../../types'
+import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
+import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
 import components from '~/.nuxt/cwa/components'
 
 export default {
   components: { CwaAdminSelect },
-  props: {
-    resource: {
-      type: Object,
-      required: true
-    }
-  },
+  mixins: [ComponentManagerTabMixin],
   data() {
     return {
       loadingComponents: false,
       availableComponents: [],
       selectedComponent: null,
-      selectedComponentDialogComponent: null
+      wrapperComponent: async () => await import('../../input/wrapper.vue')
     }
   },
   computed: {
@@ -43,14 +37,17 @@ export default {
   watch: {
     async selectedComponent(newComponent) {
       // get the component for the dialog from the ui component
-      const component = await components[newComponent]().component
-      const componentInstance = new (Vue.extend(component))({
-        propsData: {
-          iri: 'new'
-        }
-      })
-      this.selectedComponentDialogComponent =
-        componentInstance.adminDialog?.component
+      const component = await components[`CwaComponents${newComponent}`]
+      const { endpoint, resourceName: name } = this.availableComponents[
+        newComponent
+      ]
+      const event: NewComponentEvent = {
+        collection: this.resource['@id'],
+        component,
+        endpoint,
+        name
+      }
+      this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.newComponent, event)
     }
   },
   async mounted() {
@@ -68,10 +65,40 @@ export default {
       }
       return components[searchKey]
     },
+    // resolveComponentProperties(docs) {
+    //   const componentDataTemplates = {}
+    //   for (const supportedClass of docs['hydra:supportedClass']) {
+    //     if (!Array.isArray(supportedClass['hydra:supportedOperation'])) {
+    //       continue
+    //     }
+    //     let hasPut = false
+    //     for (const op of supportedClass['hydra:supportedOperation']) {
+    //       if (op['hydra:method'] === 'PUT') {
+    //         hasPut = true
+    //         break
+    //       }
+    //     }
+    //     if (!hasPut) {
+    //       continue
+    //     }
+    //
+    //     const clsObj = {}
+    //     for (const prop of supportedClass['hydra:supportedProperty']) {
+    //       clsObj[prop['hydra:property']['rdfs:label']] = {
+    //         writable: prop['hydra:writeable'],
+    //         readable: prop['hydra:readable'],
+    //         required: prop['hydra:required']
+    //       }
+    //     }
+    //     componentDataTemplates[supportedClass['hydra:title']] = clsObj
+    //   }
+    //   return componentDataTemplates
+    // },
     async fetchComponents() {
       const loadedComponents = {}
       this.loadingComponents = true
       const data = await this.$cwa.getApiDocumentation()
+
       for (const [key, endpoint] of Object.entries(
         data.entrypoint
       ) as string[][]) {

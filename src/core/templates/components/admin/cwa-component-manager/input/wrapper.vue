@@ -28,7 +28,18 @@ export default {
 <style lang="sass">
 .cwa-component-manager-input
   display: flex
+  align-items: center
   label
     +cwa-input-label
     font-size: inherit
+    margin-right: .5rem
+
+.cwa-component-manager-input
+  .select
+    +cwa-select-holder
+    select
+      +cwa-input
+
+.cwa-component-manager-input
+  +vue-multiselect
 </style>

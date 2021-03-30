@@ -9,13 +9,10 @@
 </template>
 
 <script lang="ts">
+import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
+
 export default {
-  props: {
-    resource: {
-      type: Object,
-      required: true
-    }
-  }
+  mixins: [ComponentManagerTabMixin]
 }
 </script>
 

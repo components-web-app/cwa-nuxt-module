@@ -3,12 +3,14 @@
     :class="['cwa-add-button', { 'is-pulsing': highlight }]"
     @click="$emit('click')"
   >
-    <img src="../../../assets/images/icon-add.svg" alt="Plus icon" />
+    <icon-add />
   </a>
 </template>
 
 <script>
+import IconAdd from '../../../assets/images/icon-add.svg?inline'
 export default {
+  components: { IconAdd },
   props: {
     highlight: {
       type: Boolean,
@@ -85,6 +87,9 @@ export default {
   display: block
   border-radius: 50%
   z-index: 2
+  color: $white
+  &:hover
+    color: $white
   > img
     position: relative
     transform: translate3d(0,0,0)

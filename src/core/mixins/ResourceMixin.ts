@@ -1,4 +1,3 @@
-import consola from 'consola'
 import IriMixin from './IriMixin'
 
 export default {
@@ -20,6 +19,9 @@ export default {
     }
   },
   computed: {
+    isNew() {
+      return this.displayIri.endsWith('/new')
+    },
     displayIri() {
       return this.showPublished ? this.iri : this.draftIri || this.iri
     },
@@ -27,20 +29,7 @@ export default {
       return this.$cwa.$storage.getCategoryFromIri(this.displayIri)
     },
     resource() {
-      const type = this.$cwa.$storage.getTypeFromIri(
-        this.displayIri,
-        this.category
-      )
-      if (!type) {
-        consola.warn(
-          `Could not resolve a resource type for iri ${this.displayIri} in the category ${this.category}`
-        )
-        return null
-      }
-      consola.debug(
-        `Resolved resource type for iri ${this.displayIri} in the category ${this.category} to ${type}`
-      )
-      return this.$cwa.resources[type].byId[this.displayIri]
+      return this.$cwa.$storage.getResource(this.displayIri)
     }
   }
 }

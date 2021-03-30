@@ -14,25 +14,30 @@
         <a href="#" @click.prevent="showTab(index)">{{ tab.label }}</a>
       </li>
     </ul>
-    <div class="tab-content-container">
-      <div class="tab-content">
-        <component
-          :is="tab.component"
-          v-for="(tab, index) of orderedTabs"
-          v-show="index === selectedTabIndex"
-          :key="loopKey('tab-content', index)"
-          :resource="resource"
-        />
+    <transition-expand>
+      <div v-show="areTabsShowing" class="tab-content-container">
+        <div ref="tabContent" class="tab-content">
+          <component
+            :is="tab.component"
+            v-for="(tab, index) of orderedTabs"
+            v-show="index === selectedTabIndex"
+            :key="loopKey('tab-content', index)"
+            :resource="resource"
+            :context="tab.context"
+          />
+        </div>
       </div>
-    </div>
+    </transition-expand>
   </div>
 </template>
 
 <script lang="ts">
 import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin.ts'
 import { COMPONENT_MANAGER_EVENTS } from '../../../../events'
+import TransitionExpand from '../../utils/transition-expand.vue'
 
 export default {
+  components: { TransitionExpand },
   props: {
     tabs: {
       type: Array,
@@ -46,7 +51,8 @@ export default {
   },
   data() {
     return {
-      selectedTabIndex: 0
+      selectedTabIndex: null,
+      areTabsShowing: false
     }
   },
   computed: {
@@ -70,17 +76,33 @@ export default {
   },
   mounted() {
     this.$cwa.$eventBus.$on(
-      COMPONENT_MANAGER_EVENTS.component,
+      COMPONENT_MANAGER_EVENTS.selectComponent,
       this.resetTabSelector
+    )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.showTabs,
+      this.setTabsShowing
     )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
-      COMPONENT_MANAGER_EVENTS.component,
+      COMPONENT_MANAGER_EVENTS.selectComponent,
       this.resetTabSelector
+    )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.showTabs,
+      this.setTabsShowing
     )
   },
   methods: {
+    setTabsShowing(newValue) {
+      if (newValue) {
+        this.showTab(0)
+      }
+      this.$nextTick(() => {
+        this.areTabsShowing = newValue
+      })
+    },
     showTab(newIndex) {
       this.selectedTabIndex = newIndex
     },
@@ -96,11 +118,11 @@ export default {
   ul
     list-style: none
     margin: 0
-    padding: 0
+    padding: 0 .5rem
     > .cwa-manager-tab
       padding: 0
       > a
-        padding: 1rem
+        padding: 1.5rem 1.5rem 2rem
         display: block
       &.is-selected > a
         color: $white
@@ -108,5 +130,5 @@ export default {
     max-height: 20vh
     overflow: auto
   .tab-content
-    padding: 0 1rem 1rem
+    padding: 0 2rem 2rem
 </style>

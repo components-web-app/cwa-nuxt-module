@@ -1,5 +1,8 @@
 <template>
-  <div v-if="!!isShowing" class="cwa-error-notifications">
+  <div
+    v-if="!!isShowing"
+    :class="['cwa-error-notifications', { 'show-above': showAbove }]"
+  >
     <a class="icon" href="#" @click.prevent.stop="toggleShowErrors">
       <div class="triangle" />
       <span class="total">{{ totalNotifications }}</span>
@@ -31,6 +34,10 @@ export default {
     listenCategories: {
       type: Array,
       default: null
+    },
+    showAbove: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -43,7 +50,7 @@ export default {
       return this.notifications.length
     },
     isShowing() {
-      return !!this.totalNotifications.length
+      return !!this.totalNotifications
     }
   },
   watch: {
@@ -74,26 +81,36 @@ export default {
 <style lang="sass">
 .cwa-error-notifications
   position: relative
+  &.show-above
+    .errors-list
+      bottom: 100%
+      margin-bottom: 17px
+      &::before
+        top: 100%
+        border-top: 10px solid #E6E6E6
+  &:not(.show-above)
+    .errors-list
+      top: 100%
+      margin-top: 15px
+      &::before
+        bottom: 100%
+        border-bottom: 10px solid #E6E6E6
   .errors-list
     position: absolute
     list-style: none
     background: $white
     z-index: 10
-    top: 100%
     left: 0
-    margin-top: 15px
     min-width: 250px
     max-width: 350px
     &::before
       content: ''
       position: absolute
-      bottom: 100%
       left: .95em
       width: 0
       height: 0
       border-left: 10px solid transparent
       border-right: 10px solid transparent
-      border-bottom: 10px solid #E6E6E6
     > li
       padding: 1rem
       background-color: #E6E6E6

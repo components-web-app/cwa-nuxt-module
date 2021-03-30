@@ -6,40 +6,12 @@
   input[type=password],
   select,
   textarea
-    border: 1px solid rgba(black, .3)
-    background-color: rgba(black, .3)
-    background-clip: padding-box
-    color: $cwa-color-text-light
-    padding: .2rem 3.8rem .3rem 1.0rem
-    height: 3.4rem
-    font-size: 1.4rem
-    &:hover
-      color: $white
-    &::placeholder
-      color: rgba($cwa-color-text-light, .6)
+    +cwa-input
   textarea
-    padding: .5rem 3.8rem .8rem 1.0rem
-    resize: none
-    height: 5em
+    +cwa-textarea
   .select
-    position: relative
+    +cwa-select-holder
     margin-bottom: 1.5rem
-    &:hover
-      &::before
-        opacity: 1
-    select
-      background-image: none
-      margin: 0
-    &::before
-      content: ''
-      position: absolute
-      right: 0
-      top: 0
-      height: 100%
-      width: 3.5rem
-      background: url("../images/icon-dropdown.svg") 50% 50% no-repeat
-      opacity: .6
-      pointer-events: none
   &.has-error
     input[type=text],
     select

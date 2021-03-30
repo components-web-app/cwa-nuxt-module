@@ -1,5 +1,6 @@
 import ComponentManagerMixin, {
   ComponentManagerComponent,
+  ComponentManagerComponentContext,
   ComponentManagerTab
 } from './ComponentManagerMixin'
 import ResourceMixin from './ResourceMixin'
@@ -7,23 +8,33 @@ import ApiRequestMixin from './ApiRequestMixin'
 
 export default {
   mixins: [ResourceMixin, ApiRequestMixin, ComponentManagerMixin],
+  data() {
+    return {
+      componentManagerContext: {
+        componentTab: {
+          UiComponents: [],
+          UiClassNames: []
+        }
+      } as ComponentManagerComponentContext
+    }
+  },
   computed: {
     componentManager(): ComponentManagerComponent {
       return {
         name: this?.resource?.['@type'] || 'Unknown Component',
-        tabs: this.defaultManagerTabs
+        tabs: this.defaultManagerTabs,
+        context: Object.assign(
+          {
+            statusTab: {
+              enabled: this.publishable
+            }
+          },
+          this.componentManagerContext
+        )
       }
     },
     defaultManagerTabs() {
       const tabs: Array<ComponentManagerTab> = [
-        {
-          label: 'Component',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/component-ui.vue'
-            ),
-          priority: 0
-        },
         {
           label: 'Order',
           component: () =>
@@ -41,18 +52,6 @@ export default {
           priority: 200
         }
       ]
-
-      if (this.publishable) {
-        tabs.push({
-          label: 'Status',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/publishable-status.vue'
-            ),
-          priority: 100
-        })
-      }
-
       return tabs
     },
     metadata() {

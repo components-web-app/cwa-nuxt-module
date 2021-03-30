@@ -330,6 +330,21 @@ export class Storage {
     ]({ iri, category })
   }
 
+  getResource(iri) {
+    const category = this.getCategoryFromIri(iri)
+    const type = this.getTypeFromIri(iri, category)
+    if (!type) {
+      consola.warn(
+        `Could not resolve a resource type for iri ${iri} in the category ${category}`
+      )
+      return null
+    }
+    consola.debug(
+      `Resolved resource type for iri ${iri} in the category ${category} to ${type}`
+    )
+    return this.state.resources.current[type].byId[iri]
+  }
+
   areResourcesOutdated() {
     return this.ctx.store.getters[
       this.options.vuex.namespace + '/RESOURCES_OUTDATED'

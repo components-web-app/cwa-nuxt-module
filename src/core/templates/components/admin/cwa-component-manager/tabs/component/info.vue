@@ -25,23 +25,11 @@
 <script lang="ts">
 import Info from '../../input/info.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
+import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 
 export default {
   components: { Info },
-  mixins: [ApiDateParserMixin],
-  props: {
-    resource: {
-      type: Object,
-      required: true
-    }
-  },
-  computed: {
-    inputId() {
-      return (name) => {
-        return `${this.resource['@id']}-${name}`
-      }
-    }
-  }
+  mixins: [ComponentManagerTabMixin, ApiDateParserMixin]
 }
 </script>
 

@@ -1,51 +1,29 @@
 <template>
-  <cwa-input-wrapper :id="id" :label="label" :has-error="hasError">
-    <div class="select">
-      <select :id="id" v-model="currentValue" :required="required">
-        <option :value="null" disabled :selected="value === null">
-          Please select
-        </option>
-        <option
-          v-for="(opVal, key) in options"
-          :key="opVal"
-          :value="opVal"
-          :selected="value === opVal"
-        >
-          {{ isOptionsArray ? opVal : key }}
-        </option>
-      </select>
-    </div>
-  </cwa-input-wrapper>
+  <component
+    :is="wrapper || (wrapper === false ? 'div' : 'cwa-input-wrapper')"
+    :id="id"
+    :label="label"
+    :has-error="hasError"
+  >
+    <cwa-multiselect
+      v-model="currentValue"
+      :options="options"
+      :required="required"
+    />
+  </component>
 </template>
 
 <script>
-// import Multiselect from 'vue-multiselect'
-import CwaInputMixin from './CwaInputMixin'
+import CwaMultiselect from '../../utils/cwa-multiselect'
+import CwaSelectMixin from './CwaSelectMixin'
 export default {
-  // components: { Multiselect },
-  mixins: [CwaInputMixin],
+  components: { CwaMultiselect },
+  mixins: [CwaSelectMixin],
   props: {
-    options: {
-      type: [Object, Array],
-      required: true
-    }
-  },
-  data() {
-    return {
-      currentValue: this.value
-    }
-  },
-  computed: {
-    isOptionsArray() {
-      return Array.isArray(this.options)
-    }
-  },
-  watch: {
-    value(newValue) {
-      this.currentValue = newValue
-    },
-    currentValue(newValue) {
-      this.updateValue(newValue)
+    wrapper: {
+      type: Function,
+      required: false,
+      default: null
     }
   }
 }

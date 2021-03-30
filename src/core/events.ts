@@ -1,5 +1,14 @@
 const prefix = 'cwa'
 
+export interface ResetStatusEvent {
+  category: string
+}
+
+export interface StatusEvent extends ResetStatusEvent {
+  field: string
+  status: number
+}
+
 const apiCategory = 'api'
 export const API_EVENTS = {
   created: `${prefix}:${apiCategory}:resource:created`,
@@ -12,10 +21,12 @@ export const API_EVENTS = {
 const componentManagerCategory = 'component-manager'
 export const COMPONENT_MANAGER_EVENTS = {
   showing: `${prefix}:${componentManagerCategory}:showing`,
-  component: `${prefix}:${componentManagerCategory}:component`,
+  selectComponent: `${prefix}:${componentManagerCategory}:select-component`,
   addComponent: `${prefix}:${componentManagerCategory}:add-component`,
+  newComponent: `${prefix}:${componentManagerCategory}:new-component`,
   hide: `${prefix}:${componentManagerCategory}:hide`,
-  show: `${prefix}:${componentManagerCategory}:show`
+  show: `${prefix}:${componentManagerCategory}:show`,
+  showTabs: `${prefix}:${componentManagerCategory}:show-tabs`
 }
 
 export const ADMIN_BAR_EVENTS = {
@@ -29,9 +40,16 @@ export const NOTIFICATION_EVENTS = {
   clear: `${prefix}:${notificationCategory}:clear`
 }
 
+const statusCategory = 'status'
+export const STATUS_EVENTS = {
+  change: `${prefix}:${statusCategory}:change`,
+  reset: `${prefix}:${statusCategory}:reset`
+}
+
 export default {
   API_EVENTS,
   COMPONENT_MANAGER_EVENTS,
   ADMIN_BAR_EVENTS,
-  NOTIFICATION_EVENTS
+  NOTIFICATION_EVENTS,
+  STATUS_EVENTS
 }

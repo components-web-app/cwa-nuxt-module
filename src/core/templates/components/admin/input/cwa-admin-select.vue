@@ -1,5 +1,10 @@
 <template>
-  <cwa-input-wrapper :id="id" :label="label" :has-error="hasError">
+  <component
+    :is="wrapper || (wrapper === false ? 'div' : 'cwa-input-wrapper')"
+    :id="id"
+    :label="label"
+    :has-error="hasError"
+  >
     <div class="select">
       <select
         :id="id"
@@ -7,50 +12,36 @@
         :required="required"
         @change="selectChanged"
       >
-        <option :value="null" disabled :selected="value === null">
+        <option
+          v-if="!hasNullOption"
+          :value="null"
+          disabled
+          :selected="value === null"
+        >
           Please select
         </option>
         <option
-          v-for="(opVal, key) in options"
-          :key="opVal"
-          :value="opVal"
-          :selected="value === opVal"
+          v-for="op in normalizedOptions"
+          :key="op.value"
+          :value="op.value"
+          :selected="value === op.value"
         >
-          {{ isOptionsArray ? opVal : key }}
+          {{ op.label }}
         </option>
       </select>
     </div>
-  </cwa-input-wrapper>
+  </component>
 </template>
 
 <script>
-import CwaInputMixin from './CwaInputMixin'
+import CwaSelectMixin from './CwaSelectMixin'
 export default {
-  mixins: [CwaInputMixin],
+  mixins: [CwaSelectMixin],
   props: {
-    options: {
-      type: [Object, Array],
-      required: true
-    }
-  },
-  data() {
-    return {
-      currentValue: this.value
-    }
-  },
-  computed: {
-    isOptionsArray() {
-      return Array.isArray(this.options)
-    }
-  },
-  watch: {
-    value(newValue) {
-      this.currentValue = newValue
-    }
-  },
-  methods: {
-    selectChanged() {
-      this.updateValue(this.currentValue)
+    wrapper: {
+      type: Function,
+      required: false,
+      default: null
     }
   }
 }

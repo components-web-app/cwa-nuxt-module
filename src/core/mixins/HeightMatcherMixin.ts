@@ -18,9 +18,15 @@ export default (reference) => ({
         ? `${this.$refs[reference].getBoundingClientRect().height}px`
         : '0px'
     },
-    updateElementHeight() {
+    updateElementHeight(retries: number = 0) {
       const newHeight = this.getCurrentElementHeight()
       if (newHeight === this.elementHeight) {
+        if (retries < 10) {
+          window.requestAnimationFrame(() => {
+            this.updateElementHeight(++retries)
+          })
+          return
+        }
         this.isAnimating = false
         return
       }

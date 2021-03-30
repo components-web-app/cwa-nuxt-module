@@ -3,11 +3,12 @@ import {
   Notification,
   NotificationLevels
 } from '../templates/components/cwa-api-notifications/types'
-import { NOTIFICATION_EVENTS } from '../events'
-import ComponentMixin from './ComponentMixin'
+import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
+import ResourceMixin from './ResourceMixin'
+import ApiRequestMixin from './ApiRequestMixin'
 
 export default {
-  mixins: [ComponentMixin],
+  mixins: [ResourceMixin, ApiRequestMixin],
   props: {
     field: {
       required: true,
@@ -28,6 +29,13 @@ export default {
     }
   },
   watch: {
+    outdated(isOutdated) {
+      this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
+        field: this.field,
+        category: this.notificationCategory,
+        status: isOutdated ? 0 : 1
+      } as StatusEvent)
+    },
     inputValue() {
       this.error = null
       if (this.resource[this.field] === this.inputValue) {
@@ -42,7 +50,9 @@ export default {
     }
   },
   mounted() {
-    this.inputValue = this.resource[this.field]
+    // clone any value so we are not mutating the store
+    this.inputValue =
+      JSON.parse(JSON.stringify(this.resource[this.field])) || null
   },
   methods: {
     async update() {
@@ -65,6 +75,11 @@ export default {
           category: this.notificationCategory
         }
         this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+        this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
+          field: this.field,
+          category: this.notificationCategory,
+          status: -1
+        } as StatusEvent)
       }
     }
   }

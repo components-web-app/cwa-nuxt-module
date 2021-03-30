@@ -1,4 +1,47 @@
+$control-height: 3.4rem !default
+$control-font-size: 1.4rem !default
+$control-color: $cwa-color-text-light !default
+$control-background-color: rgba(black, .3) !default
+$control-border: 1px solid rgba(black, .3) !default
+=cwa-control
+  border: $control-border
+  background-color: $control-background-color
+  background-clip: padding-box
+  color: $control-color
+  height: $control-height
+  font-size: $control-font-size
+
 =cwa-input-label
   color: $cwa-color-text-light
   font-weight: $font-weight-light
   opacity: .6
+=cwa-input
+  +cwa-control
+  padding: .2rem 3.8rem .3rem 1.0rem
+  &:hover
+    color: $white
+  &::placeholder
+    color: rgba($cwa-color-text-light, .6)
+=cwa-textarea
+  padding: .5rem 3.8rem .8rem 1.0rem
+  resize: none
+  height: 5em
+=cwa-select-holder
+  position: relative
+  &:hover
+    &::before
+      opacity: 1
+  select
+    background-image: none
+    margin: 0
+  &::before
+    content: ''
+    position: absolute
+    right: 0
+    top: 0
+    height: 100%
+    width: 3.5rem
+    background: 50% 50% no-repeat
+    background-image: url("data:image/svg+xml,%3Csvg height='8' viewBox='0 0 13 8' width='13' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m427.994794 205.787812-5.785521-5.866756c-.279031-.282947-.279031-.741676 0-1.024593l.674789-.68426c.278554-.282464.730011-.283007 1.00922-.001207l4.606733 4.649506 4.606703-4.649506c.279209-.2818.730666-.281257 1.00922.001207l.674789.68426c.279031.282947.279031.741676 0 1.024593l-5.785492 5.866756c-.27903.282917-.73141.282917-1.010441 0z' fill='%23fff' transform='translate(-422 -198)'/%3E%3C/svg%3E")
+    opacity: .6
+    pointer-events: none

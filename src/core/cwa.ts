@@ -84,6 +84,12 @@ export default class Cwa {
     return this.$state.resources.current
   }
 
+  getResourceIri(iri) {
+    return this.resources[
+      this.$storage.getTypeFromIri(iri, this.$storage.getCategoryFromIri(iri))
+    ]?.byId?.[iri]
+  }
+
   get layout() {
     return this.$storage.getState('layout')
   }
@@ -107,6 +113,13 @@ export default class Cwa {
   saveResource(resource: any, category?: string, isNew?: boolean) {
     this.$storage.setResource({ category, isNew, resource })
   }
+
+  // isResourceCurrent(resource: object, iri: string) {
+  //   const saved = this.$state.resources.current[
+  //     this.$storage.getCategoryFromIri(iri)
+  //   ][iri]
+  //   return JSON.stringify(resource) === JSON.stringify(saved)
+  // }
 
   /**
    * API Requests
@@ -210,6 +223,7 @@ export default class Cwa {
   async updateResource(endpoint: string, data: any, category?: string) {
     const doRequest = this.initNewRequest(
       async () => {
+        this.fetcher.closeMercure()
         return await this.ctx.$axios.$patch(endpoint, data, {
           headers: {
             'Content-Type': 'application/merge-patch+json'
@@ -223,7 +237,7 @@ export default class Cwa {
     const newResource = await doRequest()
     // we may get a different resource back if it is 'publishable'
     newResource['@id'] = endpoint
-    return this.processResource(await doRequest(), category)
+    return this.processResource(newResource, category)
   }
 
   async deleteResource(id: string) {

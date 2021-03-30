@@ -15,6 +15,7 @@ export default Vue.extend({
   mounted() {
     this.$cwa.$eventBus.$on(NOTIFICATION_EVENTS.add, this.addNotification)
     this.$cwa.$eventBus.$on(NOTIFICATION_EVENTS.remove, this.removeNotification)
+    this.$cwa.$eventBus.$on(NOTIFICATION_EVENTS.clear, this.clearNotifications)
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(NOTIFICATION_EVENTS.add, this.addNotification)
@@ -22,6 +23,7 @@ export default Vue.extend({
       NOTIFICATION_EVENTS.remove,
       this.removeNotification
     )
+    this.$cwa.$eventBus.$off(NOTIFICATION_EVENTS.clear, this.clearNotifications)
   },
   methods: {
     isSupportedCategory(category) {
@@ -30,6 +32,12 @@ export default Vue.extend({
         (!category && !listenCategories.length) ||
         listenCategories.includes(category)
       )
+    },
+    clearNotifications(category) {
+      if (!this.isSupportedCategory(category)) {
+        return
+      }
+      this.notifications = []
     },
     addNotification(notificationEvent: Notification): TimestampedNotification {
       if (!this.isSupportedCategory(notificationEvent.category)) {

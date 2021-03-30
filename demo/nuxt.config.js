@@ -28,46 +28,10 @@ export default {
   },
   css: ['~/assets/sass/main.sass'],
   buildModules: ['@nuxt/typescript-build'],
-  modules: [
-    '@nuxtjs/style-resources',
-    '@nuxtjs/axios',
-    '@nuxtjs/auth-next',
-    coreModuleDist
-  ],
+  modules: [coreModuleDist],
   plugins: [{ src: '~/plugins/quill', ssr: false }],
   router: {
     middleware: ['auth', 'routeLoader']
-  },
-  axios: {
-    credentials: true,
-    progress: false
-  },
-  auth: {
-    redirect: {
-      login: '/login',
-      logout: '/login',
-      home: '/',
-      callback: false
-    },
-    defaultStrategy: 'local',
-    strategies: {
-      cookie: {
-        user: {
-          autoFetch: true,
-          property: ''
-        },
-        endpoints: {
-          login: { url: '/login', method: 'post' },
-          logout: { url: '/logout', method: 'post' },
-          user: { url: '/me', method: 'get' }
-        },
-        token: {
-          global: false,
-          required: false,
-          type: false
-        }
-      }
-    }
   },
   cwa: {
     allowUnauthorizedTls: true,

@@ -27,7 +27,7 @@
       <cwa-admin-select
         v-model="component.uiComponent"
         label="UI Component"
-        :options="Object.keys(pageComponents)"
+        :options="pageComponents"
         v-bind="inputProps('uiComponent')"
       />
     </template>
@@ -62,7 +62,9 @@ export default {
   mixins: [IriPageMixin(postEndpoint), LoadLayoutsMixin],
   data() {
     return {
-      pageComponents
+      pageComponents: Object.keys(pageComponents).map((item) =>
+        item.replace(/^CwaPages/, '')
+      )
     }
   },
   methods: {
