@@ -51,8 +51,9 @@ export default {
   },
   mounted() {
     const value = this.resource[this.field]
+    const type = typeof value
     const requiresNormalizing =
-      typeof value === 'string' || typeof value === 'object' || value === null
+      value !== null && (type === 'string' || type === 'object')
     // clone any value so we are not mutating the store
     this.inputValue = requiresNormalizing
       ? JSON.parse(JSON.stringify(value)) || null

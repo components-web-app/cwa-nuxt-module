@@ -8,8 +8,8 @@
   />
 </template>
 <script>
-import InputMixin from '@cwa/nuxt-module/core/mixins/InputMixin'
-import CwaAdminMultiselect from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-multiselect.vue'
+import CwaAdminMultiselect from '../../input/cwa-admin-multiselect.vue'
+import InputMixin from '../../../../../mixins/InputMixin'
 import CwaSelectMixin from '../../input/CwaSelectMixin'
 
 export default {

@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import SelectMixin from '@cwa/nuxt-module/core/mixins/SelectMixin'
+import SelectMixin from '../../../mixins/SelectMixin'
 import IconAdd from '../../../assets/images/icon-add.svg?inline'
 export default {
   components: { IconAdd },
@@ -112,8 +112,8 @@ export default {
     updateValue() {
       // currently this will emit normalized options.. { label: string, value: any }
       // we should really be emitting whatever the user had provided though
-      // this.$emit('input', this.currentValue)
-      this.$emit('change', this.currentValue)
+      this.$emit('input', this.currentValue)
+      // this.$emit('change', this.currentValue)
     }
   }
 }
