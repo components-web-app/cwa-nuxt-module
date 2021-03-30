@@ -63,9 +63,12 @@
 
 <script>
 import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  ADMIN_BAR_EVENTS
+} from '@cwa/nuxt-module/core/events'
 import CwaNuxtLink from '../utils/cwa-nuxt-link'
 import TransitionExpand from '../utils/transition-expand.vue'
-import { COMPONENT_MANAGER_EVENTS, ADMIN_BAR_EVENTS } from '../../../events.ts'
 import CwaAdminBarMenu from './cwa-admin-bar-menu'
 import CwaAdminToggle from './input/cwa-admin-toggle'
 
