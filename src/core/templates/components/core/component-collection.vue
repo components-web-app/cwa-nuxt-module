@@ -24,12 +24,14 @@
     <component
       :is="isDraggable ? 'draggable' : 'div'"
       v-model="sortedComponentPositions"
+      class="position-container"
       :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
     >
       <component-position
         v-for="iri in sortedComponentPositions"
         :key="iri"
+        :class="isDraggable ? 'is-draggable' : null"
         :iri="iri"
       />
       <component
@@ -347,9 +349,40 @@ export default {
     opacity: .5
   100%
     opacity: 1
+
+@keyframes wobble-1
+  0%
+    transform: rotate(-.1deg)
+    animation-timing-function: ease-in
+
+  50%
+    transform: rotate(.3deg)
+    animation-timing-function: ease-out
+
+@keyframes wobble-2
+  0%
+    transform: rotate(.1deg)
+    animation-timing-function: ease-in
+
+  50%
+    transform: rotate(-.3deg)
+    animation-timing-function: ease-out
+
 .component-collection
   transition: opacity .3s
   opacity: 1
+  > .position-container > .is-draggable
+    &:nth-child(2n)
+      animation-name: wobble-1
+      animation-iteration-count: infinite
+      animation-duration: .5s
+      transform-origin: 50% 10%
+    &:nth-child(2n-1)
+      animation-name: wobble-2
+      animation-iteration-count: infinite
+      animation-duration: .5s
+      animation-direction: alternate
+      transform-origin: 30% 5%
   &.is-deleting
     opacity: .5
   &.is-reloading
