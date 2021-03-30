@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import SelectMixin from '@cwa/nuxt-module/core/mixins/SelectMixin.ts'
+import SelectMixin from '@cwa/nuxt-module/core/mixins/SelectMixin'
 import IconAdd from '../../../assets/images/icon-add.svg?inline'
 export default {
   components: { IconAdd },

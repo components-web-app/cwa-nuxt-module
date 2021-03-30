@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import CwaInputMixin from '@cwa/nuxt-module/core/templates/components/admin/input/CwaInputMixin.ts'
+import CwaInputMixin from '@cwa/nuxt-module/core/templates/components/admin/input/CwaInputMixin'
 import CwaInputWrapper from './wrapper.vue'
 
 export default {

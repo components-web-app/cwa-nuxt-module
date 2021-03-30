@@ -8,8 +8,8 @@
   />
 </template>
 <script>
-import InputMixin from '../../../../../mixins/InputMixin.ts'
-import CwaSelectMixin from '../../input/CwaSelectMixin.ts'
+import InputMixin from '../../../../../mixins/InputMixin'
+import CwaSelectMixin from '../../input/CwaSelectMixin'
 import CwaAdminSelect from '../../input/cwa-admin-select.vue'
 
 export default {
