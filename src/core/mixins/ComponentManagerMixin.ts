@@ -53,7 +53,7 @@ export const ComponentManagerMixin = {
       return this.resource['@id']
     },
     cmHighlightClass() {
-      return !this.published
+      return this.publishable && !this.published
         ? 'cwa-manager-highlight is-draft'
         : 'cwa-manager-highlight'
     }
