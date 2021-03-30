@@ -13,7 +13,7 @@
     <!-- if there are no components -->
     <client-only v-if="$cwa.isEditMode">
       <component-load-error
-        v-if="!sortedComponentPositions.length && !this.newComponentEvent"
+        v-if="!sortedComponentPositions.length && !newComponentEvent"
       >
         <div class="add-button-holder">
           <cwa-add-button :highlight="true" />
