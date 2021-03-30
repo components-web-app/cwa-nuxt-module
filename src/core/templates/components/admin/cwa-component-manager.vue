@@ -281,6 +281,50 @@ export default {
     box-shadow: none
   40%
     opacity: 1
+    box-shadow: 0 0 4px 0 $cwa-success
+    width: 100%
+    height: 100%
+  80%
+    opacity: 0
+    box-shadow: 0 0 8px 0 $cwa-success
+    width: calc(100% + 6px)
+    height: calc(100% + 6px)
+  100%
+    opacity: 0
+    box-shadow: 0 0 8px 0 $cwa-success
+    width: calc(100% + 6px)
+    height: calc(100% + 6px)
+
+@keyframes cwa-manager-highlight-after-animation
+  0%
+    opacity: 0
+    width: 100%
+    height: 100%
+    box-shadow: none
+  40%
+    opacity: 1
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 1px 0 $cwa-success, 0 0 2px 0 $cwa-success, 0 0 4px 0 $cwa-success
+  80%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 10px 0 $cwa-success, 0 0 2px 0 $cwa-success, 0 0 2px 0 $cwa-success
+  100%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 10px 0 $cwa-success, 0 0 2px 0 $cwa-success, 0 0 2px 0 $cwa-success
+
+@keyframes cwa-manager-draft-highlight-before-animation
+  0%
+    opacity: 0
+    width: calc(100% - 2px)
+    height: calc(100% - 2px)
+    box-shadow: none
+  40%
+    opacity: 1
     box-shadow: 0 0 4px 0 $cwa-warning
     width: 100%
     height: 100%
@@ -295,7 +339,7 @@ export default {
     width: calc(100% + 6px)
     height: calc(100% + 6px)
 
-@keyframes cwa-manager-highlight-after-animation
+@keyframes cwa-manager-draft-highlight-after-animation
   0%
     opacity: 0
     width: 100%
@@ -338,6 +382,11 @@ export default {
     content: ''
     animation: cwa-manager-highlight-after-animation 1.5s infinite linear
     animation-delay: .2s
+  &.is-draft
+    &::before
+      animation-name: cwa-manager-draft-highlight-before-animation
+    &::after
+      animation-name: cwa-manager-draft-highlight-after-animation
 
 .cwa-components-manager
   position: relative

@@ -51,6 +51,19 @@ export const ComponentManagerMixin = {
     },
     computedIri() {
       return this.resource['@id']
+    },
+    cmHighlightClass() {
+      return !this.published
+        ? 'cwa-manager-highlight is-draft'
+        : 'cwa-manager-highlight'
+    }
+  },
+  watch: {
+    published() {
+      if (!this.highlightElement) {
+        return
+      }
+      this.highlightElement.className = this.cmHighlightClass
     }
   },
   methods: {
@@ -88,7 +101,7 @@ export const ComponentManagerMixin = {
             this.addedRelativePosition = true
           }
           this.highlightElement = document.createElement('div')
-          this.highlightElement.classList.add('cwa-manager-highlight')
+          this.highlightElement.className = this.cmHighlightClass
           this.$el.appendChild(this.highlightElement)
         }
         return
