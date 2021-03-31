@@ -22,7 +22,7 @@
             v-if="selectedTab"
             :key="loopKey('tab-content', selectedTabIndex)"
             :resource="resource"
-            :context="selectedTab.context"
+            :context="contextWithPosition"
             @draggable="toggleDraggable"
           />
         </div>
@@ -47,6 +47,11 @@ export default {
       type: Object,
       required: false,
       default: null
+    },
+    selectedPosition: {
+      type: String,
+      required: false,
+      default: null
     }
   },
   data() {
@@ -56,6 +61,12 @@ export default {
     }
   },
   computed: {
+    contextWithPosition() {
+      return Object.assign(
+        { componentPosition: this.selectedPosition },
+        this.selectedTab.context
+      )
+    },
     orderedTabs() {
       return [...this.tabs].sort(
         (itemA: ComponentManagerTab, itemB: ComponentManagerTab) => {
@@ -111,7 +122,9 @@ export default {
         this.showTab(0)
       }
       this.$nextTick(() => {
-        this.areTabsShowing = newValue
+        setTimeout(() => {
+          this.areTabsShowing = newValue
+        }, 100)
       })
     },
     showTab(newIndex) {

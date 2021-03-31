@@ -36,13 +36,6 @@
 <script>
 import CwaSelectMixin from './CwaSelectMixin'
 export default {
-  mixins: [CwaSelectMixin],
-  props: {
-    wrapper: {
-      type: Function,
-      required: false,
-      default: null
-    }
-  }
+  mixins: [CwaSelectMixin]
 }
 </script>

@@ -18,7 +18,7 @@ export default {
       default: null
     },
     value: {
-      type: [String, Boolean, Array],
+      type: [String, Boolean, Array, Number],
       required: false,
       default: null
     },
@@ -38,6 +38,11 @@ export default {
         // notifications.forEach((item: Notification) => {})
         return true
       }
+    },
+    wrapper: {
+      type: Function,
+      required: false,
+      default: null
     }
   },
   watch: {

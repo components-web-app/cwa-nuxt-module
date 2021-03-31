@@ -44,7 +44,8 @@ export const COMPONENT_MANAGER_EVENTS = {
   show: `${prefix}:${componentManagerCategory}:show`,
   showTabs: `${prefix}:${componentManagerCategory}:show-tabs`,
   tabChanged: `${prefix}:${componentManagerCategory}:tab-changed`,
-  draggable: `${prefix}:${componentManagerCategory}:draggable`
+  draggable: `${prefix}:${componentManagerCategory}:draggable`,
+  selectPosition: `${prefix}:${componentManagerCategory}:select-position`
 }
 
 export const ADMIN_BAR_EVENTS = {

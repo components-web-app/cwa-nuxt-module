@@ -86,13 +86,11 @@ export default class Cwa {
 
   // find a resource from local storage or fetch from API
   async findResource(iri) {
-    return this.getResourceIri(iri) || (await this.refreshResource(iri))
+    return this.getResource(iri) || (await this.refreshResource(iri))
   }
 
-  getResourceIri(iri) {
-    return this.resources[
-      this.$storage.getTypeFromIri(iri, this.$storage.getCategoryFromIri(iri))
-    ]?.byId?.[iri]
+  getResource(iri) {
+    return this.$storage.getResource(iri)
   }
 
   get layout() {

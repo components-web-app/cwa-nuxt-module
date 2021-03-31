@@ -29,7 +29,7 @@ export default {
       return this.$cwa.$storage.getCategoryFromIri(this.displayIri)
     },
     resource() {
-      return this.$cwa.$storage.getResource(this.displayIri)
+      return this.$cwa.getResource(this.displayIri)
     }
   }
 }

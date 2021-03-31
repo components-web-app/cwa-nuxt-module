@@ -19,7 +19,7 @@ export default {
     storeComponent: {
       get() {
         return this.resource['@id']
-          ? this.$cwa.$storage.getResource(this.resource['@id'])
+          ? this.$cwa.getResource(this.resource['@id'])
           : null
       },
       set(resource) {

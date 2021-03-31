@@ -20,6 +20,7 @@
                 <tabs
                   :tabs="componentTabs"
                   :resource="componentResource"
+                  :selected-position="selectedPosition"
                   @draggable="toggleDraggable"
                 />
               </div>
@@ -94,7 +95,8 @@ export default {
       savedStatus: 99, // 0 orange, 1 green, -1 danger
       warningNotificationsShowing: false,
       showHighlightOverlay: false,
-      showTabs: false
+      showTabs: false,
+      selectedPosition: null
     } as {
       expanded: boolean
       components: Array<ComponentManagerAddEvent>
@@ -103,6 +105,7 @@ export default {
       warningNotificationsShowing: boolean
       showHighlightOverlay: boolean
       showTabs: boolean
+      selectedPosition?: string
     }
   },
   computed: {
@@ -114,7 +117,7 @@ export default {
       if (!iri) {
         return false
       }
-      const storageResource = this.$cwa.getResourceIri(iri)
+      const storageResource = this.$cwa.getResource(iri)
       return !storageResource._metadata.published
     },
     isNew() {
@@ -186,17 +189,19 @@ export default {
   },
   mounted() {
     window.addEventListener('click', this.show)
+    this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
-    this.$cwa.$eventBus.$on(EVENTS.tabChanged, this.tabChangedListener)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.show)
+    this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
-    this.$cwa.$eventBus.$off(EVENTS.tabChanged, this.tabChangedListener)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
-    tabChangedListener() {},
+    selectPosition(iri) {
+      this.selectedPosition = iri
+    },
     toggleDraggable(isDraggable) {
       let closestCollection = null
       if (this.components) {
@@ -257,6 +262,7 @@ export default {
     },
     show() {
       this.pendingComponents = []
+      this.selectedPosition = null
       if (this.showingCriteria) {
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }
