@@ -12,8 +12,10 @@
 
 <script lang="ts">
 import consola from 'consola'
-import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
-import { NewComponentEvent } from '../../types'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  NewComponentEvent
+} from '../../../../../../events'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
 import components from '~/.nuxt/cwa/components'

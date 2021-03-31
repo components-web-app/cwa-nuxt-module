@@ -387,10 +387,10 @@ export class Fetcher {
 
       // Must wait for existing api requests to happen and storage to update or we think something has changed when
       // it is this application changing it
-      const apiRequestInProgress = this.ctx.storage.getState(
-        'apiRequestInProgress'
+      const apiRequestsInProgress = this.ctx.storage.getState(
+        'apiRequestsInProgress'
       )
-      if (!apiRequestInProgress) {
+      if (apiRequestsInProgress === 0) {
         consola.info(
           'Invoking Mercure message handler. No request in progress.'
         )
@@ -401,9 +401,9 @@ export class Fetcher {
         'Mercure message handler waiting for current request to complete...'
       )
       const unwatchFn = this.ctx.storage.watchState(
-        'apiRequestInProgress',
+        'apiRequestsInProgress',
         (newValue) => {
-          if (!newValue) {
+          if (newValue === 0) {
             consola.info('Request complete. Invoking Mercure message handler')
             processMessage()
             unwatchFn()

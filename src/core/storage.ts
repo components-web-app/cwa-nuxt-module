@@ -29,7 +29,7 @@ export class Storage {
     const storeModule = {
       namespaced: true,
       state: () => ({
-        apiRequestInProgress: false,
+        apiRequestsInProgress: 0,
         editMode: false,
         resources: {
           new: {},
@@ -130,6 +130,8 @@ export class Storage {
 
               const cleanResourceForComparison = (obj) => {
                 const newObj = Object.assign({}, obj)
+                // remove published resource
+                delete newObj.publishedResource
                 // remove modified at timestamp
                 delete newObj.modifiedAt
                 // remove null values
@@ -138,6 +140,12 @@ export class Storage {
                 )
                 return newObj
               }
+              consola.debug(
+                JSON.stringify(cleanResourceForComparison(currentResource))
+              )
+              consola.debug(
+                JSON.stringify(cleanResourceForComparison(payload.resource))
+              )
               if (
                 JSON.stringify(cleanResourceForComparison(currentResource)) ===
                 JSON.stringify(cleanResourceForComparison(payload.resource))
@@ -147,6 +155,9 @@ export class Storage {
                 )
                 return
               }
+              consola.info(
+                `Added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is different to the existing one`
+              )
             }
           }
           const currentResourceState = newState[payload.name]
@@ -287,8 +298,22 @@ export class Storage {
     )
   }
 
-  setApiRequestInProgress(requestInProgress: boolean) {
-    this.setState('apiRequestInProgress', requestInProgress)
+  get apiRequestsInProgress() {
+    return this.getState('apiRequestsInProgress')
+  }
+
+  setApiRequestStarted(requestCount: number = 1) {
+    this.setState(
+      'apiRequestsInProgress',
+      this.apiRequestsInProgress + requestCount
+    )
+  }
+
+  setApiRequestsComplete(requestCount: number = 1) {
+    this.setState(
+      'apiRequestsInProgress',
+      this.apiRequestsInProgress - requestCount
+    )
   }
 
   setState(key, value) {

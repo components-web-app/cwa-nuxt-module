@@ -84,6 +84,7 @@ export default class Cwa {
     return this.$state.resources.current
   }
 
+  // find a resource from local storage or fetch from API
   async findResource(iri) {
     return this.getResourceIri(iri) || (await this.refreshResource(iri))
   }
@@ -162,7 +163,7 @@ export default class Cwa {
     requestFn: Function,
     { eventName, eventParams }: { eventName: string; eventParams: any }
   ) {
-    this.$storage.setApiRequestInProgress(true)
+    this.$storage.setApiRequestStarted()
     return async () => {
       try {
         return await requestFn()
@@ -176,8 +177,7 @@ export default class Cwa {
 
   private processResource(resource, category) {
     this.saveResource(resource, category)
-    this.initMercure()
-    this.$storage.setApiRequestInProgress(false)
+    this.$storage.setApiRequestsComplete()
     return resource
   }
 
@@ -188,6 +188,7 @@ export default class Cwa {
         this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
           this.saveResource(refreshResource, null)
           this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
+          consola.debug('Resource refreshed', refreshResource)
         })
       )
     }
@@ -202,7 +203,6 @@ export default class Cwa {
   ) {
     const doRequest = this.initNewRequest(
       async () => {
-        this.fetcher.closeMercure()
         const resource = await this.ctx.$axios.$post(endpoint, data)
         if (refreshEndpoints && refreshEndpoints.length) {
           await this.refreshEndpointsArray(refreshEndpoints)
@@ -227,7 +227,6 @@ export default class Cwa {
   async updateResource(endpoint: string, data: any, category?: string) {
     const doRequest = this.initNewRequest(
       async () => {
-        this.fetcher.closeMercure()
         return await this.ctx.$axios.$patch(endpoint, data, {
           headers: {
             'Content-Type': 'application/merge-patch+json'

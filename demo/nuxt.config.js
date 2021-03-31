@@ -3,8 +3,7 @@ import fs from 'fs'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
-const API_URL =
-  'http://something-else' || process.env.API_URL || 'https://localhost:8443'
+console.log('CONSOLA_LEVEL', process.env.CONSOLA_LEVEL)
 
 const https = process.env.DISABLE_HTTPS
   ? null
@@ -16,9 +15,6 @@ const https = process.env.DISABLE_HTTPS
 export default {
   server: {
     https
-  },
-  publicRuntimeConfig: {
-    API_URL
   },
   head: {
     meta: [

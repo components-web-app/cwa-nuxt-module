@@ -94,13 +94,15 @@ export default {
       for (const positionIri of resource.componentPositions) {
         promises.push(
           new Promise((resolve) => {
-            this.$cwa
-              .findResource(positionIri)
-              .then(({ componentCollection }) => {
-                this.$cwa.findResource(componentCollection).then(() => {
-                  resolve(true)
-                })
+            this.$cwa.findResource(positionIri).then((pos) => {
+              if (!pos) {
+                resolve(true)
+                return
+              }
+              this.$cwa.findResource(pos.componentCollection).then(() => {
+                resolve(true)
               })
+            })
           })
         )
       }
