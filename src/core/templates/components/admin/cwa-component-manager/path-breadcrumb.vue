@@ -58,8 +58,9 @@ export default {
     }
   },
   computed: {
+    // we will need to use the `findResource` method to ensure we have loaded all the relevant component locations and collections
     locations() {
-      const resource = this.resource
+      const resource = this.resource?.publishedResource || this.resource
       const totals = {
         layouts: 0,
         pages: 0,
@@ -82,6 +83,28 @@ export default {
       }
 
       return totals
+    }
+  },
+  async mounted() {
+    const resource = this.resource?.publishedResource || this.resource
+    if (resource) {
+      // we should ensure all the positions and collections have been resolved from the server
+      // in future we may want to return the totals directly to the component for an admin
+      const promises = []
+      for (const positionIri of resource.componentPositions) {
+        promises.push(
+          new Promise((resolve) => {
+            this.$cwa
+              .findResource(positionIri)
+              .then(({ componentCollection }) => {
+                this.$cwa.findResource(componentCollection).then(() => {
+                  resolve(true)
+                })
+              })
+          })
+        )
+      }
+      await Promise.all(promises)
     }
   },
   methods: {

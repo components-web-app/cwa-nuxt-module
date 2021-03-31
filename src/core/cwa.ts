@@ -84,6 +84,10 @@ export default class Cwa {
     return this.$state.resources.current
   }
 
+  async findResource(iri) {
+    return this.getResourceIri(iri) || (await this.refreshResource(iri))
+  }
+
   getResourceIri(iri) {
     return this.resources[
       this.$storage.getTypeFromIri(iri, this.$storage.getCategoryFromIri(iri))
