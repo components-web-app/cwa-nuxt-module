@@ -22,6 +22,13 @@ $control-border: 1px solid rgba(black, .3) !default
     color: $white
   &::placeholder
     color: rgba($cwa-color-text-light, .6)
+  &[type=number]
+    -moz-appearance: textfield
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button
+    -webkit-appearance: none
+    margin: 0
+
 =cwa-textarea
   padding: .5rem 3.8rem .8rem 1.0rem
   resize: none

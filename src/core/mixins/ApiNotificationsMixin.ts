@@ -64,13 +64,10 @@ export default Vue.extend({
       if (!this.isSupportedCategory(event.category)) {
         return
       }
-      const index = this.notifications.findIndex(
-        (obj: Notification) => obj.code === event.code
-      )
-      if (index === -1) {
-        return
-      }
-      this.notifications.splice(index, 1)
+
+      this.notifications = this.notifications.filter((obj: Notification) => {
+        return obj.code !== event.code
+      })
     }
   }
 })

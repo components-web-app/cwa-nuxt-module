@@ -77,6 +77,17 @@ import StatusIcon from './status-icon.vue'
 import ErrorNotifications from './error-notifications.vue'
 import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
 
+interface DataInterface {
+  expanded: boolean
+  components: Array<ComponentManagerAddEvent>
+  pendingComponents: Array<ComponentManagerAddEvent>
+  savedStatus: Number
+  warningNotificationsShowing: boolean
+  showHighlightOverlay: boolean
+  showTabs: boolean
+  selectedPosition?: string
+}
+
 export default {
   components: {
     PathBreadcrumbs,
@@ -87,7 +98,7 @@ export default {
     TransitionExpand
   },
   mixins: [HeightMatcherMixin('cwaManager')],
-  data() {
+  data(): DataInterface {
     return {
       expanded: false,
       components: [],
@@ -97,15 +108,6 @@ export default {
       showHighlightOverlay: false,
       showTabs: false,
       selectedPosition: null
-    } as {
-      expanded: boolean
-      components: Array<ComponentManagerAddEvent>
-      pendingComponents: Array<ComponentManagerAddEvent>
-      savedStatus: Number
-      warningNotificationsShowing: boolean
-      showHighlightOverlay: boolean
-      showTabs: boolean
-      selectedPosition?: string
     }
   },
   computed: {

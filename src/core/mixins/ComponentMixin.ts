@@ -6,19 +6,69 @@ import ComponentManagerMixin, {
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 
+interface DataInterface {
+  componentManagerContext: ComponentManagerComponentContext
+  showingSortValueElement?: Element
+  addedRelativePosition: boolean
+}
+
 export default {
   mixins: [ResourceMixin, ApiRequestMixin, ComponentManagerMixin],
-  data() {
+  props: {
+    showSort: {
+      type: Boolean,
+      default: false,
+      required: false
+    },
+    sortValue: {
+      type: Number,
+      default: null,
+      required: false
+    }
+  },
+  data(): DataInterface {
     return {
       componentManagerContext: {
         componentTab: {
           UiComponents: [],
           UiClassNames: []
         }
-      } as ComponentManagerComponentContext
+      },
+      showingSortValueElement: null,
+      addedRelativePosition: false
+    }
+  },
+  watch: {
+    displaySortValue(newValue) {
+      if (newValue !== null) {
+        if (!this.showingSortValueElement) {
+          if (this.$el.style.position === '') {
+            this.$el.style.position = 'relative'
+            this.addedRelativePosition = true
+          }
+          this.showingSortValueElement = document.createElement('span')
+          this.showingSortValueElement.className = 'cwa-sort-value'
+          this.$el.appendChild(this.showingSortValueElement)
+        }
+        this.showingSortValueElement.innerHTML = newValue
+        return
+      }
+      if (this.showingSortValueElement) {
+        this.showingSortValueElement.parentNode.removeChild(
+          this.showingSortValueElement
+        )
+        this.showingSortValueElement = null
+        if (this.addedRelativePosition) {
+          this.$el.style.position = ''
+          this.addedRelativePosition = false
+        }
+      }
     }
   },
   computed: {
+    displaySortValue() {
+      return this.showSort ? this.sortValue : null
+    },
     componentManager(): ComponentManagerComponent {
       return {
         name: this?.resource?.['@type'] || 'Unknown Component',
@@ -41,7 +91,10 @@ export default {
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/sort-order.vue'
             ),
-          priority: 100
+          priority: 100,
+          context: {
+            showOrderValues: true
+          }
         },
         {
           label: 'Info',

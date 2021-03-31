@@ -12,6 +12,9 @@
         v-model="value"
         :required="required"
         @input="updateValue($event.target.value)"
+        @keypress="$emit('keypress')"
+        @keydown="$emit('keydown')"
+        @keyup="$emit('keyup')"
       />
       <input
         v-else
@@ -20,6 +23,9 @@
         :value="value"
         :required="required"
         @input="updateValue($event.target.value)"
+        @keypress="$emit('keypress')"
+        @keydown="$emit('keydown')"
+        @keyup="$emit('keyup')"
       />
     </div>
   </component>

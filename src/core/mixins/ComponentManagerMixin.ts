@@ -111,6 +111,7 @@ export const ComponentManagerMixin = {
         this.highlightElement = null
         if (this.addedRelativePosition) {
           this.$el.style.position = ''
+          this.addedRelativePosition = false
         }
       }
     }

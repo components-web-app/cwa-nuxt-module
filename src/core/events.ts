@@ -1,4 +1,10 @@
 import { Vue } from 'vue/types/vue'
+import { ComponentManagerTab } from './mixins/ComponentManagerMixin'
+
+export interface TabChangedEvent {
+  newTab: ComponentManagerTab
+  previousTab: ComponentManagerTab
+}
 
 export interface NewComponentEvent {
   collection: string

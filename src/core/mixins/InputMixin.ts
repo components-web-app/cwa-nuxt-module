@@ -1,7 +1,8 @@
 import debounce from 'lodash.debounce'
 import {
   Notification,
-  NotificationLevels
+  NotificationLevels,
+  RemoveNotificationEvent
 } from '../templates/components/cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
 import ResourceMixin from './ResourceMixin'
@@ -61,6 +62,13 @@ export default {
   },
   methods: {
     async update() {
+      const notificationCode = 'input-error-' + this.field
+      const removeEvent: RemoveNotificationEvent = {
+        code: notificationCode,
+        category: this.notificationCategory
+      }
+      this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
+
       try {
         await this.$cwa.updateResource(
           this.iri,
@@ -71,7 +79,7 @@ export default {
       } catch (message) {
         this.error = message
         const notification: Notification = {
-          code: 'input-error',
+          code: notificationCode,
           title: 'Input Error',
           message,
           level: NotificationLevels.ERROR,

@@ -31,7 +31,8 @@
       <component-position
         v-for="iri in sortedComponentPositions"
         :key="iri"
-        :class="isDraggable ? 'is-draggable' : null"
+        :class="[isDraggable ? 'is-draggable' : null, 'component-position']"
+        :show-sort="showOrderValues"
         :iri="iri"
       />
       <component
@@ -55,7 +56,8 @@ import {
 import {
   COMPONENT_MANAGER_EVENTS,
   DraggableEvent,
-  NewComponentEvent
+  NewComponentEvent,
+  TabChangedEvent
 } from '../../../events'
 
 export default {
@@ -95,7 +97,8 @@ export default {
       reloading: false,
       previousSortedComponentPositions: null,
       newComponentEvent: null,
-      isDraggable: false
+      isDraggable: false,
+      showOrderValues: false
     }
   },
   computed: {
@@ -231,8 +234,9 @@ export default {
     )
   },
   methods: {
-    handleTabChangedEvent() {
+    handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
+      this.showOrderValues = !!event.newTab.context.showOrderValues
     },
     handleSelectComponentEvent(iri?: string) {
       if (this.newComponentEvent && this.newComponentIri !== iri) {
@@ -414,4 +418,22 @@ export default {
       animation-name: cwa-manager-highlight-before-animation-collection
     &::after
       animation-name: cwa-manager-highlight-after-animation-collection
+  .cwa-sort-value
+    pointer-events: none
+    position: absolute
+    top: 0
+    right: 0
+    font:
+      size: 1.2rem
+      weight: $font-weight-semi-bold
+    color: $white
+    background: rgba($cwa-background-dark, .8)
+    border-radius: 50%
+    width: 3rem
+    height: 3rem
+    display: flex
+    align-items: center
+    justify-content: center
+    line-height: 3rem
+    padding-bottom: .2rem
 </style>

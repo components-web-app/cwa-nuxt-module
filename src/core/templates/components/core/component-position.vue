@@ -3,6 +3,8 @@
     v-if="component"
     :component="`CwaComponents${component.uiComponent || component['@type']}`"
     :iri="resource.component"
+    :sort-value="resource.sortValue"
+    :show-sort="showSort"
     @deleted="$emit('deleted')"
   />
   <div v-else-if="resource.pageDataProperty">
@@ -14,7 +16,6 @@
 <script>
 import { StoreCategories } from '@cwa/nuxt-module/core/storage'
 import ComponentManagerMixin, {
-  ComponentManagerAddEvent,
   EVENTS
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import consola from 'consola'
@@ -31,6 +32,11 @@ export default {
     iri: {
       type: String,
       required: true
+    },
+    showSort: {
+      type: Boolean,
+      default: false,
+      required: false
     }
   },
   data() {

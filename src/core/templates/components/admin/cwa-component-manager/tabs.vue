@@ -32,8 +32,8 @@
 </template>
 
 <script lang="ts">
-import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin.ts'
-import { COMPONENT_MANAGER_EVENTS } from '../../../../events'
+import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
+import { COMPONENT_MANAGER_EVENTS, TabChangedEvent } from '../../../../events'
 import TransitionExpand from '../../utils/transition-expand.vue'
 
 export default {
@@ -93,7 +93,7 @@ export default {
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.tabChanged, {
         newTab,
         previousTab
-      })
+      } as TabChangedEvent)
     }
   },
   mounted() {
