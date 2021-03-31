@@ -1,4 +1,13 @@
-const prefix = 'cwa'
+import { Vue } from 'vue/types/vue'
+
+export interface NewComponentEvent {
+  collection: string
+  component(): {
+    component: Promise<Vue>
+  }
+  endpoint: string
+  name: string
+}
 
 export interface DraggableEvent {
   isDraggable: boolean
@@ -13,6 +22,8 @@ export interface StatusEvent extends ResetStatusEvent {
   field: string
   status: number
 }
+
+const prefix = 'cwa'
 
 const apiCategory = 'api'
 export const API_EVENTS = {
@@ -32,6 +43,7 @@ export const COMPONENT_MANAGER_EVENTS = {
   hide: `${prefix}:${componentManagerCategory}:hide`,
   show: `${prefix}:${componentManagerCategory}:show`,
   showTabs: `${prefix}:${componentManagerCategory}:show-tabs`,
+  tabChanged: `${prefix}:${componentManagerCategory}:tab-changed`,
   draggable: `${prefix}:${componentManagerCategory}:draggable`
 }
 

@@ -187,13 +187,16 @@ export default {
   mounted() {
     window.addEventListener('click', this.show)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
+    this.$cwa.$eventBus.$on(EVENTS.tabChanged, this.tabChangedListener)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.show)
-    this.$cwa.$eventBus.$emit(EVENTS.showing, false)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
+    this.$cwa.$eventBus.$off(EVENTS.tabChanged, this.tabChangedListener)
+    this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
+    tabChangedListener() {},
     toggleDraggable(isDraggable) {
       let closestCollection = null
       if (this.components) {

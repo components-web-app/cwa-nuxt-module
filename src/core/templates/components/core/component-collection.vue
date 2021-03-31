@@ -46,19 +46,22 @@
 <script lang="ts">
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
-import ApiRequestMixin from '@cwa/nuxt-module/core/mixins/ApiRequestMixin'
+import ApiRequestMixin from '../../../mixins/ApiRequestMixin'
 import {
   ComponentManagerMixin,
   ComponentManagerComponent
-} from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
-import { COMPONENT_MANAGER_EVENTS, DraggableEvent } from '../../../events'
-import { NewComponentEvent } from '../admin/cwa-component-manager/types'
+} from '../../../mixins/ComponentManagerMixin'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  DraggableEvent,
+  NewComponentEvent
+} from '../../../events'
 
 export default {
   components: {
-    CwaAddButton: () => import('../utils/cwa-add-button.vue'),
     ComponentPosition,
     ComponentLoadError: () => import('./component-load-error.vue'),
+    CwaAddButton: () => import('../utils/cwa-add-button.vue'),
     Draggable: () => import('vuedraggable')
   },
   mixins: [ApiRequestMixin, ComponentManagerMixin],
@@ -203,6 +206,10 @@ export default {
       COMPONENT_MANAGER_EVENTS.draggable,
       this.handleDraggableEvent
     )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.tabChanged,
+      this.handleTabChangedEvent
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -217,8 +224,15 @@ export default {
       COMPONENT_MANAGER_EVENTS.draggable,
       this.handleDraggableEvent
     )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.tabChanged,
+      this.handleTabChangedEvent
+    )
   },
   methods: {
+    handleTabChangedEvent() {
+      this.isDraggable = false
+    },
     handleSelectComponentEvent(iri?: string) {
       if (this.newComponentEvent && this.newComponentIri !== iri) {
         this.newComponentEvent = null

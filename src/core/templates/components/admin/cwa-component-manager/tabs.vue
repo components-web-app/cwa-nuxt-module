@@ -18,12 +18,11 @@
       <div v-show="areTabsShowing" class="tab-content-container">
         <div ref="tabContent" class="tab-content">
           <component
-            :is="tab.component"
-            v-for="(tab, index) of orderedTabs"
-            v-show="index === selectedTabIndex"
-            :key="loopKey('tab-content', index)"
+            :is="selectedTab.component"
+            v-if="selectedTab"
+            :key="loopKey('tab-content', selectedTabIndex)"
             :resource="resource"
-            :context="tab.context"
+            :context="selectedTab.context"
             @draggable="toggleDraggable"
           />
         </div>
@@ -73,6 +72,17 @@ export default {
       return (label, index) => {
         return `${this.resourceId}-${label}-${index}`
       }
+    },
+    selectedTab() {
+      return this.orderedTabs[this.selectedTabIndex] || null
+    }
+  },
+  watch: {
+    selectedTab(newTab, previousTab) {
+      this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.tabChanged, {
+        newTab,
+        previousTab
+      })
     }
   },
   mounted() {
