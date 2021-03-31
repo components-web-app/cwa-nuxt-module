@@ -1,5 +1,6 @@
 import consola from 'consola'
 import { COMPONENT_MANAGER_EVENTS } from '../events'
+import AddElementsMixin from './AddElementsMixin'
 
 export const EVENTS = COMPONENT_MANAGER_EVENTS
 
@@ -36,12 +37,7 @@ export interface ComponentManagerAddEvent {
 }
 
 export const ComponentManagerMixin = {
-  data() {
-    return {
-      highlightElementAdded: false,
-      addedRelativePosition: false
-    }
-  },
+  mixins: [AddElementsMixin],
   computed: {
     componentManager(): ComponentManagerComponent {
       return {
@@ -60,10 +56,10 @@ export const ComponentManagerMixin = {
   },
   watch: {
     published() {
-      if (!this.highlightElement) {
+      if (!this.elementsAdded.highlight) {
         return
       }
-      this.highlightElement.className = this.cmHighlightClass
+      this.elementsAdded.highlight.className = this.cmHighlightClass
     }
   },
   methods: {
@@ -94,26 +90,32 @@ export const ComponentManagerMixin = {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
     managerSelectComponentListener(iri) {
-      if (iri === this.computedIri) {
-        if (!this.highlightElement) {
-          if (this.$el.style.position === '') {
-            this.$el.style.position = 'relative'
-            this.addedRelativePosition = true
+      // the sort order tab will add the position as well
+      // next tick means we don't lose adding it, but there
+      // needs to be a better way - what if another component
+      // or function needs to do this. Perhaps we have to have
+      // events for components to listen to, and this is one?
+      // perhaps we always have a default position on all components?
+      this.$nextTick(() => {
+        if (iri === this.computedIri) {
+          if (!this.elementsAdded.highlight) {
+            this.$set(
+              this.elementsAdded,
+              'highlight',
+              document.createElement('div')
+            )
+            this.elementsAdded.highlight.className = this.cmHighlightClass
+            this.$el.appendChild(this.elementsAdded.highlight)
           }
-          this.highlightElement = document.createElement('div')
-          this.highlightElement.className = this.cmHighlightClass
-          this.$el.appendChild(this.highlightElement)
+          return
         }
-        return
-      }
-      if (this.highlightElement) {
-        this.highlightElement.parentNode.removeChild(this.highlightElement)
-        this.highlightElement = null
-        if (this.addedRelativePosition) {
-          this.$el.style.position = ''
-          this.addedRelativePosition = false
+        if (this.elementsAdded.highlight) {
+          this.elementsAdded.highlight.parentNode.removeChild(
+            this.elementsAdded.highlight
+          )
+          this.$delete(this.elementsAdded, 'highlight')
         }
-      }
+      })
     }
   },
   mounted() {

@@ -8,8 +8,6 @@ import ApiRequestMixin from './ApiRequestMixin'
 
 interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
-  showingSortValueElement?: Element
-  addedRelativePosition: boolean
 }
 
 export default {
@@ -33,35 +31,29 @@ export default {
           UiComponents: [],
           UiClassNames: []
         }
-      },
-      showingSortValueElement: null,
-      addedRelativePosition: false
+      }
     }
   },
   watch: {
     displaySortValue(newValue) {
       if (newValue !== null) {
-        if (!this.showingSortValueElement) {
-          if (this.$el.style.position === '') {
-            this.$el.style.position = 'relative'
-            this.addedRelativePosition = true
-          }
-          this.showingSortValueElement = document.createElement('span')
-          this.showingSortValueElement.className = 'cwa-sort-value'
-          this.$el.appendChild(this.showingSortValueElement)
+        if (!this.elementsAdded.sortValue) {
+          this.$set(
+            this.elementsAdded,
+            'sortValue',
+            document.createElement('span')
+          )
+          this.elementsAdded.sortValue.className = 'cwa-sort-value'
+          this.$el.appendChild(this.elementsAdded.sortValue)
         }
-        this.showingSortValueElement.innerHTML = newValue
+        this.elementsAdded.sortValue.innerHTML = newValue
         return
       }
-      if (this.showingSortValueElement) {
-        this.showingSortValueElement.parentNode.removeChild(
-          this.showingSortValueElement
+      if (this.elementsAdded.sortValue) {
+        this.elementsAdded.sortValue.parentNode.removeChild(
+          this.elementsAdded.sortValue
         )
-        this.showingSortValueElement = null
-        if (this.addedRelativePosition) {
-          this.$el.style.position = ''
-          this.addedRelativePosition = false
-        }
+        this.$delete(this.elementsAdded, 'sortValue')
       }
     }
   },

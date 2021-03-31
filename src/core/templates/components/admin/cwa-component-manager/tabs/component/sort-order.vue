@@ -36,7 +36,9 @@ export default {
   },
   computed: {
     componentPosition() {
-      return this.$cwa.getResource(this.context.componentPosition)
+      return this.context.componentPosition
+        ? this.$cwa.getResource(this.context.componentPosition)
+        : null
     }
   },
   watch: {
