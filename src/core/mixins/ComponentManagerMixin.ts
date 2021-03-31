@@ -93,7 +93,7 @@ export const ComponentManagerMixin = {
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
-    managerComponentListener(iri) {
+    managerSelectComponentListener(iri) {
       if (iri === this.computedIri) {
         if (!this.highlightElement) {
           if (this.$el.style.position === '') {
@@ -119,7 +119,7 @@ export const ComponentManagerMixin = {
     this.$el.addEventListener('click', this.initComponentManagerShowListener)
     this.$cwa.$eventBus.$on(
       EVENTS.selectComponent,
-      this.managerComponentListener
+      this.managerSelectComponentListener
     )
     // will exist with a resource mixin
     if (this.isNew) {
@@ -153,7 +153,7 @@ export const ComponentManagerMixin = {
     this.$el.removeEventListener('click', this.initComponentManagerShowListener)
     this.$cwa.$eventBus.$off(
       EVENTS.selectComponent,
-      this.managerComponentListener
+      this.managerSelectComponentListener
     )
   }
 }

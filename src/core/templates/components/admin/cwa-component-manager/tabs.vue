@@ -88,7 +88,7 @@ export default {
   mounted() {
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.resetTabSelector
+      this.selectComponentListener
     )
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.showTabs,
@@ -98,7 +98,7 @@ export default {
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.resetTabSelector
+      this.selectComponentListener
     )
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.showTabs,
@@ -117,8 +117,10 @@ export default {
     showTab(newIndex) {
       this.selectedTabIndex = newIndex
     },
-    resetTabSelector() {
-      this.showTab(0)
+    selectComponentListener(iri) {
+      if (iri !== this.resource['@id']) {
+        this.showTab(0)
+      }
     },
     toggleDraggable(isDraggable) {
       this.$emit('draggable', isDraggable)

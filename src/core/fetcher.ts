@@ -53,7 +53,7 @@ export class Fetcher {
     path: string
     preload?: string[]
   }) {
-    consola.debug(`Fetching ${url}`)
+    consola.trace(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
 
     // For dynamic components the API must know what route/path the request was originally for

@@ -364,7 +364,7 @@ export class Storage {
       )
       return null
     }
-    consola.debug(
+    consola.trace(
       `Resolved resource type for iri ${iri} in the category ${category} to ${type}`
     )
     return this.state.resources.current[type].byId[iri]

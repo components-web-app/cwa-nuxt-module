@@ -21,9 +21,9 @@
       </component-load-error>
     </client-only>
     <!-- else we loop through components -->
-    <component
-      :is="isDraggable ? 'draggable' : 'div'"
+    <draggable
       v-model="sortedComponentPositions"
+      handle=".is-draggable"
       class="position-container"
       :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
@@ -39,13 +39,14 @@
         v-if="newComponentIri"
         :iri="newComponentIri"
       />
-    </component>
+    </draggable>
   </div>
 </template>
 
 <script lang="ts">
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
+import Draggable from 'vuedraggable'
 import ApiRequestMixin from '../../../mixins/ApiRequestMixin'
 import {
   ComponentManagerMixin,
@@ -60,9 +61,9 @@ import {
 export default {
   components: {
     ComponentPosition,
+    Draggable,
     ComponentLoadError: () => import('./component-load-error.vue'),
-    CwaAddButton: () => import('../utils/cwa-add-button.vue'),
-    Draggable: () => import('vuedraggable')
+    CwaAddButton: () => import('../utils/cwa-add-button.vue')
   },
   mixins: [ApiRequestMixin, ComponentManagerMixin],
   props: {
