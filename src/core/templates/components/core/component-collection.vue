@@ -236,7 +236,7 @@ export default {
   methods: {
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
-      this.showOrderValues = !!event.newTab.context.showOrderValues
+      this.showOrderValues = !!event.newTab.context?.showOrderValues
     },
     handleSelectComponentEvent(iri?: string) {
       if (this.newComponentEvent && this.newComponentIri !== iri) {

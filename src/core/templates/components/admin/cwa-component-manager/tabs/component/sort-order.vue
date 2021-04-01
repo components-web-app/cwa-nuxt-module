@@ -10,6 +10,7 @@
       </div>
       <div class="column is-narrow">
         <cm-text
+          v-if="componentPosition"
           :id="`component-sort-number-${componentPosition['@id']}`"
           :iri="componentPosition['@id']"
           :refresh-endpoints="refreshEndpoints"
