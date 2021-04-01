@@ -130,6 +130,9 @@ export class Storage {
 
               const cleanResourceForComparison = (obj) => {
                 const newObj = Object.assign({}, obj)
+                // remove sort collection - api should not return fix
+                // todo: remove when the API is fixed
+                delete newObj.sortCollection
                 // remove published resource
                 delete newObj.publishedResource
                 // remove modified at timestamp
@@ -140,12 +143,6 @@ export class Storage {
                 )
                 return newObj
               }
-              consola.debug(
-                JSON.stringify(cleanResourceForComparison(currentResource))
-              )
-              consola.debug(
-                JSON.stringify(cleanResourceForComparison(payload.resource))
-              )
               if (
                 JSON.stringify(cleanResourceForComparison(currentResource)) ===
                 JSON.stringify(cleanResourceForComparison(payload.resource))
@@ -156,7 +153,7 @@ export class Storage {
                 return
               }
               consola.info(
-                `Added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is different to the existing one`
+                `Added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is different from the existing one`
               )
             }
           }
@@ -364,7 +361,7 @@ export class Storage {
       )
       return null
     }
-    consola.debug(
+    consola.trace(
       `Resolved resource type for iri ${iri} in the category ${category} to ${type}`
     )
     return this.state.resources.current[type].byId[iri]

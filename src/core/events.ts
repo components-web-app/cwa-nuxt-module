@@ -1,4 +1,10 @@
 import { Vue } from 'vue/types/vue'
+import { ComponentManagerTab } from './mixins/ComponentManagerMixin'
+
+export interface TabChangedEvent {
+  newTab: ComponentManagerTab
+  previousTab: ComponentManagerTab
+}
 
 export interface NewComponentEvent {
   collection: string
@@ -44,7 +50,8 @@ export const COMPONENT_MANAGER_EVENTS = {
   show: `${prefix}:${componentManagerCategory}:show`,
   showTabs: `${prefix}:${componentManagerCategory}:show-tabs`,
   tabChanged: `${prefix}:${componentManagerCategory}:tab-changed`,
-  draggable: `${prefix}:${componentManagerCategory}:draggable`
+  draggable: `${prefix}:${componentManagerCategory}:draggable`,
+  selectPosition: `${prefix}:${componentManagerCategory}:select-position`
 }
 
 export const ADMIN_BAR_EVENTS = {

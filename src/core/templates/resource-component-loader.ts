@@ -16,6 +16,16 @@ export default {
     iri: {
       required: true,
       type: String
+    },
+    sortValue: {
+      required: false,
+      type: Number,
+      default: null
+    },
+    showSort: {
+      required: false,
+      type: Boolean,
+      default: false
     }
   },
   render: (createElement, { props, parent }) => {
@@ -26,7 +36,9 @@ export default {
     if (Comp) {
       return createElement(Comp, {
         props: {
-          iri: props.iri
+          iri: props.iri,
+          sortValue: props.sortValue,
+          showSort: props.showSort
         }
       })
     }

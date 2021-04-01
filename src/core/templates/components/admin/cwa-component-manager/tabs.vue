@@ -22,7 +22,7 @@
             v-if="selectedTab"
             :key="loopKey('tab-content', selectedTabIndex)"
             :resource="resource"
-            :context="selectedTab.context"
+            :context="fullContext"
             @draggable="toggleDraggable"
           />
         </div>
@@ -32,8 +32,8 @@
 </template>
 
 <script lang="ts">
-import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin.ts'
-import { COMPONENT_MANAGER_EVENTS } from '../../../../events'
+import { ComponentManagerTab } from '../../../../mixins/ComponentManagerMixin'
+import { COMPONENT_MANAGER_EVENTS, TabChangedEvent } from '../../../../events'
 import TransitionExpand from '../../utils/transition-expand.vue'
 
 export default {
@@ -47,6 +47,16 @@ export default {
       type: Object,
       required: false,
       default: null
+    },
+    selectedPosition: {
+      type: String,
+      required: false,
+      default: null
+    },
+    collection: {
+      type: Object,
+      required: false,
+      default: null
     }
   },
   data() {
@@ -56,6 +66,15 @@ export default {
     }
   },
   computed: {
+    fullContext() {
+      return Object.assign(
+        {
+          componentPosition: this.selectedPosition,
+          collection: this.collection
+        },
+        this.selectedTab.context
+      )
+    },
     orderedTabs() {
       return [...this.tabs].sort(
         (itemA: ComponentManagerTab, itemB: ComponentManagerTab) => {
@@ -82,13 +101,13 @@ export default {
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.tabChanged, {
         newTab,
         previousTab
-      })
+      } as TabChangedEvent)
     }
   },
   mounted() {
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.resetTabSelector
+      this.selectComponentListener
     )
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.showTabs,
@@ -98,7 +117,7 @@ export default {
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.resetTabSelector
+      this.selectComponentListener
     )
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.showTabs,
@@ -111,14 +130,18 @@ export default {
         this.showTab(0)
       }
       this.$nextTick(() => {
-        this.areTabsShowing = newValue
+        setTimeout(() => {
+          this.areTabsShowing = newValue
+        }, 100)
       })
     },
     showTab(newIndex) {
       this.selectedTabIndex = newIndex
     },
-    resetTabSelector() {
-      this.showTab(0)
+    selectComponentListener(iri) {
+      if (iri !== this.resource['@id']) {
+        this.showTab(0)
+      }
     },
     toggleDraggable(isDraggable) {
       this.$emit('draggable', isDraggable)

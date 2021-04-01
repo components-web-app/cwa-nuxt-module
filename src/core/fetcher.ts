@@ -6,6 +6,11 @@ import DebugTimer from '../utils/DebugTimer'
 import ApiRequestError from '../inc/api-error'
 import Storage, { resourcesState, StoreCategories } from './storage'
 
+declare interface MercureMessage {
+  event: MessageEvent
+  data: any
+}
+
 export class Fetcher {
   // Holds the EventSource connection with mercure
   private eventSource?: EventSource
@@ -24,6 +29,7 @@ export class Fetcher {
   public static readonly loadingRouteKey = 'loadingRoute'
   private timer: DebugTimer
   private initMercureTimeout?: any = null
+  private mercureMessages: Array<MercureMessage> = []
 
   constructor({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
@@ -53,7 +59,7 @@ export class Fetcher {
     path: string
     preload?: string[]
   }) {
-    consola.debug(`Fetching ${url}`)
+    consola.trace(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
 
     // For dynamic components the API must know what route/path the request was originally for
@@ -338,6 +344,7 @@ export class Fetcher {
         consola.error('Could not get Mercure hub url.', err.message)
         return
       }
+      consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
 
       // Refresh the topics
       if (this.eventSource && this.eventSource.readyState !== 2) {
@@ -360,41 +367,30 @@ export class Fetcher {
     }, 100)
   }
 
-  private handleMercureMessage(messageEvent: MessageEvent) {
-    // if we are updating an object, we can receive the message before we have updated our store
-    // and then we think there is an update which there isn't...
+  private handleMercureMessage(event: MessageEvent) {
+    // clear off any pending unprocessed messages if new message is for same entity
+    const newMessage = {
+      event,
+      data: JSON.parse(event.data)
+    }
+    this.mercureMessages.filter((msg: MercureMessage) => {
+      return msg.data['@id'] !== newMessage['@id']
+    })
+    this.mercureMessages.push(newMessage)
+
+    // Must wait for existing api requests to happen and storage to update or we think something has changed when
+    // it is this application changing it
+    const apiRequestsInProgress = this.ctx.storage.getState(
+      'apiRequestsInProgress'
+    )
+
     return new Promise((resolve) => {
-      const processMessage = () => {
-        const data = JSON.parse(messageEvent.data)
-        if (Object.keys(data).length === 1 && data['@id']) {
-          this.ctx.storage.deleteResource(data['@id'])
-          return
-        }
-        this.lastEventId = messageEvent.lastEventId
-
-        // we listen to all of these in case we are adding to an existing component collection
-        const force = this.forceComponentPositionPersist(data)
-
-        // force option will add the resource into new even if there is not an existing resource
-        // with the same ID to merge it into
-        this.ctx.storage.setResource({
-          isNew: true,
-          resource: data,
-          force
-        })
-        resolve()
-      }
-
-      // Must wait for existing api requests to happen and storage to update or we think something has changed when
-      // it is this application changing it
-      const apiRequestsInProgress = this.ctx.storage.getState(
-        'apiRequestsInProgress'
-      )
       if (apiRequestsInProgress === 0) {
         consola.info(
           'Invoking Mercure message handler. No request in progress.'
         )
-        processMessage()
+        this.processMessageQueue()
+        resolve()
         return
       }
       consola.info(
@@ -405,12 +401,38 @@ export class Fetcher {
         (newValue) => {
           if (newValue === 0) {
             consola.info('Request complete. Invoking Mercure message handler')
-            processMessage()
+            this.processMessageQueue()
             unwatchFn()
+            resolve()
           }
         }
       )
     })
+  }
+
+  private processMessageQueue() {
+    const messages = this.mercureMessages
+    this.mercureMessages = []
+    for (const message of messages) {
+      consola.debug('Mercure message received', message)
+      const data = message.data
+      if (Object.keys(data).length === 1 && data['@id']) {
+        this.ctx.storage.deleteResource(data['@id'])
+        return
+      }
+      this.lastEventId = message.event.lastEventId
+
+      // we listen to all of these in case we are adding to an existing component collection
+      const force = this.forceComponentPositionPersist(data)
+
+      // force option will add the resource into new even if there is not an existing resource
+      // with the same ID to merge it into
+      this.ctx.storage.setResource({
+        isNew: true,
+        resource: data,
+        force
+      })
+    }
   }
 
   private forceComponentPositionPersist(data) {

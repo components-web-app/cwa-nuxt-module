@@ -21,9 +21,9 @@
       </component-load-error>
     </client-only>
     <!-- else we loop through components -->
-    <component
-      :is="isDraggable ? 'draggable' : 'div'"
+    <draggable
       v-model="sortedComponentPositions"
+      handle=".is-draggable"
       class="position-container"
       :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
@@ -31,7 +31,8 @@
       <component-position
         v-for="iri in sortedComponentPositions"
         :key="iri"
-        :class="isDraggable ? 'is-draggable' : null"
+        :class="[isDraggable ? 'is-draggable' : null, 'component-position']"
+        :show-sort="showOrderValues"
         :iri="iri"
       />
       <component
@@ -39,13 +40,14 @@
         v-if="newComponentIri"
         :iri="newComponentIri"
       />
-    </component>
+    </draggable>
   </div>
 </template>
 
 <script lang="ts">
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
+import Draggable from 'vuedraggable'
 import ApiRequestMixin from '../../../mixins/ApiRequestMixin'
 import {
   ComponentManagerMixin,
@@ -54,15 +56,16 @@ import {
 import {
   COMPONENT_MANAGER_EVENTS,
   DraggableEvent,
-  NewComponentEvent
+  NewComponentEvent,
+  TabChangedEvent
 } from '../../../events'
 
 export default {
   components: {
     ComponentPosition,
+    Draggable,
     ComponentLoadError: () => import('./component-load-error.vue'),
-    CwaAddButton: () => import('../utils/cwa-add-button.vue'),
-    Draggable: () => import('vuedraggable')
+    CwaAddButton: () => import('../utils/cwa-add-button.vue')
   },
   mixins: [ApiRequestMixin, ComponentManagerMixin],
   props: {
@@ -94,7 +97,8 @@ export default {
       reloading: false,
       previousSortedComponentPositions: null,
       newComponentEvent: null,
-      isDraggable: false
+      isDraggable: false,
+      showOrderValues: false
     }
   },
   computed: {
@@ -230,8 +234,9 @@ export default {
     )
   },
   methods: {
-    handleTabChangedEvent() {
+    handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
+      this.showOrderValues = !!event.newTab.context.showOrderValues
     },
     handleSelectComponentEvent(iri?: string) {
       if (this.newComponentEvent && this.newComponentIri !== iri) {
@@ -413,4 +418,23 @@ export default {
       animation-name: cwa-manager-highlight-before-animation-collection
     &::after
       animation-name: cwa-manager-highlight-after-animation-collection
+  .cwa-sort-value
+    pointer-events: none
+    position: absolute
+    top: 0
+    right: 0
+    font:
+      size: 1.2rem
+      weight: $font-weight-semi-bold
+    color: $white
+    background: rgba($cwa-background-dark, .8)
+    border-radius: 3rem
+    min-width: 3rem
+    height: 3rem
+    display: flex
+    align-items: center
+    justify-content: center
+    line-height: 3rem
+    padding: 0 .5rem .2rem
+    overflow: hidden
 </style>

@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import consola from 'consola'
+import { CancelTokenSource } from 'axios'
 import type { CwaOptions } from '../'
 import ApiRequestError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
@@ -9,6 +10,10 @@ import { Storage } from './storage'
 import { Fetcher } from './fetcher'
 import { API_EVENTS } from './events'
 
+interface PatchRequest {
+  endpoint: string
+  tokenSource: CancelTokenSource
+}
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
@@ -16,6 +21,7 @@ export default class Cwa {
   public $storage: Storage
   public $state
   public $eventBus
+  private patchRequests: Array<PatchRequest> = []
 
   constructor(ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
@@ -86,13 +92,11 @@ export default class Cwa {
 
   // find a resource from local storage or fetch from API
   async findResource(iri) {
-    return this.getResourceIri(iri) || (await this.refreshResource(iri))
+    return this.getResource(iri) || (await this.refreshResource(iri))
   }
 
-  getResourceIri(iri) {
-    return this.resources[
-      this.$storage.getTypeFromIri(iri, this.$storage.getCategoryFromIri(iri))
-    ]?.byId?.[iri]
+  getResource(iri) {
+    return this.$storage.getResource(iri)
   }
 
   get layout() {
@@ -135,7 +139,8 @@ export default class Cwa {
       axiosError.message,
       axiosError.statusCode,
       axiosError.endpoint,
-      axiosError.violations
+      axiosError.violations,
+      this.ctx.$axios.isCancel(error)
     )
     this.$eventBus.$emit(API_EVENTS.error, exception)
     throw exception
@@ -224,14 +229,47 @@ export default class Cwa {
     return this.processResource(await doRequest(), category)
   }
 
-  async updateResource(endpoint: string, data: any, category?: string) {
+  cancelPendingPatchRequest(
+    endpoint: string,
+    requestComplete: boolean = false
+  ) {
+    this.patchRequests = this.patchRequests.filter((pr) => {
+      if (pr.endpoint !== endpoint) {
+        return true
+      }
+      if (!requestComplete) {
+        pr.tokenSource.cancel('Cancelled due to another pending request')
+      }
+      return false
+    })
+  }
+
+  async updateResource(
+    endpoint: string,
+    data: any,
+    category?: string,
+    refreshEndpoints?: string[]
+  ) {
     const doRequest = this.initNewRequest(
       async () => {
-        return await this.ctx.$axios.$patch(endpoint, data, {
+        const tokenSource = this.ctx.$axios.CancelToken.source()
+        this.cancelPendingPatchRequest(endpoint, false)
+        this.patchRequests.push({
+          endpoint,
+          tokenSource
+        })
+        const resource = await this.ctx.$axios.$patch(endpoint, data, {
           headers: {
             'Content-Type': 'application/merge-patch+json'
-          }
+          },
+          cancelToken: tokenSource.token
         })
+        this.cancelPendingPatchRequest(endpoint, true)
+
+        if (refreshEndpoints && refreshEndpoints.length) {
+          await this.refreshEndpointsArray(refreshEndpoints)
+        }
+        return resource
       },
       { eventName: API_EVENTS.updated, eventParams: endpoint }
     )

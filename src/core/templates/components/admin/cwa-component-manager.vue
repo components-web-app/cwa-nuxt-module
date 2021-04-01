@@ -20,6 +20,8 @@
                 <tabs
                   :tabs="componentTabs"
                   :resource="componentResource"
+                  :selected-position="selectedPosition"
+                  :collection="closestCollection"
                   @draggable="toggleDraggable"
                 />
               </div>
@@ -76,6 +78,17 @@ import StatusIcon from './status-icon.vue'
 import ErrorNotifications from './error-notifications.vue'
 import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
 
+interface DataInterface {
+  expanded: boolean
+  components: Array<ComponentManagerAddEvent>
+  pendingComponents: Array<ComponentManagerAddEvent>
+  savedStatus: Number
+  warningNotificationsShowing: boolean
+  showHighlightOverlay: boolean
+  showTabs: boolean
+  selectedPosition?: string
+}
+
 export default {
   components: {
     PathBreadcrumbs,
@@ -86,7 +99,7 @@ export default {
     TransitionExpand
   },
   mixins: [HeightMatcherMixin('cwaManager')],
-  data() {
+  data(): DataInterface {
     return {
       expanded: false,
       components: [],
@@ -94,15 +107,8 @@ export default {
       savedStatus: 99, // 0 orange, 1 green, -1 danger
       warningNotificationsShowing: false,
       showHighlightOverlay: false,
-      showTabs: false
-    } as {
-      expanded: boolean
-      components: Array<ComponentManagerAddEvent>
-      pendingComponents: Array<ComponentManagerAddEvent>
-      savedStatus: Number
-      warningNotificationsShowing: boolean
-      showHighlightOverlay: boolean
-      showTabs: boolean
+      showTabs: false,
+      selectedPosition: null
     }
   },
   computed: {
@@ -114,7 +120,7 @@ export default {
       if (!iri) {
         return false
       }
-      const storageResource = this.$cwa.getResourceIri(iri)
+      const storageResource = this.$cwa.getResource(iri)
       return !storageResource._metadata.published
     },
     isNew() {
@@ -165,6 +171,14 @@ export default {
       }
 
       return dynamicTabs
+    },
+    closestCollection() {
+      for (const component of this.components) {
+        if (component.resource['@type'] === 'ComponentCollection') {
+          return component
+        }
+      }
+      return null
     }
   },
   watch: {
@@ -186,17 +200,19 @@ export default {
   },
   mounted() {
     window.addEventListener('click', this.show)
+    this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
-    this.$cwa.$eventBus.$on(EVENTS.tabChanged, this.tabChangedListener)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.show)
+    this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
-    this.$cwa.$eventBus.$off(EVENTS.tabChanged, this.tabChangedListener)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
-    tabChangedListener() {},
+    selectPosition(iri) {
+      this.selectedPosition = iri
+    },
     toggleDraggable(isDraggable) {
       let closestCollection = null
       if (this.components) {
@@ -257,6 +273,7 @@ export default {
     },
     show() {
       this.pendingComponents = []
+      this.selectedPosition = null
       if (this.showingCriteria) {
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }

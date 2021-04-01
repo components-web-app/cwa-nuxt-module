@@ -33,6 +33,10 @@ export default {
     +cwa-input-label
     font-size: inherit
     margin-right: .5rem
+  input,
+  textarea
+    +cwa-input
+    margin: 0
 
 .cwa-component-manager-input
   .select
