@@ -22,7 +22,7 @@
             v-if="selectedTab"
             :key="loopKey('tab-content', selectedTabIndex)"
             :resource="resource"
-            :context="contextWithPosition"
+            :context="fullContext"
             @draggable="toggleDraggable"
           />
         </div>
@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts">
-import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
+import { ComponentManagerTab } from '../../../../mixins/ComponentManagerMixin'
 import { COMPONENT_MANAGER_EVENTS, TabChangedEvent } from '../../../../events'
 import TransitionExpand from '../../utils/transition-expand.vue'
 
@@ -52,6 +52,11 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    collection: {
+      type: Object,
+      required: false,
+      default: null
     }
   },
   data() {
@@ -61,9 +66,12 @@ export default {
     }
   },
   computed: {
-    contextWithPosition() {
+    fullContext() {
       return Object.assign(
-        { componentPosition: this.selectedPosition },
+        {
+          componentPosition: this.selectedPosition,
+          collection: this.collection
+        },
         this.selectedTab.context
       )
     },

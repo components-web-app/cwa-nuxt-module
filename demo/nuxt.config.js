@@ -3,7 +3,9 @@ import fs from 'fs'
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin'
 import coreModuleDist from '../src/module'
 
-console.log('CONSOLA_LEVEL', process.env.CONSOLA_LEVEL)
+// Required for the mercure hub and fetcher it seems.
+// Although axios does not seem to need it so mayber we can work out why and if we can remove it at a later date
+const API_URL = process.env.API_URL || 'https://localhost:8443'
 
 const https = process.env.DISABLE_HTTPS
   ? null
@@ -15,6 +17,9 @@ const https = process.env.DISABLE_HTTPS
 export default {
   server: {
     https
+  },
+  publicRuntimeConfig: {
+    API_URL
   },
   head: {
     meta: [

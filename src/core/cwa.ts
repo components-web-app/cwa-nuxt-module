@@ -222,14 +222,23 @@ export default class Cwa {
     return this.processResource(await doRequest(), category)
   }
 
-  async updateResource(endpoint: string, data: any, category?: string) {
+  async updateResource(
+    endpoint: string,
+    data: any,
+    category?: string,
+    refreshEndpoints?: string[]
+  ) {
     const doRequest = this.initNewRequest(
       async () => {
-        return await this.ctx.$axios.$patch(endpoint, data, {
+        const resource = await this.ctx.$axios.$patch(endpoint, data, {
           headers: {
             'Content-Type': 'application/merge-patch+json'
           }
         })
+        if (refreshEndpoints && refreshEndpoints.length) {
+          await this.refreshEndpointsArray(refreshEndpoints)
+        }
+        return resource
       },
       { eventName: API_EVENTS.updated, eventParams: endpoint }
     )

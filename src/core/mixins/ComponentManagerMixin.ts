@@ -22,7 +22,7 @@ export interface ComponentManagerTab {
   label: string
   component: Function
   priority?: number
-  context?: object
+  context?: any
 }
 
 export interface ComponentManagerComponent {

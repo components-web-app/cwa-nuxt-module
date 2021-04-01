@@ -338,6 +338,7 @@ export class Fetcher {
         consola.error('Could not get Mercure hub url.', err.message)
         return
       }
+      consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
 
       // Refresh the topics
       if (this.eventSource && this.eventSource.readyState !== 2) {
@@ -365,6 +366,7 @@ export class Fetcher {
     // and then we think there is an update which there isn't...
     return new Promise((resolve) => {
       const processMessage = () => {
+        consola.debug('Mercure message received', messageEvent)
         const data = JSON.parse(messageEvent.data)
         if (Object.keys(data).length === 1 && data['@id']) {
           this.ctx.storage.deleteResource(data['@id'])

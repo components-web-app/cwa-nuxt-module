@@ -12,6 +12,7 @@
         <cm-text
           :id="`component-sort-number-${componentPosition['@id']}`"
           :iri="componentPosition['@id']"
+          :refresh-endpoints="refreshEndpoints"
           field="sortValue"
           type="number"
           label="Sort value"
@@ -39,6 +40,9 @@ export default {
       return this.context.componentPosition
         ? this.$cwa.getResource(this.context.componentPosition)
         : null
+    },
+    refreshEndpoints() {
+      return this.context.collection?.resource?.componentPositions || []
     }
   },
   watch: {

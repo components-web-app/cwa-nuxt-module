@@ -21,6 +21,7 @@
                   :tabs="componentTabs"
                   :resource="componentResource"
                   :selected-position="selectedPosition"
+                  :collection="closestCollection"
                   @draggable="toggleDraggable"
                 />
               </div>
@@ -170,6 +171,14 @@ export default {
       }
 
       return dynamicTabs
+    },
+    closestCollection() {
+      for (const component of this.components) {
+        if (component.resource['@type'] === 'ComponentCollection') {
+          return component
+        }
+      }
+      return null
     }
   },
   watch: {

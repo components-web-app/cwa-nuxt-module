@@ -19,6 +19,13 @@ export default {
       required: false,
       default: null,
       type: String
+    },
+    refreshEndpoints: {
+      required: false,
+      default() {
+        return []
+      },
+      type: Array
     }
   },
   data() {
@@ -39,7 +46,7 @@ export default {
     },
     inputValue() {
       this.error = null
-      if (this.resource[this.field] === this.inputValue) {
+      if (this.resourceValue === this.inputValue) {
         return
       }
       this.outdated = true
@@ -48,10 +55,20 @@ export default {
       }
       this.debouncedFn = debounce(this.update, 100)
       this.debouncedFn()
+    },
+    resourceValue(newValue) {
+      if (newValue !== this.inputValue) {
+        this.inputValue = newValue
+      }
+    }
+  },
+  computed: {
+    resourceValue() {
+      return this.resource[this.field]
     }
   },
   mounted() {
-    const value = this.resource[this.field]
+    const value = this.resourceValue
     const type = typeof value
     const requiresNormalizing =
       value !== null && (type === 'string' || type === 'object')
@@ -73,7 +90,8 @@ export default {
         await this.$cwa.updateResource(
           this.iri,
           { [this.field]: this.inputValue },
-          this.category || null
+          this.category || null,
+          this.refreshEndpoints
         )
         this.outdated = false
       } catch (message) {
