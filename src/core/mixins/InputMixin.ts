@@ -49,7 +49,7 @@ export default {
     },
     inputValue() {
       this.error = null
-      if (this.resourceValue === this.inputValue) {
+      if (this.valuesSame(this.resourceValue, this.inputValue)) {
         return
       }
       this.outdated = true
@@ -62,8 +62,8 @@ export default {
       this.debouncedFn()
     },
     resourceValue(newValue) {
-      if (!this.pendingDebounce && newValue !== this.inputValue) {
-        this.inputValue = newValue
+      if (!this.pendingDebounce && this.valuesSame(newValue, this.inputValue)) {
+        this.inputValue = this.normalizeValue(this.resourceValue)
       }
     }
   },
@@ -73,16 +73,29 @@ export default {
     }
   },
   mounted() {
-    const value = this.resourceValue
-    const type = typeof value
-    const requiresNormalizing =
-      value !== null && (type === 'string' || type === 'object')
-    // clone any value so we are not mutating the store
-    this.inputValue = requiresNormalizing
-      ? JSON.parse(JSON.stringify(value)) || null
-      : value
+    this.inputValue = this.normalizeValue(this.resourceValue)
   },
   methods: {
+    valuesSame(value1, value2) {
+      const getValueAsComparable = (value) => {
+        return this.requiresNormalizing(value)
+          ? JSON.stringify(value) || null
+          : null
+      }
+      return getValueAsComparable(value1) === getValueAsComparable(value2)
+    },
+    requiresNormalizing(value) {
+      const type = typeof value
+      return (
+        value !== null &&
+        (type === 'string' || type === 'object' || Array.isArray(value))
+      )
+    },
+    normalizeValue(value) {
+      return this.requiresNormalizing(value)
+        ? JSON.parse(JSON.stringify(value)) || null
+        : value
+    },
     async update() {
       this.pendingDebounce = false
       const notificationCode = 'input-error-' + this.field
