@@ -428,12 +428,13 @@ export default {
       weight: $font-weight-semi-bold
     color: $white
     background: rgba($cwa-background-dark, .8)
-    border-radius: 50%
-    width: 3rem
+    border-radius: 3rem
+    min-width: 3rem
     height: 3rem
     display: flex
     align-items: center
     justify-content: center
     line-height: 3rem
-    padding-bottom: .2rem
+    padding: 0 .5rem .2rem
+    overflow: hidden
 </style>

@@ -1,10 +1,12 @@
 import debounce from 'lodash.debounce'
+import consola from 'consola'
 import {
   Notification,
   NotificationLevels,
   RemoveNotificationEvent
 } from '../templates/components/cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
+import ApiError from '../../inc/api-error'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 
@@ -33,7 +35,8 @@ export default {
       inputValue: null,
       debouncedFn: null,
       outdated: false,
-      error: null
+      error: null,
+      pendingDebounce: false
     }
   },
   watch: {
@@ -50,14 +53,16 @@ export default {
         return
       }
       this.outdated = true
+      this.pendingDebounce = true
       if (this.debouncedFn) {
         this.debouncedFn.cancel()
+        this.$cwa.cancelPendingPatchRequest(this.iri)
       }
       this.debouncedFn = debounce(this.update, 100)
       this.debouncedFn()
     },
     resourceValue(newValue) {
-      if (newValue !== this.inputValue) {
+      if (!this.pendingDebounce && newValue !== this.inputValue) {
         this.inputValue = newValue
       }
     }
@@ -79,6 +84,7 @@ export default {
   },
   methods: {
     async update() {
+      this.pendingDebounce = false
       const notificationCode = 'input-error-' + this.field
       const removeEvent: RemoveNotificationEvent = {
         code: notificationCode,
@@ -95,11 +101,18 @@ export default {
         )
         this.outdated = false
       } catch (message) {
+        if (!(message instanceof ApiError)) {
+          throw message
+        }
+        if (message.isCancel) {
+          consola.debug('Request cancelled: ' + message.message)
+          return
+        }
         this.error = message
         const notification: Notification = {
           code: notificationCode,
           title: 'Input Error',
-          message,
+          message: message.message,
           level: NotificationLevels.ERROR,
           endpoint: this.iri,
           field: this.field,

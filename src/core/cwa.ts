@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import consola from 'consola'
+import { CancelTokenSource } from 'axios'
 import type { CwaOptions } from '../'
 import ApiRequestError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
@@ -9,6 +10,10 @@ import { Storage } from './storage'
 import { Fetcher } from './fetcher'
 import { API_EVENTS } from './events'
 
+interface PatchRequest {
+  endpoint: string
+  tokenSource: CancelTokenSource
+}
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
@@ -16,6 +21,7 @@ export default class Cwa {
   public $storage: Storage
   public $state
   public $eventBus
+  private patchRequests: Array<PatchRequest> = []
 
   constructor(ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
@@ -133,7 +139,8 @@ export default class Cwa {
       axiosError.message,
       axiosError.statusCode,
       axiosError.endpoint,
-      axiosError.violations
+      axiosError.violations,
+      this.ctx.$axios.isCancel(error)
     )
     this.$eventBus.$emit(API_EVENTS.error, exception)
     throw exception
@@ -222,6 +229,21 @@ export default class Cwa {
     return this.processResource(await doRequest(), category)
   }
 
+  cancelPendingPatchRequest(
+    endpoint: string,
+    requestComplete: boolean = false
+  ) {
+    this.patchRequests = this.patchRequests.filter((pr) => {
+      if (pr.endpoint !== endpoint) {
+        return true
+      }
+      if (!requestComplete) {
+        pr.tokenSource.cancel('Cancelled due to another pending request')
+      }
+      return false
+    })
+  }
+
   async updateResource(
     endpoint: string,
     data: any,
@@ -230,11 +252,20 @@ export default class Cwa {
   ) {
     const doRequest = this.initNewRequest(
       async () => {
+        const tokenSource = this.ctx.$axios.CancelToken.source()
+        this.cancelPendingPatchRequest(endpoint, false)
+        this.patchRequests.push({
+          endpoint,
+          tokenSource
+        })
         const resource = await this.ctx.$axios.$patch(endpoint, data, {
           headers: {
             'Content-Type': 'application/merge-patch+json'
-          }
+          },
+          cancelToken: tokenSource.token
         })
+        this.cancelPendingPatchRequest(endpoint, true)
+
         if (refreshEndpoints && refreshEndpoints.length) {
           await this.refreshEndpointsArray(refreshEndpoints)
         }
