@@ -29,7 +29,7 @@ export class Storage {
     const storeModule = {
       namespaced: true,
       state: () => ({
-        apiRequestsInProgress: 0,
+        mercurePendingProcesses: 0,
         editMode: false,
         resources: {
           new: {},
@@ -295,24 +295,26 @@ export class Storage {
     )
   }
 
-  get apiRequestsInProgress() {
-    return this.getState('apiRequestsInProgress')
+  get mercurePendingProcesses() {
+    return this.getState('mercurePendingProcesses')
   }
 
-  setApiRequestStarted(requestCount: number = 1) {
-    consola.info(`apiRequestsInProgress + ${requestCount}`)
+  increaseMercurePendingProcessCount(requestCount: number = 1) {
     this.setState(
-      'apiRequestsInProgress',
-      this.apiRequestsInProgress + requestCount
+      'mercurePendingProcesses',
+      this.mercurePendingProcesses + requestCount
     )
   }
 
-  setApiRequestsComplete(requestCount: number = 1) {
-    consola.info(`apiRequestsInProgress - ${requestCount}`)
-    this.setState(
-      'apiRequestsInProgress',
-      this.apiRequestsInProgress - requestCount
-    )
+  decreaseMercurePendingProcessCount(requestCount: number = 1) {
+    const calcValue = this.mercurePendingProcesses - requestCount
+    if (calcValue < 0) {
+      consola.warn(
+        'Cannot decrease Mercure pending processes counter to less than 0'
+      )
+    }
+    const newValue = Math.max(calcValue, 0)
+    this.setState('mercurePendingProcesses', newValue)
   }
 
   setState(key, value) {

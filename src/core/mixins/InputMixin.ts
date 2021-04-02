@@ -54,11 +54,20 @@ export default {
       }
       this.outdated = true
       this.pendingDebounce = true
+      this.$cwa.increaseMercurePendingProcessCount(1)
       if (this.debouncedFn) {
         this.debouncedFn.cancel()
         this.$cwa.cancelPendingPatchRequest(this.iri)
+        this.$cwa.decreaseMercurePendingProcessCount(1)
       }
-      this.debouncedFn = debounce(this.update, 100)
+      this.debouncedFn = debounce(async () => {
+        this.debouncedFn = null
+        try {
+          await this.update()
+        } finally {
+          this.$cwa.decreaseMercurePendingProcessCount(1)
+        }
+      }, 100)
       this.debouncedFn()
     },
     resourceValue(newValue) {
@@ -77,19 +86,11 @@ export default {
   },
   methods: {
     valuesSame(value1, value2) {
-      const getValueAsComparable = (value) => {
-        return this.requiresNormalizing(value)
-          ? JSON.stringify(value) || null
-          : null
-      }
-      return getValueAsComparable(value1) === getValueAsComparable(value2)
+      return this.normalizeValue(value1) === this.normalizeValue(value2)
     },
     requiresNormalizing(value) {
       const type = typeof value
-      return (
-        value !== null &&
-        (type === 'string' || type === 'object' || Array.isArray(value))
-      )
+      return value !== null && (type === 'object' || Array.isArray(value))
     },
     normalizeValue(value) {
       return this.requiresNormalizing(value)

@@ -373,38 +373,45 @@ export class Fetcher {
       event,
       data: JSON.parse(event.data)
     }
-    this.mercureMessages.filter((msg: MercureMessage) => {
-      return msg.data['@id'] !== newMessage['@id']
-    })
-    this.mercureMessages.push(newMessage)
+    const newMessages = [
+      ...this.mercureMessages.filter((msg: MercureMessage) => {
+        return msg.data['@id'] !== newMessage.data['@id']
+      })
+    ]
+    newMessages.push(newMessage)
+    this.mercureMessages = newMessages
 
     // Must wait for existing api requests to happen and storage to update or we think something has changed when
     // it is this application changing it
-    const apiRequestsInProgress = this.ctx.storage.getState(
-      'apiRequestsInProgress'
+    const mercurePendingProcesses = this.ctx.storage.getState(
+      'mercurePendingProcesses'
     )
 
     return new Promise((resolve) => {
-      if (apiRequestsInProgress === 0) {
-        consola.info(
+      if (mercurePendingProcesses === 0) {
+        consola.debug(
           'Invoking Mercure message handler. No request in progress.'
         )
         this.processMessageQueue()
         resolve()
         return
       }
-      consola.info(
-        'Mercure message handler waiting for current request to complete...'
+      consola.debug(
+        `Mercure message handler waiting for ${mercurePendingProcesses} processes to complete...`
       )
       const unwatchFn = this.ctx.storage.watchState(
-        'apiRequestsInProgress',
+        'mercurePendingProcesses',
         (newValue) => {
           if (newValue === 0) {
-            consola.info('Request complete. Invoking Mercure message handler')
+            consola.debug('Request complete. Invoking Mercure message handler')
             this.processMessageQueue()
             unwatchFn()
             resolve()
+            return
           }
+          consola.trace(
+            `Mercure message handler waiting for ${newValue} processes to complete...`
+          )
         }
       )
     })
@@ -412,6 +419,7 @@ export class Fetcher {
 
   private processMessageQueue() {
     const messages = this.mercureMessages
+    consola.debug(`Processing Mercure message queue: ${messages.length}`)
     this.mercureMessages = []
     for (const message of messages) {
       consola.debug('Mercure message received', message)

@@ -164,25 +164,33 @@ export default class Cwa {
     }
   }
 
-  private initNewRequest(
+  private async initNewRequest(
     requestFn: Function,
-    { eventName, eventParams }: { eventName: string; eventParams: any }
+    { eventName, eventParams }: { eventName: string; eventParams: any },
+    category: string,
+    dataTransformer?: Function
   ) {
-    this.$storage.setApiRequestStarted()
-    return async () => {
-      try {
-        return await requestFn()
-      } catch (error) {
-        this.handleRequestError(error)
-      } finally {
-        this.$eventBus.$emit(eventName, eventParams)
+    this.increaseMercurePendingProcessCount()
+    try {
+      let resource = await requestFn()
+      if (dataTransformer) {
+        resource = await dataTransformer(resource)
       }
+      if (category) {
+        return this.processResource(resource, category)
+      } else {
+        return resource
+      }
+    } catch (error) {
+      this.handleRequestError(error)
+    } finally {
+      this.$eventBus.$emit(eventName, eventParams)
+      this.decreaseMercurePendingProcessCount()
     }
   }
 
   private processResource(resource, category) {
     this.saveResource(resource, category)
-    this.$storage.setApiRequestsComplete()
     return resource
   }
 
@@ -190,14 +198,14 @@ export default class Cwa {
     afterPromise: Promise<any>,
     refreshEndpoints: string[]
   ) {
-    this.$storage.setApiRequestStarted(refreshEndpoints.length)
+    this.increaseMercurePendingProcessCount(refreshEndpoints.length)
     await afterPromise
     const promises = []
     for (const refreshEndpoint of refreshEndpoints) {
       promises.push(
         this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
           this.saveResource(refreshResource, null)
-          this.$storage.setApiRequestsComplete()
+          this.decreaseMercurePendingProcessCount()
           this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
           consola.debug('Resource refreshed', refreshResource)
         })
@@ -212,7 +220,7 @@ export default class Cwa {
     category?: string,
     refreshEndpoints?: string[]
   ) {
-    const doRequest = this.initNewRequest(
+    return await this.initNewRequest(
       async () => {
         const refreshEndpointsSize = refreshEndpoints
           ? refreshEndpoints.length
@@ -223,19 +231,19 @@ export default class Cwa {
         }
         return await postResource
       },
-      { eventName: API_EVENTS.created, eventParams: endpoint }
+      { eventName: API_EVENTS.created, eventParams: endpoint },
+      category
     )
-    return this.processResource(await doRequest(), category)
   }
 
   async refreshResource(endpoint: string, category?: string) {
-    const doRequest = this.initNewRequest(
+    return await this.initNewRequest(
       async () => {
         return await this.ctx.$axios.$get(endpoint)
       },
-      { eventName: API_EVENTS.refreshed, eventParams: endpoint }
+      { eventName: API_EVENTS.refreshed, eventParams: endpoint },
+      category
     )
-    return this.processResource(await doRequest(), category)
   }
 
   cancelPendingPatchRequest(
@@ -259,45 +267,54 @@ export default class Cwa {
     category?: string,
     refreshEndpoints?: string[]
   ) {
-    const doRequest = this.initNewRequest(
-      async () => {
-        const tokenSource = this.ctx.$axios.CancelToken.source()
-        this.cancelPendingPatchRequest(endpoint, false)
-        this.patchRequests.push({
-          endpoint,
-          tokenSource
-        })
-        const patchPromise = this.ctx.$axios.$patch(endpoint, data, {
-          headers: {
-            'Content-Type': 'application/merge-patch+json'
-          },
-          cancelToken: tokenSource.token
-        })
-        this.cancelPendingPatchRequest(endpoint, true)
-        if (refreshEndpoints && refreshEndpoints.length) {
-          await this.refreshEndpointsArray(patchPromise, refreshEndpoints)
-        }
-        return await patchPromise
-      },
-      { eventName: API_EVENTS.updated, eventParams: endpoint }
+    const requestFn = async () => {
+      const tokenSource = this.ctx.$axios.CancelToken.source()
+      this.cancelPendingPatchRequest(endpoint, false)
+      this.patchRequests.push({
+        endpoint,
+        tokenSource
+      })
+      const patchPromise = this.ctx.$axios.$patch(endpoint, data, {
+        headers: {
+          'Content-Type': 'application/merge-patch+json'
+        },
+        cancelToken: tokenSource.token
+      })
+      this.cancelPendingPatchRequest(endpoint, true)
+      if (refreshEndpoints && refreshEndpoints.length) {
+        await this.refreshEndpointsArray(patchPromise, refreshEndpoints)
+      }
+      return await patchPromise
+    }
+    return await this.initNewRequest(
+      requestFn,
+      { eventName: API_EVENTS.updated, eventParams: endpoint },
+      category,
+      (newResource) => {
+        newResource['@id'] = endpoint
+        return newResource
+      }
     )
-
-    // the resource may be different - publishable resources return the new draft resource
-    const newResource = await doRequest()
-    // we may get a different resource back if it is 'publishable'
-    newResource['@id'] = endpoint
-    return this.processResource(newResource, category)
   }
 
   async deleteResource(id: string) {
-    const doRequest = this.initNewRequest(
+    await this.initNewRequest(
       async () => {
         return await this.ctx.$axios.delete(id)
       },
-      { eventName: API_EVENTS.deleted, eventParams: id }
+      { eventName: API_EVENTS.deleted, eventParams: id },
+      null,
+      null
     )
-    await doRequest()
     this.$storage.deleteResource(id)
+  }
+
+  increaseMercurePendingProcessCount(requestCount: number = 1) {
+    this.$storage.increaseMercurePendingProcessCount(requestCount)
+  }
+
+  decreaseMercurePendingProcessCount(requestCount: number = 1) {
+    this.$storage.decreaseMercurePendingProcessCount(requestCount)
   }
 
   /**
