@@ -300,6 +300,7 @@ export class Storage {
   }
 
   setApiRequestStarted(requestCount: number = 1) {
+    consola.info(`apiRequestsInProgress + ${requestCount}`)
     this.setState(
       'apiRequestsInProgress',
       this.apiRequestsInProgress + requestCount
@@ -307,6 +308,7 @@ export class Storage {
   }
 
   setApiRequestsComplete(requestCount: number = 1) {
+    consola.info(`apiRequestsInProgress - ${requestCount}`)
     this.setState(
       'apiRequestsInProgress',
       this.apiRequestsInProgress - requestCount

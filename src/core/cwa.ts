@@ -186,12 +186,18 @@ export default class Cwa {
     return resource
   }
 
-  private refreshEndpointsArray(refreshEndpoints: string[]) {
+  private async refreshEndpointsArray(
+    afterPromise: Promise<any>,
+    refreshEndpoints: string[]
+  ) {
+    this.$storage.setApiRequestStarted(refreshEndpoints.length)
+    await afterPromise
     const promises = []
     for (const refreshEndpoint of refreshEndpoints) {
       promises.push(
         this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
           this.saveResource(refreshResource, null)
+          this.$storage.setApiRequestsComplete()
           this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
           consola.debug('Resource refreshed', refreshResource)
         })
@@ -208,11 +214,14 @@ export default class Cwa {
   ) {
     const doRequest = this.initNewRequest(
       async () => {
-        const resource = await this.ctx.$axios.$post(endpoint, data)
-        if (refreshEndpoints && refreshEndpoints.length) {
-          await this.refreshEndpointsArray(refreshEndpoints)
+        const refreshEndpointsSize = refreshEndpoints
+          ? refreshEndpoints.length
+          : 0
+        const postResource = this.ctx.$axios.$post(endpoint, data)
+        if (refreshEndpointsSize) {
+          await this.refreshEndpointsArray(postResource, refreshEndpoints)
         }
-        return resource
+        return await postResource
       },
       { eventName: API_EVENTS.created, eventParams: endpoint }
     )
@@ -258,18 +267,17 @@ export default class Cwa {
           endpoint,
           tokenSource
         })
-        const resource = await this.ctx.$axios.$patch(endpoint, data, {
+        const patchPromise = this.ctx.$axios.$patch(endpoint, data, {
           headers: {
             'Content-Type': 'application/merge-patch+json'
           },
           cancelToken: tokenSource.token
         })
         this.cancelPendingPatchRequest(endpoint, true)
-
         if (refreshEndpoints && refreshEndpoints.length) {
-          await this.refreshEndpointsArray(refreshEndpoints)
+          await this.refreshEndpointsArray(patchPromise, refreshEndpoints)
         }
-        return resource
+        return await patchPromise
       },
       { eventName: API_EVENTS.updated, eventParams: endpoint }
     )

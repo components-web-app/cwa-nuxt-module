@@ -300,9 +300,14 @@ export default {
       const previousPosition = this.previousSortedComponentPositions[
         moved.newIndex
       ]
-      await this.$cwa.updateResource(moved.element, {
-        sortValue: previousPosition.sortValue
-      })
+      await this.$cwa.updateResource(
+        moved.element,
+        {
+          sortValue: previousPosition.sortValue
+        },
+        null,
+        this.resource.componentPositions
+      )
       this.previousSortedComponentPositions = null
       this.reloading = false
     },
