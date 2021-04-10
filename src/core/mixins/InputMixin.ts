@@ -47,7 +47,7 @@ export default {
         status: isOutdated ? 0 : 1
       } as StatusEvent)
     },
-    inputValue() {
+    inputValue(newValue, oldValue) {
       this.error = null
       if (this.valuesSame(this.resourceValue, this.inputValue)) {
         return
@@ -70,9 +70,12 @@ export default {
       }, 100)
       this.debouncedFn()
     },
-    resourceValue(newValue) {
-      if (!this.pendingDebounce && this.valuesSame(newValue, this.inputValue)) {
-        this.inputValue = this.normalizeValue(this.resourceValue)
+    resourceValue: {
+      immediate: true,
+      handler(newValue) {
+        if (!this.pendingDebounce) {
+          this.inputValue = this.normalizeValue(newValue)
+        }
       }
     }
   },
@@ -81,16 +84,18 @@ export default {
       return this.resource[this.field]
     }
   },
-  mounted() {
-    this.inputValue = this.normalizeValue(this.resourceValue)
-  },
   methods: {
     valuesSame(value1, value2) {
-      return this.normalizeValue(value1) === this.normalizeValue(value2)
+      return this.stringValue(value1) === this.stringValue(value2)
     },
     requiresNormalizing(value) {
       const type = typeof value
       return value !== null && (type === 'object' || Array.isArray(value))
+    },
+    stringValue(value) {
+      return this.requiresNormalizing(value)
+        ? JSON.stringify(value) || null
+        : value
     },
     normalizeValue(value) {
       return this.requiresNormalizing(value)
