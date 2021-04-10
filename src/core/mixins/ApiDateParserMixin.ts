@@ -9,6 +9,9 @@ export default Vue.extend({
     parseDateToLocal(string) {
       return moment(this.parseDateString(string)).local()
     },
+    parseLocalDateToUtc(string) {
+      return moment(string).utc()
+    },
     formatDate(date, format = 'DD/MM/YY @ HH:mm') {
       return moment(date).format(format)
     }

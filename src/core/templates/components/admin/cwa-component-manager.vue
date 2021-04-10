@@ -271,7 +271,10 @@ export default {
       this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
     },
-    show() {
+    show(event) {
+      if (event.target.closest('.flatpickr-calendar')) {
+        return
+      }
       this.pendingComponents = []
       this.selectedPosition = null
       if (this.showingCriteria) {

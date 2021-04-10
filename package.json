@@ -50,6 +50,7 @@
     "slugify": "^1.4.6",
     "style-loader": "^1.2.1",
     "tsconfig-paths-webpack-plugin": "^3.2.0",
+    "vue-flatpickr-component": "^8",
     "vuedraggable": "^2.24.1"
   },
   "devDependencies": {
