@@ -38,10 +38,13 @@ export default {
   watch: {
     'storeComponent.uiComponent'() {
       this.$nextTick(() => {
-        this.$cwa.$eventBus.$emit(
-          COMPONENT_MANAGER_EVENTS.selectComponent,
-          this.resource['@id']
-        )
+        // lazy load mount, first mount of new ui component may not be on nex tick...
+        setTimeout(() => {
+          this.$cwa.$eventBus.$emit(
+            COMPONENT_MANAGER_EVENTS.selectComponent,
+            this.resource['@id']
+          )
+        }, 10)
       })
     }
   }

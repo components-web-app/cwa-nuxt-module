@@ -1,5 +1,5 @@
 <template>
-  <cwa-admin-datepicker v-model="inputValue" v-bind="props" />
+  <cwa-admin-datepicker id="component" v-model="inputValue" v-bind="props" />
 </template>
 <script>
 import CwaAdminDatepicker from '../../input/cwa-admin-datepicker'
@@ -24,7 +24,7 @@ export default {
   computed: {
     props() {
       return Object.assign({}, this.$props, {
-        id: `input-${this.resource['@id']}-${this.field}`,
+        id: `input-${this.resource?.['@id']}-${this.field}`,
         wrapper: this.wrapperComponent
       })
     }

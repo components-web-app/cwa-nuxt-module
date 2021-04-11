@@ -33,6 +33,7 @@ export default {
     +cwa-input-label
     font-size: inherit
     margin-right: .5rem
+    white-space: nowrap
   input,
   textarea
     +cwa-input

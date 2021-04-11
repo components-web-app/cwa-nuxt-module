@@ -121,7 +121,7 @@ export default {
         return false
       }
       const storageResource = this.$cwa.getResource(iri)
-      return !storageResource._metadata.published
+      return storageResource && !storageResource._metadata.published
     },
     isNew() {
       return this.componentResource?.['@id'].endsWith('/new')

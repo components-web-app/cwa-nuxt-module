@@ -1,17 +1,12 @@
 import debounce from 'lodash.debounce'
-import consola from 'consola'
-import {
-  Notification,
-  NotificationLevels,
-  RemoveNotificationEvent
-} from '../templates/components/cwa-api-notifications/types'
-import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
-import ApiError from '../../inc/api-error'
+import { STATUS_EVENTS, StatusEvent } from '../events'
+import UpdateResourceError from '../../inc/update-resource-error'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
+import UpdateResourceMixin from './UpdateResourceMixin'
 
 export default {
-  mixins: [ResourceMixin, ApiRequestMixin],
+  mixins: [ResourceMixin, ApiRequestMixin, UpdateResourceMixin],
   props: {
     field: {
       required: true,
@@ -47,7 +42,7 @@ export default {
         status: isOutdated ? 0 : 1
       } as StatusEvent)
     },
-    inputValue(newValue, oldValue) {
+    inputValue() {
       this.error = null
       if (this.valuesSame(this.resourceValue, this.inputValue)) {
         return
@@ -81,7 +76,7 @@ export default {
   },
   computed: {
     resourceValue() {
-      return this.resource[this.field]
+      return this.resource?.[this.field]
     }
   },
   methods: {
@@ -104,45 +99,21 @@ export default {
     },
     async update() {
       this.pendingDebounce = false
-      const notificationCode = 'input-error-' + this.field
-      const removeEvent: RemoveNotificationEvent = {
-        code: notificationCode,
-        category: this.notificationCategory
-      }
-      this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
-
       try {
-        await this.$cwa.updateResource(
+        await this.updateResource(
           this.iri,
-          { [this.field]: this.inputValue },
-          this.category || null,
-          this.refreshEndpoints
+          this.field,
+          this.inputValue,
+          this.category,
+          this.refreshEndpoints,
+          this.notificationCategory
         )
         this.outdated = false
-      } catch (message) {
-        if (!(message instanceof ApiError)) {
-          throw message
+      } catch (error) {
+        if (!(error instanceof UpdateResourceError)) {
+          throw error
         }
-        if (message.isCancel) {
-          consola.debug('Request cancelled: ' + message.message)
-          return
-        }
-        this.error = message
-        const notification: Notification = {
-          code: notificationCode,
-          title: 'Input Error',
-          message: message.message,
-          level: NotificationLevels.ERROR,
-          endpoint: this.iri,
-          field: this.field,
-          category: this.notificationCategory
-        }
-        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
-        this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
-          field: this.field,
-          category: this.notificationCategory,
-          status: -1
-        } as StatusEvent)
+        this.error = error.message
       }
     }
   }
