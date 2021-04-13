@@ -19,10 +19,11 @@
               <div class="top">
                 <tabs
                   :tabs="componentTabs"
-                  :resource="componentResource"
+                  :iri="componentIri"
                   :selected-position="selectedPosition"
                   :collection="closestCollection"
                   @draggable="toggleDraggable"
+                  @close="hide"
                 />
               </div>
               <div class="bottom row">
@@ -116,15 +117,14 @@ export default {
       if (!this.showStatusTab) {
         return false
       }
-      const iri = this.componentResource?.['@id']
-      if (!iri) {
+      if (!this.componentIri) {
         return false
       }
-      const storageResource = this.$cwa.getResource(iri)
-      return storageResource && !storageResource._metadata.published
+      const storageResource = this.$cwa.getResource(this.componentIri)
+      return !!storageResource && !storageResource._metadata.published
     },
     isNew() {
-      return this.componentResource?.['@id'].endsWith('/new')
+      return this.componentIri && this.componentIri.endsWith('/new')
     },
     showingCriteria() {
       return this.$cwa.isEditMode
@@ -144,8 +144,8 @@ export default {
     componentTabs() {
       return [...(this.componentData?.tabs || []), ...this.dynamicTabs]
     },
-    componentResource() {
-      return this.selectedComponent?.resource
+    componentIri() {
+      return this.selectedComponent?.iri
     },
     selectedContext() {
       return this.selectedComponent.data.context || {}
@@ -174,7 +174,10 @@ export default {
     },
     closestCollection() {
       for (const component of this.components) {
-        if (component.resource['@type'] === 'ComponentCollection') {
+        if (
+          this.$cwa.$storage.getTypeFromIri(component.iri) ===
+          'ComponentCollection'
+        ) {
           return component
         }
       }
@@ -191,8 +194,8 @@ export default {
         }
       }
     },
-    selectedComponent({ resource }) {
-      this.toggleComponent(resource?.['@id'] || null)
+    selectedComponent({ iri }) {
+      this.toggleComponent(iri || null)
     },
     showTabs(newValue) {
       this.$cwa.$eventBus.$emit(EVENTS.showTabs, newValue)
@@ -217,8 +220,11 @@ export default {
       let closestCollection = null
       if (this.components) {
         for (const component of this.components) {
-          if (component.resource['@type'] === 'ComponentCollection') {
-            closestCollection = component.resource['@id']
+          if (
+            this.$cwa.$storage.getTypeFromIri(component.iri) ===
+            'ComponentCollection'
+          ) {
+            closestCollection = component.iri
           }
         }
       }
@@ -301,8 +307,8 @@ export default {
         })
       })
     },
-    addComponent({ data, resource }: ComponentManagerAddEvent) {
-      this.pendingComponents.push({ data, resource })
+    addComponent({ data, iri }: ComponentManagerAddEvent) {
+      this.pendingComponents.push({ data, iri })
     },
     updateNotificationsShowing(newValue) {
       this.warningNotificationsShowing = newValue

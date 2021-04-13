@@ -1,9 +1,9 @@
 <template>
-  <div class="publishable-status-tab">
+  <div v-if="resource" class="publishable-status-tab">
     <div class="row">
       <div class="column is-narrow">
         <cwa-admin-toggle
-          :id="`component-edit-version-${resource['@id']}`"
+          :id="`component-edit-version-${iri}`"
           v-model="forceLive"
           label="Edit live version"
         />
@@ -11,15 +11,14 @@
       <template v-if="!forceLive && !resource._metadata.published">
         <div class="column is-narrow">
           <cm-datepicker
-            :id="`component-published-at-${resource['@id']}`"
-            :iri="resource['@id']"
+            :id="`component-published-at-${iri}`"
+            :iri="iri"
             field="publishedAt"
             label="Publish at"
           />
         </div>
         <div class="column is-narrow">
           <cm-button @click="publishNow">Publish Now</cm-button>
-          {{ error }}
         </div>
       </template>
     </div>
@@ -34,7 +33,7 @@ import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import CmDatepicker from '../../input/cm-datepicker.vue'
 import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
-import UpdateResourceError from '../../../../../../../inc/update-resource-error'
+import ApiError from '../../../../../../../inc/api-error'
 
 export default {
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -47,18 +46,19 @@ export default {
   },
   methods: {
     async publishNow() {
-      const iri = this.resource['@id']
+      this.error = null
       try {
         await this.updateResource(
-          iri,
+          this.iri,
           'publishedAt',
           moment.utc().toISOString(),
-          this.$cwa.$storage.getCategoryFromIri(iri),
-          [],
+          this.$cwa.$storage.getCategoryFromIri(this.iri),
+          this.resource.publishedResource.componentPositions,
           'components-manager'
         )
+        this.$emit('close')
       } catch (error) {
-        if (!(error instanceof UpdateResourceError)) {
+        if (!(error instanceof ApiError)) {
           throw error
         }
         this.error = error.message

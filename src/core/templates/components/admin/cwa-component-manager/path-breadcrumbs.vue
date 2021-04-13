@@ -3,10 +3,10 @@
     <ul class="row">
       <path-breadcrumb
         v-for="(component, componentIndex) in components"
-        :key="`path-breadcrumb-${component.resource['@id']}`"
+        :key="`path-breadcrumb-${component.iri}`"
         class="column is-narrow"
         :name="component.data.name"
-        :resource="component.resource"
+        :iri="component.iri"
         :is-selected="componentIndex === 0"
         @click="$emit('click', { componentIndex })"
       />

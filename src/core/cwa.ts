@@ -95,8 +95,8 @@ export default class Cwa {
     return this.getResource(iri) || (await this.refreshResource(iri))
   }
 
-  getResource(iri) {
-    return this.$storage.getResource(iri)
+  getResource(iri, skipIriMapping: boolean = false) {
+    return this.$storage.getResource(iri, skipIriMapping)
   }
 
   get layout() {
@@ -168,19 +168,21 @@ export default class Cwa {
     requestFn: Function,
     { eventName, eventParams }: { eventName: string; eventParams: any },
     category: string,
-    dataTransformer?: Function
+    postUpdate?: Function
   ) {
     this.increaseMercurePendingProcessCount()
     try {
       let resource = await requestFn()
-      if (dataTransformer) {
-        resource = await dataTransformer(resource)
-      }
       if (category) {
-        return this.processResource(resource, category)
-      } else {
-        return resource
+        resource = this.processResource(resource, category)
       }
+      if (postUpdate) {
+        const newResource = await postUpdate(resource)
+        if (newResource) {
+          resource = newResource
+        }
+      }
+      return resource
     } catch (error) {
       this.handleRequestError(error)
     } finally {
@@ -195,11 +197,13 @@ export default class Cwa {
   }
 
   private async refreshEndpointsArray(
-    afterPromise: Promise<any>,
-    refreshEndpoints: string[]
+    refreshEndpoints: string[],
+    afterPromise: Promise<any> = null
   ) {
     this.increaseMercurePendingProcessCount(refreshEndpoints.length)
-    await afterPromise
+    if (afterPromise) {
+      await afterPromise
+    }
     const promises = []
     for (const refreshEndpoint of refreshEndpoints) {
       promises.push(
@@ -227,7 +231,7 @@ export default class Cwa {
           : 0
         const postResource = this.ctx.$axios.$post(endpoint, data)
         if (refreshEndpointsSize) {
-          await this.refreshEndpointsArray(postResource, refreshEndpoints)
+          await this.refreshEndpointsArray(refreshEndpoints, postResource)
         }
         return await postResource
       },
@@ -281,19 +285,43 @@ export default class Cwa {
         cancelToken: tokenSource.token
       })
       this.cancelPendingPatchRequest(endpoint, true)
-      if (refreshEndpoints && refreshEndpoints.length) {
-        await this.refreshEndpointsArray(patchPromise, refreshEndpoints)
-      }
       return await patchPromise
+    }
+    const postUpdateHandler = async (newResource) => {
+      // we need to do this after the new entity is saved
+      // otherwise a new position may reference a resource/component
+      // that has not been saved locally yet. So we do it here instead
+      // of in the request function
+      if (refreshEndpoints && refreshEndpoints.length) {
+        await this.refreshEndpointsArray(refreshEndpoints)
+      }
+
+      // Handle draft mapping
+      if (newResource._metadata.published) {
+        const draftIri = this.$storage.getMappedDraft(newResource['@id'])
+        if (draftIri) {
+          this.$storage.mapDraftResource({
+            publishedIri: newResource['@id'],
+            draftIri: null
+          })
+          this.$storage.deleteResource(draftIri)
+        }
+      } else if (newResource['@id'] !== endpoint) {
+        // returned a draft that is not the same as the endpoint we posted to
+        // a new draft to relate to the published resource
+        const publishedIri = endpoint
+        const draftIri = newResource['@id']
+        this.$storage.mapDraftResource({
+          publishedIri,
+          draftIri
+        })
+      }
     }
     return await this.initNewRequest(
       requestFn,
       { eventName: API_EVENTS.updated, eventParams: endpoint },
       category,
-      (newResource) => {
-        newResource['@id'] = endpoint
-        return newResource
-      }
+      postUpdateHandler
     )
   }
 

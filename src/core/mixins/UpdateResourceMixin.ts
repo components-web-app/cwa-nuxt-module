@@ -6,7 +6,6 @@ import {
 } from '../templates/components/cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
 import ApiError from '../../inc/api-error'
-import UpdateResourceError from '../../inc/update-resource-error'
 
 export default {
   methods: {
@@ -26,7 +25,7 @@ export default {
       this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
 
       try {
-        await this.$cwa.updateResource(
+        return await this.$cwa.updateResource(
           iri,
           { [field]: value },
           category || null,
@@ -40,24 +39,24 @@ export default {
           consola.debug('Request cancelled: ' + message.message)
           return
         }
-        if (notificationCategory) {
-          const notification: Notification = {
-            code: notificationCode,
-            title: 'Input Error',
-            message: message.message,
-            level: NotificationLevels.ERROR,
-            endpoint: iri,
-            field,
-            category: notificationCategory
-          }
-          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
-          this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
-            field,
-            category: notificationCategory,
-            status: -1
-          } as StatusEvent)
+        if (!notificationCategory) {
+          throw message
         }
-        throw new UpdateResourceError(message)
+        const notification: Notification = {
+          code: notificationCode,
+          title: 'Input Error',
+          message: message.message,
+          level: NotificationLevels.ERROR,
+          endpoint: iri,
+          field,
+          category: notificationCategory
+        }
+        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+        this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
+          field,
+          category: notificationCategory,
+          status: -1
+        } as StatusEvent)
       }
     }
   }

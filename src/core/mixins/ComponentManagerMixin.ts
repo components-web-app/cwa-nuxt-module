@@ -33,7 +33,7 @@ export interface ComponentManagerComponent {
 
 export interface ComponentManagerAddEvent {
   data: ComponentManagerComponent
-  resource: Object
+  iri: string
 }
 
 export const ComponentManagerMixin = {
@@ -73,7 +73,7 @@ export const ComponentManagerMixin = {
       }
       this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
-        resource: this.resource
+        iri: this.computedIri
       } as ComponentManagerAddEvent)
     },
     initComponentManagerShowListener() {

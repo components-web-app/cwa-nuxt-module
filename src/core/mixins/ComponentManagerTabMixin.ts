@@ -1,15 +1,14 @@
+import IriMixin from './IriMixin'
+
 export default {
   props: {
-    resource: {
-      type: Object,
-      required: true
-    },
     context: {
       type: Object,
       required: false,
       default: null
     }
   },
+  mixins: [IriMixin],
   computed: {
     inputId() {
       return (name) => {

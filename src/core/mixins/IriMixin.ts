@@ -4,5 +4,10 @@ export default {
       type: String,
       required: true
     }
+  },
+  computed: {
+    resource() {
+      return this.$cwa.getResource(this.iri)
+    }
   }
 }

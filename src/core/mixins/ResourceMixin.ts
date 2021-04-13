@@ -4,7 +4,7 @@ export default {
   mixins: [IriMixin],
   data() {
     return {
-      showPublished: true,
+      showPublished: false,
       draftIri: null
     }
   },
@@ -14,7 +14,6 @@ export default {
       const component = await this.$cwa.fetcher.fetchComponent(this.iri)
       if (this.iri !== component['@id']) {
         this.draftIri = component['@id']
-        this.showPublished = false
       }
     }
   },
@@ -29,7 +28,7 @@ export default {
       return this.$cwa.$storage.getCategoryFromIri(this.displayIri)
     },
     resource() {
-      return this.$cwa.getResource(this.displayIri)
+      return this.$cwa.getResource(this.displayIri, this.showPublished)
     }
   }
 }

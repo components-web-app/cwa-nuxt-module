@@ -30,7 +30,7 @@ export default {
         wrap: false,
         altFormat: 'M j, Y @ H:i',
         altInput: true,
-        dateFormat: 'm-d-Y H:i:S',
+        dateFormat: 'Z',
         enableTime: true,
         time_24hr: true
       }

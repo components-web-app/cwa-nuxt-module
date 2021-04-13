@@ -40,16 +40,15 @@
 </template>
 
 <script>
+import IriMixin from '../../../../mixins/IriMixin'
+
 export default {
+  mixins: [IriMixin],
   props: {
     name: {
       type: String,
       required: false,
       default: null
-    },
-    resource: {
-      type: Object,
-      required: true
     },
     isSelected: {
       type: Boolean,
@@ -65,6 +64,9 @@ export default {
         layouts: 0,
         pages: 0,
         components: 0
+      }
+      if (!resource) {
+        return totals
       }
       if (resource['@type'] === 'ComponentCollection') {
         this.addCollectionTotals(resource, totals)

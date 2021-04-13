@@ -21,9 +21,10 @@
             :is="selectedTab.component"
             v-if="selectedTab"
             :key="loopKey('tab-content', selectedTabIndex)"
-            :resource="resource"
+            :iri="iri"
             :context="fullContext"
             @draggable="toggleDraggable"
+            @close="$emit('close')"
           />
         </div>
       </div>
@@ -43,8 +44,8 @@ export default {
       type: Array,
       required: true
     },
-    resource: {
-      type: Object,
+    iri: {
+      type: String,
       required: false,
       default: null
     },
@@ -84,12 +85,9 @@ export default {
         }
       )
     },
-    resourceId() {
-      return this?.resource['@id'] || 'new'
-    },
     loopKey() {
       return (label, index) => {
-        return `${this.resourceId}-${label}-${index}`
+        return `${this.iri}-${label}-${index}`
       }
     },
     selectedTab() {
@@ -139,7 +137,7 @@ export default {
       this.selectedTabIndex = newIndex
     },
     selectComponentListener(iri) {
-      if (iri !== this.resource['@id']) {
+      if (iri !== this.iri) {
         this.showTab(0)
       }
     },

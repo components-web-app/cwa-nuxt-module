@@ -34,12 +34,20 @@ export class Storage {
         resources: {
           new: {},
           current: {},
-          categories: {}
+          categories: {},
+          draftMapping: {}
         }
       }),
       mutations: {
         SET(state, payload) {
           Vue.set(state, payload.key, payload.value)
+        },
+        MAP_DRAFT_RESOURCE(state, { publishedIri, draftIri }) {
+          if (draftIri === null) {
+            Vue.delete(state.resources.draftMapping, publishedIri)
+          } else {
+            Vue.set(state.resources.draftMapping, publishedIri, draftIri)
+          }
         },
         DELETE_RESOURCE(state, payload) {
           const doDeleteResource = (state, payload) => {
@@ -55,6 +63,11 @@ export class Storage {
 
               const allIdsIndex = namedResources.allIds.indexOf(payload.id)
               if (allIdsIndex !== -1) {
+                // Delete positions if a component
+                // Should this really be done here??
+                // Or should this be the responsibility of the task that is deleting a resource...
+                // will positions actually be deleted?? We can't guarantee that can we, so
+                // by doing this we are making assumptions...
                 if (payload.category === StoreCategories.Component) {
                   const componentPositions =
                     namedResources.byId[payload.id]?.componentPositions
@@ -69,20 +82,27 @@ export class Storage {
                   }
                 }
 
-                namedResources.allIds.slice(allIdsIndex, 1)
-                Vue.delete(namedResources.byId, payload.id)
-
-                if (
-                  namedResources.currentIds &&
-                  namedResources.currentIds[payload.id]
-                ) {
+                // Delete from id mapping table
+                namedResources.allIds.splice(allIdsIndex, 1)
+                if (namedResources.currentIds) {
                   const currentIdsIndex = namedResources.currentIds.indexOf(
                     payload.id
                   )
-                  if (currentIdsIndex) {
-                    namedResources.currentIds.slice(currentIdsIndex, 1)
+                  if (currentIdsIndex !== -1) {
+                    namedResources.currentIds.splice(currentIdsIndex, 1)
                   }
                 }
+
+                // Delete from draft mapping if either no longer exists
+                // for (const [key, value] of Object.entries(
+                //   state.resources.draftMapping
+                // )) {
+                //   if (key === payload.id || value === payload.id) {
+                //     Vue.delete(state.resources.draftMapping, payload.id)
+                //   }
+                // }
+
+                Vue.delete(namedResources.byId, payload.id)
               }
             })
           }
@@ -102,6 +122,9 @@ export class Storage {
           resetCurrentIds(state.resources.current)
         },
         SET_RESOURCE(state, payload) {
+          if (payload.originalId && payload.originalId !== payload['@id']) {
+            state.resources.draftMapping[payload.originalId] = payload['@id']
+          }
           const stateKey = payload.isNew ? 'new' : 'current'
           const newState = state.resources[stateKey]
             ? { ...state.resources[stateKey] }
@@ -264,6 +287,13 @@ export class Storage {
     })
   }
 
+  mapDraftResource({ publishedIri, draftIri }) {
+    this.ctx.store.commit(this.options.vuex.namespace + '/MAP_DRAFT_RESOURCE', {
+      publishedIri,
+      draftIri
+    })
+  }
+
   setResource({
     resource,
     isNew,
@@ -356,7 +386,27 @@ export class Storage {
     ]({ iri, category })
   }
 
-  getResource(iri) {
+  getMappedDraft(iri) {
+    return this.state.resources.draftMapping[iri] || null
+  }
+
+  getMappedPublished(iri) {
+    for (const [key, value] of Object.entries(
+      this.state.resources.draftMapping
+    )) {
+      if (value === iri) {
+        return key
+      }
+    }
+  }
+
+  getResource(originalIri, skipIriMapping: boolean = false) {
+    let iri = originalIri
+    if (!skipIriMapping) {
+      // we are finding the draft IRI from the published one
+      iri = this.getMappedDraft(originalIri) || originalIri
+      consola.trace(`Resolved iri ${originalIri} to draft ${iri}`)
+    }
     const category = this.getCategoryFromIri(iri)
     const type = this.getTypeFromIri(iri, category)
     if (!type) {
@@ -368,7 +418,7 @@ export class Storage {
     consola.trace(
       `Resolved resource type for iri ${iri} in the category ${category} to ${type}`
     )
-    return this.state.resources.current[type].byId[iri]
+    return this.state.resources.current[type].byId?.[iri] || null
   }
 
   areResourcesOutdated() {

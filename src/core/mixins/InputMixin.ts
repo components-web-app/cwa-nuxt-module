@@ -1,6 +1,6 @@
 import debounce from 'lodash.debounce'
 import { STATUS_EVENTS, StatusEvent } from '../events'
-import UpdateResourceError from '../../inc/update-resource-error'
+import ApiError from '../../inc/api-error'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 import UpdateResourceMixin from './UpdateResourceMixin'
@@ -110,7 +110,7 @@ export default {
         )
         this.outdated = false
       } catch (error) {
-        if (!(error instanceof UpdateResourceError)) {
+        if (!(error instanceof ApiError)) {
           throw error
         }
         this.error = error.message
