@@ -1,15 +1,17 @@
 <template>
-  <resource-component-loader
-    v-if="component"
-    :component="`CwaComponents${component.uiComponent || component['@type']}`"
-    :iri="resource.component"
-    :sort-value="resource.sortValue"
-    :show-sort="showSort"
-    @deleted="$emit('deleted')"
-  />
-  <div v-else-if="resource.pageDataProperty">
-    The property [{{ resource.pageDataProperty }}] will be added here from page
-    data
+  <div>
+    <resource-component-loader
+      v-if="component"
+      :component="`CwaComponents${component.uiComponent || component['@type']}`"
+      :iri="resource.component"
+      :sort-value="resource.sortValue"
+      :show-sort="showSort"
+      @deleted="$emit('deleted')"
+    />
+    <div v-else-if="resource.pageDataProperty">
+      The property [{{ resource.pageDataProperty }}] will be added here from
+      page data
+    </div>
   </div>
 </template>
 
@@ -52,14 +54,7 @@ export default {
       if (!this.resource) {
         return null
       }
-      const componentType = this.$cwa.$storage.getTypeFromIri(
-        this.resource.component,
-        StoreCategories.Component
-      )
-      if (!componentType) {
-        return null
-      }
-      return this.$cwa.resources[componentType].byId[this.resource.component]
+      return this.$cwa.getResource(this.resource.component)
     }
   },
   async mounted() {
