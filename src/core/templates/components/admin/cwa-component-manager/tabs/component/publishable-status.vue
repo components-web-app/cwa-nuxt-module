@@ -1,25 +1,30 @@
 <template>
   <div v-if="resource" class="publishable-status-tab">
     <div class="row">
-      <div class="column is-narrow">
-        <cwa-admin-toggle
-          :id="`component-edit-version-${iri}`"
-          v-model="forceLive"
-          label="Edit live version"
-        />
+      <div v-if="resource._metadata.published" class="column is-narrow">
+        This resource is currently live and no modifications have been made yet
       </div>
-      <template v-if="!forceLive && !resource._metadata.published">
+      <template v-else>
         <div class="column is-narrow">
-          <cm-datepicker
-            :id="`component-published-at-${iri}`"
-            :iri="iri"
-            field="publishedAt"
-            label="Publish at"
+          <cwa-admin-toggle
+            :id="`component-edit-version-${iri}`"
+            v-model="forceLive"
+            label="Edit live version"
           />
         </div>
-        <div class="column is-narrow">
-          <cm-button @click="publishNow">Publish Now</cm-button>
-        </div>
+        <template v-if="!forceLive && !resource._metadata.published">
+          <div class="column is-narrow">
+            <cm-datepicker
+              :id="`component-published-at-${iri}`"
+              :iri="iri"
+              field="publishedAt"
+              label="Publish at"
+            />
+          </div>
+          <div class="column is-narrow">
+            <cm-button @click="publishNow">Publish Now</cm-button>
+          </div>
+        </template>
       </template>
     </div>
   </div>

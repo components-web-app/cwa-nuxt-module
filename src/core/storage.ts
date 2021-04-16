@@ -380,7 +380,10 @@ export class Storage {
     return 'Default'
   }
 
-  getTypeFromIri(iri, category) {
+  getTypeFromIri(iri, category: string = null) {
+    if (!category) {
+      category = this.getCategoryFromIri(iri)
+    }
     return this.ctx.store.getters[
       this.options.vuex.namespace + '/GET_TYPE_FROM_IRI'
     ]({ iri, category })

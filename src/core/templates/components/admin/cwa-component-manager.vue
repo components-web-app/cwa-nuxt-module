@@ -174,10 +174,7 @@ export default {
     },
     closestCollection() {
       for (const component of this.components) {
-        if (
-          this.$cwa.$storage.getTypeFromIri(component.iri) ===
-          'ComponentCollection'
-        ) {
+        if (this.isIriCollection(component.iri)) {
           return component
         }
       }
@@ -213,18 +210,18 @@ export default {
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
+    isIriCollection(iri) {
+      return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentCollection'
+    },
     selectPosition(iri) {
       this.selectedPosition = iri
     },
     toggleDraggable(isDraggable) {
       let closestCollection = null
       if (this.components) {
-        for (const component of this.components) {
-          if (
-            this.$cwa.$storage.getTypeFromIri(component.iri) ===
-            'ComponentCollection'
-          ) {
-            closestCollection = component.iri
+        for (const { iri } of this.components) {
+          if (this.isIriCollection(iri)) {
+            closestCollection = iri
           }
         }
       }
