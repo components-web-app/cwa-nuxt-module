@@ -3,7 +3,7 @@
     <div class="row">
       <div class="column is-narrow">
         <cwa-admin-toggle
-          :id="`component-sort-${resource['@id']}`"
+          :id="`component-sort-${iri}`"
           v-model="draggableToggled"
           label="Drag & drop"
         />

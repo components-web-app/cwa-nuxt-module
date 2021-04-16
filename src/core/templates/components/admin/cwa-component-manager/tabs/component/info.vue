@@ -2,7 +2,7 @@
   <div class="collection-info-tab">
     <div class="row">
       <div class="column is-narrow">
-        <info :id="inputId('id')" label="id" :value="resource['@id']" />
+        <info :id="inputId('id')" label="id" :value="iri" />
       </div>
       <div v-if="resource.createdAt || resource.modifiedAt" class="column">
         <info

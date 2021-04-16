@@ -4,7 +4,7 @@
       <div v-if="context.UiComponents" class="column is-narrow">
         <cm-select
           id="component"
-          :iri="resource['@id']"
+          :iri="iri"
           field="uiComponent"
           label="Interface"
           :options="[
@@ -16,7 +16,7 @@
       <div v-if="context.UiClassNames" class="column is-narrow">
         <cm-multiselect
           id="uiClassNames"
-          :iri="resource['@id']"
+          :iri="iri"
           field="uiClassNames"
           label="Style"
           :options="context.UiClassNames"
@@ -42,7 +42,7 @@ export default {
         setTimeout(() => {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.selectComponent,
-            this.resource['@id']
+            this.iri
           )
         }, 10)
       })
