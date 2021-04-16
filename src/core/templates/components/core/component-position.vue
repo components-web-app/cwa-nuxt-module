@@ -16,7 +16,6 @@
 </template>
 
 <script>
-import { StoreCategories } from '@cwa/nuxt-module/core/storage'
 import ComponentManagerMixin, {
   EVENTS
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
