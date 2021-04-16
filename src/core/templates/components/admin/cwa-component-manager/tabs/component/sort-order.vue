@@ -43,7 +43,12 @@ export default {
         : null
     },
     refreshEndpoints() {
-      return this.context.collection?.resource?.componentPositions || []
+      const collectionIri = this.context.collection.iri
+      if (!collectionIri) {
+        return []
+      }
+      const collection = this.$cwa.getResource(collectionIri)
+      return collection?.componentPositions || []
     }
   },
   watch: {

@@ -178,6 +178,10 @@ export class Storage {
               consola.info(
                 `Added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is different from the existing one`
               )
+              consola.info(
+                JSON.stringify(cleanResourceForComparison(payload.resource)),
+                JSON.stringify(cleanResourceForComparison(currentResource))
+              )
             }
           }
           const currentResourceState = newState[payload.name]
