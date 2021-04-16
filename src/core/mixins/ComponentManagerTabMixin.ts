@@ -17,12 +17,10 @@ export default {
     },
     storeComponent: {
       get() {
-        return this.resource['@id']
-          ? this.$cwa.getResource(this.resource['@id'])
-          : null
+        return this.resource
       },
       set(resource) {
-        if (!this.resource['@id']) {
+        if (!this.resource?.['@id']) {
           return
         }
         this.$cwa.$storage.setResource({
