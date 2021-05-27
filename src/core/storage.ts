@@ -35,10 +35,26 @@ export class Storage {
           new: {},
           current: {},
           categories: {},
-          draftMapping: {}
+          draftMapping: {},
+          mapToPublished: []
         }
       }),
       mutations: {
+        TOGGLE_PUBLISHABLE(
+          state,
+          { iri, showPublished }: { iri: string; showPublished: boolean }
+        ) {
+          if (showPublished) {
+            if (!state.resources.mapToPublished.includes(iri)) {
+              state.resources.mapToPublished.push(iri)
+            }
+          } else {
+            const useLiveIndex = state.resources.mapToPublished.indexOf(iri)
+            if (useLiveIndex !== -1) {
+              state.resources.mapToPublished.splice(useLiveIndex, 1)
+            }
+          }
+        },
         SET(state, payload) {
           Vue.set(state, payload.key, payload.value)
         },
@@ -112,7 +128,7 @@ export class Storage {
           Vue.set(state.resources, 'new', {})
           const resetCurrentIds = (obj) => {
             // of not in? Object.values() ?
-            for (const resourceName in obj) {
+            for (const resourceName of Object.keys(obj)) {
               if (obj[resourceName].currentIds === undefined) {
                 continue
               }
@@ -393,11 +409,15 @@ export class Storage {
     ]({ iri, category })
   }
 
-  getMappedDraft(iri) {
+  findDraftIri(iri) {
+    const resource = this.getResource(iri)
+    if (resource._metadata.published === false) {
+      return iri
+    }
     return this.state.resources.draftMapping[iri] || null
   }
 
-  getMappedPublished(iri) {
+  findPublishedIri(iri) {
     for (const [key, value] of Object.entries(
       this.state.resources.draftMapping
     )) {
@@ -405,15 +425,10 @@ export class Storage {
         return key
       }
     }
+    return null
   }
 
-  getResource(originalIri, skipIriMapping: boolean = false) {
-    let iri = originalIri
-    if (!skipIriMapping) {
-      // we are finding the draft IRI from the published one
-      iri = this.getMappedDraft(originalIri) || originalIri
-      consola.trace(`Resolved iri ${originalIri} to draft ${iri}`)
-    }
+  getResource(iri) {
     const category = this.getCategoryFromIri(iri)
     const type = this.getTypeFromIri(iri, category)
     if (!type) {
@@ -443,6 +458,17 @@ export class Storage {
 
   removeState(key) {
     this.setState(key, undefined)
+  }
+
+  togglePublishable(draftIri: string, showPublished: boolean) {
+    this.ctx.store.commit(this.options.vuex.namespace + '/TOGGLE_PUBLISHABLE', {
+      iri: draftIri,
+      showPublished
+    })
+  }
+
+  isIriMappedToPublished(iri: string): boolean {
+    return this.state.resources.mapToPublished.includes(iri)
   }
 }
 

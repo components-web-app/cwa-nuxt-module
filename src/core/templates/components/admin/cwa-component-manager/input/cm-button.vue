@@ -12,4 +12,5 @@ export default {}
   border: 1px solid $cwa-color-text-light
   font-weight: $font-weight-normal
   line-height: normal
+  margin-bottom: 0
 </style>

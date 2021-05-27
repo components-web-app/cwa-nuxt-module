@@ -95,8 +95,20 @@ export default class Cwa {
     return this.getResource(iri) || (await this.refreshResource(iri))
   }
 
-  getResource(iri, skipIriMapping: boolean = false) {
-    return this.$storage.getResource(iri, skipIriMapping)
+  findDraftIri(iri: string) {
+    return this.$storage.findDraftIri(iri)
+  }
+
+  getPublishableIri(iri: string) {
+    // is it draft and mapped to show published?
+    if (this.$storage.isIriMappedToPublished(iri)) {
+      return this.$storage.findPublishedIri(iri) || iri
+    }
+    return iri
+  }
+
+  getResource(iri: string) {
+    return this.$storage.getResource(iri)
   }
 
   get layout() {
@@ -123,7 +135,7 @@ export default class Cwa {
     this.$storage.setResource({ category, isNew, resource })
   }
 
-  // isResourceCurrent(resource: object, iri: string) {
+  // isResourceSaved(resource: object, iri: string) {
   //   const saved = this.$state.resources.current[
   //     this.$storage.getCategoryFromIri(iri)
   //   ][iri]
@@ -298,7 +310,7 @@ export default class Cwa {
 
       // Handle draft mapping
       if (newResource._metadata.published) {
-        const draftIri = this.$storage.getMappedDraft(newResource['@id'])
+        const draftIri = this.$storage.findDraftIri(newResource['@id'])
         if (draftIri) {
           this.$storage.mapDraftResource({
             publishedIri: newResource['@id'],
@@ -358,5 +370,9 @@ export default class Cwa {
 
   userHasRole(role) {
     return this.user ? this.user.roles.includes(role) : false
+  }
+
+  togglePublishable(draftIri: string, showPublished: boolean) {
+    this.$storage.togglePublishable(draftIri, showPublished)
   }
 }

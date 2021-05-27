@@ -1,7 +1,7 @@
 <template>
   <label :for="id" :class="['cwa-admin-toggle', { 'is-checked': !!value }]">
     <span class="label">{{ label }}</span>
-    <div class="switch">
+    <span class="switch">
       <input
         :id="id"
         :checked="value"
@@ -10,7 +10,7 @@
         @change="updateValue($event.target.checked)"
       />
       <span class="slider" />
-    </div>
+    </span>
   </label>
 </template>
 

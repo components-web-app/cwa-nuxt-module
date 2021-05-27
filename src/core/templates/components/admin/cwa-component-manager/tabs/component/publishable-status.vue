@@ -1,18 +1,24 @@
 <template>
   <div v-if="resource" class="publishable-status-tab">
     <div class="row">
-      <div v-if="resource._metadata.published" class="column is-narrow">
+      <div
+        v-if="isPublished && !$cwa.findDraftIri(iri)"
+        class="column is-narrow"
+      >
         This resource is currently live and no modifications have been made yet
       </div>
       <template v-else>
-        <div class="column is-narrow">
+        <div
+          v-if="resource.publishedResource || resource.draftResource"
+          class="column is-narrow"
+        >
           <cwa-admin-toggle
             :id="`component-edit-version-${iri}`"
-            v-model="forceLive"
+            v-model="isPublished"
             label="Edit live version"
           />
         </div>
-        <template v-if="!forceLive && !resource._metadata.published">
+        <template v-if="!isPublished">
           <div class="column is-narrow">
             <cm-datepicker
               :id="`component-published-at-${iri}`"
@@ -45,8 +51,19 @@ export default {
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin, UpdateResourceMixin],
   data() {
     return {
-      forceLive: false,
       error: null
+    }
+  },
+  computed: {
+    isPublished: {
+      get() {
+        return this.resource._metadata.published
+      },
+      set(showPublished) {
+        const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
+        this.$cwa.togglePublishable(draftIri, showPublished)
+        // const newIri = this.$cwa.getPublishableIri(draftIri)
+      }
     }
   },
   methods: {

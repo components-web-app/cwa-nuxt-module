@@ -2,7 +2,7 @@
   <resource-component-loader
     v-if="component"
     :component="`CwaComponents${component.uiComponent || component['@type']}`"
-    :iri="resource.component"
+    :iri="componentIri"
     :sort-value="resource.sortValue"
     :show-sort="showSort"
     @deleted="$emit('deleted')"
@@ -45,18 +45,22 @@ export default {
   },
   computed: {
     resource() {
-      return this.$cwa.resources.ComponentPosition.byId[this.iri]
+      return this.$cwa.getResource(this.iri)
+    },
+    componentIri() {
+      return this.$cwa.getPublishableIri(this.resource.component)
     },
     component() {
       if (!this.resource) {
         return null
       }
-      return this.$cwa.getResource(this.resource.component)
+      return this.$cwa.getResource(this.componentIri)
     }
   },
   async mounted() {
+    // load the component if not loaded
     if (!this.component) {
-      // check if no published version, only a draft
+      // check if no published version, only a draft (i.e. only an authorized viewer can see it)
       if (this.$cwa.user && this.resource.component) {
         await this.$cwa.fetcher.fetchComponent(this.resource.component)
       }
