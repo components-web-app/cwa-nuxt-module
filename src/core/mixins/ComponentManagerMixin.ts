@@ -89,7 +89,7 @@ export const ComponentManagerMixin = {
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
-    managerSelectComponentListener(iri) {
+    managerHighlightComponentListener(iri) {
       // the sort order tab will add the position as well
       // next tick means we don't lose adding it, but there
       // needs to be a better way - what if another component
@@ -116,10 +116,27 @@ export const ComponentManagerMixin = {
           this.$delete(this.elementsAdded, 'highlight')
         }
       })
+    },
+    managerSelectComponentListener(iri) {
+      if (iri !== this.computedIri) {
+        return
+      }
+      this.$nextTick(() => {
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: false
+        })
+        this.$el.dispatchEvent(clickEvent)
+      })
     }
   },
   mounted() {
     this.$el.addEventListener('click', this.initComponentManagerShowListener)
+    this.$cwa.$eventBus.$on(
+      EVENTS.highlightComponent,
+      this.managerHighlightComponentListener
+    )
     this.$cwa.$eventBus.$on(
       EVENTS.selectComponent,
       this.managerSelectComponentListener
@@ -154,6 +171,11 @@ export const ComponentManagerMixin = {
   },
   beforeDestroy() {
     this.$el.removeEventListener('click', this.initComponentManagerShowListener)
+    this.$cwa.$eventBus.$off(
+      EVENTS.highlightComponent,
+      this.managerHighlightComponentListener
+    )
+
     this.$cwa.$eventBus.$off(
       EVENTS.selectComponent,
       this.managerSelectComponentListener

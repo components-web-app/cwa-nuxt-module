@@ -43,6 +43,7 @@ export const API_EVENTS = {
 const componentManagerCategory = 'component-manager'
 export const COMPONENT_MANAGER_EVENTS = {
   showing: `${prefix}:${componentManagerCategory}:showing`,
+  highlightComponent: `${prefix}:${componentManagerCategory}:highlight-component`,
   selectComponent: `${prefix}:${componentManagerCategory}:select-component`,
   addComponent: `${prefix}:${componentManagerCategory}:add-component`,
   newComponent: `${prefix}:${componentManagerCategory}:new-component`,

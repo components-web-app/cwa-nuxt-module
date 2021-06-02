@@ -81,7 +81,7 @@ export default {
         )
         return
       }
-      this.$cwa.$eventBus.$emit(EVENTS.selectPosition, this.resource['@id'])
+      this.$cwa.$eventBus.$emit(EVENTS.selectPosition, this.iri)
     }
   }
 }

@@ -203,8 +203,8 @@ export default {
       this.handleNewComponentEvent
     )
     this.$cwa.$eventBus.$on(
-      COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.handleSelectComponentEvent
+      COMPONENT_MANAGER_EVENTS.highlightComponent,
+      this.handleHighlightComponentEvent
     )
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.draggable,
@@ -221,8 +221,8 @@ export default {
       this.handleNewComponentEvent
     )
     this.$cwa.$eventBus.$off(
-      COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.handleSelectComponentEvent
+      COMPONENT_MANAGER_EVENTS.highlightComponent,
+      this.handleHighlightComponentEvent
     )
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.draggable,
@@ -238,7 +238,7 @@ export default {
       this.isDraggable = false
       this.showOrderValues = !!event.newTab.context?.showOrderValues
     },
-    handleSelectComponentEvent(iri?: string) {
+    handleHighlightComponentEvent(iri?: string) {
       if (this.newComponentEvent && this.newComponentIri !== iri) {
         this.newComponentEvent = null
       }

@@ -41,7 +41,7 @@ export default {
         // lazy load mount, first mount of new ui component may not be on nex tick...
         setTimeout(() => {
           this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.selectComponent,
+            COMPONENT_MANAGER_EVENTS.highlightComponent,
             this.iri
           )
         }, 10)

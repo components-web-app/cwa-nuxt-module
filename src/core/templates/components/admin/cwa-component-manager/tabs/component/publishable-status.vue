@@ -45,6 +45,7 @@ import CmDatepicker from '../../input/cm-datepicker.vue'
 import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
 import ApiError from '../../../../../../../inc/api-error'
+import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
 
 export default {
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -62,7 +63,17 @@ export default {
       set(showPublished) {
         const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
         this.$cwa.togglePublishable(draftIri, showPublished)
-        // const newIri = this.$cwa.getPublishableIri(draftIri)
+        const newIri = this.$cwa.getPublishableIri(draftIri)
+        // this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
+        //   data: this.componentManager,
+        //   iri: this.computedIri
+        // } as ComponentManagerAddEvent)
+        this.$nextTick(() => {
+          this.$cwa.$eventBus.$emit(
+            COMPONENT_MANAGER_EVENTS.selectComponent,
+            newIri
+          )
+        })
       }
     }
   },

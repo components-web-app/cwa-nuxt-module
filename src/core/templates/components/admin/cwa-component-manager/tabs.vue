@@ -100,23 +100,20 @@ export default {
         newTab,
         previousTab
       } as TabChangedEvent)
+    },
+    selectedPosition(newIri, oldIri) {
+      if (newIri !== oldIri) {
+        this.showTab(0)
+      }
     }
   },
   mounted() {
-    this.$cwa.$eventBus.$on(
-      COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.selectComponentListener
-    )
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.showTabs,
       this.setTabsShowing
     )
   },
   beforeDestroy() {
-    this.$cwa.$eventBus.$off(
-      COMPONENT_MANAGER_EVENTS.selectComponent,
-      this.selectComponentListener
-    )
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.showTabs,
       this.setTabsShowing
@@ -135,11 +132,6 @@ export default {
     },
     showTab(newIndex) {
       this.selectedTabIndex = newIndex
-    },
-    selectComponentListener(iri) {
-      if (iri !== this.iri) {
-        this.showTab(0)
-      }
     },
     toggleDraggable(isDraggable) {
       this.$emit('draggable', isDraggable)

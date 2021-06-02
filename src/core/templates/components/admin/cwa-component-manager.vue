@@ -268,7 +268,7 @@ export default {
       }
     },
     toggleComponent(iri?: string) {
-      this.$cwa.$eventBus.$emit(EVENTS.selectComponent, iri)
+      this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, iri)
     },
     hide() {
       this.$cwa.$eventBus.$emit(EVENTS.hide)
@@ -279,7 +279,8 @@ export default {
         return
       }
       this.pendingComponents = []
-      this.selectedPosition = null
+      // when re-selecting published/draft this resets... do we need to?
+      // this.selectedPosition = null
       if (this.showingCriteria) {
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }
