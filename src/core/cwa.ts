@@ -312,21 +312,27 @@ export default class Cwa {
       if (newResource._metadata.published) {
         const draftIri = this.$storage.findDraftIri(newResource['@id'])
         if (draftIri) {
-          this.$storage.mapDraftResource({
+          const iriObj = {
             publishedIri: newResource['@id'],
             draftIri: null
+          }
+          this.$storage.mapDraftResource(iriObj)
+          this.$eventBus.$emit(API_EVENTS.newDraft, iriObj)
+          Vue.nextTick(() => {
+            this.$storage.deleteResource(draftIri)
           })
-          this.$storage.deleteResource(draftIri)
         }
       } else if (newResource['@id'] !== endpoint) {
         // returned a draft that is not the same as the endpoint we posted to
         // a new draft to relate to the published resource
         const publishedIri = endpoint
         const draftIri = newResource['@id']
-        this.$storage.mapDraftResource({
+        const iriObj = {
           publishedIri,
           draftIri
-        })
+        }
+        this.$storage.mapDraftResource(iriObj)
+        this.$eventBus.$emit(API_EVENTS.newDraft, iriObj)
       }
     }
     return await this.initNewRequest(

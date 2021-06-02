@@ -1,3 +1,4 @@
+import { API_EVENTS } from '../events'
 import IriMixin from './IriMixin'
 
 export default {
@@ -10,6 +11,7 @@ export default {
     }
   },
   async mounted() {
+    this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
     if (!this.resource?._metadata?.published) {
       this.draftIri = this.iri
       if (this.resource.publishedResource) {
@@ -32,6 +34,9 @@ export default {
       }
     }
   },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
+  },
   computed: {
     isNew() {
       return this.displayIri.endsWith('/new')
@@ -44,6 +49,14 @@ export default {
     },
     resource() {
       return this.$cwa.getResource(this.displayIri)
+    }
+  },
+  methods: {
+    newDraftListener({ publishedIri, draftIri }) {
+      if (this.publishedIri !== publishedIri) {
+        return
+      }
+      this.draftIri = draftIri
     }
   }
 }

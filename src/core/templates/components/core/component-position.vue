@@ -18,6 +18,7 @@ import ComponentManagerMixin, {
   EVENTS
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import consola from 'consola'
+import { API_EVENTS } from '@cwa/nuxt-module/core/events'
 import ResourceComponentLoader from '../../resource-component-loader'
 import components from '~/.nuxt/cwa/components'
 
@@ -71,6 +72,10 @@ export default {
         this.componentLoadFailed = true
       }
     }
+    this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
+  },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
   },
   methods: {
     componentManagerShowListener() {
@@ -82,6 +87,17 @@ export default {
         return
       }
       this.$cwa.$eventBus.$emit(EVENTS.selectPosition, this.iri)
+    },
+    newDraftListener({ publishedIri, draftIri }) {
+      if (this.resource.component === publishedIri && draftIri) {
+        const resource = Object.assign({}, this.resource, {
+          component: draftIri
+        })
+        this.$cwa.$storage.setResource({
+          resource,
+          isNew: false
+        })
+      }
     }
   }
 }

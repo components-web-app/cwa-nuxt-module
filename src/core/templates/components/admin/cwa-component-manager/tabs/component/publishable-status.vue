@@ -64,10 +64,6 @@ export default {
         const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
         this.$cwa.togglePublishable(draftIri, showPublished)
         const newIri = this.$cwa.getPublishableIri(draftIri)
-        // this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
-        //   data: this.componentManager,
-        //   iri: this.computedIri
-        // } as ComponentManagerAddEvent)
         this.$nextTick(() => {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.selectComponent,

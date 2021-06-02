@@ -71,7 +71,8 @@ import {
   NOTIFICATION_EVENTS,
   STATUS_EVENTS,
   ResetStatusEvent,
-  DraggableEvent
+  DraggableEvent,
+  API_EVENTS
 } from '../../../events'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
@@ -202,14 +203,23 @@ export default {
     window.addEventListener('click', this.show)
     this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
+    this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.show)
     this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
+    this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
+    newDraftListener({ publishedIri, draftIri }) {
+      if (draftIri && publishedIri === this.componentIri) {
+        this.$nextTick(() => {
+          this.$cwa.$eventBus.$emit(EVENTS.selectComponent, draftIri)
+        })
+      }
+    },
     isIriCollection(iri) {
       return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentCollection'
     },

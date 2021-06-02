@@ -37,7 +37,8 @@ export const API_EVENTS = {
   updated: `${prefix}:${apiCategory}:resource:updated`,
   deleted: `${prefix}:${apiCategory}:resource:deleted`,
   refreshed: `${prefix}:${apiCategory}:resource:refreshed`,
-  error: `${prefix}:${apiCategory}:error`
+  error: `${prefix}:${apiCategory}:error`,
+  newDraft: `${prefix}:${apiCategory}:new-draft`
 }
 
 const componentManagerCategory = 'component-manager'
