@@ -283,20 +283,28 @@ export default class Cwa {
     category?: string,
     refreshEndpoints?: string[]
   ) {
+    let patchEndpoint = endpoint
+    const draftIri = this.findDraftIri(endpoint)
+    const forcedPublishedUpdate =
+      draftIri && this.getPublishableIri(draftIri) !== draftIri
+
     const requestFn = async () => {
       const tokenSource = this.ctx.$axios.CancelToken.source()
-      this.cancelPendingPatchRequest(endpoint, false)
+      if (forcedPublishedUpdate) {
+        patchEndpoint += '?published=true'
+      }
+      this.cancelPendingPatchRequest(patchEndpoint, false)
       this.patchRequests.push({
-        endpoint,
+        endpoint: patchEndpoint,
         tokenSource
       })
-      const patchPromise = this.ctx.$axios.$patch(endpoint, data, {
+      const patchPromise = this.ctx.$axios.$patch(patchEndpoint, data, {
         headers: {
           'Content-Type': 'application/merge-patch+json'
         },
         cancelToken: tokenSource.token
       })
-      this.cancelPendingPatchRequest(endpoint, true)
+      this.cancelPendingPatchRequest(patchEndpoint, true)
       return await patchPromise
     }
     const postUpdateHandler = async (newResource) => {
@@ -306,6 +314,10 @@ export default class Cwa {
       // of in the request function
       if (refreshEndpoints && refreshEndpoints.length) {
         await this.refreshEndpointsArray(refreshEndpoints)
+      }
+
+      if (forcedPublishedUpdate) {
+        return
       }
 
       // Handle draft mapping

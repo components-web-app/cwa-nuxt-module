@@ -23,7 +23,6 @@ export default {
         category: notificationCategory
       }
       this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
-
       try {
         return await this.$cwa.updateResource(
           iri,
