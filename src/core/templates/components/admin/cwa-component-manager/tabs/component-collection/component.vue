@@ -40,9 +40,8 @@ export default {
     async selectedComponent(newComponent) {
       // get the component for the dialog from the ui component
       const component = await components[`CwaComponents${newComponent}`]
-      const { endpoint, resourceName: name } = this.availableComponents[
-        newComponent
-      ]
+      const { endpoint, resourceName: name } =
+        this.availableComponents[newComponent]
       const event: NewComponentEvent = {
         collection: this.resource['@id'],
         component,

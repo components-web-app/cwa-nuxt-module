@@ -97,7 +97,7 @@ function applyCss() {
       })
     } else {
       config.module.rules[sassRuleIdx].oneOf.forEach((rule) =>
-        ((rule.use as unknown) as any[]).push(sassResourcesLoader)
+        (rule.use as unknown as any[]).push(sassResourcesLoader)
       )
     }
   })

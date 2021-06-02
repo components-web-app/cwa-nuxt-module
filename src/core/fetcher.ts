@@ -281,9 +281,10 @@ export class Fetcher {
       return
     }
 
-    const matches = /<(.+)>; rel="http:\/\/www.w3.org\/ns\/hydra\/core#apiDocumentation"/.exec(
-      link
-    )
+    const matches =
+      /<(.+)>; rel="http:\/\/www.w3.org\/ns\/hydra\/core#apiDocumentation"/.exec(
+        link
+      )
     if (matches === null) {
       consola.error(
         'The "Link" HTTP header is not of the type "http://www.w3.org/ns/hydra/core#apiDocumentation".'
@@ -468,8 +469,8 @@ export class Fetcher {
 
     const collectionIri = data.componentCollection
     // Check if this ComponentCollection resource is current
-    const componentCollectionResource = this.currentResources
-      .ComponentCollection.byId[collectionIri]
+    const componentCollectionResource =
+      this.currentResources.ComponentCollection.byId[collectionIri]
     if (!componentCollectionResource) {
       return false
     }

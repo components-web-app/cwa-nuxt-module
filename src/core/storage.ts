@@ -269,21 +269,23 @@ export class Storage {
         }
       },
       getters: {
-        GET_TYPE_FROM_IRI: (state) => ({ iri, category }) => {
-          if (!iri) {
-            return null
-          }
-          const typeMapping = state.resources.categories[category]
-          if (!typeMapping) {
-            return null
-          }
-          for (const mappingKey of Object.keys(typeMapping)) {
-            if (iri.startsWith(mappingKey)) {
-              return typeMapping[mappingKey]
+        GET_TYPE_FROM_IRI:
+          (state) =>
+          ({ iri, category }) => {
+            if (!iri) {
+              return null
             }
-          }
-          return null
-        },
+            const typeMapping = state.resources.categories[category]
+            if (!typeMapping) {
+              return null
+            }
+            for (const mappingKey of Object.keys(typeMapping)) {
+              if (iri.startsWith(mappingKey)) {
+                return typeMapping[mappingKey]
+              }
+            }
+            return null
+          },
         RESOURCES_OUTDATED: (state) => {
           return Object.entries(state.resources.new).length !== 0
         }

@@ -297,9 +297,8 @@ export default {
     },
     async draggableChanged({ moved }) {
       this.reloading = true
-      const previousPosition = this.previousSortedComponentPositions[
-        moved.newIndex
-      ]
+      const previousPosition =
+        this.previousSortedComponentPositions[moved.newIndex]
       await this.$cwa.updateResource(
         moved.element,
         {

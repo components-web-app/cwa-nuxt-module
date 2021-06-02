@@ -72,14 +72,15 @@ export default {
         this.addCollectionTotals(resource, totals)
       } else if (resource.componentPositions) {
         resource.componentPositions.forEach((positionIri) => {
-          const componentPosition = this.$cwa.resources.ComponentPosition.byId[
-            positionIri
-          ]
+          const componentPosition =
+            this.$cwa.resources.ComponentPosition.byId[positionIri]
           if (!componentPosition?.componentCollection) {
             return
           }
-          const componentCollection = this.$cwa.resources.ComponentCollection
-            .byId[componentPosition.componentCollection]
+          const componentCollection =
+            this.$cwa.resources.ComponentCollection.byId[
+              componentPosition.componentCollection
+            ]
           this.addCollectionTotals(componentCollection, totals)
         })
       }
