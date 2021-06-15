@@ -29,7 +29,7 @@ export default {
       }
     } else {
       this.publishedIri = this.iri
-      if (this.$cwa.isUser) {
+      if (this.$cwa.user) {
         // check for a draft version
         const component = await this.$cwa.fetcher.fetchComponent(this.iri)
         // component returned this time may be a draft
