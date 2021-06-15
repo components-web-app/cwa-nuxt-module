@@ -174,6 +174,8 @@ export class Storage {
                 delete newObj.sortCollection
                 // remove published resource
                 delete newObj.publishedResource
+                // remove draft resource
+                delete newObj.draftResource
                 // remove modified at timestamp
                 delete newObj.modifiedAt
                 // remove null values

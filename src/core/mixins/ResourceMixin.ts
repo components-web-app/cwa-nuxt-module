@@ -14,9 +14,14 @@ export default {
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
     if (!this.resource?._metadata?.published) {
       this.draftIri = this.iri
-      if (this.resource.publishedResource) {
-        this.$cwa.saveResource(this.resource.publishedResource)
-        this.publishedIri = this.resource.publishedResource?.['@id'] || null
+      const publishedResource = this.resource.publishedResource
+      if (
+        publishedResource &&
+        publishedResource?.['@id'] &&
+        !this.$cwa.getResource(publishedResource['@id'])
+      ) {
+        this.$cwa.saveResource(publishedResource)
+        this.publishedIri = publishedResource['@id'] || null
         this.$cwa.$storage.mapDraftResource({
           publishedIri: this.publishedIri,
           draftIri: this.draftIri
