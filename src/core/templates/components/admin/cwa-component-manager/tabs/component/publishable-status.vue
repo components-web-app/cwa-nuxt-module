@@ -78,12 +78,13 @@ export default {
     async publishNow() {
       this.error = null
       try {
+        const publishedResource = this.$cwa.getPublishedResource(this.resource)
         await this.updateResource(
           this.iri,
           'publishedAt',
           moment.utc().toISOString(),
           this.$cwa.$storage.getCategoryFromIri(this.iri),
-          this.$cwa.getPublishedResource(this.resource).componentPositions,
+          publishedResource.componentPositions,
           'components-manager'
         )
         this.$emit('close')

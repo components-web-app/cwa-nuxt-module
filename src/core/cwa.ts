@@ -107,16 +107,16 @@ export default class Cwa {
     return iri
   }
 
-  getPublishedResource(resource: { published?: string }) {
-    const publishedIri = resource?.published
+  getPublishedResource(resource: { publishedResource?: string }) {
+    const publishedIri = resource?.publishedResource
     if (!publishedIri) {
       return null
     }
     return this.$storage.getResource(publishedIri)
   }
 
-  getDraftResource(resource: { draft?: string }) {
-    const draftIri = resource?.draft
+  getDraftResource(resource: { draftResource?: string }) {
+    const draftIri = resource?.draftResource
     if (!draftIri) {
       return null
     }
