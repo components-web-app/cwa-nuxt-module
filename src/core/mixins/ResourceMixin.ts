@@ -14,14 +14,10 @@ export default {
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
     if (!this.resource?._metadata?.published) {
       this.draftIri = this.iri
-      const publishedResource = this.resource.publishedResource
-      if (
-        publishedResource &&
-        publishedResource?.['@id'] &&
-        !this.$cwa.getResource(publishedResource['@id'])
-      ) {
-        this.$cwa.saveResource(publishedResource)
-        this.publishedIri = publishedResource['@id'] || null
+      const publishedIri = this.resource.publishedResource
+      if (publishedIri && !this.$cwa.getResource(publishedIri)) {
+        await this.$cwa.fetcher.fetchComponent(`${publishedIri}?published=true`)
+        this.publishedIri = publishedIri
         this.$cwa.$storage.mapDraftResource({
           publishedIri: this.publishedIri,
           draftIri: this.draftIri
@@ -30,6 +26,11 @@ export default {
     } else {
       this.publishedIri = this.iri
       if (this.$cwa.user) {
+        const draftIri = this.resource?.draftResource
+        if (draftIri && this.$cwa.getResource(draftIri)) {
+          this.draftIri = draftIri
+          return
+        }
         // check for a draft version
         const component = await this.$cwa.fetcher.fetchComponent(this.iri)
         // component returned this time may be a draft
@@ -44,16 +45,13 @@ export default {
   },
   computed: {
     isNew() {
-      return this.displayIri.endsWith('/new')
-    },
-    displayIri() {
-      return this.draftIri || this.publishedIri || this.iri
+      return this.iri.endsWith('/new')
     },
     category() {
-      return this.$cwa.$storage.getCategoryFromIri(this.displayIri)
+      return this.$cwa.$storage.getCategoryFromIri(this.iri)
     },
     resource() {
-      return this.$cwa.getResource(this.displayIri)
+      return this.$cwa.getResource(this.iri)
     }
   },
   methods: {

@@ -46,6 +46,7 @@ export const COMPONENT_MANAGER_EVENTS = {
   showing: `${prefix}:${componentManagerCategory}:showing`,
   highlightComponent: `${prefix}:${componentManagerCategory}:highlight-component`,
   selectComponent: `${prefix}:${componentManagerCategory}:select-component`,
+  componentMounted: `${prefix}:${componentManagerCategory}:component-mounted`,
   addComponent: `${prefix}:${componentManagerCategory}:add-component`,
   newComponent: `${prefix}:${componentManagerCategory}:new-component`,
   hide: `${prefix}:${componentManagerCategory}:hide`,

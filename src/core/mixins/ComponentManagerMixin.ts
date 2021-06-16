@@ -131,8 +131,7 @@ export const ComponentManagerMixin = {
       })
     }
   },
-  mounted() {
-    this.$el.addEventListener('click', this.initComponentManagerShowListener)
+  beforeMount() {
     this.$cwa.$eventBus.$on(
       EVENTS.highlightComponent,
       this.managerHighlightComponentListener
@@ -141,6 +140,10 @@ export const ComponentManagerMixin = {
       EVENTS.selectComponent,
       this.managerSelectComponentListener
     )
+    this.$cwa.$eventBus.$emit(EVENTS.componentMounted, this.computedIri)
+  },
+  mounted() {
+    this.$el.addEventListener('click', this.initComponentManagerShowListener)
     // will exist with a resource mixin
     if (this.isNew) {
       this.$el.click()
@@ -175,7 +178,6 @@ export const ComponentManagerMixin = {
       EVENTS.highlightComponent,
       this.managerHighlightComponentListener
     )
-
     this.$cwa.$eventBus.$off(
       EVENTS.selectComponent,
       this.managerSelectComponentListener

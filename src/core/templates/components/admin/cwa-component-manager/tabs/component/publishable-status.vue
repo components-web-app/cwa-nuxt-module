@@ -46,6 +46,7 @@ import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
 import ApiError from '../../../../../../../inc/api-error'
 import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
+import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 
 export default {
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -62,14 +63,14 @@ export default {
       },
       set(showPublished) {
         const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
-        this.$cwa.togglePublishable(draftIri, showPublished)
-        const newIri = this.$cwa.getPublishableIri(draftIri)
-        this.$nextTick(() => {
+        this.$cwa.$eventBus.$once(EVENTS.componentMounted, () => {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.selectComponent,
             newIri
           )
         })
+        this.$cwa.togglePublishable(draftIri, showPublished)
+        const newIri = this.$cwa.getPublishableIri(draftIri)
       }
     }
   },
@@ -82,7 +83,7 @@ export default {
           'publishedAt',
           moment.utc().toISOString(),
           this.$cwa.$storage.getCategoryFromIri(this.iri),
-          this.resource.publishedResource.componentPositions,
+          this.$cwa.getPublishedResource(this.resource).componentPositions,
           'components-manager'
         )
         this.$emit('close')

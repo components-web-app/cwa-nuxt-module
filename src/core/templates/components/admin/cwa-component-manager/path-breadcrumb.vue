@@ -59,7 +59,8 @@ export default {
   computed: {
     // we will need to use the `findResource` method to ensure we have loaded all the relevant component locations and collections
     locations() {
-      const resource = this.resource?.publishedResource || this.resource
+      const resource =
+        this.$cwa.getPublishedResource(this.resource) || this.resource
       const totals = {
         layouts: 0,
         pages: 0,
@@ -89,7 +90,8 @@ export default {
     }
   },
   async mounted() {
-    const resource = this.resource?.publishedResource || this.resource
+    const resource =
+      this.$cwa.getPublishedResource(this.resource) || this.resource
     if (resource) {
       // we should ensure all the positions and collections have been resolved from the server
       // in future we may want to return the totals directly to the component for an admin
