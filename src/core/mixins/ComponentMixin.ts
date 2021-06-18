@@ -64,7 +64,12 @@ export default {
     componentManager(): ComponentManagerComponent {
       return {
         name: this?.resource?.['@type'] || 'Unknown Component',
-        tabs: this.defaultManagerTabs,
+        tabs: [
+          ...this.defaultManagerTabs.map((item) =>
+            Object.assign({}, item, { context: this.componentManagerContext })
+          ),
+          ...this.componentManagerTabs
+        ],
         context: Object.assign(
           {
             statusTab: {
@@ -74,6 +79,9 @@ export default {
           this.componentManagerContext
         )
       }
+    },
+    componentManagerTabs() {
+      return []
     },
     defaultManagerTabs() {
       const tabs: Array<ComponentManagerTab> = [

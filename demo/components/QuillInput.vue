@@ -1,6 +1,5 @@
 <template>
   <div>
-    <button class="button-outline" @click="$emit('hide')">Close editor</button>
     <div ref="quill" v-html="quillModel" />
     <div v-if="outdated && !error">
       <span>saving...</span>
