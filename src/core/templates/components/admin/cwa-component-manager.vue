@@ -146,7 +146,11 @@ export default {
       return [...(this.componentData?.tabs || []), ...this.dynamicTabs]
     },
     componentIri() {
-      return this.selectedComponent?.iri
+      const selectedComponent = this.selectedComponent
+      if (!selectedComponent) {
+        return null
+      }
+      return this.$cwa.getPublishableIri(selectedComponent.iri)
     },
     selectedContext() {
       return this.selectedComponent.data.context || {}

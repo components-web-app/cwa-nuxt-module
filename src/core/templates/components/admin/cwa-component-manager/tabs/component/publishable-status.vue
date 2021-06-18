@@ -8,10 +8,7 @@
         This resource is currently live and no modifications have been made yet
       </div>
       <template v-else>
-        <div
-          v-if="resource.publishedResource || resource.draftResource"
-          class="column is-narrow"
-        >
+        <div class="column is-narrow">
           <cwa-admin-toggle
             :id="`component-edit-version-${iri}`"
             v-model="isPublished"
