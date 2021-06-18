@@ -79,7 +79,7 @@ export default {
 </script>
 
 <style lang="sass">
-@import "~assets/sass/quill.sass"
+@import '~assets/sass/quill.sass'
 .ql-container
   font-size: inherit
   height: auto
