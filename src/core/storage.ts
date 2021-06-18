@@ -178,6 +178,8 @@ export class Storage {
                 delete newObj.draftResource
                 // remove modified at timestamp
                 delete newObj.modifiedAt
+                // remove metadata, can include things specific to the resource such as published timestamps
+                delete newObj._metadata
                 // remove null values
                 Object.keys(newObj).forEach(
                   (k) => newObj[k] === null && delete newObj[k]
