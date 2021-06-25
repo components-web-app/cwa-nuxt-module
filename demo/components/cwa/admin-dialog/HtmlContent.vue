@@ -5,7 +5,7 @@
         <cwa-admin-toggle
           :id="`component-toggle-html-${iri}`"
           v-model="showEditor"
-          label="Edit live version"
+          label="Edit HTML"
         />
       </div>
     </div>

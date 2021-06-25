@@ -1,9 +1,6 @@
 <template>
   <div>
     <div ref="quill" v-html="quillModel" />
-    <div v-if="outdated && !error">
-      <span>saving...</span>
-    </div>
   </div>
 </template>
 
