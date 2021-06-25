@@ -327,6 +327,7 @@ export default {
     },
     handleBreadcrumbClick({ componentIndex }) {
       this.components = this.components.slice(componentIndex)
+      this.selectPosition(this.components[0]?.componentPositions?.[0] || null)
     }
   }
 }
