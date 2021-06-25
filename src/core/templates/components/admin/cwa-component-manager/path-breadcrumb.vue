@@ -92,11 +92,12 @@ export default {
   async mounted() {
     const resource =
       this.$cwa.getPublishedResource(this.resource) || this.resource
-    if (resource) {
+    const { componentPositions } = resource
+    if (resource && componentPositions) {
       // we should ensure all the positions and collections have been resolved from the server
       // in future we may want to return the totals directly to the component for an admin
       const promises = []
-      for (const positionIri of resource.componentPositions) {
+      for (const positionIri of componentPositions) {
         promises.push(
           new Promise((resolve) => {
             this.$cwa.findResource(positionIri).then((pos) => {

@@ -240,7 +240,16 @@ export default {
     },
     handleHighlightComponentEvent(iri?: string) {
       if (this.newComponentEvent && this.newComponentIri !== iri) {
-        this.newComponentEvent = null
+        if (
+          window.confirm('Are you sure you want to discard your new component?')
+        ) {
+          this.newComponentEvent = null
+        } else {
+          this.$cwa.$eventBus.$emit(
+            COMPONENT_MANAGER_EVENTS.selectComponent,
+            this.newComponentIri
+          )
+        }
       }
     },
     handleNewComponentEvent(event: NewComponentEvent) {
