@@ -36,7 +36,7 @@
         :iri="iri"
       />
       <component
-        :is="newComponentEvent.component"
+        :is="newComponentName"
         v-if="newComponentIri"
         :iri="newComponentIri"
       />
@@ -59,13 +59,15 @@ import {
   NewComponentEvent,
   TabChangedEvent
 } from '../../../events'
+import components from '~/.nuxt/cwa/components'
 
 export default {
   components: {
     ComponentPosition,
     Draggable,
     ComponentLoadError: () => import('./component-load-error.vue'),
-    CwaAddButton: () => import('../utils/cwa-add-button.vue')
+    CwaAddButton: () => import('../utils/cwa-add-button.vue'),
+    ...components
   },
   mixins: [ApiRequestMixin, ComponentManagerMixin],
   props: {
@@ -102,6 +104,21 @@ export default {
     }
   },
   computed: {
+    newComponentResource() {
+      if (!this.newComponentIri) {
+        return null
+      }
+      return this.$cwa.getResource(this.newComponentIri)
+    },
+    newComponentName() {
+      const componentName =
+        this.newComponentResource.uiComponent ||
+        this.newComponentResource['@type']
+      if (!componentName) {
+        return null
+      }
+      return `CwaComponents${componentName}`
+    },
     componentManager(): ComponentManagerComponent {
       return {
         name: 'Collection',

@@ -299,6 +299,16 @@ export default class Cwa {
     category?: string,
     refreshEndpoints?: string[]
   ) {
+    if (endpoint.endsWith('/new')) {
+      this.$storage.setResource({
+        resource: Object.assign(
+          { '@id': endpoint },
+          this.$storage.getResource(endpoint),
+          data
+        )
+      })
+      return
+    }
     let patchEndpoint = endpoint
     const draftIri = this.findDraftIri(endpoint)
     const forcedPublishedUpdate =
