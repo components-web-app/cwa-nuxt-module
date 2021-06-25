@@ -99,7 +99,15 @@ export default {
       const loadedComponents = {}
       this.loadingComponents = true
       const data = await this.$cwa.getApiDocumentation()
-
+      const properties = data.docs['hydra:supportedClass'].reduce(
+        (obj, supportedClass) => {
+          obj[supportedClass['rdfs:label']] = supportedClass[
+            'hydra:supportedProperty'
+          ].map((supportedProperty) => supportedProperty['hydra:title'])
+          return obj
+        },
+        {}
+      )
       for (const [key, endpoint] of Object.entries(
         data.entrypoint
       ) as string[][]) {
@@ -108,9 +116,12 @@ export default {
           if (!this.getUiComponent(resourceName)) {
             continue
           }
+          const isPublishable =
+            properties?.[resourceName].includes('publishedAt') || false
           loadedComponents[resourceName] = {
             resourceName,
-            endpoint
+            endpoint,
+            isPublishable
           }
         }
       }
