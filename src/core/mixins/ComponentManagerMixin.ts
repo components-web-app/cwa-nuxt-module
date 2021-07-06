@@ -46,7 +46,7 @@ export const ComponentManagerMixin = {
       }
     },
     computedIri() {
-      return this.resource['@id']
+      return this.resource?.['@id']
     },
     cmHighlightClass() {
       return this.publishable && !this.published

@@ -40,13 +40,17 @@ export default {
     async selectedComponent(newComponent) {
       // get the component for the dialog from the ui component
       const component = await components[`CwaComponents${newComponent}`]
-      const { endpoint, resourceName: name } =
-        this.availableComponents[newComponent]
+      const {
+        endpoint,
+        resourceName: name,
+        isPublishable
+      } = this.availableComponents[newComponent]
       const event: NewComponentEvent = {
         collection: this.resource['@id'],
         component,
         endpoint,
-        name
+        name,
+        isPublishable
       }
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.newComponent, event)
     }
@@ -66,35 +70,6 @@ export default {
       }
       return components[searchKey]
     },
-    // resolveComponentProperties(docs) {
-    //   const componentDataTemplates = {}
-    //   for (const supportedClass of docs['hydra:supportedClass']) {
-    //     if (!Array.isArray(supportedClass['hydra:supportedOperation'])) {
-    //       continue
-    //     }
-    //     let hasPut = false
-    //     for (const op of supportedClass['hydra:supportedOperation']) {
-    //       if (op['hydra:method'] === 'PUT') {
-    //         hasPut = true
-    //         break
-    //       }
-    //     }
-    //     if (!hasPut) {
-    //       continue
-    //     }
-    //
-    //     const clsObj = {}
-    //     for (const prop of supportedClass['hydra:supportedProperty']) {
-    //       clsObj[prop['hydra:property']['rdfs:label']] = {
-    //         writable: prop['hydra:writeable'],
-    //         readable: prop['hydra:readable'],
-    //         required: prop['hydra:required']
-    //       }
-    //     }
-    //     componentDataTemplates[supportedClass['hydra:title']] = clsObj
-    //   }
-    //   return componentDataTemplates
-    // },
     async fetchComponents() {
       const loadedComponents = {}
       this.loadingComponents = true

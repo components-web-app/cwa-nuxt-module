@@ -13,6 +13,7 @@ export interface NewComponentEvent {
   }
   endpoint: string
   name: string
+  isPublishable: boolean
 }
 
 export interface DraggableEvent {
