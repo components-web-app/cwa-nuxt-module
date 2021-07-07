@@ -52,12 +52,14 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import ApiDateParserMixin from '../../mixins/ApiDateParserMixin'
 import CwaLoader from './utils/cwa-loader.vue'
 import CwaModal from './utils/cwa-modal.vue'
 import StatusIcon from './admin/status-icon.vue'
 import ErrorNotifications from './admin/error-notifications.vue'
-export default {
+
+export default Vue.extend({
   components: { ErrorNotifications, StatusIcon, CwaModal, CwaLoader },
   mixins: [ApiDateParserMixin],
   props: {
@@ -86,7 +88,7 @@ export default {
       required: true
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

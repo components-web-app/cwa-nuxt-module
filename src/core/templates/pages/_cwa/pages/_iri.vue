@@ -48,6 +48,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select'
 import IriPageMixin from '../IriPageMixin'
@@ -57,7 +58,7 @@ import pageComponents from '~/.nuxt/cwa/pages'
 
 const postEndpoint = '/_/pages'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminSelect, CwaAdminText },
   mixins: [IriPageMixin(postEndpoint), LoadLayoutsMixin],
   data() {
@@ -84,5 +85,5 @@ export default {
       await this.sendRequest(data)
     }
   }
-}
+})
 </script>

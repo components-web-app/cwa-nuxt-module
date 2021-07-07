@@ -31,14 +31,15 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import Info from '../../input/info.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 
-export default {
+export default Vue.extend({
   components: { Info },
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin]
-}
+})
 </script>
 
 <style lang="sass">

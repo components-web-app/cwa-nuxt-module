@@ -34,6 +34,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import moment from 'moment'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
@@ -45,7 +46,7 @@ import ApiError from '../../../../../../../inc/api-error'
 import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
 import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 
-export default {
+export default Vue.extend({
   components: { CmButton, CmDatepicker, CwaAdminToggle },
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin, UpdateResourceMixin],
   data() {
@@ -93,7 +94,7 @@ export default {
       }
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

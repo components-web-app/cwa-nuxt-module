@@ -46,13 +46,14 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
 import IriPageMixin from '../IriPageMixin'
 
 const postEndpoint = '/users'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminSelect, CwaAdminText },
   mixins: [IriPageMixin(postEndpoint)],
   computed: {
@@ -84,5 +85,5 @@ export default {
       await this.sendRequest(data)
     }
   }
-}
+})
 </script>

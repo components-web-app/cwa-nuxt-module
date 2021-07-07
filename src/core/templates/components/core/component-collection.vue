@@ -45,6 +45,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import Draggable from 'vuedraggable'
@@ -61,7 +62,7 @@ import {
 } from '../../../events'
 import components from '~/.nuxt/cwa/components'
 
-export default {
+export default Vue.extend({
   components: {
     ComponentPosition,
     Draggable,
@@ -86,7 +87,7 @@ export default {
     locationResourceType: {
       type: String,
       required: true,
-      validate(value) {
+      validator(value: any): boolean {
         return ['pages', 'layouts', 'components'].includes(value)
       }
     }
@@ -174,7 +175,7 @@ export default {
           .sort((a, b) => (a.sortValue > b.sortValue ? 1 : -1))
           .map(({ '@id': id }) => id)
       },
-      set(newIriArray) {
+      set(newIriArray: string[]) {
         this.previousSortedComponentPositions = []
         this.sortedComponentPositions.forEach((iri) => {
           this.previousSortedComponentPositions.push({
@@ -343,7 +344,7 @@ export default {
       this.isDraggable = event.isDraggable
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

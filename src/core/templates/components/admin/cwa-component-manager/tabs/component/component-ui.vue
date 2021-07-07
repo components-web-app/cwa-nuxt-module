@@ -27,12 +27,13 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import CmSelect from '../../input/cm-select.vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
 import CmMultiselect from '../../input/cm-multiselect.vue'
 
-export default {
+export default Vue.extend({
   components: { CmMultiselect, CmSelect },
   mixins: [ComponentManagerTabMixin],
   watch: {
@@ -48,7 +49,7 @@ export default {
       })
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

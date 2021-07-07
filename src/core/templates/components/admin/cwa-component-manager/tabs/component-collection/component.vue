@@ -11,6 +11,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import consola from 'consola'
 import {
   COMPONENT_MANAGER_EVENTS,
@@ -20,7 +21,7 @@ import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerT
 import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
 import components from '~/.nuxt/cwa/components'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminSelect },
   mixins: [ComponentManagerTabMixin],
   data() {
@@ -104,5 +105,5 @@ export default {
       return loadedComponents
     }
   }
-}
+})
 </script>

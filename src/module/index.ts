@@ -155,7 +155,7 @@ async function loadComponents() {
       const nextModule = [module[0] + '-next', module[1]]
       consola.info(`Trying to add ${nextModule[0]} instead...`)
       await this.addModule(nextModule)
-      consola.info(`Successfully added${nextModule[0]}`)
+      consola.info(`Successfully added ${nextModule[0]}`)
     }
   }
 

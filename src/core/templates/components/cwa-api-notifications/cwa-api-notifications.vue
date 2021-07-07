@@ -29,10 +29,11 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import ApiNotificationsMixin from '../../../mixins/ApiNotificationsMixin'
 import CwaApiNotification from './cwa-api-notification.vue'
 
-export default {
+export default Vue.extend({
   components: { CwaApiNotification },
   mixins: [ApiNotificationsMixin],
   data() {
@@ -40,7 +41,7 @@ export default {
       expandNotifications: false as boolean
     }
   }
-}
+})
 </script>
 
 <style lang="sass" scoped>

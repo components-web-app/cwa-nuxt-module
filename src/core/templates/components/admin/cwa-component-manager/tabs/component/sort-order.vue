@@ -24,11 +24,12 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
 import CmText from '../../input/cm-text.vue'
 
-export default {
+export default Vue.extend({
   components: { CmText, CwaAdminToggle },
   mixins: [ComponentManagerTabMixin],
   data() {
@@ -59,7 +60,7 @@ export default {
   beforeDestroy() {
     this.draggableToggled = false
   }
-}
+})
 </script>
 
 <style lang="sass">

@@ -30,6 +30,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import CwaAdminText from '../../../components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '../../../components/admin/input/cwa-admin-select.vue'
 import IriPageMixin from '../IriPageMixin'
@@ -37,7 +38,7 @@ import CommaDelimitedArrayBuilder from '../../../../../utils/CommaDelimitedArray
 
 const postEndpoint = '/_/layouts'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminSelect, CwaAdminText },
   mixins: [IriPageMixin(postEndpoint)],
   methods: {
@@ -53,5 +54,5 @@ export default {
       await this.sendRequest(data)
     }
   }
-}
+})
 </script>

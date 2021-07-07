@@ -20,11 +20,12 @@
 </template>
 
 <script lang="ts">
-import { PropType } from 'vue'
+import Vue, { PropType } from 'vue'
+
 import Timestamp from '../utils/timestamp.vue'
 import { TimestampedNotification, NotificationLevels } from './types'
 
-export default {
+export default Vue.extend({
   components: { Timestamp },
   props: {
     notification: {
@@ -55,7 +56,7 @@ export default {
       return 'info'
     }
   }
-}
+})
 </script>
 
 <style lang="sass" scoped>

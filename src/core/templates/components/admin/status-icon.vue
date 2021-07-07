@@ -3,9 +3,10 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import { STATUS_EVENTS, StatusEvent, ResetStatusEvent } from '../../../events'
 
-export default {
+export default Vue.extend({
   props: {
     status: {
       type: Number,
@@ -77,7 +78,7 @@ export default {
       }
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

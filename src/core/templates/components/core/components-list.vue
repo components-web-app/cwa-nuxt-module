@@ -21,6 +21,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import {
   NotificationLevels,
   Notification
@@ -29,7 +30,7 @@ import { StoreCategories } from '../../../storage'
 import ApiError from '../../../../inc/api-error'
 import { NOTIFICATION_EVENTS } from '../../../events'
 
-export default {
+export default Vue.extend({
   props: {
     addData: {
       type: Object,
@@ -91,7 +92,7 @@ export default {
       this.$emit('added')
     }
   }
-}
+})
 </script>
 
 <style lang="sass" scoped>

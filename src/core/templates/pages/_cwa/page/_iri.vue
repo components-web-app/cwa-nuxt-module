@@ -1,8 +1,10 @@
 <script lang="ts">
+import Vue from 'vue'
 import CommonMixin from '../CommonMixin'
 import page from '../../../page'
 import { ADMIN_BAR_EVENTS } from '../../../../events'
-export default {
+
+export default Vue.extend({
   extends: page,
   pageIriParam: 'iri',
   mixins: [CommonMixin],
@@ -23,5 +25,5 @@ export default {
     this.$cwa.setEditMode(true)
     this.$cwa.initMercure(true)
   }
-}
+})
 </script>

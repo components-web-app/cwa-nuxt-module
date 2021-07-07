@@ -60,6 +60,7 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import consola from 'consola'
 import HeightMatcherMixin from '../../../mixins/HeightMatcherMixin'
 import {
@@ -95,7 +96,7 @@ interface DataInterface {
   selectedPosition?: string
 }
 
-export default {
+export default Vue.extend({
   components: {
     CwaActionButtons,
     PathBreadcrumbs,
@@ -335,7 +336,7 @@ export default {
       this.selectPosition(this.components[0]?.componentPositions?.[0] || null)
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

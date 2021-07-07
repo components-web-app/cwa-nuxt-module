@@ -33,11 +33,12 @@
 </template>
 
 <script lang="ts">
+import Vue from 'vue'
 import { ComponentManagerTab } from '../../../../mixins/ComponentManagerMixin'
 import { COMPONENT_MANAGER_EVENTS, TabChangedEvent } from '../../../../events'
 import TransitionExpand from '../../utils/transition-expand.vue'
 
-export default {
+export default Vue.extend({
   components: { TransitionExpand },
   props: {
     tabs: {
@@ -137,7 +138,7 @@ export default {
       this.$emit('draggable', isDraggable)
     }
   }
-}
+})
 </script>
 
 <style lang="sass">
