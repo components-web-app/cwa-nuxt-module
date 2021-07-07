@@ -148,7 +148,7 @@ export const ComponentManagerMixin = {
     if (this.isNew) {
       this.$el.click()
 
-      function elementInViewport(el) {
+      const elementInViewport = (el) => {
         let top = el.offsetTop
         let left = el.offsetLeft
         const width = el.offsetWidth
