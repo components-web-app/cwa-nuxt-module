@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import ErrorComponent from '@cwa/nuxt-module/core/templates/components/core/component-load-error.vue'
 
-export default {
+export default Vue.extend({
   functional: true,
   props: {
     component: {
@@ -51,4 +51,4 @@ export default {
       }
     })
   }
-}
+})

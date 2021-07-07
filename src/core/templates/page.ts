@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import consola from 'consola'
 import ClientOnly from 'vue-client-only'
 import { StoreCategories } from '../storage'
@@ -6,15 +7,30 @@ import ResourceComponentLoader from './resource-component-loader'
 // @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 
-export default {
+export default Vue.extend({
   auth: false,
-  layout({ $cwa }) {
-    return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
-  },
   components: {
     ResourceComponentLoader,
     ClientOnly,
     ...components
+  },
+  layout({ $cwa }) {
+    return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
+  },
+  head() {
+    if (!this.currentPageMetadata) {
+      return {}
+    }
+    return {
+      title: this.currentPageMetadata.title,
+      meta: [
+        {
+          hid: 'description',
+          name: 'description',
+          content: this.currentPageMetadata.metaDescription
+        }
+      ]
+    }
   },
   computed: {
     resources() {
@@ -71,21 +87,6 @@ export default {
       }
     }
   },
-  head() {
-    if (!this.currentPageMetadata) {
-      return {}
-    }
-    return {
-      title: this.currentPageMetadata.title,
-      meta: [
-        {
-          hid: 'description',
-          name: 'description',
-          content: this.currentPageMetadata.metaDescription
-        }
-      ]
-    }
-  },
   render(h) {
     return h('div', {}, [
       h(this.$options.components.ResourceComponentLoader, {
@@ -93,4 +94,4 @@ export default {
       })
     ])
   }
-}
+})

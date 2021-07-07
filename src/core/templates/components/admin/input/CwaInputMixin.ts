@@ -1,11 +1,12 @@
+import Vue from 'vue'
 import {
   Notification,
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
-
 import { NOTIFICATION_EVENTS } from '../../../../events'
 import CwaInputWrapper from './cwa-input-wrapper.vue'
-export default {
+
+export default Vue.extend({
   components: { CwaInputWrapper },
   props: {
     id: {
@@ -45,6 +46,11 @@ export default {
       default: null
     }
   },
+  computed: {
+    hasError() {
+      return this.notifications && this.notifications.length > 0
+    }
+  },
   watch: {
     notifications(newNotifications, oldNotifications) {
       if (oldNotifications && oldNotifications.length) {
@@ -64,14 +70,9 @@ export default {
       }
     }
   },
-  computed: {
-    hasError() {
-      return this.notifications && this.notifications.length > 0
-    }
-  },
   methods: {
     updateValue(value) {
       this.$emit('input', value)
     }
   }
-}
+})

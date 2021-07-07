@@ -1,6 +1,7 @@
+import Vue from 'vue'
 import CwaInputMixin from './CwaInputMixin'
 
-export default {
+export default Vue.extend({
   mixins: [CwaInputMixin],
   props: {
     isTextarea: {
@@ -12,4 +13,4 @@ export default {
       default: 'text'
     }
   }
-}
+})
