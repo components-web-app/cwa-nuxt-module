@@ -47,6 +47,9 @@
                     @click="handleBreadcrumbClick"
                   />
                 </div>
+                <div class="column is-narrow">
+                  <cwa-action-buttons />
+                </div>
               </div>
             </template>
           </div>
@@ -79,6 +82,7 @@ import Tabs from './cwa-component-manager/tabs.vue'
 import StatusIcon from './status-icon.vue'
 import ErrorNotifications from './error-notifications.vue'
 import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
+import CwaActionButtons from './cwa-component-manager/cwa-action-buttons.vue'
 
 interface DataInterface {
   expanded: boolean
@@ -93,6 +97,7 @@ interface DataInterface {
 
 export default {
   components: {
+    CwaActionButtons,
     PathBreadcrumbs,
     ErrorNotifications,
     StatusIcon,

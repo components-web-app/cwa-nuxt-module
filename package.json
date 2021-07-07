@@ -43,7 +43,7 @@
     "milligram": "^1.4.0",
     "moment": "^2.27.0",
     "node-sass": "^4.14.1",
-    "nuxt": "2.15.3",
+    "nuxt": "^2.15.7",
     "postcss-loader": "^3.0.0",
     "sass-loader": "10",
     "sass-resources-loader": "^2.0.3",
