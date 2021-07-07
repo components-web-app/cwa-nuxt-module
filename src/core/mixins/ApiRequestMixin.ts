@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import {
   Notification,
   NotificationLevels
@@ -5,7 +6,7 @@ import {
 import ApiError from '../../inc/api-error'
 import { API_EVENTS, NOTIFICATION_EVENTS } from '../events'
 
-export default {
+export default Vue.extend({
   data() {
     return {
       apiBusy: false
@@ -34,4 +35,4 @@ export default {
       this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
     }
   }
-}
+})

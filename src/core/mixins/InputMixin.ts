@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import debounce from 'lodash.debounce'
 import { STATUS_EVENTS, StatusEvent } from '../events'
 import ApiError from '../../inc/api-error'
@@ -5,7 +6,7 @@ import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 import UpdateResourceMixin from './UpdateResourceMixin'
 
-export default {
+export default Vue.extend({
   mixins: [ResourceMixin, ApiRequestMixin, UpdateResourceMixin],
   props: {
     field: {
@@ -32,6 +33,11 @@ export default {
       outdated: false,
       error: null,
       pendingDebounce: false
+    }
+  },
+  computed: {
+    resourceValue() {
+      return this.resource?.[this.field]
     }
   },
   watch: {
@@ -74,11 +80,6 @@ export default {
       }
     }
   },
-  computed: {
-    resourceValue() {
-      return this.resource?.[this.field]
-    }
-  },
   methods: {
     valuesSame(value1, value2) {
       return this.stringValue(value1) === this.stringValue(value2)
@@ -117,4 +118,4 @@ export default {
       }
     }
   }
-}
+})

@@ -1,4 +1,5 @@
-export default {
+import Vue from 'vue'
+export default Vue.extend({
   data() {
     return {
       addedRelativePosition: false,
@@ -23,4 +24,4 @@ export default {
       deep: false
     }
   }
-}
+})

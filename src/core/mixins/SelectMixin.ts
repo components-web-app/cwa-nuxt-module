@@ -1,4 +1,6 @@
-export default {
+import Vue from 'vue'
+
+export default Vue.extend({
   props: {
     options: {
       type: [Object, Array],
@@ -7,7 +9,7 @@ export default {
   },
   data() {
     return {
-      currentValue: this.value
+      currentValue: null
     }
   },
   computed: {
@@ -56,4 +58,4 @@ export default {
       this.$emit('input', this.currentValue)
     }
   }
-}
+})

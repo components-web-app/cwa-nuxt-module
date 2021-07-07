@@ -1,4 +1,6 @@
-export default {
+import Vue from 'vue'
+
+export default Vue.extend({
   methods: {
     getFilteredQuery(staticParams: string[], queryPrefixes: string[]) {
       return Object.keys(this.$route.query)
@@ -19,4 +21,4 @@ export default {
         }, {})
     }
   }
-}
+})

@@ -67,7 +67,8 @@ export default {
   data() {
     return {
       isAdding: false,
-      searchValue: null
+      searchValue: null,
+      currentValue: this.value
     }
   },
   computed: {

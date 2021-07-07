@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import consola from 'consola'
 import {
   Notification,
@@ -7,7 +8,7 @@ import {
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
 import ApiError from '../../inc/api-error'
 
-export default {
+export default Vue.extend({
   methods: {
     async updateResource(
       iri,
@@ -59,4 +60,4 @@ export default {
       }
     }
   }
-}
+})

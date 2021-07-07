@@ -1,4 +1,6 @@
-export default {
+import Vue from 'vue'
+
+export default Vue.extend({
   props: {
     iri: {
       type: String,
@@ -10,4 +12,4 @@ export default {
       return this.$cwa.getResource(this.iri)
     }
   }
-}
+})

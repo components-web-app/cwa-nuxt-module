@@ -1,6 +1,8 @@
+import Vue from 'vue'
 import IriMixin from './IriMixin'
 
-export default {
+export default Vue.extend({
+  mixins: [IriMixin],
   props: {
     context: {
       type: Object,
@@ -8,7 +10,6 @@ export default {
       default: null
     }
   },
-  mixins: [IriMixin],
   computed: {
     inputId() {
       return (name) => {
@@ -29,4 +30,4 @@ export default {
       }
     }
   }
-}
+})

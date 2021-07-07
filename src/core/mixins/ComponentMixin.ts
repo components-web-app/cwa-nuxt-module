@@ -1,3 +1,4 @@
+import Vue from 'vue'
 import ComponentManagerMixin, {
   ComponentManagerComponent,
   ComponentManagerComponentContext,
@@ -10,7 +11,7 @@ interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
 }
 
-export default {
+export default Vue.extend({
   mixins: [ResourceMixin, ApiRequestMixin, ComponentManagerMixin],
   props: {
     showSort: {
@@ -31,29 +32,6 @@ export default {
           UiComponents: [],
           UiClassNames: []
         }
-      }
-    }
-  },
-  watch: {
-    displaySortValue(newValue) {
-      if (newValue !== null) {
-        if (!this.elementsAdded.sortValue) {
-          this.$set(
-            this.elementsAdded,
-            'sortValue',
-            document.createElement('span')
-          )
-          this.elementsAdded.sortValue.className = 'cwa-sort-value'
-          this.$el.appendChild(this.elementsAdded.sortValue)
-        }
-        this.elementsAdded.sortValue.innerHTML = newValue
-        return
-      }
-      if (this.elementsAdded.sortValue) {
-        this.elementsAdded.sortValue.parentNode.removeChild(
-          this.elementsAdded.sortValue
-        )
-        this.$delete(this.elementsAdded, 'sortValue')
       }
     }
   },
@@ -116,5 +94,28 @@ export default {
     published() {
       return this.publishable ? this.metadata.published : true
     }
+  },
+  watch: {
+    displaySortValue(newValue) {
+      if (newValue !== null) {
+        if (!this.elementsAdded.sortValue) {
+          this.$set(
+            this.elementsAdded,
+            'sortValue',
+            document.createElement('span')
+          )
+          this.elementsAdded.sortValue.className = 'cwa-sort-value'
+          this.$el.appendChild(this.elementsAdded.sortValue)
+        }
+        this.elementsAdded.sortValue.innerHTML = newValue
+        return
+      }
+      if (this.elementsAdded.sortValue) {
+        this.elementsAdded.sortValue.parentNode.removeChild(
+          this.elementsAdded.sortValue
+        )
+        this.$delete(this.elementsAdded, 'sortValue')
+      }
+    }
   }
-}
+})

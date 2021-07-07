@@ -1,7 +1,8 @@
+import Vue from 'vue'
 import CwaAdminBar from '../templates/components/admin/cwa-admin-bar.vue'
 import ComponentCollection from '../templates/components/core/component-collection.vue'
 
-const mixin = {
+const mixin = Vue.extend({
   components: { ComponentCollection, CwaAdminBar },
   computed: {
     layout() {
@@ -15,6 +16,6 @@ const mixin = {
       }
     }
   }
-}
+})
 
 export default mixin

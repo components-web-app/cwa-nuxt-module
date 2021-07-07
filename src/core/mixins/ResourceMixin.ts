@@ -1,13 +1,25 @@
+import Vue from 'vue'
 import { API_EVENTS } from '../events'
 import IriMixin from './IriMixin'
 
-export default {
+export default Vue.extend({
   mixins: [IriMixin],
   data() {
     return {
       showPublished: false,
       draftIri: null,
       publishedIri: null
+    }
+  },
+  computed: {
+    isNew() {
+      return this.iri.endsWith('/new')
+    },
+    category() {
+      return this.$cwa.$storage.getCategoryFromIri(this.iri)
+    },
+    resource() {
+      return this.$cwa.getResource(this.iri)
     }
   },
   async mounted() {
@@ -43,17 +55,6 @@ export default {
   beforeDestroy() {
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
   },
-  computed: {
-    isNew() {
-      return this.iri.endsWith('/new')
-    },
-    category() {
-      return this.$cwa.$storage.getCategoryFromIri(this.iri)
-    },
-    resource() {
-      return this.$cwa.getResource(this.iri)
-    }
-  },
   methods: {
     newDraftListener({ publishedIri, draftIri }) {
       if (this.publishedIri !== publishedIri) {
@@ -62,4 +63,4 @@ export default {
       this.draftIri = draftIri
     }
   }
-}
+})

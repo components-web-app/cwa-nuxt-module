@@ -1,13 +1,11 @@
+import Vue from 'vue'
 import ComponentCollection from '../templates/components/core/component-collection.vue'
 import { ADMIN_BAR_EVENTS } from '../events'
 import IriMixin from './IriMixin'
 
-const mixin = {
+const mixin = Vue.extend({
   components: { ComponentCollection },
   mixins: [IriMixin],
-  mounted() {
-    this.$cwa.$eventBus.$emit(ADMIN_BAR_EVENTS.changeView, 'page')
-  },
   computed: {
     resource() {
       return this.$cwa.resources.Page?.byId[this.iri]
@@ -22,7 +20,10 @@ const mixin = {
         locationResourceType: 'pages'
       }
     }
+  },
+  mounted() {
+    this.$cwa.$eventBus.$emit(ADMIN_BAR_EVENTS.changeView, 'page')
   }
-}
+})
 
 export default mixin
