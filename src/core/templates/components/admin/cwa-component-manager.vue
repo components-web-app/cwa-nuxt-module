@@ -48,7 +48,12 @@
                   />
                 </div>
                 <div class="column is-narrow">
-                  <cwa-action-buttons />
+                  <cwa-action-buttons
+                    :selected-position="selectedPosition"
+                    :selected-component="
+                      selectedComponent ? selectedComponent.iri : null
+                    "
+                  />
                 </div>
               </div>
             </template>
@@ -64,7 +69,6 @@ import Vue from 'vue'
 import consola from 'consola'
 import HeightMatcherMixin from '../../../mixins/HeightMatcherMixin'
 import {
-  ComponentManagerAddEvent,
   ComponentTabContext,
   ComponentManagerTab,
   EVENTS,
@@ -76,7 +80,8 @@ import {
   STATUS_EVENTS,
   ResetStatusEvent,
   DraggableEvent,
-  API_EVENTS
+  API_EVENTS,
+  ComponentManagerAddEvent
 } from '../../../events'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'

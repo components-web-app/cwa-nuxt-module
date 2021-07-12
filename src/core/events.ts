@@ -1,5 +1,8 @@
 import { Vue } from 'vue/types/vue'
-import { ComponentManagerTab } from './mixins/ComponentManagerMixin'
+import {
+  ComponentManagerComponent,
+  ComponentManagerTab
+} from './mixins/ComponentManagerMixin'
 
 export interface TabChangedEvent {
   newTab: ComponentManagerTab
@@ -14,6 +17,12 @@ export interface NewComponentEvent {
   endpoint: string
   name: string
   isPublishable: boolean
+  iri: string
+}
+
+export interface ComponentManagerAddEvent {
+  data?: ComponentManagerComponent
+  iri: string
 }
 
 export interface DraggableEvent {
@@ -50,6 +59,7 @@ export const COMPONENT_MANAGER_EVENTS = {
   componentMounted: `${prefix}:${componentManagerCategory}:component-mounted`,
   addComponent: `${prefix}:${componentManagerCategory}:add-component`,
   newComponent: `${prefix}:${componentManagerCategory}:new-component`,
+  newComponentCleared: `${prefix}:${componentManagerCategory}:new-component-cleared`,
   hide: `${prefix}:${componentManagerCategory}:hide`,
   show: `${prefix}:${componentManagerCategory}:show`,
   showTabs: `${prefix}:${componentManagerCategory}:show-tabs`,

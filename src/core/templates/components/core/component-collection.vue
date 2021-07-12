@@ -56,6 +56,7 @@ import {
 } from '../../../mixins/ComponentManagerMixin'
 import {
   COMPONENT_MANAGER_EVENTS,
+  ComponentManagerAddEvent,
   DraggableEvent,
   NewComponentEvent,
   TabChangedEvent
@@ -192,9 +193,7 @@ export default Vue.extend({
       }
     },
     newComponentIri() {
-      return this.newComponentEvent
-        ? `${this.newComponentEvent.endpoint}/new`
-        : null
+      return this.newComponentEvent?.iri || null
     }
   },
   watch: {
@@ -262,6 +261,9 @@ export default Vue.extend({
           window.confirm('Are you sure you want to discard your new component?')
         ) {
           this.newComponentEvent = null
+          this.$cwa.$eventBus.$emit(
+            COMPONENT_MANAGER_EVENTS.newComponentCleared
+          )
         } else {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.selectComponent,

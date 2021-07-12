@@ -50,6 +50,7 @@ export default Vue.extend({
         collection: this.resource['@id'],
         component,
         endpoint,
+        iri: `${endpoint}/new`,
         name,
         isPublishable
       }

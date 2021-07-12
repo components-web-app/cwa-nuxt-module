@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import consola from 'consola'
-import { COMPONENT_MANAGER_EVENTS } from '../events'
+import { COMPONENT_MANAGER_EVENTS, ComponentManagerAddEvent } from '../events'
 import AddElementsMixin from './AddElementsMixin'
 
 export const EVENTS = COMPONENT_MANAGER_EVENTS
@@ -30,11 +30,6 @@ export interface ComponentManagerComponent {
   name: string
   tabs: Array<ComponentManagerTab>
   context?: ComponentManagerComponentContext
-}
-
-export interface ComponentManagerAddEvent {
-  data: ComponentManagerComponent
-  iri: string
 }
 
 export const ComponentManagerMixin = Vue.extend({

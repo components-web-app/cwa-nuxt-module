@@ -82,7 +82,7 @@ export default Vue.extend({
           'publishedAt',
           moment.utc().toISOString(),
           this.$cwa.$storage.getCategoryFromIri(this.iri),
-          publishedResource.componentPositions,
+          publishedResource?.componentPositions || null,
           'components-manager'
         )
         this.$emit('close')
