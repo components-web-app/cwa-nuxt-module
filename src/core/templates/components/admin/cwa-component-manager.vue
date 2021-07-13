@@ -53,6 +53,7 @@
                     :selected-component="
                       selectedComponent ? selectedComponent.iri : null
                     "
+                    @close="hide"
                   />
                 </div>
               </div>
@@ -293,7 +294,7 @@ export default Vue.extend({
       }
     },
     toggleComponent(iri?: string) {
-      this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, iri)
+      this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, { iri })
     },
     hide() {
       this.$cwa.$eventBus.$emit(EVENTS.hide)

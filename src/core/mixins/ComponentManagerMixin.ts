@@ -137,7 +137,7 @@ export const ComponentManagerMixin = Vue.extend({
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
-    managerHighlightComponentListener(iri) {
+    managerHighlightComponentListener({ iri }) {
       // the sort order tab will add the position as well
       // next tick means we don't lose adding it, but there
       // needs to be a better way - what if another component

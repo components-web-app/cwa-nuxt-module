@@ -257,21 +257,32 @@ export default class Cwa {
         const refreshEndpointsSize = refreshEndpoints
           ? refreshEndpoints.length
           : 0
-        const postResource = this.ctx.$axios.$post(endpoint, data)
+        const postResource = await this.ctx.$axios.$post(endpoint, data)
         if (refreshEndpointsSize) {
           await this.refreshEndpointsArray(refreshEndpoints, postResource)
         }
-        return await postResource
+        this.saveResource(postResource)
+        return postResource
       },
       { eventName: API_EVENTS.created, eventParams: endpoint },
       category
     )
   }
 
+  async refreshResources(endpoints: string[]) {
+    const promises = []
+    endpoints.forEach((endpoint) => {
+      promises.push(this.refreshResource(endpoint))
+    })
+    return await Promise.all(promises)
+  }
+
   async refreshResource(endpoint: string, category?: string) {
     return await this.initNewRequest(
       async () => {
-        return await this.ctx.$axios.$get(endpoint)
+        const resource = await this.ctx.$axios.$get(endpoint)
+        this.saveResource(resource)
+        return resource
       },
       { eventName: API_EVENTS.refreshed, eventParams: endpoint },
       category

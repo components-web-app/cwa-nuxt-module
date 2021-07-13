@@ -37,7 +37,7 @@
       />
       <component
         :is="newComponentName"
-        v-if="newComponentIri"
+        v-if="newComponentResource"
         :iri="newComponentIri"
       />
     </draggable>
@@ -56,7 +56,6 @@ import {
 } from '../../../mixins/ComponentManagerMixin'
 import {
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerAddEvent,
   DraggableEvent,
   NewComponentEvent,
   TabChangedEvent
@@ -114,8 +113,8 @@ export default Vue.extend({
     },
     newComponentName() {
       const componentName =
-        this.newComponentResource.uiComponent ||
-        this.newComponentResource['@type']
+        this.newComponentResource?.uiComponent ||
+        this.newComponentResource?.['@type']
       if (!componentName) {
         return null
       }
@@ -255,9 +254,20 @@ export default Vue.extend({
       this.isDraggable = false
       this.showOrderValues = !!event.newTab.context?.showOrderValues
     },
-    handleHighlightComponentEvent(iri?: string) {
-      if (this.newComponentEvent && this.newComponentIri !== iri) {
+    handleHighlightComponentEvent({
+      iri,
+      force
+    }: {
+      iri?: string
+      force?: boolean
+    }) {
+      if (
+        this.newComponentEvent &&
+        this.newComponentIri !== iri &&
+        this.newComponentResource
+      ) {
         if (
+          !force &&
           window.confirm('Are you sure you want to discard your new component?')
         ) {
           this.newComponentEvent = null

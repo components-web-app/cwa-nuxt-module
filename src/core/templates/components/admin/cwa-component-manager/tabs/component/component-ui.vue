@@ -43,7 +43,7 @@ export default Vue.extend({
         setTimeout(() => {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.highlightComponent,
-            this.iri
+            { iri: this.iri }
           )
         }, 10)
       })

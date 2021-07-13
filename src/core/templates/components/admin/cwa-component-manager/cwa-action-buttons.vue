@@ -94,23 +94,26 @@ export default Vue.extend({
           ]
         }
       )
-      await this.$cwa.createResource(
+      const resource = await this.$cwa.createResource(
         this.addingEvent.endpoint,
         resourceObject,
         null,
         [this.addingEvent.collection]
       )
+      this.$cwa.saveResource(resource)
+      await this.$cwa.refreshResources(resource.componentPositions)
+      await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
+      this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
       this.addingEvent = null
     },
     async deleteComponent(key) {
       if (!window.confirm('Are you sure?')) {
         return
       }
-      if (key === 'here') {
-        await this.$cwa.deleteResource(this.selectedPosition)
-        return
-      }
-      await this.$cwa.deleteResource(this.selectedComponent)
+      const deleteResource =
+        key === 'here' ? this.selectedPosition : this.selectedComponent
+      await this.$cwa.deleteResource(deleteResource)
+      this.$emit('close')
     }
   }
 })
