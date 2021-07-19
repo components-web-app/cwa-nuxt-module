@@ -245,11 +245,9 @@ export class Fetcher {
     try {
       return await this.fetchItem({ path, category: StoreCategories.Component })
     } catch (error) {
-      consola.error('fetchComponent error trace', path)
-      consola.error(error)
-      consola.error(error.statusCode)
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
-      if (error instanceof ApiError && error.statusCode === 404) {
+      // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ...
+      if (error?.statusCode === 404) {
         return
       }
       throw error
