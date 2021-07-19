@@ -2,7 +2,7 @@ import Vue from 'vue'
 import consola from 'consola'
 import { CancelTokenSource } from 'axios'
 import type { CwaOptions } from '../'
-import ApiRequestError from '../inc/api-error'
+import ApiError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import { cwaRouteDisabled } from '../utils'
 import MissingDataError from '../inc/missing-data-error'
@@ -167,7 +167,7 @@ export default class Cwa {
    */
   private handleRequestError(error) {
     const axiosError = AxiosErrorParser(error)
-    const exception = new ApiRequestError(
+    const exception = new ApiError(
       axiosError.message,
       axiosError.statusCode,
       axiosError.endpoint,

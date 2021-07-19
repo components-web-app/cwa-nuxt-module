@@ -4,7 +4,7 @@ import {
   Notification,
   NotificationLevels
 } from '../../components/cwa-api-notifications/types'
-import ApiRequestError from '../../../../inc/api-error'
+import ApiError from '../../../../inc/api-error'
 import { Violation } from '../../../../utils/AxiosErrorParser'
 import { NOTIFICATION_EVENTS } from '../../../events'
 import CommonMixin from './CommonMixin'
@@ -87,7 +87,7 @@ export default (postEndpoint: string) =>
           }
           this.$emit('change')
         } catch (error) {
-          if (!(error instanceof ApiRequestError)) {
+          if (!(error instanceof ApiError)) {
             throw error
           }
           if (error.violations) {

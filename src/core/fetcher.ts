@@ -3,7 +3,7 @@ import consola from 'consola'
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
-import ApiRequestError from '../inc/api-error'
+import ApiError from '../inc/api-error'
 import Storage, { resourcesState, StoreCategories } from './storage'
 
 declare interface MercureMessage {
@@ -89,7 +89,7 @@ export class Fetcher {
       // By not throwing an error we can re-fetch client-side
       // However, when fetching a route that does not exist, we need an error...
       // Changed this functionality here to throw an exception so it can be handled by the calling function
-      throw new ApiRequestError(
+      throw new ApiError(
         sanitisedError.message,
         sanitisedError.statusCode,
         sanitisedError.endpoint
@@ -245,10 +245,11 @@ export class Fetcher {
     try {
       return await this.fetchItem({ path, category: StoreCategories.Component })
     } catch (error) {
-      consola.error('fetchComponent error - debug')
+      consola.error('fetchComponent error trace', path)
       consola.error(error)
+      consola.error(error.statusCode)
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
-      if (error instanceof ApiRequestError && error.statusCode === 404) {
+      if (error instanceof ApiError && error.statusCode === 404) {
         return
       }
       throw error
