@@ -20,7 +20,7 @@ import {
   COMPONENT_MANAGER_EVENTS,
   PublishableToggledEvent,
   SaveStateEvent
-} from '../../../../src/core/events'
+} from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
   components: { CwaAdminToggle },

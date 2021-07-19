@@ -38,15 +38,15 @@ export default Vue.extend({
   mixins: [ComponentManagerTabMixin],
   watch: {
     'storeComponent.uiComponent'() {
-      this.$nextTick(() => {
-        // lazy load mount, first mount of new ui component may not be on nex tick...
-        setTimeout(() => {
+      this.$cwa.$eventBus.$once(
+        COMPONENT_MANAGER_EVENTS.componentMounted,
+        () => {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.highlightComponent,
             { iri: this.iri }
           )
-        }, 10)
-      })
+        }
+      )
     }
   }
 })
