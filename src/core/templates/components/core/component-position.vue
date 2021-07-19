@@ -1,6 +1,6 @@
 <template>
   <resource-component-loader
-    v-if="component"
+    v-if="!!component"
     :component="`CwaComponents${component.uiComponent || component['@type']}`"
     :iri="componentIri"
     :sort-value="resource.sortValue"

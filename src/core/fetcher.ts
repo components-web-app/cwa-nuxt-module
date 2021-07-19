@@ -62,10 +62,11 @@ export class Fetcher {
     consola.trace(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
 
+    const currentRoutePath = this.ctx.storage.getState(Fetcher.loadingRouteKey)
     // For dynamic components the API must know what route/path the request was originally for
     // so we set a custom "Path" header
     const requestHeaders = {
-      Path: this.ctx.storage.getState(Fetcher.loadingRouteKey)
+      Path: currentRoutePath
     } as { Path: string; Preload?: string }
 
     // preload headers for Vulcain
@@ -244,6 +245,8 @@ export class Fetcher {
     try {
       return await this.fetchItem({ path, category: StoreCategories.Component })
     } catch (error) {
+      consola.error('fetchComponent error - debug')
+      consola.error(error)
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
       if (error instanceof ApiRequestError && error.statusCode === 404) {
         return
