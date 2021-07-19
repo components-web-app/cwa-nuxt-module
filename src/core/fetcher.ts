@@ -246,7 +246,7 @@ export class Fetcher {
       return await this.fetchItem({ path, category: StoreCategories.Component })
     } catch (error) {
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
-      // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ...
+      // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ... on server-side load
       if (error?.statusCode === 404) {
         return
       }
