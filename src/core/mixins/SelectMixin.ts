@@ -5,11 +5,17 @@ export default Vue.extend({
     options: {
       type: [Object, Array],
       required: true
+    },
+    // same as CwaInputMixin. for v-model usage
+    value: {
+      type: [String, Boolean, Array, Number],
+      required: false,
+      default: null
     }
   },
   data() {
     return {
-      currentValue: null
+      currentValue: this?.value || null
     }
   },
   computed: {

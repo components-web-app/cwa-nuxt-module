@@ -60,15 +60,26 @@ export default Vue.extend({
         return this.resource._metadata.published
       },
       set(showPublished) {
-        const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
-        this.$cwa.$eventBus.$once(EVENTS.componentMounted, () => {
+        const emitSelectedComponent = (newIri) => {
           this.$cwa.$eventBus.$emit(
             COMPONENT_MANAGER_EVENTS.selectComponent,
             newIri
           )
+        }
+        let publishableIri = null
+        let emitEventImmediate = false
+        this.$cwa.$eventBus.$once(EVENTS.componentMounted, () => {
+          if (publishableIri) {
+            emitSelectedComponent(publishableIri)
+          } else {
+            emitEventImmediate = true
+          }
         })
-        this.$cwa.togglePublishable(draftIri, showPublished)
-        const newIri = this.$cwa.getPublishableIri(draftIri)
+        const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
+        publishableIri = this.$cwa.togglePublishable(draftIri, showPublished)
+        if (emitEventImmediate) {
+          emitSelectedComponent(publishableIri)
+        }
       }
     }
   },

@@ -48,6 +48,16 @@ export const ComponentManagerMixin = Vue.extend({
       return this.publishable && !this.published
         ? 'cwa-manager-highlight is-draft'
         : 'cwa-manager-highlight'
+    },
+    componentManagerState() {
+      const cmStates =
+        this.$cwa.$storage.getState('CwaComponentManagerStates') || {}
+      return cmStates?.[this.computedIri] || {}
+    },
+    cmValue() {
+      return (name) => {
+        return this.componentManagerState[name] || null
+      }
     }
   },
   watch: {

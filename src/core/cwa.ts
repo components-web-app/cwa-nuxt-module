@@ -8,7 +8,11 @@ import { cwaRouteDisabled } from '../utils'
 import MissingDataError from '../inc/missing-data-error'
 import { Storage } from './storage'
 import { Fetcher } from './fetcher'
-import { API_EVENTS } from './events'
+import {
+  API_EVENTS,
+  PublishableToggledEvent,
+  COMPONENT_MANAGER_EVENTS
+} from './events'
 
 interface PatchRequest {
   endpoint: string
@@ -429,5 +433,13 @@ export default class Cwa {
 
   togglePublishable(draftIri: string, showPublished: boolean) {
     this.$storage.togglePublishable(draftIri, showPublished)
+    const publishableIri = this.getPublishableIri(draftIri)
+    this.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.publishableToggled, {
+      draftIri,
+      publishableIri,
+      showPublished,
+      publishedIri: this.$storage.findPublishedIri(draftIri)
+    } as PublishableToggledEvent)
+    return publishableIri
   }
 }

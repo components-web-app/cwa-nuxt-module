@@ -82,7 +82,9 @@ import {
   ResetStatusEvent,
   DraggableEvent,
   API_EVENTS,
-  ComponentManagerAddEvent
+  ComponentManagerAddEvent,
+  SaveStateEvent,
+  PublishableToggledEvent
 } from '../../../events'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
@@ -100,6 +102,7 @@ interface DataInterface {
   showHighlightOverlay: boolean
   showTabs: boolean
   selectedPosition?: string
+  persistentStates: any
 }
 
 export default Vue.extend({
@@ -122,7 +125,8 @@ export default Vue.extend({
       warningNotificationsShowing: false,
       showHighlightOverlay: false,
       showTabs: false,
-      selectedPosition: null
+      selectedPosition: null,
+      persistentStates: {}
     }
   },
   computed: {
@@ -219,13 +223,24 @@ export default Vue.extend({
     window.addEventListener('click', this.show)
     this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
+    this.$cwa.$eventBus.$on(EVENTS.saveState, this.saveStateListener)
+    this.$cwa.$eventBus.$on(
+      EVENTS.publishableToggled,
+      this.publishableToggledListener
+    )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
   },
   beforeDestroy() {
     window.removeEventListener('click', this.show)
     this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
+    this.$cwa.$eventBus.$off(EVENTS.saveState, this.saveStateListener)
+    this.$cwa.$eventBus.$off(
+      EVENTS.publishableToggled,
+      this.publishableToggledListener
+    )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
+
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
@@ -234,6 +249,7 @@ export default Vue.extend({
         this.$nextTick(() => {
           this.$cwa.$eventBus.$emit(EVENTS.selectComponent, draftIri)
         })
+        this.copyState(publishedIri, draftIri)
       }
     },
     isIriCollection(iri) {
@@ -299,6 +315,8 @@ export default Vue.extend({
     hide() {
       this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
+      this.persistentStates = {}
+      this.$cwa.$storage.setState('CwaComponentManagerStates', {})
     },
     show(event) {
       if (event.target.closest('.flatpickr-calendar')) {
@@ -312,7 +330,7 @@ export default Vue.extend({
       }
       // the show event above should be listened to and add-component event emitted to populate components by now
       if (!this.pendingComponents.length) {
-        this.expanded = false
+        this.hide()
         consola.info('Not showing components manager. No menu data populated.')
         return
       }
@@ -327,7 +345,11 @@ export default Vue.extend({
         } as ResetStatusEvent)
         this.$nextTick(() => {
           this.$cwa.$eventBus.$emit(EVENTS.showing, this.showingCriteria)
-          this.expanded = this.showingCriteria
+          if (!this.showingCriteria) {
+            this.hide()
+          } else {
+            this.expanded = true
+          }
         })
       })
     },
@@ -340,6 +362,43 @@ export default Vue.extend({
     handleBreadcrumbClick({ componentIndex }) {
       this.components = this.components.slice(componentIndex)
       this.selectPosition(this.components[0]?.componentPositions?.[0] || null)
+    },
+    saveStateListener(event: SaveStateEvent) {
+      if (!this.persistentStates[event.iri]) {
+        this.$set(this.persistentStates, event.iri, {})
+      }
+      this.$set(this.persistentStates[event.iri], event.name, event.value)
+      this.$cwa.$storage.setState(
+        'CwaComponentManagerStates',
+        JSON.parse(
+          JSON.stringify({
+            ...this.persistentStates,
+            [event.iri]: { ...this.persistentStates[event.iri] }
+          })
+        )
+      )
+    },
+    publishableToggledListener(event: PublishableToggledEvent) {
+      if (event.showPublished) {
+        this.copyState(event.draftIri, event.publishedIri)
+      } else {
+        this.copyState(event.publishedIri, event.draftIri)
+      }
+    },
+    copyState(fromIri, toIri) {
+      if (!this.persistentStates[fromIri]) {
+        return
+      }
+      const copyData = JSON.parse(
+        JSON.stringify(this.persistentStates[fromIri])
+      )
+      this.$set(this.persistentStates, toIri, copyData)
+      this.$delete(this.persistentStates, fromIri)
+      const newState = {
+        ...this.persistentStates,
+        [toIri]: copyData
+      }
+      this.$cwa.$storage.setState('CwaComponentManagerStates', newState)
     }
   }
 })

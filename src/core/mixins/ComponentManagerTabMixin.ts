@@ -28,6 +28,16 @@ export default Vue.extend({
           resource
         })
       }
+    },
+    componentManagerState() {
+      const cmStates =
+        this.$cwa.$storage.getState('CwaComponentManagerStates') || {}
+      return cmStates?.[this.iri] || {}
+    },
+    cmValue() {
+      return (name) => {
+        return this.componentManagerState[name] || null
+      }
     }
   }
 })

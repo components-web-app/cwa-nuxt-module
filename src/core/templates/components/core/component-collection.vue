@@ -252,7 +252,7 @@ export default Vue.extend({
   methods: {
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
-      this.showOrderValues = !!event.newTab.context?.showOrderValues
+      this.showOrderValues = !!event.newTab?.context?.showOrderValues
     },
     handleHighlightComponentEvent({
       iri,

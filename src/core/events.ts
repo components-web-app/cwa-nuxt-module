@@ -39,6 +39,19 @@ export interface StatusEvent extends ResetStatusEvent {
   status: number
 }
 
+export interface PublishableToggledEvent {
+  draftIri: string
+  publishableIri: string
+  showPublished: boolean
+  publishedIri: string
+}
+
+export interface SaveStateEvent {
+  iri: string
+  name: string
+  value: any
+}
+
 const prefix = 'cwa'
 
 const apiCategory = 'api'
@@ -55,6 +68,7 @@ const componentManagerCategory = 'component-manager'
 export const COMPONENT_MANAGER_EVENTS = {
   showing: `${prefix}:${componentManagerCategory}:showing`,
   highlightComponent: `${prefix}:${componentManagerCategory}:highlight-component`,
+  publishableToggled: `${prefix}:${componentManagerCategory}:publishable-toggled`,
   selectComponent: `${prefix}:${componentManagerCategory}:select-component`,
   componentMounted: `${prefix}:${componentManagerCategory}:component-mounted`,
   addComponent: `${prefix}:${componentManagerCategory}:add-component`,
@@ -65,7 +79,8 @@ export const COMPONENT_MANAGER_EVENTS = {
   showTabs: `${prefix}:${componentManagerCategory}:show-tabs`,
   tabChanged: `${prefix}:${componentManagerCategory}:tab-changed`,
   draggable: `${prefix}:${componentManagerCategory}:draggable`,
-  selectPosition: `${prefix}:${componentManagerCategory}:select-position`
+  selectPosition: `${prefix}:${componentManagerCategory}:select-position`,
+  saveState: `${prefix}:${componentManagerCategory}:save-state`
 }
 
 export const ADMIN_BAR_EVENTS = {

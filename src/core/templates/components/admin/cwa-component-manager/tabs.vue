@@ -96,7 +96,7 @@ export default Vue.extend({
     }
   },
   watch: {
-    selectedTab(newTab, previousTab) {
+    selectedTab(newTab: ComponentManagerTab, previousTab: ComponentManagerTab) {
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.tabChanged, {
         newTab,
         previousTab

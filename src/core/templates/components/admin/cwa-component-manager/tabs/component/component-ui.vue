@@ -3,7 +3,7 @@
     <div class="row">
       <div v-if="context.UiComponents" class="column is-narrow">
         <cm-select
-          id="component"
+          :id="`componentUI-${iri}`"
           :iri="iri"
           field="uiComponent"
           label="Interface"
@@ -15,7 +15,7 @@
       </div>
       <div v-if="context.UiClassNames" class="column is-narrow">
         <cm-multiselect
-          id="uiClassNames"
+          :id="`uiClassNames-${iri}`"
           :iri="iri"
           field="uiClassNames"
           label="Style"

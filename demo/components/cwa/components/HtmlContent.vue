@@ -1,13 +1,12 @@
 <template>
   <div :class="['html-component', resource.uiClassNames]">
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <div v-if="!editing" v-html="displayHtml" />
+    <div v-if="!cmValue('showEditor')" v-html="displayHtml" />
     <quill-input
       v-else
       :iri="iri"
       field="html"
       notification-category="components-manager"
-      @hide="editing = false"
     />
   </div>
 </template>
@@ -20,7 +19,6 @@ export default {
   mixins: [ComponentMixin],
   data() {
     return {
-      editing: false,
       componentManagerContext: {
         componentTab: {
           UiClassNames: ['is-feature', 'has-cwa-color'],
@@ -46,20 +44,6 @@ export default {
           ? '<p style="font-style: italic">No content</p>'
           : '')
       )
-    }
-  },
-  mounted() {
-    this.$cwa.$eventBus.$on('show-html-editor', this.handleEditorEvent)
-  },
-  methods: {
-    showEditView() {
-      this.editing = true
-    },
-    handleEditorEvent({ iri, show }: { iri: string; show: boolean }) {
-      if (iri !== this.iri) {
-        return
-      }
-      this.editing = show
     }
   }
 }
