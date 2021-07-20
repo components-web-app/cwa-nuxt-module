@@ -83,14 +83,19 @@ export default Vue.extend({
     newComponentClearedListener() {
       this.addingEvent = null
     },
-    async addComponent(key) {
-      const componentCollection = this.addingEvent.collection
+    async addComponent(key: string) {
+      const componentCollection: string = this.addingEvent.collection
       const additionalData = {
         componentPositions: [
           {
             componentCollection
           }
         ]
+      } as {
+        componentPositions: {
+          componentCollection: string
+        }[]
+        publishedAt?: string
       }
       if (key) {
         additionalData.publishedAt =
