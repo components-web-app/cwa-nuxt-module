@@ -202,11 +202,22 @@ export default Vue.extend({
         // if we keep then the below 'setResource' call will need to be enhanced so as to not override
         return
       }
-      this.$cwa.$storage.setResource({
-        resource: {
-          '@id': this.newComponentIri,
-          '@type': event.name
+      const resource = {
+        '@id': this.newComponentIri,
+        '@type': event.name,
+        _metadata: {}
+      } as {
+        '@id': string
+        '@type': string
+        _metadata?: {
+          published: boolean
         }
+      }
+      if (event.isPublishable) {
+        resource._metadata.published = false
+      }
+      this.$cwa.$storage.setResource({
+        resource
       })
     }
   },
