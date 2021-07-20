@@ -17,6 +17,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import moment from 'moment'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
 import { NewComponentEvent } from '../../../../events'
 import CmButton, { altOption } from './input/cm-button.vue'
@@ -82,18 +83,23 @@ export default Vue.extend({
     newComponentClearedListener() {
       this.addingEvent = null
     },
-    async addComponent() {
+    async addComponent(key) {
       const componentCollection = this.addingEvent.collection
+      const additionalData = {
+        componentPositions: [
+          {
+            componentCollection
+          }
+        ]
+      }
+      if (key) {
+        additionalData.publishedAt =
+          key === 'published' ? moment.utc().toISOString() : null
+      }
       const resourceObject = Object.assign(
         {},
         this.$cwa.getResource(this.addingEvent.iri),
-        {
-          componentPositions: [
-            {
-              componentCollection
-            }
-          ]
-        }
+        additionalData
       )
       this.$cwa.$storage.increaseMercurePendingProcessCount()
       const resource = await this.$cwa.createResource(
