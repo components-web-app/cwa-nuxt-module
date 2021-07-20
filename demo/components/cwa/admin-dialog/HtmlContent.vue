@@ -18,8 +18,7 @@ import ComponentManagerTabMixin from '@cwa/nuxt-module/core/mixins/ComponentMana
 import CwaAdminToggle from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-toggle.vue'
 import {
   COMPONENT_MANAGER_EVENTS,
-  PublishableToggledEvent,
-  SaveStateEvent
+  PublishableToggledEvent
 } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
@@ -32,15 +31,11 @@ export default Vue.extend({
   },
   watch: {
     showEditor(value) {
-      this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.saveState, {
-        iri: this.iri,
-        name: 'showEditor',
-        value
-      } as SaveStateEvent)
+      this.saveCmValue('showEditor', value)
     }
   },
   mounted() {
-    this.showEditor = this.cmValue('showEditor')
+    this.showEditor = !!this.cmValue('showEditor')
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.publishableToggled,
       this.handlePublishableToggled

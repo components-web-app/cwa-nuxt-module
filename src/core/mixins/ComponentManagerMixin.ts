@@ -2,6 +2,7 @@ import Vue from 'vue'
 import consola from 'consola'
 import { COMPONENT_MANAGER_EVENTS, ComponentManagerAddEvent } from '../events'
 import AddElementsMixin from './AddElementsMixin'
+import ComponentManagerValueMixin from './ComponentManagerValueMixin'
 
 export const EVENTS = COMPONENT_MANAGER_EVENTS
 
@@ -33,7 +34,7 @@ export interface ComponentManagerComponent {
 }
 
 export const ComponentManagerMixin = Vue.extend({
-  mixins: [AddElementsMixin],
+  mixins: [AddElementsMixin, ComponentManagerValueMixin],
   computed: {
     componentManager(): ComponentManagerComponent {
       return {
@@ -48,16 +49,6 @@ export const ComponentManagerMixin = Vue.extend({
       return this.publishable && !this.published
         ? 'cwa-manager-highlight is-draft'
         : 'cwa-manager-highlight'
-    },
-    componentManagerState() {
-      const cmStates =
-        this.$cwa.$storage.getState('CwaComponentManagerStates') || {}
-      return cmStates?.[this.computedIri] || {}
-    },
-    cmValue() {
-      return (name) => {
-        return this.componentManagerState[name] || null
-      }
     }
   },
   watch: {

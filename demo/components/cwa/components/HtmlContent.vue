@@ -1,5 +1,8 @@
 <template>
-  <div :class="['html-component', resource.uiClassNames]">
+  <div
+    :class="['html-component', resource.uiClassNames]"
+    @dblclick="toggleEditor"
+  >
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div v-if="!cmValue('showEditor')" v-html="displayHtml" />
     <quill-input
@@ -44,6 +47,11 @@ export default {
           ? '<p style="font-style: italic">No content</p>'
           : '')
       )
+    }
+  },
+  methods: {
+    toggleEditor() {
+      this.saveCmValue('showEditor', !this.cmValue('showEditor'))
     }
   }
 }

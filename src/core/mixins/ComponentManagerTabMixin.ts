@@ -1,8 +1,9 @@
 import Vue from 'vue'
 import IriMixin from './IriMixin'
+import ComponentManagerValueMixin from './ComponentManagerValueMixin'
 
 export default Vue.extend({
-  mixins: [IriMixin],
+  mixins: [IriMixin, ComponentManagerValueMixin],
   props: {
     context: {
       type: Object,
@@ -27,16 +28,6 @@ export default Vue.extend({
         this.$cwa.$storage.setResource({
           resource
         })
-      }
-    },
-    componentManagerState() {
-      const cmStates =
-        this.$cwa.$storage.getState('CwaComponentManagerStates') || {}
-      return cmStates?.[this.iri] || {}
-    },
-    cmValue() {
-      return (name) => {
-        return this.componentManagerState[name] || null
       }
     }
   }
