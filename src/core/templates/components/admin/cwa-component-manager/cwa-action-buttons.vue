@@ -83,17 +83,19 @@ export default Vue.extend({
       this.addingEvent = null
     },
     async addComponent() {
+      const componentCollection = this.addingEvent.collection
       const resourceObject = Object.assign(
         {},
         this.$cwa.getResource(this.addingEvent.iri),
         {
           componentPositions: [
             {
-              componentCollection: this.addingEvent.collection
+              componentCollection
             }
           ]
         }
       )
+      this.$cwa.$storage.increaseMercurePendingProcessCount()
       const resource = await this.$cwa.createResource(
         this.addingEvent.endpoint,
         resourceObject,
@@ -101,10 +103,14 @@ export default Vue.extend({
         [this.addingEvent.collection]
       )
       this.$cwa.saveResource(resource)
-      await this.$cwa.refreshResources(resource.componentPositions)
+      await this.$cwa.refreshResources([
+        ...resource.componentPositions,
+        componentCollection
+      ])
       await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
       this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
       this.addingEvent = null
+      this.$cwa.$storage.decreaseMercurePendingProcessCount()
     },
     async deleteComponent(key) {
       if (!window.confirm('Are you sure?')) {
