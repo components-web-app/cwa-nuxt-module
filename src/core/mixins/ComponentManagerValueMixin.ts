@@ -6,7 +6,7 @@ export default Vue.extend({
     componentManagerState() {
       const cmStates =
         this.$cwa.$storage.getState('CwaComponentManagerStates') || {}
-      return cmStates?.[this.iri] || {}
+      return cmStates?.[this.computedIri || this.iri] || {}
     },
     cmValue() {
       return (name) => {

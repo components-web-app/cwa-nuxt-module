@@ -19,7 +19,18 @@
 import Vue from 'vue'
 import moment from 'moment'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
-import { NewComponentEvent } from '../../../../events'
+import {
+  NewComponentEvent,
+  NOTIFICATION_EVENTS,
+  STATUS_EVENTS,
+  StatusEvent
+} from '../../../../events'
+import ApiError from '../../../../../inc/api-error'
+import {
+  Notification,
+  NotificationLevels,
+  RemoveNotificationEvent
+} from '../../cwa-api-notifications/types'
 import CmButton, { altOption } from './input/cm-button.vue'
 
 export default Vue.extend({
@@ -38,9 +49,11 @@ export default Vue.extend({
   },
   data() {
     return {
-      addingEvent: null
+      addingEvent: null,
+      removeErrorEvents: []
     } as {
       addingEvent: NewComponentEvent
+      removeErrorEvents: RemoveNotificationEvent[]
     }
   },
   computed: {
@@ -84,6 +97,7 @@ export default Vue.extend({
       this.addingEvent = null
     },
     async addComponent(key: string) {
+      const notificationCategory = 'components-manager'
       const componentCollection: string = this.addingEvent.collection
       const additionalData = {
         componentPositions: [
@@ -106,22 +120,62 @@ export default Vue.extend({
         this.$cwa.getResource(this.addingEvent.iri),
         additionalData
       )
-      this.$cwa.$storage.increaseMercurePendingProcessCount()
-      const resource = await this.$cwa.createResource(
-        this.addingEvent.endpoint,
-        resourceObject,
-        null,
-        [this.addingEvent.collection]
-      )
-      this.$cwa.saveResource(resource)
-      await this.$cwa.refreshResources([
-        ...resource.componentPositions,
-        componentCollection
-      ])
-      await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
-      this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
-      this.addingEvent = null
-      this.$cwa.$storage.decreaseMercurePendingProcessCount()
+
+      for (const removeEvent of this.removeErrorEvents) {
+        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
+      }
+      this.removeErrorEvents = []
+
+      try {
+        this.$cwa.$storage.increaseMercurePendingProcessCount()
+        const resource = await this.$cwa.createResource(
+          this.addingEvent.endpoint,
+          resourceObject,
+          null,
+          [this.addingEvent.collection]
+        )
+        this.$cwa.saveResource(resource)
+        await this.$cwa.refreshResources([
+          ...resource.componentPositions,
+          componentCollection
+        ])
+        await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
+        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
+        this.addingEvent = null
+        this.$cwa.$storage.decreaseMercurePendingProcessCount()
+      } catch (message) {
+        if (!(message instanceof ApiError)) {
+          throw message
+        }
+        if (message.isCancel) {
+          return
+        }
+        for (const violation of message.violations) {
+          const field = violation.propertyPath
+          const notificationCode = 'input-error-' + field
+          const notification: Notification = {
+            code: notificationCode,
+            title: 'Input Error',
+            message: violation.message,
+            level: NotificationLevels.ERROR,
+            endpoint: this.addingEvent.iri,
+            field,
+            category: notificationCategory
+          }
+          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+          this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
+            field,
+            category: notificationCategory,
+            status: -1
+          } as StatusEvent)
+
+          const removeEvent: RemoveNotificationEvent = {
+            code: notificationCode,
+            category: notificationCategory
+          }
+          this.removeErrorEvents.push(removeEvent)
+        }
+      }
     },
     async deleteComponent(key) {
       if (!window.confirm('Are you sure?')) {
