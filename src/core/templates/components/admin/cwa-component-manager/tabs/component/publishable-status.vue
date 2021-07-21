@@ -45,6 +45,7 @@ import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
 import ApiError from '../../../../../../../inc/api-error'
 import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
 import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
+import UpdateResourceError from '../../../../../../../inc/update-resource-error'
 
 export default Vue.extend({
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -85,9 +86,8 @@ export default Vue.extend({
   },
   methods: {
     async publishNow() {
-      this.error = null
+      const publishedResource = this.$cwa.getPublishedResource(this.resource)
       try {
-        const publishedResource = this.$cwa.getPublishedResource(this.resource)
         await this.updateResource(
           this.iri,
           'publishedAt',
@@ -98,10 +98,9 @@ export default Vue.extend({
         )
         this.$emit('close')
       } catch (error) {
-        if (!(error instanceof ApiError)) {
+        if (!(error instanceof UpdateResourceError)) {
           throw error
         }
-        this.error = error.message
       }
     }
   }

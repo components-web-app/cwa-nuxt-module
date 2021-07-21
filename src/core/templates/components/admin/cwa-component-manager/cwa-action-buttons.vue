@@ -19,22 +19,15 @@
 import Vue from 'vue'
 import moment from 'moment'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
-import {
-  NewComponentEvent,
-  NOTIFICATION_EVENTS,
-  STATUS_EVENTS,
-  StatusEvent
-} from '../../../../events'
+import { NewComponentEvent, NOTIFICATION_EVENTS } from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
-import {
-  Notification,
-  NotificationLevels,
-  RemoveNotificationEvent
-} from '../../cwa-api-notifications/types'
+import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
+import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
 
 export default Vue.extend({
   components: { CmButton },
+  mixins: [ApiErrorNotificationsMixin],
   props: {
     selectedPosition: {
       type: String,
@@ -150,28 +143,15 @@ export default Vue.extend({
         if (message.isCancel) {
           return
         }
-        for (const violation of message.violations) {
-          const field = violation.propertyPath
-          const notificationCode = 'input-error-' + field
-          const notification: Notification = {
-            code: notificationCode,
-            title: 'Input Error',
-            message: violation.message,
-            level: NotificationLevels.ERROR,
-            endpoint: this.addingEvent.iri,
-            field,
-            category: notificationCategory
-          }
-          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
-          this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
-            field,
-            category: notificationCategory,
-            status: -1
-          } as StatusEvent)
-
+        const notifications = this.handleApiViolations(
+          message.violations,
+          this.addingEvent.iri,
+          notificationCategory
+        )
+        for (const notification of notifications) {
           const removeEvent: RemoveNotificationEvent = {
-            code: notificationCode,
-            category: notificationCategory
+            code: notification.node,
+            category: notification.category
           }
           this.removeErrorEvents.push(removeEvent)
         }

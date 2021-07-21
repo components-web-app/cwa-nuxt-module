@@ -100,21 +100,16 @@ export default Vue.extend({
     },
     async update() {
       this.pendingDebounce = false
-      try {
-        await this.updateResource(
-          this.iri,
-          this.field,
-          this.inputValue,
-          this.category,
-          this.refreshEndpoints,
-          this.notificationCategory
-        )
+      const result = await this.updateResource(
+        this.iri,
+        this.field,
+        this.inputValue,
+        this.category,
+        this.refreshEndpoints,
+        this.notificationCategory
+      )
+      if (result !== false) {
         this.outdated = false
-      } catch (error) {
-        if (!(error instanceof ApiError)) {
-          throw error
-        }
-        this.error = error.message
       }
     }
   }
