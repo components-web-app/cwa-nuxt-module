@@ -16,6 +16,7 @@
 
 <script lang="ts">
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
+import { ComponentManagerTab } from '@cwa/nuxt-modulecore/mixins/ComponentManagerMixin'
 import QuillInput from '~/components/QuillInput.vue'
 export default {
   components: { QuillInput },
@@ -31,16 +32,17 @@ export default {
     }
   },
   computed: {
-    componentManagerTabs() {
+    componentManagerTabs(): ComponentManagerTab[] {
       return [
         {
           label: 'HTML Content',
           component: () => import('../admin-dialog/HtmlContent.vue'),
-          priority: 2
+          priority: 2,
+          inputFieldsUsed: ['html']
         }
       ]
     },
-    displayHtml() {
+    displayHtml(): string {
       return (
         this.resource.html ||
         (this.$cwa.isAdmin

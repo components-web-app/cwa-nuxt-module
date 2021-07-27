@@ -25,6 +25,7 @@ export interface ComponentManagerTab {
   component: Function
   priority?: number
   context?: any
+  inputFieldsUsed?: string[]
 }
 
 export interface ComponentManagerComponent {

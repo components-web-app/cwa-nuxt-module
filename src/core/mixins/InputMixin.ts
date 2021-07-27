@@ -1,7 +1,6 @@
 import Vue from 'vue'
 import debounce from 'lodash.debounce'
 import { STATUS_EVENTS, StatusEvent } from '../events'
-import ApiError from '../../inc/api-error'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 import UpdateResourceMixin from './UpdateResourceMixin'

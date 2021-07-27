@@ -1,12 +1,19 @@
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
+import { Notification } from '../templates/components/cwa-api-notifications/types'
 import IriMixin from './IriMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
+import { ComponentTabContext } from './ComponentManagerMixin'
 
-export default Vue.extend({
+export const ComponentManagerTabMixin = Vue.extend({
   mixins: [IriMixin, ComponentManagerValueMixin],
   props: {
     context: {
-      type: Object,
+      type: Object as PropType<ComponentTabContext>,
+      required: false,
+      default: null
+    },
+    fieldErrors: {
+      type: Array as PropType<Notification[]>,
       required: false,
       default: null
     }
@@ -32,3 +39,5 @@ export default Vue.extend({
     }
   }
 })
+
+export default ComponentManagerTabMixin

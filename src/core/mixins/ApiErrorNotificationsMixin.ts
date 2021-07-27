@@ -1,21 +1,44 @@
 import Vue from 'vue'
 import {
   Notification,
-  NotificationLevels
+  NotificationLevels,
+  RemoveNotificationEvent
 } from '../templates/components/cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
 
+interface ApiViolationNotifications {
+  notification: Notification
+  removeEvent: RemoveNotificationEvent
+}
+
+export const getInputErrorNotificationCode = (field) => {
+  return 'input-error-' + field
+}
+
 export default Vue.extend({
+  data() {
+    return {
+      removeErrorEvents: []
+    } as {
+      removeErrorEvents: ApiViolationNotifications[]
+    }
+  },
   methods: {
+    clearAllViolationNotifications() {
+      for (const removeEvent of this.removeErrorEvents) {
+        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
+      }
+      this.removeErrorEvents = []
+    },
     handleApiViolations(
       violations,
       endpoint: string,
       notificationCategory: string
-    ): Notification[] {
-      const notifications = []
+    ): ApiViolationNotifications[] {
+      const response = []
       for (const violation of violations) {
         const field = violation.propertyPath
-        const notificationCode = 'input-error-' + field
+        const notificationCode = getInputErrorNotificationCode(field)
         const notification: Notification = {
           code: notificationCode,
           title: 'Input Error',
@@ -31,9 +54,17 @@ export default Vue.extend({
           category: notificationCategory,
           status: -1
         } as StatusEvent)
-        notifications.push(notification)
+
+        const removeEvent: RemoveNotificationEvent = {
+          code: notification.code,
+          category: notification.category,
+          field: notification.field
+        }
+        this.removeErrorEvents.push(removeEvent)
+
+        response.push({ notification, removeEvent })
       }
-      return notifications
+      return response
     }
   }
 })

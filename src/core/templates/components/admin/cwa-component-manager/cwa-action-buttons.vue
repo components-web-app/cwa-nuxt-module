@@ -19,7 +19,7 @@
 import Vue from 'vue'
 import moment from 'moment'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
-import { NewComponentEvent, NOTIFICATION_EVENTS } from '../../../../events'
+import { NewComponentEvent } from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
 import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
@@ -114,10 +114,7 @@ export default Vue.extend({
         additionalData
       )
 
-      for (const removeEvent of this.removeErrorEvents) {
-        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
-      }
-      this.removeErrorEvents = []
+      this.clearAllViolationNotifications()
 
       try {
         this.$cwa.$storage.increaseMercurePendingProcessCount()
@@ -143,18 +140,11 @@ export default Vue.extend({
         if (message.isCancel) {
           return
         }
-        const notifications = this.handleApiViolations(
+        this.handleApiViolations(
           message.violations,
           this.addingEvent.iri,
           notificationCategory
         )
-        for (const notification of notifications) {
-          const removeEvent: RemoveNotificationEvent = {
-            code: notification.node,
-            category: notification.category
-          }
-          this.removeErrorEvents.push(removeEvent)
-        }
       }
     },
     async deleteComponent(key) {

@@ -22,4 +22,5 @@ export interface TimestampedNotification extends Notification {
 export interface RemoveNotificationEvent {
   code: string
   category?: string
+  field?: string
 }

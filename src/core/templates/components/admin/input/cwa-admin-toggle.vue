@@ -1,5 +1,11 @@
 <template>
-  <label :for="id" :class="['cwa-admin-toggle', { 'is-checked': !!value }]">
+  <label
+    :for="id"
+    :class="[
+      'cwa-admin-toggle',
+      { 'is-checked': !!value, 'has-error': hasError }
+    ]"
+  >
     <span class="label">{{ label }}</span>
     <span class="switch">
       <input
@@ -37,6 +43,13 @@ export default {
   transition: opacity .25s
   cursor: pointer
   user-select: none
+  &.has-error
+    .label
+      color: $cwa-danger
+    .switch
+      input
+        + .slider
+          border-color: $cwa-danger
   &.is-checked
     opacity: 1
     color: $cwa-warning

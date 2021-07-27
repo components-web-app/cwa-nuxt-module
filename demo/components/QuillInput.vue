@@ -48,7 +48,7 @@ export default Vue.extend({
     }
   },
   watch: {
-    // when published becomes a draft...
+    // when published becomes a draft... need to update content
     iri() {
       this.$nextTick(() => {
         const selection = this.editor.getSelection()

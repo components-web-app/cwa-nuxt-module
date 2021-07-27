@@ -8,7 +8,12 @@
           'column',
           'is-narrow',
           'cwa-manager-tab',
-          { 'is-selected': index === selectedTabIndex }
+          {
+            'is-selected': index === selectedTabIndex,
+            'has-error':
+              tabInputErrors[tab.label] &&
+              !!tabInputErrors[tab.label].errorCount
+          }
         ]"
       >
         <a href="#" @click.prevent="showTab(index)">{{ tab.label }}</a>
@@ -23,6 +28,7 @@
             :key="loopKey('tab-content', selectedTabIndex)"
             :iri="iri"
             :context="fullContext"
+            :field-errors="tabInputErrors[selectedTab.label]"
             @draggable="toggleDraggable"
             @close="$emit('close')"
           />
@@ -33,16 +39,24 @@
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
 import { ComponentManagerTab } from '../../../../mixins/ComponentManagerMixin'
-import { COMPONENT_MANAGER_EVENTS, TabChangedEvent } from '../../../../events'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  TabChangedEvent,
+  NOTIFICATION_EVENTS
+} from '../../../../events'
+import {
+  Notification,
+  RemoveNotificationEvent
+} from '../../cwa-api-notifications/types'
 import TransitionExpand from '../../utils/transition-expand.vue'
 
 export default Vue.extend({
   components: { TransitionExpand },
   props: {
     tabs: {
-      type: Array,
+      type: Array as PropType<ComponentManagerTab[]>,
       required: true
     },
     iri: {
@@ -64,7 +78,8 @@ export default Vue.extend({
   data() {
     return {
       selectedTabIndex: null,
-      areTabsShowing: false
+      areTabsShowing: false,
+      tabInputErrors: {}
     }
   },
   computed: {
@@ -106,18 +121,46 @@ export default Vue.extend({
       if (newIri !== oldIri) {
         this.showTab(0)
       }
+    },
+    tabs: {
+      handler(tabs: ComponentManagerTab[]) {
+        this.tabInputErrors = {}
+        for (const tab of tabs) {
+          this.$set(this.tabInputErrors, tab.label, {
+            errorCount: 0,
+            notifications: {}
+          })
+        }
+      },
+      immediate: true
     }
   },
-  mounted() {
+  created() {
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.showTabs,
       this.setTabsShowing
+    )
+    this.$cwa.$eventBus.$on(
+      NOTIFICATION_EVENTS.add,
+      this.addNotificationListener
+    )
+    this.$cwa.$eventBus.$on(
+      NOTIFICATION_EVENTS.remove,
+      this.removeNotificationListener
     )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.showTabs,
       this.setTabsShowing
+    )
+    this.$cwa.$eventBus.$off(
+      NOTIFICATION_EVENTS.add,
+      this.addNotificationListener
+    )
+    this.$cwa.$eventBus.$off(
+      NOTIFICATION_EVENTS.remove,
+      this.removeNotificationListener
     )
   },
   methods: {
@@ -136,6 +179,33 @@ export default Vue.extend({
     },
     toggleDraggable(isDraggable) {
       this.$emit('draggable', isDraggable)
+    },
+    addNotificationListener(notification: Notification) {
+      const field = notification.field || 'default'
+      for (const tab of this.tabs) {
+        if (tab.inputFieldsUsed && tab.inputFieldsUsed.includes(field)) {
+          if (!this.tabInputErrors[tab.label].notifications[field]) {
+            this.$set(this.tabInputErrors[tab.label].notifications, field, [])
+          }
+          this.tabInputErrors[tab.label].notifications[field].push(notification)
+          this.tabInputErrors[tab.label].errorCount++
+        }
+      }
+    },
+    removeNotificationListener(removeNotification: RemoveNotificationEvent) {
+      const field = removeNotification.field || 'default'
+      for (const tab of this.tabs) {
+        const notifications =
+          this.tabInputErrors[tab.label].notifications[field]
+        if (notifications) {
+          notifications.forEach((notification: Notification, index) => {
+            if (notification.code === removeNotification.code) {
+              notifications.splice(index, 1)
+            }
+          })
+          this.tabInputErrors[tab.label].notifications[field] = notifications
+        }
+      }
     }
   }
 })
@@ -148,12 +218,24 @@ export default Vue.extend({
     margin: 0
     padding: 0 .5rem
     > .cwa-manager-tab
+      position: relative
       padding: 0
       > a
         padding: 1.5rem 1.5rem 2rem
         display: block
       &.is-selected > a
         color: $white
+      &.has-error::after
+        content: ''
+        display: block
+        position: absolute
+        bottom: 100%
+        left: 100%
+        width: 12px
+        height: 12px
+        border-radius: 50%
+        background-color: $cwa-danger
+        transform: translate(-1.6rem, 1.8rem)
   .tab-content-container
     max-height: 20vh
     overflow: auto

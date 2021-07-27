@@ -57,7 +57,8 @@ export default Vue.extend({
         oldNotifications.forEach((notification: Notification) => {
           const removeEvent: RemoveNotificationEvent = {
             code: notification.code,
-            category: notification.category
+            category: notification.category,
+            field: notification.field
           }
           this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
         })

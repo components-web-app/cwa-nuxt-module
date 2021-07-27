@@ -5,6 +5,7 @@
         <cwa-admin-toggle
           :id="`component-toggle-html-${iri}`"
           v-model="showEditor"
+          :notifications="fieldErrors.notifications['html']"
           label="Edit HTML"
         />
       </div>

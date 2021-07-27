@@ -1,7 +1,5 @@
 import Vue from 'vue'
 import consola from 'consola'
-import { RemoveNotificationEvent } from '../templates/components/cwa-api-notifications/types'
-import { NOTIFICATION_EVENTS } from '../events'
 import ApiError from '../../inc/api-error'
 import UpdateResourceError from '../../inc/update-resource-error'
 import ApiErrorNotificationsMixin from './ApiErrorNotificationsMixin'
@@ -17,12 +15,11 @@ export default Vue.extend({
       refreshEndpoints: string[] = [],
       notificationCategory: string = null
     ) {
-      const notificationCode = 'input-error-' + field
-      const removeEvent: RemoveNotificationEvent = {
-        code: notificationCode,
-        category: notificationCategory
-      }
-      this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
+      this.clearAllViolationNotifications()
+      // what is to say that the field validation is dependent on other field values... we can get validation errors for any field.
+      // we add and clear notifications localised to where the mixin is used.
+      // const notificationCode = 'input-error-' + field
+      // this.clearViolationNotification(notificationCode, notificationCategory)
       try {
         return await this.$cwa.updateResource(
           iri,
