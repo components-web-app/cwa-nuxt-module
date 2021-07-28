@@ -316,6 +316,7 @@ export default Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
       this.persistentStates = {}
+      this.selectPosition(null)
       this.$cwa.$storage.setState('CwaComponentManagerStates', {})
     },
     show(event) {
@@ -323,8 +324,6 @@ export default Vue.extend({
         return
       }
       this.pendingComponents = []
-      // when re-selecting published/draft this resets... do we need to?
-      // this.selectedPosition = null
       if (this.showingCriteria) {
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }

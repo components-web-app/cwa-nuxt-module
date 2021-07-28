@@ -131,6 +131,7 @@ export const ComponentManagerMixin = Vue.extend({
       } as ComponentManagerAddEvent)
     },
     initComponentManagerShowListener() {
+      this.$cwa.$eventBus.$emit(EVENTS.selectPosition, null)
       this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)
       // we should only be populating when the element is clicked and the show event is called
       // if we click, but this results in the manager hiding (it is already shown)
