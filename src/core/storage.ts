@@ -417,6 +417,9 @@ export class Storage {
 
   findDraftIri(iri) {
     const resource = this.getResource(iri)
+    if (!resource) {
+      return null
+    }
     if (resource._metadata.published === false) {
       return iri
     }

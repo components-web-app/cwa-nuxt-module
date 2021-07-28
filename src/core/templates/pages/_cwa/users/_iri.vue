@@ -28,18 +28,36 @@
       <cwa-admin-select
         v-model="component.enabled"
         label="Enabled"
-        :options="{ Yes: true, No: false }"
+        :options="[
+          {
+            value: true,
+            label: 'Yes'
+          },
+          {
+            value: false,
+            label: 'No'
+          }
+        ]"
         v-bind="inputProps('enabled')"
       />
       <cwa-admin-select
         v-model="highestRole"
         label="Roles"
         v-bind="inputProps('roles')"
-        :options="{
-          'Super Admin': 'ROLE_SUPER_ADMIN',
-          Admin: 'ROLE_ADMIN',
-          User: 'ROLE_USER'
-        }"
+        :options="[
+          {
+            value: 'ROLE_SUPER_ADMIN',
+            label: 'Super Admin'
+          },
+          {
+            value: 'ROLE_ADMIN',
+            label: 'Admin'
+          },
+          {
+            value: 'ROLE_USER',
+            label: 'User'
+          }
+        ]"
       />
     </template>
   </iri-modal-view>
