@@ -1,13 +1,13 @@
 import Vue from 'vue'
 import {
-  Notification,
+  NotificationEvent,
   NotificationLevels,
   RemoveNotificationEvent
 } from '../templates/components/cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
 
 interface ApiViolationNotifications {
-  notification: Notification
+  notification: NotificationEvent
   removeEvent: RemoveNotificationEvent
 }
 
@@ -39,7 +39,7 @@ export default Vue.extend({
       for (const violation of violations) {
         const field = violation.propertyPath
         const notificationCode = getInputErrorNotificationCode(field)
-        const notification: Notification = {
+        const notification: NotificationEvent = {
           code: notificationCode,
           title: 'Input Error',
           message: violation.message,
@@ -58,7 +58,8 @@ export default Vue.extend({
         const removeEvent: RemoveNotificationEvent = {
           code: notification.code,
           category: notification.category,
-          field: notification.field
+          field: notification.field,
+          endpoint: notification.endpoint
         }
         this.removeErrorEvents.push(removeEvent)
 

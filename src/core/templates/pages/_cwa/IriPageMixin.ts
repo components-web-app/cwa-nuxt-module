@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import IriModalView from '../../components/iri-modal-view.vue'
 import {
-  Notification,
+  NotificationEvent,
   NotificationLevels
 } from '../../components/cwa-api-notifications/types'
 import ApiError from '../../../../inc/api-error'
@@ -35,7 +35,7 @@ export default (postEndpoint: string) =>
         notificationCategories: {
           violations: string
         }
-        notifications: { [key: string]: Notification[] }
+        notifications: { [key: string]: NotificationEvent[] }
       }
     },
     computed: {
@@ -95,7 +95,7 @@ export default (postEndpoint: string) =>
           }
 
           if (error.statusCode === 500) {
-            const notification: Notification = {
+            const notification: NotificationEvent = {
               code: 'server_error',
               title: 'An error occurred',
               message: error.message,
@@ -110,7 +110,7 @@ export default (postEndpoint: string) =>
       },
       processViolations(violations) {
         violations.forEach((violation: Violation) => {
-          const notification: Notification = {
+          const notification: NotificationEvent = {
             code: violation.propertyPath,
             title: violation.propertyPath,
             message: violation.message,

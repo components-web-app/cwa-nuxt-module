@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import {
-  Notification,
+  NotificationEvent,
   NotificationLevels
 } from '../templates/components/cwa-api-notifications/types'
 import ApiError from '../../inc/api-error'
@@ -25,7 +25,7 @@ export default Vue.extend({
       if (!(error instanceof ApiError)) {
         throw error
       }
-      const notification: Notification = {
+      const notification: NotificationEvent = {
         code: API_EVENTS.error,
         title: 'API Error',
         message: error.statusCode + ': ' + error.message,

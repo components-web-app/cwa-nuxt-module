@@ -47,7 +47,7 @@ import {
   NOTIFICATION_EVENTS
 } from '../../../../events'
 import {
-  Notification,
+  NotificationEvent,
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
 import TransitionExpand from '../../utils/transition-expand.vue'
@@ -180,7 +180,7 @@ export default Vue.extend({
     toggleDraggable(isDraggable) {
       this.$emit('draggable', isDraggable)
     },
-    addNotificationListener(notification: Notification) {
+    addNotificationListener(notification: NotificationEvent) {
       const field = notification.field || 'default'
       for (const tab of this.tabs) {
         if (tab.inputFieldsUsed && tab.inputFieldsUsed.includes(field)) {
@@ -198,7 +198,7 @@ export default Vue.extend({
         const notifications =
           this.tabInputErrors[tab.label].notifications[field]
         if (notifications) {
-          notifications.forEach((notification: Notification, index) => {
+          notifications.forEach((notification: NotificationEvent, index) => {
             if (notification.code === removeNotification.code) {
               notifications.splice(index, 1)
             }

@@ -1,5 +1,5 @@
 import Vue, { PropType } from 'vue'
-import { Notification } from '../templates/components/cwa-api-notifications/types'
+import { NotificationEvent } from '../templates/components/cwa-api-notifications/types'
 import IriMixin from './IriMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
 import { ComponentTabContext } from './ComponentManagerMixin'
@@ -13,7 +13,10 @@ export const ComponentManagerTabMixin = Vue.extend({
       default: null
     },
     fieldErrors: {
-      type: Array as PropType<Notification[]>,
+      type: Object as PropType<{
+        notifications: NotificationEvent[]
+        errorCount: number
+      }>,
       required: false,
       default: null
     }

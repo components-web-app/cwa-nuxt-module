@@ -1,11 +1,11 @@
-import { Notification } from '../core/templates/components/cwa-api-notifications/types'
+import { NotificationEvent } from '../core/templates/components/cwa-api-notifications/types'
 import ApiError from './api-error'
 
 export default class UpdateResourceError extends Error {
   apiError: ApiError
-  noticications: Notification[]
+  noticications: NotificationEvent[]
 
-  constructor(message, apiError: ApiError, notifications: Notification[]) {
+  constructor(message, apiError: ApiError, notifications: NotificationEvent[]) {
     super(message)
     this.name = 'UpdateResourceError'
     this.apiError = apiError

@@ -4,7 +4,7 @@ export const NotificationLevels = {
   INFO: 3
 }
 
-export interface Notification {
+export interface NotificationEvent {
   title: string
   message: string
   level: number
@@ -14,7 +14,7 @@ export interface Notification {
   category?: string
 }
 
-export interface TimestampedNotification extends Notification {
+export interface TimestampedNotification extends NotificationEvent {
   id: number
   timestamp: Date
 }
@@ -23,4 +23,5 @@ export interface RemoveNotificationEvent {
   code: string
   category?: string
   field?: string
+  endpoint?: string
 }

@@ -1,6 +1,6 @@
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
 import {
-  Notification,
+  NotificationEvent,
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS } from '../../../../events'
@@ -29,7 +29,7 @@ export default Vue.extend({
       required: false
     },
     notifications: {
-      type: Array,
+      type: Array as PropType<NotificationEvent[]>,
       required: false,
       default: null,
       validator(notifications) {
@@ -54,17 +54,18 @@ export default Vue.extend({
   watch: {
     notifications(newNotifications, oldNotifications) {
       if (oldNotifications && oldNotifications.length) {
-        oldNotifications.forEach((notification: Notification) => {
+        oldNotifications.forEach((notification: NotificationEvent) => {
           const removeEvent: RemoveNotificationEvent = {
             code: notification.code,
             category: notification.category,
-            field: notification.field
+            field: notification.field,
+            endpoint: notification.endpoint
           }
           this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
         })
       }
       if (newNotifications && newNotifications.length) {
-        newNotifications.forEach((notification: Notification) => {
+        newNotifications.forEach((notification: NotificationEvent) => {
           notification.title = this.label
           this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
         })

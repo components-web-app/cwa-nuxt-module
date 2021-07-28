@@ -72,7 +72,11 @@ export const ComponentManagerMixin = Vue.extend({
     this.$cwa.$eventBus.$emit(EVENTS.componentMounted, this.computedIri)
   },
   mounted() {
-    this.$el.addEventListener('click', this.initComponentManagerShowListener)
+    this.$el.addEventListener(
+      'click',
+      this.initComponentManagerShowListener,
+      false
+    )
     // will exist with a resource mixin
     if (this.isNew) {
       this.$el.click()

@@ -1,6 +1,10 @@
 <template>
   <div
-    :class="['html-component', resource.uiClassNames]"
+    :class="[
+      'html-component',
+      resource.uiClassNames,
+      { 'has-error': !!fieldNotifications.html.length }
+    ]"
     @dblclick="toggleEditor"
   >
     <!-- eslint-disable-next-line vue/no-v-html -->
@@ -17,10 +21,11 @@
 <script lang="ts">
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
 import { ComponentManagerTab } from '@cwa/nuxt-modulecore/mixins/ComponentManagerMixin'
+import NotificationListenerMixin from '@cwa/nuxt-modulecore/mixins/NotificationListenerMixin'
 import QuillInput from '~/components/QuillInput.vue'
 export default {
   components: { QuillInput },
-  mixins: [ComponentMixin],
+  mixins: [ComponentMixin, NotificationListenerMixin],
   data() {
     return {
       componentManagerContext: {
@@ -51,6 +56,9 @@ export default {
       )
     }
   },
+  created() {
+    this.addFieldNotificationListener('html', this.iri)
+  },
   methods: {
     toggleEditor() {
       this.saveCmValue('showEditor', !this.cmValue('showEditor'))
@@ -62,6 +70,17 @@ export default {
 <style lang="sass">
 .html-component
   padding: .5rem
+  position: relative
+  &.has-error::after
+    content: ''
+    position: absolute
+    bottom: 100%
+    right: 100%
+    width: 16px
+    height: 16px
+    border-radius: 50%
+    background: $cwa-danger
+    transform: translate(8px, 8px)
   &.is-feature
     padding: 1rem .5rem
     font-size: 2.1rem

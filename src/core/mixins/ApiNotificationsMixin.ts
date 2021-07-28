@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import {
-  Notification,
+  NotificationEvent,
   RemoveNotificationEvent,
   TimestampedNotification
 } from '../templates/components/cwa-api-notifications/types'
@@ -39,12 +39,14 @@ export default Vue.extend({
       }
       this.notifications = []
     },
-    addNotification(notificationEvent: Notification): TimestampedNotification {
+    addNotification(
+      notificationEvent: NotificationEvent
+    ): TimestampedNotification {
       if (!this.isSupportedCategory(notificationEvent.category)) {
         return
       }
       // remove old notification if code already exists
-      this.notifications.forEach((notification: Notification, index) => {
+      this.notifications.forEach((notification: NotificationEvent, index) => {
         if (notification.code === notificationEvent.code) {
           this.notifications.splice(index, 1)
         }
@@ -65,9 +67,11 @@ export default Vue.extend({
         return
       }
 
-      this.notifications = this.notifications.filter((obj: Notification) => {
-        return obj.code !== event.code
-      })
+      this.notifications = this.notifications.filter(
+        (obj: NotificationEvent) => {
+          return obj.code !== event.code
+        }
+      )
     }
   }
 })
