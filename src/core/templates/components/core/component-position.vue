@@ -55,6 +55,10 @@ export default {
       if (!this.resource) {
         return null
       }
+      // may use `pageDataProperty` and not a specific component iri
+      if (!this.componentIri) {
+        return null
+      }
       return this.$cwa.getResource(this.componentIri)
     }
   },

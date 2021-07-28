@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import consola from 'consola'
 import { API_EVENTS } from '../events'
 import IriMixin from './IriMixin'
 
@@ -24,6 +25,10 @@ export default Vue.extend({
   },
   async mounted() {
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
+    if (!this.resource) {
+      consola.error(`Resource could not be found for iri ${this.iri}`)
+      return
+    }
     if (!this.resource?._metadata?.published) {
       this.draftIri = this.iri
       const publishedIri = this.resource.publishedResource

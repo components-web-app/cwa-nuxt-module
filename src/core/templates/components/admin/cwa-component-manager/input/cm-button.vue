@@ -87,11 +87,17 @@ export default Vue.extend({
       color: $white
   .alt-toggle-arrow
     position: relative
-    border-left: 1px solid $cwa-color-text-light
     width: 3em
-    height: 100%
-    margin-left: 3rem
-    margin-right: -2.5rem
+    height: calc(100% + 1rem)
+    padding-right: .5rem
+    margin: -.5rem -3rem -.5rem 3rem
+    &::before
+      content: ''
+      position: absolute
+      top: .5rem
+      left: 0px
+      bottom: .5rem
+      border-left: 1px solid $cwa-color-text-light
     img
       transform: translate(-50%, -50%) rotate(90deg)
       position: absolute
