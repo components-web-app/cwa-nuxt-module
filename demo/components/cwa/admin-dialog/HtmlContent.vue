@@ -15,7 +15,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import ComponentManagerTabMixin from '@cwa/nuxt-module/core/mixins/ComponentManagerTabMixin.ts'
+import ComponentManagerTabMixin from '@cwa/nuxt-module/core/mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-toggle.vue'
 import {
   COMPONENT_MANAGER_EVENTS,

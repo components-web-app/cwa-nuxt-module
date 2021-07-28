@@ -1,6 +1,10 @@
 <template>
   <div
-    :class="['html-component', resource.uiClassNames]"
+    :class="[
+      'html-component',
+      resource.uiClassNames,
+      { 'has-error': !!fieldNotifications.html.length }
+    ]"
     @dblclick="toggleEditor"
   >
     <cwa-logo class="cwa-logo" />

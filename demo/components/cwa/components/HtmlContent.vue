@@ -20,8 +20,8 @@
 
 <script lang="ts">
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
-import { ComponentManagerTab } from '@cwa/nuxt-modulecore/mixins/ComponentManagerMixin'
-import NotificationListenerMixin from '@cwa/nuxt-modulecore/mixins/NotificationListenerMixin'
+import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
+import NotificationListenerMixin from '@cwa/nuxt-module/core/mixins/NotificationListenerMixin'
 import QuillInput from '~/components/QuillInput.vue'
 export default {
   components: { QuillInput },
