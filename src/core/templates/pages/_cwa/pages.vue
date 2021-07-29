@@ -39,7 +39,12 @@ import GridPageMixin from './GridPageMixin'
 import LoadLayoutsMixin from './LoadLayoutsMixin'
 
 export default {
-  mixins: [GridPageMixin('_cwa_pages', '_cwa_pages_iri'), LoadLayoutsMixin]
+  mixins: [GridPageMixin('_cwa_pages', '_cwa_pages_iri'), LoadLayoutsMixin],
+  head() {
+    return {
+      title: 'Pages'
+    }
+  }
 }
 </script>
 

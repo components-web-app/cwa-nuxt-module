@@ -41,6 +41,11 @@ const postEndpoint = '/_/layouts'
 export default Vue.extend({
   components: { CwaAdminSelect, CwaAdminText },
   mixins: [IriPageMixin(postEndpoint)],
+  head() {
+    return {
+      title: `Layout Details - ${this.component.reference}`
+    }
+  },
   methods: {
     async saveLayout() {
       const uiClassNames = CommaDelimitedArrayBuilder(

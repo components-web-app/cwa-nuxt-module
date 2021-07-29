@@ -68,6 +68,11 @@ export default Vue.extend({
       )
     }
   },
+  head() {
+    return {
+      title: `Page Details - ${this.component.reference}`
+    }
+  },
   methods: {
     async savePage() {
       const uiClassNames = this.component?.uiClassNames

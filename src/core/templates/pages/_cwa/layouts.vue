@@ -27,7 +27,12 @@
 import GridPageMixin from './GridPageMixin'
 
 export default {
-  mixins: [GridPageMixin('_cwa_layouts', '_cwa_layouts_iri')]
+  mixins: [GridPageMixin('_cwa_layouts', '_cwa_layouts_iri')],
+  head() {
+    return {
+      title: 'Layouts'
+    }
+  }
 }
 </script>
 

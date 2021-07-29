@@ -74,6 +74,11 @@ const postEndpoint = '/users'
 export default Vue.extend({
   components: { CwaAdminSelect, CwaAdminText },
   mixins: [IriPageMixin(postEndpoint)],
+  head() {
+    return {
+      title: `User Details - ${this.component.username}`
+    }
+  },
   computed: {
     highestRole: {
       get() {
