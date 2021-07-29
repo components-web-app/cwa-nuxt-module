@@ -22,8 +22,11 @@
     "baseUrl": ".",
     // "declarationDir": "temp/types",
     "paths": {
-      "@cwa/nuxt-module*": [
+      "@cwa/nuxt-module/*": [
         "../src/*"
+      ],
+      "~/*": [
+        "../demo/*"
       ]
     }
   },

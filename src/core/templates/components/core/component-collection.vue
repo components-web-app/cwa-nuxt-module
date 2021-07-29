@@ -295,6 +295,8 @@ export default Vue.extend({
     },
     handleNewComponentEvent(event: NewComponentEvent) {
       if (event.collection !== this.resource['@id']) {
+        // if we had been adding one here, it was added and another is being added elsewhere we clear it...
+        this.newComponentEvent = null
         return
       }
 
