@@ -77,7 +77,7 @@ export default {
   transition: opacity .2s
   z-index: 3
 
-.cwa-add-button
+a.cwa-add-button
   position: relative
   padding: 1.4rem
   font-size: 0

@@ -4,7 +4,9 @@
     <div class="modal-content">
       <div class="modal-card">
         <div class="close-bar">
-          <button class="modal-close" aria-label="close" @click="close" />
+          <button class="modal-close" aria-label="close" @click="close">
+            <close-icon class="close-icon" />
+          </button>
         </div>
         <div class="modal-card-inner">
           <slot />
@@ -15,7 +17,9 @@
 </template>
 
 <script>
+import CloseIcon from '../../../assets/images/icon-add.svg?inline'
 export default {
+  components: { CloseIcon },
   methods: {
     close() {
       this.$emit('close')
@@ -85,13 +89,12 @@ $modal-breakpoint: $tablet
         padding: 0
         margin: 0
         overflow: hidden
-        &::before
-          content: ""
+        color: $white
+        .close-icon
           position: absolute
           width: 100%
           height: 100%
-          background: url("../../../assets/images/icon-add.svg") 50% 50% no-repeat
-          transform: rotate(45deg) scale(1.6)
+          transform: rotate(45deg) scale(.6)
           transform-origin: 50% 50%
       .modal-card-inner
         width: 100%
