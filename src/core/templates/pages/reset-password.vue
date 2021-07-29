@@ -26,7 +26,7 @@ export default {
   cwa: false,
   components: { CwaAdminAccessLayout },
   layout: 'cwa-empty',
-  header() {
+  head() {
     return {
       title: 'Reset Password'
     }

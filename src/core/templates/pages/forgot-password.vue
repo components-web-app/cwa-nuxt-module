@@ -51,6 +51,11 @@ export default {
       success: false
     }
   },
+  head() {
+    return {
+      title: 'Forgot Password'
+    }
+  },
   computed: {
     pageTitle() {
       return this.success ? 'Check your emails' : 'Password Recovery'
@@ -84,11 +89,6 @@ export default {
       } finally {
         this.submitting = false
       }
-    }
-  },
-  header() {
-    return {
-      title: 'Forgot Password'
     }
   }
 }

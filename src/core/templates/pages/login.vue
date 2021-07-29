@@ -71,6 +71,11 @@ export default {
       authScheme: 'cookie'
     }
   },
+  head() {
+    return {
+      title: 'Login'
+    }
+  },
   methods: {
     async userLogin() {
       this.submitting = true
@@ -87,11 +92,6 @@ export default {
           this.error = e + ''
         })
       this.submitting = false
-    }
-  },
-  header() {
-    return {
-      title: 'Login'
     }
   }
 }
