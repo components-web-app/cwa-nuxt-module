@@ -69,12 +69,15 @@ export default {
       if (this.$cwa.user && this.resource.component) {
         await this.$cwa.fetcher.fetchComponent(this.resource.component)
       }
-      if (!this.component) {
-        if (!this.resource.pageDataProperty && this.$cwa.isAdmin) {
-          await this.$cwa.fetcher.fetchComponent(this.resource['@id'])
+
+      this.$nextTick(async () => {
+        if (!this.component) {
+          if (!this.resource.pageDataProperty && this.$cwa.isAdmin) {
+            await this.$cwa.fetcher.fetchComponent(this.resource['@id'])
+          }
+          this.componentLoadFailed = true
         }
-        this.componentLoadFailed = true
-      }
+      })
     }
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
   },

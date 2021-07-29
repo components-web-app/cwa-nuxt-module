@@ -30,6 +30,7 @@ export class Fetcher {
   private timer: DebugTimer
   private initMercureTimeout?: any = null
   private mercureMessages: Array<MercureMessage> = []
+  private unavailableComponents: string[] = []
 
   constructor({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
     this.ctx = {
@@ -243,11 +244,22 @@ export class Fetcher {
   public async fetchComponent(path) {
     this.timer.reset()
     try {
-      return await this.fetchItem({ path, category: StoreCategories.Component })
+      return await this.fetchItem({
+        path,
+        category: StoreCategories.Component
+      })
+      // const unavailableIndex = this.unavailableComponents.indexOf(path)
+      // if (unavailableIndex !== -1) {
+      //   this.unavailableComponents.splice(unavailableIndex, 1)
+      // }
+      // return component
     } catch (error) {
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
       // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ... on server-side load
       if (error?.statusCode === 404) {
+        // if (!this.unavailableComponents.includes(path)) {
+        //   this.unavailableComponents.push(path)
+        // }
         return
       }
       throw error
@@ -395,8 +407,9 @@ export class Fetcher {
         consola.debug(
           'Invoking Mercure message handler. No request in progress.'
         )
-        this.processMessageQueue()
-        resolve()
+        this.processMessageQueue().then(() => {
+          resolve()
+        })
         return
       }
       consola.debug(
@@ -404,10 +417,10 @@ export class Fetcher {
       )
       const unwatchFn = this.ctx.storage.watchState(
         'mercurePendingProcesses',
-        (newValue) => {
+        async (newValue) => {
           if (newValue === 0) {
             consola.debug('Request complete. Invoking Mercure message handler')
-            this.processMessageQueue()
+            await this.processMessageQueue()
             unwatchFn()
             resolve()
             return
@@ -420,7 +433,7 @@ export class Fetcher {
     })
   }
 
-  private processMessageQueue() {
+  private async processMessageQueue() {
     const messages = this.mercureMessages
     consola.debug(`Processing Mercure message queue: ${messages.length}`)
     this.mercureMessages = []
@@ -434,7 +447,8 @@ export class Fetcher {
       this.lastEventId = message.event.lastEventId
 
       // we listen to all of these in case we are adding to an existing component collection
-      const force = this.forceComponentPositionPersist(data)
+      // const unavailableIndex = this.unavailableComponents.indexOf(data['@id'])
+      const force = await this.forceComponentPositionPersist(data)
 
       // force option will add the resource into new even if there is not an existing resource
       // with the same ID to merge it into
@@ -443,10 +457,14 @@ export class Fetcher {
         resource: data,
         force
       })
+
+      // if (unavailableIndex !== -1) {
+      //   this.unavailableComponents.splice(unavailableIndex, 1)
+      // }
     }
   }
 
-  private forceComponentPositionPersist(data) {
+  private async forceComponentPositionPersist(data) {
     if (data['@type'] !== 'ComponentPosition') {
       return false
     }
@@ -477,6 +495,14 @@ export class Fetcher {
       return false
     }
 
+    // we should check the component in this position
+    if (data.component) {
+      // try to fetch it from the API
+      if (!(await this.fetchComponent(data.component))) {
+        this.initMercure(this.currentResources)
+      }
+    }
+
     // Update the ComponentCollection resource to include new position
     // Mercure will not publish this, the resource is not updated in the database
     this.ctx.storage.setResource({
@@ -489,6 +515,7 @@ export class Fetcher {
       },
       isNew: true
     })
+
     return true
   }
 
@@ -499,6 +526,9 @@ export class Fetcher {
       'topic',
       `${this.ctx.apiUrl}/_/component_positions/{id}`
     )
+    // this.unavailableComponents.forEach((iri) => {
+    //   hub.searchParams.append('topic', this.ctx.apiUrl + iri)
+    // })
     for (const resourcesObject of currentResources) {
       if (resourcesObject.currentIds === undefined) {
         continue
