@@ -1,6 +1,7 @@
 import * as bluebird from 'bluebird'
 import consola from 'consola'
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
+import { Dictionary } from 'vue-router/types/router'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiError from '../inc/api-error'
@@ -20,6 +21,7 @@ export class Fetcher {
     error: any
     apiUrl: string
     storage: Storage
+    query: Dictionary<string | (string | null)[]>
   }
 
   private options: {
@@ -27,17 +29,19 @@ export class Fetcher {
   }
 
   public static readonly loadingRouteKey = 'loadingRoute'
+  public static readonly loadedRouteKey = 'loadedRoute'
   private timer: DebugTimer
   private initMercureTimeout?: any = null
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []
 
-  constructor({ $axios, error, apiUrl, storage }, { fetchConcurrency }) {
+  constructor({ $axios, error, apiUrl, storage, query }, { fetchConcurrency }) {
     this.ctx = {
       $axios,
       error,
       apiUrl,
-      storage
+      storage,
+      query
     }
     this.options = {
       fetchConcurrency
@@ -54,12 +58,20 @@ export class Fetcher {
   }
 
   private async fetcher({
-    path: url,
+    path,
     preload
   }: {
     path: string
     preload?: string[]
   }) {
+    let url = path
+    const queryObj = this.ctx.query
+    if (queryObj) {
+      const queryString = Object.keys(queryObj)
+        .map((key) => key + '=' + queryObj[key])
+        .join('&')
+      url += `?${queryString}`
+    }
     consola.trace(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
 
@@ -155,6 +167,11 @@ export class Fetcher {
   }
 
   public async fetchPage(pageIri) {
+    // prevent reload on querystring change
+    const currentlyLoaded = this.ctx.storage.getState(Fetcher.loadedRouteKey)
+    if (currentlyLoaded === pageIri) {
+      return
+    }
     this.timer.reset()
     this.timer.start(`Fetch page ${pageIri}`)
     this.ctx.storage.resetCurrentResources()
@@ -176,6 +193,7 @@ export class Fetcher {
         ...pageResponse.componentCollections,
         ...layoutResponse.componentCollections
       ])
+      this.ctx.storage.setState(Fetcher.loadedRouteKey, pageIri)
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
     } catch (error) {
       // Display error page
@@ -188,6 +206,11 @@ export class Fetcher {
   }
 
   public async fetchRoute(path) {
+    // prevent reload on querystring change
+    const currentlyLoaded = this.ctx.storage.getState(Fetcher.loadedRouteKey)
+    if (currentlyLoaded === path) {
+      return
+    }
     this.timer.reset()
     this.timer.start(`Fetch route ${path}`)
     this.ctx.storage.resetCurrentResources()
@@ -216,6 +239,7 @@ export class Fetcher {
         ...layoutResponse.componentCollections
       ])
       this.ctx.storage.setCurrentRoute(routeResponse['@id'])
+      this.ctx.storage.setState(Fetcher.loadedRouteKey, path)
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
     } catch (error) {
       // Display error page

@@ -36,6 +36,11 @@ export interface ComponentManagerComponent {
 
 export const ComponentManagerMixin = Vue.extend({
   mixins: [AddElementsMixin, ComponentManagerValueMixin],
+  data() {
+    return {
+      componentManagerDisabled: false
+    }
+  },
   computed: {
     componentManager(): ComponentManagerComponent {
       return {
@@ -61,6 +66,9 @@ export const ComponentManagerMixin = Vue.extend({
     }
   },
   beforeMount() {
+    if (this.componentManagerDisabled) {
+      return
+    }
     this.$cwa.$eventBus.$on(
       EVENTS.highlightComponent,
       this.managerHighlightComponentListener
@@ -72,6 +80,9 @@ export const ComponentManagerMixin = Vue.extend({
     this.$cwa.$eventBus.$emit(EVENTS.componentMounted, this.computedIri)
   },
   mounted() {
+    if (this.componentManagerDisabled) {
+      return
+    }
     this.$el.addEventListener(
       'click',
       this.initComponentManagerShowListener,

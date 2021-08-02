@@ -8,13 +8,15 @@ describe('Cwa', () => {
       commit: jest.fn()
     }
     const $axios = { get: jest.fn() }
+    const $route = { query: {} }
 
     const cwa = new Cwa(
       {
         store,
         error: jest.fn(),
         $axios,
-        $config: { API_URL: 'localhost' }
+        $config: { API_URL: 'localhost' },
+        $route
       },
       { vuex: { namespace: 'cwa' }, fetchConcurrency: 1 }
     )

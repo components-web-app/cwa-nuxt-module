@@ -86,7 +86,7 @@ export default Vue.extend({
       return tabs
     },
     metadata() {
-      return this.resource._metadata || {}
+      return this.resource?._metadata || {}
     },
     publishable() {
       return 'published' in this.metadata

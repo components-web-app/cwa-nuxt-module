@@ -185,7 +185,6 @@ async function loadComponents() {
     components: []
   }
   const types = Object.keys(componentImports)
-
   for (const componentType of types) {
     this.options.components.push({
       path: `~/components/cwa/${componentType}`,
