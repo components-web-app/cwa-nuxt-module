@@ -5,6 +5,7 @@
       <div class="column is-narrow">order</div>
     </div>
     <div class="collection-items">
+      <div v-if="fetching" class="loading-overlay">&nbsp;</div>
       <div class="row row-wrap">
         <blog-article-collection-item
           v-for="item of items"
@@ -38,5 +39,14 @@ export default Vue.extend({
 <style lang="sass">
 .components-collection
   .collection-items
+    position: relative
     margin-top: 1.5rem
+    .loading-overlay
+      position: absolute
+      background: rgba($white, .4)
+      top: 0
+      left: 0
+      width: 100%
+      height: 100%
+      z-index: 10
 </style>

@@ -1,10 +1,10 @@
 <template>
-  <div class="blog-collection-item">
+  <div v-if="resource" class="blog-collection-item">
     <div class="box">
       <h4>{{ resource.title }}</h4>
-      <nuxt-link v-if="route" :to="route.path" class="button"
-        >View Article</nuxt-link
-      >
+      <nuxt-link :to="route ? route.path : '#'" class="button">{{
+        route ? 'View Article' : '...'
+      }}</nuxt-link>
       <p class="created-date">
         {{ formatDate(parseDateString(resource.createdAt)) }}
       </p>

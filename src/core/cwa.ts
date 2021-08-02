@@ -55,7 +55,7 @@ export default class Cwa {
         error: this.ctx.error,
         apiUrl: this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL,
         storage,
-        query: this.ctx.query
+        router: this.ctx.app.router
       },
       {
         fetchConcurrency: this.options.fetchConcurrency
@@ -285,7 +285,7 @@ export default class Cwa {
   async refreshResource(endpoint: string, category?: string) {
     return await this.initNewRequest(
       async () => {
-        const resource = await this.ctx.$axios.$get(endpoint)
+        const resource = await this.fetcher.fetchItem({ path: endpoint })
         this.saveResource(resource)
         return resource
       },

@@ -1,7 +1,7 @@
 import * as bluebird from 'bluebird'
 import consola from 'consola'
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
-import { Dictionary } from 'vue-router/types/router'
+import VueRouter from 'vue-router'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiError from '../inc/api-error'
@@ -21,7 +21,7 @@ export class Fetcher {
     error: any
     apiUrl: string
     storage: Storage
-    query: Dictionary<string | (string | null)[]>
+    router: VueRouter
   }
 
   private options: {
@@ -35,13 +35,16 @@ export class Fetcher {
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []
 
-  constructor({ $axios, error, apiUrl, storage, query }, { fetchConcurrency }) {
+  constructor(
+    { $axios, error, apiUrl, storage, router },
+    { fetchConcurrency }
+  ) {
     this.ctx = {
       $axios,
       error,
       apiUrl,
       storage,
-      query
+      router
     }
     this.options = {
       fetchConcurrency
@@ -65,7 +68,7 @@ export class Fetcher {
     preload?: string[]
   }) {
     let url = path
-    const queryObj = this.ctx.query
+    const queryObj = this.ctx.router.currentRoute.query
     if (queryObj) {
       const queryString = Object.keys(queryObj)
         .map((key) => key + '=' + queryObj[key])
