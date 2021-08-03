@@ -1,10 +1,9 @@
 <template>
   <div @click.stop>
     <select v-model="selectedOption" @change="updateSelectedOption">
-      <option>Please select...</option>
       <option
         v-for="op of options"
-        :key="`select-option-${op.value}`"
+        :key="`select-option-${op.value}-${op.queryKey}`"
         :value="op"
       >
         {{ op.label || op.value }}
@@ -29,11 +28,26 @@ export default Vue.extend({
     options: {
       type: Array as PropType<SelectOption[]>,
       required: true
+    },
+    defaultSelectedOptionIndex: {
+      type: Number,
+      default: 0
     }
   },
   data() {
+    let selectedOptionIndex = null
+    for (const [index, option] of this.options.entries()) {
+      const optionQueryKey = this.getQueryFieldsFromOption(option)
+      if (this.$route.query[optionQueryKey[0]] === `${option.value}`) {
+        selectedOptionIndex = index
+        break
+      }
+    }
+    if (selectedOptionIndex === null) {
+      selectedOptionIndex = this.defaultSelectedOptionIndex
+    }
     return {
-      selectedOption: null
+      selectedOption: this.options[selectedOptionIndex]
     }
   },
   methods: {

@@ -34,6 +34,7 @@
       <div class="column is-narrow">
         <collection-select-input
           :query-fields="['perPage']"
+          :default-selected-option-index="1"
           :options="[
             {
               value: 4
