@@ -2,10 +2,11 @@ import * as bluebird from 'bluebird'
 import consola from 'consola'
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import VueRouter from 'vue-router'
+import { CancelTokenSource } from 'axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiError from '../inc/api-error'
-import Storage, { resourcesState, StoreCategories } from './storage'
+import Storage, { resourcesState } from './storage'
 
 declare interface MercureMessage {
   event: MessageEvent
@@ -62,10 +63,12 @@ export class Fetcher {
 
   private async fetcher({
     path,
-    preload
+    preload,
+    cancelTokenSource
   }: {
     path: string
     preload?: string[]
+    cancelTokenSource?: CancelTokenSource
   }) {
     let url = path
     const queryObj = this.ctx.router.currentRoute.query
@@ -92,14 +95,15 @@ export class Fetcher {
 
     try {
       const { headers, data } = await this.ctx.$axios.get(url, {
-        headers: requestHeaders
+        headers: requestHeaders,
+        cancelToken: cancelTokenSource ? cancelTokenSource.token : null
       })
       this.setDocsUrlFromHeaders(headers)
       this.setMercureHubFromHeaders(headers)
       return data
     } catch (error) {
+      const isCancel = this.ctx.$axios.isCancel(error)
       const sanitisedError = AxiosErrorParser(error)
-
       // for publishable components - when getting a collection the position and component id will exist.
       // SSR is not authorized to view so it will return a 404. We know it exists as an ID is there
       // By not throwing an error we can re-fetch client-side
@@ -108,7 +112,9 @@ export class Fetcher {
       throw new ApiError(
         sanitisedError.message,
         sanitisedError.statusCode,
-        sanitisedError.endpoint
+        sanitisedError.endpoint,
+        null,
+        isCancel
       )
     } finally {
       this.timer.end(`Fetching ${url}`)
@@ -118,13 +124,14 @@ export class Fetcher {
 
   public async fetchItem({
     path,
-    preload
+    preload,
+    cancelTokenSource
   }: {
     path: string
     preload?: string[]
-    category?: string
+    cancelTokenSource?: CancelTokenSource
   }) {
-    const resource = await this.fetcher({ path, preload })
+    const resource = await this.fetcher({ path, preload, cancelTokenSource })
     if (!resource) {
       return resource
     }
@@ -272,8 +279,7 @@ export class Fetcher {
     this.timer.reset()
     try {
       return await this.fetchItem({
-        path,
-        category: StoreCategories.Component
+        path
       })
       // const unavailableIndex = this.unavailableComponents.indexOf(path)
       // if (unavailableIndex !== -1) {
@@ -297,8 +303,7 @@ export class Fetcher {
     let page = routeResponse.page
     if (routeResponse.pageData) {
       const pageDataResponse = await this.fetchItem({
-        path: routeResponse.pageData,
-        category: StoreCategories.PageData
+        path: routeResponse.pageData
       })
       if (!pageDataResponse) {
         return null

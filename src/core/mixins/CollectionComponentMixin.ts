@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import ApiError from '../../inc/api-error'
 import ComponentMixin from './ComponentMixin'
 
 export default Vue.extend({
@@ -7,7 +8,8 @@ export default Vue.extend({
     return {
       fetching: false,
       loadedSubResources: false,
-      collectionSubResourceKeys: []
+      collectionSubResourceKeys: [],
+      refreshCancelTokenSource: null
     }
   },
   computed: {
@@ -28,13 +30,31 @@ export default Vue.extend({
   },
   methods: {
     async refreshCollection() {
+      if (this.refreshCancelTokenSource) {
+        this.refreshCancelTokenSource.cancel()
+      }
+      this.refreshCancelTokenSource = this.$axios.CancelToken.source()
+
       this.fetching = true
       this.loadedSubResources = false
-      await this.$cwa.refreshResource(this.iri)
-      this.$nextTick(async () => {
-        await this.loadSubResources()
-      })
-      this.fetching = false
+
+      try {
+        // this will submit with updated query parameters
+        await this.$cwa.refreshResource(
+          this.iri,
+          null,
+          this.refreshCancelTokenSource
+        )
+        this.fetching = false
+        this.$nextTick(async () => {
+          await this.loadSubResources()
+        })
+      } catch (error) {
+        if (error instanceof ApiError && error.isCancel) {
+          return
+        }
+        throw error
+      }
     },
     async loadSubResources() {
       this.loadedSubResources = false

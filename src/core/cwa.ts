@@ -167,6 +167,9 @@ export default class Cwa {
    * API Requests
    */
   private handleRequestError(error) {
+    if (error instanceof ApiError) {
+      throw error
+    }
     const axiosError = AxiosErrorParser(error)
     const exception = new ApiError(
       axiosError.message,
@@ -282,10 +285,17 @@ export default class Cwa {
     return await Promise.all(promises)
   }
 
-  async refreshResource(endpoint: string, category?: string) {
+  async refreshResource(
+    endpoint: string,
+    category?: string,
+    cancelTokenSource?: CancelTokenSource
+  ) {
     return await this.initNewRequest(
       async () => {
-        const resource = await this.fetcher.fetchItem({ path: endpoint })
+        const resource = await this.fetcher.fetchItem({
+          path: endpoint,
+          cancelTokenSource
+        })
         this.saveResource(resource)
         return resource
       },
