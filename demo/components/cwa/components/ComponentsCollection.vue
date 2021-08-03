@@ -7,6 +7,7 @@
       <div class="column is-narrow">
         <collection-select-input
           :query-fields="['order']"
+          :static-query-parameters="[{ key: 'page', value: 1 }]"
           :options="[
             {
               value: 'desc',
@@ -34,6 +35,7 @@
       <div class="column is-narrow">
         <collection-select-input
           :query-fields="['perPage']"
+          :static-query-parameters="[{ key: 'page', value: 1 }]"
           :default-selected-option-index="1"
           :options="[
             {

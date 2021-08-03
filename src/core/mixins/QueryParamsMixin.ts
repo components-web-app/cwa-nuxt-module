@@ -1,6 +1,13 @@
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
 
 export default Vue.extend({
+  props: {
+    staticQueryParameters: {
+      type: Array as PropType<{ key: string; value: string }[]>,
+      required: false,
+      default: null
+    }
+  },
   data() {
     return {
       previousQueryFields: []
@@ -11,7 +18,7 @@ export default Vue.extend({
       if (!Array.isArray(newKeys)) {
         newKeys = [newKeys]
       }
-      const params = []
+      let params = []
       const addParam = (key, value) => {
         if (Array.isArray(value)) {
           value.forEach((item) => {
@@ -42,6 +49,9 @@ export default Vue.extend({
 
       this.previousQueryFields = newKeys
 
+      if (this.staticQueryParameters) {
+        params = [...this.staticQueryParameters, ...params]
+      }
       const queryString = params
         .map(({ key, value }) => {
           return `${key}=${encodeURIComponent(value)}`

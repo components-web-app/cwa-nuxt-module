@@ -1,5 +1,5 @@
 <template>
-  <div @click.stop>
+  <div class="collection-select-input" @click.stop>
     <select v-model="selectedOption" @change="updateSelectedOption">
       <option
         v-for="op of options"
@@ -35,6 +35,11 @@ export default Vue.extend({
     }
   },
   data() {
+    return {
+      selectedOption: null
+    }
+  },
+  created() {
     let selectedOptionIndex = null
     for (const [index, option] of this.options.entries()) {
       const optionQueryKey = this.getQueryFieldsFromOption(option)
@@ -46,9 +51,7 @@ export default Vue.extend({
     if (selectedOptionIndex === null) {
       selectedOptionIndex = this.defaultSelectedOptionIndex
     }
-    return {
-      selectedOption: this.options[selectedOptionIndex]
-    }
+    this.selectedOption = this.options[selectedOptionIndex]
   },
   methods: {
     updateSelectedOption() {
@@ -64,3 +67,10 @@ export default Vue.extend({
   }
 })
 </script>
+
+<style lang="sass">
+.collection-select-input
+  width: auto
+  select
+    width: auto
+</style>

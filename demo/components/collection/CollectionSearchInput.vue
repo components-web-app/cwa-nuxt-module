@@ -1,5 +1,5 @@
 <template>
-  <div @click.stop>
+  <div class="collection-search-input" @click.stop>
     <input
       v-model="inputValue"
       type="text"
