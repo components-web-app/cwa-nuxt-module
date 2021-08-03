@@ -1,11 +1,12 @@
 <template>
   <div @click.stop>
     <input
-      v-model="searchValue"
+      v-model="inputValue"
       type="text"
+      placeholder="Search..."
       @input="
         () => {
-          updateSearch()
+          updateQuery()
         }
       "
     />
@@ -14,9 +15,14 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import QuerySearchMixin from '@cwa/nuxt-module/core/mixins/QuerySearchMixin'
+import QueryInputMixin from '@cwa/nuxt-module/core/mixins/QueryInputMixin'
 
 export default Vue.extend({
-  mixins: [QuerySearchMixin]
+  mixins: [QueryInputMixin],
+  data() {
+    return {
+      defaultDelay: 250
+    }
+  }
 })
 </script>

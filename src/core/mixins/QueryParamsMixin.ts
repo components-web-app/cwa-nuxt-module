@@ -1,6 +1,11 @@
 import Vue from 'vue'
 
 export default Vue.extend({
+  data() {
+    return {
+      previousQueryFields: []
+    }
+  },
   methods: {
     updateQueryParams(newKeys: any, newValue: any) {
       if (!Array.isArray(newKeys)) {
@@ -23,7 +28,7 @@ export default Vue.extend({
       // let existingValue = null
       const existingParams = Object.entries(this.$route.query)
       for (const [key, value] of existingParams) {
-        if (newKeys.includes(key)) {
+        if (newKeys.includes(key) || this.previousQueryFields.includes(key)) {
           // existingValue = value
           continue
         }
@@ -34,6 +39,8 @@ export default Vue.extend({
           addParam(newKey, newValue)
         }
       }
+
+      this.previousQueryFields = newKeys
 
       const queryString = params
         .map(({ key, value }) => {
