@@ -1,8 +1,11 @@
 <template>
   <div class="components-collection">
     <div class="row filters">
-      <div class="column">Search</div>
+      <div class="column">
+        <collection-search-input :search-fields="['title']" />
+      </div>
       <div class="column is-narrow">order</div>
+      <div class="column is-narrow">perpage</div>
     </div>
     <div class="collection-items">
       <div v-if="fetching" class="loading-overlay">&nbsp;</div>
@@ -22,11 +25,16 @@
 <script lang="ts">
 import Vue from 'vue'
 import CollectionComponentMixin from '@cwa/nuxt-module/core/mixins/CollectionComponentMixin'
-import BlogArticleCollectionItem from '~/components/BlogArticleCollectionItem.vue'
-import CollectionPagination from '~/components/CollectionPagination.vue'
+import BlogArticleCollectionItem from '~/components/collection/BlogArticleCollectionItem.vue'
+import CollectionPagination from '~/components/collection/CollectionPagination.vue'
+import CollectionSearchInput from '~/components/collection/CollectionSearchInput.vue'
 
 export default Vue.extend({
-  components: { CollectionPagination, BlogArticleCollectionItem },
+  components: {
+    CollectionSearchInput,
+    CollectionPagination,
+    BlogArticleCollectionItem
+  },
   mixins: [CollectionComponentMixin],
   data() {
     return {

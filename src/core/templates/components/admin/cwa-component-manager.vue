@@ -363,6 +363,9 @@ export default Vue.extend({
       this.selectPosition(this.components[0]?.componentPositions?.[0] || null)
     },
     saveStateListener(event: SaveStateEvent) {
+      if (!this.showingCriteria) {
+        return
+      }
       if (!this.persistentStates[event.iri]) {
         this.$set(this.persistentStates, event.iri, {})
       }

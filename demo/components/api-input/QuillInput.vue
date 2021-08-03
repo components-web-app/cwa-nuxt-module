@@ -6,10 +6,10 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import InputMixin from '@cwa/nuxt-module/core/mixins/InputMixin'
+import ApiInputMixin from '@cwa/nuxt-module/core/mixins/ApiInputMixin'
 
 export default Vue.extend({
-  mixins: [InputMixin],
+  mixins: [ApiInputMixin],
   data() {
     return {
       editor: null,

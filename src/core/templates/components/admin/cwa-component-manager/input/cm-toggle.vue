@@ -7,7 +7,7 @@
   />
 </template>
 <script>
-import InputMixin from '../../../../../mixins/InputMixin'
+import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaInputMixin from '../../input/CwaInputMixin'
 import CwaAdminToggle from '../../input/cwa-admin-toggle.vue'
 

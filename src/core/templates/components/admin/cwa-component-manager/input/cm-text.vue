@@ -8,7 +8,7 @@
   />
 </template>
 <script>
-import InputMixin from '../../../../../mixins/InputMixin'
+import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaTextMixin from '../../input/CwaTextMixin'
 import CwaAdminText from '../../input/cwa-admin-text.vue'
 

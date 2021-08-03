@@ -3,7 +3,7 @@
 </template>
 <script>
 import CwaAdminDatepicker from '../../input/cwa-admin-datepicker'
-import InputMixin from '../../../../../mixins/InputMixin'
+import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaTextMixin from '../../input/CwaTextMixin'
 
 export default {

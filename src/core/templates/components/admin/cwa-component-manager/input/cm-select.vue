@@ -8,7 +8,7 @@
   />
 </template>
 <script>
-import InputMixin from '../../../../../mixins/InputMixin'
+import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaSelectMixin from '../../input/CwaSelectMixin'
 import CwaAdminSelect from '../../input/cwa-admin-select.vue'
 

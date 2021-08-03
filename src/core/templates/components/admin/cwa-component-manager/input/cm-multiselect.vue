@@ -9,7 +9,7 @@
 </template>
 <script>
 import CwaAdminMultiselect from '../../input/cwa-admin-multiselect.vue'
-import InputMixin from '../../../../../mixins/InputMixin'
+import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaSelectMixin from '../../input/CwaSelectMixin'
 
 export default {
