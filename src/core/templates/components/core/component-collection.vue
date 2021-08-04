@@ -39,6 +39,7 @@
         :is="newComponentName"
         v-if="newComponentResource"
         :iri="newComponentIri"
+        @initial-data="handleInitialData"
       />
     </draggable>
   </div>
@@ -196,7 +197,7 @@ export default Vue.extend({
     }
   },
   watch: {
-    newComponentEvent(event) {
+    newComponentEvent(event: NewComponentEvent) {
       if (!event) {
         // should we remove the data or keep it in case we want to continue adding??
         // if we keep then the below 'setResource' call will need to be enhanced so as to not override
@@ -205,17 +206,21 @@ export default Vue.extend({
       const resource = {
         '@id': this.newComponentIri,
         '@type': event.name,
-        _metadata: {}
+        _metadata: {
+          _isNew: true,
+          published: false
+        }
       } as {
         '@id': string
         '@type': string
         _metadata?: {
+          _isNew: boolean
           published: boolean
         }
       }
-      if (event.isPublishable) {
-        resource._metadata.published = false
-      }
+      // if (event.isPublishable) {
+      //   resource._metadata.published = false
+      // }
       this.$cwa.$storage.setResource({
         resource
       })
@@ -261,6 +266,12 @@ export default Vue.extend({
     )
   },
   methods: {
+    handleInitialData(dataObject: Object) {
+      const resource = Object.assign({}, this.newComponentResource, dataObject)
+      this.$cwa.$storage.setResource({
+        resource
+      })
+    },
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
       this.showOrderValues = !!event.newTab?.context?.showOrderValues

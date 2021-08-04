@@ -24,7 +24,7 @@
         <div ref="tabContent" class="tab-content">
           <component
             :is="selectedTab.component"
-            v-if="selectedTab"
+            v-if="selectedTab && $cwa.getResource(iri)"
             :key="loopKey('tab-content', selectedTabIndex)"
             :iri="iri"
             :context="fullContext"

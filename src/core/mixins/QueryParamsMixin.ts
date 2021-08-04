@@ -34,8 +34,15 @@ export default Vue.extend({
 
       // let existingValue = null
       const existingParams = Object.entries(this.$route.query)
+      const staticKeys = this.staticQueryParameters
+        ? this.staticQueryParameters.map(({ key }) => key)
+        : []
       for (const [key, value] of existingParams) {
-        if (newKeys.includes(key) || this.previousQueryFields.includes(key)) {
+        if (
+          newKeys.includes(key) ||
+          this.previousQueryFields.includes(key) ||
+          staticKeys.includes(key)
+        ) {
           // existingValue = value
           continue
         }
