@@ -14,7 +14,7 @@ declare interface MercureMessage {
 }
 
 export class Fetcher {
-  // Holds the EventSource connection with mercure
+  // Holds the EventSource connection with Mercure
   private eventSource?: EventSource
   private lastEventId?: string
   private ctx: {
@@ -141,12 +141,14 @@ export class Fetcher {
     // will return what we are authorized to see
     const iri = resource['@id']
     const category = this.ctx.storage.getCategoryFromIri(iri)
+
     this.ctx.storage.setResource({ resource, category })
 
     const currentResource = this.currentResources?.[category]?.byId?.[iri]
     if (!currentResource) {
       this.initMercure(this.currentResources)
     }
+
     return resource
   }
 

@@ -326,7 +326,7 @@ export class Storage {
     category,
     force
   }: {
-    resource: object
+    resource: any
     isNew?: boolean
     category?: string
     force?: boolean
@@ -342,6 +342,12 @@ export class Storage {
       category,
       force
     })
+
+    if (resource?._metadata?.collection === true) {
+      for (const item of resource?.collection['hydra:member']) {
+        this.setResource({ isNew, resource: item, force })
+      }
+    }
   }
 
   setCurrentRoute(id) {

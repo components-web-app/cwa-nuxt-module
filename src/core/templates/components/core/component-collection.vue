@@ -207,20 +207,19 @@ export default Vue.extend({
         '@id': this.newComponentIri,
         '@type': event.name,
         _metadata: {
-          _isNew: true,
-          published: false
+          _isNew: true
         }
       } as {
         '@id': string
         '@type': string
         _metadata?: {
           _isNew: boolean
-          published: boolean
+          published?: boolean
         }
       }
-      // if (event.isPublishable) {
-      //   resource._metadata.published = false
-      // }
+      if (event.isPublishable) {
+        resource._metadata.published = false
+      }
       this.$cwa.$storage.setResource({
         resource
       })

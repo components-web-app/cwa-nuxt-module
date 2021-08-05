@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import consola from 'consola'
 import ApiError from '../../inc/api-error'
 import ComponentMixin from './ComponentMixin'
 
@@ -60,10 +61,10 @@ export default Vue.extend({
       this.loadedSubResources = false
       const subResourceIris = []
       for (const item of this.items) {
-        let resource = this.$cwa.getResource(item['@id'])
+        const resource = this.$cwa.getResource(item['@id'])
         if (!resource) {
-          this.$cwa.saveResource(item)
-          resource = item
+          consola.error('Did not find saved collection item...' + item['@id'])
+          continue
         }
         for (const subResourceIri of this.collectionSubResourceKeys) {
           resource?.[subResourceIri] &&
