@@ -36,6 +36,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import moment from 'moment'
+import consola from 'consola'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
@@ -100,6 +101,8 @@ export default Vue.extend({
         if (!(error instanceof UpdateResourceError)) {
           throw error
         }
+        consola.error(error)
+        this.$emit('close')
       }
     }
   }
