@@ -32,6 +32,8 @@ jobs:
         run: yarn test
         env:
           CI: true
+      - name: Audit
+        run: yarn run audit
 
   e2e:
     runs-on: ubuntu-latest
