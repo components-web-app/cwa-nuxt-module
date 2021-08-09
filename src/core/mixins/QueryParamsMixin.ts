@@ -1,4 +1,5 @@
-import Vue, { PropType } from 'vue'
+import Vue from 'vue'
+import type { PropType } from 'vue'
 
 export default Vue.extend({
   props: {

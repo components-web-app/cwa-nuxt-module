@@ -1,4 +1,5 @@
-import Vue, { PropType } from 'vue'
+import Vue from 'vue'
+import type { PropType } from 'vue'
 import { NotificationEvent } from '../templates/components/cwa-api-notifications/types'
 import IriMixin from './IriMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
