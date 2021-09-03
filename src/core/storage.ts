@@ -357,6 +357,11 @@ export class Storage {
     )
   }
 
+  getCurrentRoute() {
+    const routeResources = this.state.resources.current.Route
+    return routeResources.byId?.[routeResources.current] || null
+  }
+
   get mercurePendingProcesses() {
     return this.getState('mercurePendingProcesses')
   }

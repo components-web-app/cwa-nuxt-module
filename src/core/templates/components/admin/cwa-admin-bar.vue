@@ -9,6 +9,14 @@
         <div v-show="isShowing" ref="cwaAdminBar" class="cwa-admin-bar">
           <div class="inner">
             <div class="left">
+              <div class="icons">
+                <a href="#" @click.prevent="showPageEditModal">
+                  <img
+                    src="../../../assets/images/icon-info.svg"
+                    alt="Builder Icon"
+                  />
+                </a>
+              </div>
               <div v-if="currentView === 'page'" class="controls">
                 <cwa-admin-toggle
                   id="edit-mode"
@@ -57,23 +65,30 @@
           </div>
         </div>
       </transition-expand>
+      <cwa-admin-bar-page-info-modal
+        v-if="pageInfoShowing"
+        @close="pageInfoShowing = false"
+      />
     </div>
   </client-only>
 </template>
 
-<script>
+<script lang="ts">
+import Vue from 'vue'
 import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
 import {
   COMPONENT_MANAGER_EVENTS,
   ADMIN_BAR_EVENTS
 } from '@cwa/nuxt-module/core/events'
-import CwaNuxtLink from '../utils/cwa-nuxt-link'
+import CwaNuxtLink from '../utils/cwa-nuxt-link.vue'
 import TransitionExpand from '../utils/transition-expand.vue'
-import CwaAdminBarMenu from './cwa-admin-bar-menu'
-import CwaAdminToggle from './input/cwa-admin-toggle'
+import CwaAdminBarMenu from './cwa-admin-bar-menu.vue'
+import CwaAdminToggle from './input/cwa-admin-toggle.vue'
+import CwaAdminBarPageInfoModal from './cwa-admin-bar-page-info-modal.vue'
 
-export default {
+export default Vue.extend({
   components: {
+    CwaAdminBarPageInfoModal,
     CwaAdminToggle,
     CwaNuxtLink,
     CwaAdminBarMenu,
@@ -83,7 +98,8 @@ export default {
   data() {
     return {
       currentView: 'page',
-      managerShowing: false
+      managerShowing: false,
+      pageInfoShowing: false
     }
   },
   computed: {
@@ -127,9 +143,12 @@ export default {
     },
     componentManagerShowingListener(isShowing) {
       this.managerShowing = isShowing
+    },
+    showPageEditModal() {
+      this.pageInfoShowing = true
     }
   }
-}
+})
 </script>
 
 <style lang="sass">
@@ -154,6 +173,8 @@ export default {
       display: flex
     .left
       align-items: center
+      .icons > a:first-child
+        margin-left: 0
       .controls label
         font-size: .85em
     .center
@@ -171,13 +192,16 @@ export default {
         max-width: 340px
         justify-content: space-between
         align-items: center
-        > a
-          transition: opacity .25s
+    .icons
+      > a
+        transition: opacity .25s
+        opacity: .6
+        display: block
+        margin: 0 1.5rem
+        &:hover
+          opacity: .8
+        &.nuxt-link-active
+          opacity: 1
+        > img
           display: block
-          margin: 0 1.5rem
-          opacity: .6
-          &:hover
-            opacity: .8
-          &.nuxt-link-active
-            opacity: 1
 </style>

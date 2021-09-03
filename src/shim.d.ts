@@ -1,24 +1,21 @@
 import Vue from 'vue'
+import '@nuxt/types'
+import 'axios'
+import 'vuex'
 import type { AdminDialogOptions, CWA } from '.'
-
-declare module 'axios' {
-  interface AxiosRequestConfig {
-    cwa?: boolean
-  }
-}
 
 declare module '@nuxt/types' {
   interface Context {
-    $cwa: CWA
+    readonly $cwa: CWA
   }
   interface NuxtAppOptions {
-    $cwa: CWA
+    readonly $cwa: CWA
   }
 }
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $cwa: CWA
+    readonly $cwa: CWA
     adminDialog?: AdminDialogOptions
   }
 }
@@ -29,6 +26,12 @@ declare module 'vue/types/options' {
   interface ComponentOptions<V extends Vue> {
     cwa?: boolean
     pageIriParam?: string
+  }
+}
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    cwa?: boolean
   }
 }
 

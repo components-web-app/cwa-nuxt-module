@@ -438,6 +438,10 @@ export default class Cwa {
     return this.ctx.$auth.user
   }
 
+  get currentRoute() {
+    return this.$storage.getCurrentRoute()
+  }
+
   userHasRole(role) {
     return this.user ? this.user.roles.includes(role) : false
   }

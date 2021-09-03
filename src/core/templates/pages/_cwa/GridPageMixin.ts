@@ -1,12 +1,12 @@
 import Vue from 'vue'
 import CwaFooterLogo from '../../components/utils/cwa-footer-logo.vue'
 import GridPage from '../../components/admin/grid-page.vue'
-import CommonMixin from './CommonMixin'
+import CwaPageCommonMixin from './CwaPageCommonMixin'
 
 export default (pageName, modalPageName) =>
   Vue.extend({
     components: { GridPage, CwaFooterLogo },
-    mixins: [CommonMixin],
+    mixins: [CwaPageCommonMixin],
     data() {
       return {
         data: []

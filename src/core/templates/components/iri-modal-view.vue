@@ -58,33 +58,18 @@ import CwaLoader from './utils/cwa-loader.vue'
 import CwaModal from './utils/cwa-modal.vue'
 import StatusIcon from './admin/status-icon.vue'
 import ErrorNotifications from './admin/error-notifications.vue'
+import IriModalPropsMixin from './IriModalPropsMixin'
 
 export default Vue.extend({
   components: { ErrorNotifications, StatusIcon, CwaModal, CwaLoader },
-  mixins: [ApiDateParserMixin],
+  mixins: [ApiDateParserMixin, IriModalPropsMixin],
   props: {
     title: {
       type: String,
       required: true
     },
-    notificationCategories: {
-      type: Array,
-      required: true
-    },
-    isSaved: {
-      type: Boolean,
-      required: true
-    },
-    isNew: {
-      type: Boolean,
-      required: true
-    },
     component: {
       type: Object,
-      required: true
-    },
-    showLoader: {
-      type: Boolean,
       required: true
     }
   }
