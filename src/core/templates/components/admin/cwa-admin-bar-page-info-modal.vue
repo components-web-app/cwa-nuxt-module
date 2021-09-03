@@ -1,5 +1,6 @@
 <template>
   <page-modal
+    v-if="iri"
     v-model="component"
     v-bind="iriModalProps"
     :is-loading="isLoading"
@@ -10,6 +11,7 @@
     @submit="savePage"
     @delete="deleteComponent"
   />
+  <div v-else>INTERNAL ERROR: NO PAGE IRI FOUND</div>
 </template>
 
 <script lang="ts">
@@ -26,7 +28,7 @@ export default Vue.extend({
     return {
       // I don't know why this causes an error not realising $cwa is available on Vue instance...
       // @ts-ignore
-      iri: this.$cwa.currentRoute.page
+      iri: this.$cwa.currentPageIri
     }
   }
 })

@@ -357,9 +357,13 @@ export class Storage {
     )
   }
 
-  getCurrentRoute() {
-    const routeResources = this.state.resources.current.Route
-    return routeResources.byId?.[routeResources.current] || null
+  get currentRoute() {
+    const routeResources = this.state.resources.current?.Route || {}
+    return routeResources?.byId?.[routeResources.current] || null
+  }
+
+  get currentPageIri() {
+    return this.currentRoute?.page || null
   }
 
   get mercurePendingProcesses() {

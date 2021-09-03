@@ -66,7 +66,7 @@
         </div>
       </transition-expand>
       <cwa-admin-bar-page-info-modal
-        v-if="pageInfoShowing"
+        v-if="pageInfoShowing && isShowing"
         @close="pageInfoShowing = false"
       />
     </div>
@@ -145,7 +145,7 @@ export default Vue.extend({
       this.managerShowing = isShowing
     },
     showPageEditModal() {
-      this.pageInfoShowing = true
+      this.pageInfoShowing = !this.pageInfoShowing
     }
   }
 })

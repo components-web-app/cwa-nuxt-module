@@ -439,7 +439,11 @@ export default class Cwa {
   }
 
   get currentRoute() {
-    return this.$storage.getCurrentRoute()
+    return this.$storage.currentRoute
+  }
+
+  get currentPageIri() {
+    return this.$storage.currentPageIri || this.fetcher.loadedRoute || null
   }
 
   userHasRole(role) {

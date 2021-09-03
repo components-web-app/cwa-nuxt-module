@@ -2,6 +2,7 @@ import Vue from 'vue'
 // @ts-ignore
 import pageComponents from '~/.nuxt/cwa/pages'
 
+// Use IriModalMixin or IriPageMixin with this mixin.
 export default Vue.extend({
   data() {
     return {

@@ -217,6 +217,10 @@ export class Fetcher {
     }
   }
 
+  get loadedRoute() {
+    return this.ctx.storage.getState(Fetcher.loadedRouteKey)
+  }
+
   public async fetchRoute(path) {
     // prevent reload on querystring change
     const currentlyLoaded = this.ctx.storage.getState(Fetcher.loadedRouteKey)
