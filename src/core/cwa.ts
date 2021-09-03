@@ -209,9 +209,9 @@ export default class Cwa {
     this.increaseMercurePendingProcessCount()
     try {
       let resource = await requestFn()
-      if (category) {
-        resource = this.processResource(resource, category)
-      }
+      // if (category) {
+      resource = this.processResource(resource, category)
+      // }
       if (postUpdate) {
         const newResource = await postUpdate(resource)
         if (newResource) {
@@ -227,7 +227,7 @@ export default class Cwa {
     }
   }
 
-  private processResource(resource, category) {
+  private processResource(resource: any, category?: string) {
     this.saveResource(resource, category)
     return resource
   }

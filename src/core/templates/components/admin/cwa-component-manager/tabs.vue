@@ -22,7 +22,6 @@
     <transition-expand>
       <div v-show="areTabsShowing" class="tab-content-container">
         <div ref="tabContent" class="tab-content">
-          {{ iri }}
           <component
             :is="selectedTab.component"
             v-if="selectedTab && $cwa.getResource(iri)"
