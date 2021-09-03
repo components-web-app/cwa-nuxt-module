@@ -461,4 +461,8 @@ export default class Cwa {
     } as PublishableToggledEvent)
     return publishableIri
   }
+
+  isResourceSame(resource1, resource2): boolean {
+    return this.$storage.isResourceSame(resource1, resource2)
+  }
 }

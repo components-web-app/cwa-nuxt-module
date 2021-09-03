@@ -38,9 +38,7 @@ export default Vue.extend({
       return this.$route.params.iri === 'add'
     },
     isSaved() {
-      return (
-        JSON.stringify(this.component) === JSON.stringify(this.savedComponent)
-      )
+      return this.$cwa.isResourceSame(this.component, this.savedComponent)
     },
     inputProps() {
       return (key) => ({
@@ -81,9 +79,12 @@ export default Vue.extend({
               'You should use IriPageMixin or extend IriModalMixin to include the postEndpoint variable to create a new resource'
             )
           }
-          await this.$cwa.createResource(this.postEndpoint, data)
+          this.savedComponent = await this.$cwa.createResource(
+            this.postEndpoint,
+            data
+          )
         } else {
-          await this.$cwa.updateResource(this.iri, data)
+          this.savedComponent = await this.$cwa.updateResource(this.iri, data)
         }
         this.$emit('change')
       } catch (error) {

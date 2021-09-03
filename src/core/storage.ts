@@ -25,6 +25,29 @@ export class Storage {
     this._initState()
   }
 
+  isResourceSame(resource1, resource2): boolean {
+    const cleanResourceForComparison = (obj): any => {
+      const newObj = Object.assign({}, obj)
+      // remove sort collection - api should not return fix
+      // todo: remove when the API is fixed
+      delete newObj.sortCollection
+      // remove published resource
+      delete newObj.publishedResource
+      // remove draft resource
+      delete newObj.draftResource
+      // remove modified at timestamp
+      delete newObj.modifiedAt
+      // remove metadata, can include things specific to the resource such as published timestamps
+      delete newObj._metadata
+      // remove null values
+      Object.keys(newObj).forEach((k) => newObj[k] === null && delete newObj[k])
+      return JSON.stringify(newObj)
+    }
+    const resource1String = cleanResourceForComparison(resource1)
+    const resource2String = cleanResourceForComparison(resource2)
+    return resource1String === resource2String
+  }
+
   _initState() {
     const storeModule = {
       namespaced: true,
@@ -167,29 +190,7 @@ export class Storage {
                 return
               }
 
-              const cleanResourceForComparison = (obj) => {
-                const newObj = Object.assign({}, obj)
-                // remove sort collection - api should not return fix
-                // todo: remove when the API is fixed
-                delete newObj.sortCollection
-                // remove published resource
-                delete newObj.publishedResource
-                // remove draft resource
-                delete newObj.draftResource
-                // remove modified at timestamp
-                delete newObj.modifiedAt
-                // remove metadata, can include things specific to the resource such as published timestamps
-                delete newObj._metadata
-                // remove null values
-                Object.keys(newObj).forEach(
-                  (k) => newObj[k] === null && delete newObj[k]
-                )
-                return newObj
-              }
-              if (
-                JSON.stringify(cleanResourceForComparison(currentResource)) ===
-                JSON.stringify(cleanResourceForComparison(payload.resource))
-              ) {
+              if (this.isComponentSame(currentResource, payload.resource)) {
                 consola.info(
                   `Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`
                 )
@@ -197,10 +198,6 @@ export class Storage {
               }
               consola.info(
                 `Added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is different from the existing one`
-              )
-              consola.info(
-                JSON.stringify(cleanResourceForComparison(payload.resource)),
-                JSON.stringify(cleanResourceForComparison(currentResource))
               )
             }
           }
