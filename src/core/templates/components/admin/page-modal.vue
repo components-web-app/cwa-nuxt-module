@@ -1,5 +1,6 @@
 <template>
-  <iri-modal-view
+  <iri-page-modal-view
+    v-model="component"
     title="Page Details"
     v-bind="iriModalProps"
     :show-loader="isLoading"
@@ -44,12 +45,12 @@
         v-bind="inputProps('uiClassNames')"
       />
     </template>
-  </iri-modal-view>
+  </iri-page-modal-view>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
-import IriModalView from '../iri-modal-view.vue'
+import IriPageModalView from '../iri-page-modal-view.vue'
 import IriModalPropsMixin from '../IriModalPropsMixin'
 import CwaAdminSelect from './input/cwa-admin-select.vue'
 import CwaAdminText from './input/cwa-admin-text.vue'
@@ -59,7 +60,7 @@ import CwaAdminText from './input/cwa-admin-text.vue'
 // this is a PROXY for the UI
 
 export default Vue.extend({
-  components: { CwaAdminSelect, CwaAdminText, IriModalView },
+  components: { CwaAdminSelect, CwaAdminText, IriPageModalView },
   mixins: [IriModalPropsMixin],
   props: {
     value: {

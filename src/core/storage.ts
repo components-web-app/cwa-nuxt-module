@@ -449,7 +449,12 @@ export class Storage {
     return null
   }
 
-  getResource(iri) {
+  getResource(iri: string) {
+    if (iri === null) {
+      throw new Error(
+        'getResource iri parameter requires a string. Null given.'
+      )
+    }
     const category = this.getCategoryFromIri(iri)
     const type = this.getTypeFromIri(iri, category)
     if (!type) {

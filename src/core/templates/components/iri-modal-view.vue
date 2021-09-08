@@ -4,7 +4,7 @@
       <status-icon :status="isSaved ? 1 : 0" />
       <error-notifications :listen-categories="notificationCategories" />
     </div>
-    <div>
+    <div class="title-tabs">
       <h2>{{ title }}</h2>
     </div>
     <section class="details-section">
@@ -83,6 +83,18 @@ export default Vue.extend({
     top: 2rem
     left: 2rem
     display: flex
+  .title-tabs
+    display: flex
+    a
+      color: $white
+      font-size: $size-h2
+      font-weight: $font-weight-light
+      opacity: .6
+      &:not(:last-child)
+        margin-right: 1.25rem
+      &:hover,
+      &.is-selected
+        opacity: 1
   .fields-container
     .right-column-aligner
       display: flex

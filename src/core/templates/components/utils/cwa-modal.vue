@@ -67,6 +67,7 @@ $modal-breakpoint: $tablet
     box-shadow: 10px 12px 35px 8px rgba(black, .6)
     max-width: 800px
     background: $cwa-navbar-background
+    color: $cwa-color-text-light
     +from($modal-breakpoint)
       margin: 0 auto
       max-height: calc(100vh - #{$modal-content-spacing-tablet})
@@ -76,6 +77,10 @@ $modal-breakpoint: $tablet
       flex-wrap: wrap
       justify-content: center
       padding: 2rem 3rem 0 3rem
+      a
+        color: $cwa-color-text-light
+        &:hover
+          color: $white
       .close-bar
         width: 100%
         display: flex
@@ -101,6 +106,6 @@ $modal-breakpoint: $tablet
         max-width: 600px
         margin-bottom: 5rem
         h2
-          font-size: 2.8rem
+          font-size: $size-h2
           color: $white
 </style>

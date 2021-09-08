@@ -18,14 +18,12 @@ export default Vue.extend({
       component: {
         reference: ''
       },
-      savedComponent: {},
       isLoading: true,
       notificationCategories,
       notifications: {}
     } as {
       iri: string
       component: any
-      savedComponent: any
       isLoading: boolean
       notificationCategories: {
         violations: string
@@ -56,19 +54,35 @@ export default Vue.extend({
         component: this.component,
         showLoader: this.isLoading
       }
+    },
+    savedComponent: {
+      get() {
+        return this.$cwa.getResource(this.iri)
+      },
+      set(newResource) {
+        this.$cwa.saveResource(newResource)
+      }
+    }
+  },
+  watch: {
+    iri() {
+      this.findIriResource()
     }
   },
   async mounted() {
-    if (this.isNew) {
+    if (this.isNew || !this.iri) {
       this.isLoading = false
       return
     }
-    this.component = await this.$axios.$get(this.iri)
-    this.component.uiClassNames = this.component?.uiClassNames?.join(', ')
-    this.isLoading = false
-    this.savedComponent = Object.assign({}, this.component)
+    await this.findIriResource()
   },
   methods: {
+    async findIriResource() {
+      this.isLoading = true
+      this.component = Object.assign({}, await this.$cwa.findResource(this.iri))
+      this.component.uiClassNames = this.component?.uiClassNames?.join(', ')
+      this.isLoading = false
+    },
     async sendRequest(data) {
       this.notifications = {}
       this.isLoading = true
@@ -79,12 +93,9 @@ export default Vue.extend({
               'You should use IriPageMixin or extend IriModalMixin to include the postEndpoint variable to create a new resource'
             )
           }
-          this.savedComponent = await this.$cwa.createResource(
-            this.postEndpoint,
-            data
-          )
+          await this.$cwa.createResource(this.postEndpoint, data)
         } else {
-          this.savedComponent = await this.$cwa.updateResource(this.iri, data)
+          await this.$cwa.updateResource(this.iri, data)
         }
         this.$emit('change')
       } catch (error) {
