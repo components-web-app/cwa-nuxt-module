@@ -11,6 +11,10 @@
               @click.prevent="deleteRedirect(redirect['@id'])"
             >
               <icon-trash />
+              <img
+                src="../../../assets/images/icon-trash.svg"
+                alt="Trash Icon"
+              />
             </a>
           </div>
         </div>
@@ -26,11 +30,9 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import IconTrash from '../../../assets/images/icon-trash.svg?inline'
 
 export default Vue.extend({
   name: 'CwaAdminRoutesRedirectTree',
-  components: { IconTrash },
   props: {
     routes: {
       type: Array,
@@ -54,7 +56,8 @@ export default Vue.extend({
   .trash-link
     display: block
     opacity: .6
-    svg
+    padding: .15rem .75rem
+    img
       width: .9em
       height: auto
     &:hover
