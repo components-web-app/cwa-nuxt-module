@@ -5,7 +5,6 @@ import {
 } from '../../components/cwa-api-notifications/types'
 import ApiError from '../../../../inc/api-error'
 import { NOTIFICATION_EVENTS } from '../../../events'
-import { Violation } from '../../../../utils/AxiosErrorParser'
 import ApiErrorNotificationsMixin from '../../../mixins/ApiErrorNotificationsMixin'
 
 export const notificationCategories = {
@@ -35,7 +34,7 @@ export default Vue.extend({
   },
   computed: {
     isNew() {
-      return this.$route.params.iri === 'add'
+      return this.iri === 'add'
     },
     isSaved() {
       return this.$cwa.isResourceSame(this.component, this.savedComponent)
@@ -97,12 +96,14 @@ export default Vue.extend({
             )
           }
           endpoint = this.postEndpoint
-          await this.$cwa.createResource(endpoint, data)
+          const newRoute = await this.$cwa.createResource(endpoint, data)
+          this.iri = newRoute['@id']
         } else {
           endpoint = this.iri
           await this.$cwa.updateResource(endpoint, data)
         }
         this.$emit('change')
+        return true
       } catch (error) {
         if (!(error instanceof ApiError)) {
           throw error
@@ -126,9 +127,10 @@ export default Vue.extend({
           }
           this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
         }
+        return false
+      } finally {
+        this.isLoading = false
       }
-
-      this.isLoading = false
     },
     // processViolations(violations) {
     //   violations.forEach((violation: Violation) => {

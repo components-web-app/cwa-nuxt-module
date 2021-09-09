@@ -8,7 +8,7 @@
     <div class="column">
       <template v-if="routePageShowing === null">
         <div class="cwa-input">
-          <template v-if="!component">
+          <template v-if="!component['@id']">
             <div class="not-found">No page route</div>
             <cm-button @click="showEditRoute">Create page route</cm-button>
           </template>
@@ -22,7 +22,7 @@
             </div>
           </template>
         </div>
-        <div v-if="component" class="cwa-input">
+        <div v-if="component['@id']" class="cwa-input">
           <template v-if="!hasRedirects">
             <div class="not-found">You don't have any redirects</div>
             <cm-button @click="showEditRoute">Create new redirect</cm-button>
@@ -72,7 +72,9 @@
           </div>
         </div>
 
-        <section v-if="generatedRoute !== savedComponent.path">
+        <section
+          v-if="savedComponent && generatedRoute !== savedComponent.path"
+        >
           <div class="cwa-input">
             <label>Recommended page route</label>
             <div class="row">
@@ -137,15 +139,24 @@ export default Vue.extend({
       // @ts-ignore
       iri = this.$cwa.getResource(pageIri).route
     }
+    if (!iri) {
+      iri = 'add'
+    }
     return {
       iri,
       routePageShowing: null,
       pageComponent,
-      routeWithRedirects: null
+      routeWithRedirects: null,
+      postEndpoint: '/_/routes',
+      component: {
+        page: pageComponent,
+        pageData: null
+      }
     } as {
       iri: string
       routePageShowing: string
       routeWithRedirects: Object
+      postEndpoint: string
     }
   },
   computed: {
@@ -180,8 +191,14 @@ export default Vue.extend({
     },
     async saveRoute() {
       this.clearAllViolationNotifications()
-      await this.sendRequest(this.component)
-      await this.reloadRouteRedirects()
+      const data = Object.assign({}, this.component, {
+        name: this.component.path,
+        page: this.component?.page?.['@id'] || null,
+        pageData: this.component?.pageData?.['@id'] || null
+      })
+      if (await this.sendRequest(data)) {
+        await this.reloadRouteRedirects()
+      }
     },
     async generateRoute() {
       this.isLoading = true

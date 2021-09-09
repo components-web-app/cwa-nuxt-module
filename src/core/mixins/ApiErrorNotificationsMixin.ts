@@ -41,7 +41,7 @@ export default Vue.extend({
         const notificationCode = getInputErrorNotificationCode(field)
         const notification: NotificationEvent = {
           code: notificationCode,
-          title: 'Input Error',
+          title: violation.propertyPath || 'Input Error',
           message: violation.message,
           level: NotificationLevels.ERROR,
           endpoint,

@@ -320,7 +320,7 @@ const cwaModule = <Module>async function () {
           name: newObjectPath.join('_'),
           path,
           component: resolve(filePath),
-          children: _get(newRoutes, newObjectPath) ?? null
+          children: _get(newRoutes, newObjectPath) || null
         }
         _set(newRoutes, newObjectPath, newRouteObject)
       })
