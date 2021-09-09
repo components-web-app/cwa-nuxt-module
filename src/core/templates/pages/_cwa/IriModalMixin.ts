@@ -105,28 +105,7 @@ export default Vue.extend({
         this.$emit('change')
         return true
       } catch (error) {
-        if (!(error instanceof ApiError)) {
-          throw error
-        }
-        if (error.violations) {
-          // this.processViolations(error.violations)
-          this.handleApiViolations(
-            error.violations,
-            endpoint,
-            this.notificationCategories.violations
-          )
-        }
-
-        if (error.statusCode === 500) {
-          const notification: NotificationEvent = {
-            code: 'server_error',
-            title: 'An error occurred',
-            message: error.message,
-            level: NotificationLevels.ERROR,
-            category: this.notificationCategories.violations
-          }
-          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
-        }
+        this.handleResourceRequestError(error)
         return false
       } finally {
         this.isLoading = false
@@ -153,6 +132,30 @@ export default Vue.extend({
       await this.$cwa.deleteResource(this.iri)
       this.$emit('change')
       this.isLoading = false
+    },
+    handleResourceRequestError(error, endpoint) {
+      if (!(error instanceof ApiError)) {
+        throw error
+      }
+      if (error.violations) {
+        // this.processViolations(error.violations)
+        this.handleApiViolations(
+          error.violations,
+          endpoint,
+          this.notificationCategories.violations
+        )
+      }
+
+      if (error.statusCode === 500) {
+        const notification: NotificationEvent = {
+          code: 'server_error',
+          title: 'An error occurred',
+          message: error.message,
+          level: NotificationLevels.ERROR,
+          category: this.notificationCategories.violations
+        }
+        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+      }
     }
   }
 })

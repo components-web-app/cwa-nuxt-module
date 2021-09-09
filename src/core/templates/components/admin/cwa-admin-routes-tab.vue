@@ -6,7 +6,7 @@
       </div>
     </transition>
     <div class="column">
-      <template v-if="routePageShowing === null">
+      <section v-if="routePageShowing === null">
         <div class="cwa-input">
           <template v-if="!component['@id']">
             <div class="not-found">No page route</div>
@@ -25,11 +25,12 @@
         <div v-if="component['@id']" class="cwa-input">
           <template v-if="!hasRedirects">
             <div class="not-found">You don't have any redirects</div>
-            <cm-button @click="showEditRoute">Create new redirect</cm-button>
+            <cm-button @click="showRedirectPage">Create new redirect</cm-button>
           </template>
           <template v-else>
             <div class="label add-title">
-              <span>Redirects</span> <cwa-add-button />
+              <span>Redirects</span>
+              <cwa-add-button @click="showRedirectPage" />
             </div>
             <div class="row">
               <div class="column">
@@ -42,8 +43,8 @@
             </div>
           </template>
         </div>
-      </template>
-      <div v-if="routePageShowing === 'route'">
+      </section>
+      <section v-if="routePageShowing === 'route'">
         <div class="row">
           <div class="column is-narrow">
             <a href="#" @click="showRoutePage">&lt; back</a>
@@ -93,7 +94,25 @@
             </div>
           </div>
         </section>
-      </div>
+      </section>
+      <section v-if="routePageShowing === 'redirect'">
+        <div class="row">
+          <div class="column is-narrow">
+            <a href="#" @click="showRoutePage">&lt; back</a>
+          </div>
+        </div>
+        <cwa-admin-text
+          v-model="redirect"
+          label="Redirect from path"
+          v-bind="inputProps('redirect')"
+        />
+        <p>The path you enter will be redirected to the current route</p>
+        <div class="row buttons-row">
+          <div class="column">
+            <button @click="createRedirect">Create</button>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -151,12 +170,14 @@ export default Vue.extend({
       component: {
         page: pageComponent,
         pageData: null
-      }
+      },
+      redirect: null
     } as {
       iri: string
       routePageShowing: string
       routeWithRedirects: Object
       postEndpoint: string
+      redirect: string
     }
   },
   computed: {
@@ -189,6 +210,9 @@ export default Vue.extend({
     showRoutePage() {
       this.routePageShowing = null
     },
+    showRedirectPage() {
+      this.routePageShowing = 'redirect'
+    },
     async saveRoute() {
       this.clearAllViolationNotifications()
       const data = Object.assign({}, this.component, {
@@ -197,6 +221,7 @@ export default Vue.extend({
         pageData: this.component?.pageData?.['@id'] || null
       })
       if (await this.sendRequest(data)) {
+        this.showRoutePage()
         await this.reloadRouteRedirects()
       }
     },
@@ -215,11 +240,28 @@ export default Vue.extend({
           this.$emit('input', this.pageComponent)
           this.iri = this.pageComponent.route
         }
+        this.showRoutePage()
+        await this.reloadRouteRedirects()
       } catch (error) {
         consola.error(error)
       }
 
       this.isLoading = false
+    },
+    async createRedirect() {
+      const endpoint = '/_/routes'
+      const data = {
+        name: this.redirect,
+        path: this.redirect,
+        redirect: this.component['@id']
+      }
+      try {
+        await this.$cwa.createResource(endpoint, data)
+        this.showRoutePage()
+        await this.reloadRouteRedirects()
+      } catch (error) {
+        this.handleResourceRequestError(error, endpoint)
+      }
     }
   }
 })
