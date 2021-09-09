@@ -1,5 +1,5 @@
 <template>
-  <div class="row fields-container">
+  <div class="row fields-container admin-routes-tab">
     <transition name="fade">
       <div v-if="isLoading" class="loader-overlay">
         <cwa-loader />
@@ -28,10 +28,15 @@
             <cm-button @click="showEditRoute">Create new redirect</cm-button>
           </template>
           <template v-else>
-            <label>Redirects <cwa-add-button /></label>
+            <div class="label add-title">
+              <span>Redirects</span> <cwa-add-button />
+            </div>
             <div class="row">
               <div class="column">
-                <pre>{{ component.redirectedFrom }}</pre>
+                <cwa-admin-routes-redirect-tree
+                  v-if="routeWithRedirects.redirectedFrom"
+                  :routes="routeWithRedirects.redirectedFrom"
+                />
               </div>
             </div>
           </template>
@@ -99,9 +104,11 @@ import CwaAddButton from '../utils/cwa-add-button.vue'
 import CwaLoader from '../utils/cwa-loader.vue'
 import CwaAdminText from './input/cwa-admin-text.vue'
 import CmButton from './cwa-component-manager/input/cm-button.vue'
+import CwaAdminRoutesRedirectTree from './cwa-admin-routes-redirect-tree.vue'
 
 export default Vue.extend({
   components: {
+    CwaAdminRoutesRedirectTree,
     CwaLoader,
     CmButton,
     CwaAddButton,
@@ -132,19 +139,29 @@ export default Vue.extend({
     return {
       iri,
       routePageShowing: null,
-      pageComponent
+      pageComponent,
+      routeWithRedirects: null
     } as {
       iri: string
       routePageShowing: string
+      routeWithRedirects: Object
     }
   },
   computed: {
     hasRedirects() {
-      return this.component.redirectedFrom?.length || null
+      return this.routeWithRedirects?.redirectedFrom?.length || null
     },
     generatedRoute() {
       return `/${slugify(this.pageComponent.title).toLowerCase()}`
     }
+  },
+  async mounted() {
+    if (this.isNew || !this.iri) {
+      this.isLoading = false
+      return
+    }
+    this.routeWithRedirects = await this.$axios.$get(`${this.iri}/redirects`)
+    await this.findIriResource()
   },
   methods: {
     showEditRoute() {
@@ -182,12 +199,17 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-.cwa-input
-  color: $white
-  .not-found
-    color: $cwa-color-text-light
-    font-weight: $font-weight-semi-bold
-    font-size: $size-h3
-    opacity: .6
-    margin: 1.5rem 0 .5rem
+.admin-routes-tab
+  .add-title
+    display: flex
+    align-items: center
+  .cwa-input
+    margin-top: 1rem
+    color: $white
+    .not-found
+      color: $cwa-color-text-light
+      font-weight: $font-weight-semi-bold
+      font-size: $size-h3
+      opacity: .6
+      margin: 1.5rem 0 .5rem
 </style>
