@@ -155,15 +155,22 @@ export default Vue.extend({
       return `/${slugify(this.pageComponent.title).toLowerCase()}`
     }
   },
+  watch: {
+    async iri() {
+      await Promise.all([this.findIriResource(), this.reloadRouteRedirects()])
+    }
+  },
   async mounted() {
     if (this.isNew || !this.iri) {
       this.isLoading = false
       return
     }
-    this.routeWithRedirects = await this.$axios.$get(`${this.iri}/redirects`)
-    await this.findIriResource()
+    await Promise.all([this.findIriResource(), this.reloadRouteRedirects()])
   },
   methods: {
+    async reloadRouteRedirects() {
+      this.routeWithRedirects = await this.$axios.$get(`${this.iri}/redirects`)
+    },
     showEditRoute() {
       this.routePageShowing = 'route'
     },
@@ -172,6 +179,7 @@ export default Vue.extend({
     },
     async saveRoute() {
       await this.sendRequest(this.component)
+      await this.reloadRouteRedirects()
     },
     async generateRoute() {
       this.isLoading = true
