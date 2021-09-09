@@ -209,9 +209,10 @@ export default class Cwa {
     this.increaseMercurePendingProcessCount()
     try {
       let resource = await requestFn()
-      // if (category) {
-      resource = this.processResource(resource, category)
-      // }
+      // if not a successful delete request
+      if (resource?.status !== 204 && resource?.['@id']) {
+        resource = this.processResource(resource, category)
+      }
       if (postUpdate) {
         const newResource = await postUpdate(resource)
         if (newResource) {

@@ -1,10 +1,24 @@
 <template>
   <ul class="redirect-tree">
     <li v-for="redirect of routes" :key="redirect['@id']">
-      <span>{{ redirect.path }}</span>
+      <div>
+        <div class="row">
+          <div class="column">{{ redirect.path }}</div>
+          <div class="column is-narrow">
+            <a
+              href="#"
+              class="trash-link"
+              @click.prevent="deleteRedirect(redirect['@id'])"
+            >
+              <icon-trash />
+            </a>
+          </div>
+        </div>
+      </div>
       <cwa-admin-routes-redirect-tree
         v-if="redirect.redirectedFrom"
         :routes="redirect.redirectedFrom"
+        @reload="$emit('reload')"
       />
     </li>
   </ul>
@@ -12,13 +26,21 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import IconTrash from '../../../assets/images/icon-trash.svg?inline'
 
 export default Vue.extend({
   name: 'CwaAdminRoutesRedirectTree',
+  components: { IconTrash },
   props: {
     routes: {
       type: Array,
       required: true
+    }
+  },
+  methods: {
+    async deleteRedirect(iri) {
+      await this.$cwa.deleteResource(iri)
+      this.$emit('reload')
     }
   }
 })
@@ -29,33 +51,43 @@ export default Vue.extend({
   position: relative
   list-style: none
   margin-left: 0
+  .trash-link
+    display: block
+    opacity: .6
+    svg
+      width: .9em
+      height: auto
+    &:hover
+      opacity: 1
   .redirect-tree
     font-size: 100%
     margin: 0 0 0 2rem
     li
       padding-left: 0
-      > span:before
+      > div:before
         top: -50%
         height: 100%
   li
     position: relative
     margin-bottom: 0
-    > span
+    > div
       display: block
       position: relative
       padding: .5rem 0 .5rem 2rem
+      &:hover
+        background: $cwa-background-dark
       &::after
         position: absolute
         content: ''
-        left: 0
+        left: -1px
         top: 50%
         width: 1.2rem
         height: 0
         border-top: 1px dashed $cwa-color-text-light
-    &:last-child > span::before
+    &:last-child > div::before
       position: absolute
       content: ''
-      left: 0
+      left: -1px
       top: 0
       height: 50%
       width: 0
@@ -63,7 +95,7 @@ export default Vue.extend({
     &:not(:last-child)::before
       position: absolute
       content: ''
-      left: 0
+      left: -1px
       top: 0
       height: 100%
       width: 0

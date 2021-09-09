@@ -409,6 +409,10 @@ export class Storage {
   }
 
   getCategoryFromIri(iri: string) {
+    if (!iri) {
+      console.trace()
+      throw new Error('getCategoryFromIri requires the iri parameter')
+    }
     if (iri.startsWith('/component/')) {
       return StoreCategories.Component
     }

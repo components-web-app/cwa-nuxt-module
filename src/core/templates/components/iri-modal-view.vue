@@ -95,6 +95,7 @@ export default Vue.extend({
       &:hover,
       &.is-selected
         opacity: 1
+        color: $white
   .fields-container
     .right-column-aligner
       display: flex

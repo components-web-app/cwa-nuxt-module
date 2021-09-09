@@ -6,12 +6,14 @@ import {
 import ApiError from '../../../../inc/api-error'
 import { NOTIFICATION_EVENTS } from '../../../events'
 import { Violation } from '../../../../utils/AxiosErrorParser'
+import ApiErrorNotificationsMixin from '../../../mixins/ApiErrorNotificationsMixin'
 
 export const notificationCategories = {
   violations: 'iri-modal.violations'
 }
 
 export default Vue.extend({
+  mixins: [ApiErrorNotificationsMixin],
   data() {
     return {
       iri: null,
@@ -86,6 +88,7 @@ export default Vue.extend({
     async sendRequest(data) {
       this.notifications = {}
       this.isLoading = true
+      let endpoint = null
       try {
         if (this.isNew) {
           if (!this.postEndpoint) {
@@ -93,9 +96,11 @@ export default Vue.extend({
               'You should use IriPageMixin or extend IriModalMixin to include the postEndpoint variable to create a new resource'
             )
           }
-          await this.$cwa.createResource(this.postEndpoint, data)
+          endpoint = this.postEndpoint
+          await this.$cwa.createResource(endpoint, data)
         } else {
-          await this.$cwa.updateResource(this.iri, data)
+          endpoint = this.iri
+          await this.$cwa.updateResource(endpoint, data)
         }
         this.$emit('change')
       } catch (error) {
@@ -103,7 +108,12 @@ export default Vue.extend({
           throw error
         }
         if (error.violations) {
-          this.processViolations(error.violations)
+          // this.processViolations(error.violations)
+          this.handleApiViolations(
+            error.violations,
+            endpoint,
+            this.notificationCategories.violations
+          )
         }
 
         if (error.statusCode === 500) {
@@ -120,22 +130,22 @@ export default Vue.extend({
 
       this.isLoading = false
     },
-    processViolations(violations) {
-      violations.forEach((violation: Violation) => {
-        const notification: NotificationEvent = {
-          code: violation.propertyPath,
-          title: violation.propertyPath,
-          message: violation.message,
-          level: NotificationLevels.ERROR,
-          category: this.notificationCategories.violations
-        }
-        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
-        const fieldNotifications =
-          this.notifications[violation.propertyPath] || []
-        fieldNotifications.push(notification)
-        this.notifications[violation.propertyPath] = fieldNotifications
-      })
-    },
+    // processViolations(violations) {
+    //   violations.forEach((violation: Violation) => {
+    //     const notification: NotificationEvent = {
+    //       code: violation.propertyPath,
+    //       title: violation.propertyPath,
+    //       message: violation.message,
+    //       level: NotificationLevels.ERROR,
+    //       category: this.notificationCategories.violations
+    //     }
+    //     this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+    //     const fieldNotifications =
+    //       this.notifications[violation.propertyPath] || []
+    //     fieldNotifications.push(notification)
+    //     this.notifications[violation.propertyPath] = fieldNotifications
+    //   })
+    // },
     async deleteComponent() {
       this.isLoading = true
       await this.$cwa.deleteResource(this.iri)

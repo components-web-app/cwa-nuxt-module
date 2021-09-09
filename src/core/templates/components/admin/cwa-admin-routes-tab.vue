@@ -36,6 +36,7 @@
                 <cwa-admin-routes-redirect-tree
                   v-if="routeWithRedirects.redirectedFrom"
                   :routes="routeWithRedirects.redirectedFrom"
+                  @reload="reloadRouteRedirects"
                 />
               </div>
             </div>
@@ -178,6 +179,7 @@ export default Vue.extend({
       this.routePageShowing = null
     },
     async saveRoute() {
+      this.clearAllViolationNotifications()
       await this.sendRequest(this.component)
       await this.reloadRouteRedirects()
     },
