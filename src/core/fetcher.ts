@@ -23,6 +23,7 @@ export class Fetcher {
     apiUrl: string
     storage: Storage
     router: VueRouter
+    redirect: Function
   }
 
   private options: {
@@ -37,7 +38,7 @@ export class Fetcher {
   private unavailableComponents: string[] = []
 
   constructor(
-    { $axios, error, apiUrl, storage, router },
+    { $axios, error, apiUrl, storage, router, redirect },
     { fetchConcurrency }
   ) {
     this.ctx = {
@@ -45,7 +46,8 @@ export class Fetcher {
       error,
       apiUrl,
       storage,
-      router
+      router,
+      redirect
     }
     this.options = {
       fetchConcurrency
@@ -255,8 +257,16 @@ export class Fetcher {
         ...layoutResponse.componentCollections
       ])
       this.ctx.storage.setCurrentRoute(routeResponse['@id'])
-      this.ctx.storage.setState(Fetcher.loadedRouteKey, path)
+      this.ctx.storage.setState(
+        Fetcher.loadedRouteKey,
+        routeResponse.redirectPath || path
+      )
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+
+      // does not work server-side
+      if (routeResponse.redirectPath) {
+        this.ctx.redirect(308, { path: routeResponse.redirectPath })
+      }
     } catch (error) {
       // Display error page
       this.ctx.error(error)

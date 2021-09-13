@@ -55,7 +55,8 @@ export default class Cwa {
         error: this.ctx.error,
         apiUrl: this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL,
         storage,
-        router: this.ctx.app.router
+        router: this.ctx.app.router,
+        redirect: this.ctx.redirect
       },
       {
         fetchConcurrency: this.options.fetchConcurrency
