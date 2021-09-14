@@ -8,7 +8,7 @@
     <div class="column">
       <section v-if="routePageShowing === null">
         <div class="cwa-input">
-          <template v-if="!component['@id']">
+          <template v-if="!savedComponent || !savedComponent['@id']">
             <div class="not-found">No page route</div>
             <cm-button @click="showEditRoute">Create page route</cm-button>
           </template>
@@ -70,7 +70,10 @@
             </button>
           </div>
           <div v-if="!isNew" class="column is-narrow">
-            <button class="is-dark is-delete" @click="deleteComponent">
+            <button
+              class="is-dark is-delete"
+              @click="deleteComponent(onDeleteSuccess)"
+            >
               Delete
             </button>
           </div>
@@ -170,10 +173,7 @@ export default Vue.extend({
       pageComponent,
       routeWithRedirects: null,
       postEndpoint: '/_/routes',
-      component: {
-        page: pageComponent,
-        pageData: null
-      },
+      component: {},
       redirect: null,
       loadingRedirects: false,
       fieldNameMap: {
@@ -201,6 +201,17 @@ export default Vue.extend({
         this.redirect !== null &&
         this.redirect !== ''
       )
+    },
+    routePageData() {
+      return {
+        page:
+          this.component?.page?.['@id'] ||
+          this.component.page ||
+          this.pageComponent?.['@id'] ||
+          null,
+        pageData:
+          this.component?.pageData?.['@id'] || this.component.pageData || null
+      }
     }
   },
   watch: {
@@ -219,7 +230,25 @@ export default Vue.extend({
     await Promise.all([this.findIriResource(), this.reloadRouteRedirects()])
   },
   methods: {
+    async onDeleteSuccess() {
+      this.showRoutePage()
+      await this.refreshPageResource()
+      this.iri = 'add'
+    },
+    async refreshPageResource() {
+      if (this.pageComponent) {
+        this.pageComponent = await this.$cwa.refreshResource(
+          this.pageComponent['@id']
+        )
+        this.$emit('input', this.pageComponent)
+        this.iri = this.pageComponent.route
+      }
+    },
     async reloadRouteRedirects() {
+      if (this.isNew || !this.iri) {
+        this.routeWithRedirects = null
+        return
+      }
       this.loadingRedirects = true
       this.routeWithRedirects = await this.$axios.$get(`${this.iri}/redirects`)
       this.loadingRedirects = false
@@ -236,10 +265,8 @@ export default Vue.extend({
     async saveRoute() {
       this.clearAllViolationNotifications()
       const data = this.isNew
-        ? Object.assign({}, this.component, {
-            name: this.component.path,
-            page: this.component?.page?.['@id'] || null,
-            pageData: this.component?.pageData?.['@id'] || null
+        ? Object.assign({}, this.component, this.routePageData, {
+            name: this.component.path || null
           })
         : { path: this.component.path }
       if (await this.sendRequest(data)) {
@@ -250,18 +277,12 @@ export default Vue.extend({
     async generateRoute() {
       this.isLoading = true
       try {
-        const newRoute = await this.$axios.$post(`/_/routes/generate`, {
-          pageData: this.component.pageData?.['@id'] || this.component.pageData,
-          page: this.component.page?.['@id'] || this.component.page
-        })
+        const newRoute = await this.$axios.$post(
+          `/_/routes/generate`,
+          this.routePageData
+        )
         this.$cwa.saveResource(newRoute)
-        if (this.pageComponent) {
-          this.pageComponent = await this.$cwa.refreshResource(
-            this.pageComponent['@id']
-          )
-          this.$emit('input', this.pageComponent)
-          this.iri = this.pageComponent.route
-        }
+        await this.refreshPageResource()
         this.showRoutePage()
         await this.reloadRouteRedirects()
       } catch (error) {

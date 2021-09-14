@@ -57,6 +57,9 @@ export default Vue.extend({
     },
     savedComponent: {
       get() {
+        if (!this.iri) {
+          return {}
+        }
         return this.$cwa.getResource(this.iri)
       },
       set(newResource) {
@@ -81,6 +84,10 @@ export default Vue.extend({
   },
   methods: {
     async findIriResource() {
+      if (this.isNew || !this.iri) {
+        this.component = {}
+        return
+      }
       this.isLoading = true
       this.component = Object.assign({}, await this.$cwa.findResource(this.iri))
       this.component.uiClassNames = this.component?.uiClassNames?.join(', ')
@@ -129,7 +136,7 @@ export default Vue.extend({
     //     this.notifications[violation.propertyPath] = fieldNotifications
     //   })
     // },
-    deleteComponent() {
+    deleteComponent(fn: Function = null) {
       const event: DialogEvent = {
         id: 'confirm-delete-resource',
         title: 'Confirm Delete',
@@ -138,6 +145,9 @@ export default Vue.extend({
           this.isLoading = true
           await this.$cwa.deleteResource(this.iri)
           this.$emit('change')
+          if (fn) {
+            await fn()
+          }
           this.isLoading = false
         },
         confirmButtonText: 'Delete'
