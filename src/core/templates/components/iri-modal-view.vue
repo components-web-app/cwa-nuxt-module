@@ -68,9 +68,29 @@ export default Vue.extend({
       type: String,
       required: true
     },
-    component: {
+    value: {
       type: Object,
-      required: true
+      required: true,
+      default: null
+    }
+  },
+  data() {
+    return {
+      component: this.value
+    }
+  },
+  watch: {
+    component: {
+      handler(newValue) {
+        this.$emit('input', newValue)
+      },
+      deep: true
+    },
+    value: {
+      handler(newValue) {
+        this.component = newValue
+      },
+      immediate: true
     }
   }
 })

@@ -91,7 +91,6 @@ export default Vue.extend({
         notificationCategories: this.notificationCategories,
         isSaved: this.isSaved,
         isNew: this.isNew,
-        component: this.component,
         showLoader: this.isLoading
       }
     },
@@ -105,8 +104,11 @@ export default Vue.extend({
     }
   },
   watch: {
-    component(newValue) {
-      this.$emit('input', newValue)
+    component: {
+      handler(newValue) {
+        this.$emit('input', newValue)
+      },
+      deep: true
     },
     value: {
       handler(newValue) {

@@ -4,11 +4,7 @@ import {
   NotificationLevels
 } from '../../components/cwa-api-notifications/types'
 import ApiError from '../../../../inc/api-error'
-import {
-  DialogEvent,
-  NOTIFICATION_EVENTS,
-  CONFIRM_EVENTS
-} from '../../../events'
+import { DialogEvent, CONFIRM_EVENTS } from '../../../events'
 import ApiErrorNotificationsMixin from '../../../mixins/ApiErrorNotificationsMixin'
 
 export const notificationCategories = {
@@ -56,7 +52,6 @@ export default Vue.extend({
         notificationCategories: Object.values(this.notificationCategories),
         isSaved: this.isSaved,
         isNew: this.isNew,
-        component: this.component,
         showLoader: this.isLoading
       }
     },

@@ -75,14 +75,7 @@ import IriModalView from './iri-modal-view.vue'
 import CwaAdminRoutesTab from './admin/cwa-admin-routes-tab.vue'
 export default Vue.extend({
   components: { CwaAdminRoutesTab },
-  extends: IriModalView,
-  props: {
-    value: {
-      type: Object,
-      required: true,
-      default: null
-    }
-  },
+  mixins: [IriModalView],
   data() {
     return {
       currentTabIndex: 0

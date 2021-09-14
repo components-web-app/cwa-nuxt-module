@@ -27,6 +27,11 @@ export default Vue.extend({
     return {
       title: `Page Details - ${this.component.reference}`
     }
+  },
+  computed: {
+    isSaved() {
+      return this.$cwa.isResourceSame(this.component, this.savedComponent)
+    }
   }
 })
 </script>

@@ -1,5 +1,6 @@
 <template>
   <iri-modal-view
+    v-model="component"
     title="User Details"
     v-bind="iriModalProps"
     @close="$emit('close')"
