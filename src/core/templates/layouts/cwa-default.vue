@@ -6,13 +6,15 @@
     <div class="page">
       <nuxt />
     </div>
+    <cwa-confirm />
   </div>
 </template>
 
 <script>
 import CwaAdminBar from '@cwa/nuxt-module/core/templates/components/admin/cwa-admin-bar.vue'
+import CwaConfirm from '@cwa/nuxt-module/core/templates/components/cwa-confirm.vue'
 export default {
-  components: { CwaAdminBar },
+  components: { CwaConfirm, CwaAdminBar },
   props: {
     hideAdmin: {
       type: Boolean,

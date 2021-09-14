@@ -1,7 +1,7 @@
 <template>
   <div class="row fields-container admin-routes-tab">
     <transition name="fade">
-      <div v-if="isLoading" class="loader-overlay">
+      <div v-if="isLoading || loadingRedirects" class="loader-overlay">
         <cwa-loader />
       </div>
     </transition>
@@ -15,7 +15,9 @@
           <template v-else>
             <label>Page route</label>
             <div class="row">
-              <span class="column is-narrow nowrap">{{ component.path }}</span>
+              <span class="column is-narrow nowrap">{{
+                savedComponent.path
+              }}</span>
               <div class="column">
                 <a href="#" @click.prevent="showEditRoute">Edit</a>
               </div>
@@ -23,7 +25,8 @@
           </template>
         </div>
         <div v-if="component['@id']" class="cwa-input">
-          <template v-if="!hasRedirects">
+          <div v-if="loadingRedirects">Loading...</div>
+          <template v-else-if="!hasRedirects">
             <div class="not-found">You don't have any redirects</div>
             <cm-button @click="showRedirectPage">Create new redirect</cm-button>
           </template>
@@ -171,13 +174,15 @@ export default Vue.extend({
         page: pageComponent,
         pageData: null
       },
-      redirect: null
+      redirect: null,
+      loadingRedirects: false
     } as {
       iri: string
       routePageShowing: string
       routeWithRedirects: Object
       postEndpoint: string
       redirect: string
+      loadingRedirects: boolean
     }
   },
   computed: {
@@ -202,7 +207,9 @@ export default Vue.extend({
   },
   methods: {
     async reloadRouteRedirects() {
+      this.loadingRedirects = true
       this.routeWithRedirects = await this.$axios.$get(`${this.iri}/redirects`)
+      this.loadingRedirects = false
     },
     showEditRoute() {
       this.routePageShowing = 'route'
@@ -215,11 +222,13 @@ export default Vue.extend({
     },
     async saveRoute() {
       this.clearAllViolationNotifications()
-      const data = Object.assign({}, this.component, {
-        name: this.component.path,
-        page: this.component?.page?.['@id'] || null,
-        pageData: this.component?.pageData?.['@id'] || null
-      })
+      const data = this.isNew
+        ? Object.assign({}, this.component, {
+            name: this.component.path,
+            page: this.component?.page?.['@id'] || null,
+            pageData: this.component?.pageData?.['@id'] || null
+          })
+        : { path: this.component.path }
       if (await this.sendRequest(data)) {
         this.showRoutePage()
         await this.reloadRouteRedirects()
@@ -258,6 +267,7 @@ export default Vue.extend({
       try {
         await this.$cwa.createResource(endpoint, data)
         this.showRoutePage()
+        this.redirect = null
         await this.reloadRouteRedirects()
       } catch (error) {
         this.handleResourceRequestError(error, endpoint)

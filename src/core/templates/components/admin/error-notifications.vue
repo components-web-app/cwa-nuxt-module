@@ -3,8 +3,8 @@
     v-if="!!isShowing"
     :class="['cwa-error-notifications', { 'show-above': showAbove }]"
   >
-    <a class="icon" href="#" @click.prevent.stop="toggleShowErrors">
-      <div class="triangle" />
+    <a class="cwa-icon" href="#" @click.prevent.stop="toggleShowErrors">
+      <div class="cwa-warning-triangle" />
       <span class="total">{{ totalNotifications }}</span>
     </a>
     <transition name="fade">
@@ -126,12 +126,10 @@ export default {
           color: $cwa-navbar-background
       &:nth-child(2n)
         background-color: #F0F0F0
-  .icon
-    position: relative
+  .cwa-icon
+    margin: 0 1.8rem
     width: .95em
     height: .95em
-    margin: 0 1.8rem
-    display: block
     .total
       position: absolute
       z-index: 2
@@ -141,24 +139,4 @@ export default {
       transform: translate(-50%, -35%)
       font-size: .8em
       font-weight: $font-weight-bold
-    .triangle
-      z-index: 1
-      position: relative
-      background-color: $cwa-danger
-      transform: rotate(-60deg) skewX(-30deg) scale(1,.866)
-      &:before,
-      &:after
-        content: ''
-        position: absolute
-        background-color: inherit
-      &:before
-        transform: rotate(-135deg) skewX(-45deg) scale(1.414,.707) translate(0,-50%)
-      &:after
-        transform: rotate(135deg) skewY(-45deg) scale(.707,1.414) translate(50%,0)
-    .triangle,
-    .triangle:before,
-    .triangle:after
-      width: 100%
-      height: 100%
-      border-top-right-radius: 30%
 </style>

@@ -4,7 +4,11 @@ import {
   NotificationLevels
 } from '../../components/cwa-api-notifications/types'
 import ApiError from '../../../../inc/api-error'
-import { NOTIFICATION_EVENTS } from '../../../events'
+import {
+  DialogEvent,
+  NOTIFICATION_EVENTS,
+  CONFIRM_EVENTS
+} from '../../../events'
 import ApiErrorNotificationsMixin from '../../../mixins/ApiErrorNotificationsMixin'
 
 export const notificationCategories = {
@@ -127,11 +131,20 @@ export default Vue.extend({
     //     this.notifications[violation.propertyPath] = fieldNotifications
     //   })
     // },
-    async deleteComponent() {
-      this.isLoading = true
-      await this.$cwa.deleteResource(this.iri)
-      this.$emit('change')
-      this.isLoading = false
+    deleteComponent() {
+      const event: DialogEvent = {
+        id: 'confirm-delete-resource',
+        title: 'Confirm Delete',
+        html: `<p>Are you sure you want to delete this resource?</p><p class="warning"><span class="cwa-icon"><span class="cwa-warning-triangle"></span></span><span>This action cannot be reversed!</span></p>`,
+        onSuccess: async () => {
+          this.isLoading = true
+          await this.$cwa.deleteResource(this.iri)
+          this.$emit('change')
+          this.isLoading = false
+        },
+        confirmButtonText: 'Delete'
+      }
+      this.$cwa.$eventBus.$emit(CONFIRM_EVENTS.confirm, event)
     },
     handleResourceRequestError(error, endpoint) {
       if (!(error instanceof ApiError)) {
@@ -154,7 +167,7 @@ export default Vue.extend({
           level: NotificationLevels.ERROR,
           category: this.notificationCategories.violations
         }
-        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+        this.addNotificationEvent(notification)
       }
     }
   }

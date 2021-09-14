@@ -5,12 +5,15 @@ import { StoreCategories } from '../storage'
 // @ts-ignore
 import ResourceComponentLoader from './resource-component-loader'
 // @ts-ignore
+import CwaConfirm from './components/cwa-confirm'
+// @ts-ignore
 import components from '~/.nuxt/cwa/pages'
 
 export default Vue.extend({
   auth: false,
   components: {
     ResourceComponentLoader,
+    CwaConfirm,
     ClientOnly,
     ...components
   },
@@ -90,8 +93,10 @@ export default Vue.extend({
   render(h) {
     return h('div', {}, [
       h(this.$options.components.ResourceComponentLoader, {
-        props: this.resourceComponentLoaderProps
-      })
+        props: this.resourceComponentLoaderProps,
+        class: 'cwa-page'
+      }),
+      h(this.$options.components.CwaConfirm, {})
     ])
   }
 })

@@ -22,16 +22,18 @@
     <transition-expand>
       <div v-show="areTabsShowing" class="tab-content-container">
         <div ref="tabContent" class="tab-content">
-          <component
-            :is="selectedTab.component"
-            v-if="selectedTab && $cwa.getResource(iri)"
-            :key="loopKey('tab-content', selectedTabIndex)"
-            :iri="iri"
-            :context="fullContext"
-            :field-errors="tabInputErrors[selectedTab.label]"
-            @draggable="toggleDraggable"
-            @close="$emit('close')"
-          />
+          <keep-alive>
+            <component
+              :is="selectedTab.component"
+              v-if="selectedTab && $cwa.getResource(iri)"
+              :key="loopKey('tab-content', selectedTabIndex)"
+              :iri="iri"
+              :context="fullContext"
+              :field-errors="tabInputErrors[selectedTab.label]"
+              @draggable="toggleDraggable"
+              @close="$emit('close')"
+            />
+          </keep-alive>
         </div>
       </div>
     </transition-expand>

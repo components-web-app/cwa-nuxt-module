@@ -18,9 +18,11 @@ export const getInputErrorNotificationCode = (field) => {
 export default Vue.extend({
   data() {
     return {
-      removeErrorEvents: []
+      removeErrorEvents: [],
+      fieldNameMap: {}
     } as {
       removeErrorEvents: ApiViolationNotifications[]
+      fieldNameMap: { [key: string]: string }
     }
   },
   methods: {
@@ -48,24 +50,28 @@ export default Vue.extend({
           field,
           category: notificationCategory
         }
-        this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
         this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
           field,
           category: notificationCategory,
           status: -1
         } as StatusEvent)
 
-        const removeEvent: RemoveNotificationEvent = {
-          code: notification.code,
-          category: notification.category,
-          field: notification.field,
-          endpoint: notification.endpoint
-        }
-        this.removeErrorEvents.push(removeEvent)
-
-        response.push({ notification, removeEvent })
+        response.push(this.addNotificationEvent(notification))
       }
       return response
+    },
+    addNotificationEvent(notification: NotificationEvent) {
+      this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+
+      const removeEvent: RemoveNotificationEvent = {
+        code: notification.code,
+        category: notification.category,
+        field: notification.field,
+        endpoint: notification.endpoint
+      }
+      this.removeErrorEvents.push(removeEvent)
+
+      return { notification, removeEvent }
     }
   }
 })

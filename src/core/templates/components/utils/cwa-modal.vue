@@ -5,7 +5,8 @@
       <div class="modal-card">
         <div class="close-bar">
           <button class="modal-close" aria-label="close" @click="close">
-            <close-icon class="close-icon" />
+            <close-icon v-if="!hideClose" class="close-icon" />
+            <span v-else>&nbsp;</span>
           </button>
         </div>
         <div class="modal-card-inner">
@@ -17,9 +18,17 @@
 </template>
 
 <script>
-import CloseIcon from '../../../assets/images/icon-add.svg?inline'
 export default {
-  components: { CloseIcon },
+  components: {
+    CloseIcon: () => import('../../../assets/images/icon-add.svg?inline')
+  },
+  props: {
+    hideClose: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
+  },
   methods: {
     close() {
       this.$emit('close')
@@ -77,6 +86,9 @@ $modal-breakpoint: $tablet
       flex-wrap: wrap
       justify-content: center
       padding: 2rem 3rem 0 3rem
+      code
+        background: $cwa-grid-item-background
+        padding: .5em
       a
         color: $cwa-color-text-light
         &:hover

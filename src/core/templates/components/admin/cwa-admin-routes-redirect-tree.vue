@@ -8,9 +8,8 @@
             <a
               href="#"
               class="trash-link"
-              @click.prevent="deleteRedirect(redirect['@id'])"
+              @click.prevent="deleteRedirect(redirect)"
             >
-              <icon-trash />
               <img
                 src="../../../assets/images/icon-trash.svg"
                 alt="Trash Icon"
@@ -30,6 +29,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { CONFIRM_EVENTS, DialogEvent } from '../../../events'
 
 export default Vue.extend({
   name: 'CwaAdminRoutesRedirectTree',
@@ -40,9 +40,41 @@ export default Vue.extend({
     }
   },
   methods: {
-    async deleteRedirect(iri) {
-      await this.$cwa.deleteResource(iri)
-      this.$emit('reload')
+    deleteRedirect(redirect) {
+      const pathsToDelete = [redirect.path]
+      const addRedirects = (redirects: array) => {
+        if (redirects) {
+          redirects.forEach((re) => {
+            addNestedRedirectPath(re)
+          })
+        }
+      }
+      const addNestedRedirectPath = ({ path, redirectedFrom }) => {
+        pathsToDelete.push(path)
+        addRedirects(redirectedFrom)
+      }
+      addRedirects(redirect.redirectedFrom)
+      const allRedirectsAsHtml = pathsToDelete
+        .map((path) => `<p><code>${path}</code></p>`)
+        .join(' ')
+      const event: DialogEvent = {
+        title: 'Confirm Delete',
+        html: `
+<p>You are about to delete the following ${
+          pathsToDelete.length > 1 ? 'redirects' : 'redirect'
+        }</p>
+${allRedirectsAsHtml}
+<p class="warning">
+  <span class="cwa-icon"><span class="cwa-warning-triangle"></span></span>
+  <span>This action cannot be reversed!</span>
+</p>`,
+        onSuccess: async () => {
+          await this.$cwa.deleteResource(redirect['@id'])
+          this.$emit('reload')
+        },
+        confirmButtonText: 'Delete'
+      }
+      this.$cwa.$eventBus.$emit(CONFIRM_EVENTS.confirm, event)
     }
   }
 })
@@ -82,7 +114,7 @@ export default Vue.extend({
       &::after
         position: absolute
         content: ''
-        left: -1px
+        left: 0
         top: 50%
         width: 1.2rem
         height: 0
@@ -90,7 +122,7 @@ export default Vue.extend({
     &:last-child > div::before
       position: absolute
       content: ''
-      left: -1px
+      left: 0
       top: 0
       height: 50%
       width: 0
@@ -98,7 +130,7 @@ export default Vue.extend({
     &:not(:last-child)::before
       position: absolute
       content: ''
-      left: -1px
+      left: 0
       top: 0
       height: 100%
       width: 0

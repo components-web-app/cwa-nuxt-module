@@ -4,6 +4,16 @@ import {
   ComponentManagerTab
 } from './mixins/ComponentManagerMixin'
 
+export interface DialogEvent {
+  id: string
+  component?: Function
+  html?: string
+  title?: string
+  onSuccess?: Function
+  cancelButtonText?: string
+  confirmButtonText?: string
+}
+
 export interface TabChangedEvent {
   newTab: ComponentManagerTab
   previousTab: ComponentManagerTab
@@ -98,6 +108,11 @@ const statusCategory = 'status'
 export const STATUS_EVENTS = {
   change: `${prefix}:${statusCategory}:change`,
   reset: `${prefix}:${statusCategory}:reset`
+}
+
+const confirmCategory = 'confirm'
+export const CONFIRM_EVENTS = {
+  confirm: `${prefix}:${confirmCategory}:confirm`
 }
 
 export default {
