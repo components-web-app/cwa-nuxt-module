@@ -77,7 +77,7 @@
         </div>
 
         <section
-          v-if="savedComponent && generatedRoute !== savedComponent.path"
+          v-if="!savedComponent || generatedRoute !== savedComponent.path"
         >
           <div class="cwa-input">
             <label>Recommended page route</label>
@@ -251,8 +251,8 @@ export default Vue.extend({
       this.isLoading = true
       try {
         const newRoute = await this.$axios.$post(`/_/routes/generate`, {
-          pageData: this.component.pageData,
-          page: this.component.page
+          pageData: this.component.pageData?.['@id'] || this.component.pageData,
+          page: this.component.page?.['@id'] || this.component.page
         })
         this.$cwa.saveResource(newRoute)
         if (this.pageComponent) {
