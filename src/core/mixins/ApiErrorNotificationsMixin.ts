@@ -39,11 +39,12 @@ export default Vue.extend({
     ): ApiViolationNotifications[] {
       const response = []
       for (const violation of violations) {
-        const field = violation.propertyPath
+        const field =
+          this.fieldNameMap?.[violation.propertyPath] || violation.propertyPath
         const notificationCode = getInputErrorNotificationCode(field)
         const notification: NotificationEvent = {
           code: notificationCode,
-          title: violation.propertyPath || 'Input Error',
+          title: field || 'Input Error',
           message: violation.message,
           level: NotificationLevels.ERROR,
           endpoint,

@@ -175,7 +175,10 @@ export default Vue.extend({
         pageData: null
       },
       redirect: null,
-      loadingRedirects: false
+      loadingRedirects: false,
+      fieldNameMap: {
+        path: 'Page route'
+      }
     } as {
       iri: string
       routePageShowing: string
