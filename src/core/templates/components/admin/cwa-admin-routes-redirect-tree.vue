@@ -31,6 +31,11 @@
 import Vue from 'vue'
 import { CONFIRM_EVENTS, DialogEvent } from '../../../events'
 
+interface RedirectResource {
+  path: string
+  redirectedFrom?: RedirectResource[]
+}
+
 export default Vue.extend({
   name: 'CwaAdminRoutesRedirectTree',
   props: {
@@ -40,24 +45,29 @@ export default Vue.extend({
     }
   },
   methods: {
-    deleteRedirect(redirect) {
+    deleteRedirect(redirect: RedirectResource) {
       const pathsToDelete = [redirect.path]
-      const addRedirects = (redirects: array) => {
+      const addRedirects = (redirects: RedirectResource[]) => {
         if (redirects) {
           redirects.forEach((re) => {
             addNestedRedirectPath(re)
           })
         }
       }
-      const addNestedRedirectPath = ({ path, redirectedFrom }) => {
+      const addNestedRedirectPath = ({
+        path,
+        redirectedFrom
+      }: RedirectResource) => {
         pathsToDelete.push(path)
         addRedirects(redirectedFrom)
       }
       addRedirects(redirect.redirectedFrom)
+
       const allRedirectsAsHtml = pathsToDelete
         .map((path) => `<p><code>${path}</code></p>`)
         .join(' ')
       const event: DialogEvent = {
+        id: 'confirm-delete-routes',
         title: 'Confirm Delete',
         html: `
 <p>You are about to delete the following ${
