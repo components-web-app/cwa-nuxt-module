@@ -1,7 +1,9 @@
 <template>
   <cwa-modal class="layout-details-page" @close="$emit('close')">
     <div class="status-bar">
-      <status-icon :status="isSaved ? 1 : 0" />
+      <status-icon
+        :status="isSaved && routeIsSaved && !addingRedirect ? 1 : 0"
+      />
       <error-notifications :listen-categories="notificationCategories" />
     </div>
     <div class="title-tabs">
@@ -64,6 +66,8 @@
         v-model="component"
         :notification-categories="notificationCategories"
         @input="inputListener"
+        @is-saved="handleRouteIsSaved"
+        @adding-redirect="handleAddingRedirect"
       />
     </section>
   </cwa-modal>
@@ -78,7 +82,9 @@ export default Vue.extend({
   mixins: [IriModalView],
   data() {
     return {
-      currentTabIndex: 0
+      currentTabIndex: 0,
+      routeIsSaved: true,
+      addingRedirect: false
     }
   },
   methods: {
@@ -87,6 +93,12 @@ export default Vue.extend({
     },
     inputListener(resource) {
       this.$emit('input', resource)
+    },
+    handleRouteIsSaved(routeSaved) {
+      this.routeIsSaved = routeSaved
+    },
+    handleAddingRedirect(addingRedirect) {
+      this.addingRedirect = addingRedirect
     }
   }
 })

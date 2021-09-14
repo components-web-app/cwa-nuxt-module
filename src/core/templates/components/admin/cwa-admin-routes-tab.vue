@@ -194,11 +194,21 @@ export default Vue.extend({
     },
     generatedRoute() {
       return `/${slugify(this.pageComponent.title).toLowerCase()}`
+    },
+    addingRedirect() {
+      return (
+        this.routePageShowing === 'redirect' &&
+        this.redirect !== null &&
+        this.redirect !== ''
+      )
     }
   },
   watch: {
     async iri() {
       await Promise.all([this.findIriResource(), this.reloadRouteRedirects()])
+    },
+    addingRedirect(newValue) {
+      this.$emit('adding-redirect', newValue)
     }
   },
   async mounted() {
