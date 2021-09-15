@@ -103,6 +103,10 @@ interface DataInterface {
   showTabs: boolean
   selectedPosition?: string
   persistentStates: any
+  mouseDownPosition: {
+    pageX: Number
+    pageY: Number
+  }
 }
 
 export default Vue.extend({
@@ -126,7 +130,8 @@ export default Vue.extend({
       showHighlightOverlay: false,
       showTabs: false,
       selectedPosition: null,
-      persistentStates: {}
+      persistentStates: {},
+      mouseDownPosition: null
     }
   },
   computed: {
@@ -220,6 +225,7 @@ export default Vue.extend({
     }
   },
   mounted() {
+    window.addEventListener('mousedown', this.handleMouseDown)
     window.addEventListener('click', this.show)
     this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
@@ -231,6 +237,7 @@ export default Vue.extend({
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
   },
   beforeDestroy() {
+    window.removeEventListener('mousedown', this.handleMouseDown)
     window.removeEventListener('click', this.show)
     this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPosition)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
@@ -244,6 +251,12 @@ export default Vue.extend({
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
+    handleMouseDown({ pageX, pageY }) {
+      this.mouseDownPosition = {
+        pageX,
+        pageY
+      }
+    },
     newDraftListener({ publishedIri, draftIri }) {
       if (draftIri && publishedIri === this.componentIri) {
         this.$nextTick(() => {
@@ -320,9 +333,18 @@ export default Vue.extend({
       this.$cwa.$storage.setState('CwaComponentManagerStates', {})
     },
     show(event) {
+      // calendar inside manager should not trigger anything
       if (event.target.closest('.flatpickr-calendar')) {
         return
       }
+      // prevent trigger on a drag
+      const delta = 6
+      const diffX = Math.abs(event.pageX - this.mouseDownPosition.pageX)
+      const diffY = Math.abs(event.pageY - this.mouseDownPosition.pageY)
+      if (diffX > delta && diffY > delta) {
+        return
+      }
+
       this.pendingComponents = []
       if (this.showingCriteria) {
         this.$cwa.$eventBus.$emit(EVENTS.show)
