@@ -19,7 +19,11 @@
 import Vue from 'vue'
 import moment from 'moment'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
-import { NewComponentEvent } from '../../../../events'
+import {
+  CONFIRM_DIALOG_EVENTS,
+  ConfirmDialogEvent,
+  NewComponentEvent
+} from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
 import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
@@ -147,14 +151,24 @@ export default Vue.extend({
         )
       }
     },
-    async deleteComponent(key) {
-      if (!window.confirm('Are you sure?')) {
-        return
+    deleteComponent(key) {
+      const message =
+        key === 'here'
+          ? '<p>Are you sure you want to delete this component from this location?</p><p>If it does not exist anywhere else it will be permanently deleted.</p>'
+          : '<p>Are you sure you want to delete every instance of this component from your entire website?</p>'
+      const event: ConfirmDialogEvent = {
+        id: 'confirm-delete-component',
+        title: 'Confirm Delete',
+        html: `${message}<p class="warning"><span class="cwa-icon"><span class="cwa-warning-triangle"></span></span><span>This action cannot be reversed!</span></p>`,
+        onSuccess: async () => {
+          const deleteResource =
+            key === 'here' ? this.selectedPosition : this.selectedComponent
+          await this.$cwa.deleteResource(deleteResource)
+          this.$emit('close')
+        },
+        confirmButtonText: key === 'here' ? 'Delete Here' : 'Delete Everywhere'
       }
-      const deleteResource =
-        key === 'here' ? this.selectedPosition : this.selectedComponent
-      await this.$cwa.deleteResource(deleteResource)
-      this.$emit('close')
+      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
     }
   }
 })

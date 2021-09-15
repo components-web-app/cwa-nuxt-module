@@ -29,7 +29,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { CONFIRM_EVENTS, DialogEvent } from '../../../events'
+import { CONFIRM_DIALOG_EVENTS, ConfirmDialogEvent } from '../../../events'
 
 interface RedirectResource {
   path: string
@@ -66,7 +66,7 @@ export default Vue.extend({
       const allRedirectsAsHtml = pathsToDelete
         .map((path) => `<p><code>${path}</code></p>`)
         .join(' ')
-      const event: DialogEvent = {
+      const event: ConfirmDialogEvent = {
         id: 'confirm-delete-routes',
         title: 'Confirm Delete',
         html: `
@@ -84,7 +84,7 @@ ${allRedirectsAsHtml}
         },
         confirmButtonText: 'Delete'
       }
-      this.$cwa.$eventBus.$emit(CONFIRM_EVENTS.confirm, event)
+      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
     }
   }
 })

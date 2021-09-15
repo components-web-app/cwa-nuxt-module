@@ -31,7 +31,7 @@ export default {
       return this.isExternal
     },
     isExternal() {
-      return this.to.match(/^(http(s)?|ftp):\/\//)
+      return this.to.match(/^(?:(?:http(?:s)?|ftp):)?\/\//)
     },
     linkProps() {
       if (this.isExternal) {

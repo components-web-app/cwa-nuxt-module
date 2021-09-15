@@ -11,7 +11,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { DialogEvent, CONFIRM_EVENTS } from '../../events'
+import { ConfirmDialogEvent, CONFIRM_DIALOG_EVENTS } from '../../events'
 import CwaConfirmDialog from './cwa-confirm-dialog.vue'
 
 export default Vue.extend({
@@ -20,14 +20,20 @@ export default Vue.extend({
     return {
       dialogs: []
     } as {
-      dialogs: DialogEvent[]
+      dialogs: ConfirmDialogEvent[]
     }
   },
   mounted() {
-    this.$cwa.$eventBus.$on(CONFIRM_EVENTS.confirm, this.handleConfirmEvent)
+    this.$cwa.$eventBus.$on(
+      CONFIRM_DIALOG_EVENTS.confirm,
+      this.handleConfirmEvent
+    )
   },
   beforeDestroy() {
-    this.$cwa.$eventBus.$off(CONFIRM_EVENTS.confirm, this.handleConfirmEvent)
+    this.$cwa.$eventBus.$off(
+      CONFIRM_DIALOG_EVENTS.confirm,
+      this.handleConfirmEvent
+    )
   },
   methods: {
     closeModal({ id }) {
@@ -36,7 +42,7 @@ export default Vue.extend({
         this.dialogs.splice(index, 1)
       }
     },
-    handleConfirmEvent(event: DialogEvent) {
+    handleConfirmEvent(event: ConfirmDialogEvent) {
       this.dialogs.push(event)
     }
   }

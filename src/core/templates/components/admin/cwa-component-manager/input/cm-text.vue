@@ -33,7 +33,7 @@ export default {
     },
     props() {
       return Object.assign({}, this.$props, {
-        id: `input-${this.resource['@id']}-${this.field}`,
+        id: `input-${this.resource?.['@id']}-${this.field}`,
         wrapper: this.wrapperComponent
       })
     }

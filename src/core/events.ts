@@ -4,7 +4,7 @@ import {
   ComponentManagerTab
 } from './mixins/ComponentManagerMixin'
 
-export interface DialogEvent {
+export interface ConfirmDialogEvent {
   id: string
   component?: Function
   html?: string
@@ -111,7 +111,7 @@ export const STATUS_EVENTS = {
 }
 
 const confirmCategory = 'confirm'
-export const CONFIRM_EVENTS = {
+export const CONFIRM_DIALOG_EVENTS = {
   confirm: `${prefix}:${confirmCategory}:confirm`
 }
 

@@ -31,7 +31,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import type { PropType } from 'vue'
-import { DialogEvent } from '../../events'
+import { ConfirmDialogEvent } from '../../events'
 import CwaModal from './utils/cwa-modal'
 import CwaLoader from './utils/cwa-loader.vue'
 
@@ -42,7 +42,7 @@ export default Vue.extend({
   },
   props: {
     dialogEvent: {
-      type: Object as PropType<DialogEvent>,
+      type: Object as PropType<ConfirmDialogEvent>,
       required: true
     }
   },
