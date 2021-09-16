@@ -60,6 +60,8 @@
                 </li>
               </ul>
               <ul class="menu-links-right">
+                <!--
+                Unsure of what global settings would be - MW idea not thought through yet
                 <li>
                   Global Settings
                   <ul>
@@ -71,11 +73,14 @@
                     </li>
                   </ul>
                 </li>
+                -->
                 <li>
                   Account
                   <ul>
                     <li>
-                      <cwa-nuxt-link>My account</cwa-nuxt-link>
+                      <cwa-nuxt-link :to="`/_cwa/users/${$cwa.user['@id']}`"
+                        >My account</cwa-nuxt-link
+                      >
                     </li>
                     <li>
                       <a href="#" @click.prevent="$auth.logout('local')"

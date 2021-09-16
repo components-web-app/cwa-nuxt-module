@@ -9,21 +9,23 @@
         <div v-show="isShowing" ref="cwaAdminBar" class="cwa-admin-bar">
           <div class="inner">
             <div class="left">
-              <div class="icons">
-                <a href="#" @click.prevent="showPageEditModal">
-                  <img
-                    src="../../../assets/images/icon-info.svg"
-                    alt="Builder Icon"
+              <template v-if="currentView === 'page'">
+                <div class="icons">
+                  <a href="#" @click.prevent="showPageEditModal">
+                    <img
+                      src="../../../assets/images/icon-info.svg"
+                      alt="Info Icon"
+                    />
+                  </a>
+                </div>
+                <div class="controls">
+                  <cwa-admin-toggle
+                    id="edit-mode"
+                    v-model="editMode"
+                    label="Edit mode"
                   />
-                </a>
-              </div>
-              <div v-if="currentView === 'page'" class="controls">
-                <cwa-admin-toggle
-                  id="edit-mode"
-                  v-model="editMode"
-                  label="Edit mode"
-                />
-              </div>
+                </div>
+              </template>
             </div>
             <div class="center">
               <div class="icons">
@@ -45,12 +47,15 @@
                     alt="Pages Icon"
                   />
                 </cwa-nuxt-link>
+                <!--
+                We will have a page to view/visualise website components and where they are used. After Alpha.1
                 <cwa-nuxt-link to="/_cwa/components">
                   <img
                     src="../../../assets/images/icon-components.svg"
                     alt="Components Icon"
                   />
                 </cwa-nuxt-link>
+                -->
                 <cwa-nuxt-link to="/_cwa/users">
                   <img
                     src="../../../assets/images/icon-users.svg"

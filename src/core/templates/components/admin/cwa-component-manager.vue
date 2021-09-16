@@ -227,7 +227,7 @@ export default Vue.extend({
   mounted() {
     window.addEventListener('mousedown', this.handleMouseDown)
     window.addEventListener('click', this.show)
-    this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPosition)
+    this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPositionListener)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
     this.$cwa.$eventBus.$on(EVENTS.saveState, this.saveStateListener)
     this.$cwa.$eventBus.$on(
@@ -239,7 +239,7 @@ export default Vue.extend({
   beforeDestroy() {
     window.removeEventListener('mousedown', this.handleMouseDown)
     window.removeEventListener('click', this.show)
-    this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPosition)
+    this.$cwa.$eventBus.$off(EVENTS.selectPosition, this.selectPositionListener)
     this.$cwa.$eventBus.$off(EVENTS.addComponent, this.addComponent)
     this.$cwa.$eventBus.$off(EVENTS.saveState, this.saveStateListener)
     this.$cwa.$eventBus.$off(
@@ -267,6 +267,10 @@ export default Vue.extend({
     },
     isIriCollection(iri) {
       return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentCollection'
+    },
+    selectPositionListener(iri) {
+      console.log('selectPositionListener', iri)
+      this.selectPosition(iri)
     },
     selectPosition(iri) {
       this.selectedPosition = iri
