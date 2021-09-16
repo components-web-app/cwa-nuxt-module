@@ -52,7 +52,7 @@ export default Vue.extend({
         context: Object.assign(
           {
             statusTab: {
-              enabled: this.publishable
+              enabled: this.publishable && !this.metadata?._isNew
             }
           },
           this.componentManagerContext
