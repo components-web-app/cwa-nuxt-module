@@ -7,12 +7,14 @@
     :wrapper="wrapperComponent"
   />
 </template>
-<script>
+
+<script lang="ts">
+import Vue from 'vue'
 import CwaAdminMultiselect from '../../input/cwa-admin-multiselect.vue'
 import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaSelectMixin from '../../input/CwaSelectMixin'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminMultiselect },
   mixins: [InputMixin, CwaSelectMixin],
   props: {
@@ -27,5 +29,5 @@ export default {
       wrapperComponent: async () => await import('./wrapper.vue')
     }
   }
-}
+})
 </script>

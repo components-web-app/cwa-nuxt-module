@@ -9,7 +9,6 @@
       v-model="currentValue"
       :options="options"
       :required="required"
-      @input="selectChanged"
     />
   </component>
 </template>

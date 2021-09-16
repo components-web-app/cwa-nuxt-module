@@ -9,9 +9,8 @@
       <textarea
         v-if="isTextarea"
         :id="id"
-        v-model="value"
+        v-model="currentValue"
         :required="required"
-        @input="updateValue($event.target.value)"
         @keypress="$emit('keypress')"
         @keydown="$emit('keydown')"
         @keyup="$emit('keyup')"
@@ -19,10 +18,9 @@
       <input
         v-else
         :id="id"
+        v-model="currentValue"
         :type="type"
-        :value="value"
         :required="required"
-        @input="updateValue($event.target.value)"
         @keypress="$emit('keypress')"
         @keydown="$emit('keydown')"
         @keyup="$emit('keyup')"

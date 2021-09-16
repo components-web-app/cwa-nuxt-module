@@ -3,17 +3,16 @@
     :for="id"
     :class="[
       'cwa-admin-toggle',
-      { 'is-checked': !!value, 'has-error': hasError }
+      { 'is-checked': !!currentValue, 'has-error': hasError }
     ]"
   >
     <span class="label">{{ label }}</span>
     <span class="switch">
       <input
         :id="id"
-        :checked="value"
+        v-model="currentValue"
         :required="required"
         type="checkbox"
-        @change="updateValue($event.target.checked)"
       />
       <span class="slider" />
     </span>

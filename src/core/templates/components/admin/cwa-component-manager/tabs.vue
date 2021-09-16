@@ -20,20 +20,18 @@
       </li>
     </ul>
     <transition-expand>
-      <div v-show="areTabsShowing" class="tab-content-container">
+      <div v-show="showTabs" class="tab-content-container">
         <div ref="tabContent" class="tab-content">
-          <keep-alive>
-            <component
-              :is="selectedTab.component"
-              v-if="selectedTab && $cwa.getResource(iri)"
-              :key="loopKey('tab-content', selectedTabIndex)"
-              :iri="iri"
-              :context="fullContext"
-              :field-errors="tabInputErrors[selectedTab.label]"
-              @draggable="toggleDraggable"
-              @close="$emit('close')"
-            />
-          </keep-alive>
+          <component
+            :is="tabComponent"
+            v-if="tabComponent"
+            :key="loopKey(`${selectedTab.label}-tab-content`, selectedTabIndex)"
+            :iri="iri"
+            :context="fullContext"
+            :field-errors="tabInputErrors[selectedTab.label]"
+            @draggable="toggleDraggable"
+            @close="handleTabCloseEvent"
+          />
         </div>
       </div>
     </transition-expand>
@@ -76,16 +74,24 @@ export default Vue.extend({
       type: Object,
       required: false,
       default: null
+    },
+    showTabs: {
+      type: Boolean,
+      required: true
     }
   },
   data() {
     return {
       selectedTabIndex: null,
-      areTabsShowing: false,
       tabInputErrors: {}
     }
   },
   computed: {
+    tabComponent() {
+      return this.$cwa.getResource(this.iri)
+        ? this.selectedTab?.component || null
+        : null
+    },
     fullContext() {
       return Object.assign(
         {
@@ -106,7 +112,10 @@ export default Vue.extend({
     },
     loopKey() {
       return (label, index) => {
-        return `${this.iri}-${label}-${index}`
+        // using the iri results in tab being re-mounted
+        // not ideal for the publishable toggle
+        // ${this.iri}-
+        return `${label}-${index}`
       }
     },
     selectedTab() {
@@ -136,13 +145,14 @@ export default Vue.extend({
         }
       },
       immediate: true
+    },
+    showTabs(newValue) {
+      if (newValue) {
+        this.showTab(0)
+      }
     }
   },
   created() {
-    this.$cwa.$eventBus.$on(
-      COMPONENT_MANAGER_EVENTS.showTabs,
-      this.setTabsShowing
-    )
     this.$cwa.$eventBus.$on(
       NOTIFICATION_EVENTS.add,
       this.addNotificationListener
@@ -154,10 +164,6 @@ export default Vue.extend({
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
-      COMPONENT_MANAGER_EVENTS.showTabs,
-      this.setTabsShowing
-    )
-    this.$cwa.$eventBus.$off(
       NOTIFICATION_EVENTS.add,
       this.addNotificationListener
     )
@@ -167,15 +173,8 @@ export default Vue.extend({
     )
   },
   methods: {
-    setTabsShowing(newValue) {
-      if (newValue) {
-        this.showTab(0)
-      }
-      this.$nextTick(() => {
-        setTimeout(() => {
-          this.areTabsShowing = newValue
-        }, 100)
-      })
+    handleTabCloseEvent() {
+      this.$emit('close')
     },
     showTab(newIndex) {
       this.selectedTabIndex = newIndex

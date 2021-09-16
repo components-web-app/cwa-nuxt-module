@@ -6,12 +6,7 @@
     :has-error="hasError"
   >
     <div class="select">
-      <select
-        :id="id"
-        v-model="currentValue"
-        :required="required"
-        @change="selectChanged"
-      >
+      <select :id="id" v-model="currentValue" :required="required">
         <option
           v-if="!hasNullOption"
           :value="null"

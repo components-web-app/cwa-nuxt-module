@@ -89,6 +89,11 @@ export default {
       return this.normalizeValues(this.currentValue)
     }
   },
+  watch: {
+    currentValue() {
+      this.updateValue()
+    }
+  },
   methods: {
     toggleOption(value) {
       const currentIndex = !this.currentValue
@@ -102,7 +107,6 @@ export default {
         this.currentValue = []
       }
       this.currentValue.push(value)
-      this.updateValue()
     },
     toggleIsAdding() {
       if (!this.isAdding) {

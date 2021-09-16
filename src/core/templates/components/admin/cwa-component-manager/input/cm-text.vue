@@ -8,13 +8,13 @@
   />
 </template>
 <script>
-import InputMixin from '../../../../../mixins/ApiInputMixin'
+import ApiInputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaTextMixin from '../../input/CwaTextMixin'
 import CwaAdminText from '../../input/cwa-admin-text.vue'
 
 export default {
   components: { CwaAdminText },
-  mixins: [InputMixin, CwaTextMixin],
+  mixins: [ApiInputMixin, CwaTextMixin],
   props: {
     notificationCategory: {
       required: false,

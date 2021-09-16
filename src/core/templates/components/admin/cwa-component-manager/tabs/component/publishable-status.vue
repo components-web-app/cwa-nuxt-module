@@ -43,9 +43,8 @@ import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import CmDatepicker from '../../input/cm-datepicker.vue'
 import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
-import { COMPONENT_MANAGER_EVENTS } from '../../../../../../events'
-import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 import UpdateResourceError from '../../../../../../../inc/update-resource-error'
+import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 
 export default Vue.extend({
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -61,26 +60,8 @@ export default Vue.extend({
         return this.resource._metadata.published
       },
       set(showPublished) {
-        const emitSelectedComponent = (newIri) => {
-          this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.selectComponent,
-            newIri
-          )
-        }
-        let publishableIri = null
-        let emitEventImmediate = false
-        this.$cwa.$eventBus.$once(EVENTS.componentMounted, () => {
-          if (publishableIri) {
-            emitSelectedComponent(publishableIri)
-          } else {
-            emitEventImmediate = true
-          }
-        })
         const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
-        publishableIri = this.$cwa.togglePublishable(draftIri, showPublished)
-        if (emitEventImmediate) {
-          emitSelectedComponent(publishableIri)
-        }
+        this.$cwa.togglePublishable(draftIri, showPublished)
       }
     }
   },
@@ -88,7 +69,8 @@ export default Vue.extend({
     async publishNow() {
       const publishedResource = this.$cwa.getPublishedResource(this.resource)
       try {
-        await this.updateResource(
+        // this.$emit('close', true)
+        const resource = await this.updateResource(
           this.iri,
           'publishedAt',
           moment.utc().toISOString(),
@@ -96,7 +78,7 @@ export default Vue.extend({
           publishedResource?.componentPositions || null,
           'components-manager'
         )
-        this.$emit('close')
+        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
       } catch (error) {
         if (!(error instanceof UpdateResourceError)) {
           throw error

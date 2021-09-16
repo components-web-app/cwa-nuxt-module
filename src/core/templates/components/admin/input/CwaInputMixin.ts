@@ -37,7 +37,6 @@ export default Vue.extend({
         if (!(notifications !== null && Array.isArray(notifications))) {
           return false
         }
-        // notifications.forEach((item: Notification) => {})
         return true
       }
     },
@@ -47,12 +46,26 @@ export default Vue.extend({
       default: null
     }
   },
+  data() {
+    return {
+      currentValue: null
+    }
+  },
   computed: {
     hasError() {
       return this.notifications && this.notifications.length > 0
     }
   },
   watch: {
+    value: {
+      handler(newValue) {
+        this.currentValue = newValue
+      },
+      immediate: true
+    },
+    currentValue() {
+      this.updateValue()
+    },
     notifications(newNotifications, oldNotifications) {
       if (oldNotifications && oldNotifications.length) {
         oldNotifications.forEach((notification: NotificationEvent) => {
@@ -74,8 +87,8 @@ export default Vue.extend({
     }
   },
   methods: {
-    updateValue(value) {
-      this.$emit('input', value)
+    updateValue() {
+      this.$emit('input', this.currentValue)
     }
   }
 })

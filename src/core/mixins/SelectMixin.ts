@@ -13,11 +13,6 @@ export default Vue.extend({
       default: null
     }
   },
-  data() {
-    return {
-      currentValue: this?.value || null
-    }
-  },
   computed: {
     isOptionsArray() {
       return Array.isArray(this.options)
@@ -27,7 +22,7 @@ export default Vue.extend({
         return value === null
       })
     },
-    normalizedOptions() {
+    normalizedOptions(): { value: any; label: string }[] {
       // objects passed will be key value pairs
       if (!this.isOptionsArray) {
         const ops = []
@@ -42,13 +37,8 @@ export default Vue.extend({
       return this.normalizeValues(this.options)
     }
   },
-  watch: {
-    value(newValue) {
-      this.currentValue = newValue
-    }
-  },
   methods: {
-    normalizeValues(options) {
+    normalizeValues(options): { value: any; label: string }[] {
       // arrays passed will be strings or already normalized objects
       return options.map((op) => {
         if (typeof op === 'string' || op instanceof String) {
@@ -59,9 +49,6 @@ export default Vue.extend({
         }
         return op
       })
-    },
-    selectChanged() {
-      this.$emit('input', this.currentValue)
     }
   }
 })

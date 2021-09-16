@@ -22,6 +22,7 @@
                   :iri="componentIri"
                   :selected-position="selectedPosition"
                   :collection="closestCollection"
+                  :show-tabs="showTabs"
                   @draggable="toggleDraggable"
                   @close="hide"
                 />
@@ -219,9 +220,6 @@ export default Vue.extend({
     },
     selectedComponent({ iri }) {
       this.toggleComponent(iri || null)
-    },
-    showTabs(newValue) {
-      this.$cwa.$eventBus.$emit(EVENTS.showTabs, newValue)
     }
   },
   mounted() {
