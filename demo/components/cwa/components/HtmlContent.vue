@@ -28,6 +28,7 @@ import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
 import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import NotificationListenerMixin from '@cwa/nuxt-module/core/mixins/NotificationListenerMixin'
 import QuillInput from '~/components/api-input/QuillInput.vue'
+// eslint-disable-next-line vue/one-component-per-file
 export default {
   components: { QuillInput },
   mixins: [ComponentMixin, NotificationListenerMixin],
@@ -68,6 +69,7 @@ export default {
         })
         html = div.innerHTML
       }
+      // eslint-disable-next-line vue/one-component-per-file
       return Vue.extend({
         components: {
           CwaNuxtLink: () =>

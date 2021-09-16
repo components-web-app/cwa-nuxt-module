@@ -1,5 +1,4 @@
 import Vue from 'vue'
-import { COMPONENT_MANAGER_EVENTS } from '../events'
 import ComponentManagerMixin, {
   ComponentManagerComponent,
   ComponentManagerComponentContext,

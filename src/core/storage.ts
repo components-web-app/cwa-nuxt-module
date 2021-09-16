@@ -49,6 +49,7 @@ export class Storage {
   }
 
   _initState() {
+    const _this = this
     const storeModule = {
       namespaced: true,
       state: () => ({
@@ -190,7 +191,7 @@ export class Storage {
                 return
               }
 
-              if (this.isComponentSame(currentResource, payload.resource)) {
+              if (_this.isResourceSame(currentResource, payload.resource)) {
                 consola.info(
                   `Not added new resource payload to store. The new resource '${payload.name}' with ID '${payload.id}' is identical to the existing one`
                 )
@@ -410,7 +411,6 @@ export class Storage {
 
   getCategoryFromIri(iri: string) {
     if (!iri) {
-      console.trace()
       throw new Error('getCategoryFromIri requires the iri parameter')
     }
     if (iri.startsWith('/component/')) {
