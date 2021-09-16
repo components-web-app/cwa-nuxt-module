@@ -142,10 +142,6 @@ export const ComponentManagerMixin = Vue.extend({
       } as ComponentManagerAddEvent)
     },
     initComponentManagerShowListener() {
-      // on drag this deselects the position - also a feeling this was cause of intermittent bug
-      // where delete button was not appearing...
-      // this.$cwa.$eventBus.$emit(EVENTS.selectPosition, null)
-
       this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)
       // we should only be populating when the element is clicked and the show event is called
       // if we click, but this results in the manager hiding (it is already shown)

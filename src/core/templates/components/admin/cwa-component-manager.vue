@@ -269,7 +269,6 @@ export default Vue.extend({
       return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentCollection'
     },
     selectPositionListener(iri) {
-      console.log('selectPositionListener', iri)
       this.selectPosition(iri)
     },
     selectPosition(iri) {
@@ -341,16 +340,24 @@ export default Vue.extend({
       if (event.target.closest('.flatpickr-calendar')) {
         return
       }
-      // prevent trigger on a drag
-      const delta = 6
-      const diffX = Math.abs(event.pageX - this.mouseDownPosition.pageX)
-      const diffY = Math.abs(event.pageY - this.mouseDownPosition.pageY)
-      if (diffX > delta && diffY > delta) {
-        return
+
+      // for programatic clicks do not check position
+      if (event.isTrusted) {
+        // prevent trigger on a drag
+        const delta = 6
+        const diffX = Math.abs(event.pageX - this.mouseDownPosition.pageX)
+        const diffY = Math.abs(event.pageY - this.mouseDownPosition.pageY)
+        if (diffX > delta && diffY > delta) {
+          return
+        }
       }
 
       this.pendingComponents = []
       if (this.showingCriteria) {
+        // the component position component is listening to show to select a component.
+        // we could be selecting something without a position.
+        this.$cwa.$eventBus.$emit(EVENTS.selectPosition, null)
+
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }
       // the show event above should be listened to and add-component event emitted to populate components by now

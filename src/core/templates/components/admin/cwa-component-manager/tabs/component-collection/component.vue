@@ -38,6 +38,9 @@ export default Vue.extend({
   },
   watch: {
     async selectedComponent(newComponent: string) {
+      if (!newComponent) {
+        return
+      }
       // get the component for the dialog from the ui component
       const component = await components[`CwaComponents${newComponent}`]
       const {
@@ -54,6 +57,7 @@ export default Vue.extend({
         isPublishable
       }
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.newComponent, event)
+      this.selectedComponent = null
     }
   },
   async mounted() {
