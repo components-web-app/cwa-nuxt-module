@@ -62,11 +62,16 @@ export default {
       type: Array,
       required: false,
       default: null
+    },
+    expanded: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   data() {
     return {
-      isAdding: false,
+      isAdding: this.expanded,
       searchValue: null,
       currentValue: this.value
     }
@@ -92,6 +97,9 @@ export default {
   watch: {
     currentValue() {
       this.updateValue()
+    },
+    isAdding(isAdding) {
+      this.$emit('expanded', isAdding)
     }
   },
   methods: {

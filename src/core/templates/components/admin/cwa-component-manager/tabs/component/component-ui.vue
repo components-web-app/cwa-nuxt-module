@@ -20,6 +20,8 @@
           field="uiClassNames"
           label="Style"
           :options="context.UiClassNames"
+          :expanded="isExpanded"
+          @expanded="handleMultiselectExpanded"
         />
       </div>
     </div>
@@ -36,6 +38,16 @@ import CmMultiselect from '../../input/cm-multiselect.vue'
 export default Vue.extend({
   components: { CmMultiselect, CmSelect },
   mixins: [ComponentManagerTabMixin],
+  computed: {
+    isExpanded: {
+      get() {
+        return this.cmValue('isExpanded')
+      },
+      set(isExpanded) {
+        this.saveCmValue('isExpanded', isExpanded)
+      }
+    }
+  },
   watch: {
     'storeComponent.uiComponent'() {
       this.$cwa.$eventBus.$once(
@@ -49,6 +61,11 @@ export default Vue.extend({
           })
         }
       )
+    }
+  },
+  methods: {
+    handleMultiselectExpanded(isExpanded) {
+      this.isExpanded = isExpanded
     }
   }
 })

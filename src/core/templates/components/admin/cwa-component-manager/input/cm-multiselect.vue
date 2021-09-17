@@ -5,6 +5,8 @@
     :label="label"
     :options="options"
     :wrapper="wrapperComponent"
+    :expanded="expanded"
+    @expanded="handleExpanded"
   />
 </template>
 
@@ -22,11 +24,21 @@ export default Vue.extend({
       required: false,
       default: 'components-manager',
       type: String
+    },
+    expanded: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   data() {
     return {
       wrapperComponent: async () => await import('./wrapper.vue')
+    }
+  },
+  methods: {
+    handleExpanded(isExpanded) {
+      this.$emit('expanded', isExpanded)
     }
   }
 })

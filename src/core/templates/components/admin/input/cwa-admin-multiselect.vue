@@ -9,6 +9,8 @@
       v-model="currentValue"
       :options="options"
       :required="required"
+      :expanded="expanded"
+      @expanded="handleExpanded"
     />
   </component>
 </template>
@@ -24,6 +26,16 @@ export default {
       type: Function,
       required: false,
       default: null
+    },
+    expanded: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
+  },
+  methods: {
+    handleExpanded(isExpanded) {
+      this.$emit('expanded', isExpanded)
     }
   }
 }
