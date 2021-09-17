@@ -29,7 +29,7 @@ import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManag
 import NotificationListenerMixin from '@cwa/nuxt-module/core/mixins/NotificationListenerMixin'
 import QuillInput from '~/components/api-input/QuillInput.vue'
 // eslint-disable-next-line vue/one-component-per-file
-export default {
+export default Vue.extend({
   components: { QuillInput },
   mixins: [ComponentMixin, NotificationListenerMixin],
   data() {
@@ -105,7 +105,7 @@ export default {
       return newLink
     }
   }
-}
+})
 </script>
 
 <style lang="sass">
