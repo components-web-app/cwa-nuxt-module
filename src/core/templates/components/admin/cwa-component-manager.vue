@@ -103,11 +103,11 @@ interface DataInterface {
   showHighlightOverlay: boolean
   showTabs: boolean
   selectedPosition?: string
-  persistentStates: any
   mouseDownPosition: {
     pageX: Number
     pageY: Number
   }
+  persistentStates: { [key: string]: { [key: string]: any } }
 }
 
 export default Vue.extend({
@@ -131,8 +131,8 @@ export default Vue.extend({
       showHighlightOverlay: false,
       showTabs: false,
       selectedPosition: null,
-      persistentStates: {},
-      mouseDownPosition: null
+      mouseDownPosition: null,
+      persistentStates: {}
     }
   },
   computed: {
@@ -220,9 +220,19 @@ export default Vue.extend({
     },
     selectedComponent({ iri }) {
       this.toggleComponent(iri || null)
+    },
+    persistentStates: {
+      handler(newValue) {
+        this.$cwa.$storage.setState(
+          'CwaComponentManagerStates',
+          JSON.parse(JSON.stringify(newValue))
+        )
+      },
+      deep: true
     }
   },
   mounted() {
+    this.persistentStates = {}
     window.addEventListener('mousedown', this.handleMouseDown)
     window.addEventListener('click', this.show)
     this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPositionListener)
@@ -245,7 +255,6 @@ export default Vue.extend({
       this.publishableToggledListener
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
-
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
@@ -323,7 +332,6 @@ export default Vue.extend({
       this.expanded = false
       this.persistentStates = {}
       this.selectPosition(null)
-      this.$cwa.$storage.setState('CwaComponentManagerStates', {})
     },
     show(event) {
       // calendar inside manager should not trigger anything
@@ -389,19 +397,16 @@ export default Vue.extend({
       if (!this.showingCriteria) {
         return
       }
-      if (!this.persistentStates[event.iri]) {
+      if (!this.persistentStates?.[event.iri]) {
         this.$set(this.persistentStates, event.iri, {})
       }
-      this.$set(this.persistentStates[event.iri], event.name, event.value)
-      this.$cwa.$storage.setState(
-        'CwaComponentManagerStates',
-        JSON.parse(
-          JSON.stringify({
-            ...this.persistentStates,
-            [event.iri]: { ...this.persistentStates[event.iri] }
-          })
-        )
-      )
+      try {
+        this.$set(this.persistentStates[event.iri], event.name, event.value)
+      } catch (error) {
+        consola.error('ERROR SAVING CM PERSISTENT STATE (CMVALUE)')
+        consola.error(error)
+        consola.error(event.iri, event.name, event.value)
+      }
     },
     publishableToggledListener(event: PublishableToggledEvent) {
       if (event.showPublished) {
@@ -419,11 +424,6 @@ export default Vue.extend({
       )
       this.$set(this.persistentStates, toIri, copyData)
       this.$delete(this.persistentStates, fromIri)
-      const newState = {
-        ...this.persistentStates,
-        [toIri]: copyData
-      }
-      this.$cwa.$storage.setState('CwaComponentManagerStates', newState)
     }
   }
 })
