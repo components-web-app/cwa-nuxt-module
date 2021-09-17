@@ -41,10 +41,12 @@ export default Vue.extend({
       this.$cwa.$eventBus.$once(
         COMPONENT_MANAGER_EVENTS.componentMounted,
         () => {
-          this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.highlightComponent,
-            { iri: this.iri }
-          )
+          this.$nextTick(() => {
+            this.$cwa.$eventBus.$emit(
+              COMPONENT_MANAGER_EVENTS.highlightComponent,
+              { iri: this.iri }
+            )
+          })
         }
       )
     }

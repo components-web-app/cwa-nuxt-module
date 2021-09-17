@@ -17,6 +17,7 @@ export interface ConfirmDialogEvent {
 export interface TabChangedEvent {
   newTab: ComponentManagerTab
   previousTab: ComponentManagerTab
+  context: any
 }
 
 export interface NewComponentEvent {

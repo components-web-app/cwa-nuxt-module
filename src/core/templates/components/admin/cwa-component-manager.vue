@@ -273,17 +273,9 @@ export default Vue.extend({
       this.selectedPosition = iri
     },
     toggleDraggable(isDraggable) {
-      let closestCollection = null
-      if (this.components) {
-        for (const { iri } of this.components) {
-          if (this.isIriCollection(iri)) {
-            closestCollection = iri
-          }
-        }
-      }
       this.$cwa.$eventBus.$emit(EVENTS.draggable, {
         isDraggable,
-        collection: closestCollection
+        collection: this.closestCollection.iri
       } as DraggableEvent)
     },
     getStatusTab(

@@ -126,7 +126,8 @@ export default Vue.extend({
     selectedTab(newTab: ComponentManagerTab, previousTab: ComponentManagerTab) {
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.tabChanged, {
         newTab,
-        previousTab
+        previousTab,
+        context: this.fullContext
       } as TabChangedEvent)
     },
     selectedPosition(newIri, oldIri) {

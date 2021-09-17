@@ -273,7 +273,14 @@ export default Vue.extend({
     },
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
-      this.showOrderValues = !!event.newTab?.context?.showOrderValues
+      if (
+        !event.context?.collection.iri ||
+        event.context?.collection.iri !== this.resource['@id']
+      ) {
+        this.showOrderValues = false
+      } else {
+        this.showOrderValues = !!event.newTab?.context?.showOrderValues
+      }
     },
     handleHighlightComponentEvent({
       iri,

@@ -9,6 +9,7 @@ import ApiRequestMixin from './ApiRequestMixin'
 
 interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
+  elementsAdded: { [key: string]: HTMLElement }
 }
 
 export default Vue.extend({
@@ -32,7 +33,8 @@ export default Vue.extend({
           UiComponents: [],
           UiClassNames: []
         }
-      }
+      },
+      elementsAdded: {}
     }
   },
   computed: {
@@ -44,7 +46,12 @@ export default Vue.extend({
         name: this?.resource?.['@type'] || 'Unknown Component',
         tabs: [
           ...this.defaultManagerTabs.map((item) =>
-            Object.assign({}, item, { context: this.componentManagerContext })
+            Object.assign({}, item, {
+              context: {
+                ...this.componentManagerContext,
+                ...(item.context || {})
+              }
+            })
           ),
           ...this.componentManagerTabs
         ],

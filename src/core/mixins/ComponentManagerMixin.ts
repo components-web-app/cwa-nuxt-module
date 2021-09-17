@@ -38,7 +38,8 @@ export const ComponentManagerMixin = Vue.extend({
   mixins: [AddElementsMixin, ComponentManagerValueMixin],
   data() {
     return {
-      componentManagerDisabled: false
+      componentManagerDisabled: false,
+      elementsAdded: {}
     }
   },
   computed: {
