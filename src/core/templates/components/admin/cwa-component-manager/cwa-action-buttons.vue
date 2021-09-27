@@ -112,11 +112,10 @@ export default Vue.extend({
         additionalData.publishedAt =
           key === 'published' ? moment.utc().toISOString() : null
       }
-      const resourceObject = Object.assign(
-        {},
-        this.$cwa.getResource(this.addingEvent.iri),
-        additionalData
-      )
+      const resourceObject = {
+        ...this.$cwa.getResource(this.addingEvent.iri),
+        ...additionalData
+      }
 
       this.clearAllViolationNotifications()
 

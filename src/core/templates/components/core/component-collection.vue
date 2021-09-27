@@ -266,7 +266,7 @@ export default Vue.extend({
   },
   methods: {
     handleInitialData(dataObject: Object) {
-      const resource = Object.assign({}, this.newComponentResource, dataObject)
+      const resource = { ...this.newComponentResource, ...dataObject }
       this.$cwa.$storage.setResource({
         resource
       })
