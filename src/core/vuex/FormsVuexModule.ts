@@ -255,18 +255,24 @@ export default {
       }
 
       try {
-        const { data } = await this.$axios.post(formAction, submitData, {
-          cancelToken: cancelToken.token,
-          validateStatus(status) {
-            return [422, 201].includes(status)
+        const { data, status } = await this.$axios.post(
+          formAction,
+          submitData,
+          {
+            cancelToken: cancelToken.token,
+            validateStatus(status) {
+              return [422, 201].includes(status)
+            }
           }
-        })
+        )
         commit('update', {
           component: data,
           displayErrors: true
         })
         setValidationData('submitting', false)
-        setValidationData('success', true)
+        if (status === 201) {
+          setValidationData('success', true)
+        }
       } catch (error) {
         if (axios.isCancel(error)) {
           return
