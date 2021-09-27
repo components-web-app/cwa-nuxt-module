@@ -245,6 +245,10 @@ export default Vue.extend({
       COMPONENT_MANAGER_EVENTS.tabChanged,
       this.handleTabChangedEvent
     )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.hide,
+      this.handleManagerCloseEvent
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -263,6 +267,10 @@ export default Vue.extend({
       COMPONENT_MANAGER_EVENTS.tabChanged,
       this.handleTabChangedEvent
     )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.hide,
+      this.handleManagerCloseEvent
+    )
   },
   methods: {
     handleInitialData(dataObject: Object) {
@@ -270,6 +278,9 @@ export default Vue.extend({
       this.$cwa.$storage.setResource({
         resource
       })
+    },
+    handleManagerCloseEvent() {
+      this.showOrderValues = false
     },
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
