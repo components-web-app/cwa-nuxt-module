@@ -139,7 +139,8 @@ export default {
         this.preview = null
         this.$refs.file.value = ''
       } catch (error) {
-        this.handleUpdateError(error, this.notificationCategory, this.iri)
+        const apiError = this.$cwa.fetcher.axiosToApiError(error)
+        this.handleUpdateError(apiError, this.notificationCategory, this.iri)
       }
     },
     triggerUploadClick() {

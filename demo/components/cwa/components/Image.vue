@@ -57,4 +57,6 @@ export default {
     background: $cwa-background-dark
     color: $cwa-color-text-light
     display: inline-block
+  img
+    max-width: 100%
 </style>

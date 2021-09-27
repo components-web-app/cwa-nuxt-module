@@ -28,7 +28,7 @@ export default Vue.extend({
           refreshEndpoints
         )
       } catch (message) {
-        this.handleUpdateError(message, notificationCategory, iri)
+        throw this.handleUpdateError(message, notificationCategory, iri)
       }
     },
     handleUpdateError(message, notificationCategory, iri) {
@@ -65,7 +65,7 @@ export default Vue.extend({
       //   status: -1
       // } as StatusEvent)
 
-      throw new UpdateResourceError(
+      return new UpdateResourceError(
         'API error updating resource',
         message,
         notifications

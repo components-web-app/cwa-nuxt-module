@@ -104,24 +104,28 @@ export class Fetcher {
       this.setMercureHubFromHeaders(headers)
       return data
     } catch (error) {
-      const isCancel = this.ctx.$axios.isCancel(error)
-      const sanitisedError = AxiosErrorParser(error)
-      // for publishable components - when getting a collection the position and component id will exist.
-      // SSR is not authorized to view so it will return a 404. We know it exists as an ID is there
-      // By not throwing an error we can re-fetch client-side
-      // However, when fetching a route that does not exist, we need an error...
-      // Changed this functionality here to throw an exception so it can be handled by the calling function
-      throw new ApiError(
-        sanitisedError.message,
-        sanitisedError.statusCode,
-        sanitisedError.endpoint,
-        null,
-        isCancel
-      )
+      throw this.axiosToApiError(error)
     } finally {
       this.timer.end(`Fetching ${url}`)
       consola.debug(`Fetched ${url}`)
     }
+  }
+
+  public axiosToApiError(error) {
+    const isCancel = this.ctx.$axios.isCancel(error)
+    const sanitisedError = AxiosErrorParser(error)
+    // for publishable components - when getting a collection the position and component id will exist.
+    // SSR is not authorized to view so it will return a 404. We know it exists as an ID is there
+    // By not throwing an error we can re-fetch client-side
+    // However, when fetching a route that does not exist, we need an error...
+    // Changed this functionality here to throw an exception so it can be handled by the calling function
+    return new ApiError(
+      sanitisedError.message,
+      sanitisedError.statusCode,
+      sanitisedError.endpoint,
+      sanitisedError.violations || null,
+      isCancel
+    )
   }
 
   public async fetchItem({
