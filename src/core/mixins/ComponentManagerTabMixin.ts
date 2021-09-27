@@ -23,6 +23,9 @@ export const ComponentManagerTabMixin = Vue.extend({
     }
   },
   computed: {
+    isNew() {
+      return this.resource?.['@id'].endsWith('/new')
+    },
     inputId() {
       return (name) => {
         return `${this.resource?.['@id'] || '__missing_id__'}-${name}`
