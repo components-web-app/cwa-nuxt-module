@@ -135,13 +135,14 @@ export default {
           axiosConfig
         )
         this.$cwa.saveResource(data)
-        this.uploading = false
-        this.preview = null
-        this.$refs.file.value = ''
       } catch (error) {
         const apiError = this.$cwa.fetcher.axiosToApiError(error)
         this.handleUpdateError(apiError, this.notificationCategory, this.iri)
       }
+
+      this.uploading = false
+      this.preview = null
+      this.$refs.file.value = ''
     },
     triggerUploadClick() {
       const clickEvent = new MouseEvent('click', {
