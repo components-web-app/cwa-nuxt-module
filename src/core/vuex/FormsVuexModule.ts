@@ -61,14 +61,13 @@ export interface FormExtraSubmitData {
 }
 
 const getFormViewValue = (formView: FormView) => {
-  const findValue = (obj) => {
-    return 'checked' in formView.vars ? obj.checked : obj.value
+  if ('checked' in formView.metadata) {
+    return formView.metadata.checked
   }
-  const value = formView.metadata.value
-  if (value === undefined) {
-    return findValue(formView.vars)
+  if ('checked' in formView.vars) {
+    return formView.vars.checked
   }
-  return value
+  return formView.metadata.value
 }
 
 export default {

@@ -25,7 +25,7 @@ export default Vue.extend({
   computed: {
     checked: {
       get() {
-        return this.metadata.checked
+        return !!this.metadata.checked
       },
       set(newValue) {
         this.$cwa.forms.setChecked(this.storeId, newValue)
