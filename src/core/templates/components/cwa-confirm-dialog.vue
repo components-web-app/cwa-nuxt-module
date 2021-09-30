@@ -1,7 +1,13 @@
 <template>
   <cwa-modal class="cwa-confirm-dialog" :hide-close="true">
     <h2>{{ dialogEvent.title || 'Confirm' }}</h2>
-    <component :is="dialogEvent.component" v-if="dialogEvent.component" />
+    <component
+      :is="dialogEvent.component"
+      v-if="dialogEvent.component"
+      v-model="data"
+      v-bind="dialogEvent.componentProps || null"
+      @submit="handleConfirm"
+    />
     <div v-if="dialogEvent.html" v-html="dialogEvent.html"></div>
     <div class="controls-bar">
       <div class="row">
@@ -32,7 +38,7 @@
 import Vue from 'vue'
 import type { PropType } from 'vue'
 import { ConfirmDialogEvent } from '../../events'
-import CwaModal from './utils/cwa-modal'
+import CwaModal from './utils/cwa-modal.vue'
 import CwaLoader from './utils/cwa-loader.vue'
 
 export default Vue.extend({
@@ -48,14 +54,15 @@ export default Vue.extend({
   },
   data() {
     return {
-      runningConfirmFn: false
+      runningConfirmFn: false,
+      data: {}
     }
   },
   methods: {
     async handleConfirm() {
       if (this.dialogEvent.onSuccess) {
         this.runningConfirmFn = true
-        await this.dialogEvent.onSuccess()
+        await this.dialogEvent.onSuccess(this.data)
         this.runningConfirmFn = false
       }
       this.close()

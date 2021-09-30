@@ -7,6 +7,7 @@ import {
 export interface ConfirmDialogEvent {
   id: string
   component?: Function
+  componentProps?: any
   html?: string
   title?: string
   onSuccess?: Function

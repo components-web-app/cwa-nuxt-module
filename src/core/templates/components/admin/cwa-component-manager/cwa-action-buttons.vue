@@ -1,12 +1,6 @@
 <template>
   <div>
     <cm-button
-      v-if="selectedPosition"
-      :alt-options="deleteOptions"
-      @click="deleteComponent"
-      >Delete Component
-    </cm-button>
-    <cm-button
       v-if="addingEvent"
       :alt-options="addNewOptions"
       @click="addComponent"
@@ -19,11 +13,7 @@
 import Vue from 'vue'
 import moment from 'moment'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
-import {
-  CONFIRM_DIALOG_EVENTS,
-  ConfirmDialogEvent,
-  NewComponentEvent
-} from '../../../../events'
+import { NewComponentEvent } from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
 import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
@@ -61,12 +51,6 @@ export default Vue.extend({
             { label: 'Add as draft', key: 'draft' }
           ]
         : null
-    },
-    deleteOptions(): altOption[] {
-      return [
-        { label: 'Delete here', key: 'here' },
-        { label: 'Delete everywhere', key: 'everywhere' }
-      ]
     },
     addNewButtonLabel() {
       return this.addingEvent?.isPublishable ? 'Add Draft' : 'Add New'
@@ -149,25 +133,6 @@ export default Vue.extend({
           notificationCategory
         )
       }
-    },
-    deleteComponent(key) {
-      const message =
-        key === 'here'
-          ? '<p>Are you sure you want to delete this component from this location?</p><p>If it does not exist anywhere else it will be permanently deleted.</p>'
-          : '<p>Are you sure you want to delete every instance of this component from your entire website?</p>'
-      const event: ConfirmDialogEvent = {
-        id: 'confirm-delete-component',
-        title: 'Confirm Delete',
-        html: `${message}<p class="warning"><span class="cwa-icon"><span class="cwa-warning-triangle"></span></span><span>This action cannot be reversed!</span></p>`,
-        onSuccess: async () => {
-          const deleteResource =
-            key === 'here' ? this.selectedPosition : this.selectedComponent
-          await this.$cwa.deleteResource(deleteResource)
-          this.$emit('close')
-        },
-        confirmButtonText: key === 'here' ? 'Delete Here' : 'Delete Everywhere'
-      }
-      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
     }
   }
 })
