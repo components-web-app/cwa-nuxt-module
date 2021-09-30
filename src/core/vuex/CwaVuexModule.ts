@@ -190,6 +190,12 @@ export default function (storage) {
           consola.warn(`${defaultWarning} no routes have been loaded`)
           return
         }
+        if (id === null) {
+          Vue.set(routeResources, 'current', null)
+          consola.debug('Loaded route unset')
+          return
+        }
+
         if (!routeResources.allIds.includes(id)) {
           consola.warn(`${defaultWarning} does not exist`)
           return

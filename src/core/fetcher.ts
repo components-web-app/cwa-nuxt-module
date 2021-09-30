@@ -192,8 +192,10 @@ export class Fetcher {
     }
     this.timer.reset()
     this.timer.start(`Fetch page ${pageIri}`)
+    this.ctx.storage.setCurrentRoute(null)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, pageIri)
+
     this.closeMercure()
     try {
       const pageResponse = await this.fetchItem({
