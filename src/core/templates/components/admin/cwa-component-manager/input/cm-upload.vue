@@ -149,7 +149,6 @@ export default {
           }
         )
       } catch (message) {
-        console.log(message)
         throw this.handleUpdateError(
           message,
           this.notificationCategory,
