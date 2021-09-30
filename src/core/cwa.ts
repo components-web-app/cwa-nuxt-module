@@ -351,8 +351,9 @@ export default class Cwa {
     }
     let patchEndpoint = endpoint
     const draftIri = this.findDraftIri(endpoint)
-    const forcedPublishedUpdate =
-      draftIri && this.getPublishableIri(draftIri) !== draftIri
+    const forcedPublishedUpdate = draftIri
+      ? this.getPublishableIri(draftIri) !== draftIri
+      : this.$storage.isIriMappedToPublished(endpoint)
 
     const requestFn = async () => {
       const tokenSource = this.ctx.$axios.CancelToken.source()

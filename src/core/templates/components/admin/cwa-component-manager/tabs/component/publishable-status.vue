@@ -5,7 +5,13 @@
         v-if="isPublished && !$cwa.findDraftIri(iri)"
         class="column is-narrow"
       >
-        This resource is currently live and no modifications have been made yet
+        <div class="column is-narrow">
+          <cwa-admin-toggle
+            :id="`component-edit-version-${iri}`"
+            v-model="forceNoDraft"
+            label="Edit live version"
+          />
+        </div>
       </div>
       <template v-else>
         <div class="column is-narrow">
@@ -62,6 +68,14 @@ export default Vue.extend({
       set(showPublished) {
         const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri
         this.$cwa.togglePublishable(draftIri, showPublished)
+      }
+    },
+    forceNoDraft: {
+      get() {
+        return this.$cwa.$storage.isIriMappedToPublished(this.iri)
+      },
+      set(showPublished) {
+        this.$cwa.togglePublishable(this.iri, showPublished)
       }
     }
   },
