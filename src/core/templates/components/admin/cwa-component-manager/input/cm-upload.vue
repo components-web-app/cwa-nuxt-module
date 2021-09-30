@@ -39,14 +39,15 @@
     </div>
   </wrapper-component>
 </template>
-<script>
+<script lang="ts">
+import Vue from 'vue'
 import ApiInputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaInputMixin from '../../input/CwaInputMixin'
-import UpdateResourceMixin from '../../../../../mixins/UpdateResourceMixin.ts'
+import UpdateResourceMixin from '../../../../../mixins/UpdateResourceMixin'
 import WrapperComponent from './wrapper.vue'
 import CmButton from './cm-button.vue'
 
-export default {
+export default Vue.extend({
   components: { CmButton, WrapperComponent },
   mixins: [ApiInputMixin, CwaInputMixin, UpdateResourceMixin],
   props: {
@@ -169,7 +170,7 @@ export default {
       this.$refs.file.dispatchEvent(clickEvent)
     }
   }
-}
+})
 </script>
 
 <style lang="sass">

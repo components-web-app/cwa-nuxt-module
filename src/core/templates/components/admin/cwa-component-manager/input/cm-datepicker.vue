@@ -2,11 +2,12 @@
   <cwa-admin-datepicker id="component" v-model="inputValue" v-bind="props" />
 </template>
 <script>
+import Vue from 'vue'
 import CwaAdminDatepicker from '../../input/cwa-admin-datepicker'
 import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaTextMixin from '../../input/CwaTextMixin'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminDatepicker },
   mixins: [InputMixin, CwaTextMixin],
   props: {
@@ -29,5 +30,5 @@ export default {
       })
     }
   }
-}
+})
 </script>

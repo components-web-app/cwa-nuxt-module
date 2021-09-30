@@ -6,12 +6,13 @@
     :wrapper="wrapperComponent"
   />
 </template>
-<script>
+<script lang="ts">
+import Vue from 'vue'
 import InputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaInputMixin from '../../input/CwaInputMixin'
 import CwaAdminToggle from '../../input/cwa-admin-toggle.vue'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminToggle },
   mixins: [InputMixin, CwaInputMixin],
   props: {
@@ -26,5 +27,5 @@ export default {
       wrapperComponent: async () => await import('./wrapper.vue')
     }
   }
-}
+})
 </script>

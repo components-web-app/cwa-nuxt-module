@@ -7,12 +7,13 @@
     @keyup="enforceNumber"
   />
 </template>
-<script>
+<script lang="ts">
+import Vue from 'vue'
 import ApiInputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaTextMixin from '../../input/CwaTextMixin'
 import CwaAdminText from '../../input/cwa-admin-text.vue'
 
-export default {
+export default Vue.extend({
   components: { CwaAdminText },
   mixins: [ApiInputMixin, CwaTextMixin],
   props: {
@@ -53,5 +54,5 @@ export default {
       }
     }
   }
-}
+})
 </script>
