@@ -42,12 +42,13 @@
 <script>
 import ApiInputMixin from '../../../../../mixins/ApiInputMixin'
 import CwaInputMixin from '../../input/CwaInputMixin'
+import UpdateResourceMixin from '../../../../../mixins/UpdateResourceMixin.ts'
 import WrapperComponent from './wrapper.vue'
 import CmButton from './cm-button.vue'
 
 export default {
   components: { CmButton, WrapperComponent },
-  mixins: [ApiInputMixin, CwaInputMixin],
+  mixins: [ApiInputMixin, CwaInputMixin, UpdateResourceMixin],
   props: {
     notificationCategory: {
       required: false,
@@ -110,14 +111,17 @@ export default {
       await this.submitRequest(formData)
     },
     async deleteUpload() {
-      const formData = new FormData()
-      formData.append(this.field, null)
-      await this.submitRequest(formData)
+      this.uploadError = null
+      this.uploading = true
+      await this.updateResource(this.iri, this.field, null)
+      this.uploading = false
     },
     async submitRequest(formData) {
+      this.clearAllViolationNotifications()
       this.uploadError = null
       this.uploading = true
       this.uploadPercentage = 0
+
       const axiosConfig = {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -128,16 +132,29 @@ export default {
           )
         }.bind(this)
       }
+
       try {
-        const { data } = await this.$axios.post(
-          `${this.iri}/upload`,
-          formData,
-          axiosConfig
+        await this.$cwa.updateResource(
+          this.iri,
+          {},
+          null,
+          [],
+          async (_, query) => {
+            const { data } = await this.$axios.post(
+              `${this.iri}/upload${query}`,
+              formData,
+              axiosConfig
+            )
+            return data
+          }
         )
-        this.$cwa.saveResource(data)
-      } catch (error) {
-        const apiError = this.$cwa.fetcher.axiosToApiError(error)
-        this.handleUpdateError(apiError, this.notificationCategory, this.iri)
+      } catch (message) {
+        console.log(message)
+        throw this.handleUpdateError(
+          message,
+          this.notificationCategory,
+          this.iri
+        )
       }
 
       this.uploading = false

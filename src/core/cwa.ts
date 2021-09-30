@@ -336,7 +336,8 @@ export default class Cwa {
     endpoint: string,
     data: any,
     category?: string,
-    refreshEndpoints?: string[]
+    refreshEndpoints?: string[],
+    updateFn?: Function
   ) {
     if (endpoint.endsWith('/new')) {
       this.$storage.setResource({
@@ -355,8 +356,10 @@ export default class Cwa {
 
     const requestFn = async () => {
       const tokenSource = this.ctx.$axios.CancelToken.source()
-      if (forcedPublishedUpdate) {
-        patchEndpoint += '?published=true'
+      const endpointQuery = forcedPublishedUpdate ? '?published=true' : ''
+      patchEndpoint += endpointQuery
+      if (updateFn) {
+        return await updateFn(patchEndpoint, endpointQuery)
       }
       this.cancelPendingPatchRequest(patchEndpoint, false)
       this.patchRequests.push({
@@ -386,7 +389,7 @@ export default class Cwa {
       }
 
       // Handle draft mapping
-      if (newResource._metadata.published) {
+      if (newResource._metadata?.published) {
         const draftIri = this.$storage.findDraftIri(newResource['@id'])
         if (draftIri) {
           const iriObj = {

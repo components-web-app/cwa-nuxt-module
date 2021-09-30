@@ -28,7 +28,10 @@ export default {
       return this.resource._metadata?.media_objects
     },
     imageSrc() {
-      return this.resource._metadata?.media_objects?.file?.[0]?.contentUrl
+      const postfix = this.published ? '?published=true' : ''
+      return (
+        this.resource._metadata?.media_objects?.file?.[0]?.contentUrl + postfix
+      )
     },
     imageId() {
       return this.resource._metadata?.media_objects?.file?.[0]?.['@id']
@@ -43,7 +46,6 @@ export default {
   },
   methods: {
     refreshImage() {
-      console.log('refreshImage')
       this.showImage = false
       this.$nextTick(() => {
         this.showImage = true
