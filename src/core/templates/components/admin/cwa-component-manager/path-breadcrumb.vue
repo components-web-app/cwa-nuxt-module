@@ -57,6 +57,11 @@ export default {
       default: false
     }
   },
+  data() {
+    return {
+      fetchedResources: false
+    }
+  },
   computed: {
     // we will need to use the `findResource` method to ensure we have loaded all the relevant component locations and collections
     locations() {
@@ -73,19 +78,21 @@ export default {
       if (resource['@type'] === 'ComponentCollection') {
         this.addCollectionTotals(resource, totals)
       } else if (resource.componentPositions) {
-        resource.componentPositions.forEach(async (positionIri) => {
-          const componentPosition = await this.$cwa.findResource(positionIri)
+        resource.componentPositions.forEach((positionIri) => {
+          const componentPosition = this.$cwa.getResource(positionIri)
           if (!componentPosition?.componentCollection) {
             return
           }
-          const componentCollection = await this.$cwa.findResource(
+          const componentCollection = this.$cwa.getResource(
             componentPosition.componentCollection
           )
           if (!componentCollection) {
-            consola.error(
-              `Could not find component collection for resource`,
-              resource
-            )
+            if (this.fetchedResources) {
+              consola.error(
+                `Could not find component collection for resource`,
+                resource
+              )
+            }
             return
           }
           this.addCollectionTotals(componentCollection, totals)
@@ -99,7 +106,7 @@ export default {
     const resource =
       this.$cwa.getPublishedResource(this.resource) || this.resource
     const { componentPositions } = resource
-    if (resource && componentPositions) {
+    if (!!resource && !!componentPositions) {
       // we should ensure all the positions and collections have been resolved from the server
       // in future we may want to return the totals directly to the component for an admin
       const promises = []
@@ -119,11 +126,11 @@ export default {
         )
       }
       await Promise.all(promises)
+      this.fetchedResources = true
     }
   },
   methods: {
     addCollectionTotals(resource, totals) {
-      console.log(resource)
       if (resource.layouts) {
         totals.layouts += resource.layouts.length
       }
