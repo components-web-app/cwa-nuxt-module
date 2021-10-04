@@ -150,11 +150,7 @@ export default Vue.extend({
           }
         )
       } catch (message) {
-        throw this.handleUpdateError(
-          message,
-          this.notificationCategory,
-          this.iri
-        )
+        this.handleUpdateError(message, this.notificationCategory, this.iri)
       }
 
       this.uploading = false
