@@ -39,7 +39,7 @@ export const ComponentManagerMixin = Vue.extend({
   mixins: [AddElementsMixin, ComponentManagerValueMixin, ReuseComponentMixin],
   data() {
     return {
-      highlightIsComponent: false,
+      highlightIsPosition: false,
       componentManagerDisabled: false,
       elementsAdded: {}
     }
@@ -57,9 +57,6 @@ export const ComponentManagerMixin = Vue.extend({
     cmHighlightClass() {
       if (this.reuseComponent) {
         return 'cwa-manager-highlight is-primary'
-      }
-      if (this.highlightIsComponent) {
-        return 'cwa-manager-highlight is-gray'
       }
       return this.publishable && !this.published
         ? 'cwa-manager-highlight is-draft'
@@ -170,7 +167,7 @@ export const ComponentManagerMixin = Vue.extend({
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
     managerHighlightComponentListener({ iri, selectedPosition }) {
-      this.highlightIsComponent = iri === this.computedIri
+      this.highlightIsPosition = selectedPosition === this.computedIri
       // the sort order tab will add the position as well
       // next tick means we don't lose adding it, but there
       // needs to be a better way - what if another component
@@ -178,10 +175,7 @@ export const ComponentManagerMixin = Vue.extend({
       // events for components to listen to, and this is one?
       // perhaps we always have a default position on all components?
       this.$nextTick(() => {
-        if (
-          this.highlightIsComponent ||
-          selectedPosition === this.computedIri
-        ) {
+        if (iri === this.computedIri) {
           if (!this.elementsAdded.highlight) {
             this.$set(
               this.elementsAdded,

@@ -1,18 +1,16 @@
 <template>
-  <div>
-    <resource-component-loader
-      v-if="!!component"
-      :component="`CwaComponents${component.uiComponent || component['@type']}`"
-      :iri="componentIri"
-      :sort-value="resource.sortValue"
-      :show-sort="showSort"
-      :hide-nested-cwa-manager-highlight="elementsAdded.highlight"
-      @deleted="$emit('deleted')"
-    />
-    <div v-else-if="resource.pageDataProperty">
-      The property [{{ resource.pageDataProperty }}] will be added here from
-      page data
-    </div>
+  <resource-component-loader
+    v-if="!!component"
+    :component="`CwaComponents${component.uiComponent || component['@type']}`"
+    :iri="componentIri"
+    :sort-value="resource.sortValue"
+    :show-sort="showSort"
+    :highlight-is-position="highlightIsPosition"
+    @deleted="$emit('deleted')"
+  />
+  <div v-else-if="resource.pageDataProperty">
+    The property [{{ resource.pageDataProperty }}] will be added here from page
+    data
   </div>
 </template>
 

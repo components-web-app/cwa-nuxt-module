@@ -676,6 +676,13 @@ export default Vue.extend({
     &::after
       animation-name: cwa-manager-gray-highlight-after-animation
 
+.highlight-component-only
+  .cwa-manager-highlight
+    &::before
+      animation-name: cwa-manager-gray-highlight-before-animation
+    &::after
+      animation-name: cwa-manager-gray-highlight-after-animation
+
 .hide-nested-cwa-manager-highlight
   .cwa-manager-highlight
       display: none

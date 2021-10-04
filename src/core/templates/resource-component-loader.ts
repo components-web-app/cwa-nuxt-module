@@ -27,9 +27,9 @@ export default Vue.extend({
       type: Boolean,
       default: false
     },
-    hideNestedCwaManagerHighlight: {
+    highlightIsPosition: {
       type: Boolean,
-      default: false
+      default: true
     }
   },
   render: (createElement, { props, parent }) => {
@@ -44,9 +44,9 @@ export default Vue.extend({
           sortValue: props.sortValue,
           showSort: props.showSort
         },
-        class: props.hideNestedCwaManagerHighlight
-          ? 'hide-nested-cwa-manager-highlight'
-          : null
+        class: {
+          'highlight-component-only': !props.highlightIsPosition
+        }
       })
     }
     return createElement(ErrorComponent, {
