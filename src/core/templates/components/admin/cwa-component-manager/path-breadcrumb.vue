@@ -40,6 +40,7 @@
 </template>
 
 <script>
+import consola from 'consola'
 import IriMixin from '../../../../mixins/IriMixin'
 
 export default {
@@ -72,16 +73,21 @@ export default {
       if (resource['@type'] === 'ComponentCollection') {
         this.addCollectionTotals(resource, totals)
       } else if (resource.componentPositions) {
-        resource.componentPositions.forEach((positionIri) => {
-          const componentPosition =
-            this.$cwa.resources.ComponentPosition.byId[positionIri]
+        resource.componentPositions.forEach(async (positionIri) => {
+          const componentPosition = await this.$cwa.findResource(positionIri)
           if (!componentPosition?.componentCollection) {
             return
           }
-          const componentCollection =
-            this.$cwa.resources.ComponentCollection.byId[
-              componentPosition.componentCollection
-            ]
+          const componentCollection = await this.$cwa.findResource(
+            componentPosition.componentCollection
+          )
+          if (!componentCollection) {
+            consola.error(
+              `Could not find component collection for resource`,
+              resource
+            )
+            return
+          }
           this.addCollectionTotals(componentCollection, totals)
         })
       }
@@ -117,6 +123,7 @@ export default {
   },
   methods: {
     addCollectionTotals(resource, totals) {
+      console.log(resource)
       if (resource.layouts) {
         totals.layouts += resource.layouts.length
       }
