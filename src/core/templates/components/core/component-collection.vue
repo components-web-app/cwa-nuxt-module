@@ -31,7 +31,7 @@
       <component-position
         v-for="iri in sortedComponentPositions"
         :key="iri"
-        :class="[isDraggable ? 'is-draggable' : null]"
+        :class="[isDraggable ? 'is-draggable' : null, 'component-position']"
         :show-sort="showOrderValues"
         :iri="iri"
       />
