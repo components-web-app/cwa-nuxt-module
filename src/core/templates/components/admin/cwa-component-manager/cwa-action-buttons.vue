@@ -1,6 +1,18 @@
 <template>
   <div>
     <cm-button
+      v-if="selectedComponent && !reuseComponent"
+      @click="selectReuseComponent"
+    >
+      Reuse
+    </cm-button>
+    <cm-button
+      v-if="selectedComponent && reuseDestination"
+      @click="reuseComponent"
+    >
+      Reuse here
+    </cm-button>
+    <cm-button
       v-if="addingEvent"
       :alt-options="addNewOptions"
       @click="addComponent"
@@ -17,11 +29,12 @@ import { NewComponentEvent } from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
 import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
+import ReuseComponentMixin from '../../../../mixins/ReuseComponentMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
 
 export default Vue.extend({
   components: { CmButton },
-  mixins: [ApiErrorNotificationsMixin],
+  mixins: [ApiErrorNotificationsMixin, ReuseComponentMixin],
   props: {
     selectedPosition: {
       type: String,
@@ -71,6 +84,9 @@ export default Vue.extend({
     )
   },
   methods: {
+    selectReuseComponent() {
+      this.reuseComponent = this.selectedComponent
+    },
     newComponentListener(event: NewComponentEvent) {
       this.addingEvent = event
     },

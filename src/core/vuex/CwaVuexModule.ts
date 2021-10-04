@@ -14,9 +14,23 @@ export default function (storage) {
         categories: {},
         draftMapping: {},
         mapToPublished: []
+      },
+      reuse: {
+        component: null,
+        navigate: false,
+        destination: null
       }
     }),
     mutations: {
+      SET_REUSE_COMPONENT(state, iri) {
+        state.reuse.component = iri
+      },
+      SET_REUSE_NAVIGATE(state, navigate) {
+        state.reuse.navigate = navigate
+      },
+      SET_REUSE_DESTINATION(state, iri) {
+        state.reuse.destination = iri
+      },
       TOGGLE_PUBLISHABLE(
         state,
         { iri, showPublished }: { iri: string; showPublished: boolean }

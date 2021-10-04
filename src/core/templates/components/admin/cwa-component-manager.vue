@@ -1,28 +1,36 @@
 <template>
   <client-only v-if="$cwa.isAdmin">
     <div class="cwa-component-manager-holder" @click.stop>
-      <div
-        class="cwa-components-manager is-placeholder"
-        :style="{ height: `${elementHeight}` }"
-      />
+      <div class="cwa-components-manager is-placeholder" />
       <transition-expand
         @after-enter="showTabs = true"
         @after-leave="showTabs = false"
       >
         <div v-show="isShowing" ref="cwaManager" class="cwa-components-manager">
           <div class="inner">
-            <a href="#" class="done-link" @click.prevent="hide">Done</a>
+            <a href="#" class="done-link" @click.prevent="closeActionClick">{{
+              reuseComponent ? 'Cancel' : 'Done'
+            }}</a>
             <div v-if="!selectedComponent">
               <div>No component selected</div>
             </div>
             <template v-else>
               <div class="top">
+                <div v-if="reuseComponent" class="reuse-info">
+                  <p>Select where you would like to reuse this component</p>
+                  <cwa-admin-toggle
+                    id="cwa-cm-reuse-navigate"
+                    v-model="reuseNavigate"
+                    label="Navigate"
+                  />
+                </div>
                 <tabs
+                  v-show="!reuseComponent"
                   :tabs="componentTabs"
                   :iri="componentIri"
                   :selected-position="selectedPosition"
                   :collection="closestCollection"
-                  :show-tabs="showTabs"
+                  :show-tabs="showTabs && !reuseComponent"
                   @draggable="toggleDraggable"
                   @close="hide"
                 />
@@ -87,6 +95,8 @@ import {
   SaveStateEvent,
   PublishableToggledEvent
 } from '../../../events'
+import ReuseComponentMixin from '../../../mixins/ReuseComponentMixin'
+import CwaAdminToggle from './input/cwa-admin-toggle.vue'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
 import StatusIcon from './status-icon.vue'
@@ -112,6 +122,7 @@ interface DataInterface {
 
 export default Vue.extend({
   components: {
+    CwaAdminToggle,
     CwaActionButtons,
     PathBreadcrumbs,
     ErrorNotifications,
@@ -120,7 +131,7 @@ export default Vue.extend({
     PublishableIcon,
     TransitionExpand
   },
-  mixins: [HeightMatcherMixin('cwaManager')],
+  mixins: [HeightMatcherMixin('cwaManager'), ReuseComponentMixin],
   data(): DataInterface {
     return {
       expanded: false,
@@ -327,7 +338,15 @@ export default Vue.extend({
     toggleComponent(iri?: string) {
       this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, { iri })
     },
+    closeActionClick() {
+      if (this.reuseComponent) {
+        this.cancelReuse()
+        return
+      }
+      this.hide()
+    },
     hide() {
+      this.cancelReuse()
       this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
       this.persistentStates = {}
@@ -555,6 +574,12 @@ export default Vue.extend({
     bottom: 0
     left: 0
     width: 100%
+  .reuse-info
+    padding: 2rem
+    p
+      color: $white
+      font-size: 1.8rem
+
   a
     color: $cwa-color-text-light
     &:hover,

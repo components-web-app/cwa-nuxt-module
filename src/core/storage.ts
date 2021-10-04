@@ -256,6 +256,27 @@ export class Storage {
   isIriMappedToPublished(iri: string): boolean {
     return this.state.resources.mapToPublished.includes(iri)
   }
+
+  setReuseComponent(iri: string) {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/SET_REUSE_COMPONENT',
+      iri
+    )
+  }
+
+  setReuseDestination(iri: string) {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/SET_REUSE_DESTINATION',
+      iri
+    )
+  }
+
+  setReuseNavigate(navigate: boolean) {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/SET_REUSE_NAVIGATE',
+      navigate
+    )
+  }
 }
 
 export default Storage
