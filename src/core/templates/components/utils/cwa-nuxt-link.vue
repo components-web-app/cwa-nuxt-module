@@ -8,7 +8,10 @@
 </template>
 
 <script>
+import ReuseComponentMixin from '../../../mixins/ReuseComponentMixin'
+
 export default {
+  mixins: [ReuseComponentMixin],
   props: {
     to: {
       type: String,
@@ -24,6 +27,10 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    alwaysClickable: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -34,23 +41,37 @@ export default {
       return this.to.match(/^(?:(?:http(?:s)?|ftp):)?\/\//)
     },
     linkProps() {
+      const href = this.to
+      const className = this.allowNavigation ? null : 'cwa-disabled'
       if (this.isExternal) {
         return {
           is: this.domTag,
-          href: this.to,
+          href,
           target: '_blank',
-          rel: 'noopener'
+          rel: 'noopener',
+          class: className
         }
       }
       return {
         tag: this.domTag,
-        to: this.to,
-        exact: this.exact
+        to: href,
+        exact: this.exact,
+        class: className
       }
     },
     domTag() {
       return this.tag || 'a'
+    },
+    allowNavigation() {
+      const navigateReusable = this.reuseComponent && this.reuseNavigate
+      return this.alwaysClickable || navigateReusable || !this.$cwa.isEditMode
     }
   }
 }
 </script>
+
+<style lang="sass">
+.cwa-disabled
+  +no-select
+  pointer-events: none
+</style>

@@ -1,7 +1,10 @@
 <template>
   <client-only v-if="$cwa.isAdmin">
     <div class="cwa-component-manager-holder" @click.stop>
-      <div class="cwa-components-manager is-placeholder" />
+      <div
+        class="cwa-components-manager is-placeholder"
+        :style="{ height: `${elementHeight}` }"
+      />
       <transition-expand
         @after-enter="showTabs = true"
         @after-leave="showTabs = false"
@@ -295,7 +298,7 @@ export default Vue.extend({
     selectPosition(iri) {
       this.selectedPosition = iri
       if (this.reuseComponent) {
-        this.selectedPosition = iri
+        this.reuseDestination = iri
       }
     },
     toggleDraggable(isDraggable) {
@@ -361,9 +364,6 @@ export default Vue.extend({
       this.selectPosition(null)
     },
     show(event) {
-      if (this.reuseComponent) {
-        return
-      }
       // calendar inside manager should not trigger anything
       if (event.target.closest('.flatpickr-calendar')) {
         return
@@ -389,6 +389,11 @@ export default Vue.extend({
         // this event is listened so components can send events for cwa manager to listen to and populate pending components
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }
+      // if (this.reuseComponent) {
+      //   this.$cwa.$eventBus.$emit(EVENTS.selectPosition, null)
+      //   return
+      // }
+
       // the show event above should be listened to and add-component event emitted to populate components by now
       if (!this.pendingComponents.length) {
         this.hide()
@@ -711,7 +716,7 @@ export default Vue.extend({
   .button
     +cwa-control
     border-color: $cwa-color-text-light
-    margin: 0
+    margin-bottom: 0
     &:hover
       color: $white
       border-color: $white
