@@ -264,6 +264,7 @@ export default {
         margin: 0
         color: $white
         a
+          pointer-events: all
           color: inherit
           opacity: .6
           &:hover,

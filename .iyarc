@@ -1,0 +1,4 @@
+# place ids from yarn audit results to ignore here
+# nuxt added as dev dependency as it is not doing well keeping up to date right now...
+# see more: https://github.com/nuxt/nuxt.js/issues/9284
+# and: https://github.com/nuxt/nuxt.js/issues/9798

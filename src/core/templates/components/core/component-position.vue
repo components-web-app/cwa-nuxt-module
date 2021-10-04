@@ -6,6 +6,7 @@
       :iri="componentIri"
       :sort-value="resource.sortValue"
       :show-sort="showSort"
+      :highlight-is-position="highlightIsPosition"
       @deleted="$emit('deleted')"
     />
     <div v-else-if="resource.pageDataProperty">

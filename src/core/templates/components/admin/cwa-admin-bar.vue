@@ -29,19 +29,24 @@
             </div>
             <div class="center">
               <div class="icons">
-                <cwa-nuxt-link :to="builderLink" exact :class="builderClass">
+                <cwa-nuxt-link
+                  :to="builderLink"
+                  exact
+                  :class="builderClass"
+                  :always-clickable="true"
+                >
                   <img
                     src="../../../assets/images/icon-builder.svg"
                     alt="Builder Icon"
                   />
                 </cwa-nuxt-link>
-                <cwa-nuxt-link to="/_cwa/layouts">
+                <cwa-nuxt-link to="/_cwa/layouts" :always-clickable="true">
                   <img
                     src="../../../assets/images/icon-layout.svg"
                     alt="Layouts Icon"
                   />
                 </cwa-nuxt-link>
-                <cwa-nuxt-link to="/_cwa/pages">
+                <cwa-nuxt-link to="/_cwa/pages" :always-clickable="true">
                   <img
                     src="../../../assets/images/icon-pages.svg"
                     alt="Pages Icon"
@@ -56,7 +61,7 @@
                   />
                 </cwa-nuxt-link>
                 -->
-                <cwa-nuxt-link to="/_cwa/users">
+                <cwa-nuxt-link to="/_cwa/users" :always-clickable="true">
                   <img
                     src="../../../assets/images/icon-users.svg"
                     alt="Users Icon"

@@ -31,7 +31,7 @@
       <component-position
         v-for="iri in sortedComponentPositions"
         :key="iri"
-        :class="[isDraggable ? 'is-draggable' : null, 'component-position']"
+        :class="[isDraggable ? 'is-draggable' : null]"
         :show-sort="showOrderValues"
         :iri="iri"
       />
@@ -401,50 +401,6 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-@keyframes cwa-manager-highlight-before-animation-collection
-  0%
-    opacity: 0
-    width: calc(100% - 10px)
-    height: calc(100% - 10px)
-    box-shadow: none
-  40%
-    opacity: 1
-    box-shadow: 0 0 14px  $cwa-color-primary
-    width: 100%
-    height: 100%
-  80%
-    opacity: 0
-    box-shadow: 0 0 20px 0 $cwa-color-primary
-    width: calc(100% + 4px)
-    height: calc(100% + 4px)
-  100%
-    opacity: 0
-    width: calc(100% + 4px)
-    height: calc(100% + 4px)
-    box-shadow: none
-
-@keyframes cwa-manager-highlight-after-animation-collection
-  0%
-    opacity: 0
-    width: 100%
-    height: 100%
-    box-shadow: none
-  40%
-    opacity: 1
-    width: calc(100% - 5px)
-    height: calc(100% - 5px)
-    box-shadow: inset 0 0 1px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary, 0 0 4px 0 $cwa-color-primary
-  80%
-    opacity: 0
-    width: calc(100% - 5px)
-    height: calc(100% - 5px)
-    box-shadow: inset 0 0 10px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary
-  100%
-    opacity: 0
-    width: calc(100% - 5px)
-    height: calc(100% - 5px)
-    box-shadow: none
-
 @keyframes loading
   0%
     opacity: 1
@@ -499,9 +455,9 @@ export default Vue.extend({
     padding: 2rem
   > .cwa-manager-highlight
     &::before
-      animation-name: cwa-manager-highlight-before-animation-collection
+      animation-name: cwa-manager-primary-highlight-before-animation
     &::after
-      animation-name: cwa-manager-highlight-after-animation-collection
+      animation-name: cwa-manager-primary-highlight-after-animation
   .cwa-sort-value
     pointer-events: none
     position: absolute

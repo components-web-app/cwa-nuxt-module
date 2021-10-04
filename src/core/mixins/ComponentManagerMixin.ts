@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import consola from 'consola'
 import { COMPONENT_MANAGER_EVENTS, ComponentManagerAddEvent } from '../events'
+import ReuseComponentMixin from './ReuseComponentMixin'
 import AddElementsMixin from './AddElementsMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
 
@@ -35,9 +36,10 @@ export interface ComponentManagerComponent {
 }
 
 export const ComponentManagerMixin = Vue.extend({
-  mixins: [AddElementsMixin, ComponentManagerValueMixin],
+  mixins: [AddElementsMixin, ComponentManagerValueMixin, ReuseComponentMixin],
   data() {
     return {
+      highlightIsPosition: false,
       componentManagerDisabled: false,
       elementsAdded: {}
     }
@@ -53,6 +55,9 @@ export const ComponentManagerMixin = Vue.extend({
       return this.resource?.['@id']
     },
     cmHighlightClass() {
+      if (this.reuseComponent) {
+        return 'cwa-manager-highlight is-primary'
+      }
       return this.publishable && !this.published
         ? 'cwa-manager-highlight is-draft'
         : 'cwa-manager-highlight'
@@ -60,6 +65,12 @@ export const ComponentManagerMixin = Vue.extend({
   },
   watch: {
     published() {
+      if (!this.elementsAdded.highlight) {
+        return
+      }
+      this.elementsAdded.highlight.className = this.cmHighlightClass
+    },
+    cmHighlightClass() {
       if (!this.elementsAdded.highlight) {
         return
       }
@@ -155,7 +166,8 @@ export const ComponentManagerMixin = Vue.extend({
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
-    managerHighlightComponentListener({ iri }) {
+    managerHighlightComponentListener({ iri, selectedPosition }) {
+      this.highlightIsPosition = selectedPosition === this.computedIri
       // the sort order tab will add the position as well
       // next tick means we don't lose adding it, but there
       // needs to be a better way - what if another component
