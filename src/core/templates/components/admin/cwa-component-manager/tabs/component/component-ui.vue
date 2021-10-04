@@ -56,7 +56,7 @@ export default Vue.extend({
           this.$nextTick(() => {
             this.$cwa.$eventBus.$emit(
               COMPONENT_MANAGER_EVENTS.highlightComponent,
-              { iri: this.iri }
+              { iri: this.iri, selectedPosition: this.context.selectedPosition }
             )
           })
         }

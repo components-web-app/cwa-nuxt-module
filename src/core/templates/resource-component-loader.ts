@@ -26,6 +26,10 @@ export default Vue.extend({
       required: false,
       type: Boolean,
       default: false
+    },
+    hideNestedCwaManagerHighlight: {
+      type: Boolean,
+      default: false
     }
   },
   render: (createElement, { props, parent }) => {
@@ -39,7 +43,10 @@ export default Vue.extend({
           iri: props.iri,
           sortValue: props.sortValue,
           showSort: props.showSort
-        }
+        },
+        class: props.hideNestedCwaManagerHighlight
+          ? 'hide-nested-cwa-manager-highlight'
+          : null
       })
     }
     return createElement(ErrorComponent, {

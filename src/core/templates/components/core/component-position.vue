@@ -6,6 +6,7 @@
       :iri="componentIri"
       :sort-value="resource.sortValue"
       :show-sort="showSort"
+      :hide-nested-cwa-manager-highlight="elementsAdded.highlight"
       @deleted="$emit('deleted')"
     />
     <div v-else-if="resource.pageDataProperty">

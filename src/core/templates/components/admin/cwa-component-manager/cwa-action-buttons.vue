@@ -1,17 +1,16 @@
 <template>
   <div>
-    <cm-button
-      v-if="selectedComponent && !reuseComponent"
-      @click="selectReuseComponent"
-    >
-      Reuse
-    </cm-button>
-    <cm-button
-      v-if="selectedComponent && reuseDestination"
-      @click="reuseComponent"
-    >
-      Reuse here
-    </cm-button>
+    <template v-if="!addingEvent">
+      <cm-button
+        v-if="selectedComponent && !reuseComponent"
+        @click="selectReuseComponent"
+      >
+        Reuse
+      </cm-button>
+      <cm-button v-if="selectedComponent && reuseDestination" @click="reuse">
+        Reuse here
+      </cm-button>
+    </template>
     <cm-button
       v-if="addingEvent"
       :alt-options="addNewOptions"
@@ -86,6 +85,7 @@ export default Vue.extend({
   methods: {
     selectReuseComponent() {
       this.reuseComponent = this.selectedComponent
+      this.reuseDestination = this.selectedPosition
     },
     newComponentListener(event: NewComponentEvent) {
       this.addingEvent = event

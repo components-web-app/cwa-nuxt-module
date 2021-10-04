@@ -223,15 +223,18 @@ export default Vue.extend({
     isShowing(newValue) {
       this.$cwa.$eventBus.$emit(EVENTS.showing, newValue)
       if (!newValue) {
-        this.toggleComponent(null)
+        this.toggleComponent(null, null)
         if (this.expanded) {
           this.expanded = false
         }
       }
     },
     selectedComponent({ iri }) {
-      this.toggleComponent(iri || null)
+      this.toggleComponent(iri || null, this.selectedPosition || null)
     },
+    // selectedPosition(iri) {
+    //   this.toggleComponent(this.selectedComponent.iri || null, iri || null)
+    // },
     persistentStates: {
       handler(newValue) {
         this.$cwa.$storage.setState(
@@ -291,6 +294,9 @@ export default Vue.extend({
     },
     selectPosition(iri) {
       this.selectedPosition = iri
+      if (this.reuseComponent) {
+        this.selectedPosition = iri
+      }
     },
     toggleDraggable(isDraggable) {
       this.$cwa.$eventBus.$emit(EVENTS.draggable, {
@@ -335,8 +341,11 @@ export default Vue.extend({
         context: componentTabContext
       }
     },
-    toggleComponent(iri?: string) {
-      this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, { iri })
+    toggleComponent(iri?: string, selectedPosition?: string) {
+      this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, {
+        iri,
+        selectedPosition
+      })
     },
     closeActionClick() {
       if (this.reuseComponent) {
@@ -346,13 +355,15 @@ export default Vue.extend({
       this.hide()
     },
     hide() {
-      this.cancelReuse()
       this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
       this.persistentStates = {}
       this.selectPosition(null)
     },
     show(event) {
+      if (this.reuseComponent) {
+        return
+      }
       // calendar inside manager should not trigger anything
       if (event.target.closest('.flatpickr-calendar')) {
         return
@@ -375,6 +386,7 @@ export default Vue.extend({
         // we could be selecting something without a position.
         this.$cwa.$eventBus.$emit(EVENTS.selectPosition, null)
 
+        // this event is listened so components can send events for cwa manager to listen to and populate pending components
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }
       // the show event above should be listened to and add-component event emitted to populate components by now
@@ -383,6 +395,7 @@ export default Vue.extend({
         consola.info('Not showing components manager. No menu data populated.')
         return
       }
+
       this.components = this.pendingComponents
       this.$nextTick(() => {
         this.$cwa.$eventBus.$emit(
@@ -537,6 +550,95 @@ export default Vue.extend({
     height: calc(100% - 5px)
     box-shadow: inset 0 0 10px 0 $cwa-warning, 0 0 2px 0 $cwa-warning, 0 0 2px 0 $cwa-color-primary
 
+@keyframes cwa-manager-primary-highlight-before-animation
+  0%
+    opacity: 0
+    width: calc(100% - 10px)
+    height: calc(100% - 10px)
+    box-shadow: none
+  40%
+    opacity: 1
+    box-shadow: 0 0 14px  $cwa-color-primary
+    width: 100%
+    height: 100%
+  80%
+    opacity: 0
+    box-shadow: 0 0 20px 0 $cwa-color-primary
+    width: calc(100% + 4px)
+    height: calc(100% + 4px)
+  100%
+    opacity: 0
+    width: calc(100% + 4px)
+    height: calc(100% + 4px)
+    box-shadow: none
+
+@keyframes cwa-manager-primary-highlight-after-animation
+  0%
+    opacity: 0
+    width: 100%
+    height: 100%
+    box-shadow: none
+  40%
+    opacity: 1
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 1px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary, 0 0 4px 0 $cwa-color-primary
+  80%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 10px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary, 0 0 2px 0 $cwa-color-primary
+  100%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: none
+
+
+@keyframes cwa-manager-gray-highlight-before-animation
+  0%
+    opacity: 0
+    width: calc(100% - 10px)
+    height: calc(100% - 10px)
+    box-shadow: none
+  40%
+    opacity: 1
+    box-shadow: 0 0 14px  $cwa-color-quaternary
+    width: 100%
+    height: 100%
+  80%
+    opacity: 0
+    box-shadow: 0 0 20px 0 $cwa-color-quaternary
+    width: calc(100% + 4px)
+    height: calc(100% + 4px)
+  100%
+    opacity: 0
+    width: calc(100% + 4px)
+    height: calc(100% + 4px)
+    box-shadow: none
+
+@keyframes cwa-manager-gray-highlight-after-animation
+  0%
+    opacity: 0
+    width: 100%
+    height: 100%
+    box-shadow: none
+  40%
+    opacity: 1
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 1px 0 $cwa-color-quaternary, 0 0 2px 0 $cwa-color-quaternary, 0 0 4px 0 $cwa-color-quaternary
+  80%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: inset 0 0 10px 0 $cwa-color-quaternary, 0 0 2px 0 $cwa-color-quaternary, 0 0 2px 0 $cwa-color-quaternary
+  100%
+    opacity: 0
+    width: calc(100% - 5px)
+    height: calc(100% - 5px)
+    box-shadow: none
+
 =absolute-overlay
   position: absolute
   top: 50%
@@ -563,6 +665,20 @@ export default Vue.extend({
       animation-name: cwa-manager-draft-highlight-before-animation
     &::after
       animation-name: cwa-manager-draft-highlight-after-animation
+  &.is-primary
+    &::before
+      animation-name: cwa-manager-primary-highlight-before-animation
+    &::after
+      animation-name: cwa-manager-primary-highlight-after-animation
+  &.is-gray
+    &::before
+      animation-name: cwa-manager-gray-highlight-before-animation
+    &::after
+      animation-name: cwa-manager-gray-highlight-after-animation
+
+.hide-nested-cwa-manager-highlight
+  .cwa-manager-highlight
+      display: none
 
 .cwa-components-manager
   position: relative

@@ -482,8 +482,4 @@ export default class Cwa {
   isResourceSame(resource1, resource2): boolean {
     return this.$storage.isResourceSame(resource1, resource2)
   }
-
-  reuseComponent(useBefore = false) {
-    console.log('Do the API request then... Use before?', useBefore)
-  }
 }
