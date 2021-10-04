@@ -389,16 +389,20 @@ export default Vue.extend({
         // this event is listened so components can send events for cwa manager to listen to and populate pending components
         this.$cwa.$eventBus.$emit(EVENTS.show)
       }
-      // if (this.reuseComponent) {
-      //   this.$cwa.$eventBus.$emit(EVENTS.selectPosition, null)
-      //   return
-      // }
 
       // the show event above should be listened to and add-component event emitted to populate components by now
       if (!this.pendingComponents.length) {
         this.hide()
         consola.info('Not showing components manager. No menu data populated.')
         return
+      }
+      if (!this.selectedPosition && this.reuseComponent) {
+        for (const component of this.pendingComponents) {
+          if (component.data.name === 'Collection') {
+            this.reuseDestination = component.iri
+            break
+          }
+        }
       }
 
       this.components = this.pendingComponents

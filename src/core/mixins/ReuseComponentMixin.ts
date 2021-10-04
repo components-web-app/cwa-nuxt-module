@@ -30,9 +30,13 @@ export default Vue.extend({
   },
   methods: {
     async reuse(useBefore = false) {
-      const position = this.$cwa.getResource(this.reuseDestination)
-      const collection = this.$cwa.getResource(position.componentCollection)
-      let sortValue = position.sortValue
+      const destination = this.$cwa.getResource(this.reuseDestination)
+      const destinationIsCollection =
+        destination['@type'] === 'ComponentCollection'
+      const collection = destinationIsCollection
+        ? destination
+        : this.$cwa.getResource(destination.componentCollection)
+      let sortValue = destinationIsCollection ? 1 : destination.sortValue
       if (useBefore) {
         sortValue--
       } else {
@@ -41,12 +45,16 @@ export default Vue.extend({
       await this.$cwa.createResource(
         '/_/component_positions',
         {
-          componentCollection: position.componentCollection,
+          componentCollection: destinationIsCollection
+            ? this.reuseDestination
+            : destination.componentCollection,
           sortValue,
           component: this.reuseComponent
         },
         null,
-        [position.componentCollection, ...collection.componentPositions]
+        destinationIsCollection
+          ? [this.reuseDestination]
+          : [destination.componentCollection, ...collection.componentPositions]
       )
       this.$cwa.$eventBus.$emit(
         COMPONENT_MANAGER_EVENTS.selectComponent,
