@@ -72,7 +72,7 @@ export default Vue.extend({
         }
         return this.resources[resourceType].byId[this.currentRoute.pageData]
       }
-      return this.resources.Page.byId[this.currentRoute.page]
+      return this.resources.Page?.byId[this.currentRoute.page]
     },
     currentPageTemplateIri() {
       if (!this.currentRoute || !this.currentPageMetadata) {

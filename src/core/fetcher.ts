@@ -192,7 +192,6 @@ export class Fetcher {
     }
     this.timer.reset()
     this.timer.start(`Fetch page ${pageIri}`)
-    this.ctx.storage.setCurrentRoute(null)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingRouteKey, pageIri)
 
@@ -215,6 +214,7 @@ export class Fetcher {
       ])
       this.ctx.storage.setState(Fetcher.loadedRouteKey, pageIri)
       this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+      this.ctx.storage.setCurrentRoute(null)
     } catch (error) {
       // Display error page
       this.ctx.error(error)
@@ -262,6 +262,7 @@ export class Fetcher {
         ...pageResponse.componentCollections,
         ...layoutResponse.componentCollections
       ])
+
       this.ctx.storage.setCurrentRoute(routeResponse['@id'])
       this.ctx.storage.setState(
         Fetcher.loadedRouteKey,

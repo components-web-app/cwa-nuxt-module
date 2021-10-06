@@ -53,7 +53,7 @@ export default Vue.extend({
       props: {
         message:
           props.message ||
-          `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
+          `The component '<b>${props.component}</b>' specified by resource '<b>${props.iri}</b>' does not exist`,
         isDanger: true
       }
     })
