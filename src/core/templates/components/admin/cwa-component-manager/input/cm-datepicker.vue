@@ -5,11 +5,11 @@
 import Vue from 'vue'
 import CwaAdminDatepicker from '../../input/cwa-admin-datepicker'
 import InputMixin from '../../../../../mixins/ApiInputMixin'
-import CwaTextMixin from '../../input/CwaTextMixin'
+import CwaInputMixin from '../../input/CwaInputMixin'
 
 export default Vue.extend({
   components: { CwaAdminDatepicker },
-  mixins: [InputMixin, CwaTextMixin],
+  mixins: [InputMixin, CwaInputMixin],
   props: {
     notificationCategory: {
       required: false,

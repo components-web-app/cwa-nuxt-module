@@ -6,11 +6,10 @@
     :has-error="hasError"
   >
     <flat-pickr
-      :value="localValue"
+      v-model="localValue"
       :config="config"
       placeholder="Select date"
       name="date"
-      @input="updateValue"
     />
   </component>
 </template>
@@ -19,11 +18,11 @@
 import 'flatpickr/dist/flatpickr.css'
 import FlatPickr from 'vue-flatpickr-component'
 import ApiDateParserMixin from '../../../../mixins/ApiDateParserMixin'
-import CwaTextMixin from './CwaTextMixin'
+import CwaInputMixin from './CwaInputMixin'
 
 export default {
   components: { FlatPickr },
-  mixins: [CwaTextMixin, ApiDateParserMixin],
+  mixins: [CwaInputMixin, ApiDateParserMixin],
   data() {
     return {
       config: {
@@ -37,17 +36,18 @@ export default {
     }
   },
   computed: {
-    localValue() {
-      if (!this.value) {
-        return null
+    localValue: {
+      get() {
+        if (!this.currentValue) {
+          return null
+        }
+        return this.parseDateToLocal(this.currentValue).format(
+          'MM-DD-YYYY HH:mm:SS'
+        )
+      },
+      set(newValue) {
+        this.currentValue = this.parseLocalDateToUtc(newValue).toISOString()
       }
-      return this.parseDateToLocal(this.value).format('MM-DD-YYYY HH:mm:SS')
-    }
-  },
-  methods: {
-    updateValue(dateValue) {
-      const utcDate = this.parseLocalDateToUtc(dateValue).toISOString()
-      this.$emit('input', utcDate)
     }
   }
 }

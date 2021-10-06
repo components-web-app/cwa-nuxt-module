@@ -47,9 +47,9 @@ export default Vue.extend({
         status: isOutdated ? 0 : 1
       } as StatusEvent)
     },
-    inputValue() {
+    inputValue(newValue) {
       this.error = null
-      if (this.valuesSame(this.resourceValue, this.inputValue)) {
+      if (this.valuesSame(this.resourceValue, newValue)) {
         return
       }
       this.outdated = true
