@@ -20,7 +20,7 @@ export default Vue.extend({
   },
   mixins: [ReuseComponentMixin],
   layout({ $cwa }) {
-    return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
+    return $cwa.resources.Layout?.byId[$cwa.layout].uiComponent
   },
   head() {
     if (!this.currentPageMetadata) {

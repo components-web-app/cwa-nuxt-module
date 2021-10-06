@@ -83,16 +83,18 @@ export class Fetcher {
     consola.trace(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
 
-    const currentRoutePath = this.ctx.storage.getState(Fetcher.loadingRouteKey)
+    const currentRoutePath =
+      this.ctx.storage.getState(Fetcher.loadingRouteKey) ||
+      this.ctx.storage.getState(Fetcher.loadedRouteKey)
     // For dynamic components the API must know what route/path the request was originally for
     // so we set a custom "Path" header
     const requestHeaders = {
-      Path: currentRoutePath
-    } as { Path: string; Preload?: string }
+      path: currentRoutePath
+    } as { path: string; preload?: string }
 
     // preload headers for Vulcain
     if (preload) {
-      requestHeaders.Preload = preload.join(',')
+      requestHeaders.preload = preload.join(',')
     }
 
     try {
@@ -255,6 +257,7 @@ export class Fetcher {
       if (!pageResponse) {
         return
       }
+
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
       this.ctx.storage.setState('layout', layoutResponse['@id'])
 

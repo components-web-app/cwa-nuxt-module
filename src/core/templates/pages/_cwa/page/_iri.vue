@@ -10,7 +10,7 @@ export default Vue.extend({
   mixins: [CwaPageCommonMixin],
   // define this as the common mixin will want to use the cwa default layout
   layout({ $cwa }) {
-    return $cwa.resources.Layout.byId[$cwa.layout].uiComponent
+    return $cwa.resources.Layout?.byId[$cwa.layout].uiComponent
   },
   computed: {
     currentPageMetadata() {
