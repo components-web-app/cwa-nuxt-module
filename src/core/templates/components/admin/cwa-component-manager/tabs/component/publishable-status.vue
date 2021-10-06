@@ -26,6 +26,7 @@
             <cm-datepicker
               :id="`component-published-at-${iri}`"
               :iri="iri"
+              :refresh-endpoints="refreshEndpoints"
               field="publishedAt"
               label="Publish at"
             />
@@ -77,11 +78,14 @@ export default Vue.extend({
       set(showPublished) {
         this.$cwa.togglePublishable(this.iri, showPublished)
       }
+    },
+    refreshEndpoints() {
+      const publishedResource = this.$cwa.getPublishedResource(this.resource)
+      return publishedResource?.componentPositions || null
     }
   },
   methods: {
     async publishNow() {
-      const publishedResource = this.$cwa.getPublishedResource(this.resource)
       try {
         // this.$emit('close', true)
         const resource = await this.updateResource(
@@ -89,7 +93,7 @@ export default Vue.extend({
           'publishedAt',
           moment.utc().toISOString(),
           this.$cwa.$storage.getCategoryFromIri(this.iri),
-          publishedResource?.componentPositions || null,
+          this.refreshEndpoints,
           'components-manager'
         )
         this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
