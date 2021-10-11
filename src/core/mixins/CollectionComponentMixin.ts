@@ -10,7 +10,8 @@ export default Vue.extend({
       fetching: false,
       loadedSubResources: false,
       collectionSubResourceKeys: [],
-      refreshCancelTokenSource: null
+      refreshCancelTokenSource: null,
+      collectionResourceData: {}
     }
   },
   computed: {
@@ -30,6 +31,22 @@ export default Vue.extend({
     this.loadSubResources()
   },
   methods: {
+    async addCollectionResource(endpoint) {
+      try {
+        await this.$cwa.createResource(
+          endpoint,
+          this.collectionResourceData,
+          null,
+          []
+        )
+        await this.refreshCollection()
+      } catch (error) {
+        if (error instanceof ApiError && error.isCancel) {
+          return
+        }
+        throw error
+      }
+    },
     async refreshCollection() {
       if (this.refreshCancelTokenSource) {
         this.refreshCancelTokenSource.cancel()

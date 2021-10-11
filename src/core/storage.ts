@@ -97,9 +97,30 @@ export class Storage {
       force
     })
 
+    this.populateCollectionComponentResources({ resource, isNew, force })
+  }
+
+  private populateCollectionComponentResources({
+    resource,
+    isNew,
+    force
+  }: {
+    resource: any
+    isNew?: boolean
+    force?: boolean
+  }) {
     if (resource?._metadata?.collection === true) {
       for (const item of resource?.collection['hydra:member']) {
-        this.setResource({ isNew, resource: item, force })
+        const existingItem = this.getResource(item['@id'])
+        if (existingItem) {
+          this.setResource({
+            resource: { ...existingItem, ...item },
+            isNew,
+            force
+          })
+        } else {
+          this.setResource({ resource: item, isNew, force })
+        }
       }
     }
   }

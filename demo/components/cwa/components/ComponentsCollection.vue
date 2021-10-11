@@ -44,6 +44,11 @@
         />
       </div>
     </div>
+    <div v-if="$cwa.isAdmin">
+      <button @click="addCollectionResource('/page_data/blog_article_datas')">
+        Add
+      </button>
+    </div>
     <div class="collection-items">
       <div v-if="fetching" class="loading-overlay">&nbsp;</div>
       <div class="row row-wrap">
@@ -97,7 +102,8 @@ export default Vue.extend({
           UiClassNames: [],
           UiComponents: []
         }
-      }
+      },
+      collectionResourceData: {}
     }
   },
   computed: {
