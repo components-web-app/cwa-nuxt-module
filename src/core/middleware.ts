@@ -6,6 +6,16 @@ import DebugTimer from '../utils/DebugTimer'
 export default async function routeLoaderMiddleware({ route, $cwa }) {
   const pageParam = routeOption(route, 'pageIriParam')
   if (pageParam) {
+    if (route.name === '_cwa_page_data_iri') {
+      try {
+        await $cwa.fetcher.fetchPageData(
+          decodeURIComponent(route.params[pageParam])
+        )
+      } catch (err) {
+        $cwa.withError(route, err)
+      }
+      return
+    }
     try {
       await $cwa.fetcher.fetchPage(decodeURIComponent(route.params[pageParam]))
     } catch (err) {

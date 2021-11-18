@@ -55,6 +55,10 @@ export class Fetcher {
     this.timer = new DebugTimer()
   }
 
+  get loadedRoute() {
+    return this.ctx.storage.getState(Fetcher.loadedRouteKey)
+  }
+
   private get currentResources() {
     return this.ctx.storage.state.resources.current
   }
@@ -86,6 +90,7 @@ export class Fetcher {
     const currentRoutePath =
       this.ctx.storage.getState(Fetcher.loadingRouteKey) ||
       this.ctx.storage.getState(Fetcher.loadedRouteKey)
+
     // For dynamic components the API must know what route/path the request was originally for
     // so we set a custom "Path" header
     const requestHeaders = {
@@ -186,18 +191,95 @@ export class Fetcher {
       })
   }
 
-  public async fetchPage(pageIri) {
+  private startFetch(endpoint) {
     // prevent reload on querystring change
     const currentlyLoaded = this.ctx.storage.getState(Fetcher.loadedRouteKey)
-    if (currentlyLoaded === pageIri) {
+    if (currentlyLoaded === endpoint) {
+      return false
+    }
+
+    this.timer.reset()
+    this.timer.start(`Start fetch ${endpoint}`)
+    this.ctx.storage.resetCurrentResources()
+    this.ctx.storage.setState(Fetcher.loadingRouteKey, endpoint)
+    this.closeMercure()
+
+    return true
+  }
+
+  private async fetchNestedResources(
+    layoutResponse,
+    pageResponse,
+    loadedRoutePath,
+    routeResponse = null
+  ) {
+    this.ctx.storage.setState('layout', layoutResponse['@id'])
+    await this.fetchComponentCollections([
+      ...pageResponse.componentCollections,
+      ...layoutResponse.componentCollections
+    ])
+    this.ctx.storage.setState(Fetcher.loadedRouteKey, loadedRoutePath)
+    this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+
+    if (!routeResponse) {
+      this.ctx.storage.setCurrentRoute(null)
+    } else {
+      this.ctx.storage.setCurrentRoute(routeResponse['@id'])
+      // does not work server-side
+      if (routeResponse.redirectPath) {
+        this.ctx.redirect(308, { path: routeResponse.redirectPath })
+      }
+    }
+  }
+
+  private finallyFetch(endpoint) {
+    this.initMercure(this.currentResources)
+    this.timer.end(`Fetch route ${endpoint}`)
+    this.timer.print()
+  }
+
+  public async fetchPageData(pageDataIri) {
+    if (!this.startFetch(pageDataIri)) {
       return
     }
-    this.timer.reset()
-    this.timer.start(`Fetch page ${pageIri}`)
-    this.ctx.storage.resetCurrentResources()
-    this.ctx.storage.setState(Fetcher.loadingRouteKey, pageIri)
 
-    this.closeMercure()
+    try {
+      const pageDataResponse = await this.fetchItem({
+        path: pageDataIri,
+        preload: [
+          '/page/layout/componentCollections/*/componentPositions/*/component',
+          '/page/componentCollections/*/componentPositions/*/component'
+        ]
+      })
+
+      if (!pageDataResponse.page) {
+        this.ctx.error('The page data resource does not have a page configured')
+      }
+
+      const pageResponse = await this.fetchItem({
+        path: pageDataResponse.page,
+        preload: [
+          '/layout/componentCollections/*/componentPositions/*/component',
+          '/componentCollections/*/componentPositions/*/component'
+        ]
+      })
+
+      const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+
+      await this.fetchNestedResources(layoutResponse, pageResponse, pageDataIri)
+    } catch (error) {
+      // Display error page
+      this.ctx.error(error)
+    } finally {
+      this.finallyFetch(pageDataIri)
+    }
+  }
+
+  public async fetchPage(pageIri) {
+    if (!this.startFetch(pageIri)) {
+      return
+    }
+
     try {
       const pageResponse = await this.fetchItem({
         path: pageIri,
@@ -208,40 +290,21 @@ export class Fetcher {
       })
 
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
-      this.ctx.storage.setState('layout', layoutResponse['@id'])
 
-      await this.fetchComponentCollections([
-        ...pageResponse.componentCollections,
-        ...layoutResponse.componentCollections
-      ])
-      this.ctx.storage.setState(Fetcher.loadedRouteKey, pageIri)
-      this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
-      this.ctx.storage.setCurrentRoute(null)
+      await this.fetchNestedResources(layoutResponse, pageResponse, pageIri)
     } catch (error) {
       // Display error page
       this.ctx.error(error)
     } finally {
-      this.initMercure(this.currentResources)
-      this.timer.end(`Fetch page ${pageIri}`)
-      this.timer.print()
+      this.finallyFetch(pageIri)
     }
-  }
-
-  get loadedRoute() {
-    return this.ctx.storage.getState(Fetcher.loadedRouteKey)
   }
 
   public async fetchRoute(path) {
-    // prevent reload on querystring change
-    const currentlyLoaded = this.ctx.storage.getState(Fetcher.loadedRouteKey)
-    if (currentlyLoaded === path) {
+    if (!this.startFetch(path)) {
       return
     }
-    this.timer.reset()
-    this.timer.start(`Fetch route ${path}`)
-    this.ctx.storage.resetCurrentResources()
-    this.ctx.storage.setState(Fetcher.loadingRouteKey, path)
-    this.eventSource && this.eventSource.close()
+
     try {
       const routeResponse = await this.fetchItem({
         path: `/_/routes/${path}`,
@@ -259,31 +322,18 @@ export class Fetcher {
       }
 
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
-      this.ctx.storage.setState('layout', layoutResponse['@id'])
 
-      await this.fetchComponentCollections([
-        ...pageResponse.componentCollections,
-        ...layoutResponse.componentCollections
-      ])
-
-      this.ctx.storage.setCurrentRoute(routeResponse['@id'])
-      this.ctx.storage.setState(
-        Fetcher.loadedRouteKey,
-        routeResponse.redirectPath || path
+      await this.fetchNestedResources(
+        layoutResponse,
+        pageResponse,
+        routeResponse.redirectPath || path,
+        routeResponse
       )
-      this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
-
-      // does not work server-side
-      if (routeResponse.redirectPath) {
-        this.ctx.redirect(308, { path: routeResponse.redirectPath })
-      }
     } catch (error) {
       // Display error page
       this.ctx.error(error)
     } finally {
-      this.initMercure(this.currentResources)
-      this.timer.end(`Fetch route ${path}`)
-      this.timer.print()
+      this.finallyFetch(path)
     }
   }
 
