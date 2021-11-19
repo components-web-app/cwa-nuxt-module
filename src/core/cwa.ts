@@ -460,7 +460,7 @@ export default class Cwa {
   }
 
   get currentPageIri() {
-    return this.$storage.currentPageIri || this.fetcher.loadedRoute || null
+    return this.fetcher.loadedPage
   }
 
   userHasRole(role) {

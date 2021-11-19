@@ -32,6 +32,7 @@ export class Fetcher {
 
   public static readonly loadingRouteKey = 'loadingRoute'
   public static readonly loadedRouteKey = 'loadedRoute'
+  public static readonly loadedPageKey = 'loadedPage'
   private timer: DebugTimer
   private initMercureTimeout?: any = null
   private mercureMessages: Array<MercureMessage> = []
@@ -57,6 +58,10 @@ export class Fetcher {
 
   get loadedRoute() {
     return this.ctx.storage.getState(Fetcher.loadedRouteKey)
+  }
+
+  get loadedPage() {
+    return this.ctx.storage.getState(Fetcher.loadedPageKey)
   }
 
   private get currentResources() {
@@ -251,6 +256,7 @@ export class Fetcher {
           '/page/componentCollections/*/componentPositions/*/component'
         ]
       })
+      this.ctx.storage.setState(Fetcher.loadedPageKey, pageDataIri)
 
       if (!pageDataResponse.page) {
         this.ctx.error('The page data resource does not have a page configured')
@@ -288,6 +294,7 @@ export class Fetcher {
           '/componentCollections/*/componentPositions/*/component'
         ]
       })
+      this.ctx.storage.setState(Fetcher.loadedPageKey, pageIri)
 
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 
@@ -320,6 +327,10 @@ export class Fetcher {
       if (!pageResponse) {
         return
       }
+      this.ctx.storage.setState(
+        Fetcher.loadedPageKey,
+        routeResponse.pageData || pageResponse['@id']
+      )
 
       const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
 

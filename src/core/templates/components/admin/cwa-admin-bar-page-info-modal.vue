@@ -26,8 +26,6 @@ export default Vue.extend({
   mixins: [IriPageModalMixin, LoadLayoutsMixin, IriModalMixin],
   data() {
     return {
-      // I don't know why this causes an error not realising $cwa is available on Vue instance...
-      // @ts-ignore
       iri: this.$cwa.currentPageIri
     }
   }

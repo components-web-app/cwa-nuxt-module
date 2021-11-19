@@ -3,7 +3,7 @@
     v-model="component"
     title="Page Details"
     v-bind="iriModalProps"
-    :show-loader="isLoading"
+    :show-loader="isLoading || showLoader"
     @close="$emit('close')"
     @submit="$emit('submit')"
     @delete="$emit('delete')"
@@ -20,17 +20,26 @@
         v-bind="inputProps('title')"
       />
       <cwa-admin-select
-        v-model="component.layout"
-        label="Layout"
-        :options="layouts"
-        v-bind="inputProps('layout')"
+        v-if="isPageData"
+        v-model="component.page"
+        label="Page template"
+        :options="pageTemplateOptions"
+        v-bind="inputProps('page')"
       />
-      <cwa-admin-select
-        v-model="component.uiComponent"
-        label="UI Component"
-        :options="pageComponents"
-        v-bind="inputProps('uiComponent')"
-      />
+      <template v-else>
+        <cwa-admin-select
+          v-model="component.layout"
+          label="Layout"
+          :options="layouts"
+          v-bind="inputProps('layout')"
+        />
+        <cwa-admin-select
+          v-model="component.uiComponent"
+          label="UI Component"
+          :options="pageComponents"
+          v-bind="inputProps('uiComponent')"
+        />
+      </template>
     </template>
     <template slot="right">
       <cwa-admin-text
@@ -40,6 +49,7 @@
         v-bind="inputProps('metaDescription')"
       />
       <cwa-admin-text
+        v-if="!isPageData"
         v-model="component.uiClassNames"
         label="Style Classes"
         v-bind="inputProps('uiClassNames')"
@@ -50,6 +60,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import PageTemplateLoadMixin from '@cwa/nuxt-module/core/mixins/PageTemplateLoadMixin'
 import IriPageModalView from '../iri-page-modal-view.vue'
 import IriModalPropsMixin from '../IriModalPropsMixin'
 import CwaAdminSelect from './input/cwa-admin-select.vue'
@@ -61,7 +72,7 @@ import CwaAdminText from './input/cwa-admin-text.vue'
 
 export default Vue.extend({
   components: { CwaAdminSelect, CwaAdminText, IriPageModalView },
-  mixins: [IriModalPropsMixin],
+  mixins: [IriModalPropsMixin, PageTemplateLoadMixin],
   props: {
     value: {
       type: Object,
@@ -85,13 +96,21 @@ export default Vue.extend({
       required: true
     }
   },
+  data() {
+    return {
+      showLoader: false
+    }
+  },
   computed: {
+    isPageData() {
+      return this.component.page !== undefined
+    },
     iriModalProps() {
       return {
         notificationCategories: this.notificationCategories,
         isSaved: this.isSaved,
         isNew: this.isNew,
-        showLoader: this.isLoading
+        showLoader: this.isLoading || this.showLoader
       }
     },
     inputProps() {
@@ -116,6 +135,11 @@ export default Vue.extend({
       },
       immediate: true
     }
+  },
+  async mounted() {
+    this.showLoader = true
+    await this.loadPageTemplateOptions()
+    this.showLoader = false
   }
 })
 </script>

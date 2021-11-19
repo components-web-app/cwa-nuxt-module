@@ -10,8 +10,13 @@
       @deleted="$emit('deleted')"
     />
     <div v-else-if="resource.pageDataProperty">
-      The property [{{ resource.pageDataProperty }}] will be added here from
-      page data
+      <span v-if="isDynamicPage">
+        Missing page data value [{{ resource.pageDataProperty }}]
+      </span>
+      <span v-else>
+        The property [{{ resource.pageDataProperty }}] will be added here from
+        page data
+      </span>
     </div>
   </div>
 </template>
@@ -22,6 +27,7 @@ import ComponentManagerMixin, {
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import consola from 'consola'
 import { API_EVENTS } from '@cwa/nuxt-module/core/events'
+import { StoreCategories } from '@cwa/nuxt-module/core/storage'
 import ResourceComponentLoader from '../../resource-component-loader'
 import components from '~/.nuxt/cwa/components'
 
@@ -48,6 +54,13 @@ export default {
     }
   },
   computed: {
+    resources() {
+      return this.$cwa.resources
+    },
+    isDynamicPage() {
+      const page = this.$cwa.getResource(this.$cwa.currentPageIri)
+      return page['@type'] !== 'Page'
+    },
     resource() {
       return this.$cwa.getResource(this.iri)
     },

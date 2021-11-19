@@ -137,10 +137,6 @@ export class Storage {
     return routeResources?.byId?.[routeResources.current] || null
   }
 
-  get currentPageIri() {
-    return this.currentRoute?.page || null
-  }
-
   get mercurePendingProcesses() {
     return this.getState('mercurePendingProcesses')
   }

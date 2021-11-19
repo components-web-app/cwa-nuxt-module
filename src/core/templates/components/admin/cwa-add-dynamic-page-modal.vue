@@ -18,7 +18,7 @@
       <cwa-admin-select
         v-model="component.page"
         label="Page template"
-        :options="pageOptions"
+        :options="pageTemplateOptions"
         v-bind="inputProps('page')"
       />
     </template>
@@ -29,12 +29,12 @@
 import Vue from 'vue'
 import CwaAdminSelect from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-select.vue'
 import IriModalMixin from '@cwa/nuxt-module/core/templates/pages/_cwa/IriModalMixin'
-import ApiError from '@cwa/nuxt-module/inc/api-error'
+import PageTemplateLoadMixin from '@cwa/nuxt-module/core/mixins/PageTemplateLoadMixin'
 import IriModalView from '../iri-modal-view.vue'
 
 export default Vue.extend({
   components: { CwaAdminSelect, IriModalView },
-  mixins: [IriModalMixin],
+  mixins: [IriModalMixin, PageTemplateLoadMixin],
   props: {
     defaultData: {
       type: Object,
@@ -55,7 +55,6 @@ export default Vue.extend({
   data() {
     return {
       iri: 'add',
-      pageOptions: [],
       component: {
         ...this.defaultData
       },
@@ -64,14 +63,7 @@ export default Vue.extend({
   },
   async mounted() {
     this.showLoader = true
-    const { data } = await this.$axios.get('/_/pages')
-    const pages = data['hydra:member']
-    this.pageOptions = pages.map((page) => {
-      return {
-        value: page['@id'],
-        label: page.reference
-      }
-    })
+    await this.loadPageTemplateOptions()
     this.showLoader = false
   },
   methods: {
