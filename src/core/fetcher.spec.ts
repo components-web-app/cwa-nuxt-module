@@ -37,8 +37,10 @@ describe('fetcher', () => {
       }
     }
 
+    const redirect = jest.fn()
+
     const fetcher = new Fetcher(
-      { $axios, error, apiUrl, storage, router },
+      { $axios, error, apiUrl, storage, router, redirect },
       { fetchConcurrency: 1 }
     )
     await fetcher.fetchRoute('/')

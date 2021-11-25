@@ -1,4 +1,5 @@
 import Cwa from './cwa'
+jest.mock('~/.nuxt/cwa/components', () => ({}), { virtual: true })
 
 describe('Cwa', () => {
   it('should call fetcher fetchRoute', async () => {
