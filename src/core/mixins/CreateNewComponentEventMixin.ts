@@ -2,6 +2,7 @@ import Vue from 'vue'
 import consola from 'consola'
 import { NewComponentEvent } from '../events'
 import FetchComponentsMixin from './FetchComponentsMixin'
+// @ts-ignore
 import components from '~/.nuxt/cwa/components'
 
 export default Vue.extend({
