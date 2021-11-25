@@ -98,7 +98,7 @@ export default Vue.extend({
           componentPosition: this.selectedPosition,
           collection: this.collection
         },
-        this.selectedTab.context
+        this.selectedTab?.context || {}
       )
     },
     orderedTabs() {

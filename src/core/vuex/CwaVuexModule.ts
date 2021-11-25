@@ -264,7 +264,9 @@ export default function (storage) {
         const routeResources = state.resources.current.Route
         const defaultWarning = `Could not set loaded route to '${id}':`
         if (routeResources === undefined) {
-          consola.warn(`${defaultWarning} no routes have been loaded`)
+          if (id !== null) {
+            consola.warn(`${defaultWarning} no routes have been loaded`)
+          }
           return
         }
         if (id === null) {

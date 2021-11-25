@@ -42,19 +42,8 @@ export default Vue.extend({
       return this.showSort ? this.sortValue : null
     },
     componentManager(): ComponentManagerComponent {
-      return {
+      return Object.assign({}, this.baseComponentManager, {
         name: this?.resource?.['@type'] || 'Unknown Component',
-        tabs: [
-          ...this.defaultManagerTabs.map((item) =>
-            Object.assign({}, item, {
-              context: {
-                ...this.componentManagerContext,
-                ...(item.context || {})
-              }
-            })
-          ),
-          ...this.componentManagerTabs
-        ],
         context: Object.assign(
           {
             statusTab: {
@@ -63,13 +52,13 @@ export default Vue.extend({
           },
           this.componentManagerContext
         )
-      }
+      })
     },
-    componentManagerTabs() {
+    componentManagerTabs(): Array<ComponentManagerTab> {
       return []
     },
-    defaultManagerTabs() {
-      const tabs: Array<ComponentManagerTab> = [
+    defaultManagerTabs(): Array<ComponentManagerTab> {
+      return [
         {
           label: 'Order',
           component: () =>
@@ -90,7 +79,6 @@ export default Vue.extend({
           priority: 200
         }
       ]
-      return tabs
     },
     metadata() {
       return this.resource?._metadata || {}
