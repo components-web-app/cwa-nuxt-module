@@ -41,6 +41,9 @@ export default Vue.extend({
   },
   watch: {
     inputValue() {
+      if (!this.isNumberType) {
+        return
+      }
       this.$nextTick(() => {
         this.enforceNumber()
       })

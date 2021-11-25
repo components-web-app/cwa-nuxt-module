@@ -35,6 +35,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import ComponentManagerMixin, {
+  ComponentManagerTab,
   EVENTS
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import consola from 'consola'
@@ -76,6 +77,19 @@ export default Vue.extend({
     }
   },
   computed: {
+    componentManagerTabs(): Array<ComponentManagerTab> {
+      return [
+        {
+          label: 'Dynamic property',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-position.vue'
+            ),
+          priority: 100,
+          context: {}
+        }
+      ]
+    },
     componentManager() {
       return Object.assign({}, this.baseComponentManager, {
         name: 'Component Position'
