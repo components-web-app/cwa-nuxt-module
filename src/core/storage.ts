@@ -294,6 +294,12 @@ export class Storage {
       navigate
     )
   }
+
+  fetchComponentMetadata() {
+    return this.ctx.store.dispatch(
+      this.options.vuex.namespace + '/fetchComponentMetadata'
+    )
+  }
 }
 
 export default Storage

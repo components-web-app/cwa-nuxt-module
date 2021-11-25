@@ -50,6 +50,7 @@ import Vue from 'vue'
 import slugify from 'slugify'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import Draggable from 'vuedraggable'
+import NewComponentMixin from '../../../mixins/NewComponentMixin'
 import ApiRequestMixin from '../../../mixins/ApiRequestMixin'
 import {
   ComponentManagerMixin,
@@ -71,7 +72,7 @@ export default Vue.extend({
     CwaAddButton: () => import('../utils/cwa-add-button.vue'),
     ...components
   },
-  mixins: [ApiRequestMixin, ComponentManagerMixin],
+  mixins: [ApiRequestMixin, ComponentManagerMixin, NewComponentMixin],
   props: {
     location: {
       type: String,
@@ -100,27 +101,11 @@ export default Vue.extend({
       },
       reloading: false,
       previousSortedComponentPositions: null,
-      newComponentEvent: null,
       isDraggable: false,
       showOrderValues: false
     }
   },
   computed: {
-    newComponentResource() {
-      if (!this.newComponentIri) {
-        return null
-      }
-      return this.$cwa.getResource(this.newComponentIri)
-    },
-    newComponentName() {
-      const componentName =
-        this.newComponentResource?.uiComponent ||
-        this.newComponentResource?.['@type']
-      if (!componentName) {
-        return null
-      }
-      return `CwaComponents${componentName}`
-    },
     componentManager(): ComponentManagerComponent {
       return {
         name: 'Collection',
@@ -191,38 +176,6 @@ export default Vue.extend({
           this.$cwa.saveResource(newPosition)
         }
       }
-    },
-    newComponentIri() {
-      return this.newComponentEvent?.iri || null
-    }
-  },
-  watch: {
-    newComponentEvent(event: NewComponentEvent) {
-      if (!event) {
-        // should we remove the data or keep it in case we want to continue adding??
-        // if we keep then the below 'setResource' call will need to be enhanced so as to not override
-        return
-      }
-      const resource = {
-        '@id': this.newComponentIri,
-        '@type': event.name,
-        _metadata: {
-          _isNew: true
-        }
-      } as {
-        '@id': string
-        '@type': string
-        _metadata?: {
-          _isNew: boolean
-          published?: boolean
-        }
-      }
-      if (event.isPublishable) {
-        resource._metadata.published = false
-      }
-      this.$cwa.$storage.setResource({
-        resource
-      })
     }
   },
   async mounted() {
@@ -231,11 +184,7 @@ export default Vue.extend({
     }
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.newComponent,
-      this.handleNewComponentEvent
-    )
-    this.$cwa.$eventBus.$on(
-      COMPONENT_MANAGER_EVENTS.highlightComponent,
-      this.handleHighlightComponentEvent
+      this.setNewComponentEvent
     )
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.draggable,
@@ -253,11 +202,7 @@ export default Vue.extend({
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.newComponent,
-      this.handleNewComponentEvent
-    )
-    this.$cwa.$eventBus.$off(
-      COMPONENT_MANAGER_EVENTS.highlightComponent,
-      this.handleHighlightComponentEvent
+      this.setNewComponentEvent
     )
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.draggable,
@@ -273,11 +218,14 @@ export default Vue.extend({
     )
   },
   methods: {
-    handleInitialData(dataObject: Object) {
-      const resource = { ...this.newComponentResource, ...dataObject }
-      this.$cwa.$storage.setResource({
-        resource
-      })
+    setNewComponentEvent(event: NewComponentEvent) {
+      if (event.collection !== this.resource['@id']) {
+        // if we had been adding one here, it was added and another is being added elsewhere we clear it...
+        this.newComponentEvent = null
+        return
+      }
+
+      this.newComponentEvent = event
     },
     handleManagerCloseEvent() {
       this.showOrderValues = false
@@ -293,43 +241,7 @@ export default Vue.extend({
         this.showOrderValues = !!event.newTab?.context?.showOrderValues
       }
     },
-    handleHighlightComponentEvent({
-      iri,
-      force
-    }: {
-      iri?: string
-      force?: boolean
-    }) {
-      if (
-        this.newComponentEvent &&
-        this.newComponentIri !== iri &&
-        this.newComponentResource
-      ) {
-        if (
-          !force &&
-          window.confirm('Are you sure you want to discard your new component?')
-        ) {
-          this.newComponentEvent = null
-          this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.newComponentCleared
-          )
-        } else {
-          this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.selectComponent,
-            this.newComponentIri
-          )
-        }
-      }
-    },
-    handleNewComponentEvent(event: NewComponentEvent) {
-      if (event.collection !== this.resource['@id']) {
-        // if we had been adding one here, it was added and another is being added elsewhere we clear it...
-        this.newComponentEvent = null
-        return
-      }
 
-      this.newComponentEvent = event
-    },
     getCollectionResourceByLocation(location, locationResourceId) {
       const ComponentCollection = this.$cwa.resources?.ComponentCollection
       if (!ComponentCollection) {

@@ -64,6 +64,11 @@ export interface SaveStateEvent {
   value: any
 }
 
+export interface ComponentCreatedEvent {
+  tempIri: string
+  newIri: string
+}
+
 const prefix = 'cwa'
 
 const apiCategory = 'api'
@@ -82,6 +87,7 @@ export const COMPONENT_MANAGER_EVENTS = {
   highlightComponent: `${prefix}:${componentManagerCategory}:highlight-component`,
   publishableToggled: `${prefix}:${componentManagerCategory}:publishable-toggled`,
   selectComponent: `${prefix}:${componentManagerCategory}:select-component`,
+  componentCreated: `${prefix}:${componentManagerCategory}:component-created`,
   componentMounted: `${prefix}:${componentManagerCategory}:component-mounted`,
   addComponent: `${prefix}:${componentManagerCategory}:add-component`,
   newComponent: `${prefix}:${componentManagerCategory}:new-component`,

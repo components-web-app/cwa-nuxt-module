@@ -11,7 +11,18 @@
     />
     <div v-else-if="resource.pageDataProperty">
       <span v-if="isDynamicPage">
-        Missing page data value [{{ resource.pageDataProperty }}]
+        <component
+          :is="newComponentName"
+          v-if="newComponentResource"
+          :iri="newComponentIri"
+          @initial-data="handleInitialData"
+        />
+        <template v-else>
+          <button>Select position</button>&nbsp;
+          <button type="button" @click.stop="addDynamicComponent">
+            Add {{ pageDataPropComponent }}
+          </button>
+        </template>
       </span>
       <span v-else>
         The property [{{ resource.pageDataProperty }}] will be added here from
@@ -21,22 +32,32 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import Vue from 'vue'
 import ComponentManagerMixin, {
   EVENTS
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import consola from 'consola'
-import { API_EVENTS } from '@cwa/nuxt-module/core/events'
-import { StoreCategories } from '@cwa/nuxt-module/core/storage'
+import {
+  API_EVENTS,
+  COMPONENT_MANAGER_EVENTS
+} from '@cwa/nuxt-module/core/events'
+import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
+import CreateNewComponentEventMixin from '@cwa/nuxt-module/core/mixins/CreateNewComponentEventMixin'
+import type { ComponentCreatedEvent } from '@cwa/nuxt-module/core/events'
 import ResourceComponentLoader from '../../resource-component-loader'
 import components from '~/.nuxt/cwa/components'
 
-export default {
+export default Vue.extend({
   components: {
     ResourceComponentLoader,
     ...components
   },
-  mixins: [ComponentManagerMixin],
+  mixins: [
+    ComponentManagerMixin,
+    NewComponentMixin,
+    CreateNewComponentEventMixin
+  ],
   props: {
     iri: {
       type: String,
@@ -57,9 +78,17 @@ export default {
     resources() {
       return this.$cwa.resources
     },
+    pageDataPropComponent() {
+      return this.pageDataProps[this.resource.pageDataProperty]
+    },
+    pageDataProps() {
+      return this.pageResource._metadata?.page_data_props
+    },
+    pageResource() {
+      return this.$cwa.getResource(this.$cwa.currentPageIri)
+    },
     isDynamicPage() {
-      const page = this.$cwa.getResource(this.$cwa.currentPageIri)
-      return page['@type'] !== 'Page'
+      return this.pageResource['@type'] !== 'Page'
     },
     resource() {
       return this.$cwa.getResource(this.iri)
@@ -96,11 +125,47 @@ export default {
       })
     }
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
+    this.$cwa.$eventBus.$on(
+      EVENTS.componentCreated,
+      this.handleComponentCreated
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
+    this.$cwa.$eventBus.$off(
+      EVENTS.componentCreated,
+      this.handleComponentCreated
+    )
   },
   methods: {
+    async handleComponentCreated(event: ComponentCreatedEvent) {
+      if (
+        !this.newComponentEvent ||
+        event.tempIri !== this.newComponentEvent.iri
+      ) {
+        return
+      }
+      await this.$cwa.updateResource(
+        this.pageResource['@id'],
+        {
+          [this.resource.pageDataProperty]: event.newIri
+        },
+        null,
+        [this.resource['@id']]
+      )
+    },
+    async addDynamicComponent() {
+      this.newComponentEvent = await this.createNewComponentEvent(
+        this.pageDataPropComponent
+      )
+      // allow cwa manager to mount buttons to receive this event
+      this.$nextTick(() => {
+        this.$cwa.$eventBus.$emit(
+          COMPONENT_MANAGER_EVENTS.newComponent,
+          this.newComponentEvent
+        )
+      })
+    },
     componentManagerShowListener() {
       if (!this.resource) {
         consola.error(
@@ -123,5 +188,5 @@ export default {
       }
     }
   }
-}
+})
 </script>

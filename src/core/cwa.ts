@@ -256,7 +256,7 @@ export default class Cwa {
     const promises = []
     for (const refreshEndpoint of refreshEndpoints) {
       promises.push(
-        this.ctx.$axios.$get(refreshEndpoint).then((refreshResource) => {
+        this.refreshResource(refreshEndpoint).then((refreshResource) => {
           this.saveResource(refreshResource, null)
           this.decreaseMercurePendingProcessCount()
           this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)

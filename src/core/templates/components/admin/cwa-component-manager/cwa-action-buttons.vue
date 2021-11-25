@@ -23,8 +23,9 @@
 <script lang="ts">
 import Vue from 'vue'
 import moment from 'moment'
+import consola from 'consola'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
-import { NewComponentEvent } from '../../../../events'
+import { ComponentCreatedEvent, NewComponentEvent } from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
 import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
@@ -96,18 +97,21 @@ export default Vue.extend({
     async addComponent(key: string) {
       const notificationCategory = 'components-manager'
       const componentCollection: string = this.addingEvent.collection
-      const additionalData = {
-        componentPositions: [
-          {
-            componentCollection
-          }
-        ]
-      } as {
+      const additionalData = {} as {
         componentPositions: {
           componentCollection: string
         }[]
         publishedAt?: string
       }
+
+      if (componentCollection) {
+        additionalData.componentPositions = [
+          {
+            componentCollection
+          }
+        ]
+      }
+
       if (key) {
         additionalData.publishedAt =
           key === 'published' ? moment.utc().toISOString() : null
@@ -125,15 +129,21 @@ export default Vue.extend({
           this.addingEvent.endpoint,
           resourceObject,
           null,
-          [this.addingEvent.collection]
+          this.addingEvent.collection ? [this.addingEvent.collection] : null
         )
         this.$cwa.saveResource(resource)
-        await this.$cwa.refreshResources([
-          ...resource.componentPositions,
-          componentCollection
-        ])
+        if (componentCollection) {
+          await this.$cwa.refreshResources([
+            ...resource.componentPositions,
+            componentCollection
+          ])
+        }
         await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
         this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
+        this.$cwa.$eventBus.$emit(EVENTS.componentCreated, {
+          tempIri: this.addingEvent.iri,
+          newIri: resource['@id']
+        } as ComponentCreatedEvent)
         this.addingEvent = null
         this.$cwa.$storage.decreaseMercurePendingProcessCount()
       } catch (message) {
@@ -141,6 +151,10 @@ export default Vue.extend({
           throw message
         }
         if (message.isCancel) {
+          return
+        }
+        if (!message.violations) {
+          consola.error(message.message)
           return
         }
         this.handleApiViolations(

@@ -26,6 +26,7 @@ export default Vue.extend({
   mixins: [IriPageModalMixin, LoadLayoutsMixin, IriModalMixin],
   data() {
     return {
+      // @ts-ignore
       iri: this.$cwa.currentPageIri
     }
   }
