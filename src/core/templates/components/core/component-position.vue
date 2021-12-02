@@ -101,6 +101,14 @@ export default Vue.extend({
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/static-component.vue'
             ),
           context: {}
+        },
+        {
+          label: 'Info',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/info.vue'
+            ),
+          context: {}
         }
       ]
     },

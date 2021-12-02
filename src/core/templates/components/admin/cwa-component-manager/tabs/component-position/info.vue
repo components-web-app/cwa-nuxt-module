@@ -48,29 +48,16 @@ export default Vue.extend({
   components: { Info },
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin],
   methods: {
-    deleteComponent() {
+    deletePosition() {
       const event: ConfirmDialogEvent = {
-        id: 'confirm-delete-component',
+        id: 'confirm-delete-position',
         title: 'Confirm Delete',
-        component: () =>
-          import('./dialogs/confirm-delete-component-dialog.vue'),
+        component: () => import('./dialogs/confirm-delete-position-dialog.vue'),
         componentProps: {
           iri: this.iri
         },
-        onSuccess: async ({ deleteAll }) => {
-          if (deleteAll) {
-            await this.$cwa.deleteResource(this.iri)
-          } else {
-            const position = this.context.componentPosition
-            const positionResource = this.$cwa.getResource(position)
-            if (!positionResource.pageDataProperty) {
-              await this.$cwa.deleteResource(position)
-            } else {
-              await this.$cwa.updateResource(position, {
-                component: null
-              })
-            }
-          }
+        onSuccess: async () => {
+          await this.$cwa.deleteResource(this.iri)
         },
         confirmButtonText: 'Delete'
       }
