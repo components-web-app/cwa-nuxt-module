@@ -18,7 +18,7 @@ $control-border: 1px solid rgba(black, .3) !default
 =cwa-input
   +cwa-control
   padding: .2rem 3.8rem .3rem 1.0rem
-  &:hover
+  &:hover:not(:disabled)
     color: $white
   &::placeholder
     color: rgba($cwa-color-text-light, .6)
@@ -35,7 +35,7 @@ $control-border: 1px solid rgba(black, .3) !default
   height: 5em
 =cwa-select-holder
   position: relative
-  &:hover
+  &:hover:not(:disabled)
     &::before
       opacity: 1
   select

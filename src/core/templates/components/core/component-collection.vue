@@ -118,6 +118,13 @@ export default Vue.extend({
               )
           },
           {
+            label: 'Add Dynamic Placeholder',
+            component: () =>
+              import(
+                '../admin/cwa-component-manager/tabs/component-collection/position.vue'
+              )
+          },
+          {
             label: 'Info',
             component: () =>
               import(

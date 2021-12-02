@@ -16,38 +16,38 @@ input[type='submit']
   align-items: center
   display: inline-flex
   font-size: 1.5rem
-  &:hover,
-  &:focus
+  &:hover:not(:disabled),
+  &:focus:not(:disabled)
     border-color: darken($color-primary, 5%)
     background: darken($color-primary, 5%)
   &.is-warning
     background: $cwa-warning
     color: $white
     border-color: darken($cwa-warning, 5%)
-    &:hover,
-    &:focus
+    &:hover:not(:disabled),
+    &:focus:not(:disabled)
       background: darken($cwa-warning, 5%)
   &.is-dark
     background: $cwa-background-dark
     color: $cwa-color-text-light
     border-color: $cwa-background-dark
-    &:hover,
-    &:focus
+    &:hover:not(:disabled),
+    &:focus:not(:disabled)
       background: darken($cwa-background-dark, 5%)
   &.is-light
     &.button-outline
       color: $white
       border-color: $white
       opacity: .6
-      &:hover,
-      &:focus
+      &:hover:not(:disabled),
+      &:focus:not(:disabled)
         opacity: 1
     &:not(.button-outline)
       background: $cwa-background-light
       color: $cwa-background-dark
       border-color: $cwa-background-light
-      &:hover,
-      &:focus
+      &:hover:not(:disabled),
+      &:focus:not(:disabled)
         background: darken($cwa-background-light, 5%)
   &.is-loading
     opacity: .6

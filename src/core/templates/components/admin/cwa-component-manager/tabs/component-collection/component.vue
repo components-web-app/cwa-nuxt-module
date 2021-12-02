@@ -33,6 +33,9 @@ export default Vue.extend({
   },
   computed: {
     componentOptions() {
+      if (!this.availableComponents) {
+        return []
+      }
       return Object.keys(this.availableComponents)
     }
   },

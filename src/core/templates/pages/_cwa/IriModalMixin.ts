@@ -114,7 +114,7 @@ export default Vue.extend({
         this.$emit('change')
         return true
       } catch (error) {
-        this.handleResourceRequestError(error)
+        this.handleResourceRequestError(error, endpoint)
         return false
       } finally {
         this.isLoading = false
@@ -153,30 +153,6 @@ export default Vue.extend({
         confirmButtonText: 'Delete'
       }
       this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
-    },
-    handleResourceRequestError(error, endpoint) {
-      if (!(error instanceof ApiError)) {
-        throw error
-      }
-      if (error.violations) {
-        // this.processViolations(error.violations)
-        this.handleApiViolations(
-          error.violations,
-          endpoint,
-          this.notificationCategories.violations
-        )
-      }
-
-      if (error.statusCode === 500) {
-        const notification: NotificationEvent = {
-          code: 'server_error',
-          title: 'An error occurred',
-          message: error.message,
-          level: NotificationLevels.ERROR,
-          category: this.notificationCategories.violations
-        }
-        this.addNotificationEvent(notification)
-      }
     }
   }
 })

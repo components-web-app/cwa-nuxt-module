@@ -21,7 +21,8 @@ export default Vue.extend({
     },
     async createNewComponentEvent(
       newComponent: string,
-      collection: string = null
+      collection: string = null,
+      position: string = null
     ): Promise<NewComponentEvent> {
       if (!this.availableComponents) {
         consola.warn('availableComponents not loaded')
@@ -35,6 +36,7 @@ export default Vue.extend({
       } = this.availableComponents[newComponent]
       return {
         collection,
+        position,
         component,
         endpoint,
         iri: `${endpoint}/new`,

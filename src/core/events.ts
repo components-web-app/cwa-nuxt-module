@@ -22,7 +22,8 @@ export interface TabChangedEvent {
 }
 
 export interface NewComponentEvent {
-  collection: string
+  collection?: string
+  position?: string
   component(): {
     component: Promise<Vue>
   }

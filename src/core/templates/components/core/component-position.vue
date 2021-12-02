@@ -1,5 +1,22 @@
 <template>
   <div>
+    <div v-if="resource.pageDataProperty">
+      <template v-if="$cwa.isAdmin && isDynamicPage">
+        <template v-if="!dynamicComponentIri && !newComponentResource">
+          <button>Select position</button>&nbsp;
+          <button type="button" @click.stop="addDynamicComponent">
+            Add {{ pageDataPropComponent }}
+          </button>
+        </template>
+      </template>
+      <span v-else>
+        [ If page data has '{{ resource.pageDataProperty }}', it will show here
+        instead. ]
+      </span>
+    </div>
+    <div v-if="!component && $cwa.isAdmin">
+      <button>Select position</button>
+    </div>
     <resource-component-loader
       v-if="!!component"
       :component="`CwaComponents${component.uiComponent || component['@type']}`"
@@ -9,26 +26,12 @@
       :highlight-is-position="highlightIsPosition"
       @deleted="$emit('deleted')"
     />
-    <div v-else-if="resource.pageDataProperty">
-      <span v-if="isDynamicPage">
-        <component
-          :is="newComponentName"
-          v-if="newComponentResource"
-          :iri="newComponentIri"
-          @initial-data="handleInitialData"
-        />
-        <template v-else>
-          <button>Select position</button>&nbsp;
-          <button type="button" @click.stop="addDynamicComponent">
-            Add {{ pageDataPropComponent }}
-          </button>
-        </template>
-      </span>
-      <span v-else>
-        The property [{{ resource.pageDataProperty }}] will be added here from
-        page data
-      </span>
-    </div>
+    <component
+      :is="newComponentName"
+      v-if="newComponentResource"
+      :iri="newComponentIri"
+      @initial-data="handleInitialData"
+    />
   </div>
 </template>
 
@@ -42,7 +45,8 @@ import consola from 'consola'
 import {
   API_EVENTS,
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerAddEvent
+  ComponentManagerAddEvent,
+  NewComponentEvent
 } from '@cwa/nuxt-module/core/events'
 import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
 import CreateNewComponentEventMixin from '@cwa/nuxt-module/core/mixins/CreateNewComponentEventMixin'
@@ -77,15 +81,25 @@ export default Vue.extend({
     }
   },
   computed: {
+    dynamicComponentIri() {
+      return this.pageResource[this.resource.pageDataProperty]
+    },
     componentManagerTabs(): Array<ComponentManagerTab> {
       return [
         {
-          label: 'Dynamic property',
+          label: 'Dynamic',
           component: () =>
             import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-position.vue'
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
             ),
-          priority: 100,
+          context: {}
+        },
+        {
+          label: 'Static',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/static-component.vue'
+            ),
           context: {}
         }
       ]
@@ -144,6 +158,10 @@ export default Vue.extend({
         }
       })
     }
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.newComponentListener
+    )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
     this.$cwa.$eventBus.$on(
       EVENTS.componentCreated,
@@ -151,6 +169,10 @@ export default Vue.extend({
     )
   },
   beforeDestroy() {
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.newComponentListener
+    )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
     this.$cwa.$eventBus.$off(
       EVENTS.componentCreated,
@@ -210,6 +232,12 @@ export default Vue.extend({
           isNew: false
         })
       }
+    },
+    newComponentListener(event: NewComponentEvent) {
+      if (event.position !== this.iri) {
+        return
+      }
+      this.newComponentEvent = event
     }
   }
 })

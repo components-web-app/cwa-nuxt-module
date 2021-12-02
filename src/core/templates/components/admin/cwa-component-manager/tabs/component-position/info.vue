@@ -7,7 +7,7 @@
             <info :id="inputId('id')" label="id" :value="iri" />
           </div>
           <div class="column">
-            <a href="#" class="trash-link" @click.prevent="deleteComponent">
+            <a href="#" class="trash-link" @click.prevent="deletePosition">
               <img
                 src="../../../../../../assets/images/icon-trash.svg"
                 alt="Trash Icon"

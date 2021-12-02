@@ -278,7 +278,11 @@ export default class Cwa {
         const refreshEndpointsSize = refreshEndpoints
           ? refreshEndpoints.length
           : 0
-        const postResource = await this.ctx.$axios.$post(endpoint, data)
+        const postResource = await this.ctx.$axios.$post(endpoint, data, {
+          headers: {
+            path: this.fetcher.currentRoutePath
+          }
+        })
         if (refreshEndpointsSize) {
           await this.refreshEndpointsArray(refreshEndpoints, postResource)
         }
@@ -369,7 +373,8 @@ export default class Cwa {
       })
       const patchPromise = this.ctx.$axios.$patch(patchEndpoint, data, {
         headers: {
-          'Content-Type': 'application/merge-patch+json'
+          'Content-Type': 'application/merge-patch+json',
+          path: this.fetcher.currentRoutePath
         },
         cancelToken: tokenSource.token
       })

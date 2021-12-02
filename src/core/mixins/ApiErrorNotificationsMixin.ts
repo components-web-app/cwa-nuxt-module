@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import ApiError from '@cwa/nuxt-module/inc/api-error'
 import {
   NotificationEvent,
   NotificationLevels,
@@ -31,6 +32,30 @@ export default Vue.extend({
         this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.remove, removeEvent)
       }
       this.removeErrorEvents = []
+    },
+    handleResourceRequestError(error, endpoint) {
+      if (!(error instanceof ApiError)) {
+        throw error
+      }
+      if (error.violations) {
+        // this.processViolations(error.violations)
+        this.handleApiViolations(
+          error.violations,
+          endpoint,
+          this.notificationCategories.violations
+        )
+      }
+
+      if (error.statusCode === 500) {
+        const notification: NotificationEvent = {
+          code: 'server_error',
+          title: 'An error occurred',
+          message: error.message,
+          level: NotificationLevels.ERROR,
+          category: this.notificationCategories.violations
+        }
+        this.addNotificationEvent(notification)
+      }
     },
     handleApiViolations(
       violations,

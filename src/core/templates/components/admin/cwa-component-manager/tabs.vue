@@ -244,4 +244,13 @@ export default Vue.extend({
     overflow: auto
   .tab-content
     padding: 0 2rem 2rem
+    .trash-link
+      display: block
+      opacity: .6
+      padding: .15rem .15rem
+      img
+        width: .9em
+        height: auto
+      &:hover
+        opacity: 1
 </style>

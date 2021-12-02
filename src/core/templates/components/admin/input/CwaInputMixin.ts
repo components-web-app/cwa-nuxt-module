@@ -34,10 +34,7 @@ export default Vue.extend({
       required: false,
       default: null,
       validator(notifications) {
-        if (!(notifications !== null && Array.isArray(notifications))) {
-          return false
-        }
-        return true
+        return notifications !== null && Array.isArray(notifications)
       }
     },
     wrapper: {

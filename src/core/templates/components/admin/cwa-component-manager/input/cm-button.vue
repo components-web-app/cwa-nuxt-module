@@ -1,6 +1,10 @@
 <template>
   <div class="cm-button">
-    <button class="cm-button-button" @click="$emit('click', null)">
+    <button
+      class="cm-button-button"
+      :disabled="disabled"
+      @click="$emit('click', null)"
+    >
       <span><slot /></span>
       <a
         v-if="altOptionsAvailable"
@@ -36,6 +40,10 @@ export default Vue.extend({
       required: false,
       type: Array as PropType<altOption[]>,
       default: null
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -84,8 +92,10 @@ export default Vue.extend({
     line-height: normal
     margin-bottom: 0
     z-index: 1
-    &:hover
+    &:hover:not(:disabled)
       color: $white
+    &:disabled
+      pointer-events: none
   .alt-toggle-arrow
     position: relative
     width: 3em

@@ -96,20 +96,25 @@ export default Vue.extend({
     },
     async addComponent(key: string) {
       const notificationCategory = 'components-manager'
+      const componentPosition: string = this.addingEvent.position
       const componentCollection: string = this.addingEvent.collection
-      const additionalData = {} as {
-        componentPositions: {
-          componentCollection: string
-        }[]
+      const additionalData = { componentPositions: [] } as {
+        componentPositions: Array<
+          | string
+          | {
+              componentCollection: string
+            }
+        >
         publishedAt?: string
       }
 
+      if (componentPosition) {
+        additionalData.componentPositions.push(componentPosition)
+      }
       if (componentCollection) {
-        additionalData.componentPositions = [
-          {
-            componentCollection
-          }
-        ]
+        additionalData.componentPositions.push({
+          componentCollection
+        })
       }
 
       if (key) {
@@ -132,11 +137,19 @@ export default Vue.extend({
           this.addingEvent.collection ? [this.addingEvent.collection] : null
         )
         this.$cwa.saveResource(resource)
+
+        const refreshResources = []
+        if (componentPosition) {
+          refreshResources.push(componentPosition)
+        }
         if (componentCollection) {
-          await this.$cwa.refreshResources([
+          refreshResources.push(
             ...resource.componentPositions,
             componentCollection
-          ])
+          )
+        }
+        if (refreshResources.length) {
+          await this.$cwa.refreshResources(refreshResources)
         }
         await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
         this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
