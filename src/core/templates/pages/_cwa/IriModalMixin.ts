@@ -1,9 +1,5 @@
 import Vue from 'vue'
-import {
-  NotificationEvent,
-  NotificationLevels
-} from '../../components/cwa-api-notifications/types'
-import ApiError from '../../../../inc/api-error'
+import { NotificationEvent } from '../../components/cwa-api-notifications/types'
 import { ConfirmDialogEvent, CONFIRM_DIALOG_EVENTS } from '../../../events'
 import ApiErrorNotificationsMixin from '../../../mixins/ApiErrorNotificationsMixin'
 
