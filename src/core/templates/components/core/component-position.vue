@@ -14,7 +14,7 @@
         instead. ]
       </span>
     </div>
-    <div v-if="!component && $cwa.isAdmin">
+    <div v-else-if="!component && $cwa.isAdmin">
       <button>Select position</button>
     </div>
     <resource-component-loader

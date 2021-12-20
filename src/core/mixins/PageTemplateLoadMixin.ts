@@ -8,7 +8,7 @@ export default Vue.extend({
   },
   methods: {
     async loadPageTemplateOptions() {
-      const { data } = await this.$axios.get('/_/pages')
+      const { data } = await this.$axios.get('/_/pages?isTemplate=1')
       const pages = data['hydra:member']
       this.pageTemplateOptions = pages.map((page) => {
         return {

@@ -72,6 +72,7 @@ export default Vue.extend({
       try {
         await this.$cwa.createResource(this.endpoint, this.component, null, [])
         this.$emit('refresh')
+        this.$emit('close')
       } catch (error) {
         this.handleResourceRequestError(error, this.endpoint)
         return false

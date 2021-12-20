@@ -42,17 +42,33 @@
       </template>
     </template>
     <template slot="right">
-      <cwa-admin-text
-        v-model="component.metaDescription"
-        label="Meta Description"
-        :is-textarea="true"
-        v-bind="inputProps('metaDescription')"
+      <cwa-admin-select
+        v-if="!isPageData"
+        v-model="component.isTemplate"
+        label="Page Template?"
+        :options="[
+          {
+            value: false,
+            label: 'No'
+          },
+          {
+            value: true,
+            label: 'Yes'
+          }
+        ]"
+        v-bind="inputProps('isTemplate')"
       />
       <cwa-admin-text
         v-if="!isPageData"
         v-model="component.uiClassNames"
         label="Style Classes"
         v-bind="inputProps('uiClassNames')"
+      />
+      <cwa-admin-text
+        v-model="component.metaDescription"
+        label="Meta Description"
+        :is-textarea="true"
+        v-bind="inputProps('metaDescription')"
       />
     </template>
   </iri-page-modal-view>
