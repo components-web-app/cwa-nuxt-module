@@ -15,6 +15,11 @@
           <span class="text-small">({{ endpoint }})</span>
         </p>
       </div>
+      <cwa-admin-text
+        v-model="component.title"
+        label="Page Title"
+        v-bind="inputProps('title')"
+      />
       <cwa-admin-select
         v-model="component.page"
         label="Page template"
@@ -27,13 +32,14 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import CwaAdminText from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-select.vue'
 import IriModalMixin from '@cwa/nuxt-module/core/templates/pages/_cwa/IriModalMixin'
 import PageTemplateLoadMixin from '@cwa/nuxt-module/core/mixins/PageTemplateLoadMixin'
 import IriModalView from '../iri-modal-view.vue'
 
 export default Vue.extend({
-  components: { CwaAdminSelect, IriModalView },
+  components: { CwaAdminText, CwaAdminSelect, IriModalView },
   mixins: [IriModalMixin, PageTemplateLoadMixin],
   props: {
     defaultData: {

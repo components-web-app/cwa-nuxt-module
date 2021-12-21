@@ -50,6 +50,9 @@ export default Vue.extend({
         }
         // check for a draft version
         const component = await this.$cwa.fetcher.fetchComponent(this.iri)
+        if (!component) {
+          return
+        }
         // component returned this time may be a draft
         if (this.publishedIri !== component['@id']) {
           this.draftIri = component['@id']
