@@ -11,11 +11,12 @@
     </div>
     <div class="row">
       <div class="column is-narrow">
-        <cm-text
+        <cm-select
           :id="`page-data-prop-${iri}`"
           :iri="iri"
           field="pageDataProperty"
           label="Page data property"
+          :options="pageDataPropertyOptions"
         />
       </div>
     </div>
@@ -64,14 +65,17 @@ import {
   ConfirmDialogEvent
 } from '@cwa/nuxt-module/core/events'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
-import CmText from '../../input/cm-text.vue'
+import CmSelect from '../../input/cm-select.vue'
 import Info from '../../input/info.vue'
 
 export default Vue.extend({
-  components: { CmText, Info },
+  components: { CmSelect, Info },
   mixins: [ComponentManagerTabMixin],
   data() {
-    return {}
+    return {
+      loadingProperties: false,
+      pageMetadatas: null
+    }
   },
   computed: {
     dynamicComponentIri() {
@@ -79,7 +83,32 @@ export default Vue.extend({
     },
     pageResource() {
       return this.$cwa.getResource(this.$cwa.currentPageIri)
+    },
+    pageDataPropertyOptions() {
+      if (!this.pageMetadatas) {
+        return []
+      }
+      const ops = [
+        {
+          value: null,
+          label: 'None'
+        }
+      ]
+      for (const pageData of this.pageMetadatas['hydra:member']) {
+        for (const propertyMetadata of pageData.properties) {
+          ops.push({
+            value: propertyMetadata.property,
+            label: propertyMetadata.property
+          })
+        }
+      }
+      return ops
     }
+  },
+  async mounted() {
+    this.loadingProperties = true
+    this.pageMetadatas = await this.$axios.$get('/_/page_data_metadatas')
+    this.loadingProperties = true
   },
   methods: {
     selectDynamicComponent() {

@@ -64,18 +64,20 @@ export default Vue.extend({
           }
         },
         onSuccess: async ({ deleteAll }) => {
+          const position = this.context.componentPosition
+          const positionResource = this.$cwa.getResource(position)
           if (deleteAll) {
             await this.$cwa.deleteResource(this.iri)
-          } else {
-            const position = this.context.componentPosition
-            const positionResource = this.$cwa.getResource(position)
             if (!positionResource.pageDataProperty) {
-              await this.$cwa.deleteResource(position)
-            } else {
-              await this.$cwa.updateResource(position, {
-                component: null
-              })
+              // the API will have deleted the position
+              this.$cwa.$storage.deleteResource(position)
             }
+          } else if (!positionResource.pageDataProperty) {
+            await this.$cwa.deleteResource(position)
+          } else {
+            await this.$cwa.updateResource(position, {
+              component: null
+            })
           }
         },
         confirmButtonText: 'Delete'
