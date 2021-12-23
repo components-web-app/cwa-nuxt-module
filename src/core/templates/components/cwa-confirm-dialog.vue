@@ -1,11 +1,14 @@
 <template>
   <cwa-modal class="cwa-confirm-dialog" :hide-close="true">
+    <div v-if="isLoading" class="loader-overlay">
+      <cwa-loader />
+    </div>
     <h2>{{ dialogEvent.title || 'Confirm' }}</h2>
     <component
       :is="dialogEvent.component"
       v-if="dialogEvent.component"
       v-model="data"
-      v-bind="dialogEvent.componentProps || null"
+      v-bind="dialogInnerData"
       @submit="handleConfirm"
     />
     <div v-if="dialogEvent.html" v-html="dialogEvent.html"></div>
@@ -55,7 +58,28 @@ export default Vue.extend({
   data() {
     return {
       runningConfirmFn: false,
-      data: {}
+      data: {},
+      asyncData: null,
+      isLoading: false
+    }
+  },
+  computed: {
+    dialogInnerData() {
+      if (!this.asyncData && !this.dialogEvent.componentProps) {
+        return null
+      }
+      return Object.assign(
+        {},
+        this.dialogEvent.componentProps || {},
+        this.asyncData || {}
+      )
+    }
+  },
+  async mounted() {
+    if (this.dialogEvent.asyncData) {
+      this.isLoading = true
+      this.asyncData = await this.dialogEvent.asyncData()
+      this.isLoading = false
     }
   },
   methods: {

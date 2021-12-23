@@ -30,6 +30,11 @@ export default Vue.extend({
     value: {
       type: Object,
       required: true
+    },
+    usageMetadata: {
+      type: Object,
+      required: false,
+      default: null
     }
   },
   data() {
@@ -41,7 +46,7 @@ export default Vue.extend({
   },
   computed: {
     locationCount() {
-      return this.resource?.componentPositions?.length || -1
+      return this.usageMetadata ? this.usageMetadata.total : null
     },
     usedInStr() {
       const locationCount = this.locationCount

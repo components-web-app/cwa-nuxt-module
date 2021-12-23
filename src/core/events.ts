@@ -10,6 +10,7 @@ export interface ConfirmDialogEvent {
   componentProps?: any
   html?: string
   title?: string
+  asyncData?: Function
   onSuccess?: Function
   cancelButtonText?: string
   confirmButtonText?: string

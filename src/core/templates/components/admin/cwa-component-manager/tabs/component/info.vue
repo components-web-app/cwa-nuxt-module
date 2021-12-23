@@ -57,6 +57,12 @@ export default Vue.extend({
         componentProps: {
           iri: this.iri
         },
+        asyncData: async () => {
+          const usageMetadata = await this.$axios.$get(this.iri + '/usage')
+          return {
+            usageMetadata
+          }
+        },
         onSuccess: async ({ deleteAll }) => {
           if (deleteAll) {
             await this.$cwa.deleteResource(this.iri)
