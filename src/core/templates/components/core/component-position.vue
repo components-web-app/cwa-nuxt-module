@@ -124,12 +124,13 @@ export default Vue.extend({
       return this.pageDataProps[this.resource.pageDataProperty]
     },
     pageDataProps() {
-      return this.pageResource._metadata?.page_data_metadata.properties[
-        'hydra:member'
-      ].reduce((obj, item) => {
-        obj[item.property] = item.componentClass
-        return obj
-      }, {})
+      return this.pageResource._metadata?.page_data_metadata.properties.reduce(
+        (obj, item) => {
+          obj[item.property] = item.componentClass
+          return obj
+        },
+        {}
+      )
     },
     pageResource() {
       return this.$cwa.getResource(this.$cwa.currentPageIri)
