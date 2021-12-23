@@ -2,10 +2,11 @@
   <div>
     <div class="row">
       <div class="column is-narrow">
-        <cwa-admin-text
+        <cwa-admin-select
           id="page-data-property"
           v-model="pageDataProperty"
           label="Page data property"
+          :options="pageDataPropertyOptions"
           :wrapper="wrapperComponent"
         />
       </div>
@@ -23,21 +24,29 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import LoadPageDataMetadataMixin from '@cwa/nuxt-module/core/mixins/LoadPageDataMetadataMixin'
 import ApiErrorNotificationsMixin from '../../../../../../mixins/ApiErrorNotificationsMixin'
 import CmButton from '../../input/cm-button.vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
-import CwaAdminText from '../../../input/cwa-admin-text.vue'
+import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
 import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 
 export default Vue.extend({
-  components: { CmButton, CwaAdminText },
-  mixins: [ComponentManagerTabMixin, ApiErrorNotificationsMixin],
+  components: { CmButton, CwaAdminSelect },
+  mixins: [
+    ComponentManagerTabMixin,
+    ApiErrorNotificationsMixin,
+    LoadPageDataMetadataMixin
+  ],
   data() {
     return {
       wrapperComponent: async () => await import('../../input/wrapper.vue'),
       pageDataProperty: null,
       submitting: false
     }
+  },
+  async mounted() {
+    await this.loadPageDataMetadata()
   },
   methods: {
     async addPosition() {
