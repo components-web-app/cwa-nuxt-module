@@ -24,6 +24,7 @@ declare module 'vue/types/vue' {
 declare module 'vue/types/options' {
   // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   interface ComponentOptions<V extends Vue> {
+    auth?: boolean
     cwa?: boolean
     pageIriParam?: string
   }
