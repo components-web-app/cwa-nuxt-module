@@ -2,6 +2,7 @@ import Vue from 'vue'
 import '@nuxt/types'
 import 'axios'
 import 'vuex'
+import { CwaOptions } from '@cwa/nuxt-module/index'
 import type { AdminDialogOptions, CWA } from '.'
 
 declare module '@nuxt/types' {
@@ -10,6 +11,9 @@ declare module '@nuxt/types' {
   }
   interface NuxtAppOptions {
     readonly $cwa: CWA
+  }
+  interface Configuration {
+    cwa?: CwaOptions
   }
 }
 
@@ -24,7 +28,6 @@ declare module 'vue/types/vue' {
 declare module 'vue/types/options' {
   // eslint-disable-next-line no-unused-vars,@typescript-eslint/no-unused-vars
   interface ComponentOptions<V extends Vue> {
-    auth?: boolean
     cwa?: boolean
     pageIriParam?: string
   }
