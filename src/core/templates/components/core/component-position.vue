@@ -126,7 +126,7 @@ export default Vue.extend({
     pageDataProps() {
       return this.pageResource._metadata?.page_data_metadata.properties.reduce(
         (obj, item) => {
-          obj[item.property] = item.componentClass
+          obj[item.property] = item.componentShortName
           return obj
         },
         {}
