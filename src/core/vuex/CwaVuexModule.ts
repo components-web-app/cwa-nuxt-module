@@ -56,6 +56,7 @@ export default function (storage) {
           },
           {}
         )
+
         for (const [key, endpoint] of Object.entries(
           data.entrypoint
         ) as string[][]) {

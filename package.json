@@ -72,6 +72,7 @@
     "@types/node-sass": "^4.11.1",
     "all-contributors-cli": "^6.16.0",
     "axiosist": "^0.10.0",
+    "body-parser": "^1.19.1",
     "copyfiles": "^2.3.0",
     "cypress": "9.2.0",
     "eslint": "^7.2.0",
