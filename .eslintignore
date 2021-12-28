@@ -1,5 +1,5 @@
 node_modules
 .nuxt
 dist
-templates/
-docs
+/templates/
+/docs

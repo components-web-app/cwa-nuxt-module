@@ -2,10 +2,16 @@
   <div class="container">
     <div class="row">
       <div class="column">
-        <component-collection location="primary" v-bind="componentCollectionProps" />
+        <component-collection
+          location="primary"
+          v-bind="componentCollectionProps"
+        />
       </div>
       <div class="column column-20">
-        <component-collection location="secondary" v-bind="componentCollectionProps" />
+        <component-collection
+          location="secondary"
+          v-bind="componentCollectionProps"
+        />
       </div>
     </div>
   </div>

@@ -1,0 +1,17 @@
+{
+  "@context": "/contexts/Entrypoint",
+  "@id": "/",
+  "@type": "Entrypoint",
+  "blogArticleData": "/page_data/blog_article_datas",
+  "collection": "/component/collections",
+  "componentCollection": "/_/component_collections",
+  "componentPosition": "/_/component_positions",
+  "form": "/component/forms",
+  "htmlContent": "/component/html_contents",
+  "image": "/component/images",
+  "layout": "/_/layouts",
+  "page": "/_/pages",
+  "pageDataMetadata": "/_/page_data_metadatas",
+  "route": "/_/routes",
+  "user": "/users"
+}

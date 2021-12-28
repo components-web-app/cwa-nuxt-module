@@ -6,6 +6,10 @@ nav_order: 999
 
 # Development
 
+## Logging levels
+
+We use [Consola](https://github.com/nuxt-contrib/consola) for debugging. As such you can set the `CONSOLA_LEVEL` environment variable ins development to get different logging levels. E.g. 4 for debug. [See available levels here](https://github.com/nuxt-contrib/consola/blob/master/src/types.js)
+
 ## Tests
 
 ### E2E Cypress tests
@@ -28,7 +32,7 @@ yarn e2e
 
 For development you can start the application in dev mode for hot-reloading
 ```bash
-API_URL=http://localhost:3100 yarn dev
+DISABLE_HTTPS=true API_URL=http://localhost:3100 yarn dev
 ```
 
 And run Cypress tests manually with the GUI

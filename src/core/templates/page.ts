@@ -1,34 +1,59 @@
+import Vue from 'vue'
 import consola from 'consola'
+import ClientOnly from 'vue-client-only'
 import { StoreCategories } from '../storage'
 // @ts-ignore
-import components from '~/.nuxt/cwa/pages'
+import ReuseComponentMixin from '../mixins/ReuseComponentMixin'
 import ResourceComponentLoader from './resource-component-loader'
-import ContextMenu from './context-menu.vue'
-import ClientOnly from 'vue-client-only'
+// @ts-ignore
+import CwaConfirm from './components/cwa-confirm'
+// @ts-ignore
+import components from '~/.nuxt/cwa/pages'
 
-export default {
+export default Vue.extend({
   auth: false,
-  layout({ $cwa }) {
-    return $cwa.layout
-  },
   components: {
     ResourceComponentLoader,
-    ContextMenu,
+    CwaConfirm,
     ClientOnly,
     ...components
   },
+  mixins: [ReuseComponentMixin],
+  layout({ $cwa }) {
+    return $cwa.resources.Layout?.byId[$cwa.layout].uiComponent
+  },
+  head() {
+    if (!this.currentPageMetadata) {
+      return {}
+    }
+    return {
+      title: this.currentPageMetadata.title,
+      meta: [
+        {
+          hid: 'description',
+          name: 'description',
+          content: this.currentPageMetadata.metaDescription
+        }
+      ]
+    }
+  },
   computed: {
-    resources () {
+    resources() {
       return this.$cwa.resources
     },
     currentRoute() {
-      if (this.resources.Route === undefined || this.resources.Route.current === undefined) {
-        consola.error(`Current route is undefined`)
+      if (
+        this.resources.Route === undefined ||
+        this.resources.Route.current === undefined
+      ) {
+        consola.error('Current route is undefined')
         return null
       }
       const route = this.resources.Route.byId[this.resources.Route.current]
       if (route === undefined) {
-        consola.error(`Cannot find route with ID ${this.resources.Route.current}`)
+        consola.error(
+          `Cannot find route with ID ${this.resources.Route.current}`
+        )
         return null
       }
       return route
@@ -38,51 +63,42 @@ export default {
         return
       }
       if (this.currentRoute.pageData) {
-        const resourceType = this.$cwa.$storage.getTypeFromIri(this.currentRoute.pageData, StoreCategories.PageData)
+        const resourceType = this.$cwa.$storage.getTypeFromIri(
+          this.currentRoute.pageData,
+          StoreCategories.PageData
+        )
         if (!resourceType) {
           return null
         }
         return this.resources[resourceType].byId[this.currentRoute.pageData]
       }
-      return this.resources.Page.byId[this.currentRoute.page]
+      return this.resources.Page?.byId[this.currentRoute.page]
     },
     currentPageTemplateIri() {
       if (!this.currentRoute || !this.currentPageMetadata) {
         return
       }
-      return this.currentRoute.pageData ? this.currentPageMetadata.page : this.currentRoute.page
+      return this.currentRoute.pageData
+        ? this.currentPageMetadata.page
+        : this.currentRoute.page
     },
     currentPageTemplateResource() {
       return this.resources?.Page?.byId[this.currentPageTemplateIri]
     },
     resourceComponentLoaderProps() {
       return {
-        component: this.currentPageTemplateResource?.uiComponent,
+        component: `CwaPages${this.currentPageTemplateResource?.uiComponent}`,
         iri: this.currentPageTemplateIri
       }
     }
   },
-  head() {
-    if (!this.currentPageMetadata) {
-      return {}
-    }
-    return {
-      title: this.currentPageMetadata.title,
-      meta: [
-        { hid: 'description', name: 'description', content: this.currentPageMetadata.metaDescription }
-      ]
-    }
-  },
   render(h) {
-    return h(
-      'div',
-      {},
-      [
-        h(this.$options.components.ResourceComponentLoader, { props: this.resourceComponentLoaderProps }),
-        h(this.$options.components.ClientOnly, {}, [
-          h(this.$options.components.ContextMenu, { props: {} })
-        ])
-      ]
-    )
+    return h('div', {}, [
+      h(this.$options.components.ResourceComponentLoader, {
+        props: this.resourceComponentLoaderProps,
+        class: 'cwa-page'
+      }),
+      h(this.$options.components.CwaConfirm, {})
+    ])
   }
-}
+})

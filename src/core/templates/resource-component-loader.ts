@@ -1,7 +1,7 @@
 import Vue from 'vue'
-import ErrorComponent from '@cwa/nuxt-module/core/templates/component-load-error.vue'
+import ErrorComponent from '@cwa/nuxt-module/core/templates/components/core/component-load-error.vue'
 
-export default {
+export default Vue.extend({
   functional: true,
   props: {
     component: {
@@ -16,22 +16,46 @@ export default {
     iri: {
       required: true,
       type: String
+    },
+    sortValue: {
+      required: false,
+      type: Number,
+      default: null
+    },
+    showSort: {
+      required: false,
+      type: Boolean,
+      default: false
+    },
+    highlightIsPosition: {
+      type: Boolean,
+      default: true
     }
   },
   render: (createElement, { props, parent }) => {
-    let Comp = (parent.$options.components && parent.$options.components[props.component]) || Vue.component(props.component)
+    const Comp =
+      (parent.$options.components &&
+        parent.$options.components[props.component]) ||
+      Vue.component(props.component)
     if (Comp) {
       return createElement(Comp, {
         props: {
-          iri: props.iri
+          iri: props.iri,
+          sortValue: props.sortValue,
+          showSort: props.showSort
+        },
+        class: {
+          'highlight-component-only': !props.highlightIsPosition
         }
       })
     }
     return createElement(ErrorComponent, {
       props: {
-        message: props.message || `The component <b>${props.component}</b> specified by resource <b>${props.iri}</b> does not exist`,
+        message:
+          props.message ||
+          `The component '<b>${props.component}</b>' specified by resource '<b>${props.iri}</b>' does not exist`,
         isDanger: true
       }
     })
   }
-}
+})

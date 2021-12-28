@@ -32,9 +32,11 @@ jobs:
         run: yarn test
         env:
           CI: true
+      - name: Audit
+        run: yarn run audit
 
   e2e:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     container: cypress/included:4.9.0
     steps:
       - name: Checkout
@@ -58,6 +60,7 @@ jobs:
           API_PORT: 3100
           API_URL: http://localhost:3100
           NODE_TLS_REJECT_UNAUTHORIZED: 0
+          DISABLE_HTTPS: true
         run: |
           yarn api &
           yarn run demo:build
@@ -65,6 +68,8 @@ jobs:
           npx wait-on 'http://localhost:3000'
           curl -XGET localhost:3000
       - name: Run E2E
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
         run: yarn e2e
 
   deploy-next:

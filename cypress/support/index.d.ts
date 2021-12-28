@@ -7,7 +7,7 @@ declare namespace Cypress {
     /**
      * Custom command to navigate through next router
      * @example cy.navigate('greeting')
-    */
+     */
     navigate(...args: any): Chainable<Element>
   }
 }

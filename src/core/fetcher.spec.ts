@@ -26,16 +26,43 @@ describe('fetcher', () => {
         }
       },
       setResource: jest.fn(),
-      setCurrentRoute: jest.fn()
+      setCurrentRoute: jest.fn(),
+      getCategoryFromIri: jest.fn(() => {
+        return 'Default'
+      })
+    }
+    const router = {
+      currentRoute: {
+        query: {}
+      }
     }
 
-    const fetcher = new Fetcher({ $axios, error, apiUrl, storage }, { fetchConcurrency: 1 })
+    const redirect = jest.fn()
+
+    const fetcher = new Fetcher(
+      { $axios, error, apiUrl, storage, router, redirect },
+      { fetchConcurrency: 1 }
+    )
     await fetcher.fetchRoute('/')
 
     expect(storage.resetCurrentResources).toHaveBeenCalled()
-    expect(storage.setState).toHaveBeenCalledWith(Fetcher.loadingRouteKey, '/')
-    expect(storage.getState).toHaveBeenCalledWith(Fetcher.loadingRouteKey)
+    expect(storage.getState).toHaveBeenNthCalledWith(1, Fetcher.loadedRouteKey)
+    expect(storage.getState).toHaveBeenNthCalledWith(2, Fetcher.loadingRouteKey)
+
+    expect(storage.setState).toHaveBeenNthCalledWith(
+      1,
+      Fetcher.loadingRouteKey,
+      '/'
+    )
+    expect(storage.setState).toHaveBeenCalledWith(Fetcher.loadedRouteKey, '/')
+    expect(storage.setState).toHaveBeenLastCalledWith(
+      Fetcher.loadingRouteKey,
+      false
+    )
+
     expect(storage.setResource).toHaveBeenCalledTimes(6)
-    expect(storage.setCurrentRoute).toHaveBeenCalledWith('/_/routes/a76a56f1-ab30-49c9-873b-d70b4e1d3946')
+    expect(storage.setCurrentRoute).toHaveBeenCalledWith(
+      '/_/routes/a76a56f1-ab30-49c9-873b-d70b4e1d3946'
+    )
   })
 })

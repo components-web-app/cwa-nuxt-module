@@ -1,29 +1,29 @@
-import ComponentCollection from '../templates/component-collection.vue'
+import Vue from 'vue'
+import ComponentCollection from '../templates/components/core/component-collection.vue'
+import { ADMIN_BAR_EVENTS } from '../events'
 import IriMixin from './IriMixin'
 
-const mixin = {
+const mixin = Vue.extend({
   components: { ComponentCollection },
   mixins: [IriMixin],
   computed: {
-    resource () {
-      return this.$cwa.resources.Page.byId[this.iri]
+    resource() {
+      return this.$cwa.resources.Page?.byId[this.iri]
     },
-    layout () {
-      return this.$cwa.resources.Layout.byId[this.resource.layout]
+    layout() {
+      return this.$cwa.resources.Layout?.byId[this.resource.layout]
     },
-    componentCollectionProps () {
+    componentCollectionProps() {
       return {
-        pageId: this.iri,
-        pageReference: this.resource.reference
+        locationResourceId: this.iri,
+        locationResourceReference: this.resource.reference,
+        locationResourceType: 'pages'
       }
     }
   },
-  watch: {
-    'layout.reference': {
-      handler () { return this.$cwa.setLayout(this.layout.reference) },
-      immediate: true
-    }
+  mounted() {
+    this.$cwa.$eventBus.$emit(ADMIN_BAR_EVENTS.changeView, 'page')
   }
-}
+})
 
 export default mixin

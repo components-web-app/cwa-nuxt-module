@@ -5,3 +5,5 @@ dist
 types
 yarn.lock
 yarn-error.log
+demo/ssl/
+sw.*

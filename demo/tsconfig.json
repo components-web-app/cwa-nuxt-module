@@ -10,11 +10,13 @@
     ],
     "esModuleInterop": true,
     "allowJs": true,
+    "resolveJsonModule": true,
     "sourceMap": true,
+    "strict": false,
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@cwa/nuxt-module*": ["../src/*"],
+      "@cwa/nuxt-module/*": ["../src/*"],
       "~/*": [
         "./*"
       ],
@@ -26,10 +28,10 @@
       "@types/node",
       "@nuxt/types",
       "@nuxtjs/axios",
-      "../src/@types"
+      "@nuxtjs/auth-next",
+      "@nuxt/components",
+      "../src/@types",
+      "../src/shim"
     ]
-  },
-  "exclude": [
-    "node_modules"
-  ]
+  }
 }
