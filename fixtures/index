@@ -1,0 +1,19 @@
+{
+  "resourceNameCollection": [
+    "Silverback\\ApiComponentsBundle\\Model\\Uploadable\\MediaObject",
+    "Silverback\\ApiComponentsBundle\\Metadata\\PageDataMetadata",
+    "Silverback\\ApiComponentsBundle\\Entity\\Component\\Form",
+    "Silverback\\ApiComponentsBundle\\Entity\\Component\\Collection",
+    "App\\Entity\\User",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\AbstractComponent",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\AbstractPageData",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\ComponentCollection",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\ComponentPosition",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\Layout",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\Page",
+    "Silverback\\ApiComponentsBundle\\Entity\\Core\\Route",
+    "App\\Entity\\BlogArticleData",
+    "App\\Entity\\HtmlContent",
+    "App\\Entity\\Image"
+  ]
+}
