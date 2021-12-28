@@ -3,7 +3,7 @@ import ContextMenuMixin from './ContextMenuMixin'
 
 export default {
   mixins: [IriMixin, ContextMenuMixin],
-  data () {
+  data() {
     return {
       defaultContextMenuData: {
         Delete: {
@@ -13,12 +13,14 @@ export default {
     }
   },
   computed: {
-    contextMenuCategory () {
-      return `Component (${this.resource.uiComponent || this.resource['@type']})`
+    contextMenuCategory() {
+      return `Component (${
+        this.resource.uiComponent || this.resource['@type']
+      })`
     }
   },
   methods: {
-    deleteSelf () {
+    deleteSelf() {
       this.$cwa.deleteResource(this.iri)
     }
   }

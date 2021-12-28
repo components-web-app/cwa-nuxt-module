@@ -5,8 +5,14 @@
     <div v-else-if="addingComponent">Adding component</div>
     <div v-else-if="!availableComponents.length">No components available</div>
     <ul v-else>
-      <li v-for="availableComponent in availableComponents" :key="availableComponent.endpoint">
-        <button @click="addComponent(availableComponent.endpoint)" class="button-outline">
+      <li
+        v-for="availableComponent in availableComponents"
+        :key="availableComponent.endpoint"
+      >
+        <button
+          class="button-outline"
+          @click="addComponent(availableComponent.endpoint)"
+        >
           + {{ availableComponent.resource }}
         </button>
       </li>
@@ -15,9 +21,12 @@
 </template>
 
 <script lang="ts">
-import { NotificationEvent, NotificationLevels } from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
-import {StoreCategories} from "../storage";
-import ApiError from "../../inc/api-error";
+import {
+  NotificationEvent,
+  NotificationLevels
+} from '@cwa/nuxt-module/core/templates/cwa-api-notifications/types'
+import { StoreCategories } from '../storage'
+import ApiError from '../../inc/api-error'
 
 export default {
   props: {
@@ -44,7 +53,9 @@ export default {
       const components = []
       this.loadingComponents = true
       const data = await this.$cwa.getApiDocumentation()
-      for (const [key, endpoint] of Object.entries(data.entrypoint) as string[][]) {
+      for (const [key, endpoint] of Object.entries(
+        data.entrypoint
+      ) as string[][]) {
         if (endpoint.startsWith('/component/')) {
           components.push({
             resource: key[0].toUpperCase() + key.slice(1),
@@ -58,7 +69,11 @@ export default {
     async addComponent(component) {
       this.addingComponent = true
       try {
-        await this.$cwa.createResource(component, this.addData, StoreCategories.Component)
+        await this.$cwa.createResource(
+          component,
+          this.addData,
+          StoreCategories.Component
+        )
       } catch (error) {
         if (!(error instanceof ApiError)) {
           throw error

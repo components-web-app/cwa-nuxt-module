@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import moment from "moment";
+import moment from 'moment'
 
 export default {
   props: {
@@ -26,7 +26,10 @@ export default {
   },
   mounted() {
     this.updateTimestamp()
-    this.updateInterval = setInterval(this.updateTimestamp, this.updateFrequency)
+    this.updateInterval = setInterval(
+      this.updateTimestamp,
+      this.updateFrequency
+    )
   },
   beforeDestroy() {
     clearInterval(this.updateInterval)
