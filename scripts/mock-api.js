@@ -3,9 +3,9 @@ const fs = require('fs')
 const path = require('path')
 const express = require('express')
 const bodyParser = require('body-parser')
+const consola = require('consola')
 const FIXTURES_DIRECTORY = path.resolve(__dirname, `..`, `fixtures`)
 const readdir = util.promisify(fs.readdir)
-
 
 async function createRoutes(directory = null) {
   const withRoutes = []
@@ -16,7 +16,7 @@ async function createRoutes(directory = null) {
   const routes = await readdir(nestedPath)
 
   for (const route of routes) {
-    let basePath = path.join(directory || '/', route)
+    const basePath = path.join(directory || '/', route)
     const file = path.resolve(nestedPath, route)
     const stat = fs.statSync(file)
     if (stat.isDirectory()) {
@@ -78,7 +78,7 @@ function createApi() {
   app.use(bodyParser.json())
 
   return createRoutes().then((routes) => {
-    console.log(
+    consola.log(
       'Mock endpoints...',
       routes.map((r) => `${r.endpoint} :: ${r.method}`)
     )
@@ -86,8 +86,14 @@ function createApi() {
     app.all('*', (req, res, next) => {
       res.type('application/json+ld')
       res.setHeader('Access-Control-Allow-Credentials', 'true')
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
-      res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization, preload, fields, path')
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET, POST, OPTIONS, PUT, PATCH, DELETE'
+      )
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'content-type, authorization, preload, fields, path'
+      )
       res.setHeader(
         'Access-Control-Allow-Origin',
         req.get('origin') || 'http://localhost:3000'
@@ -95,8 +101,8 @@ function createApi() {
       res.setHeader(
         'Link',
         '<http://localhost:' +
-        process.env.API_PORT +
-        '/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"'
+          process.env.API_PORT +
+          '/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"'
       ) // ,<http://localhost:' + process.env.API_PORT + '/.well-known/mercure>; rel="mercure"
       next()
     })
@@ -118,6 +124,9 @@ function createApi() {
       res.status(404).send('{"message": "Not Found"}')
     })
     app.patch('*', (_, res) => {
+      res.status(404).send('{"message": "Not Found"}')
+    })
+    app.delete('*', (_, res) => {
       res.status(404).send('{"message": "Not Found"}')
     })
 
