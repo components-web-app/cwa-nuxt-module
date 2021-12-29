@@ -3,7 +3,10 @@ describe('Login', () => {
     cy.visit('/login')
     cy.get('h1').should('contain.text', 'Admin Access')
     cy.get('button[type=submit]').click()
-    cy.get('.notice.is-danger').should('contain.text', 'Incorrect username and/or password')
+    cy.get('.notice.is-danger').should(
+      'contain.text',
+      'Incorrect username and/or password'
+    )
     cy.get('input[type=text]').type('admin')
     cy.get('input[type=password]').type('admin')
     cy.get('button[type=submit]').click()
