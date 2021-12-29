@@ -1,1 +1,13 @@
-{"@context":"\/contexts\/ComponentPosition","@id":"\/_\/component_positions\/bcec8679-3a54-4baa-b485-d2579f1687f5","@type":"ComponentPosition","componentCollection":"\/_\/component_collections\/cc76794e-ead1-4c18-949b-6740bc8cd623","component":"\/component\/html_contents\/74b3c399-4301-4db6-9a1d-3b52f7202aa2","sortValue":0,"createdAt":"2020-06-24T08:14:52+00:00","modifiedAt":"2020-06-24T08:14:52+00:00","_metadata":{"persisted":true}}
+{
+  "@context": "\/contexts\/ComponentPosition",
+  "@id": "\/_\/component_positions\/bcec8679-3a54-4baa-b485-d2579f1687f5",
+  "@type": "ComponentPosition",
+  "componentCollection": "\/_\/component_collections\/cc76794e-ead1-4c18-949b-6740bc8cd623",
+  "component": "\/component\/html_contents\/74b3c399-4301-4db6-9a1d-3b52f7202aa2",
+  "sortValue": 0,
+  "createdAt": "2020-06-24T08:14:52+00:00",
+  "modifiedAt": "2020-06-24T08:14:52+00:00",
+  "_metadata": {
+    "persisted": true
+  }
+}

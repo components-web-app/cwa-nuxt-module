@@ -5,7 +5,6 @@ import type { CwaOptions } from '../'
 import ApiError from '../inc/api-error'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
 import { cwaRouteDisabled } from '../utils'
-import MissingDataError from '../inc/missing-data-error'
 import { Storage } from './storage'
 import { Fetcher } from './fetcher'
 import {
@@ -19,6 +18,10 @@ interface PatchRequest {
   endpoint: string
   tokenSource: CancelTokenSource
 }
+interface ApiDocsInterface {
+  entrypoint: any
+  docs: any
+}
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
@@ -28,6 +31,8 @@ export default class Cwa {
   public $state
   public $eventBus
   private patchRequests: Array<PatchRequest> = []
+  private apiDocumentation: ApiDocsInterface
+  private apiDocPromise: Promise<ApiDocsInterface>
 
   constructor(ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
@@ -194,22 +199,43 @@ export default class Cwa {
     throw exception
   }
 
-  async getApiDocumentation() {
+  async getApiDocumentation(refresh = false) {
+    // wait for the variable
     if (!this.$state.docsUrl) {
-      throw new MissingDataError(
-        'Cannot fetch API documentation. The docs URL has not been saved'
-      )
+      return new Promise((resolve) => {
+        this.$storage.watchState('docsUrl', (newValue) => {
+          if (newValue) {
+            resolve(this.getApiDocumentation(refresh))
+          }
+        })
+      })
     }
-    const resolved = await Promise.all([
-      this.ctx.$axios.$get(
-        this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
-      ),
-      this.ctx.$axios.$get(this.$state.docsUrl)
-    ])
-    return {
-      entrypoint: resolved[0],
-      docs: resolved[1]
+
+    if (this.apiDocPromise) {
+      return await this.apiDocPromise
     }
+
+    // fetch.. but if we have already asked for it to be fetched, let us prevent many requests.
+    if (refresh || !this.apiDocumentation) {
+      this.apiDocPromise = new Promise((resolve) => {
+        Promise.all([
+          this.ctx.$axios.$get(
+            this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
+          ),
+          this.ctx.$axios.$get(this.$state.docsUrl)
+        ]).then((responses) => {
+          this.apiDocumentation = {
+            entrypoint: responses[0],
+            docs: responses[1]
+          }
+          resolve(this.apiDocumentation)
+          this.apiDocPromise = null
+        })
+      })
+      return await this.apiDocPromise
+    }
+
+    return this.apiDocumentation
   }
 
   private async initNewRequest(

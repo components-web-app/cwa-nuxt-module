@@ -4,6 +4,8 @@ const path = require('path')
 const express = require('express')
 const bodyParser = require('body-parser')
 const consola = require('consola')
+const cookieParser = require('cookie-parser')
+
 const FIXTURES_DIRECTORY = path.resolve(__dirname, `..`, `fixtures`)
 const readdir = util.promisify(fs.readdir)
 
@@ -19,50 +21,57 @@ async function createRoutes(directory = null) {
     const basePath = path.join(directory || '/', route)
     const file = path.resolve(nestedPath, route)
     const stat = fs.statSync(file)
+
+    // recursive directory loop
     if (stat.isDirectory()) {
       withRoutes.push(...(await createRoutes(basePath, withRoutes)))
+      continue
+    }
+
+    // file found
+    let method = 'get'
+
+    let endpoint = decodeURIComponent(basePath)
+    const exploded = endpoint.split('.')
+    const endpointBaseName = exploded[0]
+
+    // parse filename for method - e.g. endpoint.get.jsonld / endpoint.post.js
+    if ((basePath.match(/\./g) || []).length === 2) {
+      method = exploded[1]
+      endpoint = endpointBaseName + '.' + exploded[2]
+    }
+
+    // if file is a script we will be running the file
+    let fn = null
+    if (endpoint.endsWith('.js')) {
+      fn = require(file).default
+      endpoint = endpoint.slice(0, -3)
     } else {
-      // file that should be an endpoint
-      let method = 'get'
-
-      let endpoint = decodeURIComponent(basePath)
-      const exploded = endpoint.split('.')
-      const endpointBaseName = exploded[0]
-
-      if ((basePath.match(/\./g) || []).length === 2) {
-        method = exploded[1]
-        endpoint = endpointBaseName + '.' + exploded[2]
+      fn = (_, res) => {
+        res.sendFile(`${file}`)
       }
+    }
 
-      let fn = (_, res) => {
-        res.sendFile(`${file}`, { root: null })
-      }
+    // create and populate the route
+    const newRoute = {
+      endpoint,
+      method,
+      fn
+    }
+    withRoutes.push(newRoute)
 
-      if (endpoint.endsWith('.js')) {
-        fn = require(file).default
-        endpoint = endpoint.slice(0, -3)
-      }
-
-      const newRoute = {
-        endpoint,
-        method,
-        fn
-      }
-      withRoutes.push(newRoute)
-
-      // create alias endpoints
-      if (endpoint.endsWith('.jsonld')) {
-        withRoutes.push(
-          Object.assign({}, newRoute, { endpoint: endpointBaseName })
-        )
-      }
-      if (endpointBaseName.endsWith('index')) {
-        withRoutes.push(
-          Object.assign({}, newRoute, {
-            endpoint: endpointBaseName.slice(0, -5)
-          })
-        )
-      }
+    // create alias endpoints
+    if (endpoint.endsWith('.jsonld')) {
+      withRoutes.push(
+        Object.assign({}, newRoute, { endpoint: endpointBaseName })
+      )
+    }
+    if (endpointBaseName.endsWith('index')) {
+      withRoutes.push(
+        Object.assign({}, newRoute, {
+          endpoint: endpointBaseName.slice(0, -5)
+        })
+      )
     }
   }
   return withRoutes
@@ -75,7 +84,33 @@ async function createRoutes(directory = null) {
  */
 function createApi() {
   const app = express()
+
+  // add common hedaers
+  app.use((req, res, next) => {
+    res.type('application/json+ld')
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, OPTIONS, PUT, PATCH, DELETE'
+    )
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'content-type, authorization, preload, fields, path'
+    )
+    res.setHeader(
+      'Access-Control-Allow-Origin',
+      req.get('origin') || 'http://localhost:3000'
+    )
+    res.setHeader(
+      'Link',
+      '<http://localhost:' +
+        process.env.API_PORT +
+        '/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"'
+    ) // ,<http://localhost:' + process.env.API_PORT + '/.well-known/mercure>; rel="mercure"
+    next()
+  })
   app.use(bodyParser.json())
+  app.use(cookieParser())
 
   return createRoutes().then((routes) => {
     consola.log(
@@ -83,34 +118,11 @@ function createApi() {
       routes.map((r) => `${r.endpoint} :: ${r.method}`)
     )
 
-    app.all('*', (req, res, next) => {
-      res.type('application/json+ld')
-      res.setHeader('Access-Control-Allow-Credentials', 'true')
-      res.setHeader(
-        'Access-Control-Allow-Methods',
-        'GET, POST, OPTIONS, PUT, PATCH, DELETE'
-      )
-      res.setHeader(
-        'Access-Control-Allow-Headers',
-        'content-type, authorization, preload, fields, path'
-      )
-      res.setHeader(
-        'Access-Control-Allow-Origin',
-        req.get('origin') || 'http://localhost:3000'
-      )
-      res.setHeader(
-        'Link',
-        '<http://localhost:' +
-          process.env.API_PORT +
-          '/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"'
-      ) // ,<http://localhost:' + process.env.API_PORT + '/.well-known/mercure>; rel="mercure"
-      next()
-    })
-
     for (const route in routes) {
       app[routes[route].method](routes[route].endpoint, routes[route].fn)
     }
 
+    // fallbacks
     app.options('*', (_, res) => {
       res.status(200).send('{"message": "OK"}')
     })
