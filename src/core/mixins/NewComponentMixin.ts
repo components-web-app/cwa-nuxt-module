@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import { COMPONENT_MANAGER_EVENTS, NewComponentEvent } from '../events'
+import {COMPONENT_MANAGER_EVENTS, CONFIRM_DIALOG_EVENTS, ConfirmDialogEvent, NewComponentEvent, HighlightComponentEvent} from '../events'
 
 export default Vue.extend({
   data() {
@@ -83,31 +83,34 @@ export default Vue.extend({
       })
     },
     handleHighlightComponentEvent({
-      iri,
-      force
-    }: {
-      iri?: string
-      force?: boolean
-    }) {
+      iri
+    }: HighlightComponentEvent) {
       if (
         this.newComponentEvent &&
         this.newComponentIri !== iri &&
         this.newComponentResource
       ) {
-        if (
-          !force &&
-          window.confirm('Are you sure you want to discard your new component?')
-        ) {
-          this.newComponentEvent = null
-          this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.newComponentCleared
-          )
-        } else {
-          this.$cwa.$eventBus.$emit(
-            COMPONENT_MANAGER_EVENTS.selectComponent,
-            this.newComponentIri
-          )
+        const event: ConfirmDialogEvent = {
+          id: 'confirm-discard-resource',
+          title: 'Confirm Discard',
+          html: `<p>Are you sure you want to discard your new component?</p><p class="warning"><span class="cwa-icon"><span class="cwa-warning-triangle"></span></span><span>This action cannot be reversed!</span></p>`,
+          onSuccess: () => {
+            this.newComponentEvent = null
+            this.$cwa.$eventBus.$emit(
+              COMPONENT_MANAGER_EVENTS.newComponentCleared
+            )
+          },
+          onCancel: () => {
+            this.$nextTick(() => {
+              this.$cwa.$eventBus.$emit(
+                COMPONENT_MANAGER_EVENTS.selectComponent,
+                this.newComponentIri
+              )
+            })
+          },
+          confirmButtonText: 'Discard'
         }
+        this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
       }
     }
   }

@@ -96,7 +96,8 @@ import {
   API_EVENTS,
   ComponentManagerAddEvent,
   SaveStateEvent,
-  PublishableToggledEvent
+  PublishableToggledEvent,
+  HighlightComponentEvent
 } from '../../../events'
 import ReuseComponentMixin from '../../../mixins/ReuseComponentMixin'
 import CwaAdminToggle from './input/cwa-admin-toggle.vue'
@@ -348,7 +349,7 @@ export default Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.highlightComponent, {
         iri,
         selectedPosition
-      })
+      } as HighlightComponentEvent)
     },
     closeActionClick() {
       if (this.reuseComponent) {

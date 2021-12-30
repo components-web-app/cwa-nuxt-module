@@ -12,6 +12,7 @@ export interface ConfirmDialogEvent {
   title?: string
   asyncData?: Function
   onSuccess?: Function
+  onCancel?: Function
   cancelButtonText?: string
   confirmButtonText?: string
 }
@@ -32,6 +33,12 @@ export interface NewComponentEvent {
   name: string
   isPublishable: boolean
   iri: string
+}
+
+export interface HighlightComponentEvent {
+  iri: string
+  selectedPosition: string
+  force?: boolean
 }
 
 export interface ComponentManagerAddEvent {

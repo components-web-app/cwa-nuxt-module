@@ -15,7 +15,7 @@
     <div class="controls-bar">
       <div class="row">
         <div class="column">
-          <button class="is-dark is-delete" @click="close">
+          <button class="is-dark is-delete" @click="cancel">
             {{ dialogEvent.cancelButtonText || 'Cancel' }}
           </button>
         </div>
@@ -87,6 +87,14 @@ export default Vue.extend({
       if (this.dialogEvent.onSuccess) {
         this.runningConfirmFn = true
         await this.dialogEvent.onSuccess(this.data)
+        this.runningConfirmFn = false
+      }
+      this.close()
+    },
+    async cancel() {
+      if (this.dialogEvent.onCancel) {
+        this.runningConfirmFn = true
+        await this.dialogEvent.onCancel(this.data)
         this.runningConfirmFn = false
       }
       this.close()

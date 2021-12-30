@@ -18,3 +18,18 @@ import './commands'
 
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
+
+declare global {
+  namespace Cypress {
+    interface Window {
+      $nuxt: any
+      nuxtApp: any
+    }
+
+    interface Chainable {
+      login(): Chainable<Window>
+      navigate(url: string): Chainable<Window>
+      navigateByUrl(url: string): Chainable<Window>
+    }
+  }
+}

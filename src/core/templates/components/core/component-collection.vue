@@ -185,6 +185,17 @@ export default Vue.extend({
       }
     }
   },
+  watch: {
+    // we cannot add a click event if this component does not exist
+    // and it will not if there is no resource.
+    resource(newValue, oldValue) {
+      if (newValue && !oldValue) {
+        this.$nextTick(() => {
+          this.initCMMixin()
+        })
+      }
+    }
+  },
   async mounted() {
     if (!this.resource && this.$cwa.isAdmin) {
       await this.addComponentCollection()

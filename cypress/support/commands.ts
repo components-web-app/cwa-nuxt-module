@@ -33,3 +33,19 @@ Cypress.Commands.add('navigate', (...args) => {
 Cypress.Commands.add('navigateByUrl', (url) => {
   return cy.navigate(url)
 })
+
+Cypress.Commands.add('login', () => {
+  cy.visit('/login')
+  return cy.window()
+    .then(w => {
+      w.nuxtApp.$auth.loginWith('cookie', {
+        data: {
+          username: 'admin',
+          password: 'admin'
+        }
+      })
+      cy.get('.cwa-admin-bar').should('exist')
+      return cy.navigate('/')
+    })
+})
+

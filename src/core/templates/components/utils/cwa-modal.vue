@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-modal is-active">
+  <div class="cwa-modal is-active" @click.stop>
     <div class="modal-background" @click="close" />
     <div class="modal-content">
       <div class="modal-card">
