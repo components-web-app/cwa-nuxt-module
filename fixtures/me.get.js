@@ -1,4 +1,4 @@
-module.exports.default = (req, res) => {
+export default (req, res) => {
   if (req.cookies.api_component !== 'valid_jwt') {
     res.status(404)
     res.send('')

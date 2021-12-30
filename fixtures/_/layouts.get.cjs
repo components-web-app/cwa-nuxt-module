@@ -1,7 +1,7 @@
 const path = require('path')
 const fs = require('fs')
 
-module.exports.default = (_, res) => {
+module.exports = (_, res) => {
   const file = path.resolve(
     __dirname,
     './layouts/239e8066-b93b-48fa-aced-33dc6d4377f1'

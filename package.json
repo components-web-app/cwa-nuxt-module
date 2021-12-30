@@ -1,6 +1,7 @@
 {
   "name": "@cwa/nuxt-module",
   "version": "1.0.0",
+  "type": "module",
   "description": "Nuxt Module for Silverback's Components Web Apps and API Components Bundle API",
   "license": "MIT",
   "author": "Daniel West <daniel@silverback.is>",
@@ -97,6 +98,7 @@
     "stylus": "^0.54.8",
     "stylus-loader": "^3.0.2",
     "typescript": "~3.8.3",
+    "uuid": "^8.3.2",
     "vue-loader": "^15.9.6"
   }
 }

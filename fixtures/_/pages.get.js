@@ -1,7 +1,9 @@
-const path = require('path')
-const fs = require('fs')
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 
-module.exports.default = (_, res) => {
+export default (_, res) => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
   const file = path.resolve(
     __dirname,
     './pages/1d2c947a-8726-4dc7-8f24-655f45e91f68'

@@ -1,4 +1,4 @@
-module.exports.default = (req, res) => {
+export default (req, res) => {
   if (req.body.username !== 'admin' || req.body.password !== 'admin') {
     res.status(401)
     res.send('{"code":401,"message":"Invalid credentials."}')

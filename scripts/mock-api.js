@@ -1,10 +1,13 @@
-const util = require('util')
-const fs = require('fs')
-const path = require('path')
-const express = require('express')
-const bodyParser = require('body-parser')
-const consola = require('consola')
-const cookieParser = require('cookie-parser')
+import util from 'util'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import express from 'express'
+import bodyParser from 'body-parser'
+import consola from 'consola'
+import cookieParser from 'cookie-parser'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const FIXTURES_DIRECTORY = path.resolve(__dirname, `..`, `fixtures`)
 const readdir = util.promisify(fs.readdir)
@@ -43,9 +46,12 @@ async function createRoutes(directory = null) {
 
     // if file is a script we will be running the file
     let fn = null
-    if (endpoint.endsWith('.js')) {
-      fn = require(file).default
-      endpoint = endpoint.slice(0, -3)
+    if (endpoint.endsWith('.js') || endpoint.endsWith('.cjs')) {
+      const imported = await import(file)
+      fn = imported.default
+      const parts = endpoint.split('.')
+      parts.pop()
+      endpoint = parts.join('.')
     } else {
       fn = (_, res) => {
         res.sendFile(`${file}`)
@@ -159,7 +165,7 @@ function createApi() {
   })
 }
 
-module.exports = createApi
+export default createApi
 
 if (process.env.API_PORT) {
   createApi().then((app) => {
