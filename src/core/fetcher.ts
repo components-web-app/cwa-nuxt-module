@@ -111,13 +111,13 @@ export class Fetcher {
     }
 
     try {
-      const { headers, data } = await this.ctx.$axios.get(url, {
+      const response = await this.ctx.$axios.get(url, {
         headers: requestHeaders,
         cancelToken: cancelTokenSource ? cancelTokenSource.token : null
       })
-      this.setDocsUrlFromHeaders(headers)
-      this.setMercureHubFromHeaders(headers)
-      return data
+      this.setDocsUrlFromHeaders(response.headers)
+      this.setMercureHubFromHeaders(response.headers)
+      return response.data
     } catch (error) {
       throw this.axiosToApiError(error)
     } finally {

@@ -88,21 +88,21 @@ function createApi() {
   // add common hedaers
   app.use((req, res, next) => {
     res.type('application/json+ld')
-    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('access-control-allow-credentials', 'true')
     res.setHeader(
-      'Access-Control-Allow-Methods',
+      'access-control-allow-methods',
       'GET, POST, OPTIONS, PUT, PATCH, DELETE'
     )
     res.setHeader(
-      'Access-Control-Allow-Headers',
+      'access-control-allow-headers',
       'content-type, authorization, preload, fields, path'
     )
     res.setHeader(
-      'Access-Control-Allow-Origin',
+      'access-control-allow-origin',
       req.get('origin') || 'http://localhost:3000'
     )
     res.setHeader(
-      'Link',
+      'link',
       '<http://localhost:' +
         process.env.API_PORT +
         '/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"'

@@ -199,13 +199,15 @@ export default class Cwa {
     throw exception
   }
 
-  async getApiDocumentation(refresh = false) {
+  async getApiDocumentation(refresh = false): Promise<ApiDocsInterface> {
     // wait for the variable
     if (!this.$state.docsUrl) {
       return new Promise((resolve) => {
         this.$storage.watchState('docsUrl', (newValue) => {
           if (newValue) {
-            resolve(this.getApiDocumentation(refresh))
+            this.getApiDocumentation(refresh).then((docs) => {
+              resolve(docs)
+            })
           }
         })
       })
@@ -216,26 +218,25 @@ export default class Cwa {
     }
 
     // fetch.. but if we have already asked for it to be fetched, let us prevent many requests.
-    if (refresh || !this.apiDocumentation) {
-      this.apiDocPromise = new Promise((resolve) => {
-        Promise.all([
-          this.ctx.$axios.$get(
-            this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
-          ),
-          this.ctx.$axios.$get(this.$state.docsUrl)
-        ]).then((responses) => {
-          this.apiDocumentation = {
-            entrypoint: responses[0],
-            docs: responses[1]
-          }
-          resolve(this.apiDocumentation)
-          this.apiDocPromise = null
-        })
-      })
-      return await this.apiDocPromise
+    if (!refresh && this.apiDocumentation) {
+      return this.apiDocumentation
     }
 
-    return this.apiDocumentation
+    this.apiDocPromise = new Promise((resolve) => {
+      Promise.all([
+        this.ctx.$axios.$get(
+          this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
+        ),
+        this.ctx.$axios.$get(this.$state.docsUrl)
+      ]).then((responses) => {
+        this.apiDocumentation = {
+          entrypoint: responses[0],
+          docs: responses[1]
+        }
+        resolve(this.apiDocumentation)
+      })
+    })
+    return await this.apiDocPromise
   }
 
   private async initNewRequest(

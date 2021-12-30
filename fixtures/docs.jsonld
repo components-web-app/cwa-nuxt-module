@@ -31,7 +31,7 @@
     "@id": "/docs.jsonld",
     "@type": "hydra:ApiDocumentation",
     "info": {
-      "version": "testing"
+      "version": "0.0.0 (dev-master@7b0da1900d1effab7b0c4b6fb72946fa603775ce)"
     },
     "hydra:title": "New Website",
     "hydra:description": "API for New Website",

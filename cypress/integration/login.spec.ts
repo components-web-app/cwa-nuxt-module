@@ -19,6 +19,7 @@ describe('Login', () => {
     cy.get('.cwa-admin-bar-menu > .menu').should('not.exist')
     cy.get('.cwa-hamburger').click()
     cy.get('.cwa-admin-bar-menu > .menu').should('be.visible')
+    cy.get('.menu-links-right li:last-child ul li:last-child a').should('contain.text', 'API dev..75ce (unstable)')
     cy.get('.menu-links-right li:first-child ul li:last-child a').click()
     cy.get('.cwa-admin-bar').should('not.exist')
   })

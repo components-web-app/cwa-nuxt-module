@@ -188,8 +188,9 @@ export default {
   },
   async mounted() {
     const { docs } = await this.$cwa.getApiDocumentation()
-    const matches = docs.info.version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
-    this.apiVersion = matches ? matches[1] : '??'
+    const version = docs.info.version
+    const matches = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
+    this.apiVersion = matches ? matches[1] : version || '??'
   },
   methods: {
     toggleMenu(showMenu) {
