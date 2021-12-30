@@ -87,20 +87,33 @@ function createApi() {
 
   // add common hedaers
   app.use((req, res, next) => {
-    res.type('application/json+ld')
+    res.setHeader('accept-ranges', 'bytes')
     res.setHeader('access-control-allow-credentials', 'true')
-    res.setHeader(
-      'access-control-allow-methods',
-      'GET, POST, OPTIONS, PUT, PATCH, DELETE'
-    )
     res.setHeader(
       'access-control-allow-headers',
       'content-type, authorization, preload, fields, path'
     )
     res.setHeader(
+      'access-control-allow-methods',
+      'GET, OPTIONS, POST, PUT, PATCH, DELETE'
+    )
+    res.setHeader(
       'access-control-allow-origin',
       req.get('origin') || 'http://localhost:3000'
     )
+    res.setHeader('access-control-max-age', 3600)
+    res.setHeader('cache-control', 'no-cache, private')
+    res.setHeader('age', 0)
+    res.setHeader('vary', 'Origin')
+
+    if (req.method === 'OPTIONS') {
+      res.type('text/html; charset=UTF-8')
+      next()
+      return
+    }
+
+    res.type('application/json+ld')
+    res.setHeader('access-control-expose-headers', 'link')
     res.setHeader(
       'link',
       '<http://localhost:' +
