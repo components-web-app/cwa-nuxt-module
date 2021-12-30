@@ -6,6 +6,7 @@ import express from 'express'
 import bodyParser from 'body-parser'
 import consola from 'consola'
 import cookieParser from 'cookie-parser'
+import session from 'express-session'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -130,6 +131,11 @@ function createApi() {
   })
   app.use(bodyParser.json())
   app.use(cookieParser())
+  app.use(session({
+    secret: 'dev no secret',
+    resave: true,
+    saveUninitialized: true
+  }))
 
   return createRoutes().then((routes) => {
     consola.log(

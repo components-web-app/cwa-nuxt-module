@@ -8,7 +8,7 @@ export default (req, res) => {
   res.cookie('api_component', 'valid_jwt', {
     expires: null,
     path: '/',
-    maxAge: 604800,
+    maxAge: 99999999999999999999,
     httpOnly: true,
     sameSite: 'lax',
     secure: false

@@ -1,0 +1,26 @@
+{
+  "@context": "/contexts/PageDataMetadata",
+  "@id": "/_/page_data_metadatas",
+  "@type": "hydra:Collection",
+  "hydra:member": [
+    {
+      "@id": "/_/page_data_metadatas/Silverback%5CApiComponentsBundle%5CEntity%5CCore%5CAbstractPageData",
+      "@type": "PageDataMetadata",
+      "resourceClass": "Silverback\\ApiComponentsBundle\\Entity\\Core\\AbstractPageData",
+      "properties": []
+    },
+    {
+      "@id": "/_/page_data_metadatas/App%5CEntity%5CBlogArticleData",
+      "@type": "PageDataMetadata",
+      "resourceClass": "App\\Entity\\BlogArticleData",
+      "properties": [
+        {
+          "@type": "PageDataPropertyMetadata",
+          "@id": "_:996",
+          "property": "htmlContent",
+          "componentShortName": "HtmlContent"
+        }
+      ]
+    }
+  ]
+}

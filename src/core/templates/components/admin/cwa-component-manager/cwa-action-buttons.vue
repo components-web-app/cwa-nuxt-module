@@ -147,6 +147,7 @@ export default Vue.extend({
             ...resource.componentPositions,
             componentCollection
           )
+          console.log('componentCollection', this.addingEvent.endpoint, resource.componentPositions)
         }
         if (refreshResources.length) {
           await this.$cwa.refreshResources(refreshResources)

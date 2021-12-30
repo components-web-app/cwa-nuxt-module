@@ -84,6 +84,7 @@
     "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-vue": "^7.7.0",
     "express": "^4.17.1",
+    "express-session": "^1.17.2",
     "fibers": "^5.0.0",
     "improved-yarn-audit": "^2.3.3",
     "jest": "^26.1.0",

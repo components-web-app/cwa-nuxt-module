@@ -4,7 +4,7 @@ export default function (req, res) {
   return res.send(
     JSON.stringify({
       '@context': '/contexts/ComponentCollection',
-      '@id': '/_/component_collections/' + uuidv4(),
+      '@id': '/_/component_collections/' + (req.body.reference || uuidv4()),
       '@type': 'ComponentCollection',
       reference: req.body.reference,
       location: req.body.location,
