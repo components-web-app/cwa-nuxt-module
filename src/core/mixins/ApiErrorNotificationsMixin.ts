@@ -1,11 +1,11 @@
 import Vue from 'vue'
-import ApiError from '@cwa/nuxt-module/inc/api-error'
 import {
   NotificationEvent,
   NotificationLevels,
   RemoveNotificationEvent
 } from '../templates/components/cwa-api-notifications/types'
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
+import ApiError from '@cwa/nuxt-module/inc/api-error'
 
 interface ApiViolationNotifications {
   notification: NotificationEvent

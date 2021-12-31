@@ -32,7 +32,10 @@
 import Vue from 'vue'
 import CmSelect from '../../input/cm-select.vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
-import {COMPONENT_MANAGER_EVENTS, HighlightComponentEvent} from '../../../../../../events'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  HighlightComponentEvent
+} from '../../../../../../events'
 import CmMultiselect from '../../input/cm-multiselect.vue'
 
 export default Vue.extend({
@@ -56,7 +59,10 @@ export default Vue.extend({
           this.$nextTick(() => {
             this.$cwa.$eventBus.$emit(
               COMPONENT_MANAGER_EVENTS.highlightComponent,
-              { iri: this.iri, selectedPosition: this.context.selectedPosition } as HighlightComponentEvent
+              {
+                iri: this.iri,
+                selectedPosition: this.context.selectedPosition
+              } as HighlightComponentEvent
             )
           })
         }

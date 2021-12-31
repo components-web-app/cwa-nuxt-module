@@ -1,6 +1,10 @@
 import Vue from 'vue'
 import consola from 'consola'
-import { COMPONENT_MANAGER_EVENTS, ComponentManagerAddEvent, HighlightComponentEvent } from '../events'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  ComponentManagerAddEvent,
+  HighlightComponentEvent
+} from '../events'
 import ReuseComponentMixin from './ReuseComponentMixin'
 import AddElementsMixin from './AddElementsMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
@@ -187,7 +191,10 @@ export const ComponentManagerMixin = Vue.extend({
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
     },
-    managerHighlightComponentListener({ iri, selectedPosition }: HighlightComponentEvent) {
+    managerHighlightComponentListener({
+      iri,
+      selectedPosition
+    }: HighlightComponentEvent) {
       this.highlightIsPosition = selectedPosition === this.computedIri
       // the sort order tab will add the position as well
       // next tick means we don't lose adding it, but there

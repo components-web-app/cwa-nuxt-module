@@ -56,12 +56,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
 import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 import CreateNewComponentEventMixin from '../../../../../../mixins/CreateNewComponentEventMixin'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import FetchComponentsMixin from '../../../../../../mixins/FetchComponentsMixin'
 import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
+import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
   components: { CwaAdminSelect },

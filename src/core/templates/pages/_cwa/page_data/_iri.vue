@@ -1,9 +1,9 @@
 <script lang="ts">
 import Vue from 'vue'
-import { StoreCategories } from '@cwa/nuxt-module/core/storage'
 import CwaPageCommonMixin from '../CwaPageCommonMixin'
 import page from '../../../page'
 import { ADMIN_BAR_EVENTS } from '../../../../events'
+import { StoreCategories } from '@cwa/nuxt-module/core/storage'
 
 export default Vue.extend({
   extends: page,

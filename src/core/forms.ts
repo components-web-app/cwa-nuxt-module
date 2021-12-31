@@ -1,3 +1,5 @@
+// see issue https://github.com/nuxt-community/axios-module/issues/555
+// eslint-disable-next-line
 import { NuxtAxiosInstance } from '@nuxtjs/axios'
 import { Store } from 'vuex'
 import _get from 'lodash.get'

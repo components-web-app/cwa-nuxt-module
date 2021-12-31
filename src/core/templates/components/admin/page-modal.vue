@@ -76,11 +76,11 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import PageTemplateLoadMixin from '@cwa/nuxt-module/core/mixins/PageTemplateLoadMixin'
 import IriPageModalView from '../iri-page-modal-view.vue'
 import IriModalPropsMixin from '../IriModalPropsMixin'
 import CwaAdminSelect from './input/cwa-admin-select.vue'
 import CwaAdminText from './input/cwa-admin-text.vue'
+import PageTemplateLoadMixin from '@cwa/nuxt-module/core/mixins/PageTemplateLoadMixin'
 
 // treat component as the v-model variable
 // get props for everything else to pass through

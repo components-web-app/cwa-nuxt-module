@@ -37,11 +37,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import consola from 'consola'
+import ResourceComponentLoader from '../../resource-component-loader'
 import ComponentManagerMixin, {
   ComponentManagerTab,
   EVENTS
 } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
-import consola from 'consola'
 import {
   API_EVENTS,
   COMPONENT_MANAGER_EVENTS,
@@ -51,7 +52,6 @@ import {
 import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
 import CreateNewComponentEventMixin from '@cwa/nuxt-module/core/mixins/CreateNewComponentEventMixin'
 import type { ComponentCreatedEvent } from '@cwa/nuxt-module/core/events'
-import ResourceComponentLoader from '../../resource-component-loader'
 import components from '~/.nuxt/cwa/components'
 
 export default Vue.extend({

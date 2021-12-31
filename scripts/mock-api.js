@@ -129,15 +129,19 @@ function createApi() {
     ) // ,<http://localhost:' + process.env.API_PORT + '/.well-known/mercure>; rel="mercure"
     next()
   })
-  app.use(bodyParser.json({
-    type: ['application/merge-patch+json', 'application/json']
-  }))
+  app.use(
+    bodyParser.json({
+      type: ['application/merge-patch+json', 'application/json']
+    })
+  )
   app.use(cookieParser())
-  app.use(session({
-    secret: 'dev no secret',
-    resave: true,
-    saveUninitialized: true
-  }))
+  app.use(
+    session({
+      secret: 'dev no secret',
+      resave: true,
+      saveUninitialized: true
+    })
+  )
 
   return createRoutes().then((routes) => {
     consola.log(

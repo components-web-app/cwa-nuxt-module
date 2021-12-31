@@ -7,6 +7,8 @@ module.exports = {
     'plugin:nuxt/recommended'
   ],
   rules: {
+    'import/no-named-as-default-member': 0,
+    'import/no-named-as-default': 0,
     'vue/no-v-html': 0,
     'vue/custom-event-name-casing': [
       'error',

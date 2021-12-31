@@ -22,13 +22,13 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import {
-  NotificationLevels,
-  Notification
-} from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
 import { StoreCategories } from '../../../storage'
 import ApiError from '../../../../inc/api-error'
 import { NOTIFICATION_EVENTS } from '../../../events'
+import {
+  NotificationEvent,
+  NotificationLevels
+} from '@cwa/nuxt-module/core/templates/components/cwa-api-notifications/types'
 
 export default Vue.extend({
   props: {
@@ -80,7 +80,7 @@ export default Vue.extend({
         if (!(error instanceof ApiError)) {
           throw error
         }
-        const notification: Notification = {
+        const notification: NotificationEvent = {
           code: 'components-list',
           title: 'An error occurred',
           message: error.message,

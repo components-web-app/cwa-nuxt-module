@@ -1,11 +1,11 @@
 import Vue from 'vue'
+import _debounce from 'lodash.debounce'
+import consola from 'consola'
+import FormViewPropsMixin from './FormViewPropsMixin'
 import {
   FormExtraSubmitData,
   FormView
 } from '@cwa/nuxt-module/core/vuex/FormsVuexModule'
-import _debounce from 'lodash.debounce'
-import consola from 'consola'
-import FormViewPropsMixin from './FormViewPropsMixin'
 
 export default Vue.extend({
   mixins: [FormViewPropsMixin],

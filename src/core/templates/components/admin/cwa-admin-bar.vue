@@ -85,16 +85,16 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
-import {
-  COMPONENT_MANAGER_EVENTS,
-  ADMIN_BAR_EVENTS
-} from '@cwa/nuxt-module/core/events'
 import CwaNuxtLink from '../utils/cwa-nuxt-link.vue'
 import TransitionExpand from '../utils/transition-expand.vue'
 import CwaAdminBarMenu from './cwa-admin-bar-menu.vue'
 import CwaAdminToggle from './input/cwa-admin-toggle.vue'
 import CwaAdminBarPageInfoModal from './cwa-admin-bar-page-info-modal.vue'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  ADMIN_BAR_EVENTS
+} from '@cwa/nuxt-module/core/events'
+import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
 
 export default Vue.extend({
   components: {

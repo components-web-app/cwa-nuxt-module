@@ -26,12 +26,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import FormViewBlockMixin from '../../../../../mixins/FormViewBlockMixin'
 import Wrapper from '@cwa/nuxt-module/core/templates/components/default/Form/FormView/_Wrapper.vue'
 import {
   FormExtraSubmitData,
   FormView
 } from '@cwa/nuxt-module/core/vuex/FormsVuexModule'
-import FormViewBlockMixin from '../../../../../mixins/FormViewBlockMixin'
 
 export default Vue.extend({
   components: { Wrapper },

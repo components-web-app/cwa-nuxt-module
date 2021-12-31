@@ -51,7 +51,6 @@ import CmDatepicker from '../../input/cm-datepicker.vue'
 import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
 import UpdateResourceError from '../../../../../../../inc/update-resource-error'
-import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 
 export default Vue.extend({
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -87,7 +86,7 @@ export default Vue.extend({
   methods: {
     async publishNow() {
       try {
-        const resource = await this.updateResource(
+        await this.updateResource(
           this.iri,
           'publishedAt',
           moment.utc().toISOString(),

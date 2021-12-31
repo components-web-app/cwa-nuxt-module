@@ -24,12 +24,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import LoadPageDataMetadataMixin from '@cwa/nuxt-module/core/mixins/LoadPageDataMetadataMixin'
 import ApiErrorNotificationsMixin from '../../../../../../mixins/ApiErrorNotificationsMixin'
 import CmButton from '../../input/cm-button.vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
 import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
+import LoadPageDataMetadataMixin from '@cwa/nuxt-module/core/mixins/LoadPageDataMetadataMixin'
 
 export default Vue.extend({
   components: { CmButton, CwaAdminSelect },

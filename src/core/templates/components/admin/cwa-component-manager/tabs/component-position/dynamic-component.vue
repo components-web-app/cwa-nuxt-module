@@ -59,15 +59,15 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
+import CmSelect from '../../input/cm-select.vue'
+import Info from '../../input/info.vue'
 import { EVENTS } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 import {
   CONFIRM_DIALOG_EVENTS,
   ConfirmDialogEvent
 } from '@cwa/nuxt-module/core/events'
 import LoadPageDataMetadataMixin from '@cwa/nuxt-module/core/mixins/LoadPageDataMetadataMixin'
-import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
-import CmSelect from '../../input/cm-select.vue'
-import Info from '../../input/info.vue'
 
 export default Vue.extend({
   components: { CmSelect, Info },

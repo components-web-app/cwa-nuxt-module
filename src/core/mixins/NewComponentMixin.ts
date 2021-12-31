@@ -1,5 +1,11 @@
 import Vue from 'vue'
-import {COMPONENT_MANAGER_EVENTS, CONFIRM_DIALOG_EVENTS, ConfirmDialogEvent, NewComponentEvent, HighlightComponentEvent} from '../events'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  CONFIRM_DIALOG_EVENTS,
+  ConfirmDialogEvent,
+  NewComponentEvent,
+  HighlightComponentEvent
+} from '../events'
 
 export default Vue.extend({
   data() {
@@ -82,9 +88,7 @@ export default Vue.extend({
         resource
       })
     },
-    handleHighlightComponentEvent({
-      iri
-    }: HighlightComponentEvent) {
+    handleHighlightComponentEvent({ iri }: HighlightComponentEvent) {
       if (
         this.newComponentEvent &&
         this.newComponentIri !== iri &&

@@ -48,7 +48,6 @@
 <script lang="ts">
 import Vue from 'vue'
 import slugify from 'slugify'
-import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import Draggable from 'vuedraggable'
 import NewComponentMixin from '../../../mixins/NewComponentMixin'
 import ApiRequestMixin from '../../../mixins/ApiRequestMixin'
@@ -62,6 +61,7 @@ import {
   NewComponentEvent,
   TabChangedEvent
 } from '../../../events'
+import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import components from '~/.nuxt/cwa/components'
 
 export default Vue.extend({

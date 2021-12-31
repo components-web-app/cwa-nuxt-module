@@ -32,11 +32,11 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import IriModalView from '../iri-modal-view.vue'
 import CwaAdminText from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-text.vue'
 import CwaAdminSelect from '@cwa/nuxt-module/core/templates/components/admin/input/cwa-admin-select.vue'
 import IriModalMixin from '@cwa/nuxt-module/core/templates/pages/_cwa/IriModalMixin'
 import PageTemplateLoadMixin from '@cwa/nuxt-module/core/mixins/PageTemplateLoadMixin'
-import IriModalView from '../iri-modal-view.vue'
 
 export default Vue.extend({
   components: { CwaAdminText, CwaAdminSelect, IriModalView },

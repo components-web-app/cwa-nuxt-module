@@ -2,8 +2,8 @@ import Vue from 'vue'
 import '@nuxt/types'
 import 'axios'
 import 'vuex'
-import { CwaOptions } from '@cwa/nuxt-module/index'
 import type { AdminDialogOptions, CWA } from '.'
+import { CwaOptions } from '@cwa/nuxt-module/index'
 
 declare module '@nuxt/types' {
   interface Context {

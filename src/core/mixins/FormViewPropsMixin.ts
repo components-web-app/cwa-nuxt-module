@@ -1,11 +1,11 @@
 import Vue from 'vue'
 import type { PropType } from 'vue'
+import { UnqiueArray } from '../../utils'
 import {
   FormView,
   ViewMetadata,
   ViewVars
 } from '@cwa/nuxt-module/core/vuex/FormsVuexModule'
-import { UnqiueArray } from '../../utils'
 
 export default Vue.extend({
   props: {
