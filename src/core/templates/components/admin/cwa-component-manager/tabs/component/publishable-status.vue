@@ -87,7 +87,6 @@ export default Vue.extend({
   methods: {
     async publishNow() {
       try {
-        // this.$emit('close', true)
         const resource = await this.updateResource(
           this.iri,
           'publishedAt',
@@ -96,13 +95,13 @@ export default Vue.extend({
           this.refreshEndpoints,
           'components-manager'
         )
-        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
+        // this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
+        this.$emit('close')
       } catch (error) {
         if (!(error instanceof UpdateResourceError)) {
           throw error
         }
         consola.error(error)
-        this.$emit('close')
       }
     }
   }
