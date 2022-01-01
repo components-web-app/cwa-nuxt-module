@@ -32,7 +32,7 @@ yarn e2e
 
 For development you can start the application in dev mode for hot-reloading
 ```bash
-DISABLE_HTTPS=true API_URL=http://localhost:3100 yarn dev
+TESTING=true DISABLE_HTTPS=true API_URL=http://localhost:3100 yarn dev
 ```
 
 And run Cypress tests manually with the GUI

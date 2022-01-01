@@ -15,6 +15,9 @@ const https = process.env.DISABLE_HTTPS
     }
 
 export default {
+  env: {
+    TESTING: process.env.TESTING || false
+  },
   server: {
     https
   },
