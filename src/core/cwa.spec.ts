@@ -1,13 +1,6 @@
 import { jest } from '@jest/globals'
 import Cwa from './cwa'
 
-// ReferenceError: require is not defined
-// see: https://github.com/facebook/jest/issues/10025
-// see: https://github.com/facebook/jest/pull/10976
-jest.unstable_mockModule('~/.nuxt/cwa/components', () => ({}), {
-  virtual: true
-})
-
 describe('Cwa', () => {
   it('should call fetcher fetchRoute', async () => {
     const store = {

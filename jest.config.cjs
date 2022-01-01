@@ -6,6 +6,6 @@ module.exports = {
   },
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
-    '^~/(.*)$': '<rootDir>/demo/$1'
+    '^~/.nuxt/cwa/(.*)$': '<rootDir>/__mock__/.nuxt/cwa/$1'
   }
 }

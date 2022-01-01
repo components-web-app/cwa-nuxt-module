@@ -3,13 +3,6 @@ import { jest } from '@jest/globals'
 import ApiServer from '../../scripts/api'
 import Fetcher from './fetcher'
 
-// ReferenceError: require is not defined
-// see: https://github.com/facebook/jest/issues/10025
-// see: https://github.com/facebook/jest/pull/10976
-jest.unstable_mockModule('~/.nuxt/cwa/components', () => ({}), {
-  virtual: true
-})
-
 const state = {}
 
 describe('fetcher', () => {
