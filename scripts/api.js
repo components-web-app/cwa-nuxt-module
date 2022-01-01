@@ -7,7 +7,6 @@ import bodyParser from 'body-parser'
 import consola from 'consola'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
-import type { Express } from 'express-serve-static-core'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -21,14 +20,12 @@ const readdir = util.promisify(fs.readdir)
  */
 
 export class ApiServer {
-  private readonly app: Express
-
   constructor() {
     this.app = express()
     this.initMiddleware()
   }
 
-  public async create() {
+  async create() {
     const routes = await this.createRoutes()
 
     consola.log(
@@ -45,7 +42,7 @@ export class ApiServer {
     return this.app
   }
 
-  private initMiddleware() {
+  initMiddleware() {
     this.app.use((req, res, next) => {
       res.setHeader('accept-ranges', 'bytes')
       res.setHeader('access-control-allow-credentials', 'true')
@@ -97,7 +94,7 @@ export class ApiServer {
     )
   }
 
-  private async createRoutes(directory = null) {
+  async createRoutes(directory = null) {
     const withRoutes = []
     const nestedPath = directory
       ? path.join(FIXTURES_DIRECTORY, directory)
@@ -168,7 +165,7 @@ export class ApiServer {
     return withRoutes
   }
 
-  private createFallbackRoutes() {
+  createFallbackRoutes() {
     // fallbacks
     this.app.options('*', (_, res) => {
       res.status(200).send('{"message": "OK"}')

@@ -1,4 +1,4 @@
-import ApiServer from './api'
+import ApiServer from './api.js'
 
 if (process.env.API_PORT) {
   const api = new ApiServer()
