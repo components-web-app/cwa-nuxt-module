@@ -37,6 +37,10 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [14.x]
+      fail-fast: true
     container: cypress/included:4.9.0
     steps:
       - name: Checkout
