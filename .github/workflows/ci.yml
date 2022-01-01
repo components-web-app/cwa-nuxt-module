@@ -87,7 +87,7 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Update package name and version number
-        run: node ./scripts/bump-next
+        run: node ./scripts/bump-next.cjs
       - name: Build
         run: |
           yarn clean
