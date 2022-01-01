@@ -154,7 +154,7 @@ export default class Cwa {
   }
 
   get loadingRoute() {
-    return this.$state[Fetcher.loadingRouteKey]
+    return this.$state[Fetcher.loadingEndpoint]
   }
 
   withError(route, err) {

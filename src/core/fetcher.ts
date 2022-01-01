@@ -1,4 +1,4 @@
-import * as bluebird from 'bluebird'
+import bluebird from 'bluebird'
 import consola from 'consola'
 // see issue https://github.com/nuxt-community/axios-module/issues/555
 // eslint-disable-next-line
@@ -32,8 +32,8 @@ export class Fetcher {
     fetchConcurrency: number
   }
 
-  public static readonly loadingRouteKey = 'loadingRoute'
-  public static readonly loadedRouteKey = 'loadedRoute'
+  public static readonly loadingEndpoint = 'loadingRoute'
+  public static readonly loadedRoutePathKey = 'loadedRoute'
   public static readonly loadedPageKey = 'loadedPage'
   private timer: DebugTimer
   private initMercureTimeout?: any = null
@@ -59,7 +59,7 @@ export class Fetcher {
   }
 
   get loadedRoute() {
-    return this.ctx.storage.getState(Fetcher.loadedRouteKey)
+    return this.ctx.storage.getState(Fetcher.loadedRoutePathKey)
   }
 
   get loadedPage() {
@@ -76,8 +76,8 @@ export class Fetcher {
 
   public get currentRoutePath() {
     return (
-      this.ctx.storage.getState(Fetcher.loadingRouteKey) ||
-      this.ctx.storage.getState(Fetcher.loadedRouteKey)
+      this.ctx.storage.getState(Fetcher.loadingEndpoint) ||
+      this.ctx.storage.getState(Fetcher.loadedRoutePathKey)
     )
   }
 
@@ -202,16 +202,19 @@ export class Fetcher {
   }
 
   private startFetch(endpoint) {
-    // prevent reload on querystring change
-    const currentlyLoaded = this.ctx.storage.getState(Fetcher.loadedRouteKey)
-    if (currentlyLoaded === endpoint) {
+    // prevent reload on querystring change or if we are already loading
+    const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
+    const currentlyLoaded = this.ctx.storage.getState(
+      Fetcher.loadedRoutePathKey
+    )
+    if (currentlyLoaded === endpoint || currentLoading === endpoint) {
       return false
     }
 
     this.timer.reset()
     this.timer.start(`Start fetch ${endpoint}`)
     this.ctx.storage.resetCurrentResources()
-    this.ctx.storage.setState(Fetcher.loadingRouteKey, endpoint)
+    this.ctx.storage.setState(Fetcher.loadingEndpoint, endpoint)
     this.closeMercure()
 
     return true
@@ -224,12 +227,13 @@ export class Fetcher {
     routeResponse = null
   ) {
     this.ctx.storage.setState('layout', layoutResponse['@id'])
+
     await this.fetchComponentCollections([
       ...pageResponse.componentCollections,
       ...layoutResponse.componentCollections
     ])
-    this.ctx.storage.setState(Fetcher.loadedRouteKey, loadedRoutePath)
-    this.ctx.storage.setState(Fetcher.loadingRouteKey, false)
+    this.ctx.storage.setState(Fetcher.loadedRoutePathKey, loadedRoutePath)
+    this.ctx.storage.setState(Fetcher.loadingEndpoint, false)
 
     if (!routeResponse) {
       this.ctx.storage.setCurrentRoute(null)
