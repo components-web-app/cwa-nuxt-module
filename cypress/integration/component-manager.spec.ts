@@ -9,7 +9,9 @@ describe('Component Manager Functions', () => {
     cy.get('.cwa-add-button.is-pulsing').eq(1).click()
     cy.get('.cwa-component-manager-holder').should('be.visible')
     cy.get('select#component').select('HtmlContent')
-    cy.get('.html-component:eq(1)').as('newComponent').should('contain.text', 'No content')
+    cy.get('.html-component:eq(1)')
+      .as('newComponent')
+      .should('contain.text', 'No content')
     cy.get('.cwa-manager-highlight').should(($highlight) => {
       expect($highlight).to.have.length(1)
       expect($highlight).have.class('is-draft')
