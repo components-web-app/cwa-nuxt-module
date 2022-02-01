@@ -114,7 +114,7 @@ export default Vue.extend({
   },
   data() {
     return {
-      showLoader: false
+      showLoaderPageTemplateOps: false
     }
   },
   computed: {
@@ -126,7 +126,8 @@ export default Vue.extend({
         notificationCategories: this.notificationCategories,
         isSaved: this.isSaved,
         isNew: this.isNew,
-        showLoader: this.isLoading || this.showLoader
+        showLoader:
+          this.isLoading || this.showLoader || this.showLoaderPageTemplateOps
       }
     },
     inputProps() {
@@ -153,9 +154,9 @@ export default Vue.extend({
     }
   },
   async mounted() {
-    this.showLoader = true
+    this.showLoaderPageTemplateOps = true
     await this.loadPageTemplateOptions()
-    this.showLoader = false
+    this.showLoaderPageTemplateOps = false
   }
 })
 </script>

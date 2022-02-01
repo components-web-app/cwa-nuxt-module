@@ -6,8 +6,8 @@
         <cwa-refresh-bar />
       </div>
 
-      <div class="container loading-message">
-        <p v-if="$cwa.$state.error" class="error">
+      <div v-if="$cwa.$state.error" class="container loading-message">
+        <p class="error">
           {{ $cwa.$state.error }}
         </p>
       </div>

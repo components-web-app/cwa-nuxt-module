@@ -157,6 +157,10 @@ export default class Cwa {
     return this.$state[Fetcher.loadingEndpoint]
   }
 
+  get layoutUiComponent() {
+    return this.resources.Layout?.byId[this.layout].uiComponent
+  }
+
   withError(route, err) {
     this.$storage.setState(
       'error',

@@ -20,7 +20,7 @@ export default Vue.extend({
   },
   mixins: [CloneComponentMixin],
   layout({ $cwa }) {
-    return $cwa.resources.Layout?.byId[$cwa.layout].uiComponent
+    return $cwa.layoutUiComponent
   },
   head() {
     if (!this.currentPageMetadata) {

@@ -262,6 +262,9 @@ const cwaModule = <Module>async function () {
     options.layouts = Object.keys(layouts)
       .filter((key) => key !== 'error' && key.substr(0, 4) !== 'cwa-')
       .reduce((obj, key) => {
+        if (key === 'default' && layouts[key] === './layouts/default.vue') {
+          return obj
+        }
         obj[key] = layouts[key]
         return obj
       }, {})
