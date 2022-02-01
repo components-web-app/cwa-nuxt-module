@@ -280,6 +280,14 @@ const cwaModule = <Module>async function () {
 
   this.addLayout(
     {
+      src: resolve(__dirname, '../core/templates/layouts/none.vue'),
+      fileName: join('cwa', 'layouts', 'none.vue')
+    },
+    'None'
+  )
+
+  this.addLayout(
+    {
       src: resolve(__dirname, '../core/templates/layouts/cwa-default.vue'),
       fileName: join('cwa', 'layouts', 'cwa-default.vue')
     },
