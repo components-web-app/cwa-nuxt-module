@@ -48,7 +48,6 @@
     "lodash.set": "^4.3.2",
     "milligram": "^1.4.0",
     "moment": "^2.27.0",
-    "postcss-loader": "^3.0.0",
     "sass": "^1.37",
     "sass-loader": "10",
     "sass-resources-loader": "^2.0.3",
