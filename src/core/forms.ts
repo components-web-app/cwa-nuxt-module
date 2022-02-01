@@ -95,7 +95,7 @@ export default class Forms {
   }
 
   setChecked(id: FormViewId, value: any) {
-    this.setMetadata(id, { key: 'value', value })
+    this.setMetadata(id, { key: 'checked', value })
   }
 
   setDisplayErrors(id: FormViewId, value: boolean) {
