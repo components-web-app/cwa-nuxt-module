@@ -2,13 +2,13 @@
   <div>
     <template v-if="!addingEvent">
       <cm-button
-        v-if="selectedComponent && !reuseComponent"
-        @click="selectReuseComponent"
+        v-if="selectedComponent && !cloneComponent"
+        @click="selectCloneComponent"
       >
-        Reuse
+        Clone
       </cm-button>
-      <cm-button v-if="selectedComponent && reuseDestination" @click="reuse">
-        Reuse here
+      <cm-button v-if="selectedComponent && cloneDestination" @click="clone">
+        Clone here
       </cm-button>
     </template>
     <cm-button
@@ -29,12 +29,12 @@ import { ComponentCreatedEvent, NewComponentEvent } from '../../../../events'
 import ApiError from '../../../../../inc/api-error'
 import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
-import ReuseComponentMixin from '../../../../mixins/ReuseComponentMixin'
+import CloneComponentMixin from '../../../../mixins/CloneComponentMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
 
 export default Vue.extend({
   components: { CmButton },
-  mixins: [ApiErrorNotificationsMixin, ReuseComponentMixin],
+  mixins: [ApiErrorNotificationsMixin, CloneComponentMixin],
   props: {
     selectedPosition: {
       type: String,
@@ -84,9 +84,9 @@ export default Vue.extend({
     )
   },
   methods: {
-    selectReuseComponent() {
-      this.reuseComponent = this.selectedComponent
-      this.reuseDestination = this.selectedPosition
+    selectCloneComponent() {
+      this.cloneComponent = this.selectedComponent
+      this.cloneDestination = this.selectedPosition
     },
     newComponentListener(event: NewComponentEvent) {
       this.addingEvent = event

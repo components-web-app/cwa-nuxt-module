@@ -12,28 +12,28 @@
         <div v-show="isShowing" ref="cwaManager" class="cwa-components-manager">
           <div class="inner">
             <a href="#" class="done-link" @click.prevent="closeActionClick">{{
-              reuseComponent ? 'Cancel' : 'Done'
+              cloneComponent ? 'Cancel' : 'Done'
             }}</a>
             <div v-if="!selectedComponent">
               <div>No component selected</div>
             </div>
             <template v-else>
               <div class="top">
-                <div v-if="reuseComponent" class="reuse-info">
-                  <p>Select where you would like to reuse this component</p>
+                <div v-if="cloneComponent" class="clone-info">
+                  <p>Select where you would like to clone this component</p>
                   <cwa-admin-toggle
-                    id="cwa-cm-reuse-navigate"
-                    v-model="reuseNavigate"
+                    id="cwa-cm-clone-navigate"
+                    v-model="cloneNavigate"
                     label="Navigate"
                   />
                 </div>
                 <tabs
-                  v-show="!reuseComponent"
+                  v-show="!cloneComponent"
                   :tabs="componentTabs"
                   :iri="componentIri"
                   :selected-position="selectedPosition"
                   :collection="closestCollection"
-                  :show-tabs="showTabs && !reuseComponent"
+                  :show-tabs="showTabs && !cloneComponent"
                   @draggable="toggleDraggable"
                   @close="hide"
                 />
@@ -99,7 +99,7 @@ import {
   PublishableToggledEvent,
   HighlightComponentEvent
 } from '../../../events'
-import ReuseComponentMixin from '../../../mixins/ReuseComponentMixin'
+import CloneComponentMixin from '../../../mixins/CloneComponentMixin'
 import CwaAdminToggle from './input/cwa-admin-toggle.vue'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
@@ -135,7 +135,7 @@ export default Vue.extend({
     PublishableIcon,
     TransitionExpand
   },
-  mixins: [HeightMatcherMixin('cwaManager'), ReuseComponentMixin],
+  mixins: [HeightMatcherMixin('cwaManager'), CloneComponentMixin],
   data(): DataInterface {
     return {
       expanded: false,
@@ -298,8 +298,8 @@ export default Vue.extend({
     },
     selectPosition(iri) {
       this.selectedPosition = iri
-      if (this.reuseComponent) {
-        this.reuseDestination = iri
+      if (this.cloneComponent) {
+        this.cloneDestination = iri
       }
     },
     toggleDraggable(isDraggable) {
@@ -352,8 +352,8 @@ export default Vue.extend({
       } as HighlightComponentEvent)
     },
     closeActionClick() {
-      if (this.reuseComponent) {
-        this.cancelReuse()
+      if (this.cloneComponent) {
+        this.cancelClone()
         return
       }
       this.hide()
@@ -397,10 +397,10 @@ export default Vue.extend({
         consola.info('Not showing components manager. No menu data populated.')
         return
       }
-      if (!this.selectedPosition && this.reuseComponent) {
+      if (!this.selectedPosition && this.cloneComponent) {
         for (const component of this.pendingComponents) {
           if (component.data.name === 'Collection') {
-            this.reuseDestination = component.iri
+            this.cloneDestination = component.iri
             break
           }
         }
@@ -707,7 +707,7 @@ export default Vue.extend({
     bottom: 0
     left: 0
     width: 100%
-  .reuse-info
+  .clone-info
     padding: 2rem
     p
       color: $white

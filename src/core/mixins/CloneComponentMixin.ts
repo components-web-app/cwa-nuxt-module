@@ -3,34 +3,34 @@ import { COMPONENT_MANAGER_EVENTS } from '../events'
 
 export default Vue.extend({
   computed: {
-    reuseComponent: {
+    cloneComponent: {
       get(): string {
-        return this.$cwa.$state.reuse.component
+        return this.$cwa.$state.clone.component
       },
       set(value: string) {
-        this.$cwa.$storage.setReuseComponent(value)
+        this.$cwa.$storage.setCloneComponent(value)
       }
     },
-    reuseDestination: {
+    cloneDestination: {
       get(): string {
-        return this.$cwa.$state.reuse.destination
+        return this.$cwa.$state.clone.destination
       },
       set(value: string) {
-        this.$cwa.$storage.setReuseDestination(value)
+        this.$cwa.$storage.setCloneDestination(value)
       }
     },
-    reuseNavigate: {
+    cloneNavigate: {
       get(): boolean {
-        return this.$cwa.$state.reuse.navigate
+        return this.$cwa.$state.clone.navigate
       },
       set(value: boolean) {
-        this.$cwa.$storage.setReuseNavigate(value)
+        this.$cwa.$storage.setCloneNavigate(value)
       }
     }
   },
   methods: {
-    async reuse(useBefore = false) {
-      const destination = this.$cwa.getResource(this.reuseDestination)
+    async clone(useBefore = false) {
+      const destination = this.$cwa.getResource(this.cloneDestination)
       const destinationIsCollection =
         destination['@type'] === 'ComponentCollection'
       const collection = destinationIsCollection
@@ -46,26 +46,26 @@ export default Vue.extend({
         '/_/component_positions',
         {
           componentCollection: destinationIsCollection
-            ? this.reuseDestination
+            ? this.cloneDestination
             : destination.componentCollection,
           sortValue,
-          component: this.reuseComponent
+          component: this.cloneComponent
         },
         null,
         destinationIsCollection
-          ? [this.reuseDestination]
+          ? [this.cloneDestination]
           : [destination.componentCollection, ...collection.componentPositions]
       )
       this.$cwa.$eventBus.$emit(
         COMPONENT_MANAGER_EVENTS.selectComponent,
-        this.reuseComponent
+        this.cloneComponent
       )
-      this.cancelReuse()
+      this.cancelClone()
     },
-    cancelReuse() {
-      this.reuseComponent = null
-      this.reuseDestination = null
-      this.reuseNavigate = false
+    cancelClone() {
+      this.cloneComponent = null
+      this.cloneDestination = null
+      this.cloneNavigate = false
     }
   }
 })

@@ -5,7 +5,7 @@ import {
   ComponentManagerAddEvent,
   HighlightComponentEvent
 } from '../events'
-import ReuseComponentMixin from './ReuseComponentMixin'
+import CloneComponentMixin from './CloneComponentMixin'
 import AddElementsMixin from './AddElementsMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
 
@@ -40,7 +40,7 @@ export interface ComponentManagerComponent {
 }
 
 export const ComponentManagerMixin = Vue.extend({
-  mixins: [AddElementsMixin, ComponentManagerValueMixin, ReuseComponentMixin],
+  mixins: [AddElementsMixin, ComponentManagerValueMixin, CloneComponentMixin],
   data() {
     return {
       highlightIsPosition: false,
@@ -80,7 +80,7 @@ export const ComponentManagerMixin = Vue.extend({
       return this.resource?.['@id']
     },
     cmHighlightClass() {
-      if (this.reuseComponent) {
+      if (this.cloneComponent) {
         return 'cwa-manager-highlight is-primary'
       }
       return this.publishable && !this.published

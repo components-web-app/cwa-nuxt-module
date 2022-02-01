@@ -8,10 +8,10 @@
 </template>
 
 <script>
-import ReuseComponentMixin from '../../../mixins/ReuseComponentMixin'
+import CloneComponentMixin from '../../../mixins/CloneComponentMixin'
 
 export default {
-  mixins: [ReuseComponentMixin],
+  mixins: [CloneComponentMixin],
   props: {
     to: {
       type: String,
@@ -63,7 +63,7 @@ export default {
       return this.tag || 'a'
     },
     allowNavigation() {
-      const navigateReusable = this.reuseComponent && this.reuseNavigate
+      const navigateReusable = this.cloneComponent && this.cloneNavigate
       return this.alwaysClickable || navigateReusable || !this.$cwa.isEditMode
     }
   }

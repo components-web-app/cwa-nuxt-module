@@ -3,7 +3,7 @@ import consola from 'consola'
 import ClientOnly from 'vue-client-only'
 import { StoreCategories } from '../storage'
 // @ts-ignore
-import ReuseComponentMixin from '../mixins/ReuseComponentMixin'
+import CloneComponentMixin from '../mixins/CloneComponentMixin'
 import ResourceComponentLoader from './resource-component-loader'
 // @ts-ignore
 import CwaConfirm from './components/cwa-confirm'
@@ -18,7 +18,7 @@ export default Vue.extend({
     ClientOnly,
     ...components
   },
-  mixins: [ReuseComponentMixin],
+  mixins: [CloneComponentMixin],
   layout({ $cwa }) {
     return $cwa.resources.Layout?.byId[$cwa.layout].uiComponent
   },

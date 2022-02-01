@@ -274,21 +274,21 @@ export class Storage {
     return this.state.resources.mapToPublished.includes(iri)
   }
 
-  setReuseComponent(iri: string) {
+  setCloneComponent(iri: string) {
     this.ctx.store.commit(
       this.options.vuex.namespace + '/SET_REUSE_COMPONENT',
       iri
     )
   }
 
-  setReuseDestination(iri: string) {
+  setCloneDestination(iri: string) {
     this.ctx.store.commit(
       this.options.vuex.namespace + '/SET_REUSE_DESTINATION',
       iri
     )
   }
 
-  setReuseNavigate(navigate: boolean) {
+  setCloneNavigate(navigate: boolean) {
     this.ctx.store.commit(
       this.options.vuex.namespace + '/SET_REUSE_NAVIGATE',
       navigate

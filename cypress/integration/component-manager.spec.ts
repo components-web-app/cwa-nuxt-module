@@ -41,7 +41,7 @@ describe('Component Manager Functions', () => {
     cy.get('.html-component').last().as('newComponent')
     cy.get('@newComponent').should('exist')
     cy.get('button').contains('Add Draft').click()
-    cy.get('button').contains('Reuse').should('exist')
+    cy.get('button').contains('Clone').should('exist')
     cy.get('@newComponent')
       .get('.cwa-manager-highlight.is-draft')
       .should('exist')

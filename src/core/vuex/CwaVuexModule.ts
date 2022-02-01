@@ -29,7 +29,7 @@ export default function (storage) {
         draftMapping: {},
         mapToPublished: []
       },
-      reuse: {
+      clone: {
         component: null,
         navigate: false,
         destination: null
@@ -87,13 +87,13 @@ export default function (storage) {
         state.componentMetadata.data = metadata
       },
       SET_REUSE_COMPONENT(state, iri) {
-        state.reuse.component = iri
+        state.clone.component = iri
       },
       SET_REUSE_NAVIGATE(state, navigate) {
-        state.reuse.navigate = navigate
+        state.clone.navigate = navigate
       },
       SET_REUSE_DESTINATION(state, iri) {
-        state.reuse.destination = iri
+        state.clone.destination = iri
       },
       TOGGLE_PUBLISHABLE(
         state,
