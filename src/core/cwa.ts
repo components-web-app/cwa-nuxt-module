@@ -158,7 +158,7 @@ export default class Cwa {
   }
 
   get layoutUiComponent() {
-    return this.resources.Layout?.byId[this.layout].uiComponent
+    return this.resources.Layout?.byId[this.layout].uiComponent || 'None'
   }
 
   withError(route, err) {

@@ -226,7 +226,7 @@ export class Fetcher {
     loadedRoutePath,
     routeResponse = null
   ) {
-    this.ctx.storage.setState('layout', layoutResponse['@id'])
+    this.ctx.storage.setState('layout', layoutResponse?.['@id'] || null)
 
     await this.fetchComponentCollections([
       ...pageResponse.componentCollections,
@@ -279,7 +279,7 @@ export class Fetcher {
         ]
       })
 
-      const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+      const layoutResponse = await this.fetchLayout(pageResponse.layout)
 
       await this.fetchNestedResources(layoutResponse, pageResponse, pageDataIri)
     } catch (error) {
@@ -288,6 +288,15 @@ export class Fetcher {
     } finally {
       this.finallyFetch(pageDataIri)
     }
+  }
+
+  private fetchLayout(layoutIri) {
+    if (!layoutIri) {
+      return {
+        componentCollections: []
+      }
+    }
+    return this.fetchItem({ path: layoutIri })
   }
 
   public async fetchPage(pageIri) {
@@ -305,7 +314,7 @@ export class Fetcher {
       })
       this.ctx.storage.setState(Fetcher.loadedPageKey, pageIri)
 
-      const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+      const layoutResponse = await this.fetchLayout(pageResponse.layout)
 
       await this.fetchNestedResources(layoutResponse, pageResponse, pageIri)
     } catch (error) {
@@ -341,7 +350,7 @@ export class Fetcher {
         routeResponse.pageData || pageResponse['@id']
       )
 
-      const layoutResponse = await this.fetchItem({ path: pageResponse.layout })
+      const layoutResponse = await this.fetchLayout(pageResponse.layout)
 
       await this.fetchNestedResources(
         layoutResponse,
