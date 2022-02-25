@@ -6,11 +6,17 @@ describe('middleware', () => {
     const route = {
       matched: [{ components: [{ _Ctor: { 0: { options: { cwa: false } } } }] }]
     }
-    const $cwa = { fetchRoute: jest.fn() }
+    const $cwa = {
+      fetchRoute: jest.fn(),
+      $storage: {
+        setState: jest.fn()
+      }
+    }
 
     await routeLoaderMiddleware({ $cwa, route })
 
     expect($cwa.fetchRoute).not.toHaveBeenCalled()
+    expect($cwa.$storage.setState).toHaveBeenCalledWith('loadedRoute', null)
   })
 
   it('should call fetchRoute', async () => {
