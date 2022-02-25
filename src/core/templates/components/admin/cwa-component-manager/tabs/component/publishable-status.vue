@@ -1,5 +1,5 @@
 <template>
-  <div v-if="resource" class="publishable-status-tab">
+  <div class="publishable-status-tab">
     <div class="row">
       <div
         v-if="isPublished && !$cwa.findDraftIri(iri)"
@@ -94,7 +94,6 @@ export default Vue.extend({
           this.refreshEndpoints,
           'components-manager'
         )
-        // this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
         this.$emit('close')
       } catch (error) {
         if (!(error instanceof UpdateResourceError)) {

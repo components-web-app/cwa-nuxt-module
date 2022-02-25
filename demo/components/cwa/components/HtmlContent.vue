@@ -5,7 +5,6 @@
       resource.uiClassNames,
       { 'has-error': !!fieldNotifications.html.length }
     ]"
-    @dblclick="toggleEditor"
   >
     <component
       :is="htmlComponent"
@@ -110,7 +109,6 @@ export default Vue.extend({
 
 <style lang="sass">
 .html-component
-  padding: .5rem
   position: relative
   &.has-error::after
     content: ''

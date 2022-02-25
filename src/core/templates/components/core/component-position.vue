@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="wrapperClass">
     <div v-if="resource.pageDataProperty">
       <template v-if="$cwa.isAdmin && isDynamicPage">
         <template v-if="!dynamicComponentIri && !newComponentResource">
@@ -153,6 +153,19 @@ export default Vue.extend({
         return null
       }
       return this.$cwa.getResource(this.componentIri)
+    },
+    wrapperClass() {
+      const normalize = (camel) => {
+        return `component${camel}`.replace(
+          /[A-Z]/g,
+          (letter) => `-${letter.toLowerCase()}`
+        )
+      }
+      return normalize(
+        this.component
+          ? this.$cwa.$storage.getTypeFromIri(this.componentIri)
+          : 'empty'
+      )
     }
   },
   async mounted() {

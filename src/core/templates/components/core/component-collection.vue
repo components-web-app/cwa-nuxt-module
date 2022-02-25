@@ -24,7 +24,7 @@
     <draggable
       v-model="sortedComponentPositions"
       handle=".is-draggable"
-      class="position-container"
+      class="positions-container"
       :group="`collection-${resource['@id']}`"
       @change="draggableChanged"
     >
@@ -360,7 +360,7 @@ export default Vue.extend({
 .component-collection
   transition: opacity .3s
   opacity: 1
-  > .position-container > .is-draggable
+  > .positions-container > .is-draggable
     &:nth-child(2n)
       animation-name: wobble-1
       animation-iteration-count: infinite

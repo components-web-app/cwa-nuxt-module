@@ -20,6 +20,13 @@ input[type='submit']
   &:focus:not(:disabled)
     border-color: darken($color-primary, 5%)
     background: darken($color-primary, 5%)
+  &.button-outline
+    &.nuxt-link-exact-active
+      background: $color-primary
+    &:hover:not(:disabled),
+    &:focus:not(:disabled),
+    &.nuxt-link-exact-active
+      color: $white
   &.is-warning
     background: $cwa-warning
     color: $white
