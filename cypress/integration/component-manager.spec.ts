@@ -1,8 +1,8 @@
 describe('Component Manager Functions', () => {
   it('Toggle edit mode', () => {
     cy.login()
-    cy.get('label[for="edit-mode"]').click()
-    cy.get('.cwa-add-button.is-pulsing').should('have.length', 3)
+    cy.get('#cwa-cm-edit-button').click()
+    cy.get('.cwa-add-button.is-pulsing').should('have.length', 2)
   })
 
   it('Discarding adding a component', () => {
@@ -41,27 +41,26 @@ describe('Component Manager Functions', () => {
     cy.get('.html-component').last().as('newComponent')
     cy.get('@newComponent').should('exist')
     cy.get('button').contains('Add Draft').click()
-    cy.get('button').contains('Clone').should('exist')
+    cy.get('button').contains('Publish').should('exist')
     cy.get('@newComponent')
       .get('.cwa-manager-highlight.is-draft')
       .should('exist')
     cy.get('.cwa-manager-tab').contains('Publish').click()
-    cy.get('button').contains('Publish Now').click()
+    cy.get('button').contains('Publish').click()
 
     // will be an error do not hide the manager
 
     cy.get('.cwa-component-manager-holder').should('be.visible')
     cy.get('.cwa-error-notifications').click()
-    cy.get('.errors-list').should('not.exist')
+    cy.get('.errors-list').should('not.be.visible')
     cy.get('.cwa-manager-tab').contains('HTML Content').click()
     cy.get('.html-content-tab label').click()
     cy.get('.ql-editor[contenteditable]').type('My HTML Content')
     cy.get('.cwa-manager-tab').contains('Publish').click()
-    cy.get('button').contains('Publish Now').click()
+    cy.get('button').contains('Publish').click()
     cy.get('.errors-list').should('not.exist')
     cy.get('.cwa-error-notifications .cwa-warning-triangle').should('not.exist')
-    cy.get('.status-icon').should('have.class', 'is-success')
-
+    cy.get('.status-icon').should('not.exist')
     cy.get('.cwa-component-manager-holder').should('not.be.visible')
     cy.get('.cwa-manager-highlight').should('not.exist')
 
@@ -74,33 +73,39 @@ describe('Component Manager Functions', () => {
   it('Handle errors when adding a component', () => {
     cy.get('.cwa-add-button.is-pulsing').eq(0).click()
     cy.get('select#component').select('HtmlContent')
-    cy.get('button').contains('Add Draft').get('.alt-toggle-arrow').click()
-    cy.get('.alt-options-list a')
-      .contains('Add as published')
+    cy.get('button')
+      .contains('Add Draft')
+      .get('.cm-button-button.is-more')
+      .click()
+    cy.get('.alt-options-list button')
+      .contains('Add & Publish')
       .as('addAsPublsihedButton')
       .should('exist')
     cy.get('@addAsPublsihedButton').click()
 
     cy.get('.status-container').within(() => {
-      cy.get('.status-icon').should('have.class', 'is-error')
+      cy.get('.status-icon').should('not.exist')
       cy.get('.cwa-error-notifications .cwa-warning-triangle').should('exist')
       cy.get('.cwa-error-notifications .total')
         .should('be.visible')
         .should('contain.text', 1)
-      cy.get('.errors-list li:first-child').within(() => {
-        cy.get('.error-title').should('contain.text', 'html')
-        cy.get('.error-description').should(
-          'contain.text',
-          'This value should not be blank'
-        )
-      })
+      cy.get('.errors-list li:first-child')
+      cy.get('.errors-list li:first-child')
+        .should('be.visible')
+        .within(() => {
+          cy.get('.error-title').should('contain.text', 'html')
+          cy.get('.error-description').should(
+            'contain.text',
+            'This value should not be blank'
+          )
+        })
     })
 
     cy.get('.html-component').first().as('newComponent').should('exist')
     cy.get('@newComponent').should('have.class', 'has-error')
 
     cy.get('.cwa-manager-tab')
-      .eq(1)
+      .eq(0)
       .should('have.class', 'has-error')
       .should('contain.text', 'HTML Content')
   })

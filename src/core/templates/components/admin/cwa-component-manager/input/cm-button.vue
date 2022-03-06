@@ -1,25 +1,35 @@
 <template>
   <div class="cm-button">
-    <button
-      class="cm-button-button"
-      :disabled="disabled"
-      @click="$emit('click', null)"
-    >
-      <span><slot /></span>
-      <a
-        v-if="altOptionsAvailable"
-        class="alt-toggle-arrow"
-        @click.stop="showAltOptions"
+    <div ref="buttonsRow" class="row row-center buttons-row row-no-padding">
+      <button
+        ref="button"
+        type="button"
+        class="cm-button-button"
+        :disabled="disabled"
+        @click="handleButtonClick"
       >
-        <img
-          src="../../../../../assets/images/arrow-left.svg"
-          alt="toggle arrow"
-        />
-      </a>
-    </button>
-    <ul v-if="showAltMenu" class="alt-options-list">
+        <span><slot /></span>
+      </button>
+      <button
+        v-if="altOptionsAvailable"
+        ref="altButton"
+        type="button"
+        class="cm-button-button is-more"
+        :disabled="disabled"
+        @click="toggleAltOptions"
+      >
+        <img src="../../../../../assets/images/more.svg" alt="more options" />
+      </button>
+    </div>
+    <ul v-show="showAltMenu" ref="altOptionsList" class="alt-options-list">
       <li v-for="(altOp, index) of altOptions" :key="`${index}-${altOp.key}`">
-        <a @click.stop="optionClick(altOp)">{{ altOp.label }}</a>
+        <button
+          type="button"
+          class="cm-button-button"
+          @click="optionClick(altOp)"
+        >
+          {{ altOp.label }}
+        </button>
       </li>
     </ul>
   </div>
@@ -28,6 +38,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import type { PropType } from 'vue'
+import { createPopper } from '@popperjs/core'
 
 export interface altOption {
   label: string
@@ -48,7 +59,8 @@ export default Vue.extend({
   },
   data() {
     return {
-      showAltMenu: false
+      showAltMenu: false,
+      popperInstance: null
     }
   },
   computed: {
@@ -56,12 +68,64 @@ export default Vue.extend({
       return this.altOptions && this.altOptions.length
     }
   },
+  watch: {
+    showAltMenu: {
+      handler(newValue) {
+        if (!this.popperInstance) {
+          return
+        }
+
+        if (newValue) {
+          this.popperInstance.setOptions((options) => ({
+            ...options,
+            modifiers: [
+              ...options.modifiers,
+              { name: 'eventListeners', enabled: true }
+            ]
+          }))
+          this.popperInstance.update()
+        } else {
+          this.popperInstance.setOptions((options) => ({
+            ...options,
+            modifiers: [
+              ...options.modifiers,
+              { name: 'eventListeners', enabled: false }
+            ]
+          }))
+        }
+      },
+      immediate: true
+    }
+  },
+  mounted() {
+    this.popperInstance = createPopper(
+      this.$refs.buttonsRow,
+      this.$refs.altOptionsList,
+      {
+        placement: 'bottom',
+        modifiers: [
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 5]
+            }
+          },
+          {
+            name: 'preventOverflow',
+            options: {
+              padding: 8
+            }
+          }
+        ]
+      }
+    )
+  },
   methods: {
     optionClick(altOp) {
       this.$emit('click', altOp.key)
       this.hideAltOptions()
     },
-    showAltOptions() {
+    toggleAltOptions() {
       if (this.showAltMenu) {
         this.hideAltOptions()
         return
@@ -76,7 +140,12 @@ export default Vue.extend({
         }
         this.showAltMenu = false
         document.body.removeEventListener('click', this.hideAltOptions, true)
+        this.$refs.altButton.blur()
       }, 1)
+    },
+    handleButtonClick() {
+      this.$refs.button.blur()
+      this.$emit('click', null)
     }
   }
 })
@@ -85,52 +154,26 @@ export default Vue.extend({
 <style lang="sass">
 .cm-button
   position: relative
+  .buttons-row
+    box-shadow: $control-shadow
   .cm-button-button
-    +cwa-control
-    border: 1px solid $cwa-color-text-light
-    font-weight: $font-weight-normal
-    line-height: normal
+    +cwa-button
     margin-bottom: 0
     z-index: 1
-    &:hover:not(:disabled)
-      color: $white
-    &:disabled
-      pointer-events: none
-  .alt-toggle-arrow
-    position: relative
-    width: 3em
-    height: calc(100% + 1rem)
-    padding-right: .5rem
-    margin: -.5rem -3rem -.5rem 3rem
-    &::before
-      content: ''
-      position: absolute
-      top: .5rem
-      left: 0px
-      bottom: .5rem
-      border-left: 1px solid $cwa-color-text-light
-    img
-      transform: translate(-50%, -50%) rotate(90deg)
-      position: absolute
-      top: 50%
-      left: 50%
-      max-width: 80%
-      height: auto
+    box-shadow: none
+    &.is-more
+      border-left: 1px solid $control-background-hover-color
+      padding-left: 1.5rem
+      padding-right: 1.5rem
   .alt-options-list
-    position: absolute
-    bottom: 100%
-    right: 0
-    border: 1px solid $cwa-color-text-light
-    background-color: $control-background-color
-    padding: .75rem
+    width: 100%
     margin: 0
-    transform: translateY(-2px)
     list-style: none
     z-index: 2
     li
       margin-bottom: .5rem
       &:last-child
         margin-bottom: 0
-      a
-        cursor: pointer
+      button
+        width: 100%
 </style>

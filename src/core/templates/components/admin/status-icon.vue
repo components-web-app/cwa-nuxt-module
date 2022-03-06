@@ -1,12 +1,24 @@
 <template>
-  <div :class="['status-icon', className]" />
+  <div class="row row-center status-icon-container row-no-padding">
+    <span v-if="autoStatus === 0" class="column is-narrow"> Not saved... </span>
+    <div class="column is-narrow">
+      <error-notifications
+        :listen-categories="categoriesAsArray"
+        :show-above="showAbove"
+        @showing="handleErrorsShowing"
+      />
+      <div v-if="!errorsShowing" :class="['status-icon', className]" />
+    </div>
+  </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
 import { STATUS_EVENTS, StatusEvent, ResetStatusEvent } from '../../../events'
+import ErrorNotifications from './error-notifications.vue'
 
 export default Vue.extend({
+  components: { ErrorNotifications },
   props: {
     status: {
       type: Number,
@@ -14,14 +26,19 @@ export default Vue.extend({
       default: 99
     },
     category: {
-      type: String,
+      type: [String, Array],
       required: false,
       default: null
+    },
+    showAbove: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
     return {
-      fieldStatuses: {}
+      fieldStatuses: {},
+      errorsShowing: false
     }
   },
   computed: {
@@ -50,6 +67,12 @@ export default Vue.extend({
     },
     autoStatus() {
       return Math.min(this.objectFieldStatus, this.status)
+    },
+    categoriesAsArray() {
+      if (Array.isArray(this.category)) {
+        return this.category
+      }
+      return [this.category]
     }
   },
   mounted() {
@@ -64,11 +87,15 @@ export default Vue.extend({
     this.$cwa.$eventBus.$off(STATUS_EVENTS.reset, this.resetStatus)
   },
   methods: {
+    handleErrorsShowing(newValue) {
+      this.errorsShowing = newValue
+      this.$emit('errors-showing', newValue)
+    },
     handleStatusNotification(event: StatusEvent) {
       if (!this.category) {
         return
       }
-      if (this.category === event.category) {
+      if (this.categoriesAsArray.includes(event.category)) {
         this.$set(this.fieldStatuses, event.field, event.status)
       }
     },
@@ -82,6 +109,10 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
+.status-icon-container
+  font-size: 1.4rem
+  > span.column.is-narrow
+    padding-right: 1rem
 .status-icon
   width: 20px
   height: 20px

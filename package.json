@@ -67,6 +67,7 @@
     "@nuxtjs/eslint-config-typescript": "^8.0.0",
     "@nuxtjs/pwa": "^3.3.5",
     "@nuxtjs/style-resources": "^1.0.0",
+    "@popperjs/core": "^2.11.2",
     "@types/jest": "^27.4.0",
     "@types/node": "^17.0.5",
     "@types/node-sass": "^4.11.1",

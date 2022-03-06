@@ -24,8 +24,8 @@
             :to="{ name: '_cwa_page_iri', params: { iri: page['@id'] } }"
             class="builder-link"
           >
-            <img src="../../../assets/images/icon-builder.svg" />
-            <span>Builder</span>
+            <img src="../../../assets/images/view.svg" />
+            <span>View</span>
           </nuxt-link>
         </div>
       </li>

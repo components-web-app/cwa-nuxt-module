@@ -1,21 +1,7 @@
 <template>
-  <div>
-    <template v-if="!addingEvent">
-      <cm-button
-        v-if="selectedComponent && !cloneComponent"
-        @click="selectCloneComponent"
-      >
-        Clone
-      </cm-button>
-      <cm-button v-if="selectedComponent && cloneDestination" @click="clone">
-        Clone here
-      </cm-button>
-    </template>
-    <cm-button
-      v-if="addingEvent"
-      :alt-options="addNewOptions"
-      @click="addComponent"
-      >{{ addNewButtonLabel }}
+  <div v-if="state && buttonOptions">
+    <cm-button :alt-options="altOptions" @click="handleClick">
+      {{ buttonOptions.default.label }}
     </cm-button>
   </div>
 </template>
@@ -31,10 +17,16 @@ import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
 import CloneComponentMixin from '../../../../mixins/CloneComponentMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
+import UpdateResourceError from '@cwa/nuxt-module/inc/update-resource-error'
+import UpdateResourceMixin from '@cwa/nuxt-module/core/mixins/UpdateResourceMixin'
 
 export default Vue.extend({
   components: { CmButton },
-  mixins: [ApiErrorNotificationsMixin, CloneComponentMixin],
+  mixins: [
+    ApiErrorNotificationsMixin,
+    CloneComponentMixin,
+    UpdateResourceMixin
+  ],
   props: {
     selectedPosition: {
       type: String,
@@ -57,16 +49,61 @@ export default Vue.extend({
     }
   },
   computed: {
-    addNewOptions(): altOption[] {
-      return this.addingEvent?.isPublishable
-        ? [
-            { label: 'Add as published', key: 'published' },
-            { label: 'Add as draft', key: 'draft' }
-          ]
-        : null
+    state() {
+      if (this.addingEvent) {
+        return 1
+      }
+      if (this.selectedComponent && !this.cloneComponent) {
+        return 2
+      }
+      if (this.selectedComponent && this.cloneDestination) {
+        return 3
+      }
+      return null
     },
-    addNewButtonLabel() {
-      return this.addingEvent?.isPublishable ? 'Add Draft' : 'Add New'
+    buttonOptions() {
+      if (this.state === 1) {
+        if (!this.addingEvent?.isPublishable) {
+          return {
+            default: { label: 'Add New', fn: this.addComponent }
+          }
+        }
+        return {
+          default: { label: 'Add Draft', fn: this.addComponent, args: [false] },
+          addNew: {
+            label: 'Add & Publish',
+            fn: this.addComponent,
+            args: [true]
+          }
+        }
+      }
+      if (this.state === 2) {
+        if (this.isDraft) {
+          return {
+            default: { label: 'Publish', fn: this.publishNow },
+            clone: { label: 'Clone', fn: this.selectCloneComponent }
+          }
+        }
+        return {
+          default: { label: 'Clone', fn: this.selectCloneComponent }
+        }
+      }
+      return null
+    },
+    altOptions(): altOption[] {
+      return Object.keys(this.buttonOptions)
+        .filter((key) => key !== 'default')
+        .map((key) => ({ key, label: this.buttonOptions[key].label }))
+    },
+    isDraft() {
+      const resource = this.$cwa.getResource(this.selectedComponent)
+      return resource?._metadata?.published === false || false
+    },
+    refreshEndpoints() {
+      const publishedResource = this.$cwa.getPublishedResource(
+        this.$cwa.getResource(this.selectedComponent)
+      )
+      return publishedResource?.componentPositions || null
     }
   },
   beforeMount() {
@@ -84,6 +121,31 @@ export default Vue.extend({
     )
   },
   methods: {
+    handleClick(clickKey) {
+      clickKey = clickKey || 'default'
+      this.buttonOptions[clickKey].fn.apply(
+        this,
+        this.buttonOptions[clickKey].args || []
+      )
+    },
+    async publishNow() {
+      try {
+        await this.updateResource(
+          this.selectedComponent,
+          'publishedAt',
+          moment.utc().toISOString(),
+          this.$cwa.$storage.getCategoryFromIri(this.selectedComponent),
+          this.refreshEndpoints,
+          'components-manager'
+        )
+        this.$emit('close')
+      } catch (error) {
+        if (!(error instanceof UpdateResourceError)) {
+          throw error
+        }
+        consola.error(error)
+      }
+    },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
       this.cloneDestination = this.selectedPosition
@@ -94,7 +156,7 @@ export default Vue.extend({
     newComponentClearedListener() {
       this.addingEvent = null
     },
-    async addComponent(key: string) {
+    async addComponent(publish: boolean) {
       const notificationCategory = 'components-manager'
       const componentPosition: string = this.addingEvent.position
       const componentCollection: string = this.addingEvent.collection
@@ -117,9 +179,8 @@ export default Vue.extend({
         })
       }
 
-      if (key) {
-        additionalData.publishedAt =
-          key === 'published' ? moment.utc().toISOString() : null
+      if (this.addingEvent?.isPublishable) {
+        additionalData.publishedAt = publish ? moment.utc().toISOString() : null
       }
       const resourceObject = {
         ...this.$cwa.getResource(this.addingEvent.iri),

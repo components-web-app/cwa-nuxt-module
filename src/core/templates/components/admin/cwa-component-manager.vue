@@ -11,60 +11,28 @@
       >
         <div v-show="isShowing" ref="cwaManager" class="cwa-components-manager">
           <div class="inner">
-            <a href="#" class="done-link" @click.prevent="closeActionClick">{{
-              cloneComponent ? 'Cancel' : 'Done'
-            }}</a>
             <div v-if="!selectedComponent">
               <div>No component selected</div>
             </div>
             <template v-else>
-              <div class="top">
-                <div v-if="cloneComponent" class="clone-info">
-                  <p>Select where you would like to clone this component</p>
-                  <cwa-admin-toggle
-                    id="cwa-cm-clone-navigate"
-                    v-model="cloneNavigate"
-                    label="Navigate"
-                  />
-                </div>
-                <tabs
-                  v-show="!cloneComponent"
-                  :tabs="componentTabs"
-                  :iri="componentIri"
-                  :selected-position="selectedPosition"
-                  :collection="closestCollection"
-                  :show-tabs="showTabs && !cloneComponent"
-                  @draggable="toggleDraggable"
-                  @close="hide"
-                />
-              </div>
-              <div class="bottom row">
-                <div v-if="showStatusTab" class="column is-narrow">
-                  <publishable-icon :is-draft="isDraft" />
-                </div>
-                <div class="column is-narrow status-container">
-                  <status-icon
-                    :status="isNew ? 0 : 1"
-                    category="components-manager"
-                  />
-                  <error-notifications
-                    :listen-categories="['components-manager']"
-                    :show-above="true"
-                    @showing="updateNotificationsShowing"
-                  />
-                </div>
+              <div class="top row">
                 <div class="column">
-                  <path-breadcrumbs
-                    :components="components"
-                    @click="handleBreadcrumbClick"
-                  />
-                </div>
-                <div class="column is-narrow">
-                  <cwa-action-buttons
+                  <div v-if="cloneComponent" class="clone-info">
+                    <p>Select where you would like to clone this component</p>
+                    <cwa-admin-toggle
+                      id="cwa-cm-clone-navigate"
+                      v-model="cloneNavigate"
+                      label="Navigate"
+                    />
+                  </div>
+                  <tabs
+                    v-show="!cloneComponent"
+                    :tabs="componentTabs"
+                    :iri="componentIri"
                     :selected-position="selectedPosition"
-                    :selected-component="
-                      selectedComponent ? selectedComponent.iri : null
-                    "
+                    :collection="closestCollection"
+                    :show-tabs="showTabs && !cloneComponent"
+                    @draggable="toggleDraggable"
                     @close="hide"
                   />
                 </div>
@@ -101,19 +69,13 @@ import {
 } from '../../../events'
 import CloneComponentMixin from '../../../mixins/CloneComponentMixin'
 import CwaAdminToggle from './input/cwa-admin-toggle.vue'
-import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
-import StatusIcon from './status-icon.vue'
-import ErrorNotifications from './error-notifications.vue'
-import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
-import CwaActionButtons from './cwa-component-manager/cwa-action-buttons.vue'
 
 interface DataInterface {
   expanded: boolean
   components: Array<ComponentManagerAddEvent>
   pendingComponents: Array<ComponentManagerAddEvent>
   savedStatus: Number
-  warningNotificationsShowing: boolean
   showHighlightOverlay: boolean
   showTabs: boolean
   selectedPosition?: string
@@ -127,12 +89,7 @@ interface DataInterface {
 export default Vue.extend({
   components: {
     CwaAdminToggle,
-    CwaActionButtons,
-    PathBreadcrumbs,
-    ErrorNotifications,
-    StatusIcon,
     Tabs,
-    PublishableIcon,
     TransitionExpand
   },
   mixins: [HeightMatcherMixin('cwaManager'), CloneComponentMixin],
@@ -142,7 +99,6 @@ export default Vue.extend({
       components: [],
       pendingComponents: [],
       savedStatus: 99, // 0 orange, 1 green, -1 danger
-      warningNotificationsShowing: false,
       showHighlightOverlay: false,
       showTabs: false,
       selectedPosition: null,
@@ -151,27 +107,11 @@ export default Vue.extend({
     }
   },
   computed: {
-    isDraft() {
-      if (!this.showStatusTab) {
-        return false
-      }
-      if (!this.componentIri) {
-        return false
-      }
-      const storageResource = this.$cwa.getResource(this.componentIri)
-      return !!storageResource && !storageResource._metadata.published
-    },
-    isNew() {
-      return this.componentIri && this.componentIri.endsWith('/new')
-    },
     showingCriteria() {
       return this.$cwa.isEditMode
     },
     isShowing() {
       return this.showingCriteria && this.expanded && this.components.length
-    },
-    showStatusTab() {
-      return this.componentData?.context?.statusTab?.enabled
     },
     selectedComponent(): ComponentManagerAddEvent | null {
       return this.components?.[0] || null
@@ -247,6 +187,14 @@ export default Vue.extend({
         )
       },
       deep: true
+    },
+    components: {
+      handler(newComponents) {
+        this.$cwa.$eventBus.$emit(EVENTS.componentsInitialised, newComponents)
+      }
+    },
+    componentIri(newComponentIri) {
+      this.$cwa.$eventBus.$emit(EVENTS.selectedComponentIri, newComponentIri)
     }
   },
   mounted() {
@@ -351,14 +299,11 @@ export default Vue.extend({
         selectedPosition
       } as HighlightComponentEvent)
     },
-    closeActionClick() {
+    hide() {
       if (this.cloneComponent) {
         this.cancelClone()
         return
       }
-      this.hide()
-    },
-    hide() {
       this.$cwa.$eventBus.$emit(EVENTS.hide)
       this.expanded = false
       this.persistentStates = {}
@@ -412,9 +357,11 @@ export default Vue.extend({
           NOTIFICATION_EVENTS.clear,
           'components-manager'
         )
+
         this.$cwa.$eventBus.$emit(STATUS_EVENTS.reset, {
           category: 'components-manager'
         } as ResetStatusEvent)
+
         this.$nextTick(() => {
           this.$cwa.$eventBus.$emit(EVENTS.showing, this.showingCriteria)
           if (!this.showingCriteria) {
@@ -427,13 +374,6 @@ export default Vue.extend({
     },
     addComponent({ data, iri }: ComponentManagerAddEvent) {
       this.pendingComponents.push({ data, iri })
-    },
-    updateNotificationsShowing(newValue) {
-      this.warningNotificationsShowing = newValue
-    },
-    handleBreadcrumbClick({ componentIndex }) {
-      this.components = this.components.slice(componentIndex)
-      this.selectPosition(this.components[0]?.componentPositions?.[0] || null)
     },
     saveStateListener(event: SaveStateEvent) {
       if (!this.showingCriteria) {
@@ -712,7 +652,6 @@ export default Vue.extend({
     p
       color: $white
       font-size: 1.8rem
-
   a
     color: $cwa-color-text-light
     &:hover,
@@ -720,23 +659,9 @@ export default Vue.extend({
       color: $white
   .button
     +cwa-control
-    border-color: $cwa-color-text-light
     margin-bottom: 0
     &:hover
       color: $white
-      border-color: $white
-  > .inner
-    > .bottom
-      padding: 1.5rem
-      background: $cwa-background-dark
-      display: flex
-      align-items: center
-  .done-link
-    position: absolute
-    top: 0
-    right: 0
+  .top.row
     padding: 1rem
-    color: inherit
-  .status-container
-    display: flex
 </style>

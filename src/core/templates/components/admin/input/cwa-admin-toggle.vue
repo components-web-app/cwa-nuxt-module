@@ -73,10 +73,11 @@ export default {
         left: 0
         right: 0
         bottom: 0
-        border: 1px solid $cwa-color-text-light
+        border: $control-border
         -webkit-transition: .4s
         transition: .4s
         border-radius: 34px
+        background: $control-background-color
 
         &:before
           position: absolute
@@ -91,7 +92,6 @@ export default {
           border-radius: 50%
 
       &:checked + .slider
-        border-color: $cwa-warning
         &:before
           transform: translateX(calc(2.5em / 2 - 2px))
           background-color: $cwa-warning

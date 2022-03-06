@@ -1,5 +1,5 @@
 <template>
-  <div :class="wrapperClass">
+  <div :class="['component-position', wrapperClass, { 'is-draft': isDraft }]">
     <div v-if="resource.pageDataProperty">
       <template v-if="$cwa.isAdmin && isDynamicPage">
         <template v-if="!dynamicComponentIri && !newComponentResource">
@@ -81,6 +81,10 @@ export default Vue.extend({
     }
   },
   computed: {
+    isDraft() {
+      const storageResource = this.$cwa.getResource(this.componentIri)
+      return storageResource?._metadata?.published === false || false
+    },
     dynamicComponentIri() {
       return this.pageResource[this.resource.pageDataProperty]
     },
@@ -269,3 +273,27 @@ export default Vue.extend({
   }
 })
 </script>
+
+<style lang="sass">
+.component-position
+  position: relative
+  &.is-draft
+    &::before
+      content: ''
+      position: absolute
+      top: 0
+      left: 0
+      width: 100%
+      height: 100%
+      background: rgba($cwa-warning, .1)
+    &::after
+      content: ''
+      position: absolute
+      bottom: 100%
+      left: 100%
+      width: 16px
+      height: 16px
+      border-radius: 50%
+      background: $cwa-warning
+      transform: translate(-8px, 8px)
+</style>

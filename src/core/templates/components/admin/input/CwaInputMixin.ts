@@ -14,6 +14,11 @@ export default Vue.extend({
       type: String,
       required: true
     },
+    errorLabel: {
+      type: String,
+      required: false,
+      default: null
+    },
     label: {
       type: String,
       required: false,
@@ -56,7 +61,9 @@ export default Vue.extend({
   watch: {
     value: {
       handler(newValue) {
-        this.currentValue = newValue
+        if (newValue !== this.currentValue) {
+          this.currentValue = newValue
+        }
       },
       immediate: true
     },
@@ -77,8 +84,9 @@ export default Vue.extend({
       }
       if (newNotifications && newNotifications.length) {
         newNotifications.forEach((notification: NotificationEvent) => {
-          notification.title = this.label
-          this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
+          notification.title = this.errorLabel || this.label
+          // the notifications is being populated from tabs.vue which is an add notification listener
+          // this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
         })
       }
     }

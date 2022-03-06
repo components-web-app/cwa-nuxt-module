@@ -1,42 +1,38 @@
 <template>
-  <li :class="['path-breadcrumb', { 'is-selected': isSelected }]">
-    <component
-      :is="isSelected ? 'div' : 'a'"
-      :href="isSelected ? null : '#'"
-      class="inner"
-      @click.prevent="!isSelected && $emit('click')"
-    >
-      <span class="label">
-        {{ name || 'Unnamed' }}
-      </span>
-      <ul class="counters">
-        <li v-if="locations.layouts" class="counter is-layouts">
-          <span class="icon"
-            ><img
-              src="../../../../assets/images/icon-layout.svg"
-              alt="Layouts icon"
-          /></span>
-          <span class="count">{{ locations.layouts }}</span>
-        </li>
-        <li v-if="locations.pages" class="counter is-pages">
-          <span class="icon"
-            ><img
-              src="../../../../assets/images/icon-pages.svg"
-              alt="Pages icon"
-          /></span>
-          <span class="count">{{ locations.pages }}</span>
-        </li>
-        <li v-if="locations.components" class="counter is-components">
-          <span class="icon"
-            ><img
-              src="../../../../assets/images/icon-components.svg"
-              alt="Components icon"
-          /></span>
-          <span class="count">{{ locations.components }}</span>
-        </li>
-      </ul>
-    </component>
-  </li>
+  <div class="resource-location">
+    <span class="label">
+      {{ name || 'Unnamed' }}
+    </span>
+    <ul class="counters">
+      <li v-if="locations.layouts" class="counter is-layouts">
+        <span class="icon"
+          ><img
+            src="../../../../assets/images/icon-layout.svg"
+            alt="Layouts icon"
+            :title="`Used in ${locations.layouts} layouts`"
+        /></span>
+        <span class="count">{{ locations.layouts }}</span>
+      </li>
+      <li v-if="locations.pages" class="counter is-pages">
+        <span class="icon"
+          ><img
+            src="../../../../assets/images/icon-pages.svg"
+            alt="Pages icon"
+            :title="`Used in ${locations.pages} pages`"
+        /></span>
+        <span class="count">{{ locations.pages }}</span>
+      </li>
+      <li v-if="locations.components" class="counter is-components">
+        <span class="icon"
+          ><img
+            src="../../../../assets/images/icon-components.svg"
+            :title="`Used in ${locations.components} components`"
+            alt="Components icon"
+        /></span>
+        <span class="count">{{ locations.components }}</span>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <script>
@@ -50,11 +46,6 @@ export default {
       type: String,
       required: false,
       default: null
-    },
-    isSelected: {
-      type: Boolean,
-      required: false,
-      default: false
     }
   },
   data() {
@@ -146,29 +137,10 @@ export default {
 </script>
 
 <style lang="sass">
-.path-breadcrumb
+.resource-location
   position: relative
-  &:not(:last-child)::after
-    content: '/'
-    position: absolute
-    top: 50%
-    transform: translateY(-50%)
-    right: -1rem
-    width: 2rem
-    text-align: center
-  &.is-selected
-    .label
-      font-weight: $font-weight-bold
-  &.is-selected,
-  &:hover
-    .label
-      color: $white
-    .icon img
-      opacity: 1
-  > .inner
-    position: relative
-    display: flex
-    align-items: center
+  display: flex
+  align-items: center
   .label
     transition: color .3s
   .icon
@@ -177,8 +149,6 @@ export default {
     img
       height: 100%
       display: block
-      opacity: .6
-      transition: opacity .3s
   .counters
     display: inline-flex
     list-style: none

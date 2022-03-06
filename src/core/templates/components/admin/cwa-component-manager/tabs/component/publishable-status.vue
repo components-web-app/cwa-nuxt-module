@@ -1,11 +1,15 @@
 <template>
   <div class="publishable-status-tab">
-    <div class="row">
+    <div class="row tab-row">
+      <div v-if="isPublished && $cwa.findDraftIri(iri) === null">
+        Published component. No draft available.
+      </div>
       <div
-        v-if="isPublished && !$cwa.findDraftIri(iri)"
+        v-else-if="isPublished && $cwa.findDraftIri(iri)"
         class="column is-narrow"
       >
         <div class="column is-narrow">
+          {{ iri }} {{ $cwa.findDraftIri(iri) }}
           <cwa-admin-toggle
             :id="`component-edit-version-${iri}`"
             v-model="forceNoDraft"

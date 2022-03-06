@@ -1,9 +1,12 @@
 $control-height: 3.4rem !default
 $control-font-size: 1.4rem !default
 $control-color: $cwa-color-text-light !default
-$control-background-color: rgba(black, .3) !default
-$control-border: 1px solid rgba(black, .3) !default
+$control-background-color: #363636 !default
+$control-background-hover-color: lighten($control-background-color, 5%) !default
+$control-border: 1px solid $control-background-color !default
+$control-shadow: 0 0 8px 0 rgba(black, .15) !default
 =cwa-control
+  box-shadow: $control-shadow
   border: $control-border
   background-color: $control-background-color
   background-clip: padding-box
@@ -11,6 +14,25 @@ $control-border: 1px solid rgba(black, .3) !default
   height: $control-height
   font-size: $control-font-size
 
+=cwa-button
+  +cwa-control
+  font-weight: $font-weight-normal
+  line-height: normal
+  &:hover,
+  &:focus
+    border: $control-border
+    border-color: $control-background-hover-color
+    &:not(:disabled)
+      background: $control-background-hover-color
+      color: $white
+    &:disabled
+      pointer-events: none
+  &:not(:first-child)
+    border-top-left-radius: 0
+    border-bottom-left-radius: 0
+  &:not(:last-child)
+    border-top-right-radius: 0
+    border-bottom-right-radius: 0
 =cwa-input-label
   color: $cwa-color-text-light
   font-weight: $font-weight-light

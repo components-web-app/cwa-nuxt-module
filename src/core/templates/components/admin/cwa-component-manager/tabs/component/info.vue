@@ -1,6 +1,6 @@
 <template>
   <div class="collection-info-tab">
-    <div class="row">
+    <div class="row tab-row">
       <div class="column is-narrow">
         <div class="row">
           <div class="column is-narrow">

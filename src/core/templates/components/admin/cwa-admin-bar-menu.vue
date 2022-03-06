@@ -36,7 +36,7 @@
                     <span>Pages</span>
                   </cwa-nuxt-link>
                 </li>
-                <li>
+                <!--<li>
                   <cwa-nuxt-link>
                     <span class="icon">
                       <img
@@ -46,7 +46,7 @@
                     </span>
                     <span>Components</span>
                   </cwa-nuxt-link>
-                </li>
+                </li>-->
                 <li>
                   <cwa-nuxt-link to="/_cwa/users">
                     <span class="icon">
@@ -211,6 +211,7 @@ export default {
   z-index: 100
   > .hamburger-holder
     z-index: 2
+    line-height: 0
   > .menu
     position: absolute
     top: -1.5rem

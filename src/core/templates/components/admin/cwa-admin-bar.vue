@@ -5,54 +5,50 @@
         class="cwa-admin-bar is-placeholder"
         :style="{ height: `${elementHeight}` }"
       />
-      <transition-expand>
-        <div v-show="isShowing" ref="cwaAdminBar" class="cwa-admin-bar">
-          <div class="inner">
-            <div class="left">
-              <template v-if="currentView === 'page'">
-                <div class="icons">
-                  <a href="#" @click.prevent="showPageEditModal">
-                    <img
-                      src="../../../assets/images/icon-info.svg"
-                      alt="Info Icon"
-                    />
-                  </a>
-                </div>
-                <div class="controls">
-                  <cwa-admin-toggle
-                    id="edit-mode"
-                    v-model="editMode"
-                    label="Edit mode"
-                  />
-                </div>
-              </template>
-            </div>
-            <div class="center">
+      <div ref="cwaAdminBar" class="cwa-admin-bar">
+        <div class="inner">
+          <div class="left">
+            <template v-if="currentView === 'page'">
               <div class="icons">
-                <cwa-nuxt-link
-                  :to="builderLink"
-                  exact
-                  :class="builderClass"
-                  :always-clickable="true"
+                <a href="#" @click.prevent="showPageEditModal">
+                  <img
+                    src="../../../assets/images/cog.svg"
+                    alt="Page Settings Cog Icon"
+                  />
+                </a>
+              </div>
+              <div class="controls">
+                <cm-button
+                  id="cwa-cm-edit-button"
+                  @click="editMode = !editMode"
+                  >{{ editMode ? 'Done' : 'Edit Page' }}</cm-button
                 >
-                  <img
-                    src="../../../assets/images/icon-builder.svg"
-                    alt="Builder Icon"
-                  />
-                </cwa-nuxt-link>
-                <cwa-nuxt-link to="/_cwa/layouts" :always-clickable="true">
-                  <img
-                    src="../../../assets/images/icon-layout.svg"
-                    alt="Layouts Icon"
-                  />
-                </cwa-nuxt-link>
-                <cwa-nuxt-link to="/_cwa/pages" :always-clickable="true">
-                  <img
-                    src="../../../assets/images/icon-pages.svg"
-                    alt="Pages Icon"
-                  />
-                </cwa-nuxt-link>
-                <!--
+              </div>
+            </template>
+          </div>
+          <div class="center">
+            <div v-if="!editMode" class="center-highlight icons">
+              <cwa-nuxt-link
+                :to="builderLink"
+                exact
+                :class="builderClass"
+                :always-clickable="true"
+              >
+                <img src="../../../assets/images/view.svg" alt="View Icon" />
+              </cwa-nuxt-link>
+              <cwa-nuxt-link to="/_cwa/layouts" :always-clickable="true">
+                <img
+                  src="../../../assets/images/icon-layout.svg"
+                  alt="Layouts Icon"
+                />
+              </cwa-nuxt-link>
+              <cwa-nuxt-link to="/_cwa/pages" :always-clickable="true">
+                <img
+                  src="../../../assets/images/icon-pages.svg"
+                  alt="Pages Icon"
+                />
+              </cwa-nuxt-link>
+              <!--
                 We will have a page to view/visualise website components and where they are used. After Alpha.1
                 <cwa-nuxt-link to="/_cwa/components">
                   <img
@@ -61,22 +57,54 @@
                   />
                 </cwa-nuxt-link>
                 -->
-                <cwa-nuxt-link to="/_cwa/users" :always-clickable="true">
-                  <img
-                    src="../../../assets/images/icon-users.svg"
-                    alt="Users Icon"
-                  />
-                </cwa-nuxt-link>
+              <cwa-nuxt-link to="/_cwa/users" :always-clickable="true">
+                <img
+                  src="../../../assets/images/icon-users.svg"
+                  alt="Users Icon"
+                />
+              </cwa-nuxt-link>
+            </div>
+            <div v-else class="center-highlight">
+              <div
+                v-if="!isComponentSelected"
+                :class="['header-prompt', { 'is-showing': showHeaderPrompt }]"
+              >
+                Now select a component...
+              </div>
+              <div v-else-if="components" class="selected-component-title">
+                <path-breadcrumbs
+                  :components="components"
+                  @click="handleBreadcrumbClick"
+                />
               </div>
             </div>
-            <div class="right">
-              <cwa-admin-bar-menu :force-hide="!isShowing" />
+          </div>
+          <div class="right">
+            <cwa-admin-bar-menu
+              v-if="!editMode"
+              :force-hide="isComponentSelected"
+            />
+            <div v-else-if="isComponentSelected" class="row row-center">
+              <div class="column is-narrow status-container">
+                <status-icon
+                  :status="isNew ? 0 : 1"
+                  :show-above="false"
+                  category="components-manager"
+                  @errors-showing="updateNotificationsShowing"
+                />
+              </div>
+              <div v-if="showStatusTab" class="column is-narrow">
+                <publishable-icon
+                  :is-draft="isDraft"
+                  :is-scheduled="isScheduled"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </transition-expand>
+      </div>
       <cwa-admin-bar-page-info-modal
-        v-if="pageInfoShowing && isShowing"
+        v-if="pageInfoShowing"
         @close="pageInfoShowing = false"
       />
     </div>
@@ -86,30 +114,39 @@
 <script lang="ts">
 import Vue from 'vue'
 import CwaNuxtLink from '../utils/cwa-nuxt-link.vue'
-import TransitionExpand from '../utils/transition-expand.vue'
+import HeightMatcherMixin from '../../../mixins/HeightMatcherMixin'
 import CwaAdminBarMenu from './cwa-admin-bar-menu.vue'
-import CwaAdminToggle from './input/cwa-admin-toggle.vue'
 import CwaAdminBarPageInfoModal from './cwa-admin-bar-page-info-modal.vue'
+import CmButton from './cwa-component-manager/input/cm-button.vue'
+import StatusIcon from './status-icon.vue'
+import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
+import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
 import {
   COMPONENT_MANAGER_EVENTS,
-  ADMIN_BAR_EVENTS
+  ADMIN_BAR_EVENTS,
+  ComponentManagerAddEvent
 } from '@cwa/nuxt-module/core/events'
-import HeightMatcherMixin from '@cwa/nuxt-module/core/mixins/HeightMatcherMixin'
 
 export default Vue.extend({
   components: {
+    PathBreadcrumbs,
+    PublishableIcon,
+    StatusIcon,
+    CmButton,
     CwaAdminBarPageInfoModal,
-    CwaAdminToggle,
     CwaNuxtLink,
-    CwaAdminBarMenu,
-    TransitionExpand
+    CwaAdminBarMenu
   },
   mixins: [HeightMatcherMixin('cwaAdminBar')],
   data() {
     return {
       currentView: 'page',
       managerShowing: false,
-      pageInfoShowing: false
+      pageInfoShowing: false,
+      warningNotificationsShowing: false,
+      componentIri: null,
+      components: [],
+      showHeaderPrompt: false
     }
   },
   computed: {
@@ -129,8 +166,47 @@ export default Vue.extend({
         ? 'nuxt-link-exact-active nuxt-link-active'
         : ''
     },
-    isShowing() {
-      return !this.managerShowing
+    isComponentSelected() {
+      return !!this.managerShowing
+    },
+    isNew() {
+      return this.componentIri && this.componentIri.endsWith('/new')
+    },
+    selectedComponent(): ComponentManagerAddEvent | null {
+      return this.components?.[0] || null
+    },
+    componentData() {
+      return this.selectedComponent?.data
+    },
+    showStatusTab() {
+      return !!this.componentData?.context?.statusTab?.enabled
+    },
+    isDraft() {
+      if (!this.showStatusTab) {
+        return false
+      }
+      if (!this.componentIri) {
+        return false
+      }
+      const storageResource = this.$cwa.getResource(this.componentIri)
+      return storageResource?._metadata?.published === false || false
+    },
+    isScheduled() {
+      if (!this.isDraft) {
+        return false
+      }
+      const storageResource = this.$cwa.getResource(this.componentIri)
+      return !!storageResource && !!storageResource._metadata?.publishedAt
+    },
+    headerPromptVisibilityChange() {
+      return this.editMode && !this.isComponentSelected
+    }
+  },
+  watch: {
+    headerPromptVisibilityChange(newValue) {
+      window.requestAnimationFrame(() => {
+        this.showHeaderPrompt = newValue
+      })
     }
   },
   mounted() {
@@ -139,6 +215,14 @@ export default Vue.extend({
       COMPONENT_MANAGER_EVENTS.showing,
       this.componentManagerShowingListener
     )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.componentsInitialised,
+      this.updateComponents
+    )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.selectedComponentIri,
+      this.updateSelectedComponentIri
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(ADMIN_BAR_EVENTS.changeView, this.changeView)
@@ -146,16 +230,44 @@ export default Vue.extend({
       COMPONENT_MANAGER_EVENTS.showing,
       this.componentManagerShowingListener
     )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.componentsInitialised,
+      this.updateComponents
+    )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.selectedComponentIri,
+      this.updateSelectedComponentIri
+    )
   },
   methods: {
+    handleBreadcrumbClick({ componentIndex }) {
+      const selectedComponent = this.components[componentIndex]
+      this.$cwa.$eventBus.$emit(
+        COMPONENT_MANAGER_EVENTS.selectComponent,
+        selectedComponent.iri
+      )
+      this.$cwa.$eventBus.$emit(
+        COMPONENT_MANAGER_EVENTS.selectPosition,
+        selectedComponent.componentPositions?.[0] || null
+      )
+    },
+    updateComponents(components) {
+      this.components = components
+    },
+    updateSelectedComponentIri(componentIri) {
+      this.componentIri = componentIri
+    },
     changeView(viewName) {
       this.currentView = viewName
     },
-    componentManagerShowingListener(isShowing) {
-      this.managerShowing = isShowing
+    componentManagerShowingListener(isComponentSelected) {
+      this.managerShowing = !!isComponentSelected
     },
     showPageEditModal() {
       this.pageInfoShowing = !this.pageInfoShowing
+    },
+    updateNotificationsShowing(newValue) {
+      this.warningNotificationsShowing = newValue
     }
   }
 })
@@ -174,7 +286,6 @@ export default Vue.extend({
   > .inner
     padding: 2rem
     background: $cwa-navbar-background
-    color: $cwa-color-text-light
     display: flex
     justify-content: space-between
     border-bottom: 2px solid #414040
@@ -194,14 +305,32 @@ export default Vue.extend({
       left: 50%
       transform: translateX(-50%)
       height: 100%
-      +mobile
-        display: none
-      .icons
+      .header-prompt
+        transition: all .3s
+        transform: translateY(-10px)
+        padding: 1rem 1.5rem
+        border-radius: 2rem
+        opacity: 0
+        &.is-showing
+          background: $control-background-color
+          color: $white
+          transform: translateY(0)
+          opacity: 1
+      //+mobile
+      //  display: none
+      .center-highlight
         display: flex
         width: 100%
-        max-width: 340px
+        // max-width: 340px
         justify-content: space-between
         align-items: center
+        &.icons
+          color: $cwa-color-text-light
+      .selected-component-title
+        width: auto
+        min-width: 150px
+        max-width: 50vw
+        overflow: visible
     .icons
       > a
         transition: opacity .25s

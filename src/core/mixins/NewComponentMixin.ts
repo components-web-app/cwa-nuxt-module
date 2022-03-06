@@ -51,14 +51,31 @@ export default Vue.extend({
       COMPONENT_MANAGER_EVENTS.highlightComponent,
       this.handleHighlightComponentEvent
     )
+    window.addEventListener('beforeunload', this.beforeWindowUnloadListener, {
+      capture: true
+    })
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.highlightComponent,
       this.handleHighlightComponentEvent
     )
+    window.removeEventListener(
+      'beforeunload',
+      this.beforeWindowUnloadListener,
+      {
+        capture: true
+      }
+    )
   },
   methods: {
+    beforeWindowUnloadListener(event) {
+      if (this.newComponentEvent && this.newComponentResource) {
+        event.preventDefault()
+        return (event.returnValue =
+          'Are you sure you want to discard your new component?')
+      }
+    },
     handleInitialData(dataObject: Object) {
       const resource = { ...this.newComponentResource, ...dataObject }
       this.$cwa.$storage.setResource({
@@ -105,6 +122,7 @@ export default Vue.extend({
             )
           },
           onCancel: () => {
+            this.$cwa.setEditMode(true)
             this.$nextTick(() => {
               this.$cwa.$eventBus.$emit(
                 COMPONENT_MANAGER_EVENTS.selectComponent,

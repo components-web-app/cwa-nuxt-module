@@ -107,7 +107,9 @@ export const COMPONENT_MANAGER_EVENTS = {
   tabChanged: `${prefix}:${componentManagerCategory}:tab-changed`,
   draggable: `${prefix}:${componentManagerCategory}:draggable`,
   selectPosition: `${prefix}:${componentManagerCategory}:select-position`,
-  saveState: `${prefix}:${componentManagerCategory}:save-state`
+  saveState: `${prefix}:${componentManagerCategory}:save-state`,
+  componentsInitialised: `${prefix}:${componentManagerCategory}:components-initialised`,
+  selectedComponentIri: `${prefix}:${componentManagerCategory}:selectedComponentIri`
 }
 
 export const ADMIN_BAR_EVENTS = {

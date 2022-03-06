@@ -1,26 +1,37 @@
 <template>
   <div class="cwa-manager-tabs">
-    <ul class="row">
-      <li
-        v-for="(tab, index) of orderedTabs"
-        :key="loopKey('tab', index)"
-        :class="[
-          'column',
-          'is-narrow',
-          'cwa-manager-tab',
-          {
-            'is-selected': index === selectedTabIndex,
-            'has-error':
-              tabInputErrors[tab.label] &&
-              !!tabInputErrors[tab.label].errorCount
-          }
-        ]"
-      >
-        <a href="#" @click.prevent="showTab(index)">{{ tab.label }}</a>
-      </li>
-    </ul>
+    <div class="row tabs-top">
+      <div class="column">
+        <ul class="row">
+          <li
+            v-for="(tab, index) of orderedTabs"
+            :key="loopKey('tab', index)"
+            :class="[
+              'column',
+              'is-narrow',
+              'cwa-manager-tab',
+              {
+                'is-selected': index === selectedTabIndex,
+                'has-error':
+                  tabInputErrors[tab.label] &&
+                  !!tabInputErrors[tab.label].errorCount
+              }
+            ]"
+          >
+            <a href="#" @click.prevent="showTab(index)">{{ tab.label }}</a>
+          </li>
+        </ul>
+      </div>
+      <div class="column is-narrow">
+        <cwa-action-buttons
+          :selected-position="selectedPosition"
+          :selected-component="iri || null"
+          @close="$emit('close')"
+        />
+      </div>
+    </div>
     <transition-expand>
-      <div v-show="showTabs" class="tab-content-container">
+      <div v-show="showTabs && dynamicTabMounted" class="tab-content-container">
         <div ref="tabContent" class="tab-content">
           <component
             :is="tabComponent"
@@ -31,6 +42,7 @@
             :field-errors="tabInputErrors[selectedTab.label]"
             @draggable="toggleDraggable"
             @close="handleTabCloseEvent"
+            @hook:mounted="handleDynamicTabMounted"
           />
         </div>
       </div>
@@ -52,9 +64,10 @@ import {
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
 import TransitionExpand from '../../utils/transition-expand.vue'
+import CwaActionButtons from './cwa-action-buttons.vue'
 
 export default Vue.extend({
-  components: { TransitionExpand },
+  components: { CwaActionButtons, TransitionExpand },
   props: {
     tabs: {
       type: Array as PropType<ComponentManagerTab[]>,
@@ -83,7 +96,8 @@ export default Vue.extend({
   data() {
     return {
       selectedTabIndex: null,
-      tabInputErrors: {}
+      tabInputErrors: {},
+      dynamicTabMounted: false
     }
   },
   computed: {
@@ -174,6 +188,11 @@ export default Vue.extend({
     )
   },
   methods: {
+    handleDynamicTabMounted() {
+      setTimeout(() => {
+        this.dynamicTabMounted = true
+      }, 10)
+    },
     handleTabCloseEvent() {
       this.$emit('close')
     },
@@ -219,16 +238,20 @@ export default Vue.extend({
   ul
     list-style: none
     margin: 0
-    padding: 0 .5rem
+    padding: 0
     > .cwa-manager-tab
       position: relative
       padding: 0
       > a
-        padding: 1.5rem 1.5rem 2rem
+        padding: .5rem 1rem
+        margin-right: .75rem
+        border-radius: 8px
         display: block
+        position: relative
       &.is-selected > a
         color: $white
-      &.has-error::after
+        background: $control-background-color
+      &.has-error > a::after
         content: ''
         display: block
         position: absolute
@@ -238,12 +261,16 @@ export default Vue.extend({
         height: 12px
         border-radius: 50%
         background-color: $cwa-danger
-        transform: translate(-1.6rem, 1.8rem)
+        transform: translate(-6px, 6px)
   .tab-content-container
     max-height: 20vh
     overflow: auto
   .tab-content
-    padding: 0 2rem 2rem
+    padding: 1.5rem 2rem .75rem
+    min-height: 60px
+    .row.tab-row
+      min-height: 36px
+      align-items: center
     .trash-link
       display: block
       opacity: .6

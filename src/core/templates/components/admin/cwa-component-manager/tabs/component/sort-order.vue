@@ -1,6 +1,6 @@
 <template>
   <div class="sort-order-tab">
-    <div class="row">
+    <div class="row tab-row">
       <div class="column is-narrow">
         <cwa-admin-toggle
           :id="`component-sort-${iri}`"
