@@ -9,7 +9,6 @@
         class="column is-narrow"
       >
         <div class="column is-narrow">
-          {{ iri }} {{ $cwa.findDraftIri(iri) }}
           <cwa-admin-toggle
             :id="`component-edit-version-${iri}`"
             v-model="forceNoDraft"
