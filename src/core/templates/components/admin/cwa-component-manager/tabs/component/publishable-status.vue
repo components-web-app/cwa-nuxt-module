@@ -4,8 +4,8 @@
       <div v-if="isPublished && $cwa.findDraftIri(iri) === null">
         Published component. No draft available.
       </div>
-      <div
-        v-else-if="isPublished && $cwa.findDraftIri(iri)"
+      <!--<div
+        v-else-if="!isPublished && $cwa.findDraftIri(iri)"
         class="column is-narrow"
       >
         <div class="column is-narrow">
@@ -15,7 +15,7 @@
             label="Edit live version"
           />
         </div>
-      </div>
+      </div>-->
       <template v-else>
         <div class="column is-narrow">
           <cwa-admin-toggle
