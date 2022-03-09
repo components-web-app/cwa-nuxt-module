@@ -121,6 +121,10 @@ export default class Cwa {
     return this.$storage.findDraftIri(iri)
   }
 
+  findPublishedIri(iri: string) {
+    return this.$storage.findPublishedIri(iri)
+  }
+
   getPublishableIri(iri: string) {
     // is it draft and mapped to show published?
     if (!this.isEditMode || this.$storage.isIriMappedToPublished(iri)) {

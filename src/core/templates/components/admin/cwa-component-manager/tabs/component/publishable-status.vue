@@ -1,6 +1,14 @@
 <template>
   <div class="publishable-status-tab">
     <div class="row tab-row">
+      <!--
+      live exists, no draft,
+      Draft exists, no live,
+      Live exists and draft exists
+
+      Draft should show the ability for a publish date
+      Draft will be showing by default, should be a way to edit the live version instead is it exists
+      -->
       <div v-if="isPublished && $cwa.findDraftIri(iri) === null">
         Published component. No draft available.
       </div>
@@ -17,7 +25,10 @@
         </div>
       </div>-->
       <template v-else>
-        <div class="column is-narrow">
+        <div
+          v-if="$cwa.findPublishedIri(iri) && $cwa.findDraftIri(iri)"
+          class="column is-narrow"
+        >
           <cwa-admin-toggle
             :id="`component-edit-version-${iri}`"
             v-model="isPublished"

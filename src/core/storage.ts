@@ -223,6 +223,14 @@ export class Storage {
         return key
       }
     }
+
+    const resource = this.getResource(iri)
+    if (!resource) {
+      return null
+    }
+    if (resource?._metadata?.published === true) {
+      return iri
+    }
     return null
   }
 
