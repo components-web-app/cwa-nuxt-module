@@ -1,8 +1,6 @@
 import bluebird from 'bluebird'
 import consola from 'consola'
-// see issue https://github.com/nuxt-community/axios-module/issues/555
-// eslint-disable-next-line
-import { NuxtAxiosInstance } from '@nuxtjs/axios'
+import type { NuxtAxiosInstance } from '@nuxtjs/axios'
 import VueRouter from 'vue-router'
 import { CancelTokenSource } from 'axios'
 import AxiosErrorParser from '../utils/AxiosErrorParser'
