@@ -277,6 +277,9 @@ export default Vue.extend({
 <style lang="sass">
 .component-position
   position: relative
+  > *
+    position: relative
+    z-index: 1
   &.is-draft
     &::before
       content: ''
@@ -286,6 +289,8 @@ export default Vue.extend({
       width: 100%
       height: 100%
       background: rgba($cwa-warning, .1)
+      pointer-events: none
+      z-index: 0
     &::after
       content: ''
       position: absolute
@@ -296,4 +301,6 @@ export default Vue.extend({
       border-radius: 50%
       background: $cwa-warning
       transform: translate(-8px, 8px)
+      pointer-events: none
+      z-index: 2
 </style>
