@@ -137,7 +137,7 @@ export default Vue.extend({
       )
     },
     pageResource() {
-      return this.$cwa.getResource(this.$cwa.currentPageIri)
+      return this.$cwa.getResource(this.$cwa.loadedPage)
     },
     isDynamicPage() {
       return this.pageResource['@type'] !== 'Page'

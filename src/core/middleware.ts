@@ -13,14 +13,14 @@ export default async function routeLoaderMiddleware({ route, $cwa }) {
           decodeURIComponent(route.params[pageParam])
         )
       } catch (err) {
-        $cwa.withError(route, err)
+        $cwa.setFetchError(route, err)
       }
       return
     }
     try {
       await $cwa.fetcher.fetchPage(decodeURIComponent(route.params[pageParam]))
     } catch (err) {
-      $cwa.withError(route, err)
+      $cwa.setFetchError(route, err)
     }
     return
   }
@@ -37,7 +37,7 @@ export default async function routeLoaderMiddleware({ route, $cwa }) {
   try {
     await $cwa.fetchRoute(route.path)
   } catch (err) {
-    $cwa.withError(route, err)
+    $cwa.setFetchError(route, err)
     return null
   }
 

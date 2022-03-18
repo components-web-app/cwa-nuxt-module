@@ -1,6 +1,6 @@
 import consola from 'consola'
 import { getProp } from '../utils'
-import CwaVuexModule from './vuex/CwaVuexModule'
+import CwaVuexModule from './storage/CwaVuexModule/index'
 
 export const StoreCategories = {
   PageData: 'PageData',
@@ -284,21 +284,21 @@ export class Storage {
 
   setCloneComponent(iri: string) {
     this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_REUSE_COMPONENT',
+      this.options.vuex.namespace + '/SET_CLONE_COMPONENT',
       iri
     )
   }
 
   setCloneDestination(iri: string) {
     this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_REUSE_DESTINATION',
+      this.options.vuex.namespace + '/SET_CLONE_DESTINATION',
       iri
     )
   }
 
   setCloneNavigate(navigate: boolean) {
     this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_REUSE_NAVIGATE',
+      this.options.vuex.namespace + '/SET_CLONE_NAVIGATE',
       navigate
     )
   }

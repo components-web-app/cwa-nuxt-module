@@ -37,13 +37,13 @@ describe('middleware', () => {
       fetchRoute: jest.fn(() => {
         throw err
       }),
-      withError: jest.fn(),
+      setFetchError: jest.fn(),
       initMercure: jest.fn()
     }
 
     await routeLoaderMiddleware({ $cwa, route })
 
     expect($cwa.fetchRoute).toHaveBeenCalledWith(route.path)
-    expect($cwa.withError).toHaveBeenCalledWith(route, err)
+    expect($cwa.setFetchError).toHaveBeenCalledWith(route, err)
   })
 })
