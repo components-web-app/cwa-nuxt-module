@@ -7,6 +7,7 @@ types
 yarn.lock
 yarn-error.log
 demo/ssl/
+demo/.env
 sw.*
 cypress/screenshots/
 cypress/downloads/
