@@ -77,7 +77,7 @@ export default Vue.extend({
       return this.pageResource[this.resource.pageDataProperty]
     },
     pageResource() {
-      return this.$cwa.getResource(this.$cwa.currentPageIri)
+      return this.$cwa.getResource(this.$cwa.loadedPage)
     }
   },
   async mounted() {

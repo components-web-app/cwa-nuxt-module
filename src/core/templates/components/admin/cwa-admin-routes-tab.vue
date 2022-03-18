@@ -152,7 +152,7 @@ export default Vue.extend({
   },
   data() {
     // @ts-ignore
-    const pageIri = this.$cwa.currentPageIri
+    const pageIri = this.$cwa.loadedPage
     const pageComponent = this.value
     // shorthand I cannot ts-ignore..
     // annoying we are ignoring a type error that does not exist...

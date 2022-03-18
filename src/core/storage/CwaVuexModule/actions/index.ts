@@ -1,0 +1,1 @@
+export { FetchComponentMetadata } from './FetchComponentMetadata'

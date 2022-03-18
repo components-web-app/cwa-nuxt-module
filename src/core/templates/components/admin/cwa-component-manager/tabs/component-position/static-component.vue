@@ -87,7 +87,7 @@ export default Vue.extend({
       return this.pageResource['@type'] !== 'Page'
     },
     pageResource() {
-      return this.$cwa.getResource(this.$cwa.currentPageIri)
+      return this.$cwa.getResource(this.$cwa.loadedPage)
     },
     staticComponentIri() {
       return this.resource._metadata.static_component
