@@ -117,7 +117,8 @@ export default Vue.extend({
       resourceIri,
       defaultData: {
         resourceIri: '/page_data/blog_article_datas'
-      }
+      },
+      resourceName: 'Components Collection'
     }
   },
   computed: {

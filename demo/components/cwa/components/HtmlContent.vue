@@ -39,14 +39,15 @@ export default Vue.extend({
           UiClassNames: ['is-feature', 'has-cwa-color'],
           UiComponents: [{ label: 'Logo Layout', value: 'HtmlContentWithLogo' }]
         }
-      }
+      },
+      resourceName: 'HTML Content'
     }
   },
   computed: {
     componentManagerTabs(): ComponentManagerTab[] {
       return [
         {
-          label: 'HTML Content',
+          label: this.resourceName,
           component: () => import('../admin-dialog/HtmlContent.vue'),
           priority: 0,
           inputFieldsUsed: ['html']
@@ -92,7 +93,6 @@ export default Vue.extend({
       this.saveCmValue('showEditor', !this.cmValue('showEditor'))
     },
     convertAnchor(anchor) {
-      // console.log(anchor, anchor.attributes, anchor.innerHTML)
       const newLink = document.createElement('cwa-nuxt-link')
       newLink.setAttribute('to', anchor.getAttribute('href'))
       for (const attr of anchor.attributes) {

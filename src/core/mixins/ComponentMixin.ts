@@ -43,7 +43,8 @@ export default Vue.extend({
     },
     componentManager(): ComponentManagerComponent {
       return Object.assign({}, this.baseComponentManager, {
-        name: this?.resource?.['@type'] || 'Unknown Component',
+        name:
+          this.resourceName || this?.resource?.['@type'] || 'Unknown Component',
         context: Object.assign(
           {
             statusTab: {

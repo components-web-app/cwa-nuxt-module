@@ -5,9 +5,13 @@
         <div v-if="!component">
           <button>Select position</button>
         </div>
-        <div v-show="isDynamicPage">
+        <div
+          v-show="
+            isDynamicPage && !dynamicComponentIri && !!pageDataPropComponent
+          "
+        >
           <button
-            v-if="!dynamicComponentIri && !newComponentResource"
+            v-if="!newComponentResource"
             type="button"
             @click.stop="addDynamicComponent"
           >

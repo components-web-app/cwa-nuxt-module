@@ -34,7 +34,7 @@ export default Vue.extend({
       default: null
     },
     selectedComponent: {
-      type: String,
+      type: Object,
       required: false,
       default: null
     }
@@ -96,12 +96,12 @@ export default Vue.extend({
         .map((key) => ({ key, label: this.buttonOptions[key].label }))
     },
     isDraft() {
-      const resource = this.$cwa.getResource(this.selectedComponent)
+      const resource = this.$cwa.getResource(this.selectedComponent.iri)
       return resource?._metadata?.published === false || false
     },
     refreshEndpoints() {
       const publishedResource = this.$cwa.getPublishedResource(
-        this.$cwa.getResource(this.selectedComponent)
+        this.$cwa.getResource(this.selectedComponent.iri)
       )
       return publishedResource?.componentPositions || null
     }
@@ -131,10 +131,10 @@ export default Vue.extend({
     async publishNow() {
       try {
         await this.updateResource(
-          this.selectedComponent,
+          this.selectedComponent.iri,
           'publishedAt',
           moment.utc().toISOString(),
-          this.$cwa.$storage.getCategoryFromIri(this.selectedComponent),
+          this.$cwa.$storage.getCategoryFromIri(this.selectedComponent.iri),
           this.refreshEndpoints,
           'components-manager'
         )

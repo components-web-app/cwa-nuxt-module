@@ -63,7 +63,7 @@ export default {
       return this.tag || 'a'
     },
     allowNavigation() {
-      const navigateReusable = this.cloneComponent && this.cloneNavigate
+      const navigateReusable = !!this.cloneComponent && this.cloneNavigate
       return this.alwaysClickable || navigateReusable || !this.$cwa.isEditMode
     }
   }

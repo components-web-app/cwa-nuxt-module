@@ -17,18 +17,12 @@
             <template v-else>
               <div class="top row">
                 <div class="column">
-                  <div v-if="cloneComponent" class="clone-info">
-                    <p>Select where you would like to clone this component</p>
-                    <cwa-admin-toggle
-                      id="cwa-cm-clone-navigate"
-                      v-model="cloneNavigate"
-                      label="Navigate"
-                    />
-                  </div>
+                  <clone v-if="cloneComponent" />
                   <tabs
                     v-show="!cloneComponent"
                     :tabs="componentTabs"
                     :iri="componentIri"
+                    :selected-component="selectedComponent"
                     :selected-position="selectedPosition"
                     :collection="closestCollection"
                     :show-tabs="showTabs && !cloneComponent"
@@ -68,8 +62,8 @@ import {
   HighlightComponentEvent
 } from '../../../events'
 import CloneComponentMixin from '../../../mixins/CloneComponentMixin'
-import CwaAdminToggle from './input/cwa-admin-toggle.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
+import Clone from './cwa-component-manager/clone.vue'
 
 interface DataInterface {
   expanded: boolean
@@ -88,7 +82,7 @@ interface DataInterface {
 
 export default Vue.extend({
   components: {
-    CwaAdminToggle,
+    Clone,
     Tabs,
     TransitionExpand
   },
@@ -342,6 +336,7 @@ export default Vue.extend({
         consola.info('Not showing components manager. No menu data populated.')
         return
       }
+
       if (!this.selectedPosition && this.cloneComponent) {
         for (const component of this.pendingComponents) {
           if (component.data.name === 'Collection') {
@@ -647,11 +642,6 @@ export default Vue.extend({
     bottom: 0
     left: 0
     width: 100%
-  .clone-info
-    padding: 2rem
-    p
-      color: $white
-      font-size: 1.8rem
   a
     color: $cwa-color-text-light
     &:hover,
