@@ -195,7 +195,7 @@ export class Storage {
     return 'Default'
   }
 
-  getTypeFromIri(iri, category: string = null) {
+  getTypeFromIri(iri, category?: string) {
     if (!category) {
       category = this.getCategoryFromIri(iri)
     }
@@ -243,8 +243,8 @@ export class Storage {
     const category = this.getCategoryFromIri(iri)
     const type = this.getTypeFromIri(iri, category)
     if (!type) {
-      consola.warn(
-        `Could not resolve a resource type for iri ${iri} in the category ${category}`
+      consola.trace(
+        `Could not resolve a resource type for iri ${iri} in the category ${category}. The resource does not exist.`
       )
       return null
     }

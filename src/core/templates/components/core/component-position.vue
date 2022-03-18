@@ -1,22 +1,26 @@
 <template>
   <div :class="['component-position', wrapperClass, { 'is-draft': isDraft }]">
-    <div v-if="resource.pageDataProperty">
-      <template v-if="$cwa.isAdmin && isDynamicPage">
-        <template v-if="!dynamicComponentIri && !newComponentResource">
-          <button>Select position</button>&nbsp;
-          <button type="button" @click.stop="addDynamicComponent">
+    <client-only>
+      <div v-if="$cwa.isAdmin">
+        <div v-if="!component">
+          <button>Select position</button>
+        </div>
+        <div v-show="isDynamicPage">
+          <button
+            v-if="!dynamicComponentIri && !newComponentResource"
+            type="button"
+            @click.stop="addDynamicComponent"
+          >
             Add {{ pageDataPropComponent }}
           </button>
-        </template>
-      </template>
-      <span v-else>
-        [ If page data has '{{ resource.pageDataProperty }}', it will show here
-        instead. ]
-      </span>
-    </div>
-    <div v-else-if="!component && $cwa.isAdmin">
-      <button>Select position</button>
-    </div>
+          <span v-else>
+            [ If page data has '{{ resource.pageDataProperty }}', it will show
+            here instead. ]
+          </span>
+        </div>
+      </div>
+    </client-only>
+
     <resource-component-loader
       v-if="!!component"
       :component="`CwaComponents${component.uiComponent || component['@type']}`"
@@ -26,6 +30,7 @@
       :highlight-is-position="highlightIsPosition"
       @deleted="$emit('deleted')"
     />
+
     <component
       :is="newComponentName"
       v-if="newComponentResource"
@@ -125,22 +130,24 @@ export default Vue.extend({
       return this.$cwa.resources
     },
     pageDataPropComponent() {
-      return this.pageDataProps[this.resource.pageDataProperty]
+      return this.pageDataProps?.[this.resource.pageDataProperty] || null
     },
     pageDataProps() {
-      return this.pageResource._metadata?.page_data_metadata.properties.reduce(
-        (obj, item) => {
-          obj[item.property] = item.componentShortName
-          return obj
-        },
-        {}
+      return (
+        this.pageResource._metadata?.page_data_metadata?.properties.reduce(
+          (obj, item) => {
+            obj[item.property] = item.componentShortName
+            return obj
+          },
+          {}
+        ) || {}
       )
     },
     pageResource() {
       return this.$cwa.getResource(this.$cwa.loadedPage)
     },
     isDynamicPage() {
-      return this.pageResource['@type'] !== 'Page'
+      return this.pageResource?.['@type'] !== 'Page'
     },
     resource() {
       return this.$cwa.getResource(this.iri)
@@ -168,7 +175,7 @@ export default Vue.extend({
       return normalize(
         this.component
           ? this.$cwa.$storage.getTypeFromIri(this.componentIri)
-          : 'empty'
+          : '-empty'
       )
     }
   },
