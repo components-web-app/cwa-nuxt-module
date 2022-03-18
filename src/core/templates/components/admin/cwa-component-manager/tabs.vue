@@ -25,7 +25,7 @@
       <div class="column is-narrow">
         <cwa-action-buttons
           :selected-position="selectedPosition"
-          :selected-component="iri || null"
+          :selected-component="selectedComponent"
           @close="$emit('close')"
         />
       </div>
@@ -90,6 +90,10 @@ export default Vue.extend({
     },
     showTabs: {
       type: Boolean,
+      required: true
+    },
+    selectedComponent: {
+      type: Object,
       required: true
     }
   },

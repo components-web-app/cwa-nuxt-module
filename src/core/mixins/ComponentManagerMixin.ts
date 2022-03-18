@@ -46,7 +46,8 @@ export const ComponentManagerMixin = Vue.extend({
       highlightIsPosition: false,
       componentManagerDisabled: false,
       elementsAdded: {},
-      componentManagerContext: {}
+      componentManagerContext: {},
+      resourceName: null
     }
   },
   computed: {
@@ -58,7 +59,7 @@ export const ComponentManagerMixin = Vue.extend({
     },
     baseComponentManager(): ComponentManagerComponent {
       return {
-        name: 'Unnamed',
+        name: this.resourceName || 'Unnamed',
         tabs: [
           ...this.defaultManagerTabs.map((item) =>
             Object.assign({}, item, {

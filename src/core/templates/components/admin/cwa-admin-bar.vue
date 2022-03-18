@@ -8,7 +8,7 @@
       <div ref="cwaAdminBar" class="cwa-admin-bar">
         <div class="inner">
           <div class="left">
-            <template v-if="currentView === 'page'">
+            <template v-if="currentView === 'page' && !isCloning">
               <div class="icons">
                 <a href="#" @click.prevent="showPageEditModal">
                   <img
@@ -66,7 +66,13 @@
             </div>
             <div v-else class="center-highlight">
               <div
-                v-if="!isComponentSelected"
+                v-if="isCloning"
+                :class="['header-prompt', { 'is-showing': true }]"
+              >
+                Select where you would like to clone this component
+              </div>
+              <div
+                v-else-if="!isComponentSelected"
                 :class="['header-prompt', { 'is-showing': showHeaderPrompt }]"
               >
                 Now select a component...
@@ -84,7 +90,10 @@
               v-if="!editMode"
               :force-hide="isComponentSelected"
             />
-            <div v-else-if="isComponentSelected" class="row row-center">
+            <div
+              v-else-if="isComponentSelected && !isCloning"
+              class="row row-center"
+            >
               <div class="column is-narrow status-container">
                 <status-icon
                   :status="isNew ? 0 : 1"
@@ -150,6 +159,9 @@ export default Vue.extend({
     }
   },
   computed: {
+    isCloning() {
+      return !!this.$cwa.$state.clone.component
+    },
     editMode: {
       set(value) {
         this.$cwa.setEditMode(value)
@@ -290,6 +302,7 @@ export default Vue.extend({
     justify-content: space-between
     border-bottom: 2px solid #414040
     align-items: center
+    min-height: 79px
     > div
       display: flex
     .left

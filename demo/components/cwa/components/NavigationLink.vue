@@ -15,6 +15,11 @@ import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManag
 export default Vue.extend({
   components: { CwaNuxtLink },
   mixins: [ComponentMixin],
+  data() {
+    return {
+      resourceName: 'Navigation Link'
+    }
+  },
   computed: {
     componentManagerTabs(): ComponentManagerTab[] {
       return [

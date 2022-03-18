@@ -124,7 +124,7 @@ export default {
         }
         this.showAltMenu = false
         document.body.removeEventListener('click', this.hideAltOptions, true)
-        this.$refs.altButton.blur()
+        this.$refs.componentList.blur()
       }, 1)
     }
   }
@@ -151,6 +151,7 @@ export default {
     top: 100%
     left: 0
     z-index: 2
+    margin: 0
     > li
       margin-bottom: .25rem
       &:last-child

@@ -49,7 +49,7 @@ export default Vue.extend({
             ? this.cloneDestination
             : destination.componentCollection,
           sortValue,
-          component: this.cloneComponent
+          component: this.cloneComponent.iri
         },
         null,
         destinationIsCollection
@@ -58,7 +58,7 @@ export default Vue.extend({
       )
       this.$cwa.$eventBus.$emit(
         COMPONENT_MANAGER_EVENTS.selectComponent,
-        this.cloneComponent
+        this.cloneComponent.iri
       )
       this.cancelClone()
     },
