@@ -1,5 +1,9 @@
 import Vue from 'vue'
-import { COMPONENT_MANAGER_EVENTS } from '../events'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  CONFIRM_DIALOG_EVENTS,
+  ConfirmDialogEvent
+} from '../events'
 
 export default Vue.extend({
   computed: {
@@ -60,12 +64,28 @@ export default Vue.extend({
         COMPONENT_MANAGER_EVENTS.selectComponent,
         this.cloneComponent.iri
       )
-      this.cancelClone()
+      this.cancelClone(false)
     },
-    cancelClone() {
-      this.cloneComponent = null
-      this.cloneDestination = null
-      this.cloneNavigate = false
+    cancelClone(confirm: boolean = true) {
+      const doCancel = () => {
+        this.cloneComponent = null
+        this.cloneDestination = null
+        this.cloneNavigate = false
+      }
+      if (!confirm) {
+        doCancel()
+        return
+      }
+      const event: ConfirmDialogEvent = {
+        id: 'confirm-cancel-clone',
+        title: 'Cancel',
+        html: `<p>Are you sure you want to stop cloning this component?</p>`,
+        onSuccess: () => {
+          doCancel()
+        },
+        confirmButtonText: 'Continue'
+      }
+      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
     }
   }
 })

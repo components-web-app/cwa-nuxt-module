@@ -148,7 +148,7 @@ export default Vue.extend({
     },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
-      this.cloneDestination = this.selectedPosition
+      // this.cloneDestination = this.selectedPosition
     },
     newComponentListener(event: NewComponentEvent) {
       this.addingEvent = event
