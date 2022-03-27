@@ -204,25 +204,45 @@ export const ComponentManagerMixin = Vue.extend({
       // events for components to listen to, and this is one?
       // perhaps we always have a default position on all components?
       this.$nextTick(() => {
+        const highlightName = 'highlight'
         if (iri === this.computedIri) {
-          if (!this.elementsAdded.highlight) {
-            this.$set(
-              this.elementsAdded,
-              'highlight',
-              document.createElement('div')
-            )
-            this.elementsAdded.highlight.className = this.cmHighlightClass
-            this.$el.appendChild(this.elementsAdded.highlight)
-          }
+          this.addDomElement(highlightName, {
+            className: this.cmHighlightClass
+          })
           return
         }
-        if (this.elementsAdded.highlight) {
-          this.elementsAdded.highlight.parentNode.removeChild(
-            this.elementsAdded.highlight
-          )
-          this.$delete(this.elementsAdded, 'highlight')
+        if (!this.isCloneComponent) {
+          this.removeDomElement(highlightName)
         }
       })
+    },
+    removeDomElement(name: string) {
+      if (!this.elementsAdded[name]) {
+        return
+      }
+      this.elementsAdded[name].$el.parentNode.removeChild(
+        this.elementsAdded[name].$el
+      )
+      this.elementsAdded[name].$destroy()
+      this.$delete(this.elementsAdded, name)
+    },
+    addDomElement(name: string, propsData: any = {}) {
+      if (this.elementsAdded[name]) {
+        consola.info(`Already added element with name '${name}'`)
+        return
+      }
+      // eslint-disable-next-line vue/one-component-per-file
+      const NewComponentClass = Vue.extend({
+        props: { className: { type: String, required: true } },
+        template: '<div v-bind:class="className"></div>'
+      })
+      const newComponent = new NewComponentClass({
+        propsData
+      })
+      newComponent.$mount()
+      this.$set(this.elementsAdded, name, newComponent)
+      this.$el.appendChild(newComponent.$el)
+      return this.elementsAdded[name]
     },
     managerSelectComponentListener(iri) {
       if (iri !== this.computedIri) {

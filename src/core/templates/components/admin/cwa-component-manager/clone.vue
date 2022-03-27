@@ -19,7 +19,7 @@
           :alt-options="cloneButtonOptions"
           @click="handleCloneClick"
         >
-          Clone After
+          {{ cloneDestinationIsCollection ? 'Clone Here' : 'Clone After' }}
         </cm-button>
       </div>
       <div class="column is-narrow">
@@ -50,6 +50,9 @@ export default Vue.extend({
   mixins: [CloneComponentMixin],
   computed: {
     cloneButtonOptions() {
+      if (this.cloneDestinationIsCollection) {
+        return null
+      }
       return [
         {
           key: 'before',

@@ -1,8 +1,16 @@
 import Vue from 'vue'
-import { COMPONENT_MANAGER_EVENTS } from '../events'
+import consola from 'consola'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  CONFIRM_DIALOG_EVENTS,
+  ConfirmDialogEvent
+} from '../events'
 
 export default Vue.extend({
   computed: {
+    isCloneComponent() {
+      return this.cloneComponent && this.cloneComponent.iri === this.iri
+    },
     cloneComponent: {
       get(): string {
         return this.$cwa.$state.clone.component
@@ -26,13 +34,24 @@ export default Vue.extend({
       set(value: boolean) {
         this.$cwa.$storage.setCloneNavigate(value)
       }
+    },
+    cloneDestinationIsCollection() {
+      if (!this.cloneDestination) {
+        return null
+      }
+      const destination = this.$cwa.getResource(this.cloneDestination)
+      return destination['@type'] === 'ComponentCollection'
     }
   },
   methods: {
     async clone(useBefore = false) {
-      const destination = this.$cwa.getResource(this.cloneDestination)
-      const destinationIsCollection =
-        destination['@type'] === 'ComponentCollection'
+      const destination = this.cloneDestination
+      if (!destination) {
+        consola.warn('Cannot clone: no destination selected')
+        return
+      }
+      const destinationIsCollection = this.cloneDestinationIsCollection
+
       const collection = destinationIsCollection
         ? destination
         : this.$cwa.getResource(destination.componentCollection)
@@ -60,12 +79,28 @@ export default Vue.extend({
         COMPONENT_MANAGER_EVENTS.selectComponent,
         this.cloneComponent.iri
       )
-      this.cancelClone()
+      this.cancelClone(false)
     },
-    cancelClone() {
-      this.cloneComponent = null
-      this.cloneDestination = null
-      this.cloneNavigate = false
+    cancelClone(confirm: boolean = true) {
+      const doCancel = () => {
+        this.cloneComponent = null
+        this.cloneDestination = null
+        this.cloneNavigate = false
+      }
+      if (!confirm) {
+        doCancel()
+        return
+      }
+      const event: ConfirmDialogEvent = {
+        id: 'confirm-cancel-clone',
+        title: 'Cancel',
+        html: `<p>Are you sure you want to stop cloning this component?</p>`,
+        onSuccess: () => {
+          doCancel()
+        },
+        confirmButtonText: 'Continue'
+      }
+      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
     }
   }
 })

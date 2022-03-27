@@ -69,7 +69,7 @@
                 v-if="isCloning"
                 :class="['header-prompt', { 'is-showing': true }]"
               >
-                Select where you would like to clone this component
+                Select where you would like to clone your component
               </div>
               <div
                 v-else-if="!isComponentSelected"
@@ -325,7 +325,7 @@ export default Vue.extend({
         border-radius: 2rem
         opacity: 0
         &.is-showing
-          background: $control-background-color
+          background: $color-primary
           color: $white
           transform: translateY(0)
           opacity: 1
