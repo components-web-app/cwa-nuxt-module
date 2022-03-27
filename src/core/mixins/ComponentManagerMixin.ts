@@ -206,27 +206,42 @@ export const ComponentManagerMixin = Vue.extend({
       this.$nextTick(() => {
         const highlightName = 'highlight'
         if (iri === this.computedIri) {
-          const newElement = this.addDomElement(highlightName)
-          newElement.className = this.cmHighlightClass
+          this.addDomElement(highlightName, {
+            className: this.cmHighlightClass
+          })
           return
         }
-        this.removeDomElement(highlightName)
+        if (!this.isCloneComponent) {
+          this.removeDomElement(highlightName)
+        }
       })
     },
     removeDomElement(name: string) {
       if (!this.elementsAdded[name]) {
         return
       }
-      this.elementsAdded[name].parentNode.removeChild(this.elementsAdded[name])
+      this.elementsAdded[name].$el.parentNode.removeChild(
+        this.elementsAdded[name].$el
+      )
+      this.elementsAdded[name].$destroy()
       this.$delete(this.elementsAdded, name)
     },
-    addDomElement(name: string) {
+    addDomElement(name: string, propsData: any = {}) {
       if (this.elementsAdded[name]) {
         consola.info(`Already added element with name '${name}'`)
         return
       }
-      this.$set(this.elementsAdded, name, document.createElement('div'))
-      this.$el.appendChild(this.elementsAdded[name])
+      // eslint-disable-next-line vue/one-component-per-file
+      const NewComponentClass = Vue.extend({
+        props: { className: { type: String, required: true } },
+        template: '<div v-bind:class="className"></div>'
+      })
+      const newComponent = new NewComponentClass({
+        propsData
+      })
+      newComponent.$mount()
+      this.$set(this.elementsAdded, name, newComponent)
+      this.$el.appendChild(newComponent.$el)
       return this.elementsAdded[name]
     },
     managerSelectComponentListener(iri) {

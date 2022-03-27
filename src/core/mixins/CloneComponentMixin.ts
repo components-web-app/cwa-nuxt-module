@@ -8,6 +8,9 @@ import {
 
 export default Vue.extend({
   computed: {
+    isCloneComponent() {
+      return this.cloneComponent && this.cloneComponent.iri === this.iri
+    },
     cloneComponent: {
       get(): string {
         return this.$cwa.$state.clone.component
