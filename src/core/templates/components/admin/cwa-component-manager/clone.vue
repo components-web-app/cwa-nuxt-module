@@ -15,7 +15,7 @@
       </div>
       <div v-if="cloneComponent && cloneDestination" class="column is-narrow">
         <cm-button
-          class="clone-button"
+          class="clone-button is-primary"
           :alt-options="cloneButtonOptions"
           @click="handleCloneClick"
         >
