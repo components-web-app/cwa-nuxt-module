@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import consola from 'consola'
 import {
   COMPONENT_MANAGER_EVENTS,
   CONFIRM_DIALOG_EVENTS,
@@ -30,13 +31,24 @@ export default Vue.extend({
       set(value: boolean) {
         this.$cwa.$storage.setCloneNavigate(value)
       }
+    },
+    cloneDestinationIsCollection() {
+      if (!this.cloneDestination) {
+        return null
+      }
+      const destination = this.$cwa.getResource(this.cloneDestination)
+      return destination['@type'] === 'ComponentCollection'
     }
   },
   methods: {
     async clone(useBefore = false) {
-      const destination = this.$cwa.getResource(this.cloneDestination)
-      const destinationIsCollection =
-        destination['@type'] === 'ComponentCollection'
+      const destination = this.cloneDestination
+      if (!destination) {
+        consola.warn('Cannot clone: no destination selected')
+        return
+      }
+      const destinationIsCollection = this.cloneDestinationIsCollection
+
       const collection = destinationIsCollection
         ? destination
         : this.$cwa.getResource(destination.componentCollection)
