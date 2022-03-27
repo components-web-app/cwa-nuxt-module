@@ -204,25 +204,30 @@ export const ComponentManagerMixin = Vue.extend({
       // events for components to listen to, and this is one?
       // perhaps we always have a default position on all components?
       this.$nextTick(() => {
+        const highlightName = 'highlight'
         if (iri === this.computedIri) {
-          if (!this.elementsAdded.highlight) {
-            this.$set(
-              this.elementsAdded,
-              'highlight',
-              document.createElement('div')
-            )
-            this.elementsAdded.highlight.className = this.cmHighlightClass
-            this.$el.appendChild(this.elementsAdded.highlight)
-          }
+          const newElement = this.addDomElement(highlightName)
+          newElement.className = this.cmHighlightClass
           return
         }
-        if (this.elementsAdded.highlight) {
-          this.elementsAdded.highlight.parentNode.removeChild(
-            this.elementsAdded.highlight
-          )
-          this.$delete(this.elementsAdded, 'highlight')
-        }
+        this.removeDomElement(highlightName)
       })
+    },
+    removeDomElement(name: string) {
+      if (!this.elementsAdded[name]) {
+        return
+      }
+      this.elementsAdded[name].parentNode.removeChild(this.elementsAdded[name])
+      this.$delete(this.elementsAdded, name)
+    },
+    addDomElement(name: string) {
+      if (this.elementsAdded[name]) {
+        consola.info(`Already added element with name '${name}'`)
+        return
+      }
+      this.$set(this.elementsAdded, name, document.createElement('div'))
+      this.$el.appendChild(this.elementsAdded[name])
+      return this.elementsAdded[name]
     },
     managerSelectComponentListener(iri) {
       if (iri !== this.computedIri) {
