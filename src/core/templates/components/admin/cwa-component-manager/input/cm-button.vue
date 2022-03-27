@@ -165,6 +165,13 @@ export default Vue.extend({
       border-left: 1px solid $control-background-hover-color
       padding-left: 1.5rem
       padding-right: 1.5rem
+  &.is-primary
+    .cm-button-button
+      background-color: $color-primary
+      color: $white
+      &:hover,
+      &:focus
+        background-color: darken($color-primary, 3%)
   .alt-options-list
     width: 100%
     margin: 0

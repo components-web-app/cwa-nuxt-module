@@ -65,24 +65,26 @@
               </cwa-nuxt-link>
             </div>
             <div v-else class="center-highlight">
-              <div
-                v-if="isCloning"
-                :class="['header-prompt', { 'is-showing': true }]"
-              >
-                Select where you would like to clone your component
-              </div>
-              <div
-                v-else-if="!isComponentSelected"
-                :class="['header-prompt', { 'is-showing': showHeaderPrompt }]"
-              >
-                Now select a component...
-              </div>
-              <div v-else-if="components" class="selected-component-title">
-                <path-breadcrumbs
-                  :components="components"
-                  @click="handleBreadcrumbClick"
-                />
-              </div>
+              <template v-if="!isCloningWithDestination">
+                <div
+                  v-if="isCloning"
+                  :class="['header-prompt', { 'is-showing': true }]"
+                >
+                  Select where you would like to clone your component
+                </div>
+                <div
+                  v-else-if="!isComponentSelected"
+                  :class="['header-prompt', { 'is-showing': showHeaderPrompt }]"
+                >
+                  Now select a component...
+                </div>
+                <div v-else-if="components" class="selected-component-title">
+                  <path-breadcrumbs
+                    :components="components"
+                    @click="handleBreadcrumbClick"
+                  />
+                </div>
+              </template>
             </div>
           </div>
           <div class="right">
@@ -161,6 +163,9 @@ export default Vue.extend({
   computed: {
     isCloning() {
       return !!this.$cwa.$state.clone.component
+    },
+    isCloningWithDestination() {
+      return this.isCloning && !!this.$cwa.$state.clone.destination
     },
     editMode: {
       set(value) {
