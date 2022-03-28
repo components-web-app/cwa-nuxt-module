@@ -1,4 +1,5 @@
 import type { NuxtAxiosInstance } from '@nuxtjs/axios'
+import { stateVars } from './storage/CwaVuexModule'
 
 export interface ApiDocsInterface {
   entrypoint: any
@@ -10,7 +11,6 @@ export class ApiDocumentation {
   private readonly $state: any
   private $axios: NuxtAxiosInstance
   private apiUrl: string
-  private apiDocumentation: ApiDocsInterface
   private apiDocPromise: Promise<ApiDocsInterface>
 
   constructor({ $storage, $state, $axios, apiUrl }) {
@@ -21,12 +21,12 @@ export class ApiDocumentation {
   }
 
   async getApiDocumentation(refresh = false): Promise<ApiDocsInterface> {
-    const apiDocumentationStorageKey = 'apiDocumentation'
+    const apiDocumentationStorageKey = stateVars.apiDocumentation
 
     // wait for the variable
-    if (!this.$state.docsUrl) {
+    if (!this.$state[stateVars.docsUrl]) {
       return new Promise((resolve) => {
-        this.$storage.watchState('docsUrl', (newValue) => {
+        this.$storage.watchState(stateVars.docsUrl, (newValue) => {
           if (newValue) {
             this.getApiDocumentation(refresh).then((docs) => {
               resolve(docs)
@@ -48,7 +48,7 @@ export class ApiDocumentation {
     this.apiDocPromise = new Promise((resolve) => {
       Promise.all([
         this.$axios.$get(this.apiUrl),
-        this.$axios.$get(this.$state.docsUrl)
+        this.$axios.$get(this.$state[stateVars.docsUrl])
       ]).then((responses) => {
         this.$storage.setState(apiDocumentationStorageKey, {
           entrypoint: responses[0],

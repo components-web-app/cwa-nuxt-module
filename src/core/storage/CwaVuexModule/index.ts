@@ -8,31 +8,62 @@ import {
   ResetCurrentResources
 } from './mutations'
 import { FetchComponentMetadata } from './actions'
+import ApiDocumentation from '@cwa/nuxt-module/core/api-documentation'
+
+export const stateVars = {
+  highlightComponent: 'highlightComponent',
+  apiDocumentation: 'apiDocumentation',
+  docsUrl: 'docsUrl'
+}
+
+export interface cwaModuleState {
+  mercurePendingProcesses: number
+  editMode: boolean
+  resources: {
+    new: any
+    current: any
+    categories: any
+    draftMapping: any
+    mapToPublished: string[]
+  }
+  clone: {
+    component: string
+    navigate: boolean
+    destination: string
+  }
+  componentMetadata: {
+    isLoading: boolean
+    data: any
+  }
+  apiDocumentation: ApiDocumentation
+  docsUrl?: string
+}
 
 export default function (storage) {
   return {
     namespaced: true,
-    state: () => ({
-      mercurePendingProcesses: 0,
-      editMode: false,
-      resources: {
-        new: {},
-        current: {},
-        categories: {},
-        draftMapping: {},
-        mapToPublished: []
-      },
-      clone: {
-        component: null,
-        navigate: false,
-        destination: null
-      },
-      componentMetadata: {
-        isLoading: false,
-        data: null
-      },
-      apiDocumentation: null
-    }),
+    state: () =>
+      ({
+        mercurePendingProcesses: 0,
+        editMode: false,
+        resources: {
+          new: {},
+          current: {},
+          categories: {},
+          draftMapping: {},
+          mapToPublished: []
+        },
+        clone: {
+          component: null,
+          navigate: false,
+          destination: null
+        },
+        componentMetadata: {
+          isLoading: false,
+          data: null
+        },
+        apiDocumentation: null
+      } as cwaModuleState),
     actions: {
       async fetchComponentMetadata(ctx) {
         return await FetchComponentMetadata.apply(this, [ctx])
