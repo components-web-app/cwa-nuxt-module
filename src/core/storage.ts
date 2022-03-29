@@ -1,6 +1,6 @@
 import consola from 'consola'
 import { getProp } from '../utils'
-import CwaVuexModule from './storage/CwaVuexModule/index'
+import CwaVuexModule, { stateVars } from './storage/CwaVuexModule/index'
 
 export const StoreCategories = {
   PageData: 'PageData',
@@ -138,12 +138,12 @@ export class Storage {
   }
 
   get mercurePendingProcesses() {
-    return this.getState('mercurePendingProcesses')
+    return this.getState(stateVars.mercurePendingProcesses)
   }
 
   increaseMercurePendingProcessCount(requestCount: number = 1) {
     this.setState(
-      'mercurePendingProcesses',
+      stateVars.mercurePendingProcesses,
       this.mercurePendingProcesses + requestCount
     )
   }
@@ -156,7 +156,7 @@ export class Storage {
       )
     }
     const newValue = Math.max(calcValue, 0)
-    this.setState('mercurePendingProcesses', newValue)
+    this.setState(stateVars.mercurePendingProcesses, newValue)
   }
 
   setState(key, value) {

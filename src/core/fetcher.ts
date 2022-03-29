@@ -35,9 +35,9 @@ export class Fetcher {
   public static readonly loadedRoutePathKey = 'loadedRoute'
   public static readonly loadedPageKey = 'loadedPage'
   private timer: DebugTimer
-  private initMercureTimeout?: any = null
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []
+  private fetchingCounter: number = 0
 
   constructor(
     { $axios, error, apiUrl, storage, router, redirect },
@@ -89,6 +89,7 @@ export class Fetcher {
     preload?: string[]
     cancelTokenSource?: CancelTokenSource
   }) {
+    this.fetchingCounter++
     let url = path
     const queryObj = this.ctx.router.currentRoute.query
     if (queryObj) {
@@ -122,6 +123,7 @@ export class Fetcher {
     } catch (error) {
       throw this.axiosToApiError(error)
     } finally {
+      this.fetchingCounter--
       this.timer.end(`Fetching ${url}`)
       consola.debug(`Fetched ${url}`)
     }
@@ -214,7 +216,7 @@ export class Fetcher {
     this.timer.start(`Start fetch ${endpoint}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingEndpoint, endpoint)
-    this.closeMercure()
+    // this.closeMercure()
 
     return true
   }
@@ -479,43 +481,40 @@ export class Fetcher {
   }
 
   public initMercure(currentResources: { any: resourcesState }) {
-    if (this.initMercureTimeout) {
-      clearTimeout(this.initMercureTimeout)
+    const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
+    if (currentLoading || this.fetchingCounter) {
+      return
     }
-    this.initMercureTimeout = setTimeout(() => {
-      const currentResourcesCategories = Object.values(currentResources)
-      if (!process.client) {
+    const currentResourcesCategories = Object.values(currentResources)
+    if (!process.client) {
+      return
+    }
+
+    let hubUrl = null
+    try {
+      hubUrl = this.getMercureHubURL(currentResourcesCategories)
+    } catch (err) {
+      consola.error('Could not get Mercure hub url.', err.message)
+      return
+    }
+    consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
+
+    // Refresh the topics
+    if (this.eventSource && this.eventSource.readyState !== 2) {
+      if (this.eventSource.url === hubUrl) {
         return
       }
+      consola.info('Closing Mercure event source to re-open with latest topics')
+      this.closeMercure()
+    }
 
-      let hubUrl = null
-      try {
-        hubUrl = this.getMercureHubURL(currentResourcesCategories)
-      } catch (err) {
-        consola.error('Could not get Mercure hub url.', err.message)
-        return
-      }
-      consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
-
-      // Refresh the topics
-      if (this.eventSource && this.eventSource.readyState !== 2) {
-        if (this.eventSource.url === hubUrl) {
-          return
-        }
-        consola.info(
-          'Closing Mercure event source to re-open with latest topics'
-        )
-        this.eventSource.close()
-      }
-
-      consola.info(`Created Mercure EventSource for "${hubUrl}"`)
-      this.eventSource = new EventSource(hubUrl)
-      // will be in context of EventSource if not using call
-      // eslint-disable-next-line no-useless-call
-      this.eventSource.onmessage = (messageEvent: MessageEvent) => {
-        this.handleMercureMessage(messageEvent)
-      }
-    }, 100)
+    consola.info(`Created Mercure EventSource for "${hubUrl}"`)
+    this.eventSource = new EventSource(hubUrl)
+    // will be in context of EventSource if not using call
+    // eslint-disable-next-line no-useless-call
+    this.eventSource.onmessage = (messageEvent: MessageEvent) => {
+      this.handleMercureMessage(messageEvent)
+    }
   }
 
   private handleMercureMessage(event: MessageEvent) {
@@ -535,7 +534,7 @@ export class Fetcher {
     // Must wait for existing api requests to happen and storage to update or we think something has changed when
     // it is this application changing it
     const mercurePendingProcesses = this.ctx.storage.getState(
-      'mercurePendingProcesses'
+      stateVars.mercurePendingProcesses
     )
 
     return new Promise((resolve) => {
@@ -552,7 +551,7 @@ export class Fetcher {
         `Mercure message handler waiting for ${mercurePendingProcesses} processes to complete...`
       )
       const unwatchFn = this.ctx.storage.watchState(
-        'mercurePendingProcesses',
+        stateVars.mercurePendingProcesses,
         async (newValue) => {
           if (newValue === 0) {
             consola.debug('Request complete. Invoking Mercure message handler')

@@ -13,7 +13,8 @@ import ApiDocumentation from '@cwa/nuxt-module/core/api-documentation'
 export const stateVars = {
   highlightComponent: 'highlightComponent',
   apiDocumentation: 'apiDocumentation',
-  docsUrl: 'docsUrl'
+  docsUrl: 'docsUrl',
+  mercurePendingProcesses: 'mercurePendingProcesses'
 }
 
 export interface cwaModuleState {
