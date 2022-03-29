@@ -7,6 +7,7 @@ import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiError from '../inc/api-error'
 import Storage, { resourcesState } from './storage'
+import { stateVars } from './storage/CwaVuexModule'
 
 declare interface MercureMessage {
   event: MessageEvent
@@ -420,7 +421,7 @@ export class Fetcher {
   }
 
   private setDocsUrlFromHeaders(headers) {
-    if (this.ctx.storage.state.docsUrl) {
+    if (this.ctx.storage.state[stateVars.docsUrl]) {
       return
     }
 
@@ -443,7 +444,7 @@ export class Fetcher {
     const docsUrl = matches[1]
 
     consola.debug('docs url set', docsUrl)
-    this.ctx.storage.setState('docsUrl', docsUrl)
+    this.ctx.storage.setState(stateVars.docsUrl, docsUrl)
   }
 
   /**

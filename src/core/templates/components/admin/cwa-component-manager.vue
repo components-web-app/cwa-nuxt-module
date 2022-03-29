@@ -56,7 +56,7 @@ import {
   ResetStatusEvent,
   DraggableEvent,
   API_EVENTS,
-  ComponentManagerAddEvent,
+  ComponentManagerResource,
   SaveStateEvent,
   PublishableToggledEvent,
   HighlightComponentEvent
@@ -67,8 +67,8 @@ import Clone from './cwa-component-manager/clone.vue'
 
 interface DataInterface {
   expanded: boolean
-  components: Array<ComponentManagerAddEvent>
-  pendingComponents: Array<ComponentManagerAddEvent>
+  components: Array<ComponentManagerResource>
+  pendingComponents: Array<ComponentManagerResource>
   savedStatus: Number
   showHighlightOverlay: boolean
   showTabs: boolean
@@ -107,7 +107,7 @@ export default Vue.extend({
     isShowing() {
       return this.showingCriteria && this.expanded && this.components.length
     },
-    selectedComponent(): ComponentManagerAddEvent | null {
+    selectedComponent(): ComponentManagerResource | null {
       return this.components?.[0] || null
     },
     componentData() {
@@ -367,7 +367,7 @@ export default Vue.extend({
         })
       })
     },
-    addComponent({ data, iri }: ComponentManagerAddEvent) {
+    addComponent({ data, iri }: ComponentManagerResource) {
       this.pendingComponents.push({ data, iri })
     },
     saveStateListener(event: SaveStateEvent) {

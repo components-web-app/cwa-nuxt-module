@@ -55,7 +55,7 @@ import ComponentManagerMixin, {
 import {
   API_EVENTS,
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerAddEvent,
+  ComponentManagerResource,
   NewComponentEvent
 } from '@cwa/nuxt-module/core/events'
 import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
@@ -261,7 +261,7 @@ export default Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
         iri: this.iri
-      } as ComponentManagerAddEvent)
+      } as ComponentManagerResource)
       this.$cwa.$eventBus.$emit(EVENTS.selectPosition, this.iri)
     },
     newDraftListener({ publishedIri, draftIri }) {

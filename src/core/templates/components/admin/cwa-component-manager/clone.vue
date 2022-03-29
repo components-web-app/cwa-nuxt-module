@@ -5,7 +5,8 @@
       <div class="column">
         <button
           class="button button-cwa clone-component-button"
-          @click="() => {}"
+          type="button"
+          @click="goToCloneFromPath"
         >
           <resource-locations
             :name="cloneComponent.data.name"
@@ -65,6 +66,9 @@ export default Vue.extend({
     handleCloneClick(clickKey) {
       clickKey = clickKey || 'default'
       this.clone(clickKey === 'before')
+    },
+    goToCloneFromPath() {
+      this.$router.push(this.cloneFromPath)
     }
   }
 })

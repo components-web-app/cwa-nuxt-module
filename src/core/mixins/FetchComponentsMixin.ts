@@ -3,7 +3,7 @@ import Vue from 'vue'
 export default Vue.extend({
   computed: {
     componentMetadataObject() {
-      return this.$cwa.$storage.state.componentMetadata
+      return this.$cwa.$state.componentMetadata
     },
     loadingComponents() {
       return this.componentMetadataObject.isLoading

@@ -9,7 +9,9 @@ describe('Cwa', () => {
       commit: jest.fn()
     }
     const $axios = { get: jest.fn() }
-    const app = { router: { currentRoute: { query: {} } } }
+    const app = {
+      router: { beforeEach: jest.fn(), currentRoute: { query: {} } }
+    }
 
     const cwa = new Cwa(
       {
@@ -26,5 +28,6 @@ describe('Cwa', () => {
 
     expect(store.commit).toHaveBeenCalled()
     expect($axios.get).toHaveBeenCalled()
+    expect(app.router.beforeEach).toHaveBeenCalled()
   })
 })
