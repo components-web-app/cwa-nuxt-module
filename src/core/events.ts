@@ -41,7 +41,7 @@ export interface HighlightComponentEvent {
   force?: boolean
 }
 
-export interface ComponentManagerAddEvent {
+export interface ComponentManagerResource {
   data?: ComponentManagerComponent
   iri: string
 }

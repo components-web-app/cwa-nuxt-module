@@ -11,11 +11,15 @@ export default Vue.extend({
     isCloneComponent() {
       return this.cloneComponent && this.cloneComponent.iri === this.iri
     },
+    cloneFromPath() {
+      return this.$cwa.$state.clone.fromPath
+    },
     cloneComponent: {
       get(): string {
         return this.$cwa.$state.clone.component
       },
       set(value: string) {
+        this.$cwa.$storage.setCloneFromPath(this.$route.path)
         this.$cwa.$storage.setCloneComponent(value)
       }
     },
@@ -41,6 +45,9 @@ export default Vue.extend({
       }
       const destination = this.$cwa.getResource(this.cloneDestination)
       return destination['@type'] === 'ComponentCollection'
+    },
+    cloneAllowNavigate(): boolean {
+      return this.$cwa.$storage.get('CLONE_ALLOW_NAVIGATE')
     }
   },
   methods: {

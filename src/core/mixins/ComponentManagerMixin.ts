@@ -2,12 +2,14 @@ import Vue from 'vue'
 import consola from 'consola'
 import {
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerAddEvent,
+  ComponentManagerResource,
   HighlightComponentEvent
 } from '../events'
 import CloneComponentMixin from './CloneComponentMixin'
 import AddElementsMixin from './AddElementsMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
+
+const highlightName = 'highlight'
 
 export const EVENTS = COMPONENT_MANAGER_EVENTS
 
@@ -122,6 +124,7 @@ export const ComponentManagerMixin = Vue.extend({
       if (this.componentManagerDisabled) {
         return
       }
+
       this.$el.addEventListener(
         'click',
         this.initComponentManagerShowListener,
@@ -136,6 +139,10 @@ export const ComponentManagerMixin = Vue.extend({
         EVENTS.selectComponent,
         this.managerSelectComponentListener
       )
+      if (this.isCloneComponent) {
+        this.addHighlightDomElement()
+      }
+
       this.$cwa.$eventBus.$emit(EVENTS.componentMounted, this.computedIri)
 
       // will exist with a resource mixin
@@ -177,7 +184,7 @@ export const ComponentManagerMixin = Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
         iri: this.computedIri
-      } as ComponentManagerAddEvent)
+      } as ComponentManagerResource)
     },
     initComponentManagerShowListener() {
       this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)
@@ -204,16 +211,18 @@ export const ComponentManagerMixin = Vue.extend({
       // events for components to listen to, and this is one?
       // perhaps we always have a default position on all components?
       this.$nextTick(() => {
-        const highlightName = 'highlight'
         if (iri === this.computedIri) {
-          this.addDomElement(highlightName, {
-            className: this.cmHighlightClass
-          })
+          this.addHighlightDomElement()
           return
         }
         if (!this.isCloneComponent) {
           this.removeDomElement(highlightName)
         }
+      })
+    },
+    addHighlightDomElement() {
+      this.addDomElement(highlightName, {
+        className: this.cmHighlightClass
       })
     },
     removeDomElement(name: string) {

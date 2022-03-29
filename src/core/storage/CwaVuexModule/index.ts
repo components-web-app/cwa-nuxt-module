@@ -8,31 +8,64 @@ import {
   ResetCurrentResources
 } from './mutations'
 import { FetchComponentMetadata } from './actions'
+import ApiDocumentation from '@cwa/nuxt-module/core/api-documentation'
+
+export const stateVars = {
+  highlightComponent: 'highlightComponent',
+  apiDocumentation: 'apiDocumentation',
+  docsUrl: 'docsUrl'
+}
+
+export interface cwaModuleState {
+  mercurePendingProcesses: number
+  editMode: boolean
+  resources: {
+    new: any
+    current: any
+    categories: any
+    draftMapping: any
+    mapToPublished: string[]
+  }
+  clone: {
+    component: string
+    navigate: boolean
+    destination: string
+    fromPath: string
+  }
+  componentMetadata: {
+    isLoading: boolean
+    data: any
+  }
+  apiDocumentation: ApiDocumentation
+  docsUrl?: string
+}
 
 export default function (storage) {
   return {
     namespaced: true,
-    state: () => ({
-      mercurePendingProcesses: 0,
-      editMode: false,
-      resources: {
-        new: {},
-        current: {},
-        categories: {},
-        draftMapping: {},
-        mapToPublished: []
-      },
-      clone: {
-        component: null,
-        navigate: false,
-        destination: null
-      },
-      componentMetadata: {
-        isLoading: false,
-        data: null
-      },
-      apiDocumentation: null
-    }),
+    state: () =>
+      ({
+        mercurePendingProcesses: 0,
+        editMode: false,
+        resources: {
+          new: {},
+          current: {},
+          categories: {},
+          draftMapping: {},
+          mapToPublished: []
+        },
+        clone: {
+          component: null,
+          navigate: false,
+          destination: null,
+          fromPath: null
+        },
+        componentMetadata: {
+          isLoading: false,
+          data: null
+        },
+        apiDocumentation: null
+      } as cwaModuleState),
     actions: {
       async fetchComponentMetadata(ctx) {
         return await FetchComponentMetadata.apply(this, [ctx])
@@ -56,6 +89,9 @@ export default function (storage) {
       },
       SET_CLONE_DESTINATION(state, iri) {
         state.clone.destination = iri
+      },
+      SET_CLONE_FROM_PATH(state, fromPath) {
+        state.clone.fromPath = fromPath
       },
       TOGGLE_PUBLISHABLE(state, payload) {
         TogglePublishable(state, payload)
@@ -103,6 +139,13 @@ export default function (storage) {
         },
       RESOURCES_OUTDATED: (state) => {
         return Object.entries(state.resources.new).length !== 0
+      },
+      CLONE_ALLOW_NAVIGATE: ({ clone }) => {
+        const isCloning = !!clone.component
+        if (!isCloning) {
+          return null
+        }
+        return clone.navigate
       }
     }
   }
