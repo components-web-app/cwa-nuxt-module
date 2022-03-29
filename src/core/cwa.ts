@@ -35,6 +35,7 @@ export default class Cwa {
   public $eventBus
   private patchRequests: Array<PatchRequest> = []
   private apiDocumentation: ApiDocumentation
+  private beforeWindowUnloadInitialised: boolean = false
 
   constructor(ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
@@ -47,18 +48,44 @@ export default class Cwa {
     this.options = options
     const apiUrl = this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
 
+    this.initRouterCloneNavigationGuard()
     this.initStorage()
     this.initFetcher(apiUrl)
     this.initForms()
     this.initApiDocumentation(apiUrl)
     if (process.client) {
       this.initMercure()
+      this.initWindowCloneNavigationGuard()
     }
   }
 
   /**
    * Initialisers
    */
+  private initRouterCloneNavigationGuard() {
+    this.ctx.app.router.beforeEach((_, __, next) => {
+      if (!this.$storage.get('CLONE_ALLOW_NAVIGATE')) {
+        return false
+      }
+      next()
+    })
+  }
+
+  private initWindowCloneNavigationGuard() {
+    if (this.beforeWindowUnloadInitialised) {
+      return
+    }
+    this.beforeWindowUnloadInitialised = true
+    window.addEventListener('beforeunload', (e) => {
+      if (this.$state.clone.component) {
+        // Cancel the event
+        e.preventDefault() // If you prevent default behavior in Mozilla Firefox prompt will always be shown
+        // Chrome requires returnValue to be set
+        e.returnValue = ''
+      }
+    })
+  }
+
   private initStorage() {
     const storage = new Storage(this.ctx, this.options)
     this.$storage = storage

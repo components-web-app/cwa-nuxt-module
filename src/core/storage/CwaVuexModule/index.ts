@@ -134,6 +134,10 @@ export default function (storage) {
         },
       RESOURCES_OUTDATED: (state) => {
         return Object.entries(state.resources.new).length !== 0
+      },
+      CLONE_ALLOW_NAVIGATE: ({ clone }) => {
+        const isCloning = !!clone.component
+        return !isCloning || clone.navigate
       }
     }
   }

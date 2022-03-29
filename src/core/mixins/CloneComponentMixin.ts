@@ -41,6 +41,9 @@ export default Vue.extend({
       }
       const destination = this.$cwa.getResource(this.cloneDestination)
       return destination['@type'] === 'ComponentCollection'
+    },
+    cloneAllowNavigate(): boolean {
+      return this.$cwa.$storage.get('CLONE_ALLOW_NAVIGATE')
     }
   },
   methods: {

@@ -195,15 +195,6 @@ export class Storage {
     return 'Default'
   }
 
-  getTypeFromIri(iri, category?: string) {
-    if (!category) {
-      category = this.getCategoryFromIri(iri)
-    }
-    return this.ctx.store.getters[
-      this.options.vuex.namespace + '/GET_TYPE_FROM_IRI'
-    ]({ iri, category })
-  }
-
   findDraftIri(iri) {
     const resource = this.getResource(iri)
     if (!resource) {
@@ -254,10 +245,19 @@ export class Storage {
     return this.state.resources.current[type].byId?.[iri] || null
   }
 
+  getTypeFromIri(iri, category?: string) {
+    if (!category) {
+      category = this.getCategoryFromIri(iri)
+    }
+    return this.get('GET_TYPE_FROM_IRI')({ iri, category })
+  }
+
   areResourcesOutdated() {
-    return this.ctx.store.getters[
-      this.options.vuex.namespace + '/RESOURCES_OUTDATED'
-    ]
+    return this.get('RESOURCES_OUTDATED')
+  }
+
+  get(getter) {
+    return this.ctx.store.getters[`${this.options.vuex.namespace}/${getter}`]
   }
 
   watchState(key, fn) {

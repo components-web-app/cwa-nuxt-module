@@ -38,7 +38,7 @@ export default {
     { src: '~/plugins/cypress', mode: 'client' }
   ],
   router: {
-    middleware: ['auth', 'routeLoader']
+    middleware: ['auth', 'cwa']
   },
   cwa: {
     allowUnauthorizedTls: true,
