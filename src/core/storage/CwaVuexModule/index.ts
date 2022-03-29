@@ -30,6 +30,7 @@ export interface cwaModuleState {
     component: string
     navigate: boolean
     destination: string
+    fromPath: string
   }
   componentMetadata: {
     isLoading: boolean
@@ -56,7 +57,8 @@ export default function (storage) {
         clone: {
           component: null,
           navigate: false,
-          destination: null
+          destination: null,
+          fromPath: null
         },
         componentMetadata: {
           isLoading: false,
@@ -87,6 +89,9 @@ export default function (storage) {
       },
       SET_CLONE_DESTINATION(state, iri) {
         state.clone.destination = iri
+      },
+      SET_CLONE_FROM_PATH(state, fromPath) {
+        state.clone.fromPath = fromPath
       },
       TOGGLE_PUBLISHABLE(state, payload) {
         TogglePublishable(state, payload)
@@ -137,7 +142,10 @@ export default function (storage) {
       },
       CLONE_ALLOW_NAVIGATE: ({ clone }) => {
         const isCloning = !!clone.component
-        return !isCloning || clone.navigate
+        if (!isCloning) {
+          return null
+        }
+        return clone.navigate
       }
     }
   }

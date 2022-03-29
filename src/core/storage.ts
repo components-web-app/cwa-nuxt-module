@@ -289,6 +289,13 @@ export class Storage {
     )
   }
 
+  setCloneFromPath(iri: string) {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/SET_CLONE_FROM_PATH',
+      iri
+    )
+  }
+
   setCloneDestination(iri: string) {
     this.ctx.store.commit(
       this.options.vuex.namespace + '/SET_CLONE_DESTINATION',

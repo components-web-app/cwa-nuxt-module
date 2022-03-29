@@ -64,10 +64,14 @@ export default class Cwa {
    */
   private initRouterCloneNavigationGuard() {
     this.ctx.app.router.beforeEach((_, __, next) => {
-      if (!this.$storage.get('CLONE_ALLOW_NAVIGATE')) {
-        return false
+      if (
+        this.$storage.get('CLONE_ALLOW_NAVIGATE') === true ||
+        !this.isEditMode
+      ) {
+        next()
+        return
       }
-      next()
+      return false
     })
   }
 

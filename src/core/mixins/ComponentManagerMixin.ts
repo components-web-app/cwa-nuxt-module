@@ -2,7 +2,7 @@ import Vue from 'vue'
 import consola from 'consola'
 import {
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerAddEvent,
+  ComponentManagerResource,
   HighlightComponentEvent
 } from '../events'
 import CloneComponentMixin from './CloneComponentMixin'
@@ -184,7 +184,7 @@ export const ComponentManagerMixin = Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
         iri: this.computedIri
-      } as ComponentManagerAddEvent)
+      } as ComponentManagerResource)
     },
     initComponentManagerShowListener() {
       this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)

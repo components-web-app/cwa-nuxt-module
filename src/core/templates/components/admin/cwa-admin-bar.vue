@@ -135,7 +135,7 @@ import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
 import {
   COMPONENT_MANAGER_EVENTS,
   ADMIN_BAR_EVENTS,
-  ComponentManagerAddEvent
+  ComponentManagerResource
 } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
@@ -189,7 +189,7 @@ export default Vue.extend({
     isNew() {
       return this.componentIri && this.componentIri.endsWith('/new')
     },
-    selectedComponent(): ComponentManagerAddEvent | null {
+    selectedComponent(): ComponentManagerResource | null {
       return this.components?.[0] || null
     },
     componentData() {
