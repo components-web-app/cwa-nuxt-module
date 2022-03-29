@@ -41,6 +41,7 @@ export interface ComponentManagerComponent {
   context?: ComponentManagerComponentContext
 }
 
+// eslint-disable-next-line vue/one-component-per-file
 export const ComponentManagerMixin = Vue.extend({
   mixins: [AddElementsMixin, ComponentManagerValueMixin, CloneComponentMixin],
   data() {
