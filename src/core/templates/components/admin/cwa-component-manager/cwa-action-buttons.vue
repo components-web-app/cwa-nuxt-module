@@ -82,7 +82,9 @@ export default Vue.extend({
           return {
             default: {
               label: 'Publish',
-              fn: this.publishNow(this.selectedComponent.iri)
+              fn: () => {
+                this.publishNow(this.selectedComponent.iri)
+              }
             },
             clone: { label: 'Clone', fn: this.selectCloneComponent }
           }

@@ -46,7 +46,7 @@
             />
           </div>
           <div class="column is-narrow">
-            <cm-button @click="publishNow(iri)">Publish Now</cm-button>
+            <cm-button @click="publishIri">Publish Now</cm-button>
           </div>
         </template>
       </template>
@@ -92,6 +92,11 @@ export default Vue.extend({
     refreshEndpoints() {
       const publishedResource = this.$cwa.getPublishedResource(this.resource)
       return publishedResource?.componentPositions || null
+    }
+  },
+  methods: {
+    publishIri() {
+      this.publishNow(this.iri)
     }
   }
 })
