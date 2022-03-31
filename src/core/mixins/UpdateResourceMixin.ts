@@ -70,6 +70,28 @@ export default Vue.extend({
         message,
         notifications
       )
+    },
+    async publishNow(iri) {
+      if (!this.moment) {
+        consola.error('Cannot publish. Moment not loaded.')
+        return
+      }
+      try {
+        await this.updateResource(
+          iri,
+          'publishedAt',
+          this.moment.utc().toISOString(),
+          this.$cwa.$storage.getCategoryFromIri(iri),
+          this.refreshEndpoints,
+          'components-manager'
+        )
+        this.$emit('close')
+      } catch (error) {
+        if (!(error instanceof UpdateResourceError)) {
+          throw error
+        }
+        consola.error(error)
+      }
     }
   }
 })
