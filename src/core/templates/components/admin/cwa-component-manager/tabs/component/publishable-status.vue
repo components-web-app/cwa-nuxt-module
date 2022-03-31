@@ -56,14 +56,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import consola from 'consola'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import CmDatepicker from '../../input/cm-datepicker.vue'
 import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
-import UpdateResourceError from '../../../../../../../inc/update-resource-error'
 
 export default Vue.extend({
   components: { CmButton, CmDatepicker, CwaAdminToggle },

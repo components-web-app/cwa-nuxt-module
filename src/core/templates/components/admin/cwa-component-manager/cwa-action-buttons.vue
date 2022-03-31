@@ -16,7 +16,6 @@ import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
 import CloneComponentMixin from '../../../../mixins/CloneComponentMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
-import UpdateResourceError from '@cwa/nuxt-module/inc/update-resource-error'
 import UpdateResourceMixin from '@cwa/nuxt-module/core/mixins/UpdateResourceMixin'
 import ApiDateParserMixin from '@cwa/nuxt-module/core/mixins/ApiDateParserMixin'
 
