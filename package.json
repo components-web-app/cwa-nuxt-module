@@ -25,6 +25,7 @@
     "lint-fix": "yarn lint --fix",
     "release": "yarn clean && yarn build && standard-version && git push --follow-tags && npm publish",
     "demo:build": "nuxt-ts build demo",
+    "demo:analyze": "nuxt-ts build demo --analyze",
     "demo:start": "nuxt-ts start demo",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js src/**/*.spec.ts --detectOpenHandles",
     "e2e": "cypress run",

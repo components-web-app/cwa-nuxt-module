@@ -8,7 +8,6 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import moment from 'moment'
 import consola from 'consola'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
 import { ComponentCreatedEvent, NewComponentEvent } from '../../../../events'
@@ -19,13 +18,15 @@ import CloneComponentMixin from '../../../../mixins/CloneComponentMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
 import UpdateResourceError from '@cwa/nuxt-module/inc/update-resource-error'
 import UpdateResourceMixin from '@cwa/nuxt-module/core/mixins/UpdateResourceMixin'
+import ApiDateParserMixin from '@cwa/nuxt-module/core/mixins/ApiDateParserMixin'
 
 export default Vue.extend({
   components: { CmButton },
   mixins: [
     ApiErrorNotificationsMixin,
     CloneComponentMixin,
-    UpdateResourceMixin
+    UpdateResourceMixin,
+    ApiDateParserMixin
   ],
   props: {
     selectedPosition: {
@@ -80,7 +81,10 @@ export default Vue.extend({
       if (this.state === 2) {
         if (this.isDraft) {
           return {
-            default: { label: 'Publish', fn: this.publishNow },
+            default: {
+              label: 'Publish',
+              fn: this.publishNow(this.selectedComponent.iri)
+            },
             clone: { label: 'Clone', fn: this.selectCloneComponent }
           }
         }
@@ -128,24 +132,6 @@ export default Vue.extend({
         this.buttonOptions[clickKey].args || []
       )
     },
-    async publishNow() {
-      try {
-        await this.updateResource(
-          this.selectedComponent.iri,
-          'publishedAt',
-          moment.utc().toISOString(),
-          this.$cwa.$storage.getCategoryFromIri(this.selectedComponent.iri),
-          this.refreshEndpoints,
-          'components-manager'
-        )
-        this.$emit('close')
-      } catch (error) {
-        if (!(error instanceof UpdateResourceError)) {
-          throw error
-        }
-        consola.error(error)
-      }
-    },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
       // this.cloneDestination = this.selectedPosition
@@ -157,6 +143,10 @@ export default Vue.extend({
       this.addingEvent = null
     },
     async addComponent(publish: boolean) {
+      if (!this.moment) {
+        consola.error('Cannot add. Moment not loaded.')
+        return
+      }
       const notificationCategory = 'components-manager'
       const componentPosition: string = this.addingEvent.position
       const componentCollection: string = this.addingEvent.collection
@@ -180,7 +170,9 @@ export default Vue.extend({
       }
 
       if (this.addingEvent?.isPublishable) {
-        additionalData.publishedAt = publish ? moment.utc().toISOString() : null
+        additionalData.publishedAt = publish
+          ? this.moment.utc().toISOString()
+          : null
       }
       const resourceObject = {
         ...this.$cwa.getResource(this.addingEvent.iri),

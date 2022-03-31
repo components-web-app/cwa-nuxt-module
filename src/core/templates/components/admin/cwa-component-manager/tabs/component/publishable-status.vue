@@ -46,7 +46,7 @@
             />
           </div>
           <div class="column is-narrow">
-            <cm-button @click="publishNow">Publish Now</cm-button>
+            <cm-button @click="publishNow(iri)">Publish Now</cm-button>
           </div>
         </template>
       </template>
@@ -56,7 +56,6 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import moment from 'moment'
 import consola from 'consola'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
@@ -95,26 +94,6 @@ export default Vue.extend({
     refreshEndpoints() {
       const publishedResource = this.$cwa.getPublishedResource(this.resource)
       return publishedResource?.componentPositions || null
-    }
-  },
-  methods: {
-    async publishNow() {
-      try {
-        await this.updateResource(
-          this.iri,
-          'publishedAt',
-          moment.utc().toISOString(),
-          this.$cwa.$storage.getCategoryFromIri(this.iri),
-          this.refreshEndpoints,
-          'components-manager'
-        )
-        this.$emit('close')
-      } catch (error) {
-        if (!(error instanceof UpdateResourceError)) {
-          throw error
-        }
-        consola.error(error)
-      }
     }
   }
 })
