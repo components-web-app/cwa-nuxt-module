@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     async updateTimestamp() {
-      const moment = await import('moment')
+      const { default: moment } = await import('moment')
       this.formattedTimestamp = moment(this.timestamp).fromNow()
     }
   }

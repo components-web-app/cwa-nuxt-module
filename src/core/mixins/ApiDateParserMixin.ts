@@ -7,7 +7,7 @@ export default Vue.extend({
     }
   },
   mounted() {
-    import('moment').then((moment) => {
+    import('moment').then(({ default: moment }) => {
       this.moment = moment
     })
   },
