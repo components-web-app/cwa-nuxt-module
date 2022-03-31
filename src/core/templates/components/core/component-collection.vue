@@ -4,8 +4,8 @@
     v-if="resource"
     :class="[
       {
-        'is-editing': $cwa.isEditMode,
-        'is-empty': !sortedComponentPositions.length
+        'is-editing': $cwa.isEditMode
+        // 'is-empty': !sortedComponentPositions.length
       },
       ...classes
     ]"
@@ -20,20 +20,21 @@
         </div>
       </component-load-error>
     </client-only>
+
     <!-- else we loop through components -->
     <draggable
       v-model="sortedComponentPositions"
       handle=".is-draggable"
       class="positions-container"
-      :group="`collection-${resource['@id']}`"
+      :group="`collection-${iri}`"
       @change="draggableChanged"
     >
       <component-position
-        v-for="iri in sortedComponentPositions"
-        :key="iri"
+        v-for="positionIri in sortedComponentPositions"
+        :key="positionIri"
         :class="[isDraggable ? 'is-draggable' : null]"
         :show-sort="showOrderValues"
-        :iri="iri"
+        :iri="positionIri"
       />
       <component
         :is="newComponentName"
@@ -74,10 +75,12 @@ export default Vue.extend({
   },
   mixins: [ApiRequestMixin, ComponentManagerMixin, NewComponentMixin],
   props: {
+    // could be layout page or component
     location: {
       type: String,
       required: true
     },
+    // could be layout iri, page iri or component iri
     locationResourceId: {
       type: String,
       required: true
@@ -106,6 +109,9 @@ export default Vue.extend({
     }
   },
   computed: {
+    iri() {
+      return this.resource?.['@id']
+    },
     componentManager(): ComponentManagerComponent {
       return {
         name: 'Collection',
@@ -135,10 +141,10 @@ export default Vue.extend({
       }
     },
     resource() {
-      return this.getCollectionResourceByLocation(
-        this.location,
-        this.locationResourceId
-      )
+      return this.$cwa.$storage.getCollectionByPlacement({
+        iri: this.locationResourceId,
+        name: this.location
+      })
     },
     classes() {
       return [
@@ -156,12 +162,9 @@ export default Vue.extend({
     },
     sortedComponentPositions: {
       get() {
-        if (!this.$cwa.resources.ComponentPosition) {
-          return []
-        }
         const positions = []
         for (const iri of this.resource.componentPositions) {
-          const position = this.$cwa.resources.ComponentPosition.byId[iri]
+          const position = this.$cwa.resources?.ComponentPosition?.byId[iri]
           position && positions.push(position)
         }
         return positions
@@ -258,25 +261,6 @@ export default Vue.extend({
       } else {
         this.showOrderValues = !!event.newTab?.context?.showOrderValues
       }
-    },
-
-    getCollectionResourceByLocation(location, locationResourceId) {
-      const ComponentCollection = this.$cwa.resources?.ComponentCollection
-      if (!ComponentCollection) {
-        return
-      }
-      for (const resource of Object.values(ComponentCollection.byId) as {
-        location?: string
-      }[]) {
-        if (
-          resource &&
-          resource.location === location &&
-          resource[this.locationResourceType].includes(locationResourceId)
-        ) {
-          return resource
-        }
-      }
-      return null
     },
     async addComponentCollection() {
       this.startApiRequest()

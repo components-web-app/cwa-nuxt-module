@@ -11,6 +11,9 @@ export type resourcesState = {
   byId: object
   allIds: string[]
   currentIds?: string[]
+  extensions?: {
+    [key: string]: any
+  }
 }
 
 export class Storage {
@@ -258,6 +261,14 @@ export class Storage {
 
   get(getter) {
     return this.ctx.store.getters[`${this.options.vuex.namespace}/${getter}`]
+  }
+
+  getCollectionByPlacement({ iri, name }) {
+    const collectionIri = this.get('COLLECTION_BY_PLACEMENT')({ iri, name })
+    if (!collectionIri) {
+      return null
+    }
+    return this.getResource(collectionIri)
   }
 
   watchState(key, fn) {

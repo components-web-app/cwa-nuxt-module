@@ -38,6 +38,9 @@ export class Fetcher {
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []
   private fetchingCounter: number = 0
+  private clientResourcesFetched: {
+    [key: string]: Promise<any>
+  } = {}
 
   constructor(
     { $axios, error, apiUrl, storage, router, redirect },
@@ -204,6 +207,7 @@ export class Fetcher {
 
   private startFetch(endpoint) {
     // prevent reload on querystring change or if we are already loading
+    this.clientResourcesFetched = {}
     const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
     const currentlyLoaded = this.ctx.storage.getState(
       Fetcher.loadedRoutePathKey
@@ -374,19 +378,31 @@ export class Fetcher {
         return this.fetchCollection(
           { paths: componentCollection.componentPositions },
           (componentPosition) => {
-            return this.fetchComponent(componentPosition.component)
+            return this.fetchResource(componentPosition.component)
           }
         )
       }
     )
   }
 
-  public async fetchComponent(path) {
+  public async fetchResource(path) {
     this.timer.reset()
-    try {
-      return await this.fetchItem({
+    const doFetch = () => {
+      return this.fetchItem({
         path
       })
+    }
+    try {
+      if (process.client) {
+        // we are fetching with full available auth
+        if (!this.clientResourcesFetched[path]) {
+          this.clientResourcesFetched[path] = doFetch()
+        }
+        return await this.clientResourcesFetched[path]
+      } else {
+        return await doFetch()
+      }
+
       // const unavailableIndex = this.unavailableComponents.indexOf(path)
       // if (unavailableIndex !== -1) {
       //   this.unavailableComponents.splice(unavailableIndex, 1)
@@ -633,7 +649,7 @@ export class Fetcher {
     // we should check the component in this position
     if (data.component) {
       // try to fetch it from the API
-      if (!(await this.fetchComponent(data.component))) {
+      if (!(await this.fetchResource(data.component))) {
         this.initMercure(this.currentResources)
       }
     }
