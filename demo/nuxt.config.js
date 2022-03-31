@@ -70,5 +70,6 @@ export default {
   },
   loading: {
     color: '#E30A6C'
-  }
+  },
+  analyze: true
 }

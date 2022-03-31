@@ -2,6 +2,37 @@ import consola from 'consola'
 import Vue from 'vue'
 import { resourcesState } from '@cwa/nuxt-module/core/storage'
 
+function componentCollectionResourceExtension(resourceState, resource) {
+  if (!resourceState.extensions) {
+    Vue.set(resourceState, 'extensions', {})
+  }
+  if (!resourceState.extensions.componentCollectionByPlacement) {
+    Vue.set(resourceState.extensions, 'componentCollectionByPlacement', {
+      components: {},
+      layouts: {},
+      pages: {}
+    })
+  }
+  const keys = ['layouts', 'pages', 'components']
+  for (const key of keys) {
+    for (const iri of resource[key]) {
+      if (!resourceState.extensions.componentCollectionByPlacement[key][iri]) {
+        resourceState.extensions.componentCollectionByPlacement[key][iri] = {}
+        Vue.set(
+          resourceState.extensions.componentCollectionByPlacement[key],
+          iri,
+          {}
+        )
+      }
+      Vue.set(
+        resourceState.extensions.componentCollectionByPlacement[key][iri],
+        resource.location,
+        resource['@id']
+      )
+    }
+  }
+}
+
 export function SetResource(storage, state, payload) {
   if (payload.originalId && payload.originalId !== payload['@id']) {
     state.resources.draftMapping[payload.originalId] = payload['@id']
@@ -51,6 +82,10 @@ export function SetResource(storage, state, payload) {
   currentResourceState.allIds = Object.keys(currentResourceState.byId)
   if (!payload.isNew && !currentResourceState.currentIds.includes(payload.id)) {
     currentResourceState.currentIds.push(payload.id)
+  }
+
+  if (payload.name === 'ComponentCollection') {
+    componentCollectionResourceExtension(currentResourceState, payload.resource)
   }
 
   Vue.set(state.resources, stateKey, {

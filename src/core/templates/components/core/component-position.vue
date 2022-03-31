@@ -184,22 +184,27 @@ export default Vue.extend({
     }
   },
   async mounted() {
-    // load the component if not loaded
+    // load the component if not loaded server-side (client-side has auth)
+    // this will be called only if there is no component, otherwise resource mixin will deal with this stuff
     if (!this.component) {
       // check if no published version, only a draft (i.e. only an authorized viewer can see it)
       if (this.$cwa.user && this.resource.component) {
-        await this.$cwa.fetcher.fetchComponent(this.resource.component)
+        await this.$cwa.fetcher.fetchResource(this.resource.component)
       }
 
+      // wait for the component IRI to try and be fetched client-side and populated into storage
       this.$nextTick(async () => {
+        // it is still not an object
         if (!this.component) {
+          // it is not a dynamic position and we are an admin.. try to fetch this position again client-side
           if (!this.resource.pageDataProperty && this.$cwa.isAdmin) {
-            await this.$cwa.fetcher.fetchComponent(this.resource['@id'])
+            await this.$cwa.fetcher.fetchResource(this.resource['@id'])
           }
           this.componentLoadFailed = true
         }
       })
     }
+
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.newComponent,
       this.newComponentListener

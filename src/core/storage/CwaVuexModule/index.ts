@@ -121,6 +121,25 @@ export default function (storage) {
       }
     },
     getters: {
+      COLLECTION_BY_PLACEMENT:
+        (state) =>
+        ({ iri, name }) => {
+          const getLookupProperty = (placementIri) => {
+            if (placementIri.startsWith('component')) {
+              return 'components'
+            }
+            if (placementIri.startsWith('/_/layouts/')) {
+              return 'layouts'
+            }
+            if (placementIri.startsWith('/_/pages/')) {
+              return 'pages'
+            }
+            return null
+          }
+          const lookupProperty = getLookupProperty(iri)
+          return state.resources.current.ComponentCollection.extensions
+            .componentCollectionByPlacement[lookupProperty][iri]?.[name]
+        },
       GET_TYPE_FROM_IRI:
         (state) =>
         ({ iri, category }) => {
