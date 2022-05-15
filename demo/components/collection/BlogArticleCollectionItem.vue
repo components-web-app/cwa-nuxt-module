@@ -2,8 +2,8 @@
   <div v-if="resource" class="blog-collection-item">
     <div class="box">
       <h4>{{ resource.title }}</h4>
-      <nuxt-link :to="route ? route.path : '#'" class="button">{{
-        route ? 'View Article' : '...'
+      <nuxt-link :to="routePath" class="button">{{
+        routePath !== '#' ? 'View Article' : '...'
       }}</nuxt-link>
       <p class="created-date">
         {{ formatDate(parseDateString(resource.createdAt)) }}
@@ -25,15 +25,28 @@ export default Vue.extend({
     }
   },
   computed: {
-    route() {
+    routePath() {
       if (!this.resource.route) {
-        return {
-          path: { name: '_cwa_page_data_iri', params: { iri: this.iri } }
-        }
+        return { name: '_cwa_page_data_iri', params: { iri: this.iri } }
       }
-      return this.resource.route['@id']
-        ? this.resource.route
-        : this.$cwa.getResource(this.resource.route)
+      if (this.resource.route?.['@id']) {
+        if (this.resource.route.path) {
+          return this.resource.route.path
+        }
+        const resource = this.$cwa.getResource(this.resource.route['@id'])
+        if (resource) {
+          return resource.path || '#'
+        }
+        return '#'
+      }
+      if (this.resource.route.startsWith('/_/routes/')) {
+        return this.resource.route.replace(/^(\/_\/routes\/)/, '')
+      }
+      // eslint-disable-next-line no-console
+      console.warn(
+        `Unable to find the route path from the value '${this.resource.route}'`
+      )
+      return '#'
     }
   }
 })
