@@ -16,9 +16,10 @@
 import Vue from 'vue'
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
 import ApiDateParserMixin from '@cwa/nuxt-module/core/mixins/ApiDateParserMixin'
+import ResolveRoutePathMixin from '@cwa/nuxt-module/core/mixins/ResolveRoutePathMixin'
 
 export default Vue.extend({
-  mixins: [ComponentMixin, ApiDateParserMixin],
+  mixins: [ComponentMixin, ApiDateParserMixin, ResolveRoutePathMixin],
   data() {
     return {
       componentManagerDisabled: true
@@ -26,27 +27,7 @@ export default Vue.extend({
   },
   computed: {
     routePath() {
-      if (!this.resource.route) {
-        return { name: '_cwa_page_data_iri', params: { iri: this.iri } }
-      }
-      if (this.resource.route?.['@id']) {
-        if (this.resource.route.path) {
-          return this.resource.route.path
-        }
-        const resource = this.$cwa.getResource(this.resource.route['@id'])
-        if (resource) {
-          return resource.path || '#'
-        }
-        return '#'
-      }
-      if (this.resource.route.startsWith('/_/routes/')) {
-        return this.resource.route.replace(/^(\/_\/routes\/)/, '')
-      }
-      // eslint-disable-next-line no-console
-      console.warn(
-        `Unable to find the route path from the value '${this.resource.route}'`
-      )
-      return '#'
+      return this.resolveRoutePath(this.resource.route)
     }
   }
 })
