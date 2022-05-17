@@ -91,6 +91,9 @@ export default Vue.extend({
   },
   computed: {
     isDraft() {
+      if (!this.componentIri) {
+        return null
+      }
       const storageResource = this.$cwa.getResource(this.componentIri)
       return storageResource?._metadata?.published === false || false
     },
@@ -157,6 +160,9 @@ export default Vue.extend({
       return this.$cwa.getResource(this.iri)
     },
     componentIri() {
+      if (!this.resource.component) {
+        return
+      }
       return this.$cwa.getPublishableIri(this.resource.component)
     },
     component() {
