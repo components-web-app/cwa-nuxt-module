@@ -1,0 +1,19 @@
+## This has been modified from the API Platform template implementation
+## More specifically from https://github.com/dunglas/demo-vulcain-api-platform
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    volumes:
+      - ./:/usr/src/app:rw,cached
+    environment:
+      NODE_ENV: ~
+      LOCAL_TLS: ~
+      NODE_TLS_REJECT_UNAUTHORIZED: ~
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
