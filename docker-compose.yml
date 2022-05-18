@@ -14,7 +14,3 @@ services:
       NODE_ENV: ~
       LOCAL_TLS: ~
       NODE_TLS_REJECT_UNAUTHORIZED: ~
-    ports:
-      - target: 3000
-        published: 3000
-        protocol: tcp
