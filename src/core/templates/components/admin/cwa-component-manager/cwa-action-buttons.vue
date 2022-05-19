@@ -126,12 +126,10 @@ export default Vue.extend({
     )
   },
   methods: {
-    handleClick(clickKey) {
+    async handleClick(clickKey) {
       clickKey = clickKey || 'default'
-      this.buttonOptions[clickKey].fn.apply(
-        this,
-        this.buttonOptions[clickKey].args || []
-      )
+      const fn: Function = this.buttonOptions[clickKey].fn
+      await fn.apply(this, this.buttonOptions[clickKey].args || [])
     },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
