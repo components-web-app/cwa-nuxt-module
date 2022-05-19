@@ -40,11 +40,17 @@ export default Vue.extend({
       }
     },
     cloneDestinationIsCollection() {
+      if (!this.cloneDestinationResource) {
+        return null
+      }
+      const destination = this.cloneDestinationResource
+      return destination['@type'] === 'ComponentCollection'
+    },
+    cloneDestinationResource() {
       if (!this.cloneDestination) {
         return null
       }
-      const destination = this.$cwa.getResource(this.cloneDestination)
-      return destination['@type'] === 'ComponentCollection'
+      return this.$cwa.getResource(this.cloneDestination)
     },
     cloneAllowNavigate(): boolean {
       return this.$cwa.$storage.get('CLONE_ALLOW_NAVIGATE')
@@ -58,11 +64,14 @@ export default Vue.extend({
         return
       }
       const destinationIsCollection = this.cloneDestinationIsCollection
-
       const collection = destinationIsCollection
         ? destination
-        : this.$cwa.getResource(destination.componentCollection)
-      let sortValue = destinationIsCollection ? 1 : destination.sortValue
+        : this.$cwa.getResource(
+            this.cloneDestinationResource.componentCollection
+          )
+      let sortValue = destinationIsCollection
+        ? 1
+        : this.cloneDestinationResource.sortValue
       if (useBefore) {
         sortValue--
       } else {
@@ -73,14 +82,17 @@ export default Vue.extend({
         {
           componentCollection: destinationIsCollection
             ? this.cloneDestination
-            : destination.componentCollection,
+            : this.cloneDestinationResource.componentCollection,
           sortValue,
           component: this.cloneComponent.iri
         },
         null,
         destinationIsCollection
           ? [this.cloneDestination]
-          : [destination.componentCollection, ...collection.componentPositions]
+          : [
+              this.cloneDestinationResource.componentCollection,
+              ...collection.componentPositions
+            ]
       )
       this.$cwa.$eventBus.$emit(
         COMPONENT_MANAGER_EVENTS.selectComponent,
