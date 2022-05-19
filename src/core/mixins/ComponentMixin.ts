@@ -59,27 +59,29 @@ export default Vue.extend({
       return []
     },
     defaultManagerTabs(): Array<ComponentManagerTab> {
-      return [
-        {
-          label: 'Order',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/sort-order.vue'
-            ),
-          priority: 100,
-          context: {
-            showOrderValues: true
-          }
-        },
-        {
-          label: 'Info',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/info.vue'
-            ),
-          priority: 200
-        }
-      ]
+      return this.resource._metadata._isNew
+        ? []
+        : [
+            {
+              label: 'Order',
+              component: () =>
+                import(
+                  '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/sort-order.vue'
+                ),
+              priority: 100,
+              context: {
+                showOrderValues: true
+              }
+            },
+            {
+              label: 'Info',
+              component: () =>
+                import(
+                  '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/info.vue'
+                ),
+              priority: 200
+            }
+          ]
     },
     metadata() {
       return this.resource?._metadata || {}
