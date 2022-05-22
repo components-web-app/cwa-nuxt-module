@@ -112,6 +112,11 @@ describe('Component Manager Functions', () => {
       .should('contain.text', 'HTML Content')
   })
 
+  it('Show plus sign in collection if all components deleted', () => {
+    cy.login()
+    cy.get('#cwa-cm-edit-button').click()
+  })
+
   it('Add a published component', () => {})
 
   it('Add a dynamic placeholder', () => {})
