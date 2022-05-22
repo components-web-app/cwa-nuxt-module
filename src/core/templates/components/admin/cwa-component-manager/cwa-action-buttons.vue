@@ -209,8 +209,9 @@ export default Vue.extend({
           tempIri: this.addingEvent.iri,
           newIri: resource['@id']
         } as ComponentCreatedEvent)
-        this.addingEvent = null
         this.$cwa.$storage.decreaseMercurePendingProcessCount()
+        this.addingEvent = null
+        this.$cwa.$eventBus.$emit(EVENTS.newComponentCleared)
       } catch (message) {
         if (!(message instanceof ApiError)) {
           throw message

@@ -198,6 +198,7 @@ export default Vue.extend({
     this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPositionListener)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
     this.$cwa.$eventBus.$on(EVENTS.saveState, this.saveStateListener)
+    this.$cwa.$eventBus.$on(API_EVENTS.deleted, this.hide)
     this.$cwa.$eventBus.$on(
       EVENTS.publishableToggled,
       this.publishableToggledListener
@@ -215,6 +216,7 @@ export default Vue.extend({
       this.publishableToggledListener
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
+    this.$cwa.$eventBus.$off(API_EVENTS.deleted, this.hide)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
