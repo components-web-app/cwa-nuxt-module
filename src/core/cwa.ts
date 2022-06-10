@@ -63,15 +63,32 @@ export default class Cwa {
    * Initialisers
    */
   private initRouterCloneNavigationGuard() {
-    this.ctx.app.router.beforeEach((_, __, next) => {
-      if (
-        this.$storage.get('CLONE_ALLOW_NAVIGATE') === true ||
-        !this.isEditMode
-      ) {
-        next()
-        return
+    let programmatic = false
+
+    ;['push', 'replace', 'go', 'back', 'forward'].forEach((methodName) => {
+      const method = this.ctx.app.router[methodName]
+      this.ctx.app.router[methodName] = (...args) => {
+        programmatic = true
+        method.apply(this.ctx.app.router, args)
       }
-      return false
+    })
+
+    this.ctx.app.router.beforeEach((toRoute, __, next) => {
+      try {
+        const cwaForce = !!toRoute.params?.cwa_force
+        if (
+          programmatic === false ||
+          this.$storage.get('CLONE_ALLOW_NAVIGATE') === true ||
+          !this.isEditMode ||
+          cwaForce
+        ) {
+          next()
+          return
+        }
+        return false
+      } finally {
+        programmatic = false
+      }
     })
   }
 

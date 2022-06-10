@@ -8,6 +8,9 @@ export default Vue.extend({
     isDynamicPage() {
       return this.pageResource?.['@type'] !== 'Page'
     },
+    isPageTemplate() {
+      return !!this.pageResource?.isTemplate
+    },
     pageDataProps() {
       return (
         this.pageResource._metadata?.page_data_metadata?.properties.reduce(

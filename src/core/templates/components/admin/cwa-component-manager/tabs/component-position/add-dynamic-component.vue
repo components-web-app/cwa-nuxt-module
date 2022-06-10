@@ -7,11 +7,8 @@
         </button>
       </div>
       <div class="column is-narrow fallback">
-        Want to add a fallback component?
-        <nuxt-link
-          :to="{ name: '_cwa_page_iri', params: { iri: pageResource.page } }"
-          >Go to page template</nuxt-link
-        >
+        Add a fallback component?
+        <a href="#" @click.prevent="goToTemplate">Go to page template</a>
       </div>
     </div>
   </div>
@@ -48,6 +45,16 @@ export default Vue.extend({
           COMPONENT_MANAGER_EVENTS.newComponent,
           newComponentEvent
         )
+      })
+    },
+    goToTemplate() {
+      this.$cwa.setEditMode(false)
+      this.$router.push({
+        name: '_cwa_page_iri',
+        params: {
+          iri: this.pageResource.page,
+          cwa_force: 'true'
+        }
       })
     }
   }

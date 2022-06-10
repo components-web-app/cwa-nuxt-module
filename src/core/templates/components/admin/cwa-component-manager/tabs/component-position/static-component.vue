@@ -25,7 +25,10 @@
           <p v-else>No static component is defined.</p>
           <nuxt-link
             class="button"
-            :to="{ name: '_cwa_page_iri', params: { iri: pageResource.page } }"
+            :to="{
+              name: '_cwa_page_iri',
+              params: { iri: pageResource.page, cwa_force: true }
+            }"
           >
             Go to page template
           </nuxt-link>
