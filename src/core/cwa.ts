@@ -229,7 +229,10 @@ export default class Cwa {
 
   getPublishableIri(iri: string) {
     // is it draft and mapped to show published?
-    if (!this.isEditMode || this.$storage.isIriMappedToPublished(iri)) {
+    if (
+      (iri && !this.isEditMode) ||
+      this.$storage.isIriMappedToPublished(iri)
+    ) {
       return this.$storage.findPublishedIri(iri) || iri
     }
     return iri
