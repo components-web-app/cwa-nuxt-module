@@ -74,6 +74,9 @@ export default class Cwa {
     })
 
     this.ctx.app.router.beforeEach((toRoute, __, next) => {
+      if (!programmatic) {
+        this.setEditMode(false)
+      }
       try {
         const cwaForce = !!toRoute.params?.cwa_force
         if (
