@@ -19,7 +19,10 @@ import Vue from 'vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import CreateNewComponentEventMixin from '../../../../../../mixins/CreateNewComponentEventMixin'
-import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
+import {
+  COMPONENT_MANAGER_EVENTS,
+  ComponentCreatedEvent
+} from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
   mixins: [
@@ -32,12 +35,28 @@ export default Vue.extend({
       return this.getPageDataPropComponent(this.resource.pageDataProperty)
     }
   },
+  mounted() {
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.componentCreated,
+      this.handleComponentCreated
+    )
+  },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.componentCreated,
+      this.handleComponentCreated
+    )
+  },
   methods: {
     async addDynamicComponent() {
       const newComponentEvent = await this.createNewComponentEvent(
         this.pageDataPropComponent,
         null,
-        this.iri
+        this.iri,
+        {
+          dynamicPage: this.pageResource['@id'],
+          property: this.resource.pageDataProperty
+        }
       )
       // allow cwa manager to mount buttons to receive this event
       this.$nextTick(() => {

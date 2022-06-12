@@ -2,7 +2,9 @@
   <div :class="['component-position', wrapperClass, { 'is-draft': isDraft }]">
     <client-only>
       <div
-        v-if="$cwa.isAdmin && $cwa.isEditMode && !component"
+        v-if="
+          $cwa.isAdmin && $cwa.isEditMode && !component && !newComponentResource
+        "
         class="empty-component-position"
       >
         <icon-component />
@@ -194,10 +196,6 @@ export default Vue.extend({
       this.newComponentListener
     )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
-    this.$cwa.$eventBus.$on(
-      EVENTS.componentCreated,
-      this.handleComponentCreated
-    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -205,28 +203,8 @@ export default Vue.extend({
       this.newComponentListener
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
-    this.$cwa.$eventBus.$off(
-      EVENTS.componentCreated,
-      this.handleComponentCreated
-    )
   },
   methods: {
-    async handleComponentCreated(event: ComponentCreatedEvent) {
-      if (
-        !this.newComponentEvent ||
-        event.tempIri !== this.newComponentEvent.iri
-      ) {
-        return
-      }
-      await this.$cwa.updateResource(
-        this.pageResource['@id'],
-        {
-          [this.resource.pageDataProperty]: event.newIri
-        },
-        null,
-        [this.resource['@id']]
-      )
-    },
     componentManagerShowListener() {
       if (!this.resource) {
         consola.error(

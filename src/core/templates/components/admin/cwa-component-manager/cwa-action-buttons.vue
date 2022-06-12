@@ -149,7 +149,9 @@ export default Vue.extend({
         return
       }
       const notificationCategory = 'components-manager'
-      const componentPosition: string = this.addingEvent.position
+      const componentPosition: string = !this.addingEvent.dynamicPage
+        ? this.addingEvent.position
+        : null
       const componentCollection: string = this.addingEvent.collection
       const additionalData = { componentPositions: [] } as {
         componentPositions: Array<
@@ -207,10 +209,23 @@ export default Vue.extend({
         }
         await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
         this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
+        const newIri = resource['@id']
         this.$cwa.$eventBus.$emit(EVENTS.componentCreated, {
           tempIri: this.addingEvent.iri,
-          newIri: resource['@id']
+          newIri
         } as ComponentCreatedEvent)
+
+        if (this.addingEvent.dynamicPage) {
+          await this.$cwa.updateResource(
+            this.addingEvent.dynamicPage.dynamicPage,
+            {
+              [this.addingEvent.dynamicPage.property]: newIri
+            },
+            null,
+            [this.addingEvent.position]
+          )
+        }
+
         this.addingEvent = null
         this.$cwa.$storage.decreaseMercurePendingProcessCount()
       } catch (message) {

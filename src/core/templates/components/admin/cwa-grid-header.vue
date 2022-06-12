@@ -138,7 +138,7 @@ export default {
     this.initialised = true
   },
   methods: {
-    updateQuerystring() {
+    async updateQuerystring() {
       const query = Object.assign({}, this.$route.query, this.filterQuery)
       if (JSON.stringify(query) !== JSON.stringify(this.$route.query)) {
         this.$set(query, this.pageParameter, 1)
@@ -148,17 +148,16 @@ export default {
           this.$delete(query, key)
         }
       })
-      this.$router
-        .replace({ query })
-        .catch((failure) => {
-          if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
-            return
-          }
-          throw failure
-        })
-        .finally(() => {
-          this.$emit('pending', false)
-        })
+      try {
+        await this.$router.replace({ query })
+      } catch (failure) {
+        if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
+          return
+        }
+        throw failure
+      } finally {
+        this.$emit('pending', false)
+      }
     },
     updateFromCurrentRoute() {
       this.filterQuery = this.getFilteredQuery(this.searchFields, [
