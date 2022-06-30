@@ -2,6 +2,7 @@
   <div class="static-component-tab">
     <div class="row">
       <div class="column is-narrow">
+        <!-- IF A DYNAMIC PAGE -->
         <div v-if="isDynamicPage">
           <template v-if="staticComponentIri">
             <template v-if="resource.component !== staticComponentIri">
@@ -33,6 +34,7 @@
             Go to page template
           </nuxt-link>
         </div>
+        <!-- IF A TEMPLATE PAGE -->
         <div v-else>
           <div v-if="staticComponentIri">
             <button type="button" @click="selectStaticComponent">
@@ -40,9 +42,6 @@
             </button>
           </div>
           <template v-else>
-            <p>
-              This page is not dynamic. Static component will show if defined.
-            </p>
             <cwa-admin-select
               id="component"
               v-model="selectedComponent"

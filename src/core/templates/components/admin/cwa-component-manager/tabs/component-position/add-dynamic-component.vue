@@ -19,10 +19,7 @@ import Vue from 'vue'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import CreateNewComponentEventMixin from '../../../../../../mixins/CreateNewComponentEventMixin'
-import {
-  COMPONENT_MANAGER_EVENTS,
-  ComponentCreatedEvent
-} from '@cwa/nuxt-module/core/events'
+import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
   mixins: [

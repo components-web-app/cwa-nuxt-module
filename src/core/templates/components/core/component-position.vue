@@ -103,23 +103,25 @@ export default Vue.extend({
       }
       return [
         {
-          label: 'Dynamic',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
-            ),
-          context: {}
-        },
-        {
           label: 'Static',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/static-component.vue'
             ),
-          context: {}
+          context: {},
+          sideBar: true
         },
         {
-          label: 'Info',
+          label: '#Ref',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
+            ),
+          context: {},
+          sideBar: true
+        },
+        {
+          label: 'Position Info',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/info.vue'

@@ -33,6 +33,7 @@ export interface ComponentManagerTab {
   priority?: number
   context?: any
   inputFieldsUsed?: string[]
+  sideBar?: boolean
 }
 
 export interface ComponentManagerComponent {
