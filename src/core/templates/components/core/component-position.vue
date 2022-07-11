@@ -95,7 +95,7 @@ export default Vue.extend({
       if (this.isDynamicPage) {
         return [
           {
-            label: 'Add  Component',
+            label: 'Add Component',
             component: () =>
               import(
                 '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/add-dynamic-component.vue'
@@ -104,20 +104,13 @@ export default Vue.extend({
           }
         ]
       }
-      return [
+
+      const tabs = [
         {
           label: 'Static',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/static-component.vue'
-            ),
-          context: {}
-        },
-        {
-          label: '#Ref',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
             ),
           context: {}
         },
@@ -130,6 +123,19 @@ export default Vue.extend({
           context: {}
         }
       ]
+
+      if (this.isPageTemplate) {
+        tabs.unshift({
+          label: '#Ref',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
+            ),
+          context: {}
+        })
+      }
+
+      return tabs
     },
     componentManager() {
       return Object.assign({}, this.baseComponentManager, {

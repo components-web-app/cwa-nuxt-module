@@ -1,22 +1,29 @@
 <template>
   <div class="cwa-manager-tabs row">
-    <div v-if="sideTabs.length" class="side-bar column is-narrow">
+    <div v-if="showSideTabs" class="side-bar column is-narrow">
       <a
-        v-for="tab of sideTabs"
-        :key="loopKey('tab', tab._index)"
         href="#"
         :class="[
           'row',
           {
-            'is-selected': tab._index === selectedTabIndex,
-            'has-error':
-              tabInputErrors[tab.label] &&
-              !!tabInputErrors[tab.label].errorCount
+            'is-selected': iriIsComponent
           }
         ]"
-        @click.prevent="showTab(tab._index)"
+        @click.prevent="selectResource(sideTabComponent)"
       >
-        <div class="column">{{ tab.label }}</div>
+        <div class="column">Static</div>
+      </a>
+      <a
+        href="#"
+        :class="[
+          'row',
+          {
+            'is-selected': iriIsPosition
+          }
+        ]"
+        @click.prevent="selectResource(sideTabPosition)"
+      >
+        <div class="column">#Ref</div>
       </a>
     </div>
     <div class="main column">
@@ -92,10 +99,12 @@ import {
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
 import TransitionExpand from '../../utils/transition-expand.vue'
+import PageResourceUtilsMixin from '../../../../mixins/PageResourceUtilsMixin'
 import CwaActionButtons from './cwa-action-buttons.vue'
 
 export default Vue.extend({
   components: { CwaActionButtons, TransitionExpand },
+  mixins: [PageResourceUtilsMixin],
   props: {
     tabs: {
       type: Array as PropType<ComponentManagerTab[]>,
@@ -161,10 +170,43 @@ export default Vue.extend({
         .map((item, index) => ({ ...item, _index: index }))
     },
     topTabs() {
-      return this.orderedTabs.filter((tab) => !tab.sideBar)
+      return this.orderedTabs // .filter((tab) => !tab.sideBar)
     },
-    sideTabs() {
-      return this.orderedTabs.filter((tab) => tab.sideBar)
+    showSideTabs() {
+      if (
+        this.isDynamicPage ||
+        !this.isPageTemplate ||
+        !this.positionResourceComponentIri
+      ) {
+        return
+      }
+      return this.iriIsPosition || this.iriIsComponent
+    },
+    sideTabPosition() {
+      if (!this.showSideTabs) {
+        return null
+      }
+      return this.selectedPosition
+    },
+    sideTabComponent() {
+      if (!this.showSideTabs) {
+        return null
+      }
+      if (this.iriIsPosition) {
+        return this.positionResourceComponentIri
+      }
+      return this.iri
+    },
+    iriIsPosition() {
+      return this.iri === this.selectedPosition
+    },
+    positionResourceComponentIri() {
+      return this.selectedPosition
+        ? this.$cwa.getResource(this.selectedPosition).component
+        : null
+    },
+    iriIsComponent() {
+      return this.positionResourceComponentIri === this.iri
     },
     loopKey() {
       return (label, index) => {
@@ -230,6 +272,10 @@ export default Vue.extend({
     )
   },
   methods: {
+    selectResource(iri) {
+      this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.selectComponent, iri)
+      this.showTab(0)
+    },
     handleDynamicTabMounted() {
       setTimeout(() => {
         this.dynamicTabMounted = true
