@@ -6,14 +6,21 @@ import ComponentManagerMixin, {
 } from './ComponentManagerMixin'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
+import PageResourceUtilsMixin from './PageResourceUtilsMixin'
 
 interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
   elementsAdded: { [key: string]: HTMLElement }
+  componentManagerDisabled: Boolean
 }
 
 export default Vue.extend({
-  mixins: [ResourceMixin, ApiRequestMixin, ComponentManagerMixin],
+  mixins: [
+    ResourceMixin,
+    ApiRequestMixin,
+    ComponentManagerMixin,
+    PageResourceUtilsMixin
+  ],
   props: {
     showSort: {
       type: Boolean,
@@ -24,6 +31,10 @@ export default Vue.extend({
       type: Number,
       default: null,
       required: false
+    },
+    isDynamic: {
+      type: Boolean,
+      required: true
     }
   },
   data(): DataInterface {
@@ -34,7 +45,8 @@ export default Vue.extend({
           UiClassNames: []
         }
       },
-      elementsAdded: {}
+      elementsAdded: {},
+      componentManagerDisabled: true
     }
   },
   computed: {
@@ -112,6 +124,12 @@ export default Vue.extend({
         )
         this.$delete(this.elementsAdded, 'sortValue')
       }
+    }
+  },
+  mounted() {
+    if (this.isDynamic || !this.isDynamicPage) {
+      this.componentManagerDisabled = false
+      this.initCMMixin()
     }
   }
 })

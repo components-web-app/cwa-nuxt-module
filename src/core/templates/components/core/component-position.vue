@@ -18,6 +18,10 @@
       :sort-value="resource.sortValue"
       :show-sort="showSort"
       :highlight-is-position="highlightIsPosition"
+      :is-dynamic="
+        isDynamicPage &&
+        resource._metadata.static_component !== resource.component
+      "
       @deleted="$emit('deleted')"
     />
 
@@ -49,7 +53,6 @@ import {
 import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
 import CreateNewComponentEventMixin from '@cwa/nuxt-module/core/mixins/CreateNewComponentEventMixin'
 import PageResourceUtilsMixin from '@cwa/nuxt-module/core/mixins/PageResourceUtilsMixin'
-import type { ComponentCreatedEvent } from '@cwa/nuxt-module/core/events'
 import components from '~/.nuxt/cwa/components'
 
 export default Vue.extend({
@@ -108,8 +111,7 @@ export default Vue.extend({
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/static-component.vue'
             ),
-          context: {},
-          sideBar: true
+          context: {}
         },
         {
           label: '#Ref',
@@ -117,11 +119,10 @@ export default Vue.extend({
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
             ),
-          context: {},
-          sideBar: true
+          context: {}
         },
         {
-          label: 'Position Info',
+          label: 'Info',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/info.vue'

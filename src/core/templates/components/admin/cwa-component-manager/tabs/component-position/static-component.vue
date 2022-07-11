@@ -63,6 +63,7 @@ import CreateNewComponentEventMixin from '../../../../../../mixins/CreateNewComp
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import FetchComponentsMixin from '../../../../../../mixins/FetchComponentsMixin'
 import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
+import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
@@ -70,7 +71,8 @@ export default Vue.extend({
   mixins: [
     ComponentManagerTabMixin,
     FetchComponentsMixin,
-    CreateNewComponentEventMixin
+    CreateNewComponentEventMixin,
+    PageResourceUtilsMixin
   ],
   data() {
     return {
@@ -84,12 +86,6 @@ export default Vue.extend({
         return []
       }
       return Object.keys(this.availableComponents)
-    },
-    isDynamicPage() {
-      return this.pageResource['@type'] !== 'Page'
-    },
-    pageResource() {
-      return this.$cwa.getResource(this.$cwa.loadedPage)
     },
     staticComponentIri() {
       return this.resource._metadata.static_component

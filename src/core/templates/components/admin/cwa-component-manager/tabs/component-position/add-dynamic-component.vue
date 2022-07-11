@@ -1,15 +1,25 @@
 <template>
   <div class="add-dynamic-component-tab">
     <div class="row row-center">
-      <div class="column is-narrow">
-        <button type="button" @click.stop="addDynamicComponent">
-          Add {{ pageDataPropComponent }}
-        </button>
-      </div>
-      <div class="column is-narrow fallback">
-        Add a fallback component?
-        <a href="#" @click.prevent="goToTemplate">Go to page template</a>
-      </div>
+      <template v-if="resource.pageDataProperty">
+        <div class="column is-narrow">
+          <button type="button" @click.stop="addDynamicComponent">
+            Add {{ pageDataPropComponent }}
+          </button>
+        </div>
+        <div class="column is-narrow fallback">
+          Add a fallback component?
+          <a href="#" @click.prevent="goToTemplate">Go to page template</a>
+        </div>
+      </template>
+      <template v-else>
+        <div class="column is-narrow">This component is locked</div>
+        <div class="column is-narrow">
+          <button type="button" @click.prevent="goToTemplate">
+            Edit via template
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
