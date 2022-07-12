@@ -109,11 +109,13 @@ export default Vue.extend({
       )
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.newComponent, event)
       this.selectedComponent = null
+      // select 1st tab again
     }
   },
   methods: {
     selectStaticComponent() {
       this.$cwa.$eventBus.$emit(EVENTS.selectComponent, this.staticComponentIri)
+      this.$emit('show-tab', 0)
     }
   }
 })

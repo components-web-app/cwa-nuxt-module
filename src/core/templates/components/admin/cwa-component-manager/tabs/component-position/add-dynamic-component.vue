@@ -2,20 +2,32 @@
   <div class="add-dynamic-component-tab">
     <div class="row row-center">
       <template v-if="resource.pageDataProperty">
-        <div class="column is-narrow">
-          <button type="button" @click.stop="addDynamicComponent">
+        <div class="column is-narrow cm-button">
+          <button
+            v-if="pageDataPropIri"
+            type="button"
+            @click="selectDynamicComponent"
+          >
+            Select component
+          </button>
+          <button v-else type="button" @click.stop="addDynamicComponent">
             Add {{ pageDataPropComponent }}
           </button>
         </div>
         <div class="column is-narrow fallback">
-          Add a fallback component?
+          {{ resource._metadata.static_component ? 'Edit' : 'Add' }} fallback
+          component?
           <a href="#" @click.prevent="goToTemplate">Go to page template</a>
         </div>
       </template>
       <template v-else>
         <div class="column is-narrow">This component is locked</div>
-        <div class="column is-narrow">
-          <button type="button" @click.prevent="goToTemplate">
+        <div class="column is-narrow cm-button">
+          <button
+            type="button"
+            class="cm-button-button"
+            @click.prevent="goToTemplate"
+          >
             Edit via template
           </button>
         </div>
@@ -30,6 +42,7 @@ import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerT
 import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import CreateNewComponentEventMixin from '../../../../../../mixins/CreateNewComponentEventMixin'
 import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
+import { EVENTS } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 
 export default Vue.extend({
   mixins: [
@@ -40,6 +53,9 @@ export default Vue.extend({
   computed: {
     pageDataPropComponent() {
       return this.getPageDataPropComponent(this.resource.pageDataProperty)
+    },
+    pageDataPropIri() {
+      return this.getDynamicComponentIri(this.resource.pageDataProperty)
     }
   },
   mounted() {
@@ -55,6 +71,9 @@ export default Vue.extend({
     )
   },
   methods: {
+    selectDynamicComponent() {
+      this.$cwa.$eventBus.$emit(EVENTS.selectComponent, this.pageDataPropIri)
+    },
     async addDynamicComponent() {
       const newComponentEvent = await this.createNewComponentEvent(
         this.pageDataPropComponent,

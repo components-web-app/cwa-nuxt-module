@@ -95,7 +95,7 @@ export default Vue.extend({
       if (this.isDynamicPage) {
         return [
           {
-            label: 'Add Component',
+            label: 'Manage Component',
             component: () =>
               import(
                 '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/add-dynamic-component.vue'
@@ -115,7 +115,7 @@ export default Vue.extend({
           context: {}
         },
         {
-          label: 'Info',
+          label: 'Position Info',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/info.vue'

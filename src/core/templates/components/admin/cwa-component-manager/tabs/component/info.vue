@@ -67,10 +67,23 @@ export default Vue.extend({
           const position = this.context.componentPosition
           const positionResource = this.$cwa.getResource(position)
           const clearComponentFromPosition = async () => {
+            const overwriteObj: any = {
+              component: null
+            }
+            if (
+              positionResource.component ===
+              positionResource._metadata.static_component
+            ) {
+              overwriteObj._metadata = Object.assign(
+                {},
+                positionResource._metadata,
+                {
+                  static_component: null
+                }
+              )
+            }
             await this.$cwa.$storage.setResource({
-              resource: Object.assign({}, positionResource, {
-                component: null
-              })
+              resource: Object.assign({}, positionResource, overwriteObj)
             })
           }
           if (deleteAll) {

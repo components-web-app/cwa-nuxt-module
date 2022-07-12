@@ -76,6 +76,7 @@
               :field-errors="tabInputErrors[selectedTab.label]"
               @draggable="toggleDraggable"
               @close="handleTabCloseEvent"
+              @show-tab="showTabListener"
               @hook:mounted="handleDynamicTabMounted"
             />
           </div>
@@ -260,6 +261,13 @@ export default Vue.extend({
       NOTIFICATION_EVENTS.remove,
       this.removeNotificationListener
     )
+    // added listener for adding a new component from the component position using the dropdown
+    // position tab is 2nd for adding a new static component, so needed to reset - if knock-ons, the tab component
+    // can emit show-tab event locally instead
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.newComponentListener
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -270,8 +278,18 @@ export default Vue.extend({
       NOTIFICATION_EVENTS.remove,
       this.removeNotificationListener
     )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.newComponentListener
+    )
   },
   methods: {
+    showTabListener(newTabIndex: number) {
+      this.showTab(newTabIndex)
+    },
+    newComponentListener() {
+      this.showTab(0)
+    },
     selectResource(iri) {
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.selectComponent, iri)
       this.showTab(0)
