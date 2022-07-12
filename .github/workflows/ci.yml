@@ -45,6 +45,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+      - name: Install SASS dependencies
+        run: |
+          apt-get install -y g++ build-essential
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:
