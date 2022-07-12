@@ -559,7 +559,7 @@ export class Fetcher {
           'Invoking Mercure message handler. No request in progress.'
         )
         this.processMessageQueue().then(() => {
-          resolve()
+          resolve(true)
         })
         return
       }
@@ -573,7 +573,7 @@ export class Fetcher {
             consola.debug('Request complete. Invoking Mercure message handler')
             await this.processMessageQueue()
             unwatchFn()
-            resolve()
+            resolve(true)
             return
           }
           consola.trace(

@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import consola from 'consola'
-import { NewComponentEvent } from '../events'
+import { NewComponentEvent, NewComponentEventDynamicPage } from '../events'
 import FetchComponentsMixin from './FetchComponentsMixin'
 // @ts-ignore
 import components from '~/.nuxt/cwa/components'
@@ -22,7 +22,8 @@ export default Vue.extend({
     async createNewComponentEvent(
       newComponent: string,
       collection: string = null,
-      position: string = null
+      position: string = null,
+      dynamicPage: NewComponentEventDynamicPage = null
     ): Promise<NewComponentEvent> {
       if (!this.availableComponents) {
         consola.warn('availableComponents not loaded')
@@ -41,7 +42,8 @@ export default Vue.extend({
         endpoint,
         iri: `${endpoint}/new`,
         name,
-        isPublishable
+        isPublishable,
+        dynamicPage
       } as NewComponentEvent
     }
   }

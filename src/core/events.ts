@@ -23,6 +23,11 @@ export interface TabChangedEvent {
   context: any
 }
 
+export interface NewComponentEventDynamicPage {
+  dynamicPage: string
+  property: string
+}
+
 export interface NewComponentEvent {
   collection?: string
   position?: string
@@ -33,6 +38,7 @@ export interface NewComponentEvent {
   name: string
   isPublishable: boolean
   iri: string
+  dynamicPage: NewComponentEventDynamicPage
 }
 
 export interface HighlightComponentEvent {
