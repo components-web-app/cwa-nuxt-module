@@ -212,7 +212,7 @@ export default Vue.extend({
           tempIri: this.addingEvent.iri,
           newIri
         } as ComponentCreatedEvent)
-        
+
         if (this.addingEvent.dynamicPage) {
           await this.$cwa.updateResource(
             this.addingEvent.dynamicPage.dynamicPage,
