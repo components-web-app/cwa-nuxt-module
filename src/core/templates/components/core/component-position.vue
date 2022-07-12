@@ -105,7 +105,7 @@ export default Vue.extend({
         ]
       }
 
-      const tabs = [
+      const tabs: Array<ComponentManagerTab> = [
         {
           label: 'Static',
           component: () =>
@@ -125,14 +125,15 @@ export default Vue.extend({
       ]
 
       if (this.isPageTemplate) {
-        tabs.unshift({
+        const refTab: ComponentManagerTab = {
           label: '#Ref',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
             ),
           context: {}
-        })
+        }
+        tabs.unshift(refTab)
       }
 
       return tabs
