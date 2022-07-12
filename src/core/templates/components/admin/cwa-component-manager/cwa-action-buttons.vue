@@ -126,12 +126,10 @@ export default Vue.extend({
     )
   },
   methods: {
-    handleClick(clickKey) {
+    async handleClick(clickKey) {
       clickKey = clickKey || 'default'
-      this.buttonOptions[clickKey].fn.apply(
-        this,
-        this.buttonOptions[clickKey].args || []
-      )
+      const fn: Function = this.buttonOptions[clickKey].fn
+      await fn.apply(this, this.buttonOptions[clickKey].args || [])
     },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
@@ -214,7 +212,7 @@ export default Vue.extend({
           tempIri: this.addingEvent.iri,
           newIri
         } as ComponentCreatedEvent)
-
+        
         if (this.addingEvent.dynamicPage) {
           await this.$cwa.updateResource(
             this.addingEvent.dynamicPage.dynamicPage,
@@ -226,8 +224,9 @@ export default Vue.extend({
           )
         }
 
-        this.addingEvent = null
         this.$cwa.$storage.decreaseMercurePendingProcessCount()
+        this.addingEvent = null
+        this.$cwa.$eventBus.$emit(EVENTS.newComponentCleared)
       } catch (message) {
         if (!(message instanceof ApiError)) {
           throw message

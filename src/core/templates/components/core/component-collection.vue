@@ -208,6 +208,10 @@ export default Vue.extend({
       this.setNewComponentEvent
     )
     this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.newComponentCleared,
+      this.setNewComponentEvent
+    )
+    this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.draggable,
       this.handleDraggableEvent
     )
@@ -226,6 +230,10 @@ export default Vue.extend({
       this.setNewComponentEvent
     )
     this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.newComponentCleared,
+      this.setNewComponentEvent
+    )
+    this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.draggable,
       this.handleDraggableEvent
     )
@@ -240,7 +248,7 @@ export default Vue.extend({
   },
   methods: {
     setNewComponentEvent(event: NewComponentEvent) {
-      if (event.collection !== this.resource['@id']) {
+      if (!event || event.collection !== this.resource['@id']) {
         // if we had been adding one here, it was added and another is being added elsewhere we clear it...
         this.newComponentEvent = null
         return

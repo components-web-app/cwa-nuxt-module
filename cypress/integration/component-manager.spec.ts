@@ -40,12 +40,14 @@ describe('Component Manager Functions', () => {
     cy.get('select#component').select('HtmlContent')
     cy.get('.html-component').last().as('newComponent')
     cy.get('@newComponent').should('exist')
+
     cy.get('button').contains('Add Draft').click()
+
     cy.get('button').contains('Publish').should('exist')
     cy.get('@newComponent')
       .get('.cwa-manager-highlight.is-draft')
       .should('exist')
-    cy.get('.cwa-manager-tab').contains('Publish').click()
+    cy.get('.cwa-manager-tab:eq(3)').contains('Publish').click()
     cy.get('button').contains('Publish').click()
 
     // will be an error do not hide the manager
@@ -108,6 +110,11 @@ describe('Component Manager Functions', () => {
       .eq(0)
       .should('have.class', 'has-error')
       .should('contain.text', 'HTML Content')
+  })
+
+  it('Show plus sign in collection if all components deleted', () => {
+    cy.login()
+    cy.get('#cwa-cm-edit-button').click()
   })
 
   it('Add a published component', () => {})
