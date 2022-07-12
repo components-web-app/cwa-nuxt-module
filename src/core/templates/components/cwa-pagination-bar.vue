@@ -138,7 +138,7 @@ export default {
         this.changePage(1)
       }
     },
-    changePage(newPage) {
+    async changePage(newPage) {
       if (newPage < 1 || newPage > this.total) {
         return
       }
@@ -146,12 +146,14 @@ export default {
       const query = Object.assign({}, this.$route.query, {
         [this.pageParameter]: newPage
       })
-      this.$router.replace({ query }).catch((failure) => {
+      try {
+        await this.$router.replace({ query })
+      } catch (failure) {
         if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
           return
         }
         throw failure
-      })
+      }
     }
   }
 }

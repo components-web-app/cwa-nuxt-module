@@ -1,21 +1,12 @@
 <template>
   <div class="dynamic-component-tab">
     <div class="row">
-      <div class="column">
-        <p>
-          If a page data property is defined, when this page is loaded via page
-          data, it will look for that property and populate this position with
-          that component if it exists.
-        </p>
-      </div>
-    </div>
-    <div class="row">
       <div class="column is-narrow">
         <cm-select
           :id="`page-data-prop-${iri}`"
           :iri="iri"
           field="pageDataProperty"
-          label="Page data property"
+          label="Component reference"
           :options="pageDataPropertyOptions"
         />
       </div>

@@ -1,27 +1,13 @@
 <template>
   <div :class="['component-position', wrapperClass, { 'is-draft': isDraft }]">
     <client-only>
-      <div v-if="$cwa.isAdmin">
-        <div v-if="!component">
-          <button>Select position</button>
-        </div>
-        <div
-          v-show="
-            isDynamicPage && !dynamicComponentIri && !!pageDataPropComponent
-          "
-        >
-          <button
-            v-if="!newComponentResource"
-            type="button"
-            @click.stop="addDynamicComponent"
-          >
-            Add {{ pageDataPropComponent }}
-          </button>
-          <span v-else>
-            [ If page data has '{{ resource.pageDataProperty }}', it will show
-            here instead. ]
-          </span>
-        </div>
+      <div
+        v-if="
+          $cwa.isAdmin && $cwa.isEditMode && !component && !newComponentResource
+        "
+        class="empty-component-position"
+      >
+        <icon-component />
       </div>
     </client-only>
 
@@ -32,6 +18,10 @@
       :sort-value="resource.sortValue"
       :show-sort="showSort"
       :highlight-is-position="highlightIsPosition"
+      :is-dynamic="
+        isDynamicPage &&
+        resource._metadata.static_component !== resource.component
+      "
       @deleted="$emit('deleted')"
     />
 
@@ -48,6 +38,8 @@
 import Vue from 'vue'
 import consola from 'consola'
 import ResourceComponentLoader from '../../resource-component-loader'
+// @ts-ignore
+import IconComponent from '@cwa/nuxt-module/core/assets/images/icon-components.svg?inline'
 import ComponentManagerMixin, {
   ComponentManagerTab,
   EVENTS
@@ -60,18 +52,20 @@ import {
 } from '@cwa/nuxt-module/core/events'
 import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
 import CreateNewComponentEventMixin from '@cwa/nuxt-module/core/mixins/CreateNewComponentEventMixin'
-import type { ComponentCreatedEvent } from '@cwa/nuxt-module/core/events'
+import PageResourceUtilsMixin from '@cwa/nuxt-module/core/mixins/PageResourceUtilsMixin'
 import components from '~/.nuxt/cwa/components'
 
 export default Vue.extend({
   components: {
     ResourceComponentLoader,
+    IconComponent,
     ...components
   },
   mixins: [
     ComponentManagerMixin,
     NewComponentMixin,
-    CreateNewComponentEventMixin
+    CreateNewComponentEventMixin,
+    PageResourceUtilsMixin
   ],
   props: {
     iri: {
@@ -97,19 +91,21 @@ export default Vue.extend({
       const storageResource = this.$cwa.getResource(this.componentIri)
       return storageResource?._metadata?.published === false || false
     },
-    dynamicComponentIri() {
-      return this.pageResource[this.resource.pageDataProperty]
-    },
     componentManagerTabs(): Array<ComponentManagerTab> {
-      return [
-        {
-          label: 'Dynamic',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
-            ),
-          context: {}
-        },
+      if (this.isDynamicPage) {
+        return [
+          {
+            label: 'Manage Component',
+            component: () =>
+              import(
+                '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/add-dynamic-component.vue'
+              ),
+            context: {}
+          }
+        ]
+      }
+
+      const tabs: Array<ComponentManagerTab> = [
         {
           label: 'Static',
           component: () =>
@@ -119,7 +115,7 @@ export default Vue.extend({
           context: {}
         },
         {
-          label: 'Info',
+          label: 'Position Info',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/info.vue'
@@ -127,6 +123,20 @@ export default Vue.extend({
           context: {}
         }
       ]
+
+      if (this.isPageTemplate) {
+        const refTab: ComponentManagerTab = {
+          label: '#Ref',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
+            ),
+          context: {}
+        }
+        tabs.unshift(refTab)
+      }
+
+      return tabs
     },
     componentManager() {
       return Object.assign({}, this.baseComponentManager, {
@@ -135,26 +145,6 @@ export default Vue.extend({
     },
     resources() {
       return this.$cwa.resources
-    },
-    pageDataPropComponent() {
-      return this.pageDataProps?.[this.resource.pageDataProperty] || null
-    },
-    pageDataProps() {
-      return (
-        this.pageResource._metadata?.page_data_metadata?.properties.reduce(
-          (obj, item) => {
-            obj[item.property] = item.componentShortName
-            return obj
-          },
-          {}
-        ) || {}
-      )
-    },
-    pageResource() {
-      return this.$cwa.getResource(this.$cwa.loadedPage)
-    },
-    isDynamicPage() {
-      return this.pageResource?.['@type'] !== 'Page'
     },
     resource() {
       return this.$cwa.getResource(this.iri)
@@ -216,10 +206,6 @@ export default Vue.extend({
       this.newComponentListener
     )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
-    this.$cwa.$eventBus.$on(
-      EVENTS.componentCreated,
-      this.handleComponentCreated
-    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -227,40 +213,8 @@ export default Vue.extend({
       this.newComponentListener
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
-    this.$cwa.$eventBus.$off(
-      EVENTS.componentCreated,
-      this.handleComponentCreated
-    )
   },
   methods: {
-    async handleComponentCreated(event: ComponentCreatedEvent) {
-      if (
-        !this.newComponentEvent ||
-        event.tempIri !== this.newComponentEvent.iri
-      ) {
-        return
-      }
-      await this.$cwa.updateResource(
-        this.pageResource['@id'],
-        {
-          [this.resource.pageDataProperty]: event.newIri
-        },
-        null,
-        [this.resource['@id']]
-      )
-    },
-    async addDynamicComponent() {
-      this.newComponentEvent = await this.createNewComponentEvent(
-        this.pageDataPropComponent
-      )
-      // allow cwa manager to mount buttons to receive this event
-      this.$nextTick(() => {
-        this.$cwa.$eventBus.$emit(
-          COMPONENT_MANAGER_EVENTS.newComponent,
-          this.newComponentEvent
-        )
-      })
-    },
     componentManagerShowListener() {
       if (!this.resource) {
         consola.error(
@@ -325,4 +279,12 @@ export default Vue.extend({
       transform: translate(-8px, 8px)
       pointer-events: none
       z-index: 2
+  .empty-component-position
+    background: $white
+    color: $cwa-background-dark
+    padding: 1rem
+    display: flex
+    justify-content: center
+    svg
+      display: block
 </style>
