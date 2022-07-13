@@ -5,14 +5,12 @@ import ComponentCollection from '../templates/components/core/component-collecti
 const mixin = Vue.extend({
   components: { ComponentCollection, CwaAdminBar },
   head() {
-    const classPostfix = this.$cwa.isEditMode
-      ? this.$cwa.isLayoutEditing
-        ? 'is-layout-editing'
-        : 'is-page-editing'
-      : ''
+    const classes = ['cwa-html']
+    this.$cwa.isEditMode && classes.push('is-editing')
+    this.$cwa.isLayoutEditing && classes.push('is-layout-editing')
     return {
       htmlAttrs: {
-        class: `cwa-html ${classPostfix}`
+        class: classes.join(' ')
       }
     }
   },

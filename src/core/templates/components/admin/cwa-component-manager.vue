@@ -59,7 +59,9 @@ import {
   ComponentManagerResource,
   SaveStateEvent,
   PublishableToggledEvent,
-  HighlightComponentEvent
+  HighlightComponentEvent,
+  ConfirmDialogEvent,
+  CONFIRM_DIALOG_EVENTS
 } from '../../../events'
 import CloneComponentMixin from '../../../mixins/CloneComponentMixin'
 import Tabs from './cwa-component-manager/tabs.vue'
@@ -78,6 +80,7 @@ interface DataInterface {
     pageY: Number
   }
   persistentStates: { [key: string]: { [key: string]: any } }
+  isLayoutModeClick: boolean
 }
 
 export default Vue.extend({
@@ -97,7 +100,8 @@ export default Vue.extend({
       showTabs: false,
       selectedPosition: null,
       mouseDownPosition: null,
-      persistentStates: {}
+      persistentStates: {},
+      isLayoutModeClick: false
     }
   },
   computed: {
@@ -170,9 +174,6 @@ export default Vue.extend({
     selectedComponent({ iri }) {
       this.toggleComponent(iri || null, this.selectedPosition || null)
     },
-    // selectedPosition(iri) {
-    //   this.toggleComponent(this.selectedComponent.iri || null, iri || null)
-    // },
     persistentStates: {
       handler(newValue) {
         this.$cwa.$storage.setState(
@@ -204,6 +205,7 @@ export default Vue.extend({
       this.publishableToggledListener
     )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
+    this.$cwa.$eventBus.$on(EVENTS.layoutEditMode, this.triggerLayoutModeClick)
   },
   beforeDestroy() {
     window.removeEventListener('mousedown', this.handleMouseDown)
@@ -217,9 +219,13 @@ export default Vue.extend({
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
     this.$cwa.$eventBus.$off(API_EVENTS.deleted, this.hide)
+    this.$cwa.$eventBus.$off(EVENTS.layoutEditMode, this.triggerLayoutModeClick)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
+    triggerLayoutModeClick() {
+      this.isLayoutModeClick = true
+    },
     handleMouseDown({ pageX, pageY }) {
       this.mouseDownPosition = {
         pageX,
@@ -305,13 +311,33 @@ export default Vue.extend({
       this.persistentStates = {}
       this.selectPosition(null)
     },
+    triggerSwitchLayoutPageEditingDialog(triggerLayoutEditing: boolean) {
+      const newEditArea = triggerLayoutEditing ? 'layout' : 'page'
+      const event: ConfirmDialogEvent = {
+        id: 'confirm-switch-edit-area',
+        title: triggerLayoutEditing ? 'Edit Layout' : 'Edit Page',
+        html: `<p>Are you sure you want to start editing the ${newEditArea}?</p>`,
+        onSuccess: () => {
+          this.$cwa.setLayoutEditing(triggerLayoutEditing)
+          this.triggerShowEvents()
+        },
+        onCancel: () => {
+          this.$cwa.$eventBus.$emit(EVENTS.cancelShow)
+        },
+        confirmButtonText: `Switch to ${newEditArea}`
+      }
+      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
+    },
     show(event) {
       // calendar inside manager should not trigger anything
-      if (event.target.closest('.flatpickr-calendar')) {
+      if (
+        event.target.closest('.flatpickr-calendar') ||
+        event.target.closest('.cwa-modal')
+      ) {
         return
       }
 
-      // for programatic clicks do not check position
+      // for programmatic clicks do not check position
       if (event.isTrusted) {
         // prevent trigger on a drag
         const delta = 6
@@ -322,6 +348,23 @@ export default Vue.extend({
         }
       }
 
+      if (this.isLayoutModeClick) {
+        // layout mode click
+
+        // reset if layout mode click
+        this.isLayoutModeClick = false
+
+        if (!this.$cwa.isLayoutEditing) {
+          this.triggerSwitchLayoutPageEditingDialog(true)
+          return
+        }
+      } else if (this.$cwa.isLayoutEditing) {
+        this.triggerSwitchLayoutPageEditingDialog(false)
+        return
+      }
+      this.triggerShowEvents()
+    },
+    triggerShowEvents() {
       this.pendingComponents = []
       if (this.showingCriteria) {
         // the component position component is listening to show to select a component.
@@ -635,20 +678,17 @@ export default Vue.extend({
       display: none
 
 .cwa-html
-  .component-collection
-    position: relative
-    z-index: 1
-    background: $body-background
-  &.is-page-editing
-    .cwa-page .component-collection
-      z-index: 2
-  &.is-layout-editing
+  &.is-editing
+    &.is-layout-editing
+      .component-collection.is-cwa-collection-layouts
+        z-index: 2
+    &:not(.is-layout-editing)
+      .component-collection:not(.is-cwa-collection-layouts)
+        z-index: 2
     .component-collection
-      z-index: 2
-    .cwa-page .component-collection
+      position: relative
       z-index: 1
-  &.is-page-editing,
-  &.is-layout-editing
+      background: $body-background
     .cwa-component-manager-holder
       &:before
         content: ''

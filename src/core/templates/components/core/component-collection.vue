@@ -149,6 +149,7 @@ export default Vue.extend({
     classes() {
       return [
         'component-collection',
+        `is-cwa-collection-${this.locationResourceType}`,
         this.resource
           ? [
               this.resource.location,

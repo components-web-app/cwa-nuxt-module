@@ -119,6 +119,14 @@ export const ComponentManagerMixin = Vue.extend({
       EVENTS.selectComponent,
       this.managerSelectComponentListener
     )
+    this.$cwa.$eventBus.$off(
+      EVENTS.cancelShow,
+      this.removeComponentManagerShowListener
+    )
+    this.$cwa.$eventBus.$off(
+      EVENTS.hide,
+      this.removeComponentManagerShowListener
+    )
   },
   methods: {
     initCMMixin() {
@@ -139,6 +147,14 @@ export const ComponentManagerMixin = Vue.extend({
       this.$cwa.$eventBus.$on(
         EVENTS.selectComponent,
         this.managerSelectComponentListener
+      )
+      this.$cwa.$eventBus.$on(
+        EVENTS.cancelShow,
+        this.removeComponentManagerShowListener
+      )
+      this.$cwa.$eventBus.$on(
+        EVENTS.hide,
+        this.removeComponentManagerShowListener
       )
       if (this.isCloneComponent) {
         this.addHighlightDomElement()
@@ -188,14 +204,11 @@ export const ComponentManagerMixin = Vue.extend({
       } as ComponentManagerResource)
     },
     initComponentManagerShowListener() {
+      if (this.locationResourceType === 'layouts') {
+        this.$cwa.$eventBus.$emit(EVENTS.layoutEditMode)
+      }
+
       this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)
-      // we should only be populating when the element is clicked and the show event is called
-      // if we click, but this results in the manager hiding (it is already shown)
-      // we should remove the event listener to prevent it being fired if the next click
-      // is not on this component
-      setTimeout(() => {
-        this.removeComponentManagerShowListener()
-      }, 0)
     },
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
