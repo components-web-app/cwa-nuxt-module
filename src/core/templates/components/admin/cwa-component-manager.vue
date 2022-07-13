@@ -634,6 +634,34 @@ export default Vue.extend({
   .cwa-manager-highlight
       display: none
 
+.cwa-html
+  .component-collection
+    position: relative
+    z-index: 1
+    background: $body-background
+  &.is-page-editing
+    .cwa-page .component-collection
+      z-index: 2
+  &.is-layout-editing
+    .component-collection
+      z-index: 2
+    .cwa-page .component-collection
+      z-index: 1
+  &.is-page-editing,
+  &.is-layout-editing
+    .cwa-component-manager-holder
+      &:before
+        content: ''
+        position: fixed
+        top: 0
+        left: 0
+        right: 0
+        bottom: 0
+        background: rgba($cwa-background-dark, .25)
+        z-index: 1
+        user-select: none
+        pointer-events: none
+
 .cwa-components-manager
   position: relative
   background: $cwa-navbar-background

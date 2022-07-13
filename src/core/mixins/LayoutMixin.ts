@@ -4,6 +4,18 @@ import ComponentCollection from '../templates/components/core/component-collecti
 
 const mixin = Vue.extend({
   components: { ComponentCollection, CwaAdminBar },
+  head() {
+    const classPostfix = this.$cwa.isEditMode
+      ? this.$cwa.isLayoutEditing
+        ? 'is-layout-editing'
+        : 'is-page-editing'
+      : ''
+    return {
+      htmlAttrs: {
+        class: `cwa-html ${classPostfix}`
+      }
+    }
+  },
   computed: {
     layout() {
       return this.$cwa.resources.Layout.byId[this.$cwa.layout]
