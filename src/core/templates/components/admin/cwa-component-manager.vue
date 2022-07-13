@@ -311,7 +311,6 @@ export default Vue.extend({
     },
     hide() {
       if (this.cloneComponent) {
-        // this.cancelClone()
         return
       }
       this.$cwa.$eventBus.$emit(EVENTS.hide)
