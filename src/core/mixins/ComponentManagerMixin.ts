@@ -271,6 +271,7 @@ export const ComponentManagerMixin = Vue.extend({
       if (iri !== this.computedIri) {
         return
       }
+
       this.$nextTick(() => {
         const clickEvent = new MouseEvent('click', {
           view: window,

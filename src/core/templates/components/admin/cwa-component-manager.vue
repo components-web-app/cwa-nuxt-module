@@ -81,6 +81,7 @@ interface DataInterface {
   }
   persistentStates: { [key: string]: { [key: string]: any } }
   isLayoutModeClick: boolean
+  forceSwitchLayoutMode: boolean
 }
 
 export default Vue.extend({
@@ -101,7 +102,8 @@ export default Vue.extend({
       selectedPosition: null,
       mouseDownPosition: null,
       persistentStates: {},
-      isLayoutModeClick: false
+      isLayoutModeClick: false,
+      forceSwitchLayoutMode: false
     }
   },
   computed: {
@@ -206,6 +208,7 @@ export default Vue.extend({
     )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
     this.$cwa.$eventBus.$on(EVENTS.layoutEditMode, this.triggerLayoutModeClick)
+    this.$cwa.$eventBus.$on(EVENTS.refuseDiscard, this.refuseDiscardListener)
   },
   beforeDestroy() {
     window.removeEventListener('mousedown', this.handleMouseDown)
@@ -220,9 +223,14 @@ export default Vue.extend({
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
     this.$cwa.$eventBus.$off(API_EVENTS.deleted, this.hide)
     this.$cwa.$eventBus.$off(EVENTS.layoutEditMode, this.triggerLayoutModeClick)
+    this.$cwa.$eventBus.$off(EVENTS.refuseDiscard, this.refuseDiscardListener)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
+    refuseDiscardListener(returnToIri) {
+      this.forceSwitchLayoutMode = true
+      this.$cwa.$eventBus.$emit(EVENTS.selectComponent, returnToIri)
+    },
     triggerLayoutModeClick() {
       this.isLayoutModeClick = true
     },
@@ -312,15 +320,21 @@ export default Vue.extend({
       this.selectPosition(null)
     },
     triggerSwitchLayoutPageEditingDialog(triggerLayoutEditing: boolean) {
+      const onSuccess = () => {
+        this.$cwa.setLayoutEditing(triggerLayoutEditing)
+        this.triggerShowEvents()
+      }
+      if (this.forceSwitchLayoutMode) {
+        this.forceSwitchLayoutMode = false
+        onSuccess()
+        return
+      }
       const newEditArea = triggerLayoutEditing ? 'layout' : 'page'
       const event: ConfirmDialogEvent = {
         id: 'confirm-switch-edit-area',
         title: triggerLayoutEditing ? 'Edit Layout' : 'Edit Page',
         html: `<p>Are you sure you want to start editing the ${newEditArea}?</p>`,
-        onSuccess: () => {
-          this.$cwa.setLayoutEditing(triggerLayoutEditing)
-          this.triggerShowEvents()
-        },
+        onSuccess,
         onCancel: () => {
           this.$cwa.$eventBus.$emit(EVENTS.cancelShow)
         },

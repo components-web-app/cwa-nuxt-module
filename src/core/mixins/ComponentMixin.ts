@@ -34,7 +34,8 @@ export default Vue.extend({
     },
     isDynamic: {
       type: Boolean,
-      required: true
+      required: false,
+      default: false
     }
   },
   data(): DataInterface {
