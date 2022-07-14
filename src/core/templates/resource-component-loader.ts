@@ -33,6 +33,7 @@ export default Vue.extend({
     },
     isDynamic: {
       type: Boolean,
+      required: false,
       default: false
     }
   },

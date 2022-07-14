@@ -20,6 +20,7 @@ export const stateVars = {
 export interface cwaModuleState {
   mercurePendingProcesses: number
   editMode: boolean
+  isLayoutEditing: boolean
   resources: {
     new: any
     current: any
@@ -48,6 +49,7 @@ export default function (storage) {
       ({
         mercurePendingProcesses: 0,
         editMode: false,
+        isLayoutEditing: false,
         resources: {
           new: {},
           current: {},

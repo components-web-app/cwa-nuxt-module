@@ -28,7 +28,7 @@
         </div>
       </div>
 
-      <nuxt />
+      <nuxt class="cwa-page" />
     </div>
     <div class="bottom">
       <component-collection

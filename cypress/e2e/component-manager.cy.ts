@@ -7,6 +7,7 @@ describe('Component Manager Functions', () => {
 
   it('Discarding adding a component', () => {
     cy.get('.cwa-add-button.is-pulsing').eq(1).click()
+    cy.get('button').contains('Switch to layout').click()
     cy.get('.cwa-component-manager-holder').should('be.visible')
     cy.get('select#component').select('HtmlContent')
     cy.get('.html-component:eq(1)')
@@ -17,6 +18,7 @@ describe('Component Manager Functions', () => {
       expect($highlight).have.class('is-draft')
     })
     cy.get('body').click()
+    cy.get('button').contains('Switch to page').click()
     cy.get('.cwa-modal.is-active.cwa-confirm-dialog')
       .should('exist')
       .within(() => {
@@ -30,6 +32,7 @@ describe('Component Manager Functions', () => {
       })
     cy.get('.cwa-manager-highlight').should('have.length', 1)
     cy.get('body').click()
+    cy.get('button').contains('Switch to page').click()
     cy.get('button').contains('Discard').click()
     cy.get('@newComponent').should('not.exist')
     cy.get('.cwa-manager-highlight').should('not.exist')
@@ -37,8 +40,9 @@ describe('Component Manager Functions', () => {
 
   it('Add a draft component and then publish it', () => {
     cy.get('.cwa-add-button.is-pulsing').eq(1).click()
+    cy.get('button').contains('Switch to layout').click()
     cy.get('select#component').select('HtmlContent')
-    cy.get('.html-component').last().as('newComponent')
+    cy.get('.html-component:eq(1)').as('newComponent')
     cy.get('@newComponent').should('exist')
 
     cy.get('button').contains('Add Draft').click()

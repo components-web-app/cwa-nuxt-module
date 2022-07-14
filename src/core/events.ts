@@ -115,7 +115,10 @@ export const COMPONENT_MANAGER_EVENTS = {
   selectPosition: `${prefix}:${componentManagerCategory}:select-position`,
   saveState: `${prefix}:${componentManagerCategory}:save-state`,
   componentsInitialised: `${prefix}:${componentManagerCategory}:components-initialised`,
-  selectedComponentIri: `${prefix}:${componentManagerCategory}:selectedComponentIri`
+  selectedComponentIri: `${prefix}:${componentManagerCategory}:selectedComponentIri`,
+  layoutEditMode: `${prefix}:${componentManagerCategory}:layout-edit-mode`,
+  cancelShow: `${prefix}:${componentManagerCategory}:cancel-show`,
+  refuseDiscard: `${prefix}:${componentManagerCategory}:refuse-discard`
 }
 
 export const ADMIN_BAR_EVENTS = {
