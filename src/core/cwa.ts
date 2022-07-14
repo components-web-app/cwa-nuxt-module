@@ -172,6 +172,13 @@ export default class Cwa {
     this.$storage.setState('editMode', enabled)
   }
 
+  /**
+   * Storage Proxy
+   */
+  public setLayoutEditing(enabled: boolean) {
+    this.$storage.setState('isLayoutEditing', enabled)
+  }
+
   get layout() {
     return this.$storage.getState('layout')
   }
@@ -240,6 +247,10 @@ export default class Cwa {
 
   public get isEditMode() {
     return this.isAdmin && this.$storage.getState('editMode')
+  }
+
+  public get isLayoutEditing() {
+    return this.isEditMode && this.$storage.getState('isLayoutEditing')
   }
 
   // find a resource from local storage or fetch from API
