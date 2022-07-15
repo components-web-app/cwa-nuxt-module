@@ -367,11 +367,11 @@ export default Vue.extend({
         // reset if layout mode click
         this.isLayoutModeClick = false
 
-        if (!this.$cwa.isLayoutEditing) {
+        if (this.$cwa.isLayoutEditing === false) {
           this.triggerSwitchLayoutPageEditingDialog(true)
           return
         }
-      } else if (this.$cwa.isLayoutEditing) {
+      } else if (this.$cwa.isLayoutEditing === true) {
         this.triggerSwitchLayoutPageEditingDialog(false)
         return
       }
