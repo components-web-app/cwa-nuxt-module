@@ -250,7 +250,10 @@ export default class Cwa {
   }
 
   public get isLayoutEditing() {
-    return this.isEditMode && this.$storage.getState('isLayoutEditing')
+    if (!this.isEditMode) {
+      return null
+    }
+    return this.$storage.getState('isLayoutEditing')
   }
 
   // find a resource from local storage or fetch from API
