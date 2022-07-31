@@ -268,6 +268,7 @@ export const ComponentManagerMixin = Vue.extend({
       return this.elementsAdded[name]
     },
     managerSelectComponentListener(iri) {
+      console.log(iri, this.computedIri)
       if (iri !== this.computedIri) {
         return
       }

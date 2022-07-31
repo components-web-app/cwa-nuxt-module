@@ -10,9 +10,8 @@
         <icon-component />
       </div>
     </client-only>
-
     <resource-component-loader
-      v-if="!!component"
+      v-if="!!component && !newComponentResource"
       :component="`CwaComponents${component.uiComponent || component['@type']}`"
       :iri="componentIri"
       :sort-value="resource.sortValue"
@@ -24,11 +23,11 @@
       "
       @deleted="$emit('deleted')"
     />
-
     <component
       :is="newComponentName"
       v-if="newComponentResource"
       :iri="newComponentIri"
+      :is-dynamic="isDynamicPage && !!newComponentEvent.dynamicPage"
       @initial-data="handleInitialData"
     />
   </div>
