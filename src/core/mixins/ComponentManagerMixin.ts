@@ -189,10 +189,18 @@ export const ComponentManagerMixin = Vue.extend({
             left += el.offsetLeft
           }
 
+          let windowViewableHeight = window.innerHeight
+          const cwaManagerElements = document.getElementsByClassName(
+            'cwa-components-manager'
+          )
+          if (cwaManagerElements) {
+            windowViewableHeight -= cwaManagerElements[0].clientHeight
+          }
+
           return (
             top >= window.pageYOffset &&
             left >= window.pageXOffset &&
-            top + height <= window.pageYOffset + window.innerHeight &&
+            top + height <= window.pageYOffset + windowViewableHeight &&
             left + width <= window.pageXOffset + window.innerWidth
           )
         }
