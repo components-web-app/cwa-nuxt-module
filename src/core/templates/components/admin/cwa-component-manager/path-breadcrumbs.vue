@@ -1,13 +1,13 @@
 <template>
-  <div class="path-selector">
-    <div class="row row-no-padding row-center">
-      <div class="column">
+  <div :class="['path-selector', { 'no-options': !componentOptions.length }]">
+    <div class="row row-center">
+      <div class="column resource-column">
         <resource-locations
           :name="components[0].data.name"
           :iri="components[0].iri"
         />
       </div>
-      <div class="column is-narrow">
+      <div v-if="componentOptions.length" class="column is-narrow">
         <button
           ref="moreButton"
           type="button"
@@ -136,8 +136,19 @@ export default {
   color: $white
   background: $control-background-color
   border-radius: 2rem
-  padding: 0 0 0 1.5rem
+  padding: 0
   position: relative
+  > .row
+    padding: 0
+    margin: 0
+    width: 100%
+  .column
+    padding: 0
+  .resource-column
+    padding: 1rem 0 1rem 1.5rem
+  &.no-options
+    .resource-column
+      padding-right: 1.5rem
   .button
     &.is-more
       border-left: 1px solid $control-background-hover-color
@@ -160,17 +171,4 @@ export default {
         margin: 0
         width: 100%
         border-radius: 2rem
-//.path-breadcrumbs
-//  > ul
-//    list-style: none
-//    margin: 0
-//    padding: 0
-//    align-items: center
-//    font-size: 1.3rem
-//    white-space: nowrap
-//    a
-//      color: $cwa-color-text-light
-//      &:hover,
-//      .is-active
-//        color: $white
 </style>
