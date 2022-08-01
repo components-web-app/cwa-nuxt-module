@@ -85,12 +85,22 @@ export const ComponentManagerMixin = Vue.extend({
       return this.resource?.['@id']
     },
     cmHighlightClass() {
-      if (this.cloneComponent) {
-        return 'cwa-manager-highlight is-primary'
+      if (!this.cmInitialised) {
+        return []
       }
-      return this.publishable && !this.published
-        ? 'cwa-manager-highlight is-draft'
-        : 'cwa-manager-highlight'
+      const outsideGlowAmount = 16
+      const classes = ['cwa-manager-highlight']
+      if (this.$el.clientWidth > window.innerWidth - outsideGlowAmount) {
+        classes.push('is-wide')
+      }
+      if (this.cloneComponent) {
+        classes.push('is-primary')
+        return classes
+      }
+      if (this.publishable && !this.published) {
+        classes.push('is-draft')
+      }
+      return classes
     }
   },
   watch: {
@@ -98,13 +108,13 @@ export const ComponentManagerMixin = Vue.extend({
       if (!this.elementsAdded.highlight) {
         return
       }
-      this.elementsAdded.highlight.className = this.cmHighlightClass
+      this.elementsAdded.highlight.className = this.cmHighlightClass.join(' ')
     },
     cmHighlightClass() {
       if (!this.elementsAdded.highlight) {
         return
       }
-      this.elementsAdded.highlight.className = this.cmHighlightClass
+      this.elementsAdded.highlight.className = this.cmHighlightClass.join(' ')
     }
   },
   mounted() {
@@ -238,7 +248,7 @@ export const ComponentManagerMixin = Vue.extend({
     },
     addHighlightDomElement() {
       this.addDomElement(highlightName, {
-        className: this.cmHighlightClass
+        className: this.cmHighlightClass.join(' ')
       })
     },
     removeDomElement(name: string) {
