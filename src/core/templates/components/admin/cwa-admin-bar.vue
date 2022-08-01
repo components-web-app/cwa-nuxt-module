@@ -18,11 +18,9 @@
                 </a>
               </div>
               <div class="controls">
-                <cm-button
-                  id="cwa-cm-edit-button"
-                  @click="editMode = !editMode"
-                  >{{ editMode ? 'Done' : 'Edit Page' }}</cm-button
-                >
+                <cm-button id="cwa-cm-edit-button" @click="toggleEditMode">{{
+                  editMode ? 'Done' : 'Edit Page'
+                }}</cm-button>
               </div>
             </template>
           </div>
@@ -257,6 +255,12 @@ export default Vue.extend({
     )
   },
   methods: {
+    toggleEditMode() {
+      this.editMode = !this.editMode
+      if (!this.editMode) {
+        this.$cwa.setLayoutEditing(false)
+      }
+    },
     handleBreadcrumbClick({ componentIndex }) {
       const selectedComponent = this.components[componentIndex]
       this.$cwa.$eventBus.$emit(
