@@ -181,6 +181,13 @@ export default Vue.extend({
   async mounted() {
     // load the component if not loaded server-side (client-side has auth)
     // this will be called only if there is no component, otherwise resource mixin will deal with this stuff
+
+    // TODO: add check to only do this for initial server-side load
+    // if it is published from a server-side load there may be a draft available
+    if (this.component?._metadata.published && this.$cwa.user) {
+      await this.$cwa.refreshResource(this.iri)
+    }
+
     if (!this.component) {
       // check if no published version, only a draft (i.e. only an authorized viewer can see it)
       if (this.$cwa.user && this.resource.component) {
