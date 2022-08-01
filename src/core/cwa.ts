@@ -453,6 +453,32 @@ export default class Cwa {
     )
   }
 
+  async refreshPositionsForComponent(iri) {
+    const allPositions: { [key: string]: { component: string } } =
+      this.$state.resources.current?.ComponentPosition?.byId
+    const promises = []
+    for (const [positionIri, position] of Object.entries(allPositions)) {
+      if (position.component === iri) {
+        promises.push(
+          new Promise((resolve) => {
+            // refresh the position from server
+            this.refreshResource(positionIri).then(
+              (refreshedPositionResource) => {
+                // find the component resource if we do not already have it
+                this.findResource(refreshedPositionResource.component).then(
+                  () => {
+                    resolve(true)
+                  }
+                )
+              }
+            )
+          })
+        )
+        await Promise.all(promises)
+      }
+    }
+  }
+
   cancelPendingPatchRequest(
     endpoint: string,
     requestComplete: boolean = false

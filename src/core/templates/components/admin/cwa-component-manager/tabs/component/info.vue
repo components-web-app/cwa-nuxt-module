@@ -71,35 +71,6 @@ export default Vue.extend({
         onSuccess: async ({ deleteAll }) => {
           const position = this.context.componentPosition
           const positionResource = this.$cwa.getResource(position)
-          const clearComponentFromPosition = async () => {
-            const loadFallback =
-              this.isDynamicPage && positionResource._metadata?.static_component
-            const component = loadFallback
-              ? positionResource._metadata?.static_component
-              : null
-            if (loadFallback) {
-              await this.$cwa.refreshResource(component)
-            }
-            const overwriteObj: any = {
-              component
-            }
-            if (
-              positionResource.component ===
-              positionResource._metadata.static_component
-            ) {
-              overwriteObj._metadata = Object.assign(
-                {},
-                positionResource._metadata,
-                {
-                  static_component: null
-                }
-              )
-            }
-            const resource = Object.assign({}, positionResource, overwriteObj)
-            await this.$cwa.$storage.setResource({
-              resource
-            })
-          }
 
           if (deleteAll) {
             const refreshPageData =
@@ -113,17 +84,24 @@ export default Vue.extend({
               await this.$cwa.refreshResource(this.$cwa.loadedPage)
             }
 
-            if (positionResource.pageDataProperty) {
+            if (
+              positionResource.pageDataProperty ||
+              !!this.resource.publishedResource
+            ) {
               // refresh as metadata and fallback may be available
-              await clearComponentFromPosition()
+              await this.$cwa.refreshPositionsForComponent(this.iri)
             } else {
               // the API will have deleted the position
               this.$cwa.$storage.deleteResource(position)
             }
-          } else if (!positionResource.pageDataProperty) {
+          } else if (
+            !positionResource.pageDataProperty &&
+            !this.resource.publishedResource
+          ) {
+            // delete position with API
             await this.$cwa.deleteResource(position)
           } else {
-            await clearComponentFromPosition()
+            await this.$cwa.refreshPositionsForComponent(this.iri)
           }
         },
         confirmButtonText: 'Delete'
