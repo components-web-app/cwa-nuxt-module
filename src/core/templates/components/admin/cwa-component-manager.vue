@@ -654,7 +654,7 @@ export default Vue.extend({
 
 .cwa-manager-highlight
   +absolute-overlay
-  &::before
+  &:not(.is-wide)::before
     +absolute-overlay
     content: ''
     animation: cwa-manager-highlight-before-animation 1.5s infinite linear
@@ -664,17 +664,17 @@ export default Vue.extend({
     animation: cwa-manager-highlight-after-animation 1.5s infinite linear
     animation-delay: .2s
   &.is-draft
-    &::before
+    &:not(.is-wide)::before
       animation-name: cwa-manager-draft-highlight-before-animation
     &::after
       animation-name: cwa-manager-draft-highlight-after-animation
   &.is-primary
-    &::before
+    &:not(.is-wide)::before
       animation-name: cwa-manager-primary-highlight-before-animation
     &::after
       animation-name: cwa-manager-primary-highlight-after-animation
   &.is-gray
-    &::before
+    &:not(.is-wide)::before
       animation-name: cwa-manager-gray-highlight-before-animation
     &::after
       animation-name: cwa-manager-gray-highlight-after-animation

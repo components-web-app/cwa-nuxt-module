@@ -377,7 +377,7 @@ export default Vue.extend({
     justify-content: center
     padding: 2rem
   > .cwa-manager-highlight
-    &::before
+    &:not(.is-wide)::before
       animation-name: cwa-manager-primary-highlight-before-animation
     &::after
       animation-name: cwa-manager-primary-highlight-after-animation
