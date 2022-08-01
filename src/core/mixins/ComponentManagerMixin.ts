@@ -131,7 +131,7 @@ export const ComponentManagerMixin = Vue.extend({
   },
   methods: {
     initCMMixin() {
-      if (this.componentManagerDisabled || this.cmInitialised) {
+      if (this.componentManagerDisabled || this.cmInitialised === this.iri) {
         return
       }
 
@@ -190,7 +190,7 @@ export const ComponentManagerMixin = Vue.extend({
           this.$el.scrollIntoView(true)
         }
       }
-      this.cmInitialised = true
+      this.cmInitialised = this.iri
     },
     componentManagerShowListener() {
       if (!this.resource) {
