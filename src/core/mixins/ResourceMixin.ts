@@ -45,7 +45,12 @@ export default Vue.extend({
 
       // do we know the published IRI from the resource
       const publishedIri = this.resource.publishedResource
-      if (publishedIri) {
+      if (!publishedIri) {
+        this.$cwa.$storage.mapDraftResource({
+          publishedIri: this.draftIri,
+          draftIri: this.draftIri
+        })
+      } else {
         this.$cwa.$storage.mapDraftResource({
           publishedIri,
           draftIri: this.draftIri
