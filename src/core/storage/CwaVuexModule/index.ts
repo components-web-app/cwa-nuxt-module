@@ -106,6 +106,9 @@ export default function (storage) {
           Vue.set(state.resources.draftMapping, publishedIri, draftIri)
         }
       },
+      CLEAR_DRAFT_RESOURCES(state) {
+        Vue.set(state, 'resources', {})
+      },
       DELETE_RESOURCE(state, payload) {
         DeleteResource(state, payload)
       },

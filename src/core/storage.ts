@@ -77,6 +77,12 @@ export class Storage {
     })
   }
 
+  clearDraftResources() {
+    this.ctx.store.commit(
+      this.options.vuex.namespace + '/CLEAR_DRAFT_RESOURCES'
+    )
+  }
+
   setResource({
     resource,
     isNew,
@@ -210,11 +216,14 @@ export class Storage {
   }
 
   findPublishedIri(iri) {
-    for (const [key, value] of Object.entries(
+    for (const [publishedIri, draftIri] of Object.entries(
       this.state.resources.draftMapping
     )) {
-      if (value === iri) {
-        return key
+      if (draftIri === iri) {
+        if (draftIri === publishedIri) {
+          return null
+        }
+        return publishedIri
       }
     }
 

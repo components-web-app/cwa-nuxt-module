@@ -231,6 +231,13 @@ export default class Cwa {
     this.$storage.decreaseMercurePendingProcessCount(requestCount)
   }
 
+  clearDraftResources() {
+    const draftIris = Object.values(this.$state.resources.draftMapping)
+    for (const iri of draftIris) {
+      this.$storage.deleteResource(iri)
+    }
+  }
+
   /**
    * API Documentation Proxy
    */
