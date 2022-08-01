@@ -184,11 +184,18 @@ export default Vue.extend({
 
       try {
         this.$cwa.$storage.increaseMercurePendingProcessCount()
+        const refreshEndpoints = []
+        if (this.addingEvent.position) {
+          refreshEndpoints.push(this.addingEvent.position)
+        }
+        if (this.addingEvent.collection) {
+          refreshEndpoints.push(this.addingEvent.collection)
+        }
         const resource = await this.$cwa.createResource(
           this.addingEvent.endpoint,
           resourceObject,
           null,
-          this.addingEvent.collection ? [this.addingEvent.collection] : null
+          refreshEndpoints
         )
         this.$cwa.saveResource(resource)
 
@@ -206,12 +213,8 @@ export default Vue.extend({
           await this.$cwa.refreshResources(refreshResources)
         }
         await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
-        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
+
         const newIri = resource['@id']
-        this.$cwa.$eventBus.$emit(EVENTS.componentCreated, {
-          tempIri: this.addingEvent.iri,
-          newIri
-        } as ComponentCreatedEvent)
 
         if (this.addingEvent.dynamicPage) {
           await this.$cwa.updateResource(
@@ -223,6 +226,12 @@ export default Vue.extend({
             [this.addingEvent.position]
           )
         }
+
+        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, newIri)
+        this.$cwa.$eventBus.$emit(EVENTS.componentCreated, {
+          tempIri: this.addingEvent.iri,
+          newIri
+        } as ComponentCreatedEvent)
 
         this.$cwa.$storage.decreaseMercurePendingProcessCount()
         this.addingEvent = null
