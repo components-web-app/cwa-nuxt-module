@@ -39,6 +39,7 @@ import Vue from 'vue'
 import Info from '../../input/info.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
+import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import {
   CONFIRM_DIALOG_EVENTS,
   ConfirmDialogEvent
@@ -46,7 +47,11 @@ import {
 
 export default Vue.extend({
   components: { Info },
-  mixins: [ComponentManagerTabMixin, ApiDateParserMixin],
+  mixins: [
+    ComponentManagerTabMixin,
+    ApiDateParserMixin,
+    PageResourceUtilsMixin
+  ],
   methods: {
     deleteComponent() {
       const event: ConfirmDialogEvent = {
@@ -67,8 +72,16 @@ export default Vue.extend({
           const position = this.context.componentPosition
           const positionResource = this.$cwa.getResource(position)
           const clearComponentFromPosition = async () => {
+            const loadFallback =
+              this.isDynamicPage && positionResource._metadata?.static_component
+            const component = loadFallback
+              ? positionResource._metadata?.static_component
+              : null
+            if (loadFallback) {
+              await this.$cwa.refreshResource(component)
+            }
             const overwriteObj: any = {
-              component: null
+              component
             }
             if (
               positionResource.component ===
@@ -82,13 +95,26 @@ export default Vue.extend({
                 }
               )
             }
+            const resource = Object.assign({}, positionResource, overwriteObj)
             await this.$cwa.$storage.setResource({
-              resource: Object.assign({}, positionResource, overwriteObj)
+              resource
             })
           }
+
           if (deleteAll) {
+            const refreshPageData =
+              this.isDynamicPage &&
+              this.getDynamicComponentIri(positionResource.pageDataProperty) ===
+                this.iri
+
             await this.$cwa.deleteResource(this.iri)
+            // refresh page data if required - so we do not have an IRI for a component that no longer exists
+            if (refreshPageData) {
+              await this.$cwa.refreshResource(this.$cwa.loadedPage)
+            }
+
             if (positionResource.pageDataProperty) {
+              // refresh as metadata and fallback may be available
               await clearComponentFromPosition()
             } else {
               // the API will have deleted the position
