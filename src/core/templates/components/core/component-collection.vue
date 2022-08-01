@@ -64,6 +64,7 @@ import {
 } from '../../../events'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import components from '~/.nuxt/cwa/components'
+import PageResourceUtilsMixin from '@cwa/nuxt-module/core/mixins/PageResourceUtilsMixin'
 
 export default Vue.extend({
   components: {
@@ -73,7 +74,12 @@ export default Vue.extend({
     CwaAddButton: () => import('../utils/cwa-add-button.vue'),
     ...components
   },
-  mixins: [ApiRequestMixin, ComponentManagerMixin, NewComponentMixin],
+  mixins: [
+    ApiRequestMixin,
+    ComponentManagerMixin,
+    NewComponentMixin,
+    PageResourceUtilsMixin
+  ],
   props: {
     // could be layout page or component
     location: {
@@ -105,7 +111,8 @@ export default Vue.extend({
       reloading: false,
       previousSortedComponentPositions: null,
       isDraggable: false,
-      showOrderValues: false
+      showOrderValues: false,
+      componentManagerDisabled: true
     }
   },
   computed: {
@@ -201,6 +208,10 @@ export default Vue.extend({
     }
   },
   async mounted() {
+    if (!this.isDynamicPage) {
+      this.componentManagerDisabled = false
+      this.initCMMixin()
+    }
     if (!this.resource && this.$cwa.isAdmin) {
       await this.addComponentCollection()
     }
@@ -263,8 +274,9 @@ export default Vue.extend({
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
       if (
-        !event.context?.collection.iri ||
-        event.context?.collection.iri !== this.resource['@id']
+        event.context?.collection &&
+        (!event.context?.collection.iri ||
+          event.context?.collection.iri !== this.resource['@id'])
       ) {
         this.showOrderValues = false
       } else {
