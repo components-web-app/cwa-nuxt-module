@@ -50,7 +50,8 @@ export const ComponentManagerMixin = Vue.extend({
       componentManagerDisabled: false,
       elementsAdded: {},
       componentManagerContext: {},
-      resourceName: null
+      resourceName: null,
+      cmInitialised: false
     }
   },
   computed: {
@@ -130,7 +131,7 @@ export const ComponentManagerMixin = Vue.extend({
   },
   methods: {
     initCMMixin() {
-      if (this.componentManagerDisabled) {
+      if (this.componentManagerDisabled || this.cmInitialised) {
         return
       }
 
@@ -189,6 +190,7 @@ export const ComponentManagerMixin = Vue.extend({
           this.$el.scrollIntoView(true)
         }
       }
+      this.cmInitialised = true
     },
     componentManagerShowListener() {
       if (!this.resource) {
@@ -268,7 +270,6 @@ export const ComponentManagerMixin = Vue.extend({
       return this.elementsAdded[name]
     },
     managerSelectComponentListener(iri) {
-      console.log(iri, this.computedIri)
       if (iri !== this.computedIri) {
         return
       }

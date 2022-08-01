@@ -127,12 +127,20 @@ export default Vue.extend({
         )
         this.$delete(this.elementsAdded, 'sortValue')
       }
+    },
+    isDynamic() {
+      this.checkInitCmMixin()
     }
   },
   mounted() {
-    if (this.isDynamic || !this.isDynamicPage) {
-      this.componentManagerDisabled = false
-      this.initCMMixin()
+    this.checkInitCmMixin()
+  },
+  methods: {
+    checkInitCmMixin() {
+      if (this.isDynamic || !this.isDynamicPage) {
+        this.componentManagerDisabled = false
+        this.initCMMixin()
+      }
     }
   }
 })
