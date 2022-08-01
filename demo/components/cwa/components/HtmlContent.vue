@@ -110,16 +110,6 @@ export default Vue.extend({
 <style lang="sass">
 .html-component
   position: relative
-  //&.has-error::after
-  //  content: ''
-  //  position: absolute
-  //  bottom: 100%
-  //  right: 100%
-  //  width: 16px
-  //  height: 16px
-  //  border-radius: 50%
-  //  background: $cwa-danger
-  //  transform: translate(8px, 8px)
   &.is-feature
     padding: 1rem .5rem
     font-size: 2.1rem

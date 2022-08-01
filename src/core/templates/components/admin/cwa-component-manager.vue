@@ -82,6 +82,7 @@ interface DataInterface {
   persistentStates: { [key: string]: { [key: string]: any } }
   isLayoutModeClick: boolean
   forceSwitchLayoutMode: boolean
+  preventPersistentStateClear: boolean
 }
 
 export default Vue.extend({
@@ -103,7 +104,8 @@ export default Vue.extend({
       mouseDownPosition: null,
       persistentStates: {},
       isLayoutModeClick: false,
-      forceSwitchLayoutMode: false
+      forceSwitchLayoutMode: false,
+      preventPersistentStateClear: true
     }
   },
   computed: {
@@ -242,6 +244,7 @@ export default Vue.extend({
     },
     newDraftListener({ publishedIri, draftIri }) {
       if (draftIri && publishedIri === this.componentIri) {
+        this.preventPersistentStateClear = true
         this.$nextTick(() => {
           this.$cwa.$eventBus.$emit(EVENTS.selectComponent, draftIri)
         })
@@ -404,6 +407,13 @@ export default Vue.extend({
         }
       }
 
+      if (this.preventPersistentStateClear) {
+        this.preventPersistentStateClear = false
+      } else if (
+        this.components?.[0]?.iri !== this.pendingComponents?.[0]?.iri
+      ) {
+        this.persistentStates = {}
+      }
       this.components = this.pendingComponents
       this.$nextTick(() => {
         this.$cwa.$eventBus.$emit(
