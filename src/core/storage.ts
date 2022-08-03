@@ -212,7 +212,10 @@ export class Storage {
     if (resource._metadata.published === false) {
       return iri
     }
-    const draftMappedIri = this.state.resources.draftMapping[iri]
+    const draftMappedIri = this.state.resources.draftMapping?.[iri]
+    if (!draftMappedIri) {
+      return null
+    }
     const draftResource = this.getResource(draftMappedIri)
     if (draftResource._metadata.published === false) {
       return draftMappedIri
