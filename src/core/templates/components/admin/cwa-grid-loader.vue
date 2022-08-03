@@ -11,7 +11,7 @@
       </div>
       Sorry, no items found
     </div>
-    <ul v-else class="row row-wrap grid">
+    <ul v-else class="columns is-multiline grid">
       <slot />
     </ul>
   </div>

@@ -1,7 +1,7 @@
 <template>
   <div v-if="notifications.length">
     <div class="api-notifications">
-      <p class="notification-title row">
+      <p class="notification-title columns">
         <span class="column">Notifications ({{ notifications.length }})</span>
         <span class="column is-narrow">
           <a

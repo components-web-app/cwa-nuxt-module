@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="cwa-header row is-mobile">
+    <div class="cwa-header columns is-mobile">
       <div class="column is-narrow">
         <h1>{{ title }}</h1>
       </div>
@@ -8,7 +8,7 @@
         <cwa-add-button :highlight="highlightAddButton" @click="$emit('add')" />
       </div>
     </div>
-    <div class="cwa-filter-bar row cwa-input">
+    <div class="cwa-filter-bar columns cwa-input">
       <div class="column is-narrow">
         <input
           v-model="search"

@@ -2,7 +2,7 @@
   <ul class="redirect-tree">
     <li v-for="redirect of routes" :key="redirect['@id']">
       <div>
-        <div class="row">
+        <div class="columns">
           <div class="column">{{ redirect.path }}</div>
           <div class="column is-narrow">
             <a

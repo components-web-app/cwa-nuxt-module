@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-manager-tabs row">
+  <div class="cwa-manager-tabs columns is-gapless">
     <div v-if="showSideTabs" class="side-bar column is-narrow">
       <a
         href="#"
@@ -27,9 +27,9 @@
       </a>
     </div>
     <div class="main column">
-      <div class="row tabs-top">
+      <div class="columns tabs-top">
         <div class="column">
-          <ul class="row">
+          <ul class="columns">
             <li
               v-for="tab of topTabs"
               :key="loopKey('tab', tab._index)"
@@ -342,7 +342,7 @@ export default Vue.extend({
 <style lang="sass">
 .cwa-manager-tabs
   .side-bar
-    > .row
+    > .columns
       height: 50%
       align-items: center
       border-right: 3px solid $cwa-grid-item-border-color
@@ -385,9 +385,11 @@ export default Vue.extend({
     max-height: 20vh
     overflow: auto
   .tab-content
-    padding: 1.5rem 2rem .75rem
-    min-height: 60px
-    .row.tab-row
+    padding: .25rem .75rem .25rem
+    min-height: 50px
+    .label
+      color: inherit
+    .columns.tab-row
       min-height: 36px
       align-items: center
     .trash-link

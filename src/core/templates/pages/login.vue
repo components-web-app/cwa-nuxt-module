@@ -42,7 +42,7 @@
           </span>
         </button>
       </div>
-      <div class="login-nav row">
+      <div class="login-nav columns">
         <div class="column is-narrow">
           <nuxt-link to="/"> &lt; Back to website </nuxt-link>
         </div>

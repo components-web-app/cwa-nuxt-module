@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="row">
+    <div class="columns">
       <div class="column is-narrow">
         <cwa-admin-select
           id="page-data-property"

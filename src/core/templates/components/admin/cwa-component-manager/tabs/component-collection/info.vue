@@ -1,6 +1,6 @@
 <template>
   <div class="collection-info-tab">
-    <div class="row">
+    <div class="columns">
       <div class="column is-narrow">
         <info :id="inputId('id')" label="id" :value="resource['@id']" />
         <info

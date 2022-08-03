@@ -13,7 +13,7 @@
     />
     <div v-if="dialogEvent.html" v-html="dialogEvent.html"></div>
     <div class="controls-bar">
-      <div class="row">
+      <div class="columns">
         <div class="column">
           <button class="is-dark is-delete" @click="cancel">
             {{ dialogEvent.cancelButtonText || 'Cancel' }}

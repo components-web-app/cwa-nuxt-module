@@ -56,6 +56,7 @@ export default {
     font-weight: $weight-light
     display: block
     padding-right: .5em
+    margin: 0
   .switch
     position: relative
     display: inline-block

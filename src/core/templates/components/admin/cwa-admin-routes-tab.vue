@@ -1,5 +1,5 @@
 <template>
-  <div class="row fields-container admin-routes-tab">
+  <div class="columns fields-container admin-routes-tab">
     <transition name="fade">
       <div v-if="isLoading || loadingRedirects" class="loader-overlay">
         <cwa-loader />
@@ -14,7 +14,7 @@
           </template>
           <template v-else>
             <label>Page route</label>
-            <div class="row">
+            <div class="columns">
               <span class="column is-narrow nowrap">{{
                 savedComponent.path
               }}</span>
@@ -35,7 +35,7 @@
               <span>Redirects</span>
               <cwa-add-button @click="showRedirectPage" />
             </div>
-            <div class="row">
+            <div class="columns">
               <div class="column">
                 <cwa-admin-routes-redirect-tree
                   v-if="routeWithRedirects.redirectedFrom"
@@ -48,7 +48,7 @@
         </div>
       </section>
       <section v-if="routePageShowing === 'route'">
-        <div class="row">
+        <div class="columns">
           <div class="column is-narrow">
             <a href="#" @click="showRoutePage">&lt; back</a>
           </div>
@@ -63,7 +63,7 @@
           to prevent broken links.
         </p>
 
-        <div class="row buttons-row">
+        <div class="columns buttons-row">
           <div class="column">
             <button @click="saveRoute">
               {{ isNew ? 'Create' : 'Update' }}
@@ -84,7 +84,7 @@
         >
           <div class="cwa-input">
             <label>Recommended page route</label>
-            <div class="row">
+            <div class="columns">
               <span class="column">{{ generatedRoute }}</span>
             </div>
           </div>
@@ -94,7 +94,7 @@
             }}'. This is optimal for search engines and relevance. A new
             redirect will also be created from your old route.
           </p>
-          <div class="row buttons-row">
+          <div class="columns buttons-row">
             <div class="column">
               <button @click="generateRoute">Generate</button>
             </div>
@@ -102,7 +102,7 @@
         </section>
       </section>
       <section v-if="routePageShowing === 'redirect'">
-        <div class="row">
+        <div class="columns">
           <div class="column is-narrow">
             <a href="#" @click="showRoutePage">&lt; back</a>
           </div>
@@ -113,7 +113,7 @@
           v-bind="inputProps('redirect')"
         />
         <p>The path you enter will be redirected to the current route</p>
-        <div class="row buttons-row">
+        <div class="columns buttons-row">
           <div class="column">
             <button @click="createRedirect">Create</button>
           </div>

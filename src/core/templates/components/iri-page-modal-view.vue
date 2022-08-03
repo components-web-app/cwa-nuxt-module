@@ -21,7 +21,7 @@
       >
     </div>
     <section v-if="currentTabIndex === 0" class="details-section">
-      <div class="row fields-container">
+      <div class="columns fields-container">
         <div class="column">
           <slot name="left" />
         </div>
@@ -43,7 +43,7 @@
           </div>
         </div>
       </div>
-      <div class="row buttons-row">
+      <div class="columns buttons-row">
         <div class="column">
           <button @click="$emit('submit')">
             {{ isNew ? 'Create' : 'Save' }}
