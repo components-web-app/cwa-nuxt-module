@@ -331,8 +331,9 @@ export default Vue.extend({
         transition: all .3s
         transform: translateY(-10px)
         padding: .75rem 1rem
-        border-radius: 2rem
+        border-radius: 1.4rem
         opacity: 0
+        font-weight: $weight-semibold
         &.is-showing
           background: $cwa-color-primary
           color: $white

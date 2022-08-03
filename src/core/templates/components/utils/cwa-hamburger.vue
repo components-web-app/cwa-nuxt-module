@@ -127,7 +127,7 @@ export default {
   position: relative
   display: inline-block
   z-index: 10
-  height: 2rem
+  height: 1.5rem
   .menu-svg
     transition: stroke .3s
     backface-visibility: hidden
