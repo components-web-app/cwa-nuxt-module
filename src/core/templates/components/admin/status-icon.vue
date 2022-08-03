@@ -1,5 +1,5 @@
 <template>
-  <div class="row row-center status-icon-container row-no-padding">
+  <div class="columns is-centered is-gapless status-icon-container">
     <span v-if="autoStatus === 0" class="column is-narrow"> Not saved... </span>
     <div class="column is-narrow">
       <error-notifications

@@ -1,6 +1,6 @@
 <template>
   <div class="add-dynamic-component-tab">
-    <div class="row row-center">
+    <div class="columns is-centered">
       <template v-if="resource.pageDataProperty">
         <div class="column is-narrow cm-button">
           <button

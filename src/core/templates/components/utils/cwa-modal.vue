@@ -118,6 +118,6 @@ $modal-breakpoint: $tablet
         max-width: 600px
         margin-bottom: 5rem
         h2
-          font-size: $size-h2
+          font-size: $size-2
           color: $white
 </style>

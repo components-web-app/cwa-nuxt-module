@@ -1,10 +1,13 @@
 <template>
   <div class="cm-button">
-    <div ref="buttonsRow" class="row row-center buttons-row row-no-padding">
+    <div
+      ref="buttonsRow"
+      class="columns is-centered buttons-row is-gapless is-marginless"
+    >
       <button
         ref="button"
         type="button"
-        class="cm-button-button"
+        class="button cm-button-button"
         :disabled="disabled"
         @click="handleButtonClick"
       >
@@ -155,23 +158,16 @@ export default Vue.extend({
 .cm-button
   position: relative
   .buttons-row
-    box-shadow: $control-shadow
+    box-shadow: $cwa-control-shadow
   .cm-button-button
     +cwa-button
     margin-bottom: 0
     z-index: 1
     box-shadow: none
     &.is-more
-      border-left: 1px solid $control-background-hover-color
+      border-left: 1px solid $cwa-control-background-hover-color
       padding-left: 1.5rem
       padding-right: 1.5rem
-  &.is-primary
-    .cm-button-button
-      background-color: $color-primary
-      color: $white
-      &:hover,
-      &:focus
-        background-color: darken($color-primary, 3%)
   .alt-options-list
     width: 100%
     margin: 0
@@ -183,4 +179,11 @@ export default Vue.extend({
         margin-bottom: 0
       button
         width: 100%
+  &.is-primary
+    .cm-button-button
+      background-color: $cwa-color-primary
+      color: $white
+      &:hover,
+      &:focus
+        background-color: darken($cwa-color-primary, 3%)
 </style>

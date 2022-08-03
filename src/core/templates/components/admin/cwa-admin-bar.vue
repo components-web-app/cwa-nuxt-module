@@ -92,7 +92,7 @@
             />
             <div
               v-else-if="isComponentSelected && !isCloning"
-              class="row row-center"
+              class="columns is-centered"
             >
               <div class="column is-narrow status-container">
                 <status-icon
@@ -305,7 +305,7 @@ export default Vue.extend({
     left: 0
     width: 100%
   > .inner
-    padding: 2rem
+    padding: 1rem 1.5rem
     background: $cwa-navbar-background
     display: flex
     justify-content: space-between
@@ -330,11 +330,11 @@ export default Vue.extend({
       .header-prompt
         transition: all .3s
         transform: translateY(-10px)
-        padding: 1rem 1.5rem
+        padding: .75rem 1rem
         border-radius: 2rem
         opacity: 0
         &.is-showing
-          background: $color-primary
+          background: $cwa-color-primary
           color: $white
           transform: translateY(0)
           opacity: 1

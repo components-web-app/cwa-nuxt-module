@@ -7,7 +7,7 @@
       <div class="logo">
         <cwa-nuxt-link to="https://cwa.rocks" target="_blank" rel="noopener">
           <cwa-logo class="cwa-logo" />
-          <span class="sr-only">Components Web App</span>
+          <span class="is-sr-only">Components Web App</span>
         </cwa-nuxt-link>
       </div>
     </div>

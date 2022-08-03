@@ -1,6 +1,6 @@
 <template>
   <div class="clone-info">
-    <div class="row row-no-padding row-center">
+    <div class="columns is-gapless is-centered">
       <div class="column is-narrow cloning-label">Cloning:</div>
       <div class="column">
         <button

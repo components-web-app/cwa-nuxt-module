@@ -147,7 +147,7 @@ export default {
       left: 50%
       transform: translate(-50%, -35%)
       font-size: .8em
-      font-weight: $font-weight-bold
+      font-weight: $weight-bold
   .errors-list
     > .arrow
       position: absolute
@@ -198,7 +198,7 @@ export default {
           &.error-title
             color: $cwa-color-primary
             font-size: 1.5rem
-            font-weight: $font-weight-semi-bold
+            font-weight: $weight-semibold
           &.error-description
             font-size: 1.3rem
             color: $cwa-navbar-background

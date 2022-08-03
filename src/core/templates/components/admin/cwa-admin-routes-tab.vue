@@ -321,8 +321,8 @@ export default Vue.extend({
     color: $white
     .not-found
       color: $cwa-color-text-light
-      font-weight: $font-weight-semi-bold
-      font-size: $size-h3
+      font-weight: $weight-semibold
+      font-size: $size-4
       opacity: .6
       margin: 1.5rem 0 .5rem
 </style>

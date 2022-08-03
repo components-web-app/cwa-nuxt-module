@@ -84,7 +84,7 @@ export default {
         opacity: .6
         font-size: .8em
     > .bottom
-      font-weight: $font-weight-light
+      font-weight: $weight-light
       opacity: .4
       font-size: .8em
       a

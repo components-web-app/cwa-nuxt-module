@@ -400,7 +400,7 @@ export default Vue.extend({
     right: 0
     font:
       size: 1.2rem
-      weight: $font-weight-semi-bold
+      weight: $weight-semibold
     color: $white
     background: rgba($cwa-background-dark, .8)
     border-radius: 3rem

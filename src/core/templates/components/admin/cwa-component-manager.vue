@@ -711,7 +711,7 @@ export default Vue.extend({
     .component-collection
       position: relative
       z-index: 1
-      background: $body-background
+      background: $body-background-color
     .cwa-component-manager-holder
       &:before
         content: ''

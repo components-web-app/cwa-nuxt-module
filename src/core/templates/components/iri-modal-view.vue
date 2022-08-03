@@ -107,8 +107,8 @@ export default Vue.extend({
     display: flex
     a
       color: $white
-      font-size: $size-h2
-      font-weight: $font-weight-light
+      font-size: $size-2
+      font-weight: $weight-light
       opacity: .6
       &:not(:last-child)
         margin-right: 1.25rem

@@ -51,7 +51,7 @@ body,
       color: $cwa-color-primary
   h1
     font-size: 3rem
-    font-weight: $font-weight-light
+    font-weight: $weight-light
     letter-spacing: .05em
     color: $white
 </style>

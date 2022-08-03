@@ -369,7 +369,7 @@ export default Vue.extend({
         position: relative
       &.is-selected > a
         color: $white
-        background: $control-background-color
+        background: $cwa-control-background-color
       &.has-error > a::after
         content: ''
         display: block

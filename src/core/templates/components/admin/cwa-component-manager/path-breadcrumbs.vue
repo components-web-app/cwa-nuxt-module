@@ -1,6 +1,6 @@
 <template>
   <div :class="['path-selector', { 'no-options': !componentOptions.length }]">
-    <div class="row row-center">
+    <div class="columns is-centered">
       <div class="column resource-column">
         <resource-locations
           :name="components[0].data.name"
@@ -134,7 +134,7 @@ export default {
 <style lang="sass">
 .path-selector
   color: $white
-  background: $control-background-color
+  background: $cwa-control-background-color
   border-radius: 2rem
   padding: 0
   position: relative
@@ -151,7 +151,7 @@ export default {
       padding-right: 1.5rem
   .button
     &.is-more
-      border-left: 1px solid $control-background-hover-color
+      border-left: 1px solid $cwa-control-background-hover-color
       padding: 2rem 1.5rem
       margin: 0 0 0 1.5rem
       border-radius: 0 2rem 2rem 0

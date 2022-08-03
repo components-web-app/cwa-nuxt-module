@@ -53,7 +53,7 @@ export default {
     opacity: 1
     color: $cwa-warning
   .label
-    font-weight: $font-weight-light
+    font-weight: $weight-light
     display: block
     padding-right: .5em
   .switch
@@ -73,11 +73,11 @@ export default {
         left: 0
         right: 0
         bottom: 0
-        border: $control-border
+        border: $cwa-control-border
         -webkit-transition: .4s
         transition: .4s
         border-radius: 34px
-        background: $control-background-color
+        background: $cwa-control-background-color
 
         &:before
           position: absolute

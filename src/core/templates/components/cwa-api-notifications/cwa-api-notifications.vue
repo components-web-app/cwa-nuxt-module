@@ -53,7 +53,7 @@ export default Vue.extend({
   height: 100%
   .notification-title
     padding: .75rem
-    font-weight: $font-weight-bold
+    font-weight: $weight-bold
     background: $cwa-background-dark
     color: $white
     margin: 0

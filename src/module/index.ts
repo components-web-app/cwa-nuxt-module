@@ -76,10 +76,7 @@ function applyCss() {
     const sassResourcesLoader = {
       loader: 'sass-resources-loader',
       options: {
-        resources: [
-          join(assetsDir, 'vars/*.sass'),
-          join(assetsDir, '_mixins.sass')
-        ]
+        resources: [join(assetsDir, 'vars/*.sass')]
       }
     }
 
