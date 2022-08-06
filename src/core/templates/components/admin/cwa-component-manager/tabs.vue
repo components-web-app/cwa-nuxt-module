@@ -387,8 +387,6 @@ export default Vue.extend({
   .tab-content
     padding: .25rem .75rem .25rem
     min-height: 50px
-    .label
-      color: inherit
     .columns.tab-row
       min-height: 36px
       align-items: center

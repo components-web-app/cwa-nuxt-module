@@ -38,8 +38,6 @@ export default {
   display: flex
   align-items: center
   margin-bottom: 0
-  opacity: .8
-  transition: opacity .25s
   cursor: pointer
   user-select: none
   &.has-error
@@ -49,14 +47,16 @@ export default {
       input
         + .slider
           border-color: $cwa-danger
-  &.is-checked
-    opacity: 1
-    color: $cwa-warning
   .label
-    font-weight: $weight-light
+    +cwa-input-label
+    font-size: inherit
     display: block
     padding-right: .5em
     margin: 0
+    transition: none
+  &.is-checked
+    .label
+      color: $cwa-warning
   .switch
     position: relative
     display: inline-block
