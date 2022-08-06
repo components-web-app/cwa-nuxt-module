@@ -5,7 +5,7 @@
         <div class="container">
           <nuxt-error-icon />
 
-          <div class="title">
+          <div class="error-title">
             {{ message }}
           </div>
           <p v-if="error.endpoint" class="description url">
@@ -24,7 +24,7 @@
         </div>
       </div>
       <div v-if="!$cwa.isAdmin" class="bottom">
-        <strong>Unexpected error?</strong> As a visitor, please contact the
+        <span class="unexpected-error-footer">Unexpected error?</span> As a visitor, please contact the
         website administrator. If you are the owner,
         <cwa-nuxt-link to="/login"> click here to login </cwa-nuxt-link>.
       </div>
@@ -78,8 +78,8 @@ export default {
     flex-direction: column
     > .top
       flex-grow: 1
-      .title
-        font-size: 1.8rem
+      .error-title
+        font-size: 1.4rem
       .description.url
         opacity: .6
         font-size: .8em
@@ -87,6 +87,8 @@ export default {
       font-weight: $weight-light
       opacity: .4
       font-size: .8em
+      .unexpected-error-footer
+        font-weight: $weight-bold
       a
         &:hover,
         &:focus

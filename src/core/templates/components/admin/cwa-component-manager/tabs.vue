@@ -341,6 +341,8 @@ export default Vue.extend({
 
 <style lang="sass">
 .cwa-manager-tabs
+  .columns.tabs-top
+    margin-bottom: 0
   .side-bar
     > .columns
       height: 50%
@@ -385,8 +387,10 @@ export default Vue.extend({
     max-height: 20vh
     overflow: auto
   .tab-content
+    display: flex
+    align-items: center
     padding: .25rem .75rem .25rem
-    min-height: 50px
+    min-height: 70px
     .columns.tab-row
       min-height: 36px
       align-items: center

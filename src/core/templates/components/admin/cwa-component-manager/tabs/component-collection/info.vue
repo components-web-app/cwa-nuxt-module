@@ -44,5 +44,5 @@ export default Vue.extend({
 
 <style lang="sass">
 .collection-info-tab
-  font-size: 1.2rem
+  font-size: .75rem
 </style>

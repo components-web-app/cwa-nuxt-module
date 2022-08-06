@@ -34,6 +34,6 @@ export default Vue.extend({
 <style lang="sass">
 .image-tab
   .help
-    font-size: 1.2rem
+    font-size: .75rem
     opacity: .6
 </style>

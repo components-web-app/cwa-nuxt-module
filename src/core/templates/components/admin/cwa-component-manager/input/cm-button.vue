@@ -168,6 +168,8 @@ export default Vue.extend({
       border-left: 1px solid $cwa-control-background-hover-color
       padding-left: 1.5rem
       padding-right: 1.5rem
+      img
+        display: block
   .alt-options-list
     width: 100%
     margin: 0

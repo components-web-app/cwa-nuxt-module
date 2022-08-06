@@ -164,6 +164,8 @@ export default {
       margin: 0 0 0 .75rem
       border-radius: 0 1.4rem 1.4rem 0
       height: 100%
+      img
+        display: block
   ul.component-list
     list-style: none
     position: absolute

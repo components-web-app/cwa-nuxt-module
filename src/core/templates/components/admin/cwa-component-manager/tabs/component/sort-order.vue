@@ -64,5 +64,7 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-// .sort-order-tab
+.sort-order-tab
+  input[type=number]
+    max-width: 180px
 </style>
