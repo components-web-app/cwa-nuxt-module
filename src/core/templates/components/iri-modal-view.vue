@@ -61,11 +61,10 @@ import ApiDateParserMixin from '../../mixins/ApiDateParserMixin'
 import CwaLoader from './utils/cwa-loader.vue'
 import CwaModal from './utils/cwa-modal.vue'
 import StatusIcon from './admin/status-icon.vue'
-import ErrorNotifications from './admin/error-notifications.vue'
 import IriModalPropsMixin from './IriModalPropsMixin'
 
 export default Vue.extend({
-  components: { ErrorNotifications, StatusIcon, CwaModal, CwaLoader },
+  components: { StatusIcon, CwaModal, CwaLoader },
   mixins: [ApiDateParserMixin, IriModalPropsMixin],
   props: {
     title: {
