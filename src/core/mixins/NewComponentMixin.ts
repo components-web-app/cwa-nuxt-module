@@ -125,7 +125,7 @@ export default Vue.extend({
             this.$cwa.setEditMode(true)
             this.$nextTick(() => {
               this.$cwa.$eventBus.$emit(
-                COMPONENT_MANAGER_EVENTS.refuseDiscard,
+                COMPONENT_MANAGER_EVENTS.selectComponent,
                 this.newComponentIri
               )
             })

@@ -6,9 +6,7 @@ dist
 types
 yarn.lock
 yarn-error.log
-demo/ssl/*
-!demo/ssl/.gitignore
-demo/.env
+demo/ssl/
 sw.*
 cypress/screenshots/
 cypress/downloads/

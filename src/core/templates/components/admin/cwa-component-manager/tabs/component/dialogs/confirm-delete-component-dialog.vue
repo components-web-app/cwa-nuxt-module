@@ -1,5 +1,5 @@
 <template>
-  <div class="content">
+  <div>
     <p>Are you sure you want to delete this component instance?</p>
     <p>{{ usedInStr }}</p>
     <p class="warning">

@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
-import { FormView as VuexFormView } from '@cwa/nuxt-module/core/storage/FormsVuexModule'
+import { FormView as VuexFormView } from '@cwa/nuxt-module/core/vuex/FormsVuexModule'
 import FormView from '@cwa/nuxt-module/core/templates/components/default/Form/FormView.vue'
 
 export default Vue.extend({

@@ -1,11 +1,11 @@
 <template>
   <div class="resource-location">
-    <span class="resource-label">
+    <span class="label">
       {{ name || 'Unnamed' }}
     </span>
     <ul class="counters">
       <li v-if="locations.layouts" class="counter is-layouts">
-        <span class="usage-icon"
+        <span class="icon"
           ><img
             src="../../../../assets/images/icon-layout.svg"
             alt="Layouts icon"
@@ -14,7 +14,7 @@
         <span class="count">{{ locations.layouts }}</span>
       </li>
       <li v-if="locations.pages" class="counter is-pages">
-        <span class="usage-icon"
+        <span class="icon"
           ><img
             src="../../../../assets/images/icon-pages.svg"
             alt="Pages icon"
@@ -23,7 +23,7 @@
         <span class="count">{{ locations.pages }}</span>
       </li>
       <li v-if="locations.components" class="counter is-components">
-        <span class="usage-icon"
+        <span class="icon"
           ><img
             src="../../../../assets/images/icon-components.svg"
             :title="`Used in ${locations.components} components`"
@@ -141,9 +141,9 @@ export default {
   position: relative
   display: flex
   align-items: center
-  .resource-label
+  .label
     transition: color .3s
-  .usage-icon
+  .icon
     height: 1.1em
     width: auto
     img
@@ -152,10 +152,10 @@ export default {
   .counters
     display: inline-flex
     list-style: none
-    margin: 0 0 0 .5em
+    margin: 0 0 0 .3rem
     padding: 0
     .counter
-      // padding-left: .5em
+      padding-left: .5em
       display: flex
       position: relative
       align-items: center

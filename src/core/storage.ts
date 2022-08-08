@@ -1,6 +1,6 @@
 import consola from 'consola'
 import { getProp } from '../utils'
-import CwaVuexModule, { stateVars } from './storage/CwaVuexModule/index'
+import CwaVuexModule from './vuex/CwaVuexModule'
 
 export const StoreCategories = {
   PageData: 'PageData',
@@ -11,9 +11,6 @@ export type resourcesState = {
   byId: object
   allIds: string[]
   currentIds?: string[]
-  extensions?: {
-    [key: string]: any
-  }
 }
 
 export class Storage {
@@ -75,12 +72,6 @@ export class Storage {
       publishedIri,
       draftIri
     })
-  }
-
-  clearDraftResources() {
-    this.ctx.store.commit(
-      this.options.vuex.namespace + '/CLEAR_DRAFT_RESOURCES'
-    )
   }
 
   setResource({
@@ -147,12 +138,12 @@ export class Storage {
   }
 
   get mercurePendingProcesses() {
-    return this.getState(stateVars.mercurePendingProcesses)
+    return this.getState('mercurePendingProcesses')
   }
 
   increaseMercurePendingProcessCount(requestCount: number = 1) {
     this.setState(
-      stateVars.mercurePendingProcesses,
+      'mercurePendingProcesses',
       this.mercurePendingProcesses + requestCount
     )
   }
@@ -165,7 +156,7 @@ export class Storage {
       )
     }
     const newValue = Math.max(calcValue, 0)
-    this.setState(stateVars.mercurePendingProcesses, newValue)
+    this.setState('mercurePendingProcesses', newValue)
   }
 
   setState(key, value) {
@@ -204,6 +195,15 @@ export class Storage {
     return 'Default'
   }
 
+  getTypeFromIri(iri, category: string = null) {
+    if (!category) {
+      category = this.getCategoryFromIri(iri)
+    }
+    return this.ctx.store.getters[
+      this.options.vuex.namespace + '/GET_TYPE_FROM_IRI'
+    ]({ iri, category })
+  }
+
   findDraftIri(iri) {
     const resource = this.getResource(iri)
     if (!resource) {
@@ -212,26 +212,15 @@ export class Storage {
     if (resource._metadata.published === false) {
       return iri
     }
-    const draftMappedIri = this.state.resources.draftMapping?.[iri]
-    if (!draftMappedIri) {
-      return null
-    }
-    const draftResource = this.getResource(draftMappedIri)
-    if (draftResource._metadata.published === false) {
-      return draftMappedIri
-    }
-    return null
+    return this.state.resources.draftMapping[iri] || null
   }
 
   findPublishedIri(iri) {
-    for (const [publishedIri, draftIri] of Object.entries(
+    for (const [key, value] of Object.entries(
       this.state.resources.draftMapping
     )) {
-      if (draftIri === iri) {
-        if (draftIri === publishedIri) {
-          return null
-        }
-        return publishedIri
+      if (value === iri) {
+        return key
       }
     }
 
@@ -254,8 +243,8 @@ export class Storage {
     const category = this.getCategoryFromIri(iri)
     const type = this.getTypeFromIri(iri, category)
     if (!type) {
-      consola.trace(
-        `Could not resolve a resource type for iri ${iri} in the category ${category}. The resource does not exist.`
+      consola.warn(
+        `Could not resolve a resource type for iri ${iri} in the category ${category}`
       )
       return null
     }
@@ -265,27 +254,10 @@ export class Storage {
     return this.state.resources.current[type].byId?.[iri] || null
   }
 
-  getTypeFromIri(iri, category?: string) {
-    if (!category) {
-      category = this.getCategoryFromIri(iri)
-    }
-    return this.get('GET_TYPE_FROM_IRI')({ iri, category })
-  }
-
   areResourcesOutdated() {
-    return this.get('RESOURCES_OUTDATED')
-  }
-
-  get(getter) {
-    return this.ctx.store.getters[`${this.options.vuex.namespace}/${getter}`]
-  }
-
-  getCollectionByPlacement({ iri, name }) {
-    const collectionIri = this.get('COLLECTION_BY_PLACEMENT')({ iri, name })
-    if (!collectionIri) {
-      return null
-    }
-    return this.getResource(collectionIri)
+    return this.ctx.store.getters[
+      this.options.vuex.namespace + '/RESOURCES_OUTDATED'
+    ]
   }
 
   watchState(key, fn) {
@@ -312,28 +284,21 @@ export class Storage {
 
   setCloneComponent(iri: string) {
     this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_CLONE_COMPONENT',
-      iri
-    )
-  }
-
-  setCloneFromPath(iri: string) {
-    this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_CLONE_FROM_PATH',
+      this.options.vuex.namespace + '/SET_REUSE_COMPONENT',
       iri
     )
   }
 
   setCloneDestination(iri: string) {
     this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_CLONE_DESTINATION',
+      this.options.vuex.namespace + '/SET_REUSE_DESTINATION',
       iri
     )
   }
 
   setCloneNavigate(navigate: boolean) {
     this.ctx.store.commit(
-      this.options.vuex.namespace + '/SET_CLONE_NAVIGATE',
+      this.options.vuex.namespace + '/SET_REUSE_NAVIGATE',
       navigate
     )
   }

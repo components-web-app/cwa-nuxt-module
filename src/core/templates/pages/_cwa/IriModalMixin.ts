@@ -33,10 +33,7 @@ export default Vue.extend({
       return this.iri === 'add'
     },
     isSaved() {
-      return (
-        this.isNew ||
-        this.$cwa.isResourceSame(this.component, this.savedComponent)
-      )
+      return this.$cwa.isResourceSame(this.component, this.savedComponent)
     },
     inputProps() {
       return (key) => ({
@@ -54,18 +51,12 @@ export default Vue.extend({
         showLoader: this.isLoading
       }
     },
-    uiClassNamesString() {
-      return this.getClassNamesString(this.component?.uiClassNames)
-    },
     savedComponent: {
       get() {
         if (!this.iri) {
           return {}
         }
-        const obj = this.$cwa.getResource(this.iri)
-        return Object.assign({}, obj, {
-          uiClassNames: this.getClassNamesString(obj?.uiClassNames)
-        })
+        return this.$cwa.getResource(this.iri)
       },
       set(newResource) {
         this.$cwa.saveResource(newResource)
@@ -88,15 +79,6 @@ export default Vue.extend({
     await this.findIriResource()
   },
   methods: {
-    getClassNamesString(classNamesArray) {
-      if (!classNamesArray) {
-        return ''
-      }
-      if (!Array.isArray(classNamesArray)) {
-        return classNamesArray
-      }
-      return classNamesArray.join(', ')
-    },
     async findIriResource() {
       if (this.isNew || !this.iri) {
         this.component = {}
@@ -104,7 +86,7 @@ export default Vue.extend({
       }
       this.isLoading = true
       this.component = Object.assign({}, await this.$cwa.findResource(this.iri))
-      this.$set(this.component, 'uiClassNames', this.uiClassNamesString)
+      this.component.uiClassNames = this.component?.uiClassNames?.join(', ')
       this.isLoading = false
     },
     async sendRequest(data) {

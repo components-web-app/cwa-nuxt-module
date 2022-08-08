@@ -2,14 +2,12 @@ import Vue from 'vue'
 import consola from 'consola'
 import {
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerResource,
+  ComponentManagerAddEvent,
   HighlightComponentEvent
 } from '../events'
 import CloneComponentMixin from './CloneComponentMixin'
 import AddElementsMixin from './AddElementsMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
-
-const highlightName = 'highlight'
 
 export const EVENTS = COMPONENT_MANAGER_EVENTS
 
@@ -41,7 +39,6 @@ export interface ComponentManagerComponent {
   context?: ComponentManagerComponentContext
 }
 
-// eslint-disable-next-line vue/one-component-per-file
 export const ComponentManagerMixin = Vue.extend({
   mixins: [AddElementsMixin, ComponentManagerValueMixin, CloneComponentMixin],
   data() {
@@ -49,9 +46,7 @@ export const ComponentManagerMixin = Vue.extend({
       highlightIsPosition: false,
       componentManagerDisabled: false,
       elementsAdded: {},
-      componentManagerContext: {},
-      resourceName: null,
-      cmInitialised: false
+      componentManagerContext: {}
     }
   },
   computed: {
@@ -63,7 +58,7 @@ export const ComponentManagerMixin = Vue.extend({
     },
     baseComponentManager(): ComponentManagerComponent {
       return {
-        name: this.resourceName || 'Unnamed',
+        name: 'Unnamed',
         tabs: [
           ...this.defaultManagerTabs.map((item) =>
             Object.assign({}, item, {
@@ -85,22 +80,12 @@ export const ComponentManagerMixin = Vue.extend({
       return this.resource?.['@id']
     },
     cmHighlightClass() {
-      if (!this.cmInitialised) {
-        return []
-      }
-      const outsideGlowAmount = 16
-      const classes = ['cwa-manager-highlight']
-      if (this.$el.clientWidth > window.innerWidth - outsideGlowAmount) {
-        classes.push('is-wide')
-      }
       if (this.cloneComponent) {
-        classes.push('is-primary')
-        return classes
+        return 'cwa-manager-highlight is-primary'
       }
-      if (this.publishable && !this.published) {
-        classes.push('is-draft')
-      }
-      return classes
+      return this.publishable && !this.published
+        ? 'cwa-manager-highlight is-draft'
+        : 'cwa-manager-highlight'
     }
   },
   watch: {
@@ -108,13 +93,13 @@ export const ComponentManagerMixin = Vue.extend({
       if (!this.elementsAdded.highlight) {
         return
       }
-      this.elementsAdded.highlight.className = this.cmHighlightClass.join(' ')
+      this.elementsAdded.highlight.className = this.cmHighlightClass
     },
     cmHighlightClass() {
       if (!this.elementsAdded.highlight) {
         return
       }
-      this.elementsAdded.highlight.className = this.cmHighlightClass.join(' ')
+      this.elementsAdded.highlight.className = this.cmHighlightClass
     }
   },
   mounted() {
@@ -130,21 +115,12 @@ export const ComponentManagerMixin = Vue.extend({
       EVENTS.selectComponent,
       this.managerSelectComponentListener
     )
-    this.$cwa.$eventBus.$off(
-      EVENTS.cancelShow,
-      this.removeComponentManagerShowListener
-    )
-    this.$cwa.$eventBus.$off(
-      EVENTS.hide,
-      this.removeComponentManagerShowListener
-    )
   },
   methods: {
     initCMMixin() {
-      if (this.componentManagerDisabled || this.cmInitialised === this.iri) {
+      if (this.componentManagerDisabled) {
         return
       }
-
       this.$el.addEventListener(
         'click',
         this.initComponentManagerShowListener,
@@ -159,18 +135,6 @@ export const ComponentManagerMixin = Vue.extend({
         EVENTS.selectComponent,
         this.managerSelectComponentListener
       )
-      this.$cwa.$eventBus.$on(
-        EVENTS.cancelShow,
-        this.removeComponentManagerShowListener
-      )
-      this.$cwa.$eventBus.$on(
-        EVENTS.hide,
-        this.removeComponentManagerShowListener
-      )
-      if (this.isCloneComponent) {
-        this.addHighlightDomElement()
-      }
-
       this.$cwa.$eventBus.$emit(EVENTS.componentMounted, this.computedIri)
 
       // will exist with a resource mixin
@@ -189,18 +153,10 @@ export const ComponentManagerMixin = Vue.extend({
             left += el.offsetLeft
           }
 
-          let windowViewableHeight = window.innerHeight
-          const cwaManagerElements = document.getElementsByClassName(
-            'cwa-components-manager'
-          )
-          if (cwaManagerElements) {
-            windowViewableHeight -= cwaManagerElements[0].clientHeight
-          }
-
           return (
             top >= window.pageYOffset &&
             left >= window.pageXOffset &&
-            top + height <= window.pageYOffset + windowViewableHeight &&
+            top + height <= window.pageYOffset + window.innerHeight &&
             left + width <= window.pageXOffset + window.innerWidth
           )
         }
@@ -208,7 +164,6 @@ export const ComponentManagerMixin = Vue.extend({
           this.$el.scrollIntoView(true)
         }
       }
-      this.cmInitialised = this.iri
     },
     componentManagerShowListener() {
       if (!this.resource) {
@@ -221,14 +176,17 @@ export const ComponentManagerMixin = Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
         iri: this.computedIri
-      } as ComponentManagerResource)
+      } as ComponentManagerAddEvent)
     },
     initComponentManagerShowListener() {
-      if (this.locationResourceType === 'layouts') {
-        this.$cwa.$eventBus.$emit(EVENTS.layoutEditMode)
-      }
-
       this.$cwa.$eventBus.$once(EVENTS.show, this.componentManagerShowListener)
+      // we should only be populating when the element is clicked and the show event is called
+      // if we click, but this results in the manager hiding (it is already shown)
+      // we should remove the event listener to prevent it being fired if the next click
+      // is not on this component
+      setTimeout(() => {
+        this.removeComponentManagerShowListener()
+      }, 0)
     },
     removeComponentManagerShowListener() {
       this.$cwa.$eventBus.$off(EVENTS.show, this.componentManagerShowListener)
@@ -246,52 +204,29 @@ export const ComponentManagerMixin = Vue.extend({
       // perhaps we always have a default position on all components?
       this.$nextTick(() => {
         if (iri === this.computedIri) {
-          this.addHighlightDomElement()
+          if (!this.elementsAdded.highlight) {
+            this.$set(
+              this.elementsAdded,
+              'highlight',
+              document.createElement('div')
+            )
+            this.elementsAdded.highlight.className = this.cmHighlightClass
+            this.$el.appendChild(this.elementsAdded.highlight)
+          }
           return
         }
-        if (!this.isCloneComponent) {
-          this.removeDomElement(highlightName)
+        if (this.elementsAdded.highlight) {
+          this.elementsAdded.highlight.parentNode.removeChild(
+            this.elementsAdded.highlight
+          )
+          this.$delete(this.elementsAdded, 'highlight')
         }
       })
-    },
-    addHighlightDomElement() {
-      this.addDomElement(highlightName, {
-        className: this.cmHighlightClass.join(' ')
-      })
-    },
-    removeDomElement(name: string) {
-      if (!this.elementsAdded[name]) {
-        return
-      }
-      this.elementsAdded[name].$el.parentNode.removeChild(
-        this.elementsAdded[name].$el
-      )
-      this.elementsAdded[name].$destroy()
-      this.$delete(this.elementsAdded, name)
-    },
-    addDomElement(name: string, propsData: any = {}) {
-      if (this.elementsAdded[name]) {
-        consola.info(`Already added element with name '${name}'`)
-        return
-      }
-      // eslint-disable-next-line vue/one-component-per-file
-      const NewComponentClass = Vue.extend({
-        props: { className: { type: String, required: true } },
-        template: '<div v-bind:class="className"></div>'
-      })
-      const newComponent = new NewComponentClass({
-        propsData
-      })
-      newComponent.$mount()
-      this.$set(this.elementsAdded, name, newComponent)
-      this.$el.appendChild(newComponent.$el)
-      return this.elementsAdded[name]
     },
     managerSelectComponentListener(iri) {
       if (iri !== this.computedIri) {
         return
       }
-
       this.$nextTick(() => {
         const clickEvent = new MouseEvent('click', {
           view: window,

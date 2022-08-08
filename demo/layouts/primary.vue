@@ -14,7 +14,7 @@
 
       <div class="navigation">
         <div class="container">
-          <div class="columns">
+          <div class="row">
             <div class="column is-narrow">
               <img src="/logo.svg" alt="CWA Logo" />
             </div>
@@ -28,7 +28,7 @@
         </div>
       </div>
 
-      <nuxt class="cwa-page" />
+      <nuxt />
     </div>
     <div class="bottom">
       <component-collection

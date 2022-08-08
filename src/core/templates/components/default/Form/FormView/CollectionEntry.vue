@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-collection-entry columns">
+  <div class="cwa-collection-entry row">
     <div class="column">
       <slot :child-proxy="'CwaFormCollectionEntryText'"></slot>
     </div>

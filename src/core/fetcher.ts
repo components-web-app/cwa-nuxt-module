@@ -7,7 +7,6 @@ import AxiosErrorParser from '../utils/AxiosErrorParser'
 import DebugTimer from '../utils/DebugTimer'
 import ApiError from '../inc/api-error'
 import Storage, { resourcesState } from './storage'
-import { stateVars } from './storage/CwaVuexModule'
 
 declare interface MercureMessage {
   event: MessageEvent
@@ -35,12 +34,9 @@ export class Fetcher {
   public static readonly loadedRoutePathKey = 'loadedRoute'
   public static readonly loadedPageKey = 'loadedPage'
   private timer: DebugTimer
+  private initMercureTimeout?: any = null
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []
-  private fetchingCounter: number = 0
-  private clientResourcesFetched: {
-    [key: string]: Promise<any>
-  } = {}
 
   constructor(
     { $axios, error, apiUrl, storage, router, redirect },
@@ -92,7 +88,6 @@ export class Fetcher {
     preload?: string[]
     cancelTokenSource?: CancelTokenSource
   }) {
-    this.fetchingCounter++
     let url = path
     const queryObj = this.ctx.router.currentRoute.query
     if (queryObj) {
@@ -126,7 +121,6 @@ export class Fetcher {
     } catch (error) {
       throw this.axiosToApiError(error)
     } finally {
-      this.fetchingCounter--
       this.timer.end(`Fetching ${url}`)
       consola.debug(`Fetched ${url}`)
     }
@@ -207,7 +201,6 @@ export class Fetcher {
 
   private startFetch(endpoint) {
     // prevent reload on querystring change or if we are already loading
-    this.clientResourcesFetched = {}
     const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
     const currentlyLoaded = this.ctx.storage.getState(
       Fetcher.loadedRoutePathKey
@@ -220,7 +213,7 @@ export class Fetcher {
     this.timer.start(`Start fetch ${endpoint}`)
     this.ctx.storage.resetCurrentResources()
     this.ctx.storage.setState(Fetcher.loadingEndpoint, endpoint)
-    // this.closeMercure()
+    this.closeMercure()
 
     return true
   }
@@ -378,31 +371,19 @@ export class Fetcher {
         return this.fetchCollection(
           { paths: componentCollection.componentPositions },
           (componentPosition) => {
-            return this.fetchResource(componentPosition.component)
+            return this.fetchComponent(componentPosition.component)
           }
         )
       }
     )
   }
 
-  public async fetchResource(path) {
+  public async fetchComponent(path) {
     this.timer.reset()
-    const doFetch = () => {
-      return this.fetchItem({
+    try {
+      return await this.fetchItem({
         path
       })
-    }
-    try {
-      if (process.client) {
-        // we are fetching with full available auth
-        if (!this.clientResourcesFetched[path]) {
-          this.clientResourcesFetched[path] = doFetch()
-        }
-        return await this.clientResourcesFetched[path]
-      } else {
-        return await doFetch()
-      }
-
       // const unavailableIndex = this.unavailableComponents.indexOf(path)
       // if (unavailableIndex !== -1) {
       //   this.unavailableComponents.splice(unavailableIndex, 1)
@@ -439,7 +420,7 @@ export class Fetcher {
   }
 
   private setDocsUrlFromHeaders(headers) {
-    if (this.ctx.storage.state[stateVars.docsUrl]) {
+    if (this.ctx.storage.state.docsUrl) {
       return
     }
 
@@ -462,7 +443,7 @@ export class Fetcher {
     const docsUrl = matches[1]
 
     consola.debug('docs url set', docsUrl)
-    this.ctx.storage.setState(stateVars.docsUrl, docsUrl)
+    this.ctx.storage.setState('docsUrl', docsUrl)
   }
 
   /**
@@ -497,40 +478,43 @@ export class Fetcher {
   }
 
   public initMercure(currentResources: { any: resourcesState }) {
-    const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
-    if (currentLoading || this.fetchingCounter) {
-      return
+    if (this.initMercureTimeout) {
+      clearTimeout(this.initMercureTimeout)
     }
-    const currentResourcesCategories = Object.values(currentResources)
-    if (!process.client) {
-      return
-    }
-
-    let hubUrl = null
-    try {
-      hubUrl = this.getMercureHubURL(currentResourcesCategories)
-    } catch (err) {
-      consola.error('Could not get Mercure hub url.', err.message)
-      return
-    }
-    consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
-
-    // Refresh the topics
-    if (this.eventSource && this.eventSource.readyState !== 2) {
-      if (this.eventSource.url === hubUrl) {
+    this.initMercureTimeout = setTimeout(() => {
+      const currentResourcesCategories = Object.values(currentResources)
+      if (!process.client) {
         return
       }
-      consola.info('Closing Mercure event source to re-open with latest topics')
-      this.closeMercure()
-    }
 
-    consola.info(`Created Mercure EventSource for "${hubUrl}"`)
-    this.eventSource = new EventSource(hubUrl)
-    // will be in context of EventSource if not using call
-    // eslint-disable-next-line no-useless-call
-    this.eventSource.onmessage = (messageEvent: MessageEvent) => {
-      this.handleMercureMessage(messageEvent)
-    }
+      let hubUrl = null
+      try {
+        hubUrl = this.getMercureHubURL(currentResourcesCategories)
+      } catch (err) {
+        consola.error('Could not get Mercure hub url.', err.message)
+        return
+      }
+      consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
+
+      // Refresh the topics
+      if (this.eventSource && this.eventSource.readyState !== 2) {
+        if (this.eventSource.url === hubUrl) {
+          return
+        }
+        consola.info(
+          'Closing Mercure event source to re-open with latest topics'
+        )
+        this.eventSource.close()
+      }
+
+      consola.info(`Created Mercure EventSource for "${hubUrl}"`)
+      this.eventSource = new EventSource(hubUrl)
+      // will be in context of EventSource if not using call
+      // eslint-disable-next-line no-useless-call
+      this.eventSource.onmessage = (messageEvent: MessageEvent) => {
+        this.handleMercureMessage(messageEvent)
+      }
+    }, 100)
   }
 
   private handleMercureMessage(event: MessageEvent) {
@@ -550,7 +534,7 @@ export class Fetcher {
     // Must wait for existing api requests to happen and storage to update or we think something has changed when
     // it is this application changing it
     const mercurePendingProcesses = this.ctx.storage.getState(
-      stateVars.mercurePendingProcesses
+      'mercurePendingProcesses'
     )
 
     return new Promise((resolve) => {
@@ -559,7 +543,7 @@ export class Fetcher {
           'Invoking Mercure message handler. No request in progress.'
         )
         this.processMessageQueue().then(() => {
-          resolve(true)
+          resolve()
         })
         return
       }
@@ -567,13 +551,13 @@ export class Fetcher {
         `Mercure message handler waiting for ${mercurePendingProcesses} processes to complete...`
       )
       const unwatchFn = this.ctx.storage.watchState(
-        stateVars.mercurePendingProcesses,
+        'mercurePendingProcesses',
         async (newValue) => {
           if (newValue === 0) {
             consola.debug('Request complete. Invoking Mercure message handler')
             await this.processMessageQueue()
             unwatchFn()
-            resolve(true)
+            resolve()
             return
           }
           consola.trace(
@@ -649,7 +633,7 @@ export class Fetcher {
     // we should check the component in this position
     if (data.component) {
       // try to fetch it from the API
-      if (!(await this.fetchResource(data.component))) {
+      if (!(await this.fetchComponent(data.component))) {
         this.initMercure(this.currentResources)
       }
     }

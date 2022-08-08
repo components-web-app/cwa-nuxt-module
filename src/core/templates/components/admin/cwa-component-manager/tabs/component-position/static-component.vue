@@ -1,8 +1,7 @@
 <template>
   <div class="static-component-tab">
-    <div class="columns">
+    <div class="row">
       <div class="column is-narrow">
-        <!-- IF A DYNAMIC PAGE -->
         <div v-if="isDynamicPage">
           <template v-if="staticComponentIri">
             <template v-if="resource.component !== staticComponentIri">
@@ -26,15 +25,11 @@
           <p v-else>No static component is defined.</p>
           <nuxt-link
             class="button"
-            :to="{
-              name: '_cwa_page_iri',
-              params: { iri: pageResource.page, cwa_force: true }
-            }"
+            :to="{ name: '_cwa_page_iri', params: { iri: pageResource.page } }"
           >
             Go to page template
           </nuxt-link>
         </div>
-        <!-- IF A TEMPLATE PAGE -->
         <div v-else>
           <div v-if="staticComponentIri">
             <button type="button" @click="selectStaticComponent">
@@ -42,6 +37,9 @@
             </button>
           </div>
           <template v-else>
+            <p>
+              This page is not dynamic. Static component will show if defined.
+            </p>
             <cwa-admin-select
               id="component"
               v-model="selectedComponent"
@@ -63,7 +61,6 @@ import CreateNewComponentEventMixin from '../../../../../../mixins/CreateNewComp
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import FetchComponentsMixin from '../../../../../../mixins/FetchComponentsMixin'
 import CwaAdminSelect from '../../../input/cwa-admin-select.vue'
-import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import { COMPONENT_MANAGER_EVENTS } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
@@ -71,8 +68,7 @@ export default Vue.extend({
   mixins: [
     ComponentManagerTabMixin,
     FetchComponentsMixin,
-    CreateNewComponentEventMixin,
-    PageResourceUtilsMixin
+    CreateNewComponentEventMixin
   ],
   data() {
     return {
@@ -86,6 +82,12 @@ export default Vue.extend({
         return []
       }
       return Object.keys(this.availableComponents)
+    },
+    isDynamicPage() {
+      return this.pageResource['@type'] !== 'Page'
+    },
+    pageResource() {
+      return this.$cwa.getResource(this.$cwa.currentPageIri)
     },
     staticComponentIri() {
       return this.resource._metadata.static_component
@@ -109,13 +111,11 @@ export default Vue.extend({
       )
       this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.newComponent, event)
       this.selectedComponent = null
-      // select 1st tab again
     }
   },
   methods: {
     selectStaticComponent() {
       this.$cwa.$eventBus.$emit(EVENTS.selectComponent, this.staticComponentIri)
-      this.$emit('show-tab', 0)
     }
   }
 })

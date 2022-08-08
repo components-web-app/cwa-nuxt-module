@@ -15,14 +15,20 @@
               <div>No component selected</div>
             </div>
             <template v-else>
-              <div class="top columns">
+              <div class="top row">
                 <div class="column">
-                  <clone v-if="cloneComponent" />
+                  <div v-if="cloneComponent" class="clone-info">
+                    <p>Select where you would like to clone this component</p>
+                    <cwa-admin-toggle
+                      id="cwa-cm-clone-navigate"
+                      v-model="cloneNavigate"
+                      label="Navigate"
+                    />
+                  </div>
                   <tabs
                     v-show="!cloneComponent"
                     :tabs="componentTabs"
                     :iri="componentIri"
-                    :selected-component="selectedComponent"
                     :selected-position="selectedPosition"
                     :collection="closestCollection"
                     :show-tabs="showTabs && !cloneComponent"
@@ -56,21 +62,19 @@ import {
   ResetStatusEvent,
   DraggableEvent,
   API_EVENTS,
-  ComponentManagerResource,
+  ComponentManagerAddEvent,
   SaveStateEvent,
   PublishableToggledEvent,
-  HighlightComponentEvent,
-  ConfirmDialogEvent,
-  CONFIRM_DIALOG_EVENTS
+  HighlightComponentEvent
 } from '../../../events'
 import CloneComponentMixin from '../../../mixins/CloneComponentMixin'
+import CwaAdminToggle from './input/cwa-admin-toggle.vue'
 import Tabs from './cwa-component-manager/tabs.vue'
-import Clone from './cwa-component-manager/clone.vue'
 
 interface DataInterface {
   expanded: boolean
-  components: Array<ComponentManagerResource>
-  pendingComponents: Array<ComponentManagerResource>
+  components: Array<ComponentManagerAddEvent>
+  pendingComponents: Array<ComponentManagerAddEvent>
   savedStatus: Number
   showHighlightOverlay: boolean
   showTabs: boolean
@@ -80,14 +84,11 @@ interface DataInterface {
     pageY: Number
   }
   persistentStates: { [key: string]: { [key: string]: any } }
-  isLayoutModeClick: boolean
-  forceSwitchLayoutMode: boolean
-  preventPersistentStateClear: boolean
 }
 
 export default Vue.extend({
   components: {
-    Clone,
+    CwaAdminToggle,
     Tabs,
     TransitionExpand
   },
@@ -102,10 +103,7 @@ export default Vue.extend({
       showTabs: false,
       selectedPosition: null,
       mouseDownPosition: null,
-      persistentStates: {},
-      isLayoutModeClick: false,
-      forceSwitchLayoutMode: false,
-      preventPersistentStateClear: true
+      persistentStates: {}
     }
   },
   computed: {
@@ -115,7 +113,7 @@ export default Vue.extend({
     isShowing() {
       return this.showingCriteria && this.expanded && this.components.length
     },
-    selectedComponent(): ComponentManagerResource | null {
+    selectedComponent(): ComponentManagerAddEvent | null {
       return this.components?.[0] || null
     },
     componentData() {
@@ -178,6 +176,9 @@ export default Vue.extend({
     selectedComponent({ iri }) {
       this.toggleComponent(iri || null, this.selectedPosition || null)
     },
+    // selectedPosition(iri) {
+    //   this.toggleComponent(this.selectedComponent.iri || null, iri || null)
+    // },
     persistentStates: {
       handler(newValue) {
         this.$cwa.$storage.setState(
@@ -203,14 +204,11 @@ export default Vue.extend({
     this.$cwa.$eventBus.$on(EVENTS.selectPosition, this.selectPositionListener)
     this.$cwa.$eventBus.$on(EVENTS.addComponent, this.addComponent)
     this.$cwa.$eventBus.$on(EVENTS.saveState, this.saveStateListener)
-    this.$cwa.$eventBus.$on(API_EVENTS.deleted, this.hide)
     this.$cwa.$eventBus.$on(
       EVENTS.publishableToggled,
       this.publishableToggledListener
     )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
-    this.$cwa.$eventBus.$on(EVENTS.layoutEditMode, this.triggerLayoutModeClick)
-    this.$cwa.$eventBus.$on(EVENTS.refuseDiscard, this.refuseDiscardListener)
   },
   beforeDestroy() {
     window.removeEventListener('mousedown', this.handleMouseDown)
@@ -223,19 +221,9 @@ export default Vue.extend({
       this.publishableToggledListener
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
-    this.$cwa.$eventBus.$off(API_EVENTS.deleted, this.hide)
-    this.$cwa.$eventBus.$off(EVENTS.layoutEditMode, this.triggerLayoutModeClick)
-    this.$cwa.$eventBus.$off(EVENTS.refuseDiscard, this.refuseDiscardListener)
     this.$cwa.$eventBus.$emit(EVENTS.showing, false)
   },
   methods: {
-    refuseDiscardListener(returnToIri) {
-      this.forceSwitchLayoutMode = true
-      this.$cwa.$eventBus.$emit(EVENTS.selectComponent, returnToIri)
-    },
-    triggerLayoutModeClick() {
-      this.isLayoutModeClick = true
-    },
     handleMouseDown({ pageX, pageY }) {
       this.mouseDownPosition = {
         pageX,
@@ -244,7 +232,6 @@ export default Vue.extend({
     },
     newDraftListener({ publishedIri, draftIri }) {
       if (draftIri && publishedIri === this.componentIri) {
-        this.preventPersistentStateClear = true
         this.$nextTick(() => {
           this.$cwa.$eventBus.$emit(EVENTS.selectComponent, draftIri)
         })
@@ -314,6 +301,7 @@ export default Vue.extend({
     },
     hide() {
       if (this.cloneComponent) {
+        this.cancelClone()
         return
       }
       this.$cwa.$eventBus.$emit(EVENTS.hide)
@@ -321,39 +309,13 @@ export default Vue.extend({
       this.persistentStates = {}
       this.selectPosition(null)
     },
-    triggerSwitchLayoutPageEditingDialog(triggerLayoutEditing: boolean) {
-      const onSuccess = () => {
-        this.$cwa.setLayoutEditing(triggerLayoutEditing)
-        this.triggerShowEvents()
-      }
-      if (this.forceSwitchLayoutMode) {
-        this.forceSwitchLayoutMode = false
-        onSuccess()
-        return
-      }
-      const newEditArea = triggerLayoutEditing ? 'layout' : 'page'
-      const event: ConfirmDialogEvent = {
-        id: 'confirm-switch-edit-area',
-        title: triggerLayoutEditing ? 'Edit Layout' : 'Edit Page',
-        html: `<p>Are you sure you want to start editing the ${newEditArea}?</p>`,
-        onSuccess,
-        onCancel: () => {
-          this.$cwa.$eventBus.$emit(EVENTS.cancelShow)
-        },
-        confirmButtonText: `Switch to ${newEditArea}`
-      }
-      this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
-    },
     show(event) {
       // calendar inside manager should not trigger anything
-      if (
-        event.target.closest('.flatpickr-calendar') ||
-        event.target.closest('.cwa-modal')
-      ) {
+      if (event.target.closest('.flatpickr-calendar')) {
         return
       }
 
-      // for programmatic clicks do not check position
+      // for programatic clicks do not check position
       if (event.isTrusted) {
         // prevent trigger on a drag
         const delta = 6
@@ -364,23 +326,6 @@ export default Vue.extend({
         }
       }
 
-      if (this.isLayoutModeClick) {
-        // layout mode click
-
-        // reset if layout mode click
-        this.isLayoutModeClick = false
-
-        if (this.$cwa.isLayoutEditing === false) {
-          this.triggerSwitchLayoutPageEditingDialog(true)
-          return
-        }
-      } else if (this.$cwa.isLayoutEditing === true) {
-        this.triggerSwitchLayoutPageEditingDialog(false)
-        return
-      }
-      this.triggerShowEvents()
-    },
-    triggerShowEvents() {
       this.pendingComponents = []
       if (this.showingCriteria) {
         // the component position component is listening to show to select a component.
@@ -397,7 +342,6 @@ export default Vue.extend({
         consola.info('Not showing components manager. No menu data populated.')
         return
       }
-
       if (!this.selectedPosition && this.cloneComponent) {
         for (const component of this.pendingComponents) {
           if (component.data.name === 'Collection') {
@@ -407,13 +351,6 @@ export default Vue.extend({
         }
       }
 
-      if (this.preventPersistentStateClear) {
-        this.preventPersistentStateClear = false
-      } else if (
-        this.components?.[0]?.iri !== this.pendingComponents?.[0]?.iri
-      ) {
-        this.persistentStates = {}
-      }
       this.components = this.pendingComponents
       this.$nextTick(() => {
         this.$cwa.$eventBus.$emit(
@@ -435,7 +372,7 @@ export default Vue.extend({
         })
       })
     },
-    addComponent({ data, iri }: ComponentManagerResource) {
+    addComponent({ data, iri }: ComponentManagerAddEvent) {
       this.pendingComponents.push({ data, iri })
     },
     saveStateListener(event: SaveStateEvent) {
@@ -664,7 +601,7 @@ export default Vue.extend({
 
 .cwa-manager-highlight
   +absolute-overlay
-  &:not(.is-wide)::before
+  &::before
     +absolute-overlay
     content: ''
     animation: cwa-manager-highlight-before-animation 1.5s infinite linear
@@ -674,17 +611,17 @@ export default Vue.extend({
     animation: cwa-manager-highlight-after-animation 1.5s infinite linear
     animation-delay: .2s
   &.is-draft
-    &:not(.is-wide)::before
+    &::before
       animation-name: cwa-manager-draft-highlight-before-animation
     &::after
       animation-name: cwa-manager-draft-highlight-after-animation
   &.is-primary
-    &:not(.is-wide)::before
+    &::before
       animation-name: cwa-manager-primary-highlight-before-animation
     &::after
       animation-name: cwa-manager-primary-highlight-after-animation
   &.is-gray
-    &:not(.is-wide)::before
+    &::before
       animation-name: cwa-manager-gray-highlight-before-animation
     &::after
       animation-name: cwa-manager-gray-highlight-after-animation
@@ -700,31 +637,6 @@ export default Vue.extend({
   .cwa-manager-highlight
       display: none
 
-.cwa-html
-  &.is-editing
-    &.is-layout-editing
-      .component-collection.is-cwa-collection-layouts
-        z-index: 2
-    &:not(.is-layout-editing)
-      .component-collection:not(.is-cwa-collection-layouts)
-        z-index: 2
-    .component-collection
-      position: relative
-      z-index: 1
-      background: $body-background-color
-    .cwa-component-manager-holder
-      &:before
-        content: ''
-        position: fixed
-        top: 0
-        left: 0
-        right: 0
-        bottom: 0
-        background: rgba($cwa-background-dark, .25)
-        z-index: 1
-        user-select: none
-        pointer-events: none
-
 .cwa-components-manager
   position: relative
   background: $cwa-navbar-background
@@ -735,6 +647,11 @@ export default Vue.extend({
     bottom: 0
     left: 0
     width: 100%
+  .clone-info
+    padding: 2rem
+    p
+      color: $white
+      font-size: 1.8rem
   a
     color: $cwa-color-text-light
     &:hover,
@@ -745,6 +662,6 @@ export default Vue.extend({
     margin-bottom: 0
     &:hover
       color: $white
-  .top.columns
+  .top.row
     padding: 1rem
 </style>

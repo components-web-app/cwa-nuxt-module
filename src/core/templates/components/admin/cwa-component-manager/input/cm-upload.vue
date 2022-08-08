@@ -1,7 +1,7 @@
 <template>
   <wrapper-component>
     <div class="cm-upload">
-      <div class="columns">
+      <div class="row">
         <div class="column is-narrow">
           <div class="file">
             <label class="file-label" :for="id">
@@ -171,7 +171,7 @@ export default Vue.extend({
 
 <style lang="sass">
 .cm-upload
-  > .columns
+  > .row
     align-items: center
   .trash-link
     display: block

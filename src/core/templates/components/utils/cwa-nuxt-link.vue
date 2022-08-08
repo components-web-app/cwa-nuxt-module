@@ -63,16 +63,15 @@ export default {
       return this.tag || 'a'
     },
     allowNavigation() {
-      return (
-        this.alwaysClickable || this.cloneAllowNavigate || !this.$cwa.isEditMode
-      )
+      const navigateReusable = this.cloneComponent && this.cloneNavigate
+      return this.alwaysClickable || navigateReusable || !this.$cwa.isEditMode
     }
   }
 }
 </script>
 
 <style lang="sass">
-//.cwa-disabled
-//  +no-select
-//  pointer-events: none
+.cwa-disabled
+  +no-select
+  pointer-events: none
 </style>

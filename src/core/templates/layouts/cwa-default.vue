@@ -44,14 +44,14 @@ body,
   > .page
     flex-grow: 1
     background: $cwa-background-dark
-a
-  color: $cwa-color-text-light
-  &:hover,
-  &:focus
-    color: $cwa-color-primary
-h1
-  font-size: 2.5rem
-  font-weight: $weight-normal
-  letter-spacing: .05em
-  color: $white
+  a
+    color: $cwa-color-text-light
+    &:hover,
+    &:focus
+      color: $cwa-color-primary
+  h1
+    font-size: 3rem
+    font-weight: $font-weight-light
+    letter-spacing: .05em
+    color: $white
 </style>

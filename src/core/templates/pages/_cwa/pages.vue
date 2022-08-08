@@ -8,14 +8,14 @@
       @load="updateData"
       @add="showAddPage"
     >
-      <li v-for="page of data" :key="page['@id']" class="column is-4">
+      <li v-for="page of data" :key="page['@id']" class="column column-33">
         <div class="cwa-grid-item page-grid-item">
           <nuxt-link :to="addRouteProps(page['@id'])">
-            <p class="cwa-title">
+            <p class="title">
               {{ page.reference }}
             </p>
-            <p class="cwa-subtitle">UI: {{ page.uiComponent }}</p>
-            <p class="cwa-subtitle">
+            <p class="subtitle">UI: {{ page.uiComponent }}</p>
+            <p class="subtitle">
               Layout:
               {{ layouts ? layouts[page.layout] || 'Unknown' : 'Loading' }}
             </p>
@@ -55,7 +55,7 @@ export default Vue.extend({
     .builder-link
       display: flex
       background: $cwa-navbar-background
-      padding: 1rem 1.25rem
+      padding: 1.2rem 2rem
       vertical-align: middle
       img
         margin-right: 1rem

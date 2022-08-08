@@ -27,7 +27,7 @@ export default Vue.extend({
   data() {
     return {
       // @ts-ignore
-      iri: this.$cwa.loadedPage
+      iri: this.$cwa.currentPageIri
     }
   }
 })

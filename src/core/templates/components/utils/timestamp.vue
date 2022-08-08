@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import moment from 'moment'
+
 export default {
   props: {
     timestamp: {
@@ -33,8 +35,7 @@ export default {
     clearInterval(this.updateInterval)
   },
   methods: {
-    async updateTimestamp() {
-      const { default: moment } = await import('moment')
+    updateTimestamp() {
       this.formattedTimestamp = moment(this.timestamp).fromNow()
     }
   }

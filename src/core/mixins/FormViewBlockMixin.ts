@@ -5,7 +5,7 @@ import FormViewPropsMixin from './FormViewPropsMixin'
 import {
   FormExtraSubmitData,
   FormView
-} from '@cwa/nuxt-module/core/storage/FormsVuexModule'
+} from '@cwa/nuxt-module/core/vuex/FormsVuexModule'
 
 export default Vue.extend({
   mixins: [FormViewPropsMixin],

@@ -1,18 +1,14 @@
 <template>
   <cwa-modal class="layout-details-page" @close="$emit('close')">
     <div class="status-bar">
-      <status-icon
-        :always-show-status="true"
-        :show-status-text="false"
-        :status="isSaved ? 1 : 0"
-        :category="notificationCategories"
-      />
+      <status-icon :status="isSaved ? 1 : 0" />
+      <error-notifications :listen-categories="notificationCategories" />
     </div>
     <div class="title-tabs">
       <h2>{{ title }}</h2>
     </div>
     <section class="details-section">
-      <div class="columns fields-container">
+      <div class="row fields-container">
         <div class="column">
           <slot name="left" />
         </div>
@@ -34,20 +30,20 @@
           </div>
         </div>
       </div>
-      <div class="columns buttons-row">
+      <div class="row buttons-row">
         <div class="column">
-          <button class="button is-cwa-primary" @click="$emit('submit')">
+          <button @click="$emit('submit')">
             {{ isNew ? 'Create' : 'Save' }}
           </button>
         </div>
         <div v-if="!isNew" class="column is-narrow">
-          <button class="button is-dark is-delete" @click="$emit('delete')">
+          <button class="is-dark is-delete" @click="$emit('delete')">
             Delete
           </button>
         </div>
       </div>
       <transition name="fade">
-        <div v-if="showLoader" class="cwa-loader-overlay">
+        <div v-if="showLoader" class="loader-overlay">
           <cwa-loader />
         </div>
       </transition>
@@ -61,10 +57,11 @@ import ApiDateParserMixin from '../../mixins/ApiDateParserMixin'
 import CwaLoader from './utils/cwa-loader.vue'
 import CwaModal from './utils/cwa-modal.vue'
 import StatusIcon from './admin/status-icon.vue'
+import ErrorNotifications from './admin/error-notifications.vue'
 import IriModalPropsMixin from './IriModalPropsMixin'
 
 export default Vue.extend({
-  components: { StatusIcon, CwaModal, CwaLoader },
+  components: { ErrorNotifications, StatusIcon, CwaModal, CwaLoader },
   mixins: [ApiDateParserMixin, IriModalPropsMixin],
   props: {
     title: {
@@ -103,17 +100,15 @@ export default Vue.extend({
 .layout-details-page
   .status-bar
     position: absolute
-    top: 1rem
-    left: 1rem
+    top: 2rem
+    left: 2rem
     display: flex
-    z-index: 100
   .title-tabs
     display: flex
-    margin-bottom: 1rem
     a
       color: $white
-      font-size: $size-3
-      font-weight: $weight-normal
+      font-size: $size-h2
+      font-weight: $font-weight-light
       opacity: .6
       &:not(:last-child)
         margin-right: 1.25rem
@@ -131,10 +126,10 @@ export default Vue.extend({
       margin-top: 1rem
       text-align: right
       color: $cwa-color-text-light
-      font-size: .9rem
+      font-size: 1.3rem
       justify-self: end
   .buttons-row
-    margin-top: 1rem
+    margin-top: 2.5rem
     button.is-delete
       &:hover,
       &:focus

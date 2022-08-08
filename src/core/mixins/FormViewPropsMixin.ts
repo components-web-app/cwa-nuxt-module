@@ -5,7 +5,7 @@ import {
   FormView,
   ViewMetadata,
   ViewVars
-} from '@cwa/nuxt-module/core/storage/FormsVuexModule'
+} from '@cwa/nuxt-module/core/vuex/FormsVuexModule'
 
 export default Vue.extend({
   props: {

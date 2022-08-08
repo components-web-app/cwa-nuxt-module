@@ -1,40 +1,19 @@
 import Vue from 'vue'
+import moment from 'moment'
 
 export default Vue.extend({
-  data() {
-    return {
-      moment: null
-    }
-  },
-  mounted() {
-    import('moment').then(({ default: moment }) => {
-      this.moment = moment
-    })
-  },
   methods: {
     parseDateString(string) {
-      if (!this.moment) {
-        return string
-      }
-      return this.moment.utc(string).toDate()
+      return moment.utc(string).toDate()
     },
     parseDateToLocal(string) {
-      if (!this.moment) {
-        return string
-      }
-      return this.moment(this.parseDateString(string)).local()
+      return moment(this.parseDateString(string)).local()
     },
     parseLocalDateToUtc(string) {
-      if (!this.moment) {
-        return string
-      }
-      return this.moment(string).utc()
+      return moment(string).utc()
     },
     formatDate(date, format = 'DD/MM/YY @ HH:mm') {
-      if (!this.moment) {
-        return date
-      }
-      return this.moment(date).format(format)
+      return moment(date).format(format)
     }
   }
 })

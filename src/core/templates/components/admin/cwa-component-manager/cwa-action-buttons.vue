@@ -8,6 +8,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import moment from 'moment'
 import consola from 'consola'
 import { EVENTS } from '../../../../mixins/ComponentManagerMixin'
 import { ComponentCreatedEvent, NewComponentEvent } from '../../../../events'
@@ -16,16 +17,15 @@ import { RemoveNotificationEvent } from '../../cwa-api-notifications/types'
 import ApiErrorNotificationsMixin from '../../../../mixins/ApiErrorNotificationsMixin'
 import CloneComponentMixin from '../../../../mixins/CloneComponentMixin'
 import CmButton, { altOption } from './input/cm-button.vue'
+import UpdateResourceError from '@cwa/nuxt-module/inc/update-resource-error'
 import UpdateResourceMixin from '@cwa/nuxt-module/core/mixins/UpdateResourceMixin'
-import ApiDateParserMixin from '@cwa/nuxt-module/core/mixins/ApiDateParserMixin'
 
 export default Vue.extend({
   components: { CmButton },
   mixins: [
     ApiErrorNotificationsMixin,
     CloneComponentMixin,
-    UpdateResourceMixin,
-    ApiDateParserMixin
+    UpdateResourceMixin
   ],
   props: {
     selectedPosition: {
@@ -34,7 +34,7 @@ export default Vue.extend({
       default: null
     },
     selectedComponent: {
-      type: Object,
+      type: String,
       required: false,
       default: null
     }
@@ -80,12 +80,7 @@ export default Vue.extend({
       if (this.state === 2) {
         if (this.isDraft) {
           return {
-            default: {
-              label: 'Publish',
-              fn: () => {
-                this.publishNow(this.selectedComponent.iri)
-              }
-            },
+            default: { label: 'Publish', fn: this.publishNow },
             clone: { label: 'Clone', fn: this.selectCloneComponent }
           }
         }
@@ -101,12 +96,12 @@ export default Vue.extend({
         .map((key) => ({ key, label: this.buttonOptions[key].label }))
     },
     isDraft() {
-      const resource = this.$cwa.getResource(this.selectedComponent.iri)
+      const resource = this.$cwa.getResource(this.selectedComponent)
       return resource?._metadata?.published === false || false
     },
     refreshEndpoints() {
       const publishedResource = this.$cwa.getPublishedResource(
-        this.$cwa.getResource(this.selectedComponent.iri)
+        this.$cwa.getResource(this.selectedComponent)
       )
       return publishedResource?.componentPositions || null
     }
@@ -126,14 +121,34 @@ export default Vue.extend({
     )
   },
   methods: {
-    async handleClick(clickKey) {
+    handleClick(clickKey) {
       clickKey = clickKey || 'default'
-      const fn: Function = this.buttonOptions[clickKey].fn
-      await fn.apply(this, this.buttonOptions[clickKey].args || [])
+      this.buttonOptions[clickKey].fn.apply(
+        this,
+        this.buttonOptions[clickKey].args || []
+      )
+    },
+    async publishNow() {
+      try {
+        await this.updateResource(
+          this.selectedComponent,
+          'publishedAt',
+          moment.utc().toISOString(),
+          this.$cwa.$storage.getCategoryFromIri(this.selectedComponent),
+          this.refreshEndpoints,
+          'components-manager'
+        )
+        this.$emit('close')
+      } catch (error) {
+        if (!(error instanceof UpdateResourceError)) {
+          throw error
+        }
+        consola.error(error)
+      }
     },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
-      // this.cloneDestination = this.selectedPosition
+      this.cloneDestination = this.selectedPosition
     },
     newComponentListener(event: NewComponentEvent) {
       this.addingEvent = event
@@ -142,14 +157,8 @@ export default Vue.extend({
       this.addingEvent = null
     },
     async addComponent(publish: boolean) {
-      if (!this.moment) {
-        consola.error('Cannot add. Moment not loaded.')
-        return
-      }
       const notificationCategory = 'components-manager'
-      const componentPosition: string = !this.addingEvent.dynamicPage
-        ? this.addingEvent.position
-        : null
+      const componentPosition: string = this.addingEvent.position
       const componentCollection: string = this.addingEvent.collection
       const additionalData = { componentPositions: [] } as {
         componentPositions: Array<
@@ -171,9 +180,7 @@ export default Vue.extend({
       }
 
       if (this.addingEvent?.isPublishable) {
-        additionalData.publishedAt = publish
-          ? this.moment.utc().toISOString()
-          : null
+        additionalData.publishedAt = publish ? moment.utc().toISOString() : null
       }
       const resourceObject = {
         ...this.$cwa.getResource(this.addingEvent.iri),
@@ -184,18 +191,11 @@ export default Vue.extend({
 
       try {
         this.$cwa.$storage.increaseMercurePendingProcessCount()
-        const refreshEndpoints = []
-        if (this.addingEvent.position) {
-          refreshEndpoints.push(this.addingEvent.position)
-        }
-        if (this.addingEvent.collection) {
-          refreshEndpoints.push(this.addingEvent.collection)
-        }
         const resource = await this.$cwa.createResource(
           this.addingEvent.endpoint,
           resourceObject,
           null,
-          refreshEndpoints
+          this.addingEvent.collection ? [this.addingEvent.collection] : null
         )
         this.$cwa.saveResource(resource)
 
@@ -213,29 +213,13 @@ export default Vue.extend({
           await this.$cwa.refreshResources(refreshResources)
         }
         await this.$cwa.$storage.deleteResource(this.addingEvent.iri)
-
-        const newIri = resource['@id']
-
-        if (this.addingEvent.dynamicPage) {
-          await this.$cwa.updateResource(
-            this.addingEvent.dynamicPage.dynamicPage,
-            {
-              [this.addingEvent.dynamicPage.property]: newIri
-            },
-            null,
-            [this.addingEvent.position]
-          )
-        }
-
-        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, newIri)
+        this.$cwa.$eventBus.$emit(EVENTS.selectComponent, resource['@id'])
         this.$cwa.$eventBus.$emit(EVENTS.componentCreated, {
           tempIri: this.addingEvent.iri,
-          newIri
+          newIri: resource['@id']
         } as ComponentCreatedEvent)
-
-        this.$cwa.$storage.decreaseMercurePendingProcessCount()
         this.addingEvent = null
-        this.$cwa.$eventBus.$emit(EVENTS.newComponentCleared)
+        this.$cwa.$storage.decreaseMercurePendingProcessCount()
       } catch (message) {
         if (!(message instanceof ApiError)) {
           throw message
