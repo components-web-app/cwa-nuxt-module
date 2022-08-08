@@ -1,6 +1,6 @@
 <template>
   <div class="publishable-status-tab">
-    <div class="columns tab-row">
+    <div class="row tab-row">
       <!--
       live exists, no draft,
       Draft exists, no live,
@@ -12,6 +12,18 @@
       <div v-if="isPublished && $cwa.findDraftIri(iri) === null">
         Published component. No draft available.
       </div>
+      <!--<div
+        v-else-if="!isPublished && $cwa.findDraftIri(iri)"
+        class="column is-narrow"
+      >
+        <div class="column is-narrow">
+          <cwa-admin-toggle
+            :id="`component-edit-version-${iri}`"
+            v-model="forceNoDraft"
+            label="Edit live version"
+          />
+        </div>
+      </div>-->
       <template v-else>
         <div
           v-if="$cwa.findPublishedIri(iri) && $cwa.findDraftIri(iri)"
@@ -34,7 +46,7 @@
             />
           </div>
           <div class="column is-narrow">
-            <cm-button @click="publishIri">Publish Now</cm-button>
+            <cm-button @click="publishNow">Publish Now</cm-button>
           </div>
         </template>
       </template>
@@ -44,12 +56,15 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import moment from 'moment'
+import consola from 'consola'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import CmDatepicker from '../../input/cm-datepicker.vue'
 import CmButton from '../../input/cm-button.vue'
 import UpdateResourceMixin from '../../../../../../mixins/UpdateResourceMixin'
+import UpdateResourceError from '../../../../../../../inc/update-resource-error'
 
 export default Vue.extend({
   components: { CmButton, CmDatepicker, CwaAdminToggle },
@@ -83,8 +98,23 @@ export default Vue.extend({
     }
   },
   methods: {
-    publishIri() {
-      this.publishNow(this.iri)
+    async publishNow() {
+      try {
+        await this.updateResource(
+          this.iri,
+          'publishedAt',
+          moment.utc().toISOString(),
+          this.$cwa.$storage.getCategoryFromIri(this.iri),
+          this.refreshEndpoints,
+          'components-manager'
+        )
+        this.$emit('close')
+      } catch (error) {
+        if (!(error instanceof UpdateResourceError)) {
+          throw error
+        }
+        consola.error(error)
+      }
     }
   }
 })

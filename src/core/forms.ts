@@ -6,7 +6,7 @@ import FormsVuexModule, {
   FormView,
   ViewMetadata,
   ViewVars
-} from './storage/FormsVuexModule'
+} from './vuex/FormsVuexModule'
 
 export interface FormViewId {
   formId: string

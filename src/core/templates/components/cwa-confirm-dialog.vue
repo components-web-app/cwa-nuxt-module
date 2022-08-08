@@ -1,6 +1,6 @@
 <template>
   <cwa-modal class="cwa-confirm-dialog" :hide-close="true">
-    <div v-if="isLoading" class="cwa-loader-overlay">
+    <div v-if="isLoading" class="loader-overlay">
       <cwa-loader />
     </div>
     <h2>{{ dialogEvent.title || 'Confirm' }}</h2>
@@ -11,25 +11,17 @@
       v-bind="dialogInnerData"
       @submit="handleConfirm"
     />
-    <div
-      v-if="dialogEvent.html"
-      class="content"
-      v-html="dialogEvent.html"
-    ></div>
+    <div v-if="dialogEvent.html" v-html="dialogEvent.html"></div>
     <div class="controls-bar">
-      <div class="columns">
+      <div class="row">
         <div class="column">
-          <button class="button is-dark is-delete" @click="cancel">
+          <button class="is-dark is-delete" @click="cancel">
             {{ dialogEvent.cancelButtonText || 'Cancel' }}
           </button>
         </div>
-        <div class="column is-narrow">
+        <div class="is-narrow">
           <button
-            :class="{
-              button: true,
-              'is-cwa-primary': true,
-              'is-loading': runningConfirmFn
-            }"
+            :class="{ 'is-loading': runningConfirmFn }"
             @click="handleConfirm"
           >
             {{ dialogEvent.confirmButtonText || 'Confirm' }}
@@ -38,7 +30,7 @@
       </div>
     </div>
     <transition name="fade">
-      <div v-if="runningConfirmFn" class="cwa-loader-overlay">
+      <div v-if="runningConfirmFn" class="loader-overlay">
         <cwa-loader />
       </div>
     </transition>
@@ -118,19 +110,19 @@ export default Vue.extend({
 .cwa-confirm-dialog
   .controls-bar
     border-top: 1px solid $cwa-grid-item-border-color
-    padding: .8rem .8rem 0
-    margin-left: -.8rem
-    margin-right: -.8rem
-  &.cwa-modal .cwa-modal-content
+    padding: 3rem 3rem 0
+    margin-left: -3rem
+    margin-right: -3rem
+  &.cwa-modal .modal-content
     max-width: 600px
     box-shadow: 0 0 35px 8px rgba($cwa-danger, .6)
-    .cwa-modal-card
-      padding-top: 1.5rem
+    .modal-card
+      padding-top: 3rem
       .close-bar
         display: none
-      .cwa-modal-card-inner
+      .modal-card-inner
         max-width: 100%
-        padding-bottom: 1.5rem
+        margin-bottom: 3rem
         b,
         strong,
         .warning

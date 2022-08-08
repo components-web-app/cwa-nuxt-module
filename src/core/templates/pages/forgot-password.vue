@@ -25,7 +25,7 @@
           <span>Reset</span>
         </button>
       </div>
-      <div class="login-nav columns">
+      <div class="login-nav row">
         <div class="column is-narrow">
           <nuxt-link to="/login"> &lt; Back to login </nuxt-link>
         </div>

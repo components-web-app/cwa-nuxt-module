@@ -2,7 +2,7 @@
   <ul class="redirect-tree">
     <li v-for="redirect of routes" :key="redirect['@id']">
       <div>
-        <div class="columns">
+        <div class="row">
           <div class="column">{{ redirect.path }}</div>
           <div class="column is-narrow">
             <a
@@ -100,13 +100,13 @@ ${allRedirectsAsHtml}
     opacity: .6
     padding: .15rem .75rem
     img
-      width: .8em
+      width: .9em
       height: auto
     &:hover
       opacity: 1
   .redirect-tree
     font-size: 100%
-    margin: 0 0 0 1rem
+    margin: 0 0 0 2rem
     li
       padding-left: 0
       > div:before
@@ -115,11 +115,10 @@ ${allRedirectsAsHtml}
   li
     position: relative
     margin-bottom: 0
-    padding-left: 1px
     > div
       display: block
       position: relative
-      padding: .25rem 0 .25rem 1.25rem
+      padding: .5rem 0 .5rem 2rem
       &:hover
         background: $cwa-background-dark
       &::after
@@ -127,10 +126,10 @@ ${allRedirectsAsHtml}
         content: ''
         left: 0
         top: 50%
-        width: .75rem
+        width: 1.2rem
         height: 0
         border-top: 1px dashed $cwa-color-text-light
-    &:last-child::before
+    &:last-child > div::before
       position: absolute
       content: ''
       left: 0

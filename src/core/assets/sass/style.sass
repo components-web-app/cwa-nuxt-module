@@ -1,16 +1,107 @@
-@import 'fonts'
+// @import ~milligram/src/_Blockquote
+// @import ~milligram/src/_Code
+// @import ~milligram/src/_Divider
+@import '~milligram/src/_List'
+@import '~milligram/src/_Spacing'
+// @import ~milligram/src/_Table
+@import '~milligram/src/_Typography'
+// @import ~milligram/src/_Image
+// @import ~milligram/src/_Utility
 
-@import "vars/vars"
-@import "~bulma/sass/base/_all"
-@import "~bulma/sass/elements/all"
-@import "~bulma/sass/form/_all"
-@import "~bulma/sass/components/all"
-@import "~bulma/sass/grid/_all"
-@import "~bulma/sass/helpers/_all"
-@import "~bulma/sass/layout/_all"
+@import 'custom/Grid'
+@import 'custom/Base'
+@import 'custom/Button'
+@import 'custom/Form'
+@import 'custom/Link'
 
-@import 'cwa'
+@import 'Fonts'
+
 @import 'cwa-inputs'
 
-body
-  background-color: $body-background-color
+pre
+  padding: .75rem
+
+.notice
+  margin-bottom: 1rem
+  padding: 1rem
+  background: $cwa-color-tertiary
+  font-weight: $font-weight-normal
+  &.is-danger
+    background: $cwa-danger
+    color: $cwa-color-tertiary
+    font-weight: $font-weight-semi-bold
+
+.column.is-narrow
+  width: auto
+  flex-grow: 0
+
+.sr-only
+  position: absolute
+  left: -10000px
+  top: auto
+  width: 1px
+  height: 1px
+  overflow: hidden
+
+section.page
+  padding: 2rem 0
+
+.fade-enter-active
+  transition: all .15s ease-out
+
+.fade-leave-active
+  transition: all .15s ease-in
+
+.fade-enter, .fade-leave-to
+  opacity: 0
+
+textarea
+  font-family: inherit
+
+.nowrap
+  white-space: nowrap
+
+.loader-overlay
+  position: absolute
+  top: 0
+  left: 0
+  width: 100%
+  height: 100%
+  background: rgba($cwa-navbar-background, .9)
+  z-index: 2
+  display: flex
+  align-items: center
+  align-content: center
+  justify-content: center
+  justify-items: center
+
+.cwa-icon
+  position: relative
+  width: .75em
+  height: .75em
+  margin: 0 1em 0 .5em
+  display: block
+.cwa-warning-triangle
+  z-index: 1
+  position: relative
+  background-color: $cwa-danger
+  transform: rotate(-60deg) skewX(-30deg) scale(1,.866)
+  display: block
+  &:before,
+  &:after
+    content: ''
+    position: absolute
+    background-color: inherit
+  &:before
+    transform: rotate(-135deg) skewX(-45deg) scale(1.414,.707) translate(0,-50%)
+  &:after
+    transform: rotate(135deg) skewY(-45deg) scale(.707,1.414) translate(50%,0)
+.cwa-warning-triangle,
+.cwa-warning-triangle::before,
+.cwa-warning-triangle::after
+  width: 100%
+  height: 100%
+  border-top-right-radius: 30%
+
+.button.button-cwa
+  +cwa-button

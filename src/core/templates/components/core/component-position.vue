@@ -1,33 +1,35 @@
 <template>
   <div :class="['component-position', wrapperClass, { 'is-draft': isDraft }]">
-    <client-only>
-      <div
-        v-if="
-          $cwa.isAdmin && $cwa.isEditMode && !component && !newComponentResource
-        "
-        class="empty-component-position"
-      >
-        <icon-component />
-      </div>
-    </client-only>
+    <div v-if="resource.pageDataProperty">
+      <template v-if="$cwa.isAdmin && isDynamicPage">
+        <template v-if="!dynamicComponentIri && !newComponentResource">
+          <button>Select position</button>&nbsp;
+          <button type="button" @click.stop="addDynamicComponent">
+            Add {{ pageDataPropComponent }}
+          </button>
+        </template>
+      </template>
+      <span v-else>
+        [ If page data has '{{ resource.pageDataProperty }}', it will show here
+        instead. ]
+      </span>
+    </div>
+    <div v-else-if="!component && $cwa.isAdmin">
+      <button>Select position</button>
+    </div>
     <resource-component-loader
-      v-if="!!component && !newComponentResource"
+      v-if="!!component"
       :component="`CwaComponents${component.uiComponent || component['@type']}`"
       :iri="componentIri"
       :sort-value="resource.sortValue"
       :show-sort="showSort"
       :highlight-is-position="highlightIsPosition"
-      :is-dynamic="
-        isDynamicPage &&
-        resource._metadata.static_component !== resource.component
-      "
       @deleted="$emit('deleted')"
     />
     <component
       :is="newComponentName"
       v-if="newComponentResource"
       :iri="newComponentIri"
-      :is-dynamic="isDynamicPage && !!newComponentEvent.dynamicPage"
       @initial-data="handleInitialData"
     />
   </div>
@@ -37,8 +39,6 @@
 import Vue from 'vue'
 import consola from 'consola'
 import ResourceComponentLoader from '../../resource-component-loader'
-// @ts-ignore
-import IconComponent from '@cwa/nuxt-module/core/assets/images/icon-components.svg?inline'
 import ComponentManagerMixin, {
   ComponentManagerTab,
   EVENTS
@@ -46,25 +46,23 @@ import ComponentManagerMixin, {
 import {
   API_EVENTS,
   COMPONENT_MANAGER_EVENTS,
-  ComponentManagerResource,
+  ComponentManagerAddEvent,
   NewComponentEvent
 } from '@cwa/nuxt-module/core/events'
 import NewComponentMixin from '@cwa/nuxt-module/core/mixins/NewComponentMixin'
 import CreateNewComponentEventMixin from '@cwa/nuxt-module/core/mixins/CreateNewComponentEventMixin'
-import PageResourceUtilsMixin from '@cwa/nuxt-module/core/mixins/PageResourceUtilsMixin'
+import type { ComponentCreatedEvent } from '@cwa/nuxt-module/core/events'
 import components from '~/.nuxt/cwa/components'
 
 export default Vue.extend({
   components: {
     ResourceComponentLoader,
-    IconComponent,
     ...components
   },
   mixins: [
     ComponentManagerMixin,
     NewComponentMixin,
-    CreateNewComponentEventMixin,
-    PageResourceUtilsMixin
+    CreateNewComponentEventMixin
   ],
   props: {
     iri: {
@@ -84,27 +82,22 @@ export default Vue.extend({
   },
   computed: {
     isDraft() {
-      if (!this.componentIri) {
-        return null
-      }
       const storageResource = this.$cwa.getResource(this.componentIri)
       return storageResource?._metadata?.published === false || false
     },
+    dynamicComponentIri() {
+      return this.pageResource[this.resource.pageDataProperty]
+    },
     componentManagerTabs(): Array<ComponentManagerTab> {
-      if (this.isDynamicPage) {
-        return [
-          {
-            label: 'Manage Component',
-            component: () =>
-              import(
-                '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/add-dynamic-component.vue'
-              ),
-            context: {}
-          }
-        ]
-      }
-
-      const tabs: Array<ComponentManagerTab> = [
+      return [
+        {
+          label: 'Dynamic',
+          component: () =>
+            import(
+              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
+            ),
+          context: {}
+        },
         {
           label: 'Static',
           component: () =>
@@ -114,7 +107,7 @@ export default Vue.extend({
           context: {}
         },
         {
-          label: 'Position Info',
+          label: 'Info',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/info.vue'
@@ -122,20 +115,6 @@ export default Vue.extend({
           context: {}
         }
       ]
-
-      if (this.isPageTemplate) {
-        const refTab: ComponentManagerTab = {
-          label: '#Ref',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/dynamic-component.vue'
-            ),
-          context: {}
-        }
-        tabs.unshift(refTab)
-      }
-
-      return tabs
     },
     componentManager() {
       return Object.assign({}, this.baseComponentManager, {
@@ -145,13 +124,28 @@ export default Vue.extend({
     resources() {
       return this.$cwa.resources
     },
+    pageDataPropComponent() {
+      return this.pageDataProps[this.resource.pageDataProperty]
+    },
+    pageDataProps() {
+      return this.pageResource._metadata?.page_data_metadata.properties.reduce(
+        (obj, item) => {
+          obj[item.property] = item.componentShortName
+          return obj
+        },
+        {}
+      )
+    },
+    pageResource() {
+      return this.$cwa.getResource(this.$cwa.currentPageIri)
+    },
+    isDynamicPage() {
+      return this.pageResource['@type'] !== 'Page'
+    },
     resource() {
       return this.$cwa.getResource(this.iri)
     },
     componentIri() {
-      if (!this.resource.component) {
-        return
-      }
       return this.$cwa.getPublishableIri(this.resource.component)
     },
     component() {
@@ -174,44 +168,36 @@ export default Vue.extend({
       return normalize(
         this.component
           ? this.$cwa.$storage.getTypeFromIri(this.componentIri)
-          : '-empty'
+          : 'empty'
       )
     }
   },
   async mounted() {
-    // load the component if not loaded server-side (client-side has auth)
-    // this will be called only if there is no component, otherwise resource mixin will deal with this stuff
-
-    // TODO: add check to only do this for initial server-side load
-    // if it is published from a server-side load there may be a draft available
-    if (this.component?._metadata.published && this.$cwa.user) {
-      await this.$cwa.refreshResource(this.iri)
-    }
-
+    // load the component if not loaded
     if (!this.component) {
       // check if no published version, only a draft (i.e. only an authorized viewer can see it)
       if (this.$cwa.user && this.resource.component) {
-        await this.$cwa.fetcher.fetchResource(this.resource.component)
+        await this.$cwa.fetcher.fetchComponent(this.resource.component)
       }
 
-      // wait for the component IRI to try and be fetched client-side and populated into storage
       this.$nextTick(async () => {
-        // it is still not an object
         if (!this.component) {
-          // it is not a dynamic position and we are an admin.. try to fetch this position again client-side
           if (!this.resource.pageDataProperty && this.$cwa.isAdmin) {
-            await this.$cwa.fetcher.fetchResource(this.resource['@id'])
+            await this.$cwa.fetcher.fetchComponent(this.resource['@id'])
           }
           this.componentLoadFailed = true
         }
       })
     }
-
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.newComponent,
       this.newComponentListener
     )
     this.$cwa.$eventBus.$on(API_EVENTS.newDraft, this.newDraftListener)
+    this.$cwa.$eventBus.$on(
+      EVENTS.componentCreated,
+      this.handleComponentCreated
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -219,8 +205,40 @@ export default Vue.extend({
       this.newComponentListener
     )
     this.$cwa.$eventBus.$off(API_EVENTS.newDraft, this.newDraftListener)
+    this.$cwa.$eventBus.$off(
+      EVENTS.componentCreated,
+      this.handleComponentCreated
+    )
   },
   methods: {
+    async handleComponentCreated(event: ComponentCreatedEvent) {
+      if (
+        !this.newComponentEvent ||
+        event.tempIri !== this.newComponentEvent.iri
+      ) {
+        return
+      }
+      await this.$cwa.updateResource(
+        this.pageResource['@id'],
+        {
+          [this.resource.pageDataProperty]: event.newIri
+        },
+        null,
+        [this.resource['@id']]
+      )
+    },
+    async addDynamicComponent() {
+      this.newComponentEvent = await this.createNewComponentEvent(
+        this.pageDataPropComponent
+      )
+      // allow cwa manager to mount buttons to receive this event
+      this.$nextTick(() => {
+        this.$cwa.$eventBus.$emit(
+          COMPONENT_MANAGER_EVENTS.newComponent,
+          this.newComponentEvent
+        )
+      })
+    },
     componentManagerShowListener() {
       if (!this.resource) {
         consola.error(
@@ -232,7 +250,7 @@ export default Vue.extend({
       this.$cwa.$eventBus.$emit(EVENTS.addComponent, {
         data: this.componentManager,
         iri: this.iri
-      } as ComponentManagerResource)
+      } as ComponentManagerAddEvent)
       this.$cwa.$eventBus.$emit(EVENTS.selectPosition, this.iri)
     },
     newDraftListener({ publishedIri, draftIri }) {
@@ -259,9 +277,6 @@ export default Vue.extend({
 <style lang="sass">
 .component-position
   position: relative
-  > *
-    position: relative
-    z-index: 1
   &.is-draft
     &::before
       content: ''
@@ -271,8 +286,6 @@ export default Vue.extend({
       width: 100%
       height: 100%
       background: rgba($cwa-warning, .1)
-      pointer-events: none
-      z-index: 0
     &::after
       content: ''
       position: absolute
@@ -283,14 +296,4 @@ export default Vue.extend({
       border-radius: 50%
       background: $cwa-warning
       transform: translate(-8px, 8px)
-      pointer-events: none
-      z-index: 2
-  .empty-component-position
-    background: $white
-    color: $cwa-background-dark
-    padding: 1rem
-    display: flex
-    justify-content: center
-    svg
-      display: block
 </style>

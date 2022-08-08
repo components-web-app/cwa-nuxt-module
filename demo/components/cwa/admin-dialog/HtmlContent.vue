@@ -1,6 +1,6 @@
 <template>
   <div class="html-content-tab">
-    <div class="columns tab-row">
+    <div class="row tab-row">
       <div class="column is-narrow">
         <cwa-admin-toggle
           :id="`component-toggle-html-${iri}`"
@@ -26,17 +26,18 @@ import {
 export default Vue.extend({
   components: { CwaAdminToggle },
   mixins: [ComponentManagerTabMixin],
-  computed: {
-    showEditor: {
-      get() {
-        return !!this.cmValue('showEditor')
-      },
-      set(value) {
-        this.saveCmValue('showEditor', value)
-      }
+  data() {
+    return {
+      showEditor: false
+    }
+  },
+  watch: {
+    showEditor(value) {
+      this.saveCmValue('showEditor', value)
     }
   },
   mounted() {
+    this.showEditor = !!this.cmValue('showEditor')
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.publishableToggled,
       this.handlePublishableToggled

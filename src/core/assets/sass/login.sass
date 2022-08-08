@@ -1,21 +1,21 @@
 .login-form
   label
-    color: $cwa-color-text-light
     letter-spacing: .08em
   input
-    height: 3em
     border: 0
+    height: 4.8rem
+    padding: 1.1rem 1.0rem 1.2rem // This vertically centers text on FF, ignored by Webkit
+    font-size: 1.5rem
     &::placeholder
       font-style: italic
       color: $cwa-color-text-light
   button
     margin-top: 1rem
-    color: $cwa-background-dark
-    font-size: 1.2rem
+    font-size: 1.5rem
     height: 3em
-    padding: 0 1.5rem
-    font-weight: $weight-bold
     .icon
+      height: 1.5em
+      width: 1.5em
       align-items: center
       display: inline-flex
       justify-content: center
@@ -23,6 +23,9 @@
       margin-right: calc(-.5em - 1px)
       svg
         width: 1em
+    +tablet
+      font-size: 1.7rem
+      height: 3.5em
   .login-nav
     margin-top: 2rem
     padding-top: 1rem

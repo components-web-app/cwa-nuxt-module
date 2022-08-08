@@ -30,11 +30,6 @@ export default Vue.extend({
     highlightIsPosition: {
       type: Boolean,
       default: true
-    },
-    isDynamic: {
-      type: Boolean,
-      required: false,
-      default: false
     }
   },
   render: (createElement, { props, parent }) => {
@@ -47,8 +42,7 @@ export default Vue.extend({
         props: {
           iri: props.iri,
           sortValue: props.sortValue,
-          showSort: props.showSort,
-          isDynamic: props.isDynamic
+          showSort: props.showSort
         },
         class: {
           'highlight-component-only': !props.highlightIsPosition

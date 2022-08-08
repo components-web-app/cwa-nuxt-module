@@ -11,7 +11,7 @@
       </div>
       Sorry, no items found
     </div>
-    <ul v-else class="columns is-multiline grid">
+    <ul v-else class="row row-wrap grid">
       <slot />
     </ul>
   </div>
@@ -63,5 +63,5 @@ export default {
       transform-origin: 50% 50%
       opacity: 0
   .grid
-    margin-top: 1.25rem
+    margin-top: 2.5rem
 </style>

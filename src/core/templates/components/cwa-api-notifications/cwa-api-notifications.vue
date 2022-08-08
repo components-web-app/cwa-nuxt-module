@@ -1,7 +1,7 @@
 <template>
   <div v-if="notifications.length">
     <div class="api-notifications">
-      <p class="notification-title columns">
+      <p class="notification-title row">
         <span class="column">Notifications ({{ notifications.length }})</span>
         <span class="column is-narrow">
           <a
@@ -53,7 +53,7 @@ export default Vue.extend({
   height: 100%
   .notification-title
     padding: .75rem
-    font-weight: $weight-bold
+    font-weight: $font-weight-bold
     background: $cwa-background-dark
     color: $white
     margin: 0

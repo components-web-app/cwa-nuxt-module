@@ -7,7 +7,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
-import type { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
+import { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 
 export default Vue.extend({
   mixins: [ComponentMixin],

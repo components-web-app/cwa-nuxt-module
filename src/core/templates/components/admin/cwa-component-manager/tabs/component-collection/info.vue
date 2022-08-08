@@ -1,6 +1,6 @@
 <template>
   <div class="collection-info-tab">
-    <div class="columns">
+    <div class="row">
       <div class="column is-narrow">
         <info :id="inputId('id')" label="id" :value="resource['@id']" />
         <info
@@ -44,5 +44,5 @@ export default Vue.extend({
 
 <style lang="sass">
 .collection-info-tab
-  font-size: .75rem
+  font-size: 1.2rem
 </style>

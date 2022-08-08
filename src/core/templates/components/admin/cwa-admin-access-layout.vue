@@ -24,7 +24,7 @@ export default {
 </script>
 <style lang="sass">
 .login-page
-  padding: 2rem
+  padding: 4rem
   min-height: 100vh
   display: flex
   align-items: center
@@ -32,11 +32,13 @@ export default {
     width: 100%
     max-width: 500px
   .logo
-    margin-bottom: 1.5rem
+    margin-bottom: 3rem
     h1
       +font-lemonmilk
-      font-size: 1.5rem
-      margin-top: .5rem
+      font-size: 2.2rem
+      margin-top: 1.5rem
+      +mobile
+        font-size: 1.8rem
     svg
       max-width: 300px
       height: auto

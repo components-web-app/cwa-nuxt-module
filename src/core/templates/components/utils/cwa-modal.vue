@@ -1,20 +1,15 @@
 <template>
   <div class="cwa-modal is-active" @click.stop>
-    <div class="cwa-modal-background" @click="close" />
-    <div class="cwa-modal-content">
-      <div class="cwa-modal-card">
+    <div class="modal-background" @click="close" />
+    <div class="modal-content">
+      <div class="modal-card">
         <div class="close-bar">
-          <button
-            class="cwa-modal-close"
-            aria-label="close"
-            type="button"
-            @click="close"
-          >
+          <button class="modal-close" aria-label="close" @click="close">
             <close-icon v-if="!hideClose" class="close-icon" />
             <span v-else>&nbsp;</span>
           </button>
         </div>
-        <div class="cwa-modal-card-inner">
+        <div class="modal-card-inner">
           <slot />
         </div>
       </div>
@@ -64,13 +59,13 @@ $modal-breakpoint: $tablet
   overflow: hidden
   position: fixed
   z-index: 200
-  padding: 0 2rem
+  padding: 0 4rem
   &.is-active
     display: flex
-  .cwa-modal-background
+  .modal-background
     +overlay
     background-color: rgba($cwa-background-dark, .7)
-  .cwa-modal-content
+  .modal-content
     margin: 0 $modal-content-margin-mobile
     max-height: calc(100vh - #{$modal-content-spacing-mobile})
     overflow: auto
@@ -85,49 +80,44 @@ $modal-breakpoint: $tablet
     +from($modal-breakpoint)
       margin: 0 auto
       max-height: calc(100vh - #{$modal-content-spacing-tablet})
-    .cwa-modal-card
+    .modal-card
       width: 100%
       display: flex
       flex-wrap: wrap
       justify-content: center
-      padding: 1rem 1.5rem 0 1.5rem
+      padding: 2rem 3rem 0 3rem
       code
         background: $cwa-grid-item-background
         padding: .5em
-        color: $cwa-color-text-light
       a
         color: $cwa-color-text-light
-        &:hover,
-        &.is-selected
+        &:hover
           color: $white
       .close-bar
         width: 100%
         display: flex
         justify-content: flex-end
-      .cwa-modal-close
+      .modal-close
         position: relative
         background: none
         border: none
-        height: 3rem
-        width: 3rem
+        height: 4rem
+        width: 4rem
         padding: 0
         margin: 0
         overflow: hidden
         color: $white
-        cursor: pointer
         .close-icon
           position: absolute
-          top: 0
-          left: 0
           width: 100%
           height: 100%
           transform: rotate(45deg) scale(.6)
           transform-origin: 50% 50%
-      .cwa-modal-card-inner
+      .modal-card-inner
         width: 100%
         max-width: 600px
-        padding-bottom: 2.5rem
+        margin-bottom: 5rem
         h2
-          font-size: $size-3
+          font-size: $size-h2
           color: $white
 </style>

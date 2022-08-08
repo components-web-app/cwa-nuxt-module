@@ -32,7 +32,7 @@ export default Vue.extend({
   mounted() {
     this.$cwa.$eventBus.$emit(ADMIN_BAR_EVENTS.changeView, 'page')
     this.$cwa.setEditMode(true)
-    // this.$cwa.initMercure(true)
+    this.$cwa.initMercure(true)
   }
 })
 </script>

@@ -23,11 +23,6 @@ export interface TabChangedEvent {
   context: any
 }
 
-export interface NewComponentEventDynamicPage {
-  dynamicPage: string
-  property: string
-}
-
 export interface NewComponentEvent {
   collection?: string
   position?: string
@@ -38,7 +33,6 @@ export interface NewComponentEvent {
   name: string
   isPublishable: boolean
   iri: string
-  dynamicPage: NewComponentEventDynamicPage
 }
 
 export interface HighlightComponentEvent {
@@ -47,7 +41,7 @@ export interface HighlightComponentEvent {
   force?: boolean
 }
 
-export interface ComponentManagerResource {
+export interface ComponentManagerAddEvent {
   data?: ComponentManagerComponent
   iri: string
 }
@@ -115,10 +109,7 @@ export const COMPONENT_MANAGER_EVENTS = {
   selectPosition: `${prefix}:${componentManagerCategory}:select-position`,
   saveState: `${prefix}:${componentManagerCategory}:save-state`,
   componentsInitialised: `${prefix}:${componentManagerCategory}:components-initialised`,
-  selectedComponentIri: `${prefix}:${componentManagerCategory}:selectedComponentIri`,
-  layoutEditMode: `${prefix}:${componentManagerCategory}:layout-edit-mode`,
-  cancelShow: `${prefix}:${componentManagerCategory}:cancel-show`,
-  refuseDiscard: `${prefix}:${componentManagerCategory}:refuse-discard`
+  selectedComponentIri: `${prefix}:${componentManagerCategory}:selectedComponentIri`
 }
 
 export const ADMIN_BAR_EVENTS = {
