@@ -63,5 +63,5 @@ export default {
       transform-origin: 50% 50%
       opacity: 0
   .grid
-    margin-top: 2.5rem
+    margin-top: 1.25rem
 </style>

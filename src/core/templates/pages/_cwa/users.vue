@@ -8,15 +8,15 @@
       @load="updateData"
       @add="showAddPage"
     >
-      <li v-for="user of data" :key="user['@id']" class="column column-33">
+      <li v-for="user of data" :key="user['@id']" class="column is-4">
         <nuxt-link
           :to="addRouteProps(user['@id'])"
           class="cwa-grid-item user-grid-item"
         >
-          <p class="title">
+          <p class="cwa-title">
             {{ user.username }}
           </p>
-          <p class="subtitle">
+          <p class="cwa-subtitle">
             {{ user.enabled ? 'enabled' : 'disabled' }}
           </p>
         </nuxt-link>

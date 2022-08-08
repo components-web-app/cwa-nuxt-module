@@ -1,8 +1,12 @@
 <template>
   <cwa-modal class="layout-details-page" @close="$emit('close')">
     <div class="status-bar">
-      <status-icon :status="isSaved ? 1 : 0" />
-      <error-notifications :listen-categories="notificationCategories" />
+      <status-icon
+        :always-show-status="true"
+        :show-status-text="false"
+        :status="isSaved ? 1 : 0"
+        :category="notificationCategories"
+      />
     </div>
     <div class="title-tabs">
       <h2>{{ title }}</h2>
@@ -105,7 +109,6 @@ export default Vue.extend({
     display: flex
   .title-tabs
     display: flex
-    margin-bottom: calc($gap / 2)
     a
       color: $white
       font-size: $size-3

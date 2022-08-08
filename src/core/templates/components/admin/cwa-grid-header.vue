@@ -15,7 +15,7 @@
           type="text"
           name="search"
           placeholder="Search"
-          :class="{ 'has-content': search }"
+          :class="{ input: true, 'has-content': search }"
         />
       </div>
       <div class="column is-narrow">
@@ -205,9 +205,9 @@ export default {
 .cwa-header
   align-items: center
   h1
-    margin: 0 2rem 0 0
+    margin: 0
+    font-size: 2rem
 .cwa-filter-bar
-  margin-top: 2rem
   input[type=text]
     width: 100%
     min-width: 300px

@@ -7,15 +7,15 @@
       @load="updateData"
       @add="showAddPage"
     >
-      <li v-for="layout of data" :key="layout['@id']" class="column column-33">
+      <li v-for="layout of data" :key="layout['@id']" class="column is-4">
         <nuxt-link
           :to="addRouteProps(layout['@id'])"
           class="cwa-grid-item layout-grid-item"
         >
-          <p class="title">
+          <p class="cwa-title">
             {{ layout.reference }}
           </p>
-          <p class="subtitle">UI: {{ layout.uiComponent }}</p>
+          <p class="cwa-subtitle">UI: {{ layout.uiComponent }}</p>
         </nuxt-link>
       </li>
     </grid-page>
@@ -45,7 +45,7 @@ export default {
       position: absolute
       top: 0
       right: 0
-      width: 7rem
+      width: 4rem
       height: 100%
       background: url("../../../assets/images/icon-layout.svg") 0 50% no-repeat
       opacity: .6
