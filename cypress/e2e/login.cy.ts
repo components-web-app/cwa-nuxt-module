@@ -5,7 +5,7 @@ describe('Login', () => {
   })
   it('Fails to login login', () => {
     cy.get('button[type=submit]').click()
-    cy.get('.notice.is-danger').should(
+    cy.get('.notification.is-danger').should(
       'contain.text',
       'Incorrect username and/or password'
     )
@@ -14,7 +14,7 @@ describe('Login', () => {
     cy.get('input[type=text]').type('admin')
     cy.get('input[type=password]').type('admin')
     cy.get('button[type=submit]').click()
-    cy.get('.notice.is-danger').should('not.exist')
+    cy.get('.notification.is-danger').should('not.exist')
   })
   it('Redirected and the home page is displayed', () => {
     cy.location('pathname').should('eq', '/')
