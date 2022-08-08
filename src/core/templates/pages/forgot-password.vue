@@ -1,6 +1,6 @@
 <template>
   <cwa-admin-access-layout :title="pageTitle">
-    <div v-if="success">
+    <div v-if="success" class="content">
       <p>We've sent you an email with a link to reset your password</p>
       <div>
         <nuxt-link to="/login" class="button is-light">
@@ -9,19 +9,22 @@
       </div>
     </div>
     <form v-else class="login-form" @submit.prevent="submitRequest">
-      <div v-if="error" class="notice is-danger">
+      <div v-if="error" class="notification is-danger">
         {{ error }}
       </div>
-      <div>
-        <label>Username</label>
-        <input
-          v-model="username"
-          type="text"
-          placeholder="E.g. you.rock@cwa.rocks"
-        />
+      <div class="field">
+        <label class="label">Username</label>
+        <div class="control">
+          <input
+            v-model="username"
+            type="text"
+            placeholder="E.g. you.rock@cwa.rocks"
+            class="input"
+          />
+        </div>
       </div>
       <div>
-        <button class="is-light" type="submit" :disabled="submitting">
+        <button class="button is-light" type="submit" :disabled="submitting">
           <span>Reset</span>
         </button>
       </div>
