@@ -9,7 +9,7 @@
         type="checkbox"
         @change="validate"
       />
-      <span :class="classNames" v-html="vars.label" />
+      <span v-html="vars.label" />
     </label>
   </wrapper>
 </template>

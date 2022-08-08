@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-input-wrapper field">
-    <button v-bind="inputAttr" type="submit" class="button">
+    <button v-bind="inputAttr" type="submit">
       {{ vars.label }}
     </button>
   </div>
