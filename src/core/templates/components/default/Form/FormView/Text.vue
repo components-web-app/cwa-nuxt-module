@@ -5,6 +5,7 @@
       v-model.number="value"
       v-bind="textInputAttr"
       :class="classNames"
+      class="input"
       v-on="events"
     />
     <textarea
@@ -12,6 +13,7 @@
       v-model="value"
       v-bind="textInputAttr"
       :class="classNames"
+      class="input"
       v-on="events"
     />
     <input
@@ -19,6 +21,7 @@
       v-model="value"
       v-bind="textInputAttr"
       :class="classNames"
+      class="input"
       v-on="events"
     />
   </wrapper>

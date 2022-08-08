@@ -1,18 +1,18 @@
 <template>
-  <div class="cwa-input-wrapper">
+  <div class="cwa-input-wrapper field">
     <slot name="label">
       <label
         v-if="vars.label"
         v-bind="vars.label_attr"
-        :class="{ 'is-required': vars.required }"
+        :class="{ label: true, 'is-required': vars.required }"
         v-html="vars.label"
       />
     </slot>
     <slot name="default"></slot>
-    <slot name="errors">
+    <slot name="help errors">
       <ul
         v-if="displayErrors && vars.errors && vars.errors.length"
-        class="cwa-input-errors"
+        class="help cwa-input-errors"
       >
         <li
           v-for="(error, errorIndex) of vars.errors"
@@ -55,7 +55,6 @@ export default Vue.extend({
     display: block
     position: relative
     list-style: none
-    margin: -1.2rem 0 1.5rem
     padding: 0
     li
       margin: 0

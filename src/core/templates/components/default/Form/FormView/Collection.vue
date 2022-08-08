@@ -1,6 +1,6 @@
 <template>
   <wrapper v-bind="wrapperProps">
-    <button type="button" @click="addEntry">+ Entry</button>
+    <button type="button" class="button" @click="addEntry">+ Entry</button>
     <slot :child-proxy="'CwaFormCollectionEntry'"></slot>
   </wrapper>
 </template>

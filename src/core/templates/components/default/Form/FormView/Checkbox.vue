@@ -1,6 +1,6 @@
 <template>
-  <wrapper v-bind="wrapperProps">
-    <label :for="`${vars.id}`" v-bind="vars.label_attr">
+  <wrapper v-bind="wrapperProps" class="field">
+    <label :for="`${vars.id}`" v-bind="vars.label_attr" class="checkbox">
       <input
         :id="`${vars.id}`"
         v-bind="vars.attr"

@@ -1,20 +1,22 @@
 <template>
-  <select
-    v-model="value"
-    :multiple="vars.multiple"
-    :class="classNames"
-    v-bind="inputAttr"
-    @change="validate"
-  >
-    <option
-      v-for="(choice, index) of vars.choices"
-      :key="`${vars.id}-choice-${index}`"
-      :value="choice.value"
-      v-bind="choice.attr"
+  <div :class="['select', 'is-fullwidth', { 'is-multiple': vars.multiple }]">
+    <select
+      v-model="value"
+      :multiple="vars.multiple"
+      :class="classNames"
+      v-bind="inputAttr"
+      @change="validate"
     >
-      {{ choice.label }}
-    </option>
-  </select>
+      <option
+        v-for="(choice, index) of vars.choices"
+        :key="`${vars.id}-choice-${index}`"
+        :value="choice.value"
+        v-bind="choice.attr"
+      >
+        {{ choice.label }}
+      </option>
+    </select>
+  </div>
 </template>
 
 <script lang="ts">
