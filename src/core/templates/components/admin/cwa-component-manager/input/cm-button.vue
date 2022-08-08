@@ -2,33 +2,37 @@
   <div class="cm-button">
     <div
       ref="buttonsRow"
-      class="columns is-vcentered buttons-row is-gapless is-marginless"
+      class="buttons-row field has-addons"
     >
-      <button
-        ref="button"
-        type="button"
-        class="button cm-button-button"
-        :disabled="disabled"
-        @click="handleButtonClick"
-      >
-        <span><slot /></span>
-      </button>
-      <button
-        v-if="altOptionsAvailable"
-        ref="altButton"
-        type="button"
-        class="cm-button-button is-more"
-        :disabled="disabled"
-        @click="toggleAltOptions"
-      >
-        <img src="../../../../../assets/images/more.svg" alt="more options" />
-      </button>
+      <div class="control">
+        <button
+          ref="button"
+          type="button"
+          class="button cm-button-button"
+          :disabled="disabled"
+          @click="handleButtonClick"
+        >
+          <span><slot /></span>
+        </button>
+      </div>
+      <div class="control">
+        <button
+          v-if="altOptionsAvailable"
+          ref="altButton"
+          type="button"
+          class="button cm-button-button is-more"
+          :disabled="disabled"
+          @click="toggleAltOptions"
+        >
+          <img src="../../../../../assets/images/more.svg" alt="more options" />
+        </button>
+      </div>
     </div>
     <ul v-show="showAltMenu" ref="altOptionsList" class="alt-options-list">
       <li v-for="(altOp, index) of altOptions" :key="`${index}-${altOp.key}`">
         <button
           type="button"
-          class="cm-button-button"
+          class="button cm-button-button"
           @click="optionClick(altOp)"
         >
           {{ altOp.label }}
@@ -165,9 +169,11 @@ export default Vue.extend({
     z-index: 1
     box-shadow: none
     &.is-more
+      display: block
       border-left: 1px solid $cwa-control-background-hover-color
       padding-left: 1.5rem
       padding-right: 1.5rem
+      height: 100%
       img
         display: block
   .alt-options-list
