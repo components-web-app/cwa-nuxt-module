@@ -2,7 +2,11 @@
   <div class="cm-button">
     <div
       ref="buttonsRow"
-      class="buttons-row field has-addons"
+      :class="[
+        'buttons-row',
+        'field',
+        altOptionsAvailable ? 'has-addons' : null
+      ]"
     >
       <div class="control">
         <button
@@ -15,9 +19,8 @@
           <span><slot /></span>
         </button>
       </div>
-      <div class="control">
+      <div v-if="altOptionsAvailable" class="control">
         <button
-          v-if="altOptionsAvailable"
           ref="altButton"
           type="button"
           class="button cm-button-button is-more"
@@ -161,8 +164,8 @@ export default Vue.extend({
 <style lang="sass">
 .cm-button
   position: relative
-  //.buttons-row
-  //  box-shadow: $cwa-control-shadow
+  .buttons-row
+    margin: 0
   .cm-button-button
     +cwa-button
     margin-bottom: 0
