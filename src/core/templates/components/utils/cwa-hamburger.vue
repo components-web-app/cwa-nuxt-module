@@ -4,7 +4,7 @@
     :class="{ 'show-open': open, 'css-animate': !gsapEnabled }"
     @click.stop="toggleMenu"
   >
-    <span class="sr-only">Menu</span>
+    <span class="is-sr-only">Menu</span>
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 50 50"
@@ -127,7 +127,7 @@ export default {
   position: relative
   display: inline-block
   z-index: 10
-  height: 2rem
+  height: 1.5rem
   .menu-svg
     transition: stroke .3s
     backface-visibility: hidden

@@ -1,6 +1,6 @@
 <template>
   <div class="static-component-tab">
-    <div class="row">
+    <div class="columns">
       <div class="column is-narrow">
         <!-- IF A DYNAMIC PAGE -->
         <div v-if="isDynamicPage">

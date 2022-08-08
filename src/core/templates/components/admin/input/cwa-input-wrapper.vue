@@ -1,6 +1,6 @@
 <template>
-  <div :class="['cwa-input', { 'has-error': hasError }]">
-    <label v-if="label" :for="id">{{ label }}</label>
+  <div :class="['cwa-input', 'field', { 'has-error': hasError }]">
+    <label v-if="label" :for="id" class="label">{{ label }}</label>
     <slot />
   </div>
 </template>

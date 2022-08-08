@@ -8,15 +8,15 @@
       @load="updateData"
       @add="showAddPage"
     >
-      <li v-for="user of data" :key="user['@id']" class="column column-33">
+      <li v-for="user of data" :key="user['@id']" class="column is-4">
         <nuxt-link
           :to="addRouteProps(user['@id'])"
           class="cwa-grid-item user-grid-item"
         >
-          <p class="title">
+          <p class="cwa-title">
             {{ user.username }}
           </p>
-          <p class="subtitle">
+          <p class="cwa-subtitle">
             {{ user.enabled ? 'enabled' : 'disabled' }}
           </p>
         </nuxt-link>
@@ -42,13 +42,13 @@ export default {
 <style lang="sass">
 .cwa-users-page
   .user-grid-item
-    padding-right: 7rem
+    padding-right: 5rem
     &:after
       content: ''
       position: absolute
       top: 0
       right: 0
-      width: 7rem
+      width: 5rem
       height: 100%
       background: url("../../../assets/images/icon-users.svg") 0 50% no-repeat
       opacity: .6

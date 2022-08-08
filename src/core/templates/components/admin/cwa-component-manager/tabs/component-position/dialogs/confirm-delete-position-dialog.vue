@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="content">
     <p>Are you sure you want to delete this position?</p>
     <p class="warning">
       <span class="cwa-icon">

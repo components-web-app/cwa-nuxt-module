@@ -19,7 +19,7 @@ export default {
 <style lang="sass">
 .cwa-input-info-text
   color: $cwa-color-text-light
-  font-weight: $font-weight-light
+  font-weight: $weight-light
   white-space: nowrap
   max-width: 250px
   overflow: hidden

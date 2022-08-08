@@ -1,25 +1,27 @@
 <template>
-  <div class="row fields-container admin-routes-tab">
+  <div class="columns fields-container admin-routes-tab">
     <transition name="fade">
-      <div v-if="isLoading || loadingRedirects" class="loader-overlay">
+      <div v-if="isLoading || loadingRedirects" class="cwa-loader-overlay">
         <cwa-loader />
       </div>
     </transition>
     <div class="column">
       <section v-if="routePageShowing === null">
-        <div class="cwa-input">
+        <div class="cwa-input field">
           <template v-if="!savedComponent || !savedComponent['@id']">
             <div class="not-found">No page route</div>
             <cm-button @click="showEditRoute">Create page route</cm-button>
           </template>
           <template v-else>
-            <label>Page route</label>
-            <div class="row">
-              <span class="column is-narrow nowrap">{{
-                savedComponent.path
-              }}</span>
-              <div class="column">
-                <a href="#" @click.prevent="showEditRoute">Edit</a>
+            <label class="label">Page route</label>
+            <div class="control">
+              <div class="columns">
+                <span class="column is-narrow nowrap">{{
+                  savedComponent.path
+                }}</span>
+                <div class="column">
+                  <a href="#" @click.prevent="showEditRoute">Edit</a>
+                </div>
               </div>
             </div>
           </template>
@@ -35,7 +37,7 @@
               <span>Redirects</span>
               <cwa-add-button @click="showRedirectPage" />
             </div>
-            <div class="row">
+            <div class="columns">
               <div class="column">
                 <cwa-admin-routes-redirect-tree
                   v-if="routeWithRedirects.redirectedFrom"
@@ -48,7 +50,7 @@
         </div>
       </section>
       <section v-if="routePageShowing === 'route'">
-        <div class="row">
+        <div class="columns">
           <div class="column is-narrow">
             <a href="#" @click="showRoutePage">&lt; back</a>
           </div>
@@ -63,15 +65,15 @@
           to prevent broken links.
         </p>
 
-        <div class="row buttons-row">
+        <div class="columns buttons-row">
           <div class="column">
-            <button @click="saveRoute">
+            <button class="button is-cwa-primary" @click="saveRoute">
               {{ isNew ? 'Create' : 'Update' }}
             </button>
           </div>
           <div v-if="!isNew" class="column is-narrow">
             <button
-              class="is-dark is-delete"
+              class="button is-dark is-delete"
               @click="deleteComponent(onDeleteSuccess)"
             >
               Delete
@@ -84,7 +86,7 @@
         >
           <div class="cwa-input">
             <label>Recommended page route</label>
-            <div class="row">
+            <div class="columns">
               <span class="column">{{ generatedRoute }}</span>
             </div>
           </div>
@@ -94,15 +96,17 @@
             }}'. This is optimal for search engines and relevance. A new
             redirect will also be created from your old route.
           </p>
-          <div class="row buttons-row">
+          <div class="columns buttons-row">
             <div class="column">
-              <button @click="generateRoute">Generate</button>
+              <button class="button is-cwa-primary" @click="generateRoute">
+                Generate
+              </button>
             </div>
           </div>
         </section>
       </section>
       <section v-if="routePageShowing === 'redirect'">
-        <div class="row">
+        <div class="columns">
           <div class="column is-narrow">
             <a href="#" @click="showRoutePage">&lt; back</a>
           </div>
@@ -113,9 +117,11 @@
           v-bind="inputProps('redirect')"
         />
         <p>The path you enter will be redirected to the current route</p>
-        <div class="row buttons-row">
+        <div class="columns buttons-row">
           <div class="column">
-            <button @click="createRedirect">Create</button>
+            <button class="button is-cwa-primary" @click="createRedirect">
+              Create
+            </button>
           </div>
         </div>
       </section>
@@ -196,11 +202,13 @@ export default Vue.extend({
       return `/${slugify(this.pageComponent.title).toLowerCase()}`
     },
     addingRedirect() {
-      return (
-        this.routePageShowing === 'redirect' &&
-        this.redirect !== null &&
-        this.redirect !== ''
-      )
+      // this is to determine whether we show the icon as saved or not
+      return this.routePageShowing === 'redirect'
+      // (
+      //   this.routePageShowing === 'redirect' &&
+      //   this.redirect !== null &&
+      //   this.redirect !== ''
+      // )
     },
     routePageData() {
       return {
@@ -317,12 +325,11 @@ export default Vue.extend({
     display: flex
     align-items: center
   .cwa-input
-    margin-top: 1rem
     color: $white
     .not-found
       color: $cwa-color-text-light
-      font-weight: $font-weight-semi-bold
-      font-size: $size-h3
+      font-weight: $weight-semibold
+      font-size: $size-5
       opacity: .6
       margin: 1.5rem 0 .5rem
 </style>

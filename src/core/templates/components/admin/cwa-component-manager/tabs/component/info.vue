@@ -1,8 +1,8 @@
 <template>
   <div class="collection-info-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <div class="column is-narrow">
-        <div class="row">
+        <div class="columns">
           <div class="column is-narrow">
             <info :id="inputId('id')" label="id" :value="iri" />
           </div>
@@ -114,5 +114,5 @@ export default Vue.extend({
 
 <style lang="sass">
 .collection-info-tab
-  font-size: 1.2rem
+  font-size: .75rem
 </style>

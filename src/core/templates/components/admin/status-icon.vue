@@ -1,13 +1,19 @@
 <template>
-  <div class="row row-center status-icon-container row-no-padding">
-    <span v-if="autoStatus === 0" class="column is-narrow"> Not saved... </span>
-    <div class="column is-narrow">
+  <div
+    class="columns is-centered is-vcentered is-gapless status-icon-container"
+  >
+    <span v-if="showStatusText && autoStatus <= 0" class="column is-narrow">
+      Not saved...</span
+    >
+    <div v-if="alwaysShowStatus || !errorsShowing" class="column is-narrow">
+      <div :class="['status-icon', className]" />
+    </div>
+    <div v-show="errorsShowing" class="column is-narrow">
       <error-notifications
         :listen-categories="categoriesAsArray"
         :show-above="showAbove"
         @showing="handleErrorsShowing"
       />
-      <div v-if="!errorsShowing" :class="['status-icon', className]" />
     </div>
   </div>
 </template>
@@ -20,6 +26,14 @@ import ErrorNotifications from './error-notifications.vue'
 export default Vue.extend({
   components: { ErrorNotifications },
   props: {
+    alwaysShowStatus: {
+      type: Boolean,
+      default: false
+    },
+    showStatusText: {
+      type: Boolean,
+      default: true
+    },
     status: {
       type: Number,
       required: false,
@@ -110,9 +124,8 @@ export default Vue.extend({
 
 <style lang="sass">
 .status-icon-container
-  font-size: 1.4rem
-  > span.column.is-narrow
-    padding-right: 1rem
+  > .column:not(:last-child)
+    padding-right: .5rem !important
 .status-icon
   width: 20px
   height: 20px

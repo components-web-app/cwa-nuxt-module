@@ -81,22 +81,18 @@ export default Vue.extend({
     }
   },
   computed: {
+    isSaved() {
+      return (
+        this.isNew ||
+        this.$cwa.isResourceSame(
+          this.normalizeRoles(this.component),
+          this.normalizeRoles(this.savedComponent)
+        )
+      )
+    },
     highestRole: {
       get() {
-        if (!this.component.roles) {
-          return null
-        }
-        let highestIndex = null
-        const roleHierarchy = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER']
-        for (const role of this.component.roles) {
-          const foundIndex = roleHierarchy.indexOf(role)
-          if (foundIndex !== -1) {
-            if (highestIndex === null || foundIndex < highestIndex) {
-              highestIndex = foundIndex
-            }
-          }
-        }
-        return highestIndex !== null ? roleHierarchy[highestIndex] : null
+        return this.findHighestRole(this.component.roles)
       },
       set(value) {
         this.component.roles = [value]
@@ -104,6 +100,30 @@ export default Vue.extend({
     }
   },
   methods: {
+    findHighestRole(roles) {
+      if (!roles) {
+        return null
+      }
+      if (!Array.isArray(roles)) {
+        return roles
+      }
+      let highestIndex = null
+      const roleHierarchy = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER']
+      for (const role of roles) {
+        const foundIndex = roleHierarchy.indexOf(role)
+        if (foundIndex !== -1) {
+          if (highestIndex === null || foundIndex < highestIndex) {
+            highestIndex = foundIndex
+          }
+        }
+      }
+      return highestIndex !== null ? roleHierarchy[highestIndex] : null
+    },
+    normalizeRoles(component) {
+      return Object.assign({}, component, {
+        roles: this.findHighestRole(component?.roles)
+      })
+    },
     async saveUser() {
       const data = Object.assign({}, this.component)
       await this.sendRequest(data)

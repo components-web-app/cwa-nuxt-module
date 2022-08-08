@@ -399,17 +399,17 @@ export default Vue.extend({
     top: 0
     right: 0
     font:
-      size: 1.2rem
-      weight: $font-weight-semi-bold
+      size: .9rem
+      weight: $weight-semibold
     color: $white
     background: rgba($cwa-background-dark, .8)
-    border-radius: 3rem
-    min-width: 3rem
-    height: 3rem
+    border-radius: 2rem
+    min-width: 2rem
+    height: 2rem
     display: flex
     align-items: center
     justify-content: center
-    line-height: 3rem
-    padding: 0 .5rem .2rem
+    line-height: 2rem
+    padding: 0 .25rem
     overflow: hidden
 </style>

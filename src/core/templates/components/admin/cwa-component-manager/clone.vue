@@ -1,10 +1,10 @@
 <template>
   <div class="clone-info">
-    <div class="row row-no-padding row-center">
+    <div class="columns is-gapless is-centered">
       <div class="column is-narrow cloning-label">Cloning:</div>
       <div class="column">
         <button
-          class="button button-cwa clone-component-button"
+          class="button is-cwa clone-component-button"
           type="button"
           @click="goToCloneFromPath"
         >
@@ -24,10 +24,10 @@
         </cm-button>
       </div>
       <div class="column is-narrow">
-        <button class="button button-cwa" @click="cancelClone">Cancel</button>
+        <button class="button is-cwa" @click="cancelClone">Cancel</button>
       </div>
     </div>
-    <div class="bottom-content row">
+    <div class="bottom-content columns">
       <div class="column is-narrow">
         <cwa-admin-toggle
           id="cwa-cm-clone-navigate"
