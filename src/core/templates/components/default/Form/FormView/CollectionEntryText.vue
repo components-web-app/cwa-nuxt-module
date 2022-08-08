@@ -1,12 +1,13 @@
 <template>
   <wrapper class="collection-entry-text" v-bind="wrapperProps">
-    <div class="row">
+    <div class="columns is-vcentered">
       <div class="column">
         <input
           v-if="inputType === 'number'"
           v-model.number="value"
           v-bind="textInputAttr"
           :class="classNames"
+          class="input"
           v-on="events"
         />
         <textarea
@@ -14,6 +15,7 @@
           v-model="value"
           v-bind="textInputAttr"
           :class="classNames"
+          class="textarea"
           v-on="events"
         />
         <input
@@ -21,11 +23,12 @@
           v-model="value"
           v-bind="textInputAttr"
           :class="classNames"
+          class="input"
           v-on="events"
         />
       </div>
       <div class="column is-narrow">
-        <button type="button" @click="deleteEntry">Delete</button>
+        <button type="button" class="button" @click="deleteEntry">Delete</button>
       </div>
     </div>
   </wrapper>
@@ -47,8 +50,6 @@ export default Vue.extend({
 
 <style lang="sass">
 .collection-entry-text
-  .columns
-    align-items: center
-    button
-      margin-bottom: 1.5rem
+   > .columns
+     margin-bottom: 0
 </style>

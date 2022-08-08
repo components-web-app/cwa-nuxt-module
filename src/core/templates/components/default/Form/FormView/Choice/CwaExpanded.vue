@@ -1,10 +1,14 @@
 <template>
-  <div :class="classNames" v-bind="inputAttr">
+  <div :class="classNames" class="field" v-bind="inputAttr">
     <div
       v-for="(choice, index) of vars.choices"
       :key="`${vars.id}-choice-${index}`"
     >
-      <label :for="`${vars.id}-choice-${index}`" v-bind="choice.attr">
+      <label
+        :for="`${vars.id}-choice-${index}`"
+        class="radio"
+        v-bind="choice.attr"
+      >
         <input
           :id="`${vars.id}-choice-${index}`"
           v-model="value"

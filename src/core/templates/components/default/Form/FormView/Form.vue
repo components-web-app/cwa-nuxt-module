@@ -5,7 +5,9 @@
     :class="['cwa-form', { 'is-submitting': metadata.validation.submitting }]"
     @submit.prevent="submitForm"
   >
-    <div v-if="metadata.validation.success">Form successfully submitted</div>
+    <div v-if="metadata.validation.success" class="notification is-success is-size-5 has-text-weight-bold">
+      Form successfully submitted
+    </div>
     <template v-else>
       <slot></slot>
       <span class="help">* required</span>

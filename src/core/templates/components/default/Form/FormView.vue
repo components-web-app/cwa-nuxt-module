@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-form-view">
+  <div class="cwa-form-view field">
     <component
       :is="appliedChildProxy || formViewComponent"
       v-bind="formViewProps"
