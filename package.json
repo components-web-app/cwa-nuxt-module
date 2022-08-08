@@ -32,7 +32,9 @@
     "e2e:open": "cypress open",
     "api": "node scripts/mock-api",
     "contrib:add": "all-contributors add",
-    "contrib:generate": "all-contributors generate"
+    "contrib:generate": "all-contributors generate",
+    "css-build": "node-sass --omit-source-map-url sass/style.sass css/cwa.css",
+    "css-watch": "npm run css-build -- --watch"
   },
   "dependencies": {
     "@nuxt/components": "^2.2.0",
@@ -41,6 +43,7 @@
     "@nuxtjs/svg": "^0.1.12",
     "@popperjs/core": "^2.11.2",
     "bluebird": "^3.7.2",
+    "bulma": "^0.9.4",
     "consola": "^2.13.0",
     "css-loader": "^5.2.0",
     "har-validator": "^5.1.5",

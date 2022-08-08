@@ -1,6 +1,6 @@
 <template>
   <div class="html-content-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <div class="column is-narrow">
         <cwa-admin-toggle
           :id="`component-toggle-html-${iri}`"

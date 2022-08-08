@@ -1,5 +1,5 @@
 <template>
-  <div v-if="total > 1" class="row pagination-bar is-mobile">
+  <div v-if="total > 1" class="columns pagination-bar is-mobile">
     <div class="column page-numbers">
       <template v-if="showFirstPageLink">
         <a href="#" @click.prevent="changePage(1)">1</a> <span>..</span>
@@ -18,7 +18,7 @@
       </template>
     </div>
     <div class="column is-narrow">
-      <div class="row is-mobile">
+      <div class="columns is-mobile">
         <div class="column">
           <a
             :disabled="isFirst"

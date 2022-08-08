@@ -1,0 +1,53 @@
+@import "~bulma/sass/utilities/initial-variables"
+@import "~bulma/sass/utilities/functions"
+
+$font-family-muli: 'Muli', sans-serif
+$font-family-lemonmilk: 'Lemonmilk', sans-serif
+
+// CWA Colours
+$cwa-success: #9CDD05 !default
+$cwa-danger: #E30A6C !default
+$cwa-warning: #FFAA00 !default
+$cwa-navbar-background: #212121 !default
+$cwa-grid-item-background: #2F2F2F !default
+$cwa-grid-item-border-color: #414040
+
+$cwa-color-text-light: #b1b1b1 !default
+$cwa-background-light: #F4F3F3 !default
+$cwa-background-dark: #292929 !default
+
+$cwa-color-initial: $white !default
+$cwa-color-primary: $cwa-danger !default
+$cwa-color-secondary: $cwa-warning !default
+$cwa-color-tertiary: $cwa-background-light !default
+$cwa-color-quaternary: $cwa-color-text-light !default
+$cwa-color-quinary: #e1e1e1 !default
+
+$cwa-link-color: $cwa-color-primary !default
+$cwa-link-color-hover: #212121 !default
+
+// Custom variables for application to use
+$color-warning: $cwa-warning !default
+$color-danger: $cwa-danger !default
+$color-success: $cwa-success !default
+
+// Vars to override which will propagate to default bulma
+$cwa-body-background-color: $cwa-background-light !default
+$cwa-font-family: $font-family-muli !default
+$cwa-family-primary: $font-family-muli !default
+$cwa-family-secondary: $font-family-lemonmilk !default
+
+// Overrides on bulma defaults
+$body-background-color: $cwa-body-background-color
+$body-family: $cwa-family-primary
+$family-primary: $cwa-family-primary
+$family-secondary: $cwa-family-secondary
+
+@import "~bulma/sass/utilities/derived-variables"
+
+$addColors: ( "cwa-primary": ($cwa-danger, findColorInvert($cwa-danger)) )
+$colors: map-merge($colors, $addColors)
+
+@import "~bulma/sass/utilities/mixins"
+@import "~bulma/sass/utilities/controls"
+@import "~bulma/sass/utilities/extends"

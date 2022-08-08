@@ -81,10 +81,10 @@ li.notification
   .message
     margin: 0 0 .5rem
   .endpoint
-    font-weight: $font-weight-normal
+    font-weight: $weight-normal
   .timestamp
     color: $cwa-color-text-light
-    font-weight: $font-weight-bold
+    font-weight: $weight-bold
     font-size: .8em
     .clear-notification
       margin-left: 1rem

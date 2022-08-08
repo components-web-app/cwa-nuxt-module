@@ -47,7 +47,7 @@ export default Vue.extend({
 
 <style lang="sass">
 .collection-entry-text
-  .row
+  .columns
     align-items: center
     button
       margin-bottom: 1.5rem

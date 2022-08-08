@@ -1,6 +1,6 @@
 <template>
   <div class="component-ui-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <div v-if="context.UiComponents" class="column is-narrow">
         <cm-select
           :id="`componentUI-${iri}`"

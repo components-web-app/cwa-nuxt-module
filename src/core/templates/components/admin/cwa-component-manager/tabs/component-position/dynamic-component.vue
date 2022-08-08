@@ -1,6 +1,6 @@
 <template>
   <div class="dynamic-component-tab">
-    <div class="row">
+    <div class="columns">
       <div class="column is-narrow">
         <cm-select
           :id="`page-data-prop-${iri}`"

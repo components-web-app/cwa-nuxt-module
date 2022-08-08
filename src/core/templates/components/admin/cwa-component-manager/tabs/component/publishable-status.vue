@@ -1,6 +1,6 @@
 <template>
   <div class="publishable-status-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <!--
       live exists, no draft,
       Draft exists, no live,

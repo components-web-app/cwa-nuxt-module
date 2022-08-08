@@ -15,7 +15,7 @@
               <div>No component selected</div>
             </div>
             <template v-else>
-              <div class="top row">
+              <div class="top columns">
                 <div class="column">
                   <clone v-if="cloneComponent" />
                   <tabs
@@ -711,7 +711,7 @@ export default Vue.extend({
     .component-collection
       position: relative
       z-index: 1
-      background: $body-background
+      background: $body-background-color
     .cwa-component-manager-holder
       &:before
         content: ''
@@ -745,6 +745,6 @@ export default Vue.extend({
     margin-bottom: 0
     &:hover
       color: $white
-  .top.row
+  .top.columns
     padding: 1rem
 </style>

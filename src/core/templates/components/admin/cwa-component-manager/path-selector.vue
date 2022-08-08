@@ -1,17 +1,20 @@
 <template>
   <div :class="['path-selector', { 'no-options': !componentOptions.length }]">
-    <div class="row row-center">
+    <div class="columns is-centered is-vcentered is-marginless">
       <div class="column resource-column">
         <resource-locations
           :name="components[0].data.name"
           :iri="components[0].iri"
         />
       </div>
-      <div v-if="componentOptions.length" class="column is-narrow">
+      <div
+        v-if="componentOptions.length"
+        class="column is-narrow more-button-column"
+      >
         <button
           ref="moreButton"
           type="button"
-          class="button button-cwa is-more"
+          class="button is-cwa is-more"
           @click="toggleAltOptions"
         >
           <img src="../../../../assets/images/more.svg" alt="more options" />
@@ -21,10 +24,10 @@
     <ul v-show="showAltMenu" ref="componentList" class="component-list">
       <li
         v-for="(component, componentIndex) in componentOptions"
-        :key="`path-breadcrumb-${component.iri}`"
+        :key="`path-select-${component.iri}-${componentIndex}`"
       >
         <button
-          class="button button-cwa"
+          class="button is-cwa"
           @click="$emit('click', { componentIndex: componentIndex + 1 })"
         >
           <resource-locations
@@ -134,27 +137,35 @@ export default {
 <style lang="sass">
 .path-selector
   color: $white
-  background: $control-background-color
-  border-radius: 2rem
+  background: $cwa-control-background-color
+  border-radius: 1.2rem
   padding: 0
   position: relative
-  > .row
+  > .columns
     padding: 0
     margin: 0
     width: 100%
   .column
     padding: 0
   .resource-column
-    padding: 1rem 0 1rem 1.5rem
+    padding: .7rem .25rem .7rem 1rem
   &.no-options
     .resource-column
       padding-right: 1.5rem
+  .more-button-column
+    position: relative
+    padding: 0
+    align-self: stretch
   .button
     &.is-more
-      border-left: 1px solid $control-background-hover-color
-      padding: 2rem 1.5rem
-      margin: 0 0 0 1.5rem
-      border-radius: 0 2rem 2rem 0
+      position: relative
+      border-left: 1px solid $cwa-control-background-hover-color
+      padding: 0 .75rem
+      margin: 0 0 0 .75rem
+      border-radius: 0 1.4rem 1.4rem 0
+      height: 100%
+      img
+        display: block
   ul.component-list
     list-style: none
     position: absolute
@@ -167,7 +178,7 @@ export default {
       margin-bottom: .25rem
       &:last-child
         margin-bottom: 0
-      .button-cwa
+      .button.is-cwa
         margin: 0
         width: 100%
         border-radius: 2rem

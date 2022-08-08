@@ -8,7 +8,7 @@ describe('Delete a component', () => {
     cy.get('.tab-content-container').should('be.visible')
     cy.get('.cwa-manager-tab').contains('Info').click()
     cy.get('.trash-link').click()
-    cy.get('.modal-card-inner button').contains('Delete').click()
+    cy.get('.cwa-modal-card-inner button').contains('Delete').click()
     cy.get('.cwa-add-button.is-pulsing').should('have.length', 3)
   })
 })
