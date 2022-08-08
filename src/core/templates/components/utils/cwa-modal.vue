@@ -94,10 +94,12 @@ $modal-breakpoint: $tablet
       code
         background: $cwa-grid-item-background
         padding: .5em
-      //a
-      //  color: $cwa-color-text-light
-      //  &:hover
-      //    color: $white
+        color: $cwa-color-text-light
+      a
+        color: $cwa-color-text-light
+        &:hover,
+        &.is-selected
+          color: $white
       .close-bar
         width: 100%
         display: flex

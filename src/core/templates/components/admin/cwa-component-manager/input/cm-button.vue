@@ -2,7 +2,7 @@
   <div class="cm-button">
     <div
       ref="buttonsRow"
-      class="columns is-centered buttons-row is-gapless is-marginless"
+      class="columns is-vcentered buttons-row is-gapless is-marginless"
     >
       <button
         ref="button"
@@ -157,8 +157,8 @@ export default Vue.extend({
 <style lang="sass">
 .cm-button
   position: relative
-  .buttons-row
-    box-shadow: $cwa-control-shadow
+  //.buttons-row
+  //  box-shadow: $cwa-control-shadow
   .cm-button-button
     +cwa-button
     margin-bottom: 0

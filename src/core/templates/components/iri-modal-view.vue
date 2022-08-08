@@ -109,7 +109,7 @@ export default Vue.extend({
     a
       color: $white
       font-size: $size-3
-      font-weight: $weight-light
+      font-weight: $weight-normal
       opacity: .6
       &:not(:last-child)
         margin-right: 1.25rem
@@ -130,7 +130,7 @@ export default Vue.extend({
       font-size: .9rem
       justify-self: end
   .buttons-row
-    margin-top: .5rem
+    margin-top: 1rem
     button.is-delete
       &:hover,
       &:focus

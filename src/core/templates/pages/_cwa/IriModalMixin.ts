@@ -33,7 +33,10 @@ export default Vue.extend({
       return this.iri === 'add'
     },
     isSaved() {
-      return this.$cwa.isResourceSame(this.component, this.savedComponent)
+      return (
+        this.isNew ||
+        this.$cwa.isResourceSame(this.component, this.savedComponent)
+      )
     },
     inputProps() {
       return (key) => ({
