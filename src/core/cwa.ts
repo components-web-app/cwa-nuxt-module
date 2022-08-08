@@ -13,15 +13,18 @@ import {
   COMPONENT_MANAGER_EVENTS
 } from './events'
 import Forms from './forms'
+import ApiDocumentation from './api-documentation'
+import type { ApiDocsInterface } from './api-documentation'
 
 interface PatchRequest {
   endpoint: string
   tokenSource: CancelTokenSource
 }
-interface ApiDocsInterface {
-  entrypoint: any
-  docs: any
-}
+
+/**
+ * CWA Module is the main entrypoint and API for a user using the CWA Module
+ * It provides easy to use proxy functions to other classes and to provide API and functionality to manage resources
+ */
 export default class Cwa {
   public ctx: any
   public options: CwaOptions
@@ -31,8 +34,8 @@ export default class Cwa {
   public $state
   public $eventBus
   private patchRequests: Array<PatchRequest> = []
-  private apiDocumentation: ApiDocsInterface
-  private apiDocPromise: Promise<ApiDocsInterface>
+  private apiDocumentation: ApiDocumentation
+  private beforeWindowUnloadInitialised: boolean = false
 
   constructor(ctx, options) {
     if (options.allowUnauthorizedTls && ctx.isDev) {
@@ -42,26 +45,84 @@ export default class Cwa {
     this.$eventBus = new Vue()
 
     this.ctx = ctx
-
     this.options = options
+    const apiUrl = this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
 
-    /**
-     * init storage
-     */
-    options.initialState = {}
-    const storage = new Storage(ctx, options)
+    this.initRouterCloneNavigationGuard()
+    this.initStorage()
+    this.initFetcher(apiUrl)
+    this.initForms()
+    this.initApiDocumentation(apiUrl)
+    if (process.client) {
+      this.initMercure()
+      this.initWindowCloneNavigationGuard()
+    }
+  }
+
+  /**
+   * Initialisers
+   */
+  private initRouterCloneNavigationGuard() {
+    let programmatic = false
+
+    ;['push', 'replace', 'go', 'back', 'forward'].forEach((methodName) => {
+      const method = this.ctx.app.router[methodName]
+      this.ctx.app.router[methodName] = (...args) => {
+        programmatic = true
+        method.apply(this.ctx.app.router, args)
+      }
+    })
+
+    this.ctx.app.router.beforeEach((toRoute, __, next) => {
+      if (!programmatic) {
+        this.setEditMode(false)
+      }
+      try {
+        const cwaForce = !!toRoute.params?.cwa_force
+        if (
+          programmatic === false ||
+          this.$storage.get('CLONE_ALLOW_NAVIGATE') === true ||
+          !this.isEditMode ||
+          cwaForce
+        ) {
+          next()
+          return
+        }
+        return false
+      } finally {
+        programmatic = false
+      }
+    })
+  }
+
+  private initWindowCloneNavigationGuard() {
+    if (this.beforeWindowUnloadInitialised) {
+      return
+    }
+    this.beforeWindowUnloadInitialised = true
+    window.addEventListener('beforeunload', (e) => {
+      if (this.$state.clone.component) {
+        // Cancel the event
+        e.preventDefault() // If you prevent default behavior in Mozilla Firefox prompt will always be shown
+        // Chrome requires returnValue to be set
+        e.returnValue = ''
+      }
+    })
+  }
+
+  private initStorage() {
+    const storage = new Storage(this.ctx, this.options)
     this.$storage = storage
     this.$state = storage.state
+  }
 
-    /**
-     * init fetcher
-     */
+  private initFetcher(apiUrl: string) {
     this.fetcher = new Fetcher(
       {
         $axios: this.ctx.$axios,
         error: this.ctx.error,
-        apiUrl: this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL,
-        storage,
+        apiUrl,
+        storage: this.$storage,
         router: this.ctx.app.router,
         redirect: this.ctx.redirect
       },
@@ -69,32 +130,35 @@ export default class Cwa {
         fetchConcurrency: this.options.fetchConcurrency
       }
     )
+  }
 
-    /**
-     * init forms
-     */
+  private initForms() {
     this.forms = new Forms({
       $axios: this.ctx.$axios,
       store: this.ctx.store,
       vuexNamespace: this.options.vuex.namespace
     })
-
-    if (process.client) {
-      this.initMercure()
-    }
   }
 
-  public get isEditMode() {
-    return this.isAdmin && this.$storage.getState('editMode')
+  private initApiDocumentation(apiUrl: string) {
+    this.apiDocumentation = new ApiDocumentation({
+      $axios: this.ctx.$axios,
+      $storage: this.$storage,
+      $state: this.$state,
+      apiUrl
+    })
   }
 
-  public setEditMode(enabled: boolean) {
-    this.$storage.setState('editMode', enabled)
-  }
-
-  initMercure(force: boolean = false) {
+  public initMercure(force: boolean = false) {
     ;(force || !cwaRouteDisabled(this.ctx.route)) &&
       this.fetcher.initMercure(this.$state.resources.current)
+  }
+
+  /**
+   * Fetcher Proxy
+   */
+  get loadedPage() {
+    return this.fetcher.loadedPage
   }
 
   public fetchRoute(path) {
@@ -102,19 +166,37 @@ export default class Cwa {
   }
 
   /**
-   * Storage
+   * Storage Proxy
    */
-  get resourcesOutdated() {
-    return this.$storage.areResourcesOutdated()
+  public setEditMode(enabled: boolean) {
+    this.$storage.setState('editMode', enabled)
+  }
+
+  /**
+   * Storage Proxy
+   */
+  public setLayoutEditing(enabled: boolean) {
+    this.$storage.setState('isLayoutEditing', enabled)
+  }
+
+  get layout() {
+    return this.$storage.getState('layout')
+  }
+
+  get loadingRoute() {
+    return this.$state[Fetcher.loadingEndpoint]
   }
 
   get resources() {
     return this.$state.resources.current
   }
 
-  // find a resource from local storage or fetch from API
-  async findResource(iri) {
-    return this.getResource(iri) || (await this.refreshResource(iri))
+  get resourcesOutdated() {
+    return this.$storage.areResourcesOutdated()
+  }
+
+  get currentRoute() {
+    return this.$storage.currentRoute
   }
 
   findDraftIri(iri: string) {
@@ -125,9 +207,73 @@ export default class Cwa {
     return this.$storage.findPublishedIri(iri)
   }
 
+  getResource(iri: string) {
+    return this.$storage.getResource(iri)
+  }
+
+  isResourceSame(resource1, resource2): boolean {
+    return this.$storage.isResourceSame(resource1, resource2)
+  }
+
+  mergeNewResources() {
+    this.$storage.mergeNewResources()
+  }
+
+  saveResource(resource: any, category?: string, isNew?: boolean) {
+    this.$storage.setResource({ category, isNew, resource })
+  }
+
+  increaseMercurePendingProcessCount(requestCount: number = 1) {
+    this.$storage.increaseMercurePendingProcessCount(requestCount)
+  }
+
+  decreaseMercurePendingProcessCount(requestCount: number = 1) {
+    this.$storage.decreaseMercurePendingProcessCount(requestCount)
+  }
+
+  clearDraftResources() {
+    const draftIris = Object.values(this.$state.resources.draftMapping)
+    for (const iri of draftIris) {
+      this.$storage.deleteResource(iri)
+    }
+  }
+
+  /**
+   * API Documentation Proxy
+   */
+  getApiDocumentation(refresh = false): Promise<ApiDocsInterface> {
+    return this.apiDocumentation.getApiDocumentation(refresh)
+  }
+
+  /**
+   * Storage
+   */
+  get layoutUiComponent() {
+    return this.resources.Layout?.byId[this.layout].uiComponent || 'None'
+  }
+
+  public get isEditMode() {
+    return this.isAdmin && this.$storage.getState('editMode')
+  }
+
+  public get isLayoutEditing() {
+    if (!this.isEditMode) {
+      return null
+    }
+    return this.$storage.getState('isLayoutEditing')
+  }
+
+  // find a resource from local storage or fetch from API
+  async findResource(iri) {
+    return this.getResource(iri) || (await this.refreshResource(iri))
+  }
+
   getPublishableIri(iri: string) {
     // is it draft and mapped to show published?
-    if (!this.isEditMode || this.$storage.isIriMappedToPublished(iri)) {
+    if (
+      (iri && !this.isEditMode) ||
+      this.$storage.isIriMappedToPublished(iri)
+    ) {
       return this.$storage.findPublishedIri(iri) || iri
     }
     return iri
@@ -149,23 +295,7 @@ export default class Cwa {
     return this.$storage.getResource(draftIri)
   }
 
-  getResource(iri: string) {
-    return this.$storage.getResource(iri)
-  }
-
-  get layout() {
-    return this.$storage.getState('layout')
-  }
-
-  get loadingRoute() {
-    return this.$state[Fetcher.loadingEndpoint]
-  }
-
-  get layoutUiComponent() {
-    return this.resources.Layout?.byId[this.layout].uiComponent || 'None'
-  }
-
-  withError(route, err) {
+  setFetchError(route, err) {
     this.$storage.setState(
       'error',
       `An error occurred while requesting ${route.path}`
@@ -173,12 +303,16 @@ export default class Cwa {
     consola.error(err)
   }
 
-  mergeNewResources() {
-    this.$storage.mergeNewResources()
-  }
-
-  saveResource(resource: any, category?: string, isNew?: boolean) {
-    this.$storage.setResource({ category, isNew, resource })
+  togglePublishable(draftIri: string, showPublished: boolean) {
+    this.$storage.togglePublishable(draftIri, showPublished)
+    const publishableIri = this.getPublishableIri(draftIri)
+    this.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.publishableToggled, {
+      draftIri,
+      publishableIri,
+      showPublished,
+      publishedIri: this.$storage.findPublishedIri(draftIri)
+    } as PublishableToggledEvent)
+    return publishableIri
   }
 
   // isResourceSaved(resource: object, iri: string) {
@@ -189,7 +323,22 @@ export default class Cwa {
   // }
 
   /**
-   * API Requests
+   * User / security
+   */
+  get isAdmin() {
+    return this.userHasRole('ROLE_ADMIN')
+  }
+
+  get user() {
+    return this.ctx.$auth.user
+  }
+
+  userHasRole(role) {
+    return this.user ? this.user.roles.includes(role) : false
+  }
+
+  /**
+   * Resource Management
    */
   private handleRequestError(error) {
     if (error instanceof ApiError) {
@@ -207,46 +356,6 @@ export default class Cwa {
     throw exception
   }
 
-  async getApiDocumentation(refresh = false): Promise<ApiDocsInterface> {
-    // wait for the variable
-    if (!this.$state.docsUrl) {
-      return new Promise((resolve) => {
-        this.$storage.watchState('docsUrl', (newValue) => {
-          if (newValue) {
-            this.getApiDocumentation(refresh).then((docs) => {
-              resolve(docs)
-            })
-          }
-        })
-      })
-    }
-
-    if (this.apiDocPromise) {
-      return await this.apiDocPromise
-    }
-
-    // fetch.. but if we have already asked for it to be fetched, let us prevent many requests.
-    if (!refresh && this.apiDocumentation) {
-      return this.apiDocumentation
-    }
-
-    this.apiDocPromise = new Promise((resolve) => {
-      Promise.all([
-        this.ctx.$axios.$get(
-          this.ctx.$config.API_URL_BROWSER || this.ctx.$config.API_URL
-        ),
-        this.ctx.$axios.$get(this.$state.docsUrl)
-      ]).then((responses) => {
-        this.apiDocumentation = {
-          entrypoint: responses[0],
-          docs: responses[1]
-        }
-        resolve(this.apiDocumentation)
-      })
-    })
-    return await this.apiDocPromise
-  }
-
   private async initNewRequest(
     requestFn: Function,
     { eventName, eventParams }: { eventName: string; eventParams: any },
@@ -258,7 +367,7 @@ export default class Cwa {
       let resource = await requestFn()
       // if not a successful delete request
       if (resource?.status !== 204 && resource?.['@id']) {
-        resource = this.processResource(resource, category)
+        this.saveResource(resource, category)
       }
       if (postUpdate) {
         const newResource = await postUpdate(resource)
@@ -273,11 +382,6 @@ export default class Cwa {
       this.$eventBus.$emit(eventName, eventParams)
       this.decreaseMercurePendingProcessCount()
     }
-  }
-
-  private processResource(resource: any, category?: string) {
-    this.saveResource(resource, category)
-    return resource
   }
 
   private async refreshEndpointsArray(
@@ -356,6 +460,32 @@ export default class Cwa {
     )
   }
 
+  async refreshPositionsForComponent(iri) {
+    const allPositions: { [key: string]: { component: string } } =
+      this.$state.resources.current?.ComponentPosition?.byId
+    const promises = []
+    for (const [positionIri, position] of Object.entries(allPositions)) {
+      if (position.component === iri) {
+        promises.push(
+          new Promise((resolve) => {
+            // refresh the position from server
+            this.refreshResource(positionIri).then(
+              (refreshedPositionResource) => {
+                // find the component resource if we do not already have it
+                this.findResource(refreshedPositionResource.component).then(
+                  () => {
+                    resolve(true)
+                  }
+                )
+              }
+            )
+          })
+        )
+        await Promise.all(promises)
+      }
+    }
+  }
+
   cancelPendingPatchRequest(
     endpoint: string,
     requestComplete: boolean = false
@@ -378,6 +508,7 @@ export default class Cwa {
     refreshEndpoints?: string[],
     updateFn?: Function
   ) {
+    // New resources are being updated locally - nothing in the API
     if (endpoint.endsWith('/new')) {
       this.$storage.setResource({
         resource: Object.assign(
@@ -388,16 +519,56 @@ export default class Cwa {
       })
       return
     }
-    let patchEndpoint = endpoint
+
     const draftIri = this.findDraftIri(endpoint)
     const forcedPublishedUpdate = draftIri
       ? this.getPublishableIri(draftIri) !== draftIri
       : this.$storage.isIriMappedToPublished(endpoint)
 
-    const requestFn = async () => {
+    const requestFn = this.createUpdateRequestFunction(
+      forcedPublishedUpdate,
+      endpoint,
+      data,
+      updateFn
+    )
+
+    const postUpdateHandler = this.createPostUpdateHandler(
+      forcedPublishedUpdate,
+      endpoint,
+      refreshEndpoints
+    )
+
+    return await this.initNewRequest(
+      requestFn,
+      { eventName: API_EVENTS.updated, eventParams: endpoint },
+      category,
+      postUpdateHandler
+    )
+  }
+
+  async deleteResource(id: string) {
+    await this.initNewRequest(
+      async () => {
+        return await this.ctx.$axios.delete(id)
+      },
+      { eventName: API_EVENTS.deleted, eventParams: id },
+      null,
+      null
+    )
+    this.$storage.deleteResource(id)
+  }
+
+  private createUpdateRequestFunction(
+    forcedPublishedUpdate: boolean,
+    endpoint: string,
+    data: any,
+    updateFn?: Function
+  ) {
+    return async () => {
       const tokenSource = this.ctx.$axios.CancelToken.source()
       const endpointQuery = forcedPublishedUpdate ? '?published=true' : ''
-      patchEndpoint += endpointQuery
+      const patchEndpoint = endpoint + endpointQuery
+
       if (updateFn) {
         return await updateFn(patchEndpoint, endpointQuery)
       }
@@ -416,7 +587,14 @@ export default class Cwa {
       this.cancelPendingPatchRequest(patchEndpoint, true)
       return await patchPromise
     }
-    const postUpdateHandler = async (newResource) => {
+  }
+
+  private createPostUpdateHandler(
+    forcedPublishedUpdate: boolean,
+    endpoint: string,
+    refreshEndpoints?: string[]
+  ) {
+    return async (newResource) => {
       // we need to do this after the new entity is saved
       // otherwise a new position may reference a resource/component
       // that has not been saved locally yet. So we do it here instead
@@ -456,70 +634,5 @@ export default class Cwa {
         this.$eventBus.$emit(API_EVENTS.newDraft, iriObj)
       }
     }
-    return await this.initNewRequest(
-      requestFn,
-      { eventName: API_EVENTS.updated, eventParams: endpoint },
-      category,
-      postUpdateHandler
-    )
-  }
-
-  async deleteResource(id: string) {
-    await this.initNewRequest(
-      async () => {
-        return await this.ctx.$axios.delete(id)
-      },
-      { eventName: API_EVENTS.deleted, eventParams: id },
-      null,
-      null
-    )
-    this.$storage.deleteResource(id)
-  }
-
-  increaseMercurePendingProcessCount(requestCount: number = 1) {
-    this.$storage.increaseMercurePendingProcessCount(requestCount)
-  }
-
-  decreaseMercurePendingProcessCount(requestCount: number = 1) {
-    this.$storage.decreaseMercurePendingProcessCount(requestCount)
-  }
-
-  /**
-   * User / security
-   */
-  get isAdmin() {
-    return this.userHasRole('ROLE_ADMIN')
-  }
-
-  get user() {
-    return this.ctx.$auth.user
-  }
-
-  get currentRoute() {
-    return this.$storage.currentRoute
-  }
-
-  get currentPageIri() {
-    return this.fetcher.loadedPage
-  }
-
-  userHasRole(role) {
-    return this.user ? this.user.roles.includes(role) : false
-  }
-
-  togglePublishable(draftIri: string, showPublished: boolean) {
-    this.$storage.togglePublishable(draftIri, showPublished)
-    const publishableIri = this.getPublishableIri(draftIri)
-    this.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.publishableToggled, {
-      draftIri,
-      publishableIri,
-      showPublished,
-      publishedIri: this.$storage.findPublishedIri(draftIri)
-    } as PublishableToggledEvent)
-    return publishableIri
-  }
-
-  isResourceSame(resource1, resource2): boolean {
-    return this.$storage.isResourceSame(resource1, resource2)
   }
 }

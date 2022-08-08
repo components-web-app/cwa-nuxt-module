@@ -5,7 +5,7 @@
     :label="label"
     :has-error="hasError"
   >
-    <div class="select">
+    <div class="select is-fullwidth">
       <select :id="id" v-model="currentValue" :required="required">
         <option
           v-if="!hasNullOption"

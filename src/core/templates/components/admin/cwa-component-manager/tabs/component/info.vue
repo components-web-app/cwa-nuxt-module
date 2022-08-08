@@ -1,8 +1,8 @@
 <template>
   <div class="collection-info-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <div class="column is-narrow">
-        <div class="row">
+        <div class="columns">
           <div class="column is-narrow">
             <info :id="inputId('id')" label="id" :value="iri" />
           </div>
@@ -39,6 +39,7 @@ import Vue from 'vue'
 import Info from '../../input/info.vue'
 import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
+import PageResourceUtilsMixin from '../../../../../../mixins/PageResourceUtilsMixin'
 import {
   CONFIRM_DIALOG_EVENTS,
   ConfirmDialogEvent
@@ -46,7 +47,11 @@ import {
 
 export default Vue.extend({
   components: { Info },
-  mixins: [ComponentManagerTabMixin, ApiDateParserMixin],
+  mixins: [
+    ComponentManagerTabMixin,
+    ApiDateParserMixin,
+    PageResourceUtilsMixin
+  ],
   methods: {
     deleteComponent() {
       const event: ConfirmDialogEvent = {
@@ -66,18 +71,37 @@ export default Vue.extend({
         onSuccess: async ({ deleteAll }) => {
           const position = this.context.componentPosition
           const positionResource = this.$cwa.getResource(position)
+
           if (deleteAll) {
+            const refreshPageData =
+              this.isDynamicPage &&
+              this.getDynamicComponentIri(positionResource.pageDataProperty) ===
+                this.iri
+
             await this.$cwa.deleteResource(this.iri)
-            if (!positionResource.pageDataProperty) {
+            // refresh page data if required - so we do not have an IRI for a component that no longer exists
+            if (refreshPageData) {
+              await this.$cwa.refreshResource(this.$cwa.loadedPage)
+            }
+
+            if (
+              positionResource.pageDataProperty ||
+              !!this.resource.publishedResource
+            ) {
+              // refresh as metadata and fallback may be available
+              await this.$cwa.refreshPositionsForComponent(this.iri)
+            } else {
               // the API will have deleted the position
               this.$cwa.$storage.deleteResource(position)
             }
-          } else if (!positionResource.pageDataProperty) {
+          } else if (
+            !positionResource.pageDataProperty &&
+            !this.resource.publishedResource
+          ) {
+            // delete position with API
             await this.$cwa.deleteResource(position)
           } else {
-            await this.$cwa.updateResource(position, {
-              component: null
-            })
+            await this.$cwa.refreshPositionsForComponent(this.iri)
           }
         },
         confirmButtonText: 'Delete'
@@ -90,5 +114,5 @@ export default Vue.extend({
 
 <style lang="sass">
 .collection-info-tab
-  font-size: 1.2rem
+  font-size: .75rem
 </style>

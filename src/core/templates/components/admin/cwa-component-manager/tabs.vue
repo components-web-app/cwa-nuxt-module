@@ -1,52 +1,88 @@
 <template>
-  <div class="cwa-manager-tabs">
-    <div class="row tabs-top">
-      <div class="column">
-        <ul class="row">
-          <li
-            v-for="(tab, index) of orderedTabs"
-            :key="loopKey('tab', index)"
-            :class="[
-              'column',
-              'is-narrow',
-              'cwa-manager-tab',
-              {
-                'is-selected': index === selectedTabIndex,
-                'has-error':
-                  tabInputErrors[tab.label] &&
-                  !!tabInputErrors[tab.label].errorCount
-              }
-            ]"
-          >
-            <a href="#" @click.prevent="showTab(index)">{{ tab.label }}</a>
-          </li>
-        </ul>
-      </div>
-      <div class="column is-narrow">
-        <cwa-action-buttons
-          :selected-position="selectedPosition"
-          :selected-component="iri || null"
-          @close="$emit('close')"
-        />
-      </div>
+  <div class="cwa-manager-tabs columns is-gapless">
+    <div v-if="showSideTabs" class="side-bar column is-narrow">
+      <a
+        href="#"
+        :class="[
+          'row',
+          {
+            'is-selected': iriIsComponent
+          }
+        ]"
+        @click.prevent="selectResource(sideTabComponent)"
+      >
+        <div class="column">Static</div>
+      </a>
+      <a
+        href="#"
+        :class="[
+          'row',
+          {
+            'is-selected': iriIsPosition
+          }
+        ]"
+        @click.prevent="selectResource(sideTabPosition)"
+      >
+        <div class="column">#Ref</div>
+      </a>
     </div>
-    <transition-expand>
-      <div v-show="showTabs && dynamicTabMounted" class="tab-content-container">
-        <div ref="tabContent" class="tab-content">
-          <component
-            :is="tabComponent"
-            v-if="tabComponent"
-            :key="loopKey(`${selectedTab.label}-tab-content`, selectedTabIndex)"
-            :iri="iri"
-            :context="fullContext"
-            :field-errors="tabInputErrors[selectedTab.label]"
-            @draggable="toggleDraggable"
-            @close="handleTabCloseEvent"
-            @hook:mounted="handleDynamicTabMounted"
+    <div class="main column">
+      <div class="columns tabs-top">
+        <div class="column">
+          <ul class="columns">
+            <li
+              v-for="tab of topTabs"
+              :key="loopKey('tab', tab._index)"
+              :class="[
+                'column',
+                'is-narrow',
+                'cwa-manager-tab',
+                {
+                  'is-selected': tab._index === selectedTabIndex,
+                  'has-error':
+                    tabInputErrors[tab.label] &&
+                    !!tabInputErrors[tab.label].errorCount
+                }
+              ]"
+            >
+              <a href="#" @click.prevent="showTab(tab._index)">{{
+                tab.label
+              }}</a>
+            </li>
+          </ul>
+        </div>
+        <div class="column is-narrow">
+          <cwa-action-buttons
+            :selected-position="selectedPosition"
+            :selected-component="selectedComponent"
+            @close="$emit('close')"
           />
         </div>
       </div>
-    </transition-expand>
+      <transition-expand>
+        <div
+          v-show="showTabs && dynamicTabMounted"
+          class="tab-content-container"
+        >
+          <div ref="tabContent" class="tab-content">
+            <component
+              :is="tabComponent"
+              v-if="tabComponent"
+              :key="
+                loopKey(`${selectedTab.label}-tab-content`, selectedTabIndex)
+              "
+              :iri="iri"
+              :context="fullContext"
+              :field-errors="tabInputErrors[selectedTab.label]"
+              @draggable="toggleDraggable"
+              @close="handleTabCloseEvent"
+              @show-tab="showTabListener"
+              @hook:mounted="handleDynamicTabMounted"
+            />
+          </div>
+        </div>
+      </transition-expand>
+    </div>
   </div>
 </template>
 
@@ -64,10 +100,12 @@ import {
   RemoveNotificationEvent
 } from '../../cwa-api-notifications/types'
 import TransitionExpand from '../../utils/transition-expand.vue'
+import PageResourceUtilsMixin from '../../../../mixins/PageResourceUtilsMixin'
 import CwaActionButtons from './cwa-action-buttons.vue'
 
 export default Vue.extend({
   components: { CwaActionButtons, TransitionExpand },
+  mixins: [PageResourceUtilsMixin],
   props: {
     tabs: {
       type: Array as PropType<ComponentManagerTab[]>,
@@ -90,6 +128,10 @@ export default Vue.extend({
     },
     showTabs: {
       type: Boolean,
+      required: true
+    },
+    selectedComponent: {
+      type: Object,
       required: true
     }
   },
@@ -116,13 +158,56 @@ export default Vue.extend({
       )
     },
     orderedTabs() {
-      return [...this.tabs].sort(
-        (itemA: ComponentManagerTab, itemB: ComponentManagerTab) => {
-          const priorityA = itemA.priority || 0
-          const priorityB = itemB.priority || 0
-          return priorityA - priorityB
-        }
-      )
+      const sortFn = (
+        itemA: ComponentManagerTab,
+        itemB: ComponentManagerTab
+      ) => {
+        const priorityA = itemA.priority || 0
+        const priorityB = itemB.priority || 0
+        return priorityA - priorityB
+      }
+      return [...this.tabs]
+        .sort(sortFn)
+        .map((item, index) => ({ ...item, _index: index }))
+    },
+    topTabs() {
+      return this.orderedTabs // .filter((tab) => !tab.sideBar)
+    },
+    showSideTabs() {
+      if (
+        this.isDynamicPage ||
+        !this.isPageTemplate ||
+        !this.positionResourceComponentIri
+      ) {
+        return
+      }
+      return this.iriIsPosition || this.iriIsComponent
+    },
+    sideTabPosition() {
+      if (!this.showSideTabs) {
+        return null
+      }
+      return this.selectedPosition
+    },
+    sideTabComponent() {
+      if (!this.showSideTabs) {
+        return null
+      }
+      if (this.iriIsPosition) {
+        return this.positionResourceComponentIri
+      }
+      return this.iri
+    },
+    iriIsPosition() {
+      return this.iri === this.selectedPosition
+    },
+    positionResourceComponentIri() {
+      return this.selectedPosition
+        ? this.$cwa.getResource(this.selectedPosition).component
+        : null
+    },
+    iriIsComponent() {
+      return this.positionResourceComponentIri === this.iri
     },
     loopKey() {
       return (label, index) => {
@@ -176,6 +261,13 @@ export default Vue.extend({
       NOTIFICATION_EVENTS.remove,
       this.removeNotificationListener
     )
+    // added listener for adding a new component from the component position using the dropdown
+    // position tab is 2nd for adding a new static component, so needed to reset - if knock-ons, the tab component
+    // can emit show-tab event locally instead
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.newComponentListener
+    )
   },
   beforeDestroy() {
     this.$cwa.$eventBus.$off(
@@ -186,8 +278,22 @@ export default Vue.extend({
       NOTIFICATION_EVENTS.remove,
       this.removeNotificationListener
     )
+    this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.newComponent,
+      this.newComponentListener
+    )
   },
   methods: {
+    showTabListener(newTabIndex: number) {
+      this.showTab(newTabIndex)
+    },
+    newComponentListener() {
+      this.showTab(0)
+    },
+    selectResource(iri) {
+      this.$cwa.$eventBus.$emit(COMPONENT_MANAGER_EVENTS.selectComponent, iri)
+      this.showTab(0)
+    },
     handleDynamicTabMounted() {
       setTimeout(() => {
         this.dynamicTabMounted = true
@@ -235,6 +341,21 @@ export default Vue.extend({
 
 <style lang="sass">
 .cwa-manager-tabs
+  .columns.tabs-top
+    margin-bottom: 0
+  .side-bar
+    > .columns
+      height: 50%
+      align-items: center
+      border-right: 3px solid $cwa-grid-item-border-color
+      transition: border-color .3s, color .3s
+      &:hover,
+      &.is-selected
+        border-color: $white
+        color: $white
+      > .column
+        display: flex
+        justify-content: center
   ul
     list-style: none
     margin: 0
@@ -250,7 +371,7 @@ export default Vue.extend({
         position: relative
       &.is-selected > a
         color: $white
-        background: $control-background-color
+        background: $cwa-control-background-color
       &.has-error > a::after
         content: ''
         display: block
@@ -266,9 +387,11 @@ export default Vue.extend({
     max-height: 20vh
     overflow: auto
   .tab-content
-    padding: 1.5rem 2rem .75rem
-    min-height: 60px
-    .row.tab-row
+    display: flex
+    align-items: center
+    padding: .25rem .75rem .25rem
+    min-height: 70px
+    .columns.tab-row
       min-height: 36px
       align-items: center
     .trash-link

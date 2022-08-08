@@ -8,7 +8,7 @@
       <div ref="cwaAdminBar" class="cwa-admin-bar">
         <div class="inner">
           <div class="left">
-            <template v-if="currentView === 'page'">
+            <template v-if="currentView === 'page' && !isCloning">
               <div class="icons">
                 <a href="#" @click.prevent="showPageEditModal">
                   <img
@@ -18,11 +18,9 @@
                 </a>
               </div>
               <div class="controls">
-                <cm-button
-                  id="cwa-cm-edit-button"
-                  @click="editMode = !editMode"
-                  >{{ editMode ? 'Done' : 'Edit Page' }}</cm-button
-                >
+                <cm-button id="cwa-cm-edit-button" @click="toggleEditMode">{{
+                  editMode ? 'Done' : 'Edit Page'
+                }}</cm-button>
               </div>
             </template>
           </div>
@@ -65,18 +63,26 @@
               </cwa-nuxt-link>
             </div>
             <div v-else class="center-highlight">
-              <div
-                v-if="!isComponentSelected"
-                :class="['header-prompt', { 'is-showing': showHeaderPrompt }]"
-              >
-                Now select a component...
-              </div>
-              <div v-else-if="components" class="selected-component-title">
-                <path-breadcrumbs
-                  :components="components"
-                  @click="handleBreadcrumbClick"
-                />
-              </div>
+              <template v-if="!isCloningWithDestination">
+                <div
+                  v-if="isCloning"
+                  :class="['header-prompt', { 'is-showing': true }]"
+                >
+                  Select where you would like to clone your component
+                </div>
+                <div
+                  v-else-if="!isComponentSelected"
+                  :class="['header-prompt', { 'is-showing': showHeaderPrompt }]"
+                >
+                  Now select a component...
+                </div>
+                <div v-else-if="components" class="selected-component-title">
+                  <path-selector
+                    :components="components"
+                    @click="handleBreadcrumbClick"
+                  />
+                </div>
+              </template>
             </div>
           </div>
           <div class="right">
@@ -84,7 +90,10 @@
               v-if="!editMode"
               :force-hide="isComponentSelected"
             />
-            <div v-else-if="isComponentSelected" class="row row-center">
+            <div
+              v-else-if="isComponentSelected && !isCloning"
+              class="columns is-centered"
+            >
               <div class="column is-narrow status-container">
                 <status-icon
                   :status="isNew ? 0 : 1"
@@ -120,16 +129,16 @@ import CwaAdminBarPageInfoModal from './cwa-admin-bar-page-info-modal.vue'
 import CmButton from './cwa-component-manager/input/cm-button.vue'
 import StatusIcon from './status-icon.vue'
 import PublishableIcon from './cwa-component-manager/publishable-icon.vue'
-import PathBreadcrumbs from './cwa-component-manager/path-breadcrumbs.vue'
+import PathSelector from './cwa-component-manager/path-selector.vue'
 import {
   COMPONENT_MANAGER_EVENTS,
   ADMIN_BAR_EVENTS,
-  ComponentManagerAddEvent
+  ComponentManagerResource
 } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
   components: {
-    PathBreadcrumbs,
+    PathSelector,
     PublishableIcon,
     StatusIcon,
     CmButton,
@@ -150,6 +159,12 @@ export default Vue.extend({
     }
   },
   computed: {
+    isCloning() {
+      return !!this.$cwa.$state.clone.component
+    },
+    isCloningWithDestination() {
+      return this.isCloning && !!this.$cwa.$state.clone.destination
+    },
     editMode: {
       set(value) {
         this.$cwa.setEditMode(value)
@@ -172,7 +187,7 @@ export default Vue.extend({
     isNew() {
       return this.componentIri && this.componentIri.endsWith('/new')
     },
-    selectedComponent(): ComponentManagerAddEvent | null {
+    selectedComponent(): ComponentManagerResource | null {
       return this.components?.[0] || null
     },
     componentData() {
@@ -240,6 +255,12 @@ export default Vue.extend({
     )
   },
   methods: {
+    toggleEditMode() {
+      this.editMode = !this.editMode
+      if (!this.editMode) {
+        this.$cwa.setLayoutEditing(false)
+      }
+    },
     handleBreadcrumbClick({ componentIndex }) {
       const selectedComponent = this.components[componentIndex]
       this.$cwa.$eventBus.$emit(
@@ -284,12 +305,13 @@ export default Vue.extend({
     left: 0
     width: 100%
   > .inner
-    padding: 2rem
+    padding: 1rem 1.5rem
     background: $cwa-navbar-background
     display: flex
     justify-content: space-between
     border-bottom: 2px solid #414040
     align-items: center
+    min-height: 79px
     > div
       display: flex
     .left
@@ -304,20 +326,21 @@ export default Vue.extend({
       top: 0
       left: 50%
       transform: translateX(-50%)
-      height: 100%
+      bottom: 2px
       .header-prompt
         transition: all .3s
         transform: translateY(-10px)
-        padding: 1rem 1.5rem
-        border-radius: 2rem
+        padding: .75rem 1rem
+        border-radius: 1.4rem
         opacity: 0
+        font-weight: $weight-semibold
         &.is-showing
-          background: $control-background-color
+          background: $cwa-color-primary
           color: $white
           transform: translateY(0)
           opacity: 1
-      //+mobile
-      //  display: none
+      +mobile
+        display: none
       .center-highlight
         display: flex
         width: 100%

@@ -6,12 +6,13 @@
       { 'has-error': !!fieldNotifications.html.length }
     ]"
   >
-    <component
-      :is="htmlComponent"
-      v-if="!cmValue('showEditor')"
-      v-bind="$props"
-      class="cwa-html-content"
-    ></component>
+    <div v-if="!cmValue('showEditor')" class="cwa-html-content">
+      <component
+        :is="htmlComponent"
+        v-bind="$props"
+        class="cwa-html-content content"
+      ></component>
+    </div>
     <quill-input
       v-else
       :iri="iri"
@@ -39,14 +40,15 @@ export default Vue.extend({
           UiClassNames: ['is-feature', 'has-cwa-color'],
           UiComponents: [{ label: 'Logo Layout', value: 'HtmlContentWithLogo' }]
         }
-      }
+      },
+      resourceName: 'HTML Content'
     }
   },
   computed: {
     componentManagerTabs(): ComponentManagerTab[] {
       return [
         {
-          label: 'HTML Content',
+          label: this.resourceName,
           component: () => import('../admin-dialog/HtmlContent.vue'),
           priority: 0,
           inputFieldsUsed: ['html']
@@ -92,7 +94,6 @@ export default Vue.extend({
       this.saveCmValue('showEditor', !this.cmValue('showEditor'))
     },
     convertAnchor(anchor) {
-      // console.log(anchor, anchor.attributes, anchor.innerHTML)
       const newLink = document.createElement('cwa-nuxt-link')
       newLink.setAttribute('to', anchor.getAttribute('href'))
       for (const attr of anchor.attributes) {
@@ -110,16 +111,6 @@ export default Vue.extend({
 <style lang="sass">
 .html-component
   position: relative
-  //&.has-error::after
-  //  content: ''
-  //  position: absolute
-  //  bottom: 100%
-  //  right: 100%
-  //  width: 16px
-  //  height: 16px
-  //  border-radius: 50%
-  //  background: $cwa-danger
-  //  transform: translate(8px, 8px)
   &.is-feature
     padding: 1rem .5rem
     font-size: 2.1rem

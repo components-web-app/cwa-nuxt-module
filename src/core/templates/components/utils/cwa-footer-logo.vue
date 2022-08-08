@@ -3,11 +3,11 @@
     <div class="top">
       <slot />
     </div>
-    <div class="footer">
+    <div class="cwa-footer">
       <div class="logo">
         <cwa-nuxt-link to="https://cwa.rocks" target="_blank" rel="noopener">
           <cwa-logo class="cwa-logo" />
-          <span class="sr-only">Components Web App</span>
+          <span class="is-sr-only">Components Web App</span>
         </cwa-nuxt-link>
       </div>
     </div>
@@ -29,9 +29,9 @@ export default {
   height: 100%
   > .top
     flex-grow: 1
-    padding-top: 5rem
-  .footer
-    margin-top: 4rem
+    padding-top: 2.5rem
+  .cwa-footer
+    margin-top: 2rem
     text-align: center
     .cwa-logo
       width: auto

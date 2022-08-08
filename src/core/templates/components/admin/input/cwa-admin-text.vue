@@ -5,12 +5,13 @@
     :label="label"
     :has-error="hasError"
   >
-    <div>
+    <div class="control">
       <textarea
         v-if="isTextarea"
         :id="id"
         v-model="currentValue"
         :required="required"
+        class="textarea"
         @keypress="$emit('keypress')"
         @keydown="$emit('keydown')"
         @keyup="$emit('keyup')"
@@ -21,6 +22,7 @@
         v-model="currentValue"
         :type="type"
         :required="required"
+        class="input"
         @keypress="$emit('keypress')"
         @keydown="$emit('keydown')"
         @keyup="$emit('keyup')"

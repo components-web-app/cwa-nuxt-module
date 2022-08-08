@@ -4,8 +4,8 @@
     v-if="resource"
     :class="[
       {
-        'is-editing': $cwa.isEditMode,
-        'is-empty': !sortedComponentPositions.length
+        'is-editing': $cwa.isEditMode
+        // 'is-empty': !sortedComponentPositions.length
       },
       ...classes
     ]"
@@ -20,20 +20,21 @@
         </div>
       </component-load-error>
     </client-only>
+
     <!-- else we loop through components -->
     <draggable
       v-model="sortedComponentPositions"
       handle=".is-draggable"
       class="positions-container"
-      :group="`collection-${resource['@id']}`"
+      :group="`collection-${iri}`"
       @change="draggableChanged"
     >
       <component-position
-        v-for="iri in sortedComponentPositions"
-        :key="iri"
+        v-for="positionIri in sortedComponentPositions"
+        :key="positionIri"
         :class="[isDraggable ? 'is-draggable' : null]"
         :show-sort="showOrderValues"
-        :iri="iri"
+        :iri="positionIri"
       />
       <component
         :is="newComponentName"
@@ -63,6 +64,7 @@ import {
 } from '../../../events'
 import ComponentPosition from '@cwa/nuxt-module/core/templates/components/core/component-position.vue'
 import components from '~/.nuxt/cwa/components'
+import PageResourceUtilsMixin from '@cwa/nuxt-module/core/mixins/PageResourceUtilsMixin'
 
 export default Vue.extend({
   components: {
@@ -72,12 +74,19 @@ export default Vue.extend({
     CwaAddButton: () => import('../utils/cwa-add-button.vue'),
     ...components
   },
-  mixins: [ApiRequestMixin, ComponentManagerMixin, NewComponentMixin],
+  mixins: [
+    ApiRequestMixin,
+    ComponentManagerMixin,
+    NewComponentMixin,
+    PageResourceUtilsMixin
+  ],
   props: {
+    // could be layout page or component
     location: {
       type: String,
       required: true
     },
+    // could be layout iri, page iri or component iri
     locationResourceId: {
       type: String,
       required: true
@@ -102,10 +111,14 @@ export default Vue.extend({
       reloading: false,
       previousSortedComponentPositions: null,
       isDraggable: false,
-      showOrderValues: false
+      showOrderValues: false,
+      componentManagerDisabled: true
     }
   },
   computed: {
+    iri() {
+      return this.resource?.['@id']
+    },
     componentManager(): ComponentManagerComponent {
       return {
         name: 'Collection',
@@ -135,14 +148,15 @@ export default Vue.extend({
       }
     },
     resource() {
-      return this.getCollectionResourceByLocation(
-        this.location,
-        this.locationResourceId
-      )
+      return this.$cwa.$storage.getCollectionByPlacement({
+        iri: this.locationResourceId,
+        name: this.location
+      })
     },
     classes() {
       return [
         'component-collection',
+        `is-cwa-collection-${this.locationResourceType}`,
         this.resource
           ? [
               this.resource.location,
@@ -156,12 +170,9 @@ export default Vue.extend({
     },
     sortedComponentPositions: {
       get() {
-        if (!this.$cwa.resources.ComponentPosition) {
-          return []
-        }
         const positions = []
         for (const iri of this.resource.componentPositions) {
-          const position = this.$cwa.resources.ComponentPosition.byId[iri]
+          const position = this.$cwa.resources?.ComponentPosition?.byId[iri]
           position && positions.push(position)
         }
         return positions
@@ -197,11 +208,19 @@ export default Vue.extend({
     }
   },
   async mounted() {
+    if (!this.isDynamicPage) {
+      this.componentManagerDisabled = false
+      this.initCMMixin()
+    }
     if (!this.resource && this.$cwa.isAdmin) {
       await this.addComponentCollection()
     }
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.newComponent,
+      this.setNewComponentEvent
+    )
+    this.$cwa.$eventBus.$on(
+      COMPONENT_MANAGER_EVENTS.newComponentCleared,
       this.setNewComponentEvent
     )
     this.$cwa.$eventBus.$on(
@@ -223,6 +242,10 @@ export default Vue.extend({
       this.setNewComponentEvent
     )
     this.$cwa.$eventBus.$off(
+      COMPONENT_MANAGER_EVENTS.newComponentCleared,
+      this.setNewComponentEvent
+    )
+    this.$cwa.$eventBus.$off(
       COMPONENT_MANAGER_EVENTS.draggable,
       this.handleDraggableEvent
     )
@@ -237,7 +260,7 @@ export default Vue.extend({
   },
   methods: {
     setNewComponentEvent(event: NewComponentEvent) {
-      if (event.collection !== this.resource['@id']) {
+      if (!event || event.collection !== this.resource['@id']) {
         // if we had been adding one here, it was added and another is being added elsewhere we clear it...
         this.newComponentEvent = null
         return
@@ -251,32 +274,14 @@ export default Vue.extend({
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
       if (
-        !event.context?.collection.iri ||
-        event.context?.collection.iri !== this.resource['@id']
+        event.context?.collection &&
+        (!event.context?.collection.iri ||
+          event.context?.collection.iri !== this.resource['@id'])
       ) {
         this.showOrderValues = false
       } else {
         this.showOrderValues = !!event.newTab?.context?.showOrderValues
       }
-    },
-
-    getCollectionResourceByLocation(location, locationResourceId) {
-      const ComponentCollection = this.$cwa.resources?.ComponentCollection
-      if (!ComponentCollection) {
-        return
-      }
-      for (const resource of Object.values(ComponentCollection.byId) as {
-        location?: string
-      }[]) {
-        if (
-          resource &&
-          resource.location === location &&
-          resource[this.locationResourceType].includes(locationResourceId)
-        ) {
-          return resource
-        }
-      }
-      return null
     },
     async addComponentCollection() {
       this.startApiRequest()
@@ -384,7 +389,7 @@ export default Vue.extend({
     justify-content: center
     padding: 2rem
   > .cwa-manager-highlight
-    &::before
+    &:not(.is-wide)::before
       animation-name: cwa-manager-primary-highlight-before-animation
     &::after
       animation-name: cwa-manager-primary-highlight-after-animation
@@ -394,17 +399,17 @@ export default Vue.extend({
     top: 0
     right: 0
     font:
-      size: 1.2rem
-      weight: $font-weight-semi-bold
+      size: .9rem
+      weight: $weight-semibold
     color: $white
     background: rgba($cwa-background-dark, .8)
-    border-radius: 3rem
-    min-width: 3rem
-    height: 3rem
+    border-radius: 2rem
+    min-width: 2rem
+    height: 2rem
     display: flex
     align-items: center
     justify-content: center
-    line-height: 3rem
-    padding: 0 .5rem .2rem
+    line-height: 2rem
+    padding: 0 .25rem
     overflow: hidden
 </style>

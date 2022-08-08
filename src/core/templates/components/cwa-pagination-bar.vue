@@ -1,5 +1,5 @@
 <template>
-  <div v-if="total > 1" class="row pagination-bar is-mobile">
+  <div v-if="total > 1" class="columns pagination-bar is-mobile">
     <div class="column page-numbers">
       <template v-if="showFirstPageLink">
         <a href="#" @click.prevent="changePage(1)">1</a> <span>..</span>
@@ -18,7 +18,7 @@
       </template>
     </div>
     <div class="column is-narrow">
-      <div class="row is-mobile">
+      <div class="columns is-mobile">
         <div class="column">
           <a
             :disabled="isFirst"
@@ -138,7 +138,7 @@ export default {
         this.changePage(1)
       }
     },
-    changePage(newPage) {
+    async changePage(newPage) {
       if (newPage < 1 || newPage > this.total) {
         return
       }
@@ -146,12 +146,14 @@ export default {
       const query = Object.assign({}, this.$route.query, {
         [this.pageParameter]: newPage
       })
-      this.$router.replace({ query }).catch((failure) => {
+      try {
+        await this.$router.replace({ query })
+      } catch (failure) {
         if (isNavigationFailure(failure, NavigationFailureType.duplicated)) {
           return
         }
         throw failure
-      })
+      }
     }
   }
 }

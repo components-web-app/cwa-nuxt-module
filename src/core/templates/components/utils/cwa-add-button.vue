@@ -79,7 +79,7 @@ export default {
 
 a.cwa-add-button
   position: relative
-  padding: 1.4rem
+  padding: 1rem
   font-size: 0
   line-height: 0
   white-space: nowrap
@@ -100,6 +100,7 @@ a.cwa-add-button
     +radial-border
   &.is-pulsing
     background: $cwa-color-primary
+    color: $white
     &:before,
     &:after
       opacity: 1

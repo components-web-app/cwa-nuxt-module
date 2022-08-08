@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [14.x]
+        node: [16.x]
       fail-fast: true
     steps:
       - name: Checkout
@@ -39,12 +39,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [14.x]
+        node: [16.x]
       fail-fast: true
-    container: cypress/included:4.9.0
+    container: cypress/included:10.3.0
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+      - name: Install SASS dependencies
+        run: |
+          apt-get update
+          apt-get install -y g++ build-essential
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:

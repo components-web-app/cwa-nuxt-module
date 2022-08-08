@@ -1,6 +1,6 @@
 <template>
   <div class="components-collection">
-    <div class="row filters">
+    <div class="columns filters">
       <div class="column">
         <collection-search-input
           :query-fields="['title']"
@@ -44,12 +44,14 @@
         />
       </div>
     </div>
-    <div v-if="$cwa.isAdmin">
-      <button @click="showNewResourceModal = true">Add</button>
-    </div>
+    <client-only>
+      <div v-if="$cwa.isAdmin">
+        <button @click="showNewResourceModal = true">Add</button>
+      </div>
+    </client-only>
     <div class="collection-items">
       <div v-if="fetching" class="loading-overlay">&nbsp;</div>
-      <div class="row row-wrap">
+      <div class="columns is-multiline">
         <div v-if="!items.length">
           {{
             resource._metadata._isNew
@@ -117,7 +119,8 @@ export default Vue.extend({
       resourceIri,
       defaultData: {
         resourceIri: '/page_data/blog_article_datas'
-      }
+      },
+      resourceName: 'Components Collection'
     }
   },
   computed: {

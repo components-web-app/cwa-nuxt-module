@@ -1,6 +1,6 @@
 <template>
   <div class="image-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <div class="column is-narrow">
         <span v-if="isNew">
           Please add as a draft in order to upload a file
@@ -34,6 +34,6 @@ export default Vue.extend({
 <style lang="sass">
 .image-tab
   .help
-    font-size: 1.2rem
+    font-size: .75rem
     opacity: .6
 </style>

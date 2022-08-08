@@ -1,6 +1,6 @@
 <template>
   <div class="sort-order-tab">
-    <div class="row tab-row">
+    <div class="columns tab-row">
       <div class="column is-narrow">
         <cwa-admin-toggle
           :id="`component-sort-${iri}`"
@@ -64,5 +64,7 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-// .sort-order-tab
+.sort-order-tab
+  input[type=number]
+    max-width: 180px
 </style>

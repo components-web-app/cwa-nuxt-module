@@ -83,9 +83,7 @@
                       >
                     </li>
                     <li>
-                      <a href="#" @click.prevent="$auth.logout('local')"
-                        >Sign out</a
-                      >
+                      <a href="#" @click.prevent="logout">Sign out</a>
                     </li>
                   </ul>
                 </li>
@@ -200,6 +198,10 @@ export default {
       return version.length > 9
         ? `${version.substr(0, 3)}..${version.substr(-4)}`
         : version
+    },
+    async logout() {
+      await this.$auth.logout('local')
+      this.$cwa.clearDraftResources()
     }
   }
 }
@@ -214,8 +216,8 @@ export default {
     line-height: 0
   > .menu
     position: absolute
-    top: -1.5rem
-    right: -1.5rem
+    top: -1rem
+    right: -1rem
     width: 80vw
     max-width: 600px
     background: $cwa-navbar-background
@@ -237,16 +239,17 @@ export default {
     .menu-scroll
       max-height: 90vh
       overflow: auto
-      padding: 2.5rem 4rem 4rem
+      padding: 1.5rem 2rem 2rem
       +tablet
-        padding: 2.5rem 6rem 6rem
+        padding: 1.5rem 3rem 3rem
 
     .menu-header
       text-align: center
       color: $cwa-color-text-light
       opacity: .6
-      font-size: 1.5rem
-      margin-bottom: 3rem
+      font-size: 1rem
+      margin-bottom: 1.5rem
+      font-weight: $weight-semibold
       .cwa-logo
         width: auto
         height: 25px
@@ -265,6 +268,7 @@ export default {
         list-style: none
         margin: 0
         color: $white
+        font-weight: $weight-semibold
         a
           pointer-events: all
           color: inherit
@@ -277,7 +281,7 @@ export default {
         > li
           margin: 0
           > ul
-            margin-bottom: 2rem
+            margin-bottom: 1rem
             > li
               color: $cwa-color-text-light
           &:last-child > ul
@@ -285,20 +289,22 @@ export default {
 
         &.menu-links-right
           padding-right: 30px
-          font-size: 1.45rem
+          font-size: .95rem
           +mobile
-            margin-top: 3rem
+            margin-top: 1.5rem
         &.menu-links-left
-          font-size: 1.7rem
+          font-size: 1.2rem
           li
             > a
               display: flex
               align-content: center
+              > span
+                display: block
               > .icon
-                margin-right: 2rem
-                min-width: 3.2rem
+                margin-right: 1rem
+                min-width: 1.5rem
             &:not(:last-child)
-              margin-bottom: 2rem
+              margin-bottom: 1rem
   .menu-enter,
   .menu-leave-to
     transform: scale(.97)

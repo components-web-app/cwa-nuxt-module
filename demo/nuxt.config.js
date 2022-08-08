@@ -33,12 +33,9 @@ export default {
   css: ['~/assets/sass/main.sass'],
   buildModules: ['@nuxt/typescript-build'],
   modules: [coreModuleDist],
-  plugins: [
-    { src: '~/plugins/quill', mode: 'client' },
-    { src: '~/plugins/cypress', mode: 'client' }
-  ],
+  plugins: [{ src: '~/plugins/cypress', mode: 'client' }],
   router: {
-    middleware: ['auth', 'routeLoader']
+    middleware: ['auth', 'cwa']
   },
   cwa: {
     allowUnauthorizedTls: true,

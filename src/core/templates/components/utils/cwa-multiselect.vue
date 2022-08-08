@@ -142,7 +142,7 @@ export default {
   .no-options-placeholder
     color: $cwa-color-text-light
     opacity: .6
-    font-weight: $font-weight-light
+    font-weight: $weight-light
   .view
     display: flex
     align-items: center
@@ -165,7 +165,7 @@ export default {
     align-items: center
     background: $cwa-background-dark
     padding: 0 .5rem 0 .75rem
-    height: $control-height
+    height: $cwa-control-height
     line-height: 1em
     border-radius: .4rem
     cursor: pointer

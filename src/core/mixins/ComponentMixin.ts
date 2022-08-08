@@ -6,14 +6,21 @@ import ComponentManagerMixin, {
 } from './ComponentManagerMixin'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
+import PageResourceUtilsMixin from './PageResourceUtilsMixin'
 
 interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
   elementsAdded: { [key: string]: HTMLElement }
+  componentManagerDisabled: Boolean
 }
 
 export default Vue.extend({
-  mixins: [ResourceMixin, ApiRequestMixin, ComponentManagerMixin],
+  mixins: [
+    ResourceMixin,
+    ApiRequestMixin,
+    ComponentManagerMixin,
+    PageResourceUtilsMixin
+  ],
   props: {
     showSort: {
       type: Boolean,
@@ -24,6 +31,11 @@ export default Vue.extend({
       type: Number,
       default: null,
       required: false
+    },
+    isDynamic: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   data(): DataInterface {
@@ -34,7 +46,8 @@ export default Vue.extend({
           UiClassNames: []
         }
       },
-      elementsAdded: {}
+      elementsAdded: {},
+      componentManagerDisabled: true
     }
   },
   computed: {
@@ -43,7 +56,8 @@ export default Vue.extend({
     },
     componentManager(): ComponentManagerComponent {
       return Object.assign({}, this.baseComponentManager, {
-        name: this?.resource?.['@type'] || 'Unknown Component',
+        name:
+          this.resourceName || this?.resource?.['@type'] || 'Unknown Component',
         context: Object.assign(
           {
             statusTab: {
@@ -58,27 +72,29 @@ export default Vue.extend({
       return []
     },
     defaultManagerTabs(): Array<ComponentManagerTab> {
-      return [
-        {
-          label: 'Order',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/sort-order.vue'
-            ),
-          priority: 100,
-          context: {
-            showOrderValues: true
-          }
-        },
-        {
-          label: 'Info',
-          component: () =>
-            import(
-              '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/info.vue'
-            ),
-          priority: 200
-        }
-      ]
+      return this.resource._metadata._isNew
+        ? []
+        : [
+            {
+              label: 'Order',
+              component: () =>
+                import(
+                  '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/sort-order.vue'
+                ),
+              priority: 100,
+              context: {
+                showOrderValues: true
+              }
+            },
+            {
+              label: 'Info',
+              component: () =>
+                import(
+                  '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component/info.vue'
+                ),
+              priority: 200
+            }
+          ]
     },
     metadata() {
       return this.resource?._metadata || {}
@@ -110,6 +126,20 @@ export default Vue.extend({
           this.elementsAdded.sortValue
         )
         this.$delete(this.elementsAdded, 'sortValue')
+      }
+    },
+    isDynamic() {
+      this.checkInitCmMixin()
+    }
+  },
+  mounted() {
+    this.checkInitCmMixin()
+  },
+  methods: {
+    checkInitCmMixin() {
+      if (this.isDynamic || !this.isDynamicPage) {
+        this.componentManagerDisabled = false
+        this.initCMMixin()
       }
     }
   }
