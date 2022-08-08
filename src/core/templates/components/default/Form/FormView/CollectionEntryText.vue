@@ -28,7 +28,9 @@
         />
       </div>
       <div class="column is-narrow">
-        <button type="button" class="button" @click="deleteEntry">Delete</button>
+        <button type="button" class="button" @click="deleteEntry">
+          Delete
+        </button>
       </div>
     </div>
   </wrapper>
