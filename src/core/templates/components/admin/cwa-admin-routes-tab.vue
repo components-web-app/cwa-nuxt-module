@@ -331,5 +331,5 @@ export default Vue.extend({
       font-weight: $weight-semibold
       font-size: $size-5
       opacity: .6
-      margin: 1.5rem 0 .5rem
+      margin: 0 0 1rem
 </style>
