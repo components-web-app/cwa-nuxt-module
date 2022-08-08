@@ -11,7 +11,11 @@
       v-bind="dialogInnerData"
       @submit="handleConfirm"
     />
-    <div v-if="dialogEvent.html" v-html="dialogEvent.html"></div>
+    <div
+      v-if="dialogEvent.html"
+      class="content"
+      v-html="dialogEvent.html"
+    ></div>
     <div class="controls-bar">
       <div class="columns">
         <div class="column">
@@ -114,19 +118,19 @@ export default Vue.extend({
 .cwa-confirm-dialog
   .controls-bar
     border-top: 1px solid $cwa-grid-item-border-color
-    padding: 1.5rem 1.5rem 0
-    margin-left: -1.5rem
-    margin-right: -1.5rem
-  &.cwa-modal .modal-content
+    padding: .8rem .8rem 0
+    margin-left: -.8rem
+    margin-right: -.8rem
+  &.cwa-modal .cwa-modal-content
     max-width: 600px
     box-shadow: 0 0 35px 8px rgba($cwa-danger, .6)
-    .modal-card
-      padding-top: 3rem
+    .cwa-modal-card
+      padding-top: 1.5rem
       .close-bar
         display: none
-      .modal-card-inner
+      .cwa-modal-card-inner
         max-width: 100%
-        margin-bottom: 3rem
+        margin-bottom: 1.5rem
         b,
         strong,
         .warning

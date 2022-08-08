@@ -32,12 +32,12 @@
       </div>
       <div class="columns buttons-row">
         <div class="column">
-          <button @click="$emit('submit')">
+          <button class="button is-cwa-primary" @click="$emit('submit')">
             {{ isNew ? 'Create' : 'Save' }}
           </button>
         </div>
         <div v-if="!isNew" class="column is-narrow">
-          <button class="is-dark is-delete" @click="$emit('delete')">
+          <button class="button is-dark is-delete" @click="$emit('delete')">
             Delete
           </button>
         </div>
@@ -100,14 +100,15 @@ export default Vue.extend({
 .layout-details-page
   .status-bar
     position: absolute
-    top: 2rem
-    left: 2rem
+    top: 1rem
+    left: 1rem
     display: flex
   .title-tabs
     display: flex
+    margin-bottom: calc($gap / 2)
     a
       color: $white
-      font-size: $size-2
+      font-size: $size-3
       font-weight: $weight-light
       opacity: .6
       &:not(:last-child)
@@ -126,10 +127,10 @@ export default Vue.extend({
       margin-top: 1rem
       text-align: right
       color: $cwa-color-text-light
-      font-size: 1.3rem
+      font-size: .9rem
       justify-self: end
   .buttons-row
-    margin-top: 2.5rem
+    margin-top: .5rem
     button.is-delete
       &:hover,
       &:focus

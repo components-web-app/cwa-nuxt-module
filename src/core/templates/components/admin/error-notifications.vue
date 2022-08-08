@@ -136,7 +136,7 @@ export default {
 .cwa-error-notifications
   position: relative
   .cwa-icon
-    margin: 0
+    margin: .35rem .5rem
     width: .95em
     height: .95em
     .total
@@ -190,17 +190,17 @@ export default {
       min-width: 250px
       max-width: 350px
       > li
-        padding: 1rem
+        padding: .8rem
         background-color: #E6E6E6
         margin: 0
         p
           margin: 0
           &.error-title
             color: $cwa-color-primary
-            font-size: 1.5rem
+            font-size: 1rem
             font-weight: $weight-semibold
           &.error-description
-            font-size: 1.3rem
+            font-size: .8rem
             color: $cwa-navbar-background
         &:nth-child(2n)
           background-color: #F0F0F0

@@ -2,9 +2,11 @@
   <cwa-modal class="layout-details-page" @close="$emit('close')">
     <div class="status-bar">
       <status-icon
+        :always-show-status="true"
+        :show-status-text="false"
         :status="isSaved && routeIsSaved && !addingRedirect ? 1 : 0"
+        :category="notificationCategories"
       />
-      <error-notifications :listen-categories="notificationCategories" />
     </div>
     <div class="title-tabs">
       <a
@@ -45,12 +47,12 @@
       </div>
       <div class="columns buttons-row">
         <div class="column">
-          <button @click="$emit('submit')">
+          <button class="button is-cwa-primary" @click="$emit('submit')">
             {{ isNew ? 'Create' : 'Save' }}
           </button>
         </div>
         <div v-if="!isNew" class="column is-narrow">
-          <button class="is-dark is-delete" @click="$emit('delete')">
+          <button class="button is-dark is-delete" @click="$emit('delete')">
             Delete
           </button>
         </div>
@@ -103,3 +105,8 @@ export default Vue.extend({
   }
 })
 </script>
+
+<style lang="sass">
+.status-bar
+  padding: .25rem
+</style>
