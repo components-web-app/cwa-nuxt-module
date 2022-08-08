@@ -15,7 +15,7 @@
               <div>No component selected</div>
             </div>
             <template v-else>
-              <div class="top columns">
+              <div class="top columns is-gapless">
                 <div class="column">
                   <clone v-if="cloneComponent" />
                   <tabs
@@ -740,11 +740,9 @@ export default Vue.extend({
     &:hover,
     .is-active
       color: $white
-  .button
+  .button:not(.is-light)
     +cwa-control
     margin-bottom: 0
     &:hover
       color: $white
-  .top.columns
-    padding: 1rem
 </style>
