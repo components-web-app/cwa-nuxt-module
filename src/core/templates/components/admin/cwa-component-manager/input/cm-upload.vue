@@ -223,6 +223,8 @@ export default Vue.extend({
       height: 100%
       width: 100%
       border-radius: .4rem
+      left: 0
+      z-index: 2
     > span
       display: block
 </style>
