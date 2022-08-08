@@ -107,8 +107,10 @@ export default Vue.extend({
     top: 1rem
     left: 1rem
     display: flex
+    z-index: 100
   .title-tabs
     display: flex
+    margin-bottom: 1rem
     a
       color: $white
       font-size: $size-3

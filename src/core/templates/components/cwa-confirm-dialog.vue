@@ -130,7 +130,7 @@ export default Vue.extend({
         display: none
       .cwa-modal-card-inner
         max-width: 100%
-        margin-bottom: 1.5rem
+        padding-bottom: 1.5rem
         b,
         strong,
         .warning

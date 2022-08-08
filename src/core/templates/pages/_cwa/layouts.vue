@@ -39,7 +39,7 @@ export default {
 <style lang="sass">
 .cwa-layouts-page
   .layout-grid-item
-    padding-right: 7rem
+    padding-right: 5rem
     &:after
       content: ''
       position: absolute

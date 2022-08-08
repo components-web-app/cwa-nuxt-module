@@ -42,13 +42,13 @@ export default {
 <style lang="sass">
 .cwa-users-page
   .user-grid-item
-    padding-right: 7rem
+    padding-right: 5rem
     &:after
       content: ''
       position: absolute
       top: 0
       right: 0
-      width: 7rem
+      width: 5rem
       height: 100%
       background: url("../../../assets/images/icon-users.svg") 0 50% no-repeat
       opacity: .6

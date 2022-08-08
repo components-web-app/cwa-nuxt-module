@@ -126,9 +126,8 @@ $modal-breakpoint: $tablet
       .cwa-modal-card-inner
         width: 100%
         max-width: 600px
-        margin-bottom: 2.5rem
+        padding-bottom: 2.5rem
         h2
           font-size: $size-3
           color: $white
-          margin-bottom: .5rem
 </style>
