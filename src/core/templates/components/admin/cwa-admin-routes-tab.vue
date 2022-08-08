@@ -1,7 +1,7 @@
 <template>
   <div class="columns fields-container admin-routes-tab">
     <transition name="fade">
-      <div v-if="isLoading || loadingRedirects" class="loader-overlay">
+      <div v-if="isLoading || loadingRedirects" class="cwa-loader-overlay">
         <cwa-loader />
       </div>
     </transition>

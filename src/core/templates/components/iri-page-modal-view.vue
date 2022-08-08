@@ -56,7 +56,7 @@
         </div>
       </div>
       <transition name="fade">
-        <div v-if="showLoader" class="loader-overlay">
+        <div v-if="showLoader" class="cwa-loader-overlay">
           <cwa-loader />
         </div>
       </transition>

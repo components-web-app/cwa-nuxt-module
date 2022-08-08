@@ -1,6 +1,6 @@
 <template>
   <cwa-modal class="cwa-confirm-dialog" :hide-close="true">
-    <div v-if="isLoading" class="loader-overlay">
+    <div v-if="isLoading" class="cwa-loader-overlay">
       <cwa-loader />
     </div>
     <h2>{{ dialogEvent.title || 'Confirm' }}</h2>
@@ -15,13 +15,17 @@
     <div class="controls-bar">
       <div class="columns">
         <div class="column">
-          <button class="is-dark is-delete" @click="cancel">
+          <button class="button is-dark is-delete" @click="cancel">
             {{ dialogEvent.cancelButtonText || 'Cancel' }}
           </button>
         </div>
-        <div class="is-narrow">
+        <div class="column is-narrow">
           <button
-            :class="{ 'is-loading': runningConfirmFn }"
+            :class="{
+              button: true,
+              'is-cwa-primary': true,
+              'is-loading': runningConfirmFn
+            }"
             @click="handleConfirm"
           >
             {{ dialogEvent.confirmButtonText || 'Confirm' }}
@@ -30,7 +34,7 @@
       </div>
     </div>
     <transition name="fade">
-      <div v-if="runningConfirmFn" class="loader-overlay">
+      <div v-if="runningConfirmFn" class="cwa-loader-overlay">
         <cwa-loader />
       </div>
     </transition>
@@ -110,9 +114,9 @@ export default Vue.extend({
 .cwa-confirm-dialog
   .controls-bar
     border-top: 1px solid $cwa-grid-item-border-color
-    padding: 3rem 3rem 0
-    margin-left: -3rem
-    margin-right: -3rem
+    padding: 1.5rem 1.5rem 0
+    margin-left: -1.5rem
+    margin-right: -1.5rem
   &.cwa-modal .modal-content
     max-width: 600px
     box-shadow: 0 0 35px 8px rgba($cwa-danger, .6)

@@ -45,12 +45,8 @@ $family-secondary: $cwa-family-secondary
 
 @import "~bulma/sass/utilities/derived-variables"
 
-//$addColors: (
-//"twitter":($twitter, $twitter-invert),
-//"linkedin": ($linkedin, $linkedin-invert),
-//"github": ($github, $github-invert)
-//);
-//$colors: map-merge($colors, $addColors);
+$addColors: ( "cwa-primary": ($cwa-danger, findColorInvert($cwa-danger)) )
+$colors: map-merge($colors, $addColors)
 
 @import "~bulma/sass/utilities/mixins"
 @import "~bulma/sass/utilities/controls"
