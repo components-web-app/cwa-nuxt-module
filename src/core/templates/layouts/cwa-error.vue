@@ -24,8 +24,8 @@
         </div>
       </div>
       <div v-if="!$cwa.isAdmin" class="bottom">
-        <span class="unexpected-error-footer">Unexpected error?</span> As a visitor, please contact the
-        website administrator. If you are the owner,
+        <span class="unexpected-error-footer">Unexpected error?</span> As a
+        visitor, please contact the website administrator. If you are the owner,
         <cwa-nuxt-link to="/login"> click here to login </cwa-nuxt-link>.
       </div>
     </div>
