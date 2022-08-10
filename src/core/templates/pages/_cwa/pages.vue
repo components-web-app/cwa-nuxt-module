@@ -21,11 +21,14 @@
             </p>
           </nuxt-link>
           <nuxt-link
-            :to="{ name: '_cwa_page_iri', params: { iri: page['@id'] } }"
+            :to="{
+              name: '_cwa_page_iri',
+              params: { iri: page['@id'], cwa_force: true }
+            }"
             class="builder-link"
           >
             <img src="../../../assets/images/view.svg" />
-            <span>View</span>
+            <span>View {{ page.isTemplate ? 'Template' : 'Page' }}</span>
           </nuxt-link>
         </div>
       </li>
