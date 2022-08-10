@@ -17,7 +17,11 @@
                 overriding it.
               </p>
               <div>
-                <button type="button" @click="selectStaticComponent">
+                <button
+                  type="button"
+                  class="button"
+                  @click="selectStaticComponent"
+                >
                   Select component
                 </button>
               </div>
@@ -36,10 +40,21 @@
         </div>
         <!-- IF A TEMPLATE PAGE -->
         <div v-else>
-          <div v-if="staticComponentIri">
-            <button type="button" @click="selectStaticComponent">
-              Select component
-            </button>
+          <div v-if="staticComponentIri" class="columns is-vcentered">
+            <div class="column is-narrow">
+              <button
+                type="button"
+                class="button"
+                @click="selectStaticComponent"
+              >
+                Select component
+              </button>
+            </div>
+            <div class="column is-narrow">
+              <span class="fallback">
+                *A component already exists in this position
+              </span>
+            </div>
           </div>
           <template v-else>
             <cwa-admin-select
@@ -88,7 +103,9 @@ export default Vue.extend({
       return Object.keys(this.availableComponents)
     },
     staticComponentIri() {
-      return this.resource._metadata.static_component
+      return this.$cwa.getPublishableIri(
+        this.resource._metadata.static_component
+      )
     },
     dynamicComponentIri() {
       return this.pageResource[this.resource.pageDataProperty]
@@ -122,5 +139,7 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-// .static-component-tab
+.static-component-tab
+ .fallback
+   font-size: .8em
 </style>

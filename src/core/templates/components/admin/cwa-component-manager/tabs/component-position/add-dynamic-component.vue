@@ -1,16 +1,22 @@
 <template>
   <div class="add-dynamic-component-tab">
-    <div class="columns is-centered">
+    <div class="columns is-vcentered">
       <template v-if="resource.pageDataProperty">
         <div class="column is-narrow cm-button">
           <button
             v-if="pageDataPropIri"
             type="button"
+            class="button"
             @click="selectDynamicComponent"
           >
             Select component
           </button>
-          <button v-else type="button" @click.stop="addDynamicComponent">
+          <button
+            v-else
+            type="button"
+            class="button"
+            @click.stop="addDynamicComponent"
+          >
             Add {{ pageDataPropComponent }}
           </button>
         </div>
@@ -108,8 +114,6 @@ export default Vue.extend({
 
 <style lang="sass">
 .add-dynamic-component-tab
-  button
-    margin: 0
   .fallback
     font-size: .8em
 </style>

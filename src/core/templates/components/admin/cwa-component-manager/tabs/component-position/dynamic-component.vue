@@ -37,7 +37,7 @@
         <div class="column is-narrow cm-button">
           <button
             type="button"
-            class="cm-button-button"
+            class="button cm-button-button"
             @click="selectDynamicComponent"
           >
             Select component

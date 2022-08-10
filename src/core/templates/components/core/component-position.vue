@@ -106,7 +106,7 @@ export default Vue.extend({
 
       const tabs: Array<ComponentManagerTab> = [
         {
-          label: 'Static',
+          label: 'Add Component',
           component: () =>
             import(
               '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/tabs/component-position/static-component.vue'

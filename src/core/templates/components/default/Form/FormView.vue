@@ -7,7 +7,7 @@
     >
       <template v-if="formViewComponent === 'div'">
         <div class="cwa-form-view-not-found">
-          <p class="has-color-primary">Form View Block Not Found</p>
+          <p class="has-text-primary">Form View Block Not Found</p>
           <p>Searched:</p>
           <pre>{{ blockPrefixComponents }}</pre>
           <p>Excluded:</p>
