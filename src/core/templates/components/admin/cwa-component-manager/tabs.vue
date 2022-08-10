@@ -32,7 +32,7 @@
       <div class="main-manager-section">
         <div class="columns tabs-top">
           <div class="column">
-            <ul class="columns">
+            <ul class="columns tabs-list">
               <li
                 v-for="tab of topTabs"
                 :key="loopKey('tab', tab._index)"
@@ -344,11 +344,13 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-.cwa-manager-tabs
+.cwa-manager-tabs.columns.is-gapless
+  margin: 0
   .main-manager-section
     padding: calc($gap/2)
   .columns.tabs-top
     margin-bottom: 0
+    align-items: center
   .side-bar
     background-color: $cwa-background-dark
     > .columns
@@ -366,7 +368,7 @@ export default Vue.extend({
         align-content: center
         align-items: center
         width: 100%
-  ul
+  ul.tabs-list
     list-style: none
     margin: 0
     padding: 0
