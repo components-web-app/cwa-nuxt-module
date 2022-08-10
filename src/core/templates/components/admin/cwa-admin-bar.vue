@@ -92,7 +92,7 @@
             />
             <div
               v-else-if="isComponentSelected && !isCloning"
-              class="columns is-centered"
+              class="columns is-vcentered"
             >
               <div class="column is-narrow status-container">
                 <status-icon

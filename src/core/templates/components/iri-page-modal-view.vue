@@ -23,38 +23,40 @@
       >
     </div>
     <section v-if="currentTabIndex === 0" class="details-section">
-      <div class="columns fields-container">
-        <div class="column">
-          <slot name="left" />
-        </div>
-        <div class="column">
-          <div class="right-column-aligner">
-            <div>
-              <slot name="right" />
-            </div>
-            <div v-if="!isNew" class="timestamps">
+      <div>
+        <div class="columns fields-container">
+          <div class="column">
+            <slot name="left" />
+          </div>
+          <div class="column">
+            <div class="right-column-aligner">
               <div>
-                Updated:
-                {{ formatDate(parseDateString(component.modifiedAt)) }} UTC
+                <slot name="right" />
               </div>
-              <div>
-                Created:
-                {{ formatDate(parseDateString(component.createdAt)) }} UTC
+              <div v-if="!isNew" class="timestamps">
+                <div>
+                  Updated:
+                  {{ formatDate(parseDateString(component.modifiedAt)) }} UTC
+                </div>
+                <div>
+                  Created:
+                  {{ formatDate(parseDateString(component.createdAt)) }} UTC
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="columns buttons-row">
-        <div class="column">
-          <button class="button is-cwa-primary" @click="$emit('submit')">
-            {{ isNew ? 'Create' : 'Save' }}
-          </button>
-        </div>
-        <div v-if="!isNew" class="column is-narrow">
-          <button class="button is-dark is-delete" @click="$emit('delete')">
-            Delete
-          </button>
+        <div class="columns buttons-row">
+          <div class="column">
+            <button class="button is-cwa-primary" @click="$emit('submit')">
+              {{ isNew ? 'Create' : 'Save' }}
+            </button>
+          </div>
+          <div v-if="!isNew" class="column is-narrow">
+            <button class="button is-dark is-delete" @click="$emit('delete')">
+              Delete
+            </button>
+          </div>
         </div>
       </div>
       <transition name="fade">

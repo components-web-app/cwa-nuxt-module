@@ -44,6 +44,8 @@ body,
   > .page
     flex-grow: 1
     background: $cwa-background-dark
+  a
+    color: $cwa-color-text-light
 h1
   font-size: 2.5rem
   font-weight: $weight-normal

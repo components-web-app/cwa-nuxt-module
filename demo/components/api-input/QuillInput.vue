@@ -110,7 +110,7 @@ export default Vue.extend({
 
       const ThemeColorClass = new Parchment.Attributor.Class(
         'theme-color',
-        'has-color',
+        'has-text',
         {
           scope: Parchment.Scope.INLINE,
           whitelist: ['primary', 'success']
