@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!$cwa.resourcesOutdated" class="container cwa-refresh-bar">
+  <div v-if="$cwa.resourcesOutdated" class="container cwa-refresh-bar">
     <div class="inner">
       <span>The content on this page is outdated.</span>
       <span>
