@@ -43,9 +43,15 @@
                 />
               </div>
               <div class="column is-narrow">
-                <cwa-nuxt-link to="/_cwa/pages" class="button">
+                <nuxt-link
+                  :to="{
+                    name: '_cwa_pages',
+                    params: { cwa_force: true }
+                  }"
+                  class="button"
+                >
                   View All Pages
-                </cwa-nuxt-link>
+                </nuxt-link>
               </div>
             </div>
           </div>
