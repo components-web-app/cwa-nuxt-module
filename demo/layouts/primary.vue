@@ -22,6 +22,7 @@
               <component-collection
                 location="top"
                 v-bind="componentCollectionProps"
+                :allowed-components="['/component/navigation_links']"
               />
             </div>
           </div>

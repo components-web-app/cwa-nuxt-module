@@ -101,6 +101,11 @@ export default Vue.extend({
       validator(value: any): boolean {
         return ['pages', 'layouts', 'components'].includes(value)
       }
+    },
+    allowedComponents: {
+      type: Array,
+      default: null,
+      required: false
     }
   },
   data() {
@@ -283,6 +288,37 @@ export default Vue.extend({
         this.showOrderValues = !!event.newTab?.context?.showOrderValues
       }
     },
+    async validateComponentCollection() {
+      const arrayCompare = (a1, a2) => {
+        if (!Array.isArray(a1)) {
+          a1 = []
+        }
+        if (!Array.isArray(a2)) {
+          a2 = []
+        }
+        let i = a1.length
+        while (i--) {
+          if (a1[i] !== a2[i]) return false
+        }
+        return true
+      }
+      if (
+        !arrayCompare(
+          this.resource.allowedComponents,
+          this.allowedComponents
+        )
+      ) {
+        this.startApiRequest()
+        try {
+          await this.$cwa.updateResource(this.resource['@id'], {
+            allowedComponents: this.allowedComponents
+          })
+        } catch (err) {
+          this.handleApiError(err)
+        }
+        this.completeApiRequest()
+      }
+    },
     async addComponentCollection() {
       this.startApiRequest()
       try {
@@ -291,7 +327,8 @@ export default Vue.extend({
           {
             reference: `${this.locationResourceReference}_${this.location}`,
             location: this.location,
-            [this.locationResourceType]: [this.locationResourceId]
+            [this.locationResourceType]: [this.locationResourceId],
+            allowedComponents: this.allowedComponents
           },
           null,
           [this.locationResourceId]
