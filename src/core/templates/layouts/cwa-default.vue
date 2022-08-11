@@ -46,9 +46,9 @@ body,
     background: $cwa-background-dark
   a
     color: $cwa-color-text-light
-h1
-  font-size: 2.5rem
-  font-weight: $weight-normal
-  letter-spacing: .05em
-  color: $white
+  h1
+    font-size: 2.4rem
+    font-weight: $weight-normal
+    letter-spacing: .03em
+    color: $white
 </style>

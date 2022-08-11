@@ -36,7 +36,16 @@ export default Vue.extend({
       if (!this.availableComponents) {
         return []
       }
-      return Object.keys(this.availableComponents)
+      const objKeys = Object.keys(this.availableComponents)
+      if (!this.resource.allowedComponents) {
+        return objKeys
+      }
+
+      return objKeys.filter((key) => {
+        return this.resource.allowedComponents.includes(
+          this.availableComponents[key].endpoint
+        )
+      })
     }
   },
   watch: {
