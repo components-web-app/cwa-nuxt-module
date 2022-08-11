@@ -16,6 +16,7 @@
         >{{ title }}</a
       >
       <a
+        v-if="!isNew"
         href="#"
         :class="{ 'is-selected': currentTabIndex === 1 }"
         @click.prevent="changeTab(1)"
