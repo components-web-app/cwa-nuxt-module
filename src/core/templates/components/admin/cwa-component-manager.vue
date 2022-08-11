@@ -380,6 +380,11 @@ export default Vue.extend({
       }
       this.triggerShowEvents()
     },
+    isIriDraftPublishedEquivalent(oldIri, newIri) {
+      const draftIri = this.$cwa.findDraftIri(oldIri)
+      const publishedIri = this.$cwa.findPublishedIri(oldIri)
+      return newIri === draftIri || newIri === publishedIri
+    },
     triggerShowEvents() {
       this.pendingComponents = []
       if (this.showingCriteria) {
@@ -410,7 +415,10 @@ export default Vue.extend({
       if (this.preventPersistentStateClear) {
         this.preventPersistentStateClear = false
       } else if (
-        this.components?.[0]?.iri !== this.pendingComponents?.[0]?.iri
+        !this.isIriDraftPublishedEquivalent(
+          this.components?.[0]?.iri,
+          this.pendingComponents?.[0]?.iri
+        )
       ) {
         this.persistentStates = {}
       }
