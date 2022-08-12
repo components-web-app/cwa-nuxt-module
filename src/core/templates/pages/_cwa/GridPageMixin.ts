@@ -25,12 +25,23 @@ export default (pageName, modalPageName) =>
       updateData(newData) {
         this.data = newData
       },
-      async reloadAndClose() {
+      async reloadData() {
         await this.$refs.gridPage.loadData(true)
+      },
+      async reloadAndClose() {
+        await this.reloadData()
         await this.closeModal()
       },
       async closeModal() {
-        await this.$router.push({ name: pageName, query: this.$route.query })
+        const query = Object.assign({}, this.$route.query)
+        if (query.tabIndex) {
+          delete query.tabIndex
+        }
+        console.log(query)
+        await this.$router.push({
+          name: pageName,
+          query
+        })
       },
       showAddPage(iri = 'add') {
         this.$router.push(this.addRouteProps(iri))

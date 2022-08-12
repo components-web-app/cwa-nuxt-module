@@ -5,7 +5,7 @@
     v-bind="iriModalProps"
     :show-loader="isLoading || showLoader"
     @close="$emit('close')"
-    @submit="$emit('submit')"
+    @submit="handleSubmit"
     @delete="$emit('delete')"
   >
     <template slot="left">
@@ -157,6 +157,11 @@ export default Vue.extend({
     this.showLoaderPageTemplateOps = true
     await this.loadPageTemplateOptions()
     this.showLoaderPageTemplateOps = false
+  },
+  methods: {
+    handleSubmit(submitEventParams = null) {
+      this.$emit('submit', submitEventParams)
+    }
   }
 })
 </script>

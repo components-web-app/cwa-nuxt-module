@@ -99,15 +99,17 @@ export default Vue.extend({
     },
     async findIriResource() {
       if (this.isNew || !this.iri) {
+        this.isLoading = false
         this.component = {}
         return
       }
       this.isLoading = true
-      this.component = Object.assign({}, await this.$cwa.findResource(this.iri))
+      const iriResource = await this.$cwa.findResource(this.iri)
+      this.component = Object.assign({}, iriResource)
       this.$set(this.component, 'uiClassNames', this.uiClassNamesString)
       this.isLoading = false
     },
-    async sendRequest(data) {
+    async sendRequest(data, submitEventParams) {
       this.notifications = {}
       this.isLoading = true
       let endpoint = null
@@ -125,7 +127,16 @@ export default Vue.extend({
           endpoint = this.iri
           await this.$cwa.updateResource(endpoint, data)
         }
-        this.$emit('change')
+        if (!submitEventParams?.cancelClose) {
+          this.$emit('change')
+        } else {
+          this.$emit('reload')
+          await this.findIriResource()
+        }
+        const successFn = submitEventParams?.successFn
+        if (submitEventParams?.successFn) {
+          await successFn(this.iri)
+        }
         return true
       } catch (error) {
         this.handleResourceRequestError(error, endpoint)

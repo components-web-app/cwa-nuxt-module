@@ -49,7 +49,10 @@
         </div>
         <div class="columns buttons-row">
           <div class="column">
-            <button class="button is-cwa-primary" @click="$emit('submit')">
+            <button
+              class="button is-cwa-primary"
+              @click="$emit('submit', submitEventParams)"
+            >
               {{ isNew ? 'Create' : 'Save' }}
             </button>
           </div>
@@ -86,13 +89,35 @@ export default Vue.extend({
   components: { CwaAdminRoutesTab },
   mixins: [IriModalView],
   data() {
+    let currentTabIndex = 0
+    if (this.$route.query?.tabIndex) {
+      const tabIndexQuery = this.$route.query?.tabIndex
+      const tabIndex = Array.isArray(tabIndexQuery)
+        ? tabIndexQuery[0]
+        : tabIndexQuery
+      const parsedInt = Number.parseInt(tabIndex)
+      if (!Number.isNaN(parsedInt)) {
+        currentTabIndex = Math.max(parsedInt, 1)
+      }
+    }
     return {
-      currentTabIndex: 0,
+      currentTabIndex,
       routeIsSaved: true,
       addingRedirect: false
     }
   },
+  computed: {
+    submitEventParams() {
+      if (!this.isNew) {
+        return null
+      }
+      return { successFn: this.addSuccess, cancelClose: true }
+    }
+  },
   methods: {
+    addSuccess() {
+      this.changeTab(1)
+    },
     changeTab(newIndex) {
       this.currentTabIndex = newIndex
     },
