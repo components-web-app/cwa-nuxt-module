@@ -100,11 +100,16 @@ export default class Cwa {
           cwaForce
 
         if (!cwaConfirmedNavigation) {
-          next(false)
+          return false
         }
 
         toRoute.meta.cwaConfirmedNavigation = true
-        next(toRoute)
+        next({
+          path: toRoute.path,
+          params: toRoute.params,
+          query: toRoute.query,
+          meta: toRoute.meta
+        })
       } finally {
         programmatic = false
       }
