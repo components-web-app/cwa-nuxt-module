@@ -217,8 +217,12 @@ export default Vue.extend({
       this.componentManagerDisabled = false
       this.initCMMixin()
     }
-    if (!this.resource && this.$cwa.isAdmin) {
-      await this.addComponentCollection()
+    if (this.$cwa.isAdmin) {
+      if (!this.resource) {
+        await this.addComponentCollection()
+      } else {
+        await this.validateComponentCollection()
+      }
     }
     this.$cwa.$eventBus.$on(
       COMPONENT_MANAGER_EVENTS.newComponent,
