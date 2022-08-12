@@ -8,18 +8,20 @@
           <div class="error-title">
             {{ message }}
           </div>
-          <p v-if="error.endpoint" class="description url">
-            {{ error.endpoint }}
-          </p>
-          <!-- eslint-disable vue/no-parsing-error -->
-          <p v-if="statusCode === 404" class="description">
-            <NuxtLink class="error-link button is-light button-outline" to="/">
-              <%= messages.back_to_home %>
-            </NuxtLink>
-          </p>
-          <% if(debug) { %>
-          <p v-else class="description"><%= messages.client_error_details %></p>
-          <% } %>
+          <div class="content">
+            <p v-if="error.endpoint" class="description url">
+              {{ error.endpoint }}
+            </p>
+            <!-- eslint-disable vue/no-parsing-error -->
+            <p v-if="statusCode === 404" class="description">
+              <NuxtLink class="error-link button is-light is-outlined" to="/">
+                <%= messages.back_to_home %>
+              </NuxtLink>
+            </p>
+            <% if(debug) { %>
+            <p v-else class="description"><%= messages.client_error_details %></p>
+            <% } %>
+          </div>
           <!-- eslint-enable vue/no-parsing-error -->
         </div>
       </div>
