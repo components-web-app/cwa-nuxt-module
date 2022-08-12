@@ -93,6 +93,9 @@ export default Vue.extend({
         : value
     },
     normalizeValue(value) {
+      if (value === undefined) {
+        value = null
+      }
       return this.requiresNormalizing(value)
         ? JSON.parse(JSON.stringify(value)) || null
         : value
