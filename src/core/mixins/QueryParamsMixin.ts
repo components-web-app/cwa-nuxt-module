@@ -65,7 +65,13 @@ export default Vue.extend({
           return `${key}=${encodeURIComponent(value)}`
         })
         .join('&')
-      this.$router.push(`?${queryString}`)
+
+      this.$router.push({
+        path: `${this.$route.path}?${queryString}`,
+        query: {
+          cwa_force: 'true'
+        }
+      })
     }
   }
 })

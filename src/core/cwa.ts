@@ -74,21 +74,37 @@ export default class Cwa {
     })
 
     this.ctx.app.router.beforeEach((toRoute, __, next) => {
+      if (toRoute.meta.cwaConfirmedNavigation) {
+        delete toRoute.meta.cwaConfirmedNavigation
+        next()
+        return
+      }
+
+      // we should not be in edit mode anymore if user uses back/forward button
       if (!programmatic) {
         this.setEditMode(false)
       }
+
       try {
-        const cwaForce = !!toRoute.params?.cwa_force
-        if (
+        let cwaForce = toRoute.params?.cwa_force
+        cwaForce = cwaForce === 'true' ? true : !!cwaForce
+        if (!cwaForce) {
+          cwaForce = toRoute.query?.cwa_force === 'true'
+          delete toRoute.query.cwa_force
+        }
+
+        const cwaConfirmedNavigation =
           programmatic === false ||
           this.$storage.get('CLONE_ALLOW_NAVIGATE') === true ||
           !this.isEditMode ||
           cwaForce
-        ) {
-          next()
-          return
+
+        if (!cwaConfirmedNavigation) {
+          next(false)
         }
-        return false
+
+        toRoute.meta.cwaConfirmedNavigation = true
+        next(toRoute)
       } finally {
         programmatic = false
       }
