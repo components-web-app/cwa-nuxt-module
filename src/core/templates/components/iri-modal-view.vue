@@ -108,7 +108,7 @@ export default Vue.extend({
     top: 1rem
     left: 1rem
     display: flex
-    z-index: 100
+    z-index: 201
   .title-tabs
     display: flex
     margin-bottom: 1rem

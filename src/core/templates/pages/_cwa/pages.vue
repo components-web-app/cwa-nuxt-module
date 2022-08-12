@@ -33,7 +33,11 @@
         </div>
       </li>
     </grid-page>
-    <nuxt-child @close="closeModal" @change="reloadAndClose" />
+    <nuxt-child
+      @close="closeModal"
+      @change="reloadAndClose"
+      @reload="reloadData"
+    />
   </cwa-footer-logo>
 </template>
 

@@ -15,7 +15,7 @@ export default Vue.extend({
     }
   },
   methods: {
-    async savePage() {
+    async savePage(submitEventParams = null) {
       const uiClassNames = this.component?.uiClassNames
         ?.split(',')
         .map((item) => item.trim())
@@ -28,7 +28,7 @@ export default Vue.extend({
           uiClassNames
         }
       )
-      await this.sendRequest(data)
+      await this.sendRequest(data, submitEventParams)
     }
   }
 })
