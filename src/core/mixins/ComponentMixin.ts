@@ -12,6 +12,7 @@ interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
   elementsAdded: { [key: string]: HTMLElement }
   componentManagerDisabled: Boolean
+  forceComponentManagerDisabled: Boolean
 }
 
 export default Vue.extend({
@@ -47,7 +48,8 @@ export default Vue.extend({
         }
       },
       elementsAdded: {},
-      componentManagerDisabled: true
+      componentManagerDisabled: true,
+      forceComponentManagerDisabled: false
     }
   },
   computed: {
@@ -137,7 +139,10 @@ export default Vue.extend({
   },
   methods: {
     checkInitCmMixin() {
-      if (this.isDynamic || !this.isDynamicPage) {
+      if (
+        !this.forceComponentManagerDisabled &&
+        (this.isDynamic || !this.isDynamicPage)
+      ) {
         this.componentManagerDisabled = false
         this.initCMMixin()
       }
