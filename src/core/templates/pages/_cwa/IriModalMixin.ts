@@ -1,6 +1,10 @@
 import Vue from 'vue'
 import { NotificationEvent } from '../../components/cwa-api-notifications/types'
-import { ConfirmDialogEvent, CONFIRM_DIALOG_EVENTS } from '../../../events'
+import {
+  ConfirmDialogEvent,
+  CONFIRM_DIALOG_EVENTS,
+  NOTIFICATION_EVENTS
+} from '../../../events'
 import ApiErrorNotificationsMixin from '../../../mixins/ApiErrorNotificationsMixin'
 
 export const notificationCategories = {
@@ -81,13 +85,32 @@ export default Vue.extend({
     }
   },
   async mounted() {
+    this.$cwa.$eventBus.$on(
+      NOTIFICATION_EVENTS.add,
+      this.handleNotificationEvent
+    )
     if (this.isNew || !this.iri) {
       this.isLoading = false
       return
     }
     await this.findIriResource()
   },
+  beforeDestroy() {
+    this.$cwa.$eventBus.$off(
+      NOTIFICATION_EVENTS.add,
+      this.handleNotificationEvent
+    )
+  },
   methods: {
+    handleNotificationEvent(notification: NotificationEvent) {
+      const listenCategories = Object.values(this.notificationCategories)
+      if (!listenCategories.includes(notification.category)) {
+        return
+      }
+      const fieldNotifications = this.notifications[notification.field] || []
+      fieldNotifications.push(notification)
+      this.$set(this.notifications, notification.field, fieldNotifications)
+    },
     getClassNamesString(classNamesArray) {
       if (!classNamesArray) {
         return ''
