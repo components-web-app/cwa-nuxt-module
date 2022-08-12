@@ -28,6 +28,9 @@ export default Vue.extend({
   created() {},
   methods: {
     submitForm() {
+      if (this.$cwa.isEditMode) {
+        return
+      }
       this.$cwa.forms.submit(this.storeId)
     }
   }
