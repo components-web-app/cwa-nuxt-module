@@ -303,10 +303,7 @@ export default Vue.extend({
         return true
       }
       if (
-        !arrayCompare(
-          this.resource.allowedComponents,
-          this.allowedComponents
-        )
+        !arrayCompare(this.resource.allowedComponents, this.allowedComponents)
       ) {
         this.startApiRequest()
         try {
