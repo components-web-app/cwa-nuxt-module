@@ -19,7 +19,9 @@
               </NuxtLink>
             </p>
             <% if(debug) { %>
-            <p v-else class="description"><%= messages.client_error_details %></p>
+            <p v-else class="description">
+              <%= messages.client_error_details %>
+            </p>
             <% } %>
           </div>
           <!-- eslint-enable vue/no-parsing-error -->

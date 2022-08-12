@@ -239,6 +239,7 @@ export default {
           const value = getFormViewValue(child)
           if (
             child.children &&
+            Object.keys(child.children).length > 0 &&
             !Array.isArray(value) &&
             (!('multiple' in child.vars) || child.vars.multiple)
           ) {
