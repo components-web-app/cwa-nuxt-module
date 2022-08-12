@@ -37,7 +37,6 @@ export default (pageName, modalPageName) =>
         if (query.tabIndex) {
           delete query.tabIndex
         }
-        console.log(query)
         await this.$router.push({
           name: pageName,
           query
