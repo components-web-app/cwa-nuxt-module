@@ -51,6 +51,9 @@ export default Vue.extend({
   },
   methods: {
     enforceNumber() {
+      if (this.inputValue === null) {
+        return ''
+      }
       const normalizedNumber = this.inputValue / 1 || 0
       if (normalizedNumber !== this.inputValue) {
         this.inputValue = normalizedNumber
