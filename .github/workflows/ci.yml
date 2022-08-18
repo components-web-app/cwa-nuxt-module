@@ -63,7 +63,7 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: yarn --frozen-lockfile
-      - name: Start API
+      - name: Start API + Build and Run Application
         env:
           API_PORT: 3100
           API_URL: http://localhost:3100

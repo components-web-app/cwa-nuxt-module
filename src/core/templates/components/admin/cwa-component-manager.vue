@@ -159,7 +159,15 @@ export default Vue.extend({
     closestCollection() {
       for (const component of this.components) {
         if (this.isIriCollection(component.iri)) {
-          return component
+          return component.iri
+        }
+        // on a dynamic page, the collection is not initialised as it cannot be edited
+        if (this.isIriPoisition(component.iri)) {
+          const positionResource = this.$cwa.getResource(component.iri)
+          const collectionIri = positionResource?.componentCollection
+          if (collectionIri) {
+            return collectionIri
+          }
         }
       }
       return null
@@ -254,6 +262,9 @@ export default Vue.extend({
     isIriCollection(iri) {
       return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentCollection'
     },
+    isIriPoisition(iri) {
+      return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentPosition'
+    },
     selectPositionListener(iri) {
       this.selectPosition(iri)
     },
@@ -266,7 +277,7 @@ export default Vue.extend({
     toggleDraggable(isDraggable) {
       this.$cwa.$eventBus.$emit(EVENTS.draggable, {
         isDraggable,
-        collection: this.closestCollection.iri
+        collection: this.closestCollection
       } as DraggableEvent)
     },
     getStatusTab(

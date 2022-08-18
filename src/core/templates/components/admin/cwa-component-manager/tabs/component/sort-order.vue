@@ -25,6 +25,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import consola from 'consola'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 import CwaAdminToggle from '../../../input/cwa-admin-toggle.vue'
 import CmText from '../../input/cm-text.vue'
@@ -44,8 +45,13 @@ export default Vue.extend({
         : null
     },
     refreshEndpoints() {
-      const collectionIri = this.context.collection.iri
+      const collectionIri = this.context.collection
       if (!collectionIri) {
+        consola.warn(
+          `Expected to find a collection in context to refresh. Context provided:`,
+          this.context,
+          this.iri
+        )
         return []
       }
       const collection = this.$cwa.getResource(collectionIri)
