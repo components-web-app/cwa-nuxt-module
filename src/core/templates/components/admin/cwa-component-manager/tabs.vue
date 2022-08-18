@@ -126,7 +126,7 @@ export default Vue.extend({
       default: null
     },
     collection: {
-      type: Object,
+      type: String,
       required: false,
       default: null
     },

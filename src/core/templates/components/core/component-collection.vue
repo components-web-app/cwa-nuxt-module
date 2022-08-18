@@ -283,9 +283,8 @@ export default Vue.extend({
     handleTabChangedEvent(event: TabChangedEvent) {
       this.isDraggable = false
       if (
-        event.context?.collection &&
-        (!event.context?.collection.iri ||
-          event.context?.collection.iri !== this.resource['@id'])
+        event.context?.collection === null ||
+        event.context?.collection !== this.resource['@id']
       ) {
         this.showOrderValues = false
       } else {
