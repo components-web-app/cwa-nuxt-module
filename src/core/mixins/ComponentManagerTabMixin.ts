@@ -5,7 +5,7 @@ import IriMixin from './IriMixin'
 import ComponentManagerValueMixin from './ComponentManagerValueMixin'
 import { ComponentTabContext } from './ComponentManagerMixin'
 
-export const ComponentManagerTabMixin = Vue.extend({
+export default Vue.extend({
   mixins: [IriMixin, ComponentManagerValueMixin],
   props: {
     context: {
@@ -49,5 +49,3 @@ export const ComponentManagerTabMixin = Vue.extend({
     }
   }
 })
-
-export default ComponentManagerTabMixin

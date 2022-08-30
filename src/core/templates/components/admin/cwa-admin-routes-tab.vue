@@ -227,7 +227,7 @@ export default Vue.extend({
       await Promise.all([this.findIriResource(), this.reloadRouteRedirects()])
     },
     addingRedirect(newValue) {
-      this.$emit('adding-redirect', newValue)
+      this.$emit('addingRedirect', newValue)
     }
   },
   async mounted() {

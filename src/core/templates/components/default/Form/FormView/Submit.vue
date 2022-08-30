@@ -11,6 +11,7 @@ import Vue from 'vue'
 import FormViewBlockMixin from '@cwa/nuxt-module/core/mixins/FormViewBlockMixin'
 
 export default Vue.extend({
+  name: 'CwaFormSubmit',
   mixins: [FormViewBlockMixin]
 })
 </script>

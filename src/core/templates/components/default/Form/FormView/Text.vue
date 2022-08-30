@@ -37,6 +37,7 @@ import {
 } from '@cwa/nuxt-module/core/storage/FormsVuexModule'
 
 export default Vue.extend({
+  name: 'CwaFormText',
   components: { Wrapper },
   mixins: [FormViewBlockMixin],
   data() {

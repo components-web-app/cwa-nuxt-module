@@ -10,6 +10,7 @@ import ComponentMixin from '@cwa/nuxt-module/core/mixins/ComponentMixin'
 import type { ComponentManagerTab } from '@cwa/nuxt-module/core/mixins/ComponentManagerMixin'
 
 export default Vue.extend({
+  name: 'CwaComponentImage',
   mixins: [ComponentMixin],
   data() {
     return {

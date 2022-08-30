@@ -32,6 +32,7 @@ import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 import LoadPageDataMetadataMixin from '@cwa/nuxt-module/core/mixins/LoadPageDataMetadataMixin'
 
 export default Vue.extend({
+  name: 'CwaComponentCollectionPosition',
   components: { CmButton, CwaAdminSelect },
   mixins: [
     ComponentManagerTabMixin,

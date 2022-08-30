@@ -6,6 +6,7 @@
 
 <script>
 export default {
+  name: 'CwaTimestamp',
   props: {
     timestamp: {
       type: Date,

@@ -20,6 +20,7 @@ import FormViewBlockMixin from '@cwa/nuxt-module/core/mixins/FormViewBlockMixin'
 import Wrapper from '@cwa/nuxt-module/core/templates/components/default/Form/FormView/_Wrapper.vue'
 
 export default Vue.extend({
+  name: 'CwaFormCheckbox',
   components: { Wrapper },
   mixins: [FormViewBlockMixin],
   computed: {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <slot :viewData="{ repeatedChildren: formView.children }"></slot>
+    <slot :view-data="{ repeatedChildren: formView.children }"></slot>
   </div>
 </template>
 
@@ -9,6 +9,7 @@ import Vue from 'vue'
 import FormViewBlockMixin from '@cwa/nuxt-module/core/mixins/FormViewBlockMixin'
 
 export default Vue.extend({
+  name: 'CwaFormRepeated',
   mixins: [FormViewBlockMixin],
   computed: {}
 })

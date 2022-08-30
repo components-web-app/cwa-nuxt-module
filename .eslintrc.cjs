@@ -17,6 +17,7 @@ module.exports = {
           '/^cwa:[a-z]+(?:-[a-z]+)*:[a-z]+(?:-[a-z]+)*(:[a-z]+(?:-[a-z]+)*)?$/u'
         ]
       }
-    ]
+    ],
+    'vue/multi-word-component-names': 0
   }
 }

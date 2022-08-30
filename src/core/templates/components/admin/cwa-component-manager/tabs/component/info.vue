@@ -46,6 +46,7 @@ import {
 } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
+  name: 'CwaComponentInfo',
   components: { Info },
   mixins: [
     ComponentManagerTabMixin,

@@ -173,7 +173,7 @@ export default Vue.extend({
     }
   },
   created() {
-    this.$emit('initial-data', this.defaultData)
+    this.$emit('initialData', this.defaultData)
   }
 })
 </script>

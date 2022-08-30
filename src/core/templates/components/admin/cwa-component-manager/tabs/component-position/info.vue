@@ -45,6 +45,7 @@ import {
 } from '@cwa/nuxt-module/core/events'
 
 export default Vue.extend({
+  name: 'CwaComponentPositionInfo',
   components: { Info },
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin],
   methods: {

@@ -67,6 +67,7 @@
 <script>
 import CwaAdminAccessLayout from '../components/admin/cwa-admin-access-layout.vue'
 export default {
+  name: 'CwaLogin',
   cwa: false,
   components: { CwaAdminAccessLayout },
   layout: 'cwa-empty',

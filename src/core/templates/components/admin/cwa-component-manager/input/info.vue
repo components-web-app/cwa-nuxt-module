@@ -11,6 +11,7 @@ import CwaInputWrapper from './wrapper.vue'
 import CwaInputMixin from '@cwa/nuxt-module/core/templates/components/admin/input/CwaInputMixin'
 
 export default {
+  name: 'CwaManagerInputInfo',
   components: { CwaInputWrapper },
   mixins: [CwaInputMixin]
 }
