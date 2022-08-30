@@ -69,6 +69,7 @@ import ResourceLocations from './resource-locations.vue'
 import CmButton from '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/input/cm-button.vue'
 
 export default Vue.extend({
+  name: 'CwaManagerClone',
   components: { CmButton, ResourceLocations, CwaAdminToggle },
   mixins: [CloneComponentMixin],
   computed: {

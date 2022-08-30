@@ -23,6 +23,7 @@ import Vue from 'vue'
 import FormViewBlockMixin from '@cwa/nuxt-module/core/mixins/FormViewBlockMixin'
 
 export default Vue.extend({
+  name: 'CwaFormForm',
   mixins: [FormViewBlockMixin],
   // prevent unnecessary call to initialise this as a form view
   created() {},

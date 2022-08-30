@@ -28,7 +28,7 @@ export default Vue.extend({
       const initObj = {
         formType: this.formType
       }
-      this.$emit('initial-data', initObj)
+      this.$emit('initialData', initObj)
       return
     }
     this.$cwa.forms.init({ component: this.resource })

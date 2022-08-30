@@ -106,7 +106,7 @@ export default Vue.extend({
   methods: {
     handleErrorsShowing(newValue) {
       this.errorsShowing = newValue
-      this.$emit('errors-showing', newValue)
+      this.$emit('errorsShowing', newValue)
     },
     handleStatusNotification(event: StatusEvent) {
       if (!this.category) {

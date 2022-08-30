@@ -6,8 +6,8 @@
         :style="{ height: `${elementHeight}` }"
       />
       <transition-expand
-        @after-enter="showTabs = true"
-        @after-leave="showTabs = false"
+        @afterEnter="showTabs = true"
+        @afterLeave="showTabs = false"
       >
         <div v-show="isShowing" ref="cwaManager" class="cwa-components-manager">
           <div class="inner">

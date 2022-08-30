@@ -99,7 +99,7 @@
                   :status="isNew ? 0 : 1"
                   :show-above="false"
                   category="components-manager"
-                  @errors-showing="updateNotificationsShowing"
+                  @errorsShowing="updateNotificationsShowing"
                 />
               </div>
               <div v-if="showStatusTab" class="column is-narrow">

@@ -47,6 +47,7 @@ import GridPageMixin from './GridPageMixin'
 import LoadLayoutsMixin from './LoadLayoutsMixin'
 
 export default Vue.extend({
+  name: 'CwaPages',
   mixins: [GridPageMixin('_cwa_pages', '_cwa_pages_iri'), LoadLayoutsMixin],
   head() {
     return {

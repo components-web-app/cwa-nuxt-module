@@ -47,6 +47,7 @@ import CwaRefreshBar from '@cwa/nuxt-module/core/templates/components/admin/cwa-
 import CwaComponentManager from '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager.vue'
 
 export default {
+  name: 'CwaDemoLayoutPrimary',
   components: { CwaComponentManager, CwaRefreshBar },
   mixins: [LayoutMixin]
 }

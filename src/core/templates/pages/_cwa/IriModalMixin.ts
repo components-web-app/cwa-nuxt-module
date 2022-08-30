@@ -81,7 +81,7 @@ export default Vue.extend({
       this.findIriResource()
     },
     isSaved(newValue) {
-      this.$emit('is-saved', newValue)
+      this.$emit('isSaved', newValue)
     }
   },
   async mounted() {

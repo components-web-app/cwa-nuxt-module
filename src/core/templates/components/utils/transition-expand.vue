@@ -2,9 +2,9 @@
   <transition
     name="expand"
     @enter="enter"
-    @after-enter="afterEnter"
+    @afterEnter="afterEnter"
     @leave="leave"
-    @after-leave="afterLeave"
+    @afterLeave="afterLeave"
   >
     <slot />
   </transition>
@@ -22,7 +22,7 @@ export default {
     afterEnter(element) {
       // eslint-disable-next-line no-param-reassign
       element.style.height = 'auto'
-      this.$emit('after-enter')
+      this.$emit('afterEnter')
     },
     enter(element) {
       this.$emit('enter')
@@ -64,7 +64,7 @@ export default {
       })
     },
     afterLeave() {
-      this.$emit('after-leave')
+      this.$emit('afterLeave')
     }
   }
 }

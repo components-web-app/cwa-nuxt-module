@@ -74,8 +74,8 @@
         v-model="component"
         :notification-categories="notificationCategories"
         @input="inputListener"
-        @is-saved="handleRouteIsSaved"
-        @adding-redirect="handleAddingRedirect"
+        @isSaved="handleRouteIsSaved"
+        @addingRedirect="handleAddingRedirect"
       />
     </section>
   </cwa-modal>

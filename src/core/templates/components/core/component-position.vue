@@ -28,7 +28,7 @@
       v-if="newComponentResource"
       :iri="newComponentIri"
       :is-dynamic="isDynamicPage && !!newComponentEvent.dynamicPage"
-      @initial-data="handleInitialData"
+      @initialData="handleInitialData"
     />
   </div>
 </template>

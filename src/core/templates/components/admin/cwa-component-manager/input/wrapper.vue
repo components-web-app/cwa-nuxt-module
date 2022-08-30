@@ -7,6 +7,7 @@
 
 <script>
 export default {
+  name: 'CwaManagerInputWrapper',
   props: {
     id: {
       type: String,

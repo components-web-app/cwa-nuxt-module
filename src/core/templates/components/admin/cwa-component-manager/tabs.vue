@@ -79,7 +79,7 @@
                 :field-errors="tabInputErrors[selectedTab.label]"
                 @draggable="toggleDraggable"
                 @close="handleTabCloseEvent"
-                @show-tab="showTabListener"
+                @showTab="showTabListener"
                 @hook:mounted="handleDynamicTabMounted"
               />
             </div>
@@ -108,6 +108,7 @@ import PageResourceUtilsMixin from '../../../../mixins/PageResourceUtilsMixin'
 import CwaActionButtons from './cwa-action-buttons.vue'
 
 export default Vue.extend({
+  name: 'CwaManagerTabs',
   components: { CwaActionButtons, TransitionExpand },
   mixins: [PageResourceUtilsMixin],
   props: {

@@ -30,6 +30,7 @@
 import GridPageMixin from './GridPageMixin'
 
 export default {
+  name: 'CwaUsers',
   mixins: [GridPageMixin('_cwa_users', '_cwa_users_iri')],
   head() {
     return {

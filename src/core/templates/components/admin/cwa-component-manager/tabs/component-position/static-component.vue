@@ -132,7 +132,7 @@ export default Vue.extend({
   methods: {
     selectStaticComponent() {
       this.$cwa.$eventBus.$emit(EVENTS.selectComponent, this.staticComponentIri)
-      this.$emit('show-tab', 0)
+      this.$emit('showTab', 0)
     }
   }
 })

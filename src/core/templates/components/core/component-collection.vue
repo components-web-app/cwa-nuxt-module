@@ -40,7 +40,7 @@
         :is="newComponentName"
         v-if="newComponentResource"
         :iri="newComponentIri"
-        @initial-data="handleInitialData"
+        @initialData="handleInitialData"
       />
     </draggable>
   </div>

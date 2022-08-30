@@ -26,6 +26,7 @@ import ComponentManagerTabMixin from '@cwa/nuxt-module/core/mixins/ComponentMana
 import CmUpload from '@cwa/nuxt-module/core/templates/components/admin/cwa-component-manager/input/cm-upload.vue'
 
 export default Vue.extend({
+  name: 'CwaAdminImage',
   components: { CmUpload },
   mixins: [ComponentManagerTabMixin]
 })
