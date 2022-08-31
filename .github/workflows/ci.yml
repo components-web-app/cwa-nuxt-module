@@ -39,7 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [16.x]
+        # see https://pullanswer.com/questions/err_loader_chain_incomplete-e2e-in-local
+        node: [16.16]
       fail-fast: true
     container: cypress/included:10.7.0
     steps:
