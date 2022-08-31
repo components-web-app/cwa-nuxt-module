@@ -41,20 +41,20 @@ jobs:
       matrix:
         node: [16.x]
       fail-fast: true
-    container: cypress/included:10.3.0
+    container: cypress/included:10.7.0
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
       - name: Install SASS dependencies
         run: |
           apt-get update
           apt-get install -y g++ build-essential
       - name: Use Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
       - name: Cache Node.js modules
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.yarn
           key: ${{ runner.OS }}-node-${{ hashFiles('**/yarn.lock') }}
@@ -79,10 +79,7 @@ jobs:
       - name: Run E2E
         env:
           CYPRESS_BASE_URL: http://localhost:3000
-        run: yarn e2e # --record --key=${{secrets.CYPRESS_RECORD_KEY}} - current github ci issue
-        #libva error: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
-        #[1530:0831/114308.395937:ERROR:gpu_memory_buffer_support_x11.cc(44)] dri3 extension not supported.
-        #(node:1541) ExperimentalWarning: Custom ESM Loaders is an experimental feature. This feature could change at any time
+        run: yarn e2e --record --key=${{secrets.CYPRESS_RECORD_KEY}}
 
   deploy-next:
     if: github.ref == 'refs/heads/dev'
