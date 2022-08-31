@@ -64,41 +64,6 @@ function extendRoutesFn({ pagesDepth }) {
   }
 }
 
-function applyCss() {
-  const assetsDir = resolve(__dirname, '../core/assets/sass')
-  this.options.css.push(join(assetsDir, 'style.sass'))
-
-  this.extendBuild((config, _) => {
-    const sassRuleIdx = config.module.rules.findIndex((e) => {
-      return e.test.toString().match(/sass/)
-    })
-
-    const sassResourcesLoader = {
-      loader: 'sass-resources-loader',
-      options: {
-        resources: [join(assetsDir, 'vars/*.sass')]
-      }
-    }
-
-    if (sassRuleIdx === -1) {
-      config.module.rules.push({
-        test: /sass/,
-        use: [
-          'style-loader',
-          'css-loader',
-          'postcss-loader',
-          'sass-loader',
-          sassResourcesLoader
-        ]
-      })
-    } else {
-      config.module.rules[sassRuleIdx].oneOf.forEach((rule) =>
-        (rule.use as unknown as any[]).push(sassResourcesLoader)
-      )
-    }
-  })
-}
-
 async function loadComponents() {
   const requiredModules = [
     ['@nuxtjs/style-resources', {}],
@@ -372,8 +337,6 @@ const cwaModule = <Module>async function () {
     }
   })
   this.nuxt.options.plugins.push(resolve(this.nuxt.options.buildDir, dst))
-
-  applyCss.call(this)
 
   await loadComponents.call(this)
 }

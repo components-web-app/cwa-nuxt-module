@@ -31,6 +31,7 @@ export default {
     ]
   },
   css: ['~/assets/sass/main.sass'],
+  // , '@nuxtjs/style-resources' - will be added automatically.
   buildModules: ['@nuxt/typescript-build'],
   modules: [coreModuleDist],
   plugins: [{ src: '~/plugins/cypress', mode: 'client' }],
@@ -63,7 +64,7 @@ export default {
     }
   },
   styleResources: {
-    sass: ['~/assets/sass/vars/*.sass']
+    sass: ['~/assets/sass/vars/*.sass', '../src/core/assets/sass/vars/*.sass']
   },
   loading: {
     color: '#E30A6C'
