@@ -8,7 +8,7 @@ import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 import PageResourceUtilsMixin from './PageResourceUtilsMixin'
 
-interface DataInterface {
+export interface DataInterface {
   componentManagerContext: ComponentManagerComponentContext
   elementsAdded: { [key: string]: HTMLElement }
   componentManagerDisabled: Boolean

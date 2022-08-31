@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # see https://pullanswer.com/questions/err_loader_chain_incomplete-e2e-in-local
+        # see https://github.com/cypress-io/cypress/issues/23393
         node: [16.16]
       fail-fast: true
     container: cypress/included:10.7.0
