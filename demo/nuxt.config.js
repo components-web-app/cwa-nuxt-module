@@ -64,7 +64,7 @@ export default {
     }
   },
   styleResources: {
-    sass: ['~/assets/sass/vars/*.sass', '../src/core/assets/sass/vars/*.sass']
+    sass: ['~/assets/sass/vars/*.sass']
   },
   loading: {
     color: '#E30A6C'
