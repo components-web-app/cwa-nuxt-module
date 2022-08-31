@@ -39,6 +39,7 @@ body,
   display: flex
   flex-direction: column
   color: $cwa-color-text-light
+  font-family: $cwa-font-family
   > .top
     flex-grow: 0
   > .page
