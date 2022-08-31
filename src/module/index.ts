@@ -66,12 +66,7 @@ function extendRoutesFn({ pagesDepth }) {
 
 async function loadComponents() {
   const requiredModules = [
-    [
-      '@nuxtjs/style-resources',
-      {
-        sass: [resolve(__dirname, '../core/assets/sass/vars/*.sass')]
-      }
-    ],
+    ['@nuxtjs/style-resources', {}],
     [
       '@nuxtjs/axios',
       {
