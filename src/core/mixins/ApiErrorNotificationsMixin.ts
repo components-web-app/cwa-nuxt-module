@@ -7,7 +7,7 @@ import {
 import { NOTIFICATION_EVENTS, STATUS_EVENTS, StatusEvent } from '../events'
 import ApiError from '@cwa/nuxt-module/inc/api-error'
 
-interface ApiViolationNotifications {
+export interface ApiViolationNotifications {
   notification: NotificationEvent
   removeEvent: RemoveNotificationEvent
 }
