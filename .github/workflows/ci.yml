@@ -79,7 +79,10 @@ jobs:
       - name: Run E2E
         env:
           CYPRESS_BASE_URL: http://localhost:3000
-        run: yarn e2e --record --key=${{secrets.CYPRESS_RECORD_KEY}}
+        run: yarn e2e # --record --key=${{secrets.CYPRESS_RECORD_KEY}} - current github ci issue
+        #libva error: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+        #[1530:0831/114308.395937:ERROR:gpu_memory_buffer_support_x11.cc(44)] dri3 extension not supported.
+        #(node:1541) ExperimentalWarning: Custom ESM Loaders is an experimental feature. This feature could change at any time
 
   deploy-next:
     if: github.ref == 'refs/heads/dev'
