@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # see https://github.com/cypress-io/cypress/issues/23393
+        # see https://github.com/cypress-io/cypress/issues/23393 - 16.17 compatibility issue
         node: [16.16]
       fail-fast: true
     container: cypress/included:10.7.0
@@ -64,7 +64,7 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: yarn --frozen-lockfile
-      - name: Start API + Build and Run Application
+      - name: Start API, Build and Start Demo Application
         env:
           API_PORT: 3100
           API_URL: http://localhost:3100
