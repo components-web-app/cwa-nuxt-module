@@ -300,6 +300,9 @@ export const ComponentManagerMixin = Vue.extend({
         })
         this.$el.dispatchEvent(clickEvent)
       })
+    },
+    toggleCmValue(varName) {
+      this.saveCmValue(varName, !this.cmValue(varName))
     }
   }
 })
