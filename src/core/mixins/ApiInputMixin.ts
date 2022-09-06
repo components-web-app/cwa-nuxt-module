@@ -31,7 +31,8 @@ export default Vue.extend({
       debouncedFn: null,
       outdated: false,
       error: null,
-      pendingDebounce: false
+      pendingDebounce: false,
+      updatingResourceValue: null
     }
   },
   computed: {
@@ -49,15 +50,18 @@ export default Vue.extend({
     },
     inputValue(newValue) {
       this.error = null
-      if (this.valuesSame(this.resourceValue, newValue)) {
+      const expectedResourceValue = this.updatingResourceValue
+        ? this.updatingResourceValue
+        : this.resourceValue
+      if (this.valuesSame(expectedResourceValue, newValue)) {
         return
       }
       this.outdated = true
       this.pendingDebounce = true
       this.$cwa.increaseMercurePendingProcessCount(1)
+      this.$cwa.cancelPendingPatchRequest(this.iri)
       if (this.debouncedFn) {
         this.debouncedFn.cancel()
-        this.$cwa.cancelPendingPatchRequest(this.iri)
         this.$cwa.decreaseMercurePendingProcessCount(1)
       }
       this.debouncedFn = debounce(async () => {
@@ -67,7 +71,7 @@ export default Vue.extend({
         } finally {
           this.$cwa.decreaseMercurePendingProcessCount(1)
         }
-      }, 100)
+      }, 200)
       this.debouncedFn()
     },
     resourceValue: {
@@ -102,6 +106,7 @@ export default Vue.extend({
     },
     async update() {
       this.pendingDebounce = false
+      this.updatingResourceValue = this.inputValue
       const result = await this.updateResource(
         this.iri,
         this.field,
@@ -110,6 +115,7 @@ export default Vue.extend({
         this.refreshEndpoints,
         this.notificationCategory
       )
+      this.updatingResourceValue = null
       if (result !== false) {
         this.outdated = false
       }

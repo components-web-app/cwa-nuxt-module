@@ -49,22 +49,6 @@ export default Vue.extend({
         notificationCategory
       )
 
-      // const notification: Notification = {
-      //   code: notificationCode,
-      //   title: 'Input Error',
-      //   message: message.message,
-      //   level: NotificationLevels.ERROR,
-      //   endpoint: iri,
-      //   field,
-      //   category: notificationCategory
-      // }
-      // this.$cwa.$eventBus.$emit(NOTIFICATION_EVENTS.add, notification)
-      // this.$cwa.$eventBus.$emit(STATUS_EVENTS.change, {
-      //   field,
-      //   category: notificationCategory,
-      //   status: -1
-      // } as StatusEvent)
-
       return new UpdateResourceError(
         'API error updating resource',
         message,
