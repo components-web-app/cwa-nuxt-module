@@ -163,12 +163,12 @@ export default Vue.extend({
     },
     componentManagerTabs(): ComponentManagerTab[] {
       return [
-        {
-          label: 'Collection',
-          component: () => import('../admin-dialog/ComponentsCollection.vue'),
-          priority: 2,
-          inputFieldsUsed: ['resourceIri', 'perPage', 'defaultQueryParameters']
-        }
+        this.createCMTab(
+          'Collection',
+          () => import('../admin-dialog/ComponentsCollection.vue'),
+          2,
+          ['resourceIri', 'perPage', 'defaultQueryParameters']
+        )
       ]
     }
   },
