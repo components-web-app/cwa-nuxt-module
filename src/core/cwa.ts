@@ -513,7 +513,7 @@ export default class Cwa {
         return true
       }
       if (!requestComplete) {
-        pr.tokenSource.cancel('Cancelled due to another pending request')
+        pr.tokenSource.cancel('Cancelled due to another pending patch request')
       }
       return false
     })
@@ -586,10 +586,10 @@ export default class Cwa {
       const tokenSource = this.ctx.$axios.CancelToken.source()
       const endpointQuery = forcedPublishedUpdate ? '?published=true' : ''
       const patchEndpoint = endpoint + endpointQuery
-
       if (updateFn) {
         return await updateFn(patchEndpoint, endpointQuery)
       }
+
       this.cancelPendingPatchRequest(patchEndpoint, false)
       this.patchRequests.push({
         endpoint: patchEndpoint,
@@ -602,8 +602,9 @@ export default class Cwa {
         },
         cancelToken: tokenSource.token
       })
+      const result = await patchPromise
       this.cancelPendingPatchRequest(patchEndpoint, true)
-      return await patchPromise
+      return result
     }
   }
 
