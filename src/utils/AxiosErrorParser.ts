@@ -17,16 +17,17 @@ export default function (error): AxiosError {
     error.response.status &&
     typeof error.response.data === 'object'
   ) {
+    const errorResponseData = error.response.data
     return {
       statusCode: error.response.status,
       message:
-        error.response.data.message ||
-        error.response.data.detail ||
-        error.response.data['hydra:description'],
-      violations: error.response.data.violations,
+        errorResponseData.message ||
+        errorResponseData.detail ||
+        errorResponseData['hydra:description'],
+      violations: errorResponseData.violations,
       endpoint
     }
-  } else if (error.message) {
+  } else if (error?.message) {
     return {
       statusCode: 500,
       message: error.message,
