@@ -48,12 +48,12 @@ export default Vue.extend({
   computed: {
     componentManagerTabs(): ComponentManagerTab[] {
       return [
-        {
-          label: this.resourceName,
-          component: () => import('../admin-dialog/HtmlContent.vue'),
-          priority: 0,
-          inputFieldsUsed: ['html']
-        }
+        this.createCMTab(
+          this.resourceName,
+          () => import('../admin-dialog/HtmlContent.vue'),
+          0,
+          ['html']
+        )
       ]
     },
     htmlComponent() {

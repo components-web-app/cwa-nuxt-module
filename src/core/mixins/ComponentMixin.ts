@@ -53,6 +53,9 @@ export default Vue.extend({
     }
   },
   computed: {
+    mediaObjects() {
+      return this.resource._metadata?.media_objects
+    },
     displaySortValue() {
       return this.showSort ? this.sortValue : null
     },
@@ -138,6 +141,31 @@ export default Vue.extend({
     this.checkInitCmMixin()
   },
   methods: {
+    getMediaObjectContentUrl(mediaObject: any) {
+      const postfix = this.published ? '?published=true' : ''
+      return mediaObject?.contentUrl + postfix
+    },
+    getMediaObject(field: string, index: number) {
+      if (!this.mediaObjects) {
+        return null
+      }
+      return this.mediaObjects?.[field]?.[index]
+    },
+    createCMTab(
+      label: string,
+      component: Function,
+      priority: number = null,
+      inputFieldsUsed: string[] = [],
+      context: any = {}
+    ): ComponentManagerTab {
+      return {
+        label,
+        component,
+        priority,
+        context,
+        inputFieldsUsed
+      }
+    },
     checkInitCmMixin() {
       if (
         !this.forceComponentManagerDisabled &&
