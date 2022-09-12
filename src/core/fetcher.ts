@@ -510,7 +510,7 @@ export class Fetcher {
     try {
       hubUrl = this.getMercureHubURL(currentResourcesCategories)
     } catch (err) {
-      consola.error('Could not get Mercure hub url.', err.message)
+      consola.error('Could not get Mercure hub url.', err?.message)
       return
     }
     consola.debug(`Mercure hub eventsource URL ${hubUrl}`)
