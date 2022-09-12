@@ -6,6 +6,7 @@ import coreModuleDist from '../src/module'
 // Required for the mercure hub and fetcher it seems.
 // Although axios does not seem to need it so maybe we can work out why and if we can remove it at a later date
 const API_URL = process.env.API_URL || 'https://localhost:8443'
+const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
 
 const https = process.env.DISABLE_HTTPS
   ? null
@@ -22,7 +23,8 @@ export default {
     https
   },
   publicRuntimeConfig: {
-    API_URL
+    API_URL,
+    API_URL_BROWSER
   },
   head: {
     meta: [

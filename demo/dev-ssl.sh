@@ -3,12 +3,7 @@
 parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 cd "$parent_path"
 
-openssl req -x509 \
-  -nodes \
-  -days 365 \
-  -out ./demo/ssl/localhost.crt \
-  -keyout ./demo/ssl/localhost.key \
-  -sha256 \
-  -subj '/C=CA/ST=QC/O=Company, Inc./CN=localhost' \
-  -addext "subjectAltName=DNS:localhost" \
-  -newkey rsa:4096
+openssl req -x509 -out ./demo/ssl/localhost.crt -keyout ./demo/ssl/localhost.key \
+  -newkey rsa:2048 -nodes -sha256 \
+  -subj '/CN=localhost' -extensions EXT -config <( \
+   printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
