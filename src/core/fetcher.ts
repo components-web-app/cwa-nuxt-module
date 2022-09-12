@@ -537,7 +537,7 @@ export class Fetcher {
       'mercurePendingProcesses'
     )
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       if (mercurePendingProcesses === 0) {
         consola.debug(
           'Invoking Mercure message handler. No request in progress.'
