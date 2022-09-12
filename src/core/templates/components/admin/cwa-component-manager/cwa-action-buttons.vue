@@ -204,10 +204,7 @@ export default Vue.extend({
           refreshResources.push(componentPosition)
         }
         if (componentGroup) {
-          refreshResources.push(
-            ...resource.componentPositions,
-            componentGroup
-          )
+          refreshResources.push(...resource.componentPositions, componentGroup)
         }
         if (refreshResources.length) {
           await this.$cwa.refreshResources(refreshResources)

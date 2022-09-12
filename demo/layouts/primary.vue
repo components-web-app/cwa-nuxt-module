@@ -32,10 +32,7 @@
       <nuxt class="cwa-page" />
     </div>
     <div class="bottom">
-      <component-group
-        location="bottom"
-        v-bind="componentGroupProps"
-      />
+      <component-group location="bottom" v-bind="componentGroupProps" />
     </div>
     <cwa-component-manager />
   </div>
