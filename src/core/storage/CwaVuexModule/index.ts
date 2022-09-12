@@ -126,7 +126,7 @@ export default function (storage) {
       }
     },
     getters: {
-      COLLECTION_BY_PLACEMENT:
+      GROUP_BY_PLACEMENT:
         (state) =>
         ({ iri, name }) => {
           const getLookupProperty = (placementIri) => {
@@ -142,8 +142,8 @@ export default function (storage) {
             return null
           }
           const lookupProperty = getLookupProperty(iri)
-          return state.resources.current.ComponentCollection.extensions
-            .componentCollectionByPlacement[lookupProperty][iri]?.[name]
+          return state.resources.current.ComponentGroup.extensions
+            .componentGroupByPlacement[lookupProperty][iri]?.[name]
         },
       GET_TYPE_FROM_IRI:
         (state) =>

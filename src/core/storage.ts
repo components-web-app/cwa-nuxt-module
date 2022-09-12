@@ -280,8 +280,8 @@ export class Storage {
     return this.ctx.store.getters[`${this.options.vuex.namespace}/${getter}`]
   }
 
-  getCollectionByPlacement({ iri, name }) {
-    const collectionIri = this.get('COLLECTION_BY_PLACEMENT')({ iri, name })
+  getGroupByPlacement({ iri, name }) {
+    const collectionIri = this.get('GROUP_BY_PLACEMENT')({ iri, name })
     if (!collectionIri) {
       return null
     }

@@ -196,13 +196,13 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#Form/componentCollections",
+                        "@id": "#Form/componentGroups",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollections",
+                        "rdfs:label": "componentGroups",
                         "domain": "#Form",
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollections",
+                    "hydra:title": "componentGroups",
                     "hydra:required": false,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -398,13 +398,13 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#Collection/componentCollections",
+                        "@id": "#Collection/componentGroups",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollections",
+                        "rdfs:label": "componentGroups",
                         "domain": "#Collection",
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollections",
+                    "hydra:title": "componentGroups",
                     "hydra:required": false,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -1055,13 +1055,13 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#Page/componentCollections",
+                        "@id": "#Page/componentGroups",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollections",
+                        "rdfs:label": "componentGroups",
                         "domain": "#Page",
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollections",
+                    "hydra:title": "componentGroups",
                     "hydra:required": false,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -1294,14 +1294,14 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentPosition/componentCollection",
+                        "@id": "#ComponentPosition/componentGroup",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollection",
+                        "rdfs:label": "componentGroup",
                         "domain": "#ComponentPosition",
                         "owl:maxCardinality": 1,
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollection",
+                    "hydra:title": "componentGroup",
                     "hydra:required": true,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -1466,18 +1466,18 @@
             "hydra:description": "We must define this as an API resource, otherwise when serializing and the relation is to this class,\nAPI Platform does not know that it will be a resource and will make it an object, not an IRI."
         },
         {
-            "@id": "#ComponentCollection",
+            "@id": "#ComponentGroup",
             "@type": "hydra:Class",
-            "rdfs:label": "ComponentCollection",
-            "hydra:title": "ComponentCollection",
+            "rdfs:label": "ComponentGroup",
+            "hydra:title": "ComponentGroup",
             "hydra:supportedProperty": [
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/reference",
+                        "@id": "#ComponentGroup/reference",
                         "@type": "rdf:Property",
                         "rdfs:label": "reference",
-                        "domain": "#ComponentCollection",
+                        "domain": "#ComponentGroup",
                         "range": "xmls:string"
                     },
                     "hydra:title": "reference",
@@ -1488,10 +1488,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/location",
+                        "@id": "#ComponentGroup/location",
                         "@type": "rdf:Property",
                         "rdfs:label": "location",
-                        "domain": "#ComponentCollection",
+                        "domain": "#ComponentGroup",
                         "range": "xmls:string"
                     },
                     "hydra:title": "location",
@@ -1502,10 +1502,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/layouts",
+                        "@id": "#ComponentGroup/layouts",
                         "@type": "hydra:Link",
                         "rdfs:label": "layouts",
-                        "domain": "#ComponentCollection",
+                        "domain": "#ComponentGroup",
                         "range": "#Layout"
                     },
                     "hydra:title": "layouts",
@@ -1516,10 +1516,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/pages",
+                        "@id": "#ComponentGroup/pages",
                         "@type": "hydra:Link",
                         "rdfs:label": "pages",
-                        "domain": "#ComponentCollection",
+                        "domain": "#ComponentGroup",
                         "range": "#Page"
                     },
                     "hydra:title": "pages",
@@ -1530,10 +1530,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/components",
+                        "@id": "#ComponentGroup/components",
                         "@type": "hydra:Link",
                         "rdfs:label": "components",
-                        "domain": "#ComponentCollection",
+                        "domain": "#ComponentGroup",
                         "range": "#AbstractComponent"
                     },
                     "hydra:title": "components",
@@ -1544,10 +1544,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/componentPositions",
+                        "@id": "#ComponentGroup/componentPositions",
                         "@type": "hydra:Link",
                         "rdfs:label": "componentPositions",
-                        "domain": "#ComponentCollection",
+                        "domain": "#ComponentGroup",
                         "range": "#ComponentPosition"
                     },
                     "hydra:title": "componentPositions",
@@ -1558,10 +1558,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#ComponentCollection/allowedComponents",
+                        "@id": "#ComponentGroup/allowedComponents",
                         "@type": "rdf:Property",
                         "rdfs:label": "allowedComponents",
-                        "domain": "#ComponentCollection"
+                        "domain": "#ComponentGroup"
                     },
                     "hydra:title": "allowedComponents",
                     "hydra:required": false,
@@ -1576,9 +1576,9 @@
                         "schema:FindAction"
                     ],
                     "hydra:method": "GET",
-                    "hydra:title": "Retrieves ComponentCollection resource.",
-                    "rdfs:label": "Retrieves ComponentCollection resource.",
-                    "returns": "#ComponentCollection"
+                    "hydra:title": "Retrieves ComponentGroup resource.",
+                    "rdfs:label": "Retrieves ComponentGroup resource.",
+                    "returns": "#ComponentGroup"
                 },
                 {
                     "@type": [
@@ -1586,8 +1586,8 @@
                         "schema:DeleteAction"
                     ],
                     "hydra:method": "DELETE",
-                    "hydra:title": "Deletes the ComponentCollection resource.",
-                    "rdfs:label": "Deletes the ComponentCollection resource.",
+                    "hydra:title": "Deletes the ComponentGroup resource.",
+                    "rdfs:label": "Deletes the ComponentGroup resource.",
                     "returns": "owl:Nothing"
                 },
                 {
@@ -1595,19 +1595,19 @@
                         "hydra:Operation",
                         "schema:ReplaceAction"
                     ],
-                    "expects": "#ComponentCollection",
+                    "expects": "#ComponentGroup",
                     "hydra:method": "PUT",
-                    "hydra:title": "Replaces the ComponentCollection resource.",
-                    "rdfs:label": "Replaces the ComponentCollection resource.",
-                    "returns": "#ComponentCollection"
+                    "hydra:title": "Replaces the ComponentGroup resource.",
+                    "rdfs:label": "Replaces the ComponentGroup resource.",
+                    "returns": "#ComponentGroup"
                 },
                 {
                     "@type": "hydra:Operation",
-                    "expects": "#ComponentCollection",
+                    "expects": "#ComponentGroup",
                     "hydra:method": "PATCH",
-                    "hydra:title": "Updates the ComponentCollection resource.",
-                    "rdfs:label": "Updates the ComponentCollection resource.",
-                    "returns": "#ComponentCollection"
+                    "hydra:title": "Updates the ComponentGroup resource.",
+                    "rdfs:label": "Updates the ComponentGroup resource.",
+                    "returns": "#ComponentGroup"
                 }
             ],
             "hydra:description": ""
@@ -1704,13 +1704,13 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#Layout/componentCollections",
+                        "@id": "#Layout/componentGroups",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollections",
+                        "rdfs:label": "componentGroups",
                         "domain": "#Layout",
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollections",
+                    "hydra:title": "componentGroups",
                     "hydra:required": false,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -2082,13 +2082,13 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#Image/componentCollections",
+                        "@id": "#Image/componentGroups",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollections",
+                        "rdfs:label": "componentGroups",
                         "domain": "#Image",
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollections",
+                    "hydra:title": "componentGroups",
                     "hydra:required": false,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -2290,13 +2290,13 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#HtmlContent/componentCollections",
+                        "@id": "#HtmlContent/componentGroups",
                         "@type": "hydra:Link",
-                        "rdfs:label": "componentCollections",
+                        "rdfs:label": "componentGroups",
                         "domain": "#HtmlContent",
-                        "range": "#ComponentCollection"
+                        "range": "#ComponentGroup"
                     },
-                    "hydra:title": "componentCollections",
+                    "hydra:title": "componentGroups",
                     "hydra:required": false,
                     "hydra:readable": true,
                     "hydra:writeable": true
@@ -2727,10 +2727,10 @@
                 {
                     "@type": "hydra:SupportedProperty",
                     "hydra:property": {
-                        "@id": "#Entrypoint/componentCollection",
+                        "@id": "#Entrypoint/componentGroup",
                         "@type": "hydra:Link",
                         "domain": "#Entrypoint",
-                        "rdfs:label": "The collection of ComponentCollection resources",
+                        "rdfs:label": "The collection of ComponentGroup resources",
                         "rdfs:range": [
                             {
                                 "@id": "hydra:Collection"
@@ -2741,7 +2741,7 @@
                                         "@id": "hydra:member"
                                     },
                                     "owl:allValuesFrom": {
-                                        "@id": "#ComponentCollection"
+                                        "@id": "#ComponentGroup"
                                     }
                                 }
                             }
@@ -2753,8 +2753,8 @@
                                     "schema:FindAction"
                                 ],
                                 "hydra:method": "GET",
-                                "hydra:title": "Retrieves the collection of ComponentCollection resources.",
-                                "rdfs:label": "Retrieves the collection of ComponentCollection resources.",
+                                "hydra:title": "Retrieves the collection of ComponentGroup resources.",
+                                "rdfs:label": "Retrieves the collection of ComponentGroup resources.",
                                 "returns": "hydra:Collection"
                             },
                             {
@@ -2762,15 +2762,15 @@
                                     "hydra:Operation",
                                     "schema:CreateAction"
                                 ],
-                                "expects": "#ComponentCollection",
+                                "expects": "#ComponentGroup",
                                 "hydra:method": "POST",
-                                "hydra:title": "Creates a ComponentCollection resource.",
-                                "rdfs:label": "Creates a ComponentCollection resource.",
-                                "returns": "#ComponentCollection"
+                                "hydra:title": "Creates a ComponentGroup resource.",
+                                "rdfs:label": "Creates a ComponentGroup resource.",
+                                "returns": "#ComponentGroup"
                             }
                         ]
                     },
-                    "hydra:title": "The collection of ComponentCollection resources",
+                    "hydra:title": "The collection of ComponentGroup resources",
                     "hydra:readable": true,
                     "hydra:writeable": false
                 },

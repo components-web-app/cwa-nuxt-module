@@ -66,18 +66,18 @@ export default {
       if (!resource) {
         return totals
       }
-      if (resource['@type'] === 'ComponentCollection') {
+      if (resource['@type'] === 'ComponentGroup') {
         this.addCollectionTotals(resource, totals)
       } else if (resource.componentPositions) {
         resource.componentPositions.forEach((positionIri) => {
           const componentPosition = this.$cwa.getResource(positionIri)
-          if (!componentPosition?.componentCollection) {
+          if (!componentPosition?.componentGroup) {
             return
           }
-          const componentCollection = this.$cwa.getResource(
-            componentPosition.componentCollection
+          const componentGroup = this.$cwa.getResource(
+            componentPosition.componentGroup
           )
-          if (!componentCollection) {
+          if (!componentGroup) {
             if (this.fetchedResources) {
               consola.error(
                 `Could not find component collection for resource`,
@@ -86,7 +86,7 @@ export default {
             }
             return
           }
-          this.addCollectionTotals(componentCollection, totals)
+          this.addCollectionTotals(componentGroup, totals)
         })
       }
 
@@ -109,7 +109,7 @@ export default {
                 resolve(true)
                 return
               }
-              this.$cwa.findResource(pos.componentCollection).then(() => {
+              this.$cwa.findResource(pos.componentGroup).then(() => {
                 resolve(true)
               })
             })

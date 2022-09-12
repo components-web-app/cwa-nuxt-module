@@ -44,7 +44,7 @@ export default Vue.extend({
         return null
       }
       const destination = this.cloneDestinationResource
-      return destination['@type'] === 'ComponentCollection'
+      return destination['@type'] === 'ComponentGroup'
     },
     cloneDestinationResource() {
       if (!this.cloneDestination) {
@@ -66,9 +66,7 @@ export default Vue.extend({
       const destinationIsCollection = this.cloneDestinationIsCollection
       const collection = destinationIsCollection
         ? destination
-        : this.$cwa.getResource(
-            this.cloneDestinationResource.componentCollection
-          )
+        : this.$cwa.getResource(this.cloneDestinationResource.componentGroup)
       let sortValue = destinationIsCollection
         ? 1
         : this.cloneDestinationResource.sortValue
@@ -80,9 +78,9 @@ export default Vue.extend({
       await this.$cwa.createResource(
         '/_/component_positions',
         {
-          componentCollection: destinationIsCollection
+          componentGroup: destinationIsCollection
             ? this.cloneDestination
-            : this.cloneDestinationResource.componentCollection,
+            : this.cloneDestinationResource.componentGroup,
           sortValue,
           component: this.cloneComponent.iri
         },
@@ -90,7 +88,7 @@ export default Vue.extend({
         destinationIsCollection
           ? [this.cloneDestination]
           : [
-              this.cloneDestinationResource.componentCollection,
+              this.cloneDestinationResource.componentGroup,
               ...collection.componentPositions
             ]
       )

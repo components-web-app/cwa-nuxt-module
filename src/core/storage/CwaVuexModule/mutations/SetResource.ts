@@ -2,12 +2,12 @@ import consola from 'consola'
 import Vue from 'vue'
 import { resourcesState } from '@cwa/nuxt-module/core/storage'
 
-function componentCollectionResourceExtension(resourceState, resource) {
+function componentGroupResourceExtension(resourceState, resource) {
   if (!resourceState.extensions) {
     Vue.set(resourceState, 'extensions', {})
   }
-  if (!resourceState.extensions.componentCollectionByPlacement) {
-    Vue.set(resourceState.extensions, 'componentCollectionByPlacement', {
+  if (!resourceState.extensions.componentGroupByPlacement) {
+    Vue.set(resourceState.extensions, 'componentGroupByPlacement', {
       components: {},
       layouts: {},
       pages: {}
@@ -16,16 +16,16 @@ function componentCollectionResourceExtension(resourceState, resource) {
   const keys = ['layouts', 'pages', 'components']
   for (const key of keys) {
     for (const iri of resource[key]) {
-      if (!resourceState.extensions.componentCollectionByPlacement[key][iri]) {
-        resourceState.extensions.componentCollectionByPlacement[key][iri] = {}
+      if (!resourceState.extensions.componentGroupByPlacement[key][iri]) {
+        resourceState.extensions.componentGroupByPlacement[key][iri] = {}
         Vue.set(
-          resourceState.extensions.componentCollectionByPlacement[key],
+          resourceState.extensions.componentGroupByPlacement[key],
           iri,
           {}
         )
       }
       Vue.set(
-        resourceState.extensions.componentCollectionByPlacement[key][iri],
+        resourceState.extensions.componentGroupByPlacement[key][iri],
         resource.location,
         resource['@id']
       )
@@ -84,8 +84,8 @@ export function SetResource(storage, state, payload) {
     currentResourceState.currentIds.push(payload.id)
   }
 
-  if (payload.name === 'ComponentCollection') {
-    componentCollectionResourceExtension(currentResourceState, payload.resource)
+  if (payload.name === 'ComponentGroup') {
+    componentGroupResourceExtension(currentResourceState, payload.resource)
   }
 
   Vue.set(state.resources, stateKey, {

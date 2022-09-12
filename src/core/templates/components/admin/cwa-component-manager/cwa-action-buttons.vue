@@ -150,12 +150,12 @@ export default Vue.extend({
       const componentPosition: string = !this.addingEvent.dynamicPage
         ? this.addingEvent.position
         : null
-      const componentCollection: string = this.addingEvent.collection
+      const componentGroup: string = this.addingEvent.collection
       const additionalData = { componentPositions: [] } as {
         componentPositions: Array<
           | string
           | {
-              componentCollection: string
+              componentGroup: string
             }
         >
         publishedAt?: string
@@ -164,9 +164,9 @@ export default Vue.extend({
       if (componentPosition) {
         additionalData.componentPositions.push(componentPosition)
       }
-      if (componentCollection) {
+      if (componentGroup) {
         additionalData.componentPositions.push({
-          componentCollection
+          componentGroup
         })
       }
 
@@ -203,11 +203,8 @@ export default Vue.extend({
         if (componentPosition) {
           refreshResources.push(componentPosition)
         }
-        if (componentCollection) {
-          refreshResources.push(
-            ...resource.componentPositions,
-            componentCollection
-          )
+        if (componentGroup) {
+          refreshResources.push(...resource.componentPositions, componentGroup)
         }
         if (refreshResources.length) {
           await this.$cwa.refreshResources(refreshResources)

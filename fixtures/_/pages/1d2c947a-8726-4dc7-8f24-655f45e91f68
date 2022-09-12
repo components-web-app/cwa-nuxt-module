@@ -11,8 +11,8 @@
   "nested": true,
   "title": "Welcome to CWA",
   "metaDescription": "A demo CWA website",
-  "componentCollections": [
-    "\/_\/component_collections\/cc76794e-ead1-4c18-949b-6740bc8cd623"
+  "componentGroups": [
+    "\/_\/component_groups\/cc76794e-ead1-4c18-949b-6740bc8cd623"
   ],
   "_metadata": {
     "persisted": true

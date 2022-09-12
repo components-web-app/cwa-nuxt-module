@@ -233,9 +233,9 @@ export class Fetcher {
   ) {
     this.ctx.storage.setState('layout', layoutResponse?.['@id'] || null)
 
-    await this.fetchComponentCollections([
-      ...pageResponse.componentCollections,
-      ...layoutResponse.componentCollections
+    await this.fetchComponentGroups([
+      ...pageResponse.componentGroups,
+      ...layoutResponse.componentGroups
     ])
     this.ctx.storage.setState(Fetcher.loadedRoutePathKey, loadedRoutePath)
     this.ctx.storage.setState(Fetcher.loadingEndpoint, false)
@@ -266,8 +266,8 @@ export class Fetcher {
       const pageDataResponse = await this.fetchItem({
         path: pageDataIri,
         preload: [
-          '/page/layout/componentCollections/*/componentPositions/*/component',
-          '/page/componentCollections/*/componentPositions/*/component'
+          '/page/layout/componentGroups/*/componentPositions/*/component',
+          '/page/componentGroups/*/componentPositions/*/component'
         ]
       })
       this.ctx.storage.setState(Fetcher.loadedPageKey, pageDataIri)
@@ -279,8 +279,8 @@ export class Fetcher {
       const pageResponse = await this.fetchItem({
         path: pageDataResponse.page,
         preload: [
-          '/layout/componentCollections/*/componentPositions/*/component',
-          '/componentCollections/*/componentPositions/*/component'
+          '/layout/componentGroups/*/componentPositions/*/component',
+          '/componentGroups/*/componentPositions/*/component'
         ]
       })
 
@@ -298,7 +298,7 @@ export class Fetcher {
   private fetchLayout(layoutIri) {
     if (!layoutIri) {
       return {
-        componentCollections: []
+        componentGroups: []
       }
     }
     return this.fetchItem({ path: layoutIri })
@@ -313,8 +313,8 @@ export class Fetcher {
       const pageResponse = await this.fetchItem({
         path: pageIri,
         preload: [
-          '/layout/componentCollections/*/componentPositions/*/component',
-          '/componentCollections/*/componentPositions/*/component'
+          '/layout/componentGroups/*/componentPositions/*/component',
+          '/componentGroups/*/componentPositions/*/component'
         ]
       })
       this.ctx.storage.setState(Fetcher.loadedPageKey, pageIri)
@@ -339,10 +339,10 @@ export class Fetcher {
       const routeResponse = await this.fetchItem({
         path: `/_/routes/${path}`,
         preload: [
-          '/page/layout/componentCollections/*/componentPositions/*/component',
-          '/page/componentCollections/*/componentPositions/*/component',
-          '/pageData/page/layout/componentCollections/*/componentPositions/*/component',
-          '/pageData/page/componentCollections/*/componentPositions/*/component'
+          '/page/layout/componentGroups/*/componentPositions/*/component',
+          '/page/componentGroups/*/componentPositions/*/component',
+          '/pageData/page/layout/componentGroups/*/componentPositions/*/component',
+          '/pageData/page/componentGroups/*/componentPositions/*/component'
         ]
       })
 
@@ -371,12 +371,12 @@ export class Fetcher {
     }
   }
 
-  private fetchComponentCollections(paths) {
+  private fetchComponentGroups(paths) {
     return this.fetchCollection(
       { paths, preload: ['/componentPositions/*/component'] },
-      (componentCollection) => {
+      (componentGroup) => {
         return this.fetchCollection(
-          { paths: componentCollection.componentPositions },
+          { paths: componentGroup.componentPositions },
           (componentPosition) => {
             return this.fetchResource(componentPosition.component)
           }
@@ -621,12 +621,12 @@ export class Fetcher {
     }
 
     if (
-      !this.currentResources.ComponentCollection.currentIds.includes(
-        data.componentCollection
+      !this.currentResources.ComponentGroup.currentIds.includes(
+        data.componentGroup
       )
     ) {
       consola.info(
-        'New ComponentPosition received by Mercure is not included in any current ComponentCollection resources. Skipped.'
+        'New ComponentPosition received by Mercure is not included in any current ComponentGroup resources. Skipped.'
       )
       return false
     }
@@ -638,11 +638,11 @@ export class Fetcher {
       return false
     }
 
-    const collectionIri = data.componentCollection
-    // Check if this ComponentCollection resource is current
-    const componentCollectionResource =
-      this.currentResources.ComponentCollection.byId[collectionIri]
-    if (!componentCollectionResource) {
+    const collectionIri = data.componentGroup
+    // Check if this ComponentGroup resource is current
+    const componentGroupResource =
+      this.currentResources.ComponentGroup.byId[collectionIri]
+    if (!componentGroupResource) {
       return false
     }
 
@@ -654,13 +654,13 @@ export class Fetcher {
       }
     }
 
-    // Update the ComponentCollection resource to include new position
+    // Update the ComponentGroup resource to include new position
     // Mercure will not publish this, the resource is not updated in the database
     this.ctx.storage.setResource({
       resource: {
-        ...componentCollectionResource,
+        ...componentGroupResource,
         componentPositions: [
-          ...componentCollectionResource.componentPositions,
+          ...componentGroupResource.componentPositions,
           data['@id']
         ]
       },

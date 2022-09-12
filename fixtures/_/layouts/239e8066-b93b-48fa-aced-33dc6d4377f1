@@ -9,7 +9,7 @@
   "createdAt": "2020-06-24T08:14:52+00:00",
   "modifiedAt": "2020-06-24T08:14:52+00:00",
   "uiComponent": "primary",
-  "componentCollections": [],
+  "componentGroups": [],
   "_metadata": {
     "persisted": true
   }

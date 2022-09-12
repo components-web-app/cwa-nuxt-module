@@ -29,7 +29,7 @@
           v-model="searchValue"
           type="text"
           placeholder="Search"
-          class="search-input"
+          class="input search-input"
         />
       </div>
       <ul v-if="filteredNormalizedOptions.length" class="options-list">

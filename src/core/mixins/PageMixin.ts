@@ -1,10 +1,10 @@
 import Vue from 'vue'
-import ComponentCollection from '../templates/components/core/component-collection.vue'
+import ComponentGroup from '../templates/components/core/component-group.vue'
 import { ADMIN_BAR_EVENTS } from '../events'
 import IriMixin from './IriMixin'
 
 const mixin = Vue.extend({
-  components: { ComponentCollection },
+  components: { ComponentGroup },
   mixins: [IriMixin],
   computed: {
     resource() {
@@ -13,7 +13,7 @@ const mixin = Vue.extend({
     layout() {
       return this.$cwa.resources.Layout?.byId[this.resource.layout]
     },
-    componentCollectionProps() {
+    componentGroupProps() {
       return {
         locationResourceId: this.iri,
         locationResourceReference: this.resource.reference,

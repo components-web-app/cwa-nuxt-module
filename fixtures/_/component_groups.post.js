@@ -3,9 +3,9 @@ import { v4 as uuidv4 } from 'uuid'
 export default function (req, res) {
   return res.send(
     JSON.stringify({
-      '@context': '/contexts/ComponentCollection',
-      '@id': '/_/component_collections/' + (req.body.reference || uuidv4()),
-      '@type': 'ComponentCollection',
+      '@context': '/contexts/ComponentGroup',
+      '@id': '/_/component_groups/' + (req.body.reference || uuidv4()),
+      '@type': 'ComponentGroup',
       reference: req.body.reference,
       location: req.body.location,
       layouts: req.body.layouts || [],

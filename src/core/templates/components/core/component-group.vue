@@ -132,42 +132,43 @@ export default Vue.extend({
             label: 'Add Component',
             component: () =>
               import(
-                '../admin/cwa-component-manager/tabs/component-collection/component.vue'
+                '../admin/cwa-component-manager/tabs/component-group/component.vue'
               )
           },
           {
             label: 'Add Dynamic Placeholder',
             component: () =>
               import(
-                '../admin/cwa-component-manager/tabs/component-collection/position.vue'
+                '../admin/cwa-component-manager/tabs/component-group/position.vue'
               )
           },
           {
             label: 'Info',
             component: () =>
               import(
-                '../admin/cwa-component-manager/tabs/component-collection/info.vue'
+                '../admin/cwa-component-manager/tabs/component-group/info.vue'
               )
           }
         ]
       }
     },
     resource() {
-      return this.$cwa.$storage.getCollectionByPlacement({
+      return this.$cwa.$storage.getGroupByPlacement({
         iri: this.locationResourceId,
         name: this.location
       })
     },
     classes() {
       return [
-        'component-collection',
+        'component-group',
         `is-cwa-collection-${this.locationResourceType}`,
         this.resource
           ? [
-              this.resource.location,
-              slugify(this.resource.reference, {
-                lower: true
-              })
+              `cwa-group-${this.resource.location}`,
+              'cwa-group-' +
+                slugify(this.resource.reference, {
+                  lower: true
+                })
             ]
           : 'not-found',
         { 'is-deleting': this.apiBusy, 'is-reloading': this.reloading }
@@ -219,9 +220,9 @@ export default Vue.extend({
     }
     if (this.$cwa.isAdmin) {
       if (!this.resource) {
-        await this.addComponentCollection()
+        await this.addComponentGroup()
       } else {
-        await this.validateComponentCollection()
+        await this.validateComponentGroup()
       }
     }
     this.$cwa.$eventBus.$on(
@@ -291,7 +292,7 @@ export default Vue.extend({
         this.showOrderValues = !!event.newTab?.context?.showOrderValues
       }
     },
-    async validateComponentCollection() {
+    async validateComponentGroup() {
       const arrayCompare = (a1, a2) => {
         if (!Array.isArray(a1)) {
           a1 = []
@@ -319,11 +320,11 @@ export default Vue.extend({
         this.completeApiRequest()
       }
     },
-    async addComponentCollection() {
+    async addComponentGroup() {
       this.startApiRequest()
       try {
         await this.$cwa.createResource(
-          '/_/component_collections',
+          '/_/component_groups',
           {
             reference: `${this.locationResourceReference}_${this.location}`,
             location: this.location,
@@ -399,7 +400,7 @@ export default Vue.extend({
     transform: rotate(-.3deg)
     animation-timing-function: ease-out
 
-.component-collection
+.component-group
   transition: opacity .3s
   opacity: 1
   > .positions-container > .is-draggable
