@@ -20,7 +20,7 @@ describe('Login', () => {
     cy.location('pathname').should('eq', '/')
     cy.get('.cwa-admin-bar').should('exist')
 
-    cy.get('.component-collection p').should('contain', 'Bonjour mon ami')
+    cy.get('.component-group p').should('contain', 'Bonjour mon ami')
   })
   it('Can use the hamburger menu', () => {
     cy.get('.cwa-admin-bar-menu > .menu').should('not.exist')
