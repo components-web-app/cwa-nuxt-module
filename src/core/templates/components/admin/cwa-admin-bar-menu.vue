@@ -83,7 +83,7 @@
                       >
                     </li>
                     <li>
-                      <a href="#" @click.prevent="logout">Sign out</a>
+                      <a href="#" @click.prevent="$cwa.logout">Sign out</a>
                     </li>
                   </ul>
                 </li>
@@ -198,10 +198,6 @@ export default {
       return version.length > 9
         ? `${version.substr(0, 3)}..${version.substr(-4)}`
         : version
-    },
-    async logout() {
-      await this.$auth.logout('local')
-      this.$cwa.clearDraftResources()
     }
   }
 }

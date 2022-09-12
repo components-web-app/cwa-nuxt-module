@@ -321,6 +321,11 @@ export default class Cwa {
     consola.error(err)
   }
 
+  async logout() {
+    await this.ctx.$auth.logout('local')
+    this.clearDraftResources()
+  }
+
   togglePublishable(draftIri: string, showPublished: boolean) {
     this.$storage.togglePublishable(draftIri, showPublished)
     const publishableIri = this.getPublishableIri(draftIri)
