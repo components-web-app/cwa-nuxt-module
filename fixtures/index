@@ -4,7 +4,7 @@
   "@type": "Entrypoint",
   "blogArticleData": "/page_data/blog_article_datas",
   "collection": "/component/collections",
-  "componentCollection": "/_/component_collections",
+  "componentGroup": "/_/component_groups",
   "componentPosition": "/_/component_positions",
   "form": "/component/forms",
   "htmlContent": "/component/html_contents",

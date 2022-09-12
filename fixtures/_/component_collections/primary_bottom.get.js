@@ -1,9 +1,9 @@
 export default function (_, res) {
   return res.send(
     JSON.stringify({
-      '@context': '/contexts/ComponentCollection',
-      '@id': '/_/component_collections/primary_bottom',
-      '@type': 'ComponentCollection',
+      '@context': '/contexts/ComponentGroup',
+      '@id': '/_/component_groups/primary_bottom',
+      '@type': 'ComponentGroup',
       reference: 'primary_bottom',
       location: 'bottom',
       layouts: ['/_/layouts/239e8066-b93b-48fa-aced-33dc6d4377f1'],

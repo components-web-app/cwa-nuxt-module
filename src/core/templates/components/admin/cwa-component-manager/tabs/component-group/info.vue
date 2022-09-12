@@ -37,7 +37,7 @@ import ApiDateParserMixin from '../../../../../../mixins/ApiDateParserMixin'
 import ComponentManagerTabMixin from '../../../../../../mixins/ComponentManagerTabMixin'
 
 export default Vue.extend({
-  name: 'CwaComponentCollectionInfo',
+  name: 'CwaComponentGroupInfo',
   components: { Info },
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin]
 })

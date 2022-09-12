@@ -8,7 +8,7 @@ export default function (_, res) {
       componentPositions: [
         '/_/component_positions/bcec8679-3a54-4baa-b485-d2579f1687f5'
       ],
-      componentCollections: [],
+      componentGroups: [],
       positionRestricted: false,
       _metadata: {
         persisted: true

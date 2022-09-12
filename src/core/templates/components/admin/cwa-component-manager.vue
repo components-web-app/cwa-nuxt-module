@@ -164,7 +164,7 @@ export default Vue.extend({
         // on a dynamic page, the collection is not initialised as it cannot be edited
         if (this.isIriPoisition(component.iri)) {
           const positionResource = this.$cwa.getResource(component.iri)
-          const collectionIri = positionResource?.componentCollection
+          const collectionIri = positionResource?.componentGroup
           if (collectionIri) {
             return collectionIri
           }
@@ -260,7 +260,7 @@ export default Vue.extend({
       }
     },
     isIriCollection(iri) {
-      return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentCollection'
+      return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentGroup'
     },
     isIriPoisition(iri) {
       return this.$cwa.$storage.getTypeFromIri(iri) === 'ComponentPosition'
@@ -722,12 +722,12 @@ export default Vue.extend({
 .cwa-html
   &.is-editing
     &.is-layout-editing
-      .component-collection.is-cwa-collection-layouts
+      .component-group.is-cwa-collection-layouts
         z-index: 2
     &:not(.is-layout-editing)
-      .component-collection:not(.is-cwa-collection-layouts)
+      .component-group:not(.is-cwa-collection-layouts)
         z-index: 2
-    .component-collection
+    .component-group
       position: relative
       z-index: 1
       background: $body-background-color

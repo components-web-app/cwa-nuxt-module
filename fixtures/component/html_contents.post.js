@@ -27,7 +27,7 @@ export default function (req, res) {
     '@type': 'HtmlContent',
     html,
     componentPositions: ['/_/component_positions/primary_bottom_new_position'],
-    componentCollections: req.body.componentCollections || [],
+    componentGroups: req.body.componentGroups || [],
     positionRestricted: false,
     _metadata: {
       persisted: true,

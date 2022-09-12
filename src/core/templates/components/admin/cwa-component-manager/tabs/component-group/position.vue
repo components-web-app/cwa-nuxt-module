@@ -32,7 +32,7 @@ import { EVENTS } from '../../../../../../mixins/ComponentManagerMixin'
 import LoadPageDataMetadataMixin from '@cwa/nuxt-module/core/mixins/LoadPageDataMetadataMixin'
 
 export default Vue.extend({
-  name: 'CwaComponentCollectionPosition',
+  name: 'CwaComponentGroupPosition',
   components: { CmButton, CwaAdminSelect },
   mixins: [
     ComponentManagerTabMixin,
@@ -57,7 +57,7 @@ export default Vue.extend({
         const newPosition = await this.$cwa.createResource(
           endpoint,
           {
-            componentCollection: this.resource['@id'],
+            componentGroup: this.resource['@id'],
             pageDataProperty: this.pageDataProperty
           },
           null,

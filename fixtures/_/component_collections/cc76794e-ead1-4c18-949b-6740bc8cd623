@@ -1,7 +1,7 @@
 {
-  "@context": "\/contexts\/ComponentCollection",
-  "@id": "\/_\/component_collections\/cc76794e-ead1-4c18-949b-6740bc8cd623",
-  "@type": "ComponentCollection",
+  "@context": "\/contexts\/ComponentGroup",
+  "@id": "\/_\/component_groups\/cc76794e-ead1-4c18-949b-6740bc8cd623",
+  "@type": "ComponentGroup",
   "reference": "home_primary",
   "location": "primary",
   "layouts": [],

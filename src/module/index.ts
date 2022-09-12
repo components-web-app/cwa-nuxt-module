@@ -195,7 +195,7 @@ async function loadComponents() {
     '@cwa/nuxt-module/core/mixins/ResourceMixin.js'
   )
   this.nuxt.options.build!.transpile!.push(
-    '@cwa/nuxt-module/core/templates/components/core/component-collection.vue'
+    '@cwa/nuxt-module/core/templates/components/core/component-group.vue'
   )
   this.nuxt.options.build!.transpile!.push(
     '@cwa/nuxt-module/core/templates/components/core/component-position.vue'

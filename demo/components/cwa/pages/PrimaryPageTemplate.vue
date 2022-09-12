@@ -4,9 +4,9 @@
       <div class="container">
         <div class="columns is-gapless">
           <div class="column">
-            <component-collection
+            <component-group
               location="primary"
-              v-bind="componentCollectionProps"
+              v-bind="componentGroupProps"
             />
           </div>
         </div>
