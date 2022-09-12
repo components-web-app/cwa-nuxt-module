@@ -11,3 +11,4 @@ sw.*
 cypress/screenshots/
 cypress/downloads/
 coverage/
+build
