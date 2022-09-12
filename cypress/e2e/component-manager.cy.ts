@@ -39,6 +39,16 @@ describe('Component Manager Functions', () => {
   })
 
   it('Add a draft component and then publish it', () => {
+    // only in c1 version 10.7.0
+    cy.on('uncaught:exception', (err) => {
+      expect(err.message).to.include(
+        "Cannot read properties of undefined (reading 'message')"
+      )
+      // return false to prevent the error from
+      // failing this test
+      return false
+    })
+
     cy.get('.cwa-add-button.is-pulsing').eq(1).click()
     cy.get('button').contains('Switch to layout').click()
     cy.get('select#component').select('HtmlContent')
