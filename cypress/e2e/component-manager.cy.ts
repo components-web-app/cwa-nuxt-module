@@ -62,7 +62,7 @@ describe('Component Manager Functions', () => {
       .get('.cwa-manager-highlight.is-draft')
       .should('exist')
     cy.get('.cwa-manager-tab:eq(3)').contains('Publish').click()
-    cy.get('button').contains('Publish Now').click()
+    cy.get('button').contains('Publish').click()
 
     // will be an error do not hide the manager
 
@@ -73,7 +73,7 @@ describe('Component Manager Functions', () => {
     cy.get('.html-content-tab label').click()
     cy.get('.ql-editor[contenteditable]').type('My HTML Content')
     cy.get('.cwa-manager-tab').contains('Publish').click()
-    cy.get('button').contains('Publish Now').click()
+    cy.get('button').contains('Publish').click()
     cy.get('.errors-list').should('not.exist')
     cy.get('.cwa-error-notifications .cwa-warning-triangle').should('not.exist')
     cy.get('.status-icon').should('not.exist')
