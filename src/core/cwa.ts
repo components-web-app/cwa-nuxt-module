@@ -110,11 +110,11 @@ export default class Cwa {
         }
 
         toRoute.meta.cwaConfirmedNavigation = true
-        next(
-          Object.assign({}, toRoute, {
-            query: toRoute.query
-          })
-        )
+
+        next({
+          path: toRoute.path,
+          query: toRoute.query
+        })
       } finally {
         programmatic = false
       }
