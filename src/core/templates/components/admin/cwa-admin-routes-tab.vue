@@ -210,15 +210,36 @@ export default Vue.extend({
       //   this.redirect !== ''
       // )
     },
+    pageComponentIsPageData() {
+      if (!this.pageComponent) {
+        return null
+      }
+      return this.pageComponent.page !== undefined
+    },
+    staticPageComponent() {
+      if (this.pageComponentIsPageData === false) {
+        return this.pageComponent
+      }
+      return null
+    },
+    pageDataComponent() {
+      if (this.pageComponentIsPageData === true) {
+        return this.pageComponent
+      }
+      return null
+    },
     routePageData() {
       return {
         page:
           this.component?.page?.['@id'] ||
           this.component.page ||
-          this.pageComponent?.['@id'] ||
+          this.staticPageComponent?.['@id'] ||
           null,
         pageData:
-          this.component?.pageData?.['@id'] || this.component.pageData || null
+          this.component?.pageData?.['@id'] ||
+          this.component.pageData ||
+          this.pageDataComponent?.['@id'] ||
+          null
       }
     }
   },
