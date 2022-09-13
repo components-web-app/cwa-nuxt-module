@@ -5,6 +5,7 @@ import Fetcher from './fetcher'
 // I don't know whether the $cwa property will be required, but it is injected into all contexts throughout
 // Nuxt/Vuejs components. This is the class at source /src/core/cwa.ts
 export default async function routeLoaderMiddleware({ route, $cwa }) {
+  $cwa.$storage.setState(Fetcher.isSSRKey, !process.client)
   const pageParam = routeOption(route, 'pageIriParam')
   if (pageParam) {
     if (route.name === '_cwa_page_data_iri') {

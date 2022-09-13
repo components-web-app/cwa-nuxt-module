@@ -34,6 +34,7 @@ export class Fetcher {
   public static readonly loadingEndpoint = 'loadingRoute'
   public static readonly loadedRoutePathKey = 'loadedRoute'
   public static readonly loadedPageKey = 'loadedPage'
+  public static readonly isSSRKey = 'isSsrLoad'
   private timer: DebugTimer
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []

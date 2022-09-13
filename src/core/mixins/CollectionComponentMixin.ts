@@ -30,6 +30,11 @@ export default Vue.extend({
   created() {
     this.loadSubResources()
   },
+  mounted() {
+    if (this.$cwa.user && this.$cwa.isServerLoad) {
+      this.refreshCollection()
+    }
+  },
   methods: {
     async refreshCollection() {
       if (this.refreshCancelTokenSource) {

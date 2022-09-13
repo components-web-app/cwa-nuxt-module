@@ -59,6 +59,10 @@ export default class Cwa {
     }
   }
 
+  get isServerLoad() {
+    return this.$storage.getState(Fetcher.isSSRKey)
+  }
+
   /**
    * Initialisers
    */
