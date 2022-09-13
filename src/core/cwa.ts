@@ -94,7 +94,9 @@ export default class Cwa {
         cwaForce = cwaForce === 'true' ? true : !!cwaForce
         if (!cwaForce) {
           cwaForce = toRoute.query?.cwa_force === 'true'
-          delete toRoute.query.cwa_force
+          if (cwaForce) {
+            delete toRoute.query.cwa_force
+          }
         }
 
         const cwaConfirmedNavigation =
@@ -108,9 +110,11 @@ export default class Cwa {
         }
 
         toRoute.meta.cwaConfirmedNavigation = true
-        next({
-          query: toRoute.query
-        })
+        next(
+          Object.assign({}, toRoute, {
+            query: toRoute.query
+          })
+        )
       } finally {
         programmatic = false
       }
