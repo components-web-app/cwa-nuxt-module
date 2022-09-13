@@ -16,13 +16,20 @@ describe('middleware', () => {
     await routeLoaderMiddleware({ $cwa, route })
 
     expect($cwa.fetchRoute).not.toHaveBeenCalled()
+    expect($cwa.$storage.setState).toHaveBeenCalledWith('isSsrLoad', true)
     expect($cwa.$storage.setState).toHaveBeenCalledWith('loadedRoute', null)
   })
 
   it('should call fetchRoute', async () => {
     process.client = true
     const route = { matched: [{ components: [{ _Ctor: {} }] }], path: '/' }
-    const $cwa = { fetchRoute: jest.fn(), initMercure: jest.fn() }
+    const $cwa = {
+      fetchRoute: jest.fn(),
+      initMercure: jest.fn(),
+      $storage: {
+        setState: jest.fn()
+      }
+    }
 
     await routeLoaderMiddleware({ $cwa, route })
 
@@ -38,7 +45,10 @@ describe('middleware', () => {
         throw err
       }),
       setFetchError: jest.fn(),
-      initMercure: jest.fn()
+      initMercure: jest.fn(),
+      $storage: {
+        setState: jest.fn()
+      }
     }
 
     await routeLoaderMiddleware({ $cwa, route })
