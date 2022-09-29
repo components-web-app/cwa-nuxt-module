@@ -60,7 +60,9 @@ export default Vue.extend({
           this.publishedIri = publishedIri
           return
         }
-        await this.$cwa.fetcher.fetchResource(`${publishedIri}?published=true`)
+        await this.$cwa.fetcher.fetchResource({
+          path: `${publishedIri}?published=true`
+        })
 
         this.publishedIri = publishedIri
       }

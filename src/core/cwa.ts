@@ -479,7 +479,7 @@ export default class Cwa {
   ) {
     return await this.initNewRequest(
       async () => {
-        const resource = await this.fetcher.fetchItem({
+        const resource = await this.fetcher.fetchResource({
           path: endpoint,
           cancelTokenSource
         })

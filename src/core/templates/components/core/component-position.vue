@@ -191,7 +191,7 @@ export default Vue.extend({
     if (!this.component) {
       // check if no published version, only a draft (i.e. only an authorized viewer can see it)
       if (this.$cwa.user && this.resource.component) {
-        await this.$cwa.fetcher.fetchResource(this.resource.component)
+        await this.$cwa.fetcher.fetchResource({ path: this.resource.component })
       }
 
       // wait for the component IRI to try and be fetched client-side and populated into storage
@@ -200,7 +200,9 @@ export default Vue.extend({
         if (!this.component) {
           // it is not a dynamic position and we are an admin.. try to fetch this position again client-side
           if (!this.resource.pageDataProperty && this.$cwa.isAdmin) {
-            await this.$cwa.fetcher.fetchResource(this.resource['@id'])
+            await this.$cwa.fetcher.fetchResource({
+              path: this.resource['@id']
+            })
           }
           this.componentLoadFailed = true
         }

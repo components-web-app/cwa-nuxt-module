@@ -39,7 +39,7 @@ export class Fetcher {
   private mercureMessages: Array<MercureMessage> = []
   private unavailableComponents: string[] = []
   private fetchingCounter: number = 0
-  private clientResourcesFetched: {
+  private resourcesFetched: {
     [key: string]: Promise<any>
   } = {}
 
@@ -150,34 +150,49 @@ export class Fetcher {
     )
   }
 
-  public async fetchItem({
-    path,
-    preload,
-    cancelTokenSource
-  }: {
+  public async fetchResource(fetcherObj: {
     path: string
     preload?: string[]
     cancelTokenSource?: CancelTokenSource
   }) {
-    const resource = await this.fetcher({ path, preload, cancelTokenSource })
-    if (!resource) {
+    this.timer.reset()
+
+    const doFetch = async () => {
+      const resource = await this.fetcher(fetcherObj)
+      if (!resource) {
+        return resource
+      }
+
+      // we could be returned a draft instead with a different IRI.
+      // although a fix in the API means we shouldn't - component position
+      // will return what we are authorized to see
+      const iri = resource['@id']
+      const category = this.ctx.storage.getCategoryFromIri(iri)
+
+      this.ctx.storage.setResource({ resource, category })
+
+      const currentResource = this.currentResources?.[category]?.byId?.[iri]
+      if (!currentResource) {
+        this.initMercure(this.currentResources)
+      }
+
       return resource
     }
 
-    // we could be returned a draft instead with a different IRI.
-    // although a fix in the API means we shouldn't - component position
-    // will return what we are authorized to see
-    const iri = resource['@id']
-    const category = this.ctx.storage.getCategoryFromIri(iri)
-
-    this.ctx.storage.setResource({ resource, category })
-
-    const currentResource = this.currentResources?.[category]?.byId?.[iri]
-    if (!currentResource) {
-      this.initMercure(this.currentResources)
+    try {
+      // we are fetching with full available auth
+      if (!this.resourcesFetched[fetcherObj.path]) {
+        this.resourcesFetched[fetcherObj.path] = doFetch()
+      }
+      return await this.resourcesFetched[fetcherObj.path]
+    } catch (error) {
+      // may be a draft component without a published version - only accessible to admin, therefore only available client-side
+      // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ... on server-side load
+      if (!process.client && error?.statusCode === 404) {
+        return
+      }
+      throw error
     }
-
-    return resource
   }
 
   private fetchCollection(
@@ -208,7 +223,7 @@ export class Fetcher {
 
   private startFetch(endpoint) {
     // prevent reload on querystring change or if we are already loading
-    this.clientResourcesFetched = {}
+    this.resourcesFetched = {}
     const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
     const currentlyLoaded = this.ctx.storage.getState(
       Fetcher.loadedRoutePathKey
@@ -264,7 +279,7 @@ export class Fetcher {
     }
 
     try {
-      const pageDataResponse = await this.fetchItem({
+      const pageDataResponse = await this.fetchResource({
         path: pageDataIri,
         preload: [
           '/page/layout/componentGroups/*/componentPositions/*/component',
@@ -277,7 +292,7 @@ export class Fetcher {
         this.ctx.error('The page data resource does not have a page configured')
       }
 
-      const pageResponse = await this.fetchItem({
+      const pageResponse = await this.fetchResource({
         path: pageDataResponse.page,
         preload: [
           '/layout/componentGroups/*/componentPositions/*/component',
@@ -302,7 +317,7 @@ export class Fetcher {
         componentGroups: []
       }
     }
-    return this.fetchItem({ path: layoutIri })
+    return this.fetchResource({ path: layoutIri })
   }
 
   public async fetchPage(pageIri) {
@@ -311,7 +326,7 @@ export class Fetcher {
     }
 
     try {
-      const pageResponse = await this.fetchItem({
+      const pageResponse = await this.fetchResource({
         path: pageIri,
         preload: [
           '/layout/componentGroups/*/componentPositions/*/component',
@@ -337,7 +352,19 @@ export class Fetcher {
     }
 
     try {
-      const routeResponse = await this.fetchItem({
+      const routeManifestResponse = await this.fetcher({
+        path: `/_/routes_manifest/${path}`
+      })
+      const manifestResources = routeManifestResponse.resource_iris
+      manifestResources.forEach((manifestResource) => {
+        this.fetchResource({ path: manifestResource })
+      })
+    } catch (e) {
+      consola.error('routes menifest error', e)
+    }
+
+    try {
+      const routeResponse = await this.fetchResource({
         path: `/_/routes/${path}`,
         preload: [
           '/page/layout/componentGroups/*/componentPositions/*/component',
@@ -379,53 +406,17 @@ export class Fetcher {
         return this.fetchCollection(
           { paths: componentGroup.componentPositions },
           (componentPosition) => {
-            return this.fetchResource(componentPosition.component)
+            return this.fetchResource({ path: componentPosition.component })
           }
         )
       }
     )
   }
 
-  public async fetchResource(path) {
-    this.timer.reset()
-    const doFetch = () => {
-      return this.fetchItem({
-        path
-      })
-    }
-    try {
-      if (process.client) {
-        // we are fetching with full available auth
-        if (!this.clientResourcesFetched[path]) {
-          this.clientResourcesFetched[path] = doFetch()
-        }
-        return await this.clientResourcesFetched[path]
-      } else {
-        return await doFetch()
-      }
-
-      // const unavailableIndex = this.unavailableComponents.indexOf(path)
-      // if (unavailableIndex !== -1) {
-      //   this.unavailableComponents.splice(unavailableIndex, 1)
-      // }
-      // return component
-    } catch (error) {
-      // may be a draft component without a published version - only accessible to admin, therefore only available client-side
-      // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ... on server-side load
-      if (error?.statusCode === 404) {
-        // if (!this.unavailableComponents.includes(path)) {
-        //   this.unavailableComponents.push(path)
-        // }
-        return
-      }
-      throw error
-    }
-  }
-
   private async fetchPageByRouteResponse(routeResponse) {
     let page = routeResponse.page
     if (routeResponse.pageData) {
-      const pageDataResponse = await this.fetchItem({
+      const pageDataResponse = await this.fetchResource({
         path: routeResponse.pageData
       })
       if (!pageDataResponse) {
@@ -436,7 +427,7 @@ export class Fetcher {
     if (!page) {
       return null
     }
-    return this.fetchItem({ path: page })
+    return this.fetchResource({ path: page })
   }
 
   private setDocsUrlFromHeaders(headers) {
@@ -650,7 +641,7 @@ export class Fetcher {
     // we should check the component in this position
     if (data.component) {
       // try to fetch it from the API
-      if (!(await this.fetchResource(data.component))) {
+      if (!(await this.fetchResource({ path: data.component }))) {
         this.initMercure(this.currentResources)
       }
     }
