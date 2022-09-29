@@ -188,7 +188,9 @@ export class Fetcher {
     } catch (error) {
       // may be a draft component without a published version - only accessible to admin, therefore only available client-side
       // error instanceof ApiError &&  -- causes issue when deployed, does not detect as this type of error ... on server-side load
-      if (!process.client && error?.statusCode === 404) {
+      // !process.client &&
+      // manifest will serve draft resource iris currently as well... interesting, needs investigating
+      if (error?.statusCode === 404) {
         return
       }
       throw error
@@ -360,7 +362,7 @@ export class Fetcher {
         this.fetchResource({ path: manifestResource })
       })
     } catch (e) {
-      consola.error('routes menifest error', e)
+      consola.error('routes manifest error', e)
     }
 
     try {
