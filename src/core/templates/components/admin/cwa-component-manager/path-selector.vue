@@ -169,7 +169,7 @@ export default {
   ul.component-list
     list-style: none
     position: absolute
-    width: 100%
+    min-width: 100%
     top: 100%
     left: 0
     z-index: 2
