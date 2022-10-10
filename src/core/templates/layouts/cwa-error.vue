@@ -18,6 +18,12 @@
                 <%= messages.back_to_home %>
               </NuxtLink>
             </p>
+            <% if(debug) { %>
+            <p v-else class="description">
+              <%= messages.client_error_details %>
+            </p>
+            <% } %>
+            <!-- eslint-enable vue/no-parsing-error -->
             <p v-if="statusCode === 401" class="description">
               <button
                 class="error-link button is-light is-outlined"
@@ -26,13 +32,15 @@
                 {{ loggingOut ? 'Please wait...' : 'Sign out' }}
               </button>
             </p>
-            <% if(debug) { %>
-            <p v-else class="description">
-              <%= messages.client_error_details %>
+            <p v-if="statusCode === 500" class="description">
+              <button
+                class="error-link button is-light is-outlined"
+                @click="refreshPage"
+              >
+                {{ reloading ? 'Please wait...' : 'Try Again' }}
+              </button>
             </p>
-            <% } %>
           </div>
-          <!-- eslint-enable vue/no-parsing-error -->
         </div>
       </div>
       <div v-if="!$cwa.isAdmin" class="bottom">
@@ -62,7 +70,8 @@ export default {
   },
   data() {
     return {
-      loggingOut: false
+      loggingOut: false,
+      reloading: false
     }
   },
   head() {
@@ -89,11 +98,14 @@ export default {
       try {
         this.loggingOut = true
         await this.$cwa.logout()
+        this.refreshPage()
       } catch (error) {
         this.loggingOut = false
         consola.error(error)
       }
-
+    },
+    refreshPage() {
+      this.reloading = true
       window.location.reload()
     }
   }
