@@ -105,10 +105,10 @@ export default Vue.extend({
       return this.resource?._metadata || {}
     },
     publishable() {
-      return 'published' in this.metadata
+      return 'publishable' in this.metadata
     },
     published() {
-      return this.publishable ? this.metadata.published : true
+      return this.publishable ? this.metadata.publishable.published : true
     }
   },
   watch: {

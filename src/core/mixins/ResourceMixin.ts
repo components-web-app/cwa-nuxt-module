@@ -34,7 +34,7 @@ export default Vue.extend({
 
     // client side has auth so let's update the results
     // if it is not published, we should try and fetch the associated published resource
-    if (!this.resource?._metadata?.published) {
+    if (!this.resource?._metadata?.publishable?.published) {
       this.draftIri = this.iri
       // do we have the published already in store
       const mappedPublishedIri = this.$cwa.$storage.findPublishedIri(this.iri)

@@ -88,7 +88,9 @@ export default Vue.extend({
         return null
       }
       const storageResource = this.$cwa.getResource(this.componentIri)
-      return storageResource?._metadata?.published === false || false
+      return (
+        storageResource?._metadata?.publishable?.published === false || false
+      )
     },
     componentManagerTabs(): Array<ComponentManagerTab> {
       if (this.isDynamicPage) {
@@ -184,7 +186,7 @@ export default Vue.extend({
 
     // TODO: add check to only do this for initial server-side load
     // if it is published from a server-side load there may be a draft available
-    if (this.component?._metadata.published && this.$cwa.user) {
+    if (this.component?._metadata.publishable?.published && this.$cwa.user) {
       await this.$cwa.refreshResource(this.iri)
     }
 

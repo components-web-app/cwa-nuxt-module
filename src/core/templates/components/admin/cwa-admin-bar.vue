@@ -204,14 +204,19 @@ export default Vue.extend({
         return false
       }
       const storageResource = this.$cwa.getResource(this.componentIri)
-      return storageResource?._metadata?.published === false || false
+      return (
+        storageResource?._metadata?.publishable?.published === false || false
+      )
     },
     isScheduled() {
       if (!this.isDraft) {
         return false
       }
       const storageResource = this.$cwa.getResource(this.componentIri)
-      return !!storageResource && !!storageResource._metadata?.publishedAt
+      return (
+        !!storageResource &&
+        !!storageResource._metadata?.publishable?.publishedAt
+      )
     },
     headerPromptVisibilityChange() {
       return this.editMode && !this.isComponentSelected

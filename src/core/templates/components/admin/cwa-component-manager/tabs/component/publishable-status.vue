@@ -62,7 +62,7 @@ export default Vue.extend({
   computed: {
     isPublished: {
       get() {
-        return this.resource._metadata.published
+        return this.resource._metadata.publishable?.published || false
       },
       set(showPublished) {
         const draftIri = this.$cwa.findDraftIri(this.iri) || this.iri

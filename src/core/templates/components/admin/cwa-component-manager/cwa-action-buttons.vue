@@ -102,7 +102,7 @@ export default Vue.extend({
     },
     isDraft() {
       const resource = this.$cwa.getResource(this.selectedComponent.iri)
-      return resource?._metadata?.published === false || false
+      return resource?._metadata?.publishable?.published === false || false
     },
     refreshEndpoints() {
       const publishedResource = this.$cwa.getPublishedResource(

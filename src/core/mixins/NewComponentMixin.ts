@@ -95,11 +95,13 @@ export default Vue.extend({
         '@type': string
         _metadata?: {
           _isNew: boolean
-          published?: boolean
+          publishable?: {
+            published?: boolean
+          }
         }
       }
       if (isPublishable) {
-        resource._metadata.published = false
+        resource._metadata.publishable = { published: false }
       }
       this.$cwa.$storage.setResource({
         resource
