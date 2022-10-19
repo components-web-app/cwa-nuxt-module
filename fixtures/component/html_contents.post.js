@@ -31,7 +31,7 @@ export default function (req, res) {
     positionRestricted: false,
     _metadata: {
       persisted: true,
-      published: !!req.body.publishedAt,
+      publishable: { published: !!req.body.publishedAt },
       publishedAt: req.body.publishedAt || null
     }
   }
