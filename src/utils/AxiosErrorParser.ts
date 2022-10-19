@@ -11,7 +11,9 @@ export interface AxiosError {
 }
 
 export default function (error): AxiosError {
-  const endpoint = error?.response?.config?.url
+  const baseURL = error?.config?.baseURL || '//'
+  const endpoint =
+    baseURL + (error?.config?.url || error?.response?.config?.url)
   if (
     error.response &&
     error.response.status &&

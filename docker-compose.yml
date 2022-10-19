@@ -13,7 +13,7 @@ services:
       NODE_ENV: ~
       LOCAL_TLS: ~
       NODE_TLS_REJECT_UNAUTHORIZED: ~
-      API_URL: https://api.cwa.local:8443
+      API_URL: https://caddy.local:8443
       API_URL_BROWSER: https://localhost:8443
       HOST: 0.0.0.0
     ports:
