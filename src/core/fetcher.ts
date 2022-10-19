@@ -43,6 +43,8 @@ export class Fetcher {
     [key: string]: Promise<any>
   } = {}
 
+  private resourcesCacheEnabled: boolean = false
+
   constructor(
     { $axios, error, apiUrl, storage, router, redirect },
     { fetchConcurrency }
@@ -181,6 +183,9 @@ export class Fetcher {
 
     try {
       // we are fetching with full available auth
+      if (!this.resourcesCacheEnabled) {
+        return await doFetch()
+      }
       if (!this.resourcesFetched[fetcherObj.path]) {
         this.resourcesFetched[fetcherObj.path] = doFetch()
       }
@@ -226,6 +231,7 @@ export class Fetcher {
   private startFetch(endpoint) {
     // prevent reload on querystring change or if we are already loading
     this.resourcesFetched = {}
+    this.resourcesCacheEnabled = true
     const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
     const currentlyLoaded = this.ctx.storage.getState(
       Fetcher.loadedRoutePathKey
@@ -270,6 +276,8 @@ export class Fetcher {
   }
 
   private finallyFetch(endpoint) {
+    this.resourcesFetched = {}
+    this.resourcesCacheEnabled = false
     this.initMercure(this.currentResources)
     this.timer.end(`Fetch route ${endpoint}`)
     this.timer.print()

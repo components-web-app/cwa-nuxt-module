@@ -427,7 +427,6 @@ export default class Cwa {
     for (const refreshEndpoint of refreshEndpoints) {
       promises.push(
         this.refreshResource(refreshEndpoint).then((refreshResource) => {
-          this.saveResource(refreshResource, null)
           this.decreaseMercurePendingProcessCount()
           this.$eventBus.$emit(API_EVENTS.refreshed, refreshEndpoint)
           consola.debug('Resource refreshed', refreshResource)
@@ -639,6 +638,9 @@ export default class Cwa {
         return
       }
 
+      if (!newResource._metadata?.publishable) {
+        return
+      }
       // Handle draft mapping
       if (newResource._metadata?.publishable?.published) {
         const draftIri = this.$storage.findDraftIri(newResource['@id'])
