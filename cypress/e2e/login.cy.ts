@@ -28,7 +28,7 @@ describe('Login', () => {
     cy.get('.cwa-admin-bar-menu > .menu').should('be.visible')
     cy.get('.menu-links-right li:last-child ul li:last-child a').should(
       'contain.text',
-      'API dev..75ce (unstable)'
+      'API dev..b15e (unstable)'
     )
   })
   it('Can log out', () => {

@@ -640,7 +640,7 @@ export default class Cwa {
       }
 
       // Handle draft mapping
-      if (newResource._metadata?.publishable) {
+      if (newResource._metadata?.publishable?.published) {
         const draftIri = this.$storage.findDraftIri(newResource['@id'])
         if (draftIri) {
           const iriObj = {
