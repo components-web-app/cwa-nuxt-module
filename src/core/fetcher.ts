@@ -369,8 +369,8 @@ export class Fetcher {
       manifestResources.forEach((manifestResource) => {
         this.fetchResource({ path: manifestResource })
       })
-    } catch (e) {
-      consola.error('routes manifest error', e)
+    } catch (error) {
+      this.ctx.error(error)
     }
 
     try {
@@ -424,6 +424,9 @@ export class Fetcher {
   }
 
   private async fetchPageByRouteResponse(routeResponse) {
+    if (!routeResponse) {
+      return null
+    }
     let page = routeResponse.page
     if (routeResponse.pageData) {
       const pageDataResponse = await this.fetchResource({
