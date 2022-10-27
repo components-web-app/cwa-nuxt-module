@@ -10,7 +10,12 @@
           </div>
           <div class="content">
             <p v-if="error.endpoint" class="description url">
-              {{ error.endpoint }}
+              <a
+                :href="error.endpoint"
+                target="_blank"
+                rel="nofollow noopener"
+                >{{ error.endpoint }}</a
+              >
             </p>
             <!-- eslint-disable vue/no-parsing-error -->
             <p v-if="statusCode === 404" class="description">

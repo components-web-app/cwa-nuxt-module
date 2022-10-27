@@ -37,7 +37,6 @@ export class Fetcher {
   public static readonly isSSRKey = 'isSsrLoad'
   private timer: DebugTimer
   private mercureMessages: Array<MercureMessage> = []
-  private unavailableComponents: string[] = []
   private fetchingCounter: number = 0
   private resourcesFetched: {
     [key: string]: Promise<any>
@@ -71,7 +70,7 @@ export class Fetcher {
     return this.ctx.storage.getState(Fetcher.loadedPageKey)
   }
 
-  private get currentResources() {
+  private get currentResources(): { [any: string]: resourcesState } {
     return this.ctx.storage.state.resources.current
   }
 
@@ -98,11 +97,13 @@ export class Fetcher {
     this.fetchingCounter++
     let url = path
     const queryObj = this.ctx.router.currentRoute.query
-    if (queryObj) {
-      const queryString = Object.keys(queryObj)
+    let queryKeys
+    if (queryObj && (queryKeys = Object.keys(queryObj)).length > 0) {
+      const queryString = queryKeys
         .map((key) => key + '=' + queryObj[key])
         .join('&')
-      url += `?${queryString}`
+      const delimiter = url.includes('?') ? '&' : '?'
+      url += `${delimiter}${queryString}`
     }
     consola.trace(`Fetching ${url}`)
     this.timer.start(`Fetching ${url}`)
@@ -173,10 +174,10 @@ export class Fetcher {
 
       this.ctx.storage.setResource({ resource, category })
 
-      const currentResource = this.currentResources?.[category]?.byId?.[iri]
-      if (!currentResource) {
-        this.initMercure(this.currentResources)
-      }
+      // const currentResource = this.currentResources?.[category]?.byId?.[iri]
+      // if (!currentResource) {
+      //   this.initMercure()
+      // }
 
       return resource
     }
@@ -278,7 +279,7 @@ export class Fetcher {
   private finallyFetch(endpoint) {
     this.resourcesFetched = {}
     this.resourcesCacheEnabled = false
-    this.initMercure(this.currentResources)
+    this.initMercure()
     this.timer.end(`Fetch route ${endpoint}`)
     this.timer.print()
   }
@@ -501,19 +502,15 @@ export class Fetcher {
     }
   }
 
-  public initMercure(currentResources: { any: resourcesState }) {
+  public initMercure() {
     const currentLoading = this.ctx.storage.getState(Fetcher.loadingEndpoint)
-    if (currentLoading || this.fetchingCounter) {
-      return
-    }
-    const currentResourcesCategories = Object.values(currentResources)
-    if (!process.client) {
+    if (currentLoading || this.fetchingCounter || !process.client) {
       return
     }
 
     let hubUrl = null
     try {
-      hubUrl = this.getMercureHubURL(currentResourcesCategories)
+      hubUrl = this.getMercureHubURL()
     } catch (err) {
       consola.error('Could not get Mercure hub url.', err?.message)
       return
@@ -533,9 +530,20 @@ export class Fetcher {
     this.eventSource = new EventSource(hubUrl)
     // will be in context of EventSource if not using call
     // eslint-disable-next-line no-useless-call
-    this.eventSource.onmessage = (messageEvent: MessageEvent) => {
-      this.handleMercureMessage(messageEvent)
+    this.eventSource.onmessage = async (messageEvent: MessageEvent) => {
+      await this.handleMercureMessage(messageEvent)
     }
+  }
+
+  private getCurrentMercureResources(currentResources: {
+    [any: string]: resourcesState
+  }): string[] {
+    const currentResourcesCategories = Object.values(currentResources)
+    const resources = []
+    for (const resourcesObject of currentResourcesCategories) {
+      resources.push(...resourcesObject.currentIds)
+    }
+    return resources
   }
 
   private handleMercureMessage(event: MessageEvent) {
@@ -544,6 +552,19 @@ export class Fetcher {
       event,
       data: JSON.parse(event.data)
     }
+
+    const currentResourceIris = this.getCurrentMercureResources(
+      this.currentResources
+    )
+
+    if (!currentResourceIris.includes(newMessage.data['@id'])) {
+      // the update may be for a new draft resource which will be related to a published resource currently loaded
+      const publishedIri = newMessage.data?.publishedResource || null
+      if (!publishedIri || !currentResourceIris.includes(publishedIri)) {
+        return
+      }
+    }
+
     const newMessages = [
       ...this.mercureMessages.filter((msg: MercureMessage) => {
         return msg.data['@id'] !== newMessage.data['@id']
@@ -596,14 +617,16 @@ export class Fetcher {
     for (const message of messages) {
       consola.debug('Mercure message received', message)
       const data = message.data
+
+      // delete resource if deleted from API - instant...
       if (Object.keys(data).length === 1 && data['@id']) {
         this.ctx.storage.deleteResource(data['@id'])
         return
       }
+
       this.lastEventId = message.event.lastEventId
 
       // we listen to all of these in case we are adding to an existing component collection
-      // const unavailableIndex = this.unavailableComponents.indexOf(data['@id'])
       const force = await this.forceComponentPositionPersist(data)
 
       // force option will add the resource into new even if there is not an existing resource
@@ -613,10 +636,6 @@ export class Fetcher {
         resource: data,
         force
       })
-
-      // if (unavailableIndex !== -1) {
-      //   this.unavailableComponents.splice(unavailableIndex, 1)
-      // }
     }
   }
 
@@ -655,7 +674,7 @@ export class Fetcher {
     if (data.component) {
       // try to fetch it from the API
       if (!(await this.fetchResource({ path: data.component }))) {
-        this.initMercure(this.currentResources)
+        // this.initMercure()
       }
     }
 
@@ -675,27 +694,24 @@ export class Fetcher {
     return true
   }
 
-  private getMercureHubURL(currentResources: resourcesState[]) {
+  private getMercureHubURL() {
     const hub = new URL(this.ctx.storage.state.mercureHub)
 
-    hub.searchParams.append(
-      'topic',
-      `${this.ctx.apiUrl}/_/component_positions/{id}`
-    )
-    // this.unavailableComponents.forEach((iri) => {
-    //   hub.searchParams.append('topic', this.ctx.apiUrl + iri)
-    // })
-    for (const resourcesObject of currentResources) {
-      if (resourcesObject.currentIds === undefined) {
-        continue
-      }
-      resourcesObject.currentIds.forEach((id) => {
-        hub.searchParams.append('topic', this.ctx.apiUrl + id)
-      })
-    }
-    if (hub.searchParams.get('topic') === null) {
-      throw new Error('No current resources/topics.')
-    }
+    hub.searchParams.append('topic', `*`)
+
+    // hub.searchParams.append(
+    //   'topic',
+    //   `${this.ctx.apiUrl}/_/component_positions/{id}`
+    // )
+    //
+    // for (const resourcesObject of currentResources) {
+    //   if (resourcesObject.currentIds === undefined) {
+    //     continue
+    //   }
+    //   resourcesObject.currentIds.forEach((id) => {
+    //     hub.searchParams.append('topic', this.ctx.apiUrl + id)
+    //   })
+    // }
 
     if (this.lastEventId) {
       hub.searchParams.append('Last-Event-ID', this.lastEventId)

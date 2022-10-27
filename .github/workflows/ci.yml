@@ -39,10 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # see https://github.com/cypress-io/cypress/issues/23393 - 16.17 compatibility issue
-        node: [16.16]
+        node: [16]
       fail-fast: true
-    container: cypress/included:10.7.0
+    container: cypress/included:10.11.0
     steps:
       - name: Checkout
         uses: actions/checkout@v3

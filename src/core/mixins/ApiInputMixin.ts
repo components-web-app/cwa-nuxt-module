@@ -4,6 +4,7 @@ import { STATUS_EVENTS, StatusEvent } from '../events'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 import UpdateResourceMixin from './UpdateResourceMixin'
+import UpdateResourceError from '@cwa/nuxt-module/inc/update-resource-error';
 
 export default Vue.extend({
   mixins: [ResourceMixin, ApiRequestMixin, UpdateResourceMixin],
@@ -68,6 +69,10 @@ export default Vue.extend({
         this.debouncedFn = null
         try {
           await this.update()
+        } catch (error) {
+          if (error) {
+            throw error
+          }
         } finally {
           this.$cwa.decreaseMercurePendingProcessCount(1)
         }
@@ -107,17 +112,18 @@ export default Vue.extend({
     async update() {
       this.pendingDebounce = false
       this.updatingResourceValue = this.inputValue
-      const result = await this.updateResource(
-        this.iri,
-        this.field,
-        this.inputValue,
-        this.category,
-        this.refreshEndpoints,
-        this.notificationCategory
-      )
-      this.updatingResourceValue = null
-      if (result !== false) {
+      try {
+        await this.updateResource(
+          this.iri,
+          this.field,
+          this.inputValue,
+          this.category,
+          this.refreshEndpoints,
+          this.notificationCategory
+        )
         this.outdated = false
+      } finally {
+        this.updatingResourceValue = null
       }
     }
   }

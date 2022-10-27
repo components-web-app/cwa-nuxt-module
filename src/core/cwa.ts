@@ -176,8 +176,7 @@ export default class Cwa {
   }
 
   public initMercure(force: boolean = false) {
-    ;(force || !cwaRouteDisabled(this.ctx.route)) &&
-      this.fetcher.initMercure(this.$state.resources.current)
+    ;(force || !cwaRouteDisabled(this.ctx.route)) && this.fetcher.initMercure()
   }
 
   /**
