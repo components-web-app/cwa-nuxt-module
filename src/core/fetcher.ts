@@ -174,10 +174,10 @@ export class Fetcher {
 
       this.ctx.storage.setResource({ resource, category })
 
-      // const currentResource = this.currentResources?.[category]?.byId?.[iri]
-      // if (!currentResource) {
-      //   this.initMercure()
-      // }
+      const currentResource = this.currentResources?.[category]?.byId?.[iri]
+      if (!currentResource) {
+        this.initMercure()
+      }
 
       return resource
     }
@@ -527,7 +527,7 @@ export class Fetcher {
     }
 
     consola.info(`Created Mercure EventSource for "${hubUrl}"`)
-    this.eventSource = new EventSource(hubUrl)
+    this.eventSource = new EventSource(hubUrl, { withCredentials: true })
     // will be in context of EventSource if not using call
     // eslint-disable-next-line no-useless-call
     this.eventSource.onmessage = async (messageEvent: MessageEvent) => {
@@ -662,6 +662,11 @@ export class Fetcher {
       return false
     }
 
+    // Check if the component position received is dynamic and applicable for this page
+    await this.refreshComponentPositionForCurrentPath(data)
+
+    // TODO: CHECK IF MERCURE IS PUBLISHING THE COMPONENT GROUP UPDATES NOW - IT MAY DO AND THIS MAY NOT BE NECESSARY
+
     const collectionIri = data.componentGroup
     // Check if this ComponentGroup resource is current
     const componentGroupResource =
@@ -674,7 +679,7 @@ export class Fetcher {
     if (data.component) {
       // try to fetch it from the API
       if (!(await this.fetchResource({ path: data.component }))) {
-        // this.initMercure()
+        this.initMercure()
       }
     }
 
@@ -694,24 +699,31 @@ export class Fetcher {
     return true
   }
 
+  private async refreshComponentPositionForCurrentPath(data) {
+    if (data['@type'] !== 'ComponentPosition') {
+      return data
+    }
+
+    // not a dynamic or is accurate for current page
+    const pageDataPath = data._metadata.pageDataPath
+    if (!pageDataPath || pageDataPath === this.currentRoutePath) {
+      return data
+    }
+
+    const newData = await this.fetchResource(data['@iri'])
+
+    this.ctx.storage.setResource({
+      resource: newData,
+      isNew: true
+    })
+
+    return newData
+  }
+
   private getMercureHubURL() {
     const hub = new URL(this.ctx.storage.state.mercureHub)
 
     hub.searchParams.append('topic', `*`)
-
-    // hub.searchParams.append(
-    //   'topic',
-    //   `${this.ctx.apiUrl}/_/component_positions/{id}`
-    // )
-    //
-    // for (const resourcesObject of currentResources) {
-    //   if (resourcesObject.currentIds === undefined) {
-    //     continue
-    //   }
-    //   resourcesObject.currentIds.forEach((id) => {
-    //     hub.searchParams.append('topic', this.ctx.apiUrl + id)
-    //   })
-    // }
 
     if (this.lastEventId) {
       hub.searchParams.append('Last-Event-ID', this.lastEventId)
