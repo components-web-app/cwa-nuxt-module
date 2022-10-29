@@ -331,6 +331,21 @@ export default class Cwa {
   async logout() {
     await this.ctx.$auth.logout('local')
     this.clearDraftResources()
+    this.fetcher.initMercure()
+  }
+
+  async login(authScheme: string) {
+    await this.ctx.$auth
+      .loginWith(authScheme, {
+        data: this.login
+      })
+      .catch((e) => {
+        if (e.response && e.response.status === 401) {
+          throw new Error('Incorrect username and/or password')
+        }
+        throw new Error(e + '')
+      })
+    this.fetcher.initMercure()
   }
 
   togglePublishable(draftIri: string, showPublished: boolean) {

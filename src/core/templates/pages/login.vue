@@ -91,17 +91,11 @@ export default {
     async userLogin() {
       this.submitting = true
       this.error = null
-      await this.$auth
-        .loginWith(this.authScheme, {
-          data: this.login
-        })
-        .catch((e) => {
-          if (e.response && e.response.status === 401) {
-            this.error = 'Incorrect username and/or password'
-            return
-          }
-          this.error = e + ''
-        })
+      try {
+        await this.$cwa.login(this.authScheme)
+      } catch (error) {
+        this.error = error
+      }
       this.submitting = false
     }
   }

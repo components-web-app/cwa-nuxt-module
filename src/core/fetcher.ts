@@ -522,7 +522,7 @@ export class Fetcher {
       if (this.eventSource.url === hubUrl) {
         return
       }
-      consola.info('Closing Mercure event source to re-open with latest topics')
+      consola.info('Closing Mercure Event Source')
       this.closeMercure()
     }
 
