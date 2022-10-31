@@ -334,10 +334,16 @@ export default class Cwa {
     this.fetcher.initMercure()
   }
 
-  async login(authScheme: string) {
+  async login(
+    authScheme: string,
+    loginData: {
+      username: string
+      password: string
+    }
+  ) {
     await this.ctx.$auth
       .loginWith(authScheme, {
-        data: this.login
+        data: loginData
       })
       .catch((e) => {
         if (e.response && e.response.status === 401) {

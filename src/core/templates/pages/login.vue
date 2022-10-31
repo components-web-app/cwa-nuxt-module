@@ -4,6 +4,7 @@
       <div v-if="error" class="notification is-danger">
         {{ error }}
       </div>
+      <slot name="login-message" />
       <div class="field">
         <label class="label">Username</label>
         <div class="control">
@@ -92,7 +93,7 @@ export default {
       this.submitting = true
       this.error = null
       try {
-        await this.$cwa.login(this.authScheme)
+        await this.$cwa.login(this.authScheme, this.login)
       } catch (error) {
         this.error = error
       }

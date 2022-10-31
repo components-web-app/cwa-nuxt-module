@@ -48,6 +48,7 @@ export class Storage {
     }
     const resource1String = cleanResourceForComparison(resource1)
     const resource2String = cleanResourceForComparison(resource2)
+
     return resource1String === resource2String
   }
 

@@ -69,6 +69,6 @@ export default {
     sass: ['~/assets/sass/vars/*.sass', '../src/core/assets/sass/vars/*.sass']
   },
   loading: {
-    color: '#FFAA00'
+    color: '#9CDD05'
   }
 }

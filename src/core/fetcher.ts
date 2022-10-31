@@ -616,7 +616,7 @@ export class Fetcher {
     this.mercureMessages = []
     for (const message of messages) {
       consola.debug('Mercure message received', message)
-      const data = message.data
+      let data = message.data
 
       // delete resource if deleted from API - instant...
       if (Object.keys(data).length === 1 && data['@id']) {
@@ -624,100 +624,33 @@ export class Fetcher {
         return
       }
 
-      this.lastEventId = message.event.lastEventId
-
       // we listen to all of these in case we are adding to an existing component collection
-      const force = await this.forceComponentPositionPersist(data)
+      if (this.shouldManualRefresh(data)) {
+        data = await this.fetcher({ path: data['@id'] })
+      }
+
+      this.lastEventId = message.event.lastEventId
 
       // force option will add the resource into new even if there is not an existing resource
       // with the same ID to merge it into
       this.ctx.storage.setResource({
         isNew: true,
         resource: data,
-        force
+        force: false
       })
     }
   }
 
-  private async forceComponentPositionPersist(data) {
-    if (data['@type'] !== 'ComponentPosition') {
-      return false
-    }
-
+  private shouldManualRefresh(data) {
     if (
-      !this.currentResources.ComponentGroup.currentIds.includes(
-        data.componentGroup
-      )
-    ) {
-      consola.info(
-        'New ComponentPosition received by Mercure is not included in any current ComponentGroup resources. Skipped.'
-      )
-      return false
-    }
-
-    // We do not need to adapt behaviour if the ComponentPosition already exists
-    if (
-      this.currentResources.ComponentPosition.currentIds.includes(data['@id'])
+      data['@type'] !== 'ComponentPosition' ||
+      !this.currentResources.ComponentPosition.currentIds.includes(data['@id'])
     ) {
       return false
     }
 
-    // Check if the component position received is dynamic and applicable for this page
-    await this.refreshComponentPositionForCurrentPath(data)
-
-    // TODO: CHECK IF MERCURE IS PUBLISHING THE COMPONENT GROUP UPDATES NOW - IT MAY DO AND THIS MAY NOT BE NECESSARY
-
-    const collectionIri = data.componentGroup
-    // Check if this ComponentGroup resource is current
-    const componentGroupResource =
-      this.currentResources.ComponentGroup.byId[collectionIri]
-    if (!componentGroupResource) {
-      return false
-    }
-
-    // we should check the component in this position
-    if (data.component) {
-      // try to fetch it from the API
-      if (!(await this.fetchResource({ path: data.component }))) {
-        this.initMercure()
-      }
-    }
-
-    // Update the ComponentGroup resource to include new position
-    // Mercure will not publish this, the resource is not updated in the database
-    this.ctx.storage.setResource({
-      resource: {
-        ...componentGroupResource,
-        componentPositions: [
-          ...componentGroupResource.componentPositions,
-          data['@id']
-        ]
-      },
-      isNew: true
-    })
-
-    return true
-  }
-
-  private async refreshComponentPositionForCurrentPath(data) {
-    if (data['@type'] !== 'ComponentPosition') {
-      return data
-    }
-
-    // not a dynamic or is accurate for current page
     const pageDataPath = data._metadata.pageDataPath
-    if (!pageDataPath || pageDataPath === this.currentRoutePath) {
-      return data
-    }
-
-    const newData = await this.fetchResource(data['@iri'])
-
-    this.ctx.storage.setResource({
-      resource: newData,
-      isNew: true
-    })
-
-    return newData
+    return !(!pageDataPath || pageDataPath === this.currentRoutePath)
   }
 
   private getMercureHubURL() {
