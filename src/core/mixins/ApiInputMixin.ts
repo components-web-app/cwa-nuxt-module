@@ -4,7 +4,6 @@ import { STATUS_EVENTS, StatusEvent } from '../events'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
 import UpdateResourceMixin from './UpdateResourceMixin'
-import UpdateResourceError from '@cwa/nuxt-module/inc/update-resource-error';
 
 export default Vue.extend({
   mixins: [ResourceMixin, ApiRequestMixin, UpdateResourceMixin],
