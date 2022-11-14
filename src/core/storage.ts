@@ -64,11 +64,36 @@ export class Storage {
   deleteResource(id) {
     const category = this.getCategoryFromIri(id)
     const name = this.getTypeFromIri(id, category)
+    if (name === 'ComponentPosition') {
+      this.deletePositionFromComponentGroups(id)
+    }
     this.ctx.store.commit(this.options.vuex.namespace + '/DELETE_RESOURCE', {
       id,
       name,
       category
     })
+  }
+
+  private deletePositionFromComponentGroups(positionIri) {
+    const allComponentGroups: {
+      [key: string]: { componentPositions: string[] }
+    } = this.state.resources.current?.ComponentGroup?.byId
+
+    for (const componentGroup of Object.values(allComponentGroups)) {
+      const positionIndex =
+        componentGroup.componentPositions.indexOf(positionIri)
+      if (positionIndex !== -1) {
+        const newPositions = componentGroup.componentPositions.slice(
+          positionIndex,
+          1
+        )
+        const newComponentGroup = {
+          ...componentGroup,
+          componentPositions: newPositions
+        }
+        this.setResource({ resource: newComponentGroup })
+      }
+    }
   }
 
   mapDraftResource({ publishedIri, draftIri }) {

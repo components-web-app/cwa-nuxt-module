@@ -73,40 +73,44 @@ export default Vue.extend({
           const position = this.context.componentPosition
           const positionResource = this.$cwa.getResource(position)
 
-          if (deleteAll) {
-            const refreshPageData =
-              this.isDynamicPage &&
-              this.getDynamicComponentIri(positionResource.pageDataProperty) ===
-                this.iri
-
-            await this.$cwa.deleteResource(this.iri)
-            // refresh page data if required - so we do not have an IRI for a component that no longer exists
-            if (refreshPageData) {
-              await this.$cwa.refreshResource(this.$cwa.loadedPage)
-            }
-
+          if (!deleteAll) {
             if (
-              positionResource.pageDataProperty ||
-              !!this.resource.publishedResource
+              !positionResource.pageDataProperty &&
+              !this.resource.publishedResource
             ) {
-              // refresh as metadata and fallback may be available
-              await this.$cwa.refreshPositionsForComponent(this.iri)
-            } else {
-              // the API will have deleted the position
-              this.$cwa.$storage.deleteResource(position)
+              // delete position with API
+              await this.$cwa.deleteResource(position)
+              return
             }
-          } else if (
-            !positionResource.pageDataProperty &&
-            !this.resource.publishedResource
-          ) {
-            // delete position with API
-            await this.$cwa.deleteResource(position)
-          } else {
             await this.$cwa.refreshPositionsForComponent(this.iri)
+            return
+          }
+
+          const refreshPageData =
+            this.isDynamicPage &&
+            this.getDynamicComponentIri(positionResource.pageDataProperty) ===
+              this.iri
+
+          await this.$cwa.deleteResource(this.iri)
+          // refresh page data if required - so we do not have an IRI for a component that no longer exists
+          if (refreshPageData) {
+            await this.$cwa.refreshResource(this.$cwa.loadedPage)
+          }
+
+          if (
+            positionResource.pageDataProperty ||
+            !!this.resource.publishedResource
+          ) {
+            // refresh as metadata and fallback may be available
+            await this.$cwa.refreshPositionsForComponent(this.iri)
+          } else {
+            // the API will have deleted the position
+            this.$cwa.$storage.deleteResource(position)
           }
         },
         confirmButtonText: 'Delete'
       }
+
       this.$cwa.$eventBus.$emit(CONFIRM_DIALOG_EVENTS.confirm, event)
     }
   }

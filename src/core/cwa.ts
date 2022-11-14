@@ -510,12 +510,12 @@ export default class Cwa {
     )
   }
 
-  async refreshPositionsForComponent(iri) {
+  async refreshPositionsForComponent(componentIri) {
     const allPositions: { [key: string]: { component: string } } =
       this.$state.resources.current?.ComponentPosition?.byId
     const promises = []
     for (const [positionIri, position] of Object.entries(allPositions)) {
-      if (position.component === iri) {
+      if (position.component === componentIri) {
         promises.push(
           new Promise((resolve) => {
             // refresh the position from server
