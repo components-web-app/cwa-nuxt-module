@@ -34,7 +34,9 @@
             />
           </div>
           <div class="column is-narrow">
-            <cm-button @click="publishIri">Publish Now</cm-button>
+            <cm-button :disabled="publishing" @click="publishIri"
+              >Publish Now</cm-button
+            >
           </div>
         </template>
       </template>
@@ -56,7 +58,8 @@ export default Vue.extend({
   mixins: [ComponentManagerTabMixin, ApiDateParserMixin, UpdateResourceMixin],
   data() {
     return {
-      error: null
+      error: null,
+      publishing: false
     }
   },
   computed: {
@@ -83,8 +86,10 @@ export default Vue.extend({
     }
   },
   methods: {
-    publishIri() {
-      this.publishNow(this.iri)
+    async publishIri() {
+      this.publishing = true
+      await this.publishNow(this.iri)
+      this.publishing = false
     }
   }
 })

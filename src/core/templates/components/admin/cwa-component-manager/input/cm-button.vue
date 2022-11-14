@@ -36,6 +36,7 @@
         <button
           type="button"
           class="button cm-button-button"
+          :disabled="disabled"
           @click="optionClick(altOp)"
         >
           {{ altOp.label }}
@@ -194,7 +195,8 @@ export default Vue.extend({
     .cm-button-button
       background-color: $cwa-color-primary
       color: $white
-      &:hover,
-      &:focus
-        background-color: darken($cwa-color-primary, 3%)
+      &:not(:disabled)
+        &:hover,
+        &:focus
+          background-color: darken($cwa-color-primary, 3%)
 </style>

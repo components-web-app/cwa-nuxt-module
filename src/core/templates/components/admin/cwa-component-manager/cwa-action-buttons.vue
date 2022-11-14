@@ -1,6 +1,10 @@
 <template>
   <div v-if="state && buttonOptions">
-    <cm-button :alt-options="altOptions" @click="handleClick">
+    <cm-button
+      :alt-options="altOptions"
+      :disabled="handlingClick"
+      @click="handleClick"
+    >
       {{ buttonOptions.default.label }}
     </cm-button>
   </div>
@@ -42,10 +46,12 @@ export default Vue.extend({
   data() {
     return {
       addingEvent: null,
-      removeErrorEvents: []
+      removeErrorEvents: [],
+      handlingClick: false
     } as {
       addingEvent: NewComponentEvent
       removeErrorEvents: RemoveNotificationEvent[]
+      handlingClick: boolean
     }
   },
   computed: {
@@ -82,8 +88,8 @@ export default Vue.extend({
           return {
             default: {
               label: 'Publish',
-              fn: () => {
-                this.publishNow(this.selectedComponent.iri)
+              fn: async () => {
+                await this.publishNow(this.selectedComponent.iri)
               }
             },
             clone: { label: 'Clone', fn: this.selectCloneComponent }
@@ -127,9 +133,13 @@ export default Vue.extend({
   },
   methods: {
     async handleClick(clickKey) {
+      this.handlingClick = true
       clickKey = clickKey || 'default'
       const fn: Function = this.buttonOptions[clickKey].fn
       await fn.apply(this, this.buttonOptions[clickKey].args || [])
+      setTimeout(() => {
+        this.handlingClick = false
+      }, 50)
     },
     selectCloneComponent() {
       this.cloneComponent = this.selectedComponent
