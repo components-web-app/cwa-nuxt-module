@@ -54,7 +54,7 @@ export default Vue.extend({
   },
   computed: {
     mediaObjects() {
-      return this.resource._metadata?.media_objects
+      return this.resource._metadata?.mediaObjects
     },
     displaySortValue() {
       return this.showSort ? this.sortValue : null

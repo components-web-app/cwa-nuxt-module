@@ -43,11 +43,13 @@ export default Vue.extend({
         throw message
       }
 
-      const notifications = this.handleApiViolations(
-        message.violations,
-        iri,
-        notificationCategory
-      )
+      const notifications = message?.violations
+        ? this.handleApiViolations(
+            message.violations,
+            iri,
+            notificationCategory
+          )
+        : []
 
       return new UpdateResourceError(
         'API error updating resource',

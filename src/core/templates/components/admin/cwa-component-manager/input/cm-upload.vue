@@ -75,7 +75,7 @@ export default Vue.extend({
       return this.file && /\.(jpe?g|png|gif|svg)$/i.test(this.file.name)
     },
     fileExists() {
-      return !!this.resource._metadata?.media_objects?.[this.field]
+      return !!this.resource._metadata?.mediaObjects?.[this.field]
     }
   },
   methods: {
