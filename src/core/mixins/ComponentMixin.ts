@@ -53,6 +53,13 @@ export default Vue.extend({
     }
   },
   computed: {
+    componentGroupProps() {
+      return {
+        locationResourceId: this.iri,
+        locationResourceReference: this.iri,
+        locationResourceType: 'components'
+      }
+    },
     mediaObjects() {
       return this.resource._metadata?.mediaObjects
     },
