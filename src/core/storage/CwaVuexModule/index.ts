@@ -130,7 +130,7 @@ export default function (storage) {
         (state) =>
         ({ iri, name }) => {
           const getLookupProperty = (placementIri) => {
-            if (placementIri.startsWith('component')) {
+            if (placementIri.startsWith('/component/')) {
               return 'components'
             }
             if (placementIri.startsWith('/_/layouts/')) {
@@ -142,6 +142,12 @@ export default function (storage) {
             return null
           }
           const lookupProperty = getLookupProperty(iri)
+          if (!lookupProperty) {
+            throw new Error(
+              `Component Group type could not be identified by the iri '${iri}'`
+            )
+          }
+
           return state.resources.current.ComponentGroup.extensions
             .componentGroupByPlacement[lookupProperty][iri]?.[name]
         },

@@ -19,18 +19,7 @@ To run Cypress tests start a mock API in one terminal
 API_PORT=3100 yarn api
 ```
 
-Build and start the demo application to run your tests
-```bash
-yarn demo:buld
-yarn demo:start
-```
-
-Run the test
-```bash
-yarn e2e
-```
-
-For development you can start the application in dev mode for hot-reloading
+For development, you can start the application in dev mode for hot-reloading
 ```bash
 TESTING=true DISABLE_HTTPS=true API_URL=http://localhost:3100 yarn dev
 ```
@@ -45,6 +34,12 @@ yarn e2e:open
 Run the following command to execute Jest unit tests
 ```bash
 yarn test
+```
+
+You can build and start the demo application using the following commands
+```bash
+yarn demo:buld
+yarn demo:start
 ```
 
 ## Running a real API
