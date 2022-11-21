@@ -25,14 +25,14 @@
     <draggable
       v-model="sortedComponentPositions"
       handle=".is-draggable"
-      class="positions-container"
+      :class="groupClassNames"
       :group="`collection-${iri}`"
       @change="draggableChanged"
     >
       <component-position
         v-for="positionIri in sortedComponentPositions"
         :key="positionIri"
-        :class="[isDraggable ? 'is-draggable' : null]"
+        :class="positionClassNames"
         :show-sort="showOrderValues"
         :iri="positionIri"
       />
@@ -106,6 +106,16 @@ export default Vue.extend({
       type: Array,
       default: null,
       required: false
+    },
+    groupClass: {
+      type: Array,
+      default: null,
+      required: false
+    },
+    positionClass: {
+      type: Array,
+      default: null,
+      required: false
     }
   },
   data() {
@@ -121,6 +131,16 @@ export default Vue.extend({
     }
   },
   computed: {
+    positionClassNames() {
+      const classes = this.positionClass || []
+      if (this.isDraggable) {
+        classes.push('is-draggable')
+      }
+      return classes
+    },
+    groupClassNames() {
+      return ['positions-container', ...(this.groupClass || [])]
+    },
     iri() {
       return this.resource?.['@id']
     },
