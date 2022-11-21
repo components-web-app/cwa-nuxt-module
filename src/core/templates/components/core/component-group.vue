@@ -36,12 +36,13 @@
         :show-sort="showOrderValues"
         :iri="positionIri"
       />
-      <component
-        :is="newComponentName"
-        v-if="newComponentResource"
-        :iri="newComponentIri"
-        @initialData="handleInitialData"
-      />
+      <div v-if="newComponentResource" :class="positionClassNames">
+        <component
+          :is="newComponentName"
+          :iri="newComponentIri"
+          @initialData="handleInitialData"
+        />
+      </div>
     </draggable>
   </div>
 </template>
