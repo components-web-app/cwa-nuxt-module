@@ -6,7 +6,7 @@
       v-if="showStatusText && autoStatus <= 0"
       class="column is-narrow not-saved-text"
     >
-      Not saved...
+      <span>Not saved...</span>
     </span>
     <div v-if="alwaysShowStatus || !errorsShowing" class="column is-narrow">
       <div :class="['status-icon', className]" />
@@ -131,6 +131,8 @@ export default Vue.extend({
     padding-right: .5rem !important
   .not-saved-text
     color: $cwa-color-text-light
+    > span
+      padding-right: .5rem
 .status-icon
   width: 20px
   height: 20px

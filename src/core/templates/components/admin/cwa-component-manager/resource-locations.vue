@@ -148,6 +148,7 @@ export default {
     width: auto
     img
       height: 100%
+      max-width: none
       display: block
   .counters
     display: inline-flex
