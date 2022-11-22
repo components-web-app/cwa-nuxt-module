@@ -148,7 +148,7 @@ export default function (storage) {
             )
           }
 
-          return state.resources.current.ComponentGroup.extensions
+          return state.resources.current.ComponentGroup?.extensions
             .componentGroupByPlacement[lookupProperty][iri]?.[name]
         },
       GET_TYPE_FROM_IRI:
