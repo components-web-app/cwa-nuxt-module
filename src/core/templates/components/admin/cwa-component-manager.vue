@@ -300,10 +300,14 @@ export default Vue.extend({
       componentTabContext: ComponentTabContext
     ): ComponentManagerTab | null {
       if (
-        !componentTabContext.UiClassNames ||
-        !componentTabContext.UiClassNames.length ||
-        !componentTabContext.UiComponents ||
-        !componentTabContext.UiComponents.length
+        !(
+          componentTabContext.UiClassNames &&
+          componentTabContext.UiClassNames.length
+        ) &&
+        !(
+          componentTabContext.UiComponents &&
+          componentTabContext.UiComponents.length
+        )
       ) {
         return null
       }

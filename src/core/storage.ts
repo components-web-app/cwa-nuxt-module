@@ -83,10 +83,8 @@ export class Storage {
       const positionIndex =
         componentGroup.componentPositions.indexOf(positionIri)
       if (positionIndex !== -1) {
-        const newPositions = componentGroup.componentPositions.slice(
-          positionIndex,
-          1
-        )
+        const newPositions = [...componentGroup.componentPositions]
+        newPositions.splice(positionIndex, 1)
         const newComponentGroup = {
           ...componentGroup,
           componentPositions: newPositions
