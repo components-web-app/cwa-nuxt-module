@@ -61,7 +61,9 @@ export default {
     value: {
       type: Array,
       required: false,
-      default: null
+      default() {
+        return []
+      }
     },
     expanded: {
       type: Boolean,
@@ -125,8 +127,7 @@ export default {
     updateValue() {
       // currently this will emit normalized options.. { label: string, value: any }
       // we should really be emitting whatever the user had provided though
-      this.$emit('input', this.currentValue)
-      // this.$emit('change', this.currentValue)
+      this.$emit('input', [...this.currentValue])
     }
   }
 }
