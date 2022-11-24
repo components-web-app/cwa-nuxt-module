@@ -161,7 +161,6 @@ export class Fetcher {
     this.timer.reset()
 
     const doFetch = async () => {
-      const resource = await this.fetcher(fetcherObj)
       if (!resource) {
         return resource
       }
@@ -171,7 +170,10 @@ export class Fetcher {
       // will return what we are authorized to see
       const iri = resource['@id']
       const category = this.ctx.storage.getCategoryFromIri(iri)
-
+      await this.fetchResource({
+        path: pageDataResponse.page,
+        preload: ['/componentGroups/*/componentPositions/*/component']
+      })
       this.ctx.storage.setResource({ resource, category })
 
       const currentResource = this.currentResources?.[category]?.byId?.[iri]
@@ -418,11 +420,21 @@ export class Fetcher {
         return this.fetchCollection(
           { paths: componentGroup.componentPositions },
           (componentPosition) => {
-            return this.fetchResource({ path: componentPosition.component })
+            return this.fetchComponent(componentPosition.component)
           }
         )
       }
     )
+  }
+
+  private async fetchComponent(componentIri: string) {
+    const componentResource = await this.fetchResource({
+      path: componentIri,
+      preload: ['/componentGroups/componentPositions/*/component']
+    })
+    if (componentResource.componentGroups) {
+      this.fetchComponentGroups(componentResource.componentGroups)
+    }
   }
 
   private async fetchPageByRouteResponse(routeResponse) {
