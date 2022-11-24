@@ -279,6 +279,7 @@ export class Fetcher {
   private finallyFetch(endpoint) {
     this.resourcesFetched = {}
     this.resourcesCacheEnabled = false
+    this.ctx.storage.setState(Fetcher.loadingEndpoint, false)
     this.initMercure()
     this.timer.end(`Fetch route ${endpoint}`)
     this.timer.print()
