@@ -1,5 +1,10 @@
 <template>
-  <component :is="domTag" v-if="isExternal" v-bind="linkProps">
+  <component
+    :is="domTag"
+    v-if="isExternal"
+    v-bind="linkProps"
+    @click="handleExternalLinkClick"
+  >
     <slot />
   </component>
   <nuxt-link v-else v-bind="linkProps">
@@ -66,6 +71,13 @@ export default {
       return (
         this.alwaysClickable || this.cloneAllowNavigate || !this.$cwa.isEditMode
       )
+    }
+  },
+  methods: {
+    handleExternalLinkClick(e) {
+      if (!this.allowNavigation) {
+        e.preventDefault()
+      }
     }
   }
 }

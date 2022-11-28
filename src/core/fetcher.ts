@@ -430,7 +430,7 @@ export class Fetcher {
       preload: ['/componentGroups/componentPositions/*/component']
     })
     if (componentResource?.componentGroups) {
-      this.fetchComponentGroups(componentResource.componentGroups)
+      await this.fetchComponentGroups(componentResource.componentGroups)
     }
   }
 
