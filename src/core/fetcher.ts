@@ -429,7 +429,7 @@ export class Fetcher {
       path: componentIri,
       preload: ['/componentGroups/componentPositions/*/component']
     })
-    if (componentResource.componentGroups) {
+    if (componentResource?.componentGroups) {
       this.fetchComponentGroups(componentResource.componentGroups)
     }
   }
