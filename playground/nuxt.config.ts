@@ -1,5 +1,5 @@
-import { defineNuxtConfig } from 'nuxt/config'
 import { fileURLToPath } from 'url'
+import { defineNuxtConfig } from 'nuxt/config'
 import CwaModule from '..'
 
 export default defineNuxtConfig({
@@ -8,15 +8,15 @@ export default defineNuxtConfig({
   ],
   cwa: {},
   alias: {
-    '@cwa/nuxt-module': fileURLToPath(new URL('../src', import.meta.url)),
+    '@cwa/nuxt-module': fileURLToPath(new URL('../src', import.meta.url))
   },
   typescript: {
     tsConfig: {
-      "include": [
-        "./src"
+      include: [
+        './src'
       ],
-      "exclude": [
-        "./src/**/*.spec.ts"
+      exclude: [
+        './src/**/*.spec.ts'
       ]
     }
   }

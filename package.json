@@ -18,10 +18,14 @@
     "prepack": "nuxt-module-build",
     "dev": "nuxi dev playground",
     "dev:build": "nuxi build playground",
-    "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground"
+    "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
+    "lint": "eslint --ext .ts,.js,.vue .",
+    "lint:fix": "eslint --fix --ext .ts,.js,.vue ."
   },
   "dependencies": {
-    "@nuxt/kit": "^3.0.0"
+    "@nuxt/kit": "^3.0.0",
+    "@pinia/nuxt": "^0.4.6",
+    "pinia": "^2.0.27"
   },
   "devDependencies": {
     "@nuxt/module-builder": "^0.2.1",
