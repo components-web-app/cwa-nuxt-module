@@ -1,24 +1,30 @@
 import { fileURLToPath } from 'url'
-import { defineNuxtModule, addPlugin, createResolver } from '@nuxt/kit'
+import { defineNuxtModule, createResolver, addPluginTemplate } from '@nuxt/kit'
+import { join } from 'path'
 
-export interface ModuleOptions {
-  addPlugin: boolean
+export interface CwaModuleOptions {
+
 }
 
-export default defineNuxtModule<ModuleOptions>({
+export default defineNuxtModule<CwaModuleOptions>({
   meta: {
-    name: 'cwa-module',
-    configKey: 'cwa'
+    name: '@cwa/nuxt-module',
+    configKey: 'cwa',
+    compatibility: {
+      nuxt: '^3.0.0'
+    }
   },
   defaults: {
-    addPlugin: true
   },
-  setup (options, nuxt) {
-    if (options.addPlugin) {
-      const { resolve } = createResolver(import.meta.url)
-      const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
-      nuxt.options.build.transpile.push(runtimeDir)
-      addPlugin(resolve(runtimeDir, 'plugin'))
-    }
+  setup (options: CwaModuleOptions, nuxt) {
+    const { resolve } = createResolver(import.meta.url)
+    const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
+    nuxt.options.build.transpile.push(runtimeDir)
+
+    addPluginTemplate({
+      src: resolve(runtimeDir, 'plugin.ts'),
+      filename: join('cwa', 'cwa-plugin.ts'),
+      options
+    })
   }
 })
