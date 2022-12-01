@@ -25,6 +25,7 @@
   "dependencies": {
     "@nuxt/kit": "^3.0.0",
     "@pinia/nuxt": "^0.4.6",
+    "bluebird": "^3.7.2",
     "pinia": "^2.0.27"
   },
   "devDependencies": {

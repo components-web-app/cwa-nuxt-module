@@ -1,11 +1,7 @@
 <template>
   <div>
-    <pre>{{ $cwa.store.resources }}</pre>
+    <NuxtLayout>
+      <NuxtPage/>
+    </NuxtLayout>
   </div>
 </template>
-
-<script setup>
-import { useNuxtApp } from 'nuxt/app'
-
-const { $cwa } = useNuxtApp()
-</script>

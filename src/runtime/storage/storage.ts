@@ -1,28 +1,21 @@
 import { defineStore } from 'pinia'
-import { reactive } from '#imports'
+import {
+  ResourcesStore
+} from '@cwa/nuxt-module/runtime/storage/stores/resources/resources-store'
 
-export interface CwaStore {
-  resources: {
-    new: any
-    current: any
-    categories: any
-  }
+export interface CwaStores {
+  resources: ResourcesStore
 }
 
 export class Storage {
   private readonly storeName: string
-  public readonly store: CwaStore
+  public readonly stores: CwaStores
 
   constructor (storeName: string) {
     this.storeName = storeName
-    const storeDefinition = defineStore(this.storeName, (): CwaStore => {
-      const resources = reactive({
-        new: {},
-        current: {},
-        categories: {}
-      })
-      return { resources }
-    })
-    this.store = storeDefinition()
+
+    this.stores = {
+      resources: new ResourcesStore(storeName)
+    }
   }
 }

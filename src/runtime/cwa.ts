@@ -6,17 +6,19 @@ import { Fetcher } from '@cwa/nuxt-module/runtime/api/fetcher'
 export default class Cwa {
   private readonly nuxtApp: NuxtApp
   private readonly options: CwaModuleOptions
-  private readonly fetcher: Fetcher
   private readonly storage: Storage
+  public readonly fetcher: Fetcher
 
   constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
+    const apiUrl = nuxtApp.$config.API_URL_BROWSER || nuxtApp.$config.API_URL || 'https://api-url-not-set.com'
+
     this.nuxtApp = nuxtApp
     this.options = options
-    this.fetcher = new Fetcher()
     this.storage = new Storage(this.options.storeName)
+    this.fetcher = new Fetcher(apiUrl, this.storage.stores.resources)
   }
 
-  public get store() {
-    return this.storage.store
+  public get stores () {
+    return this.storage.stores
   }
 }
