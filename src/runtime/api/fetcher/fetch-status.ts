@@ -44,7 +44,7 @@ export default class FetchStatus {
   }
 
   public getFetchingEndpointPromise (endpoint: string): CwaFetcherAsyncResponse | null {
-    return this.status?.endpoints[endpoint] || null
+    return this.status.endpoints[endpoint] || null
   }
 
   /**
@@ -62,7 +62,7 @@ export default class FetchStatus {
   }
 
   public addEndpoint (endpoint: string, promise: CwaFetcherAsyncResponse) {
-    if (!this.status.isFetching) {
+    if (undefined === this.status.fetchingEndpoint) {
       return
     }
     this.status.endpoints[endpoint] = promise
@@ -82,7 +82,7 @@ export default class FetchStatus {
   private initFetchStatus ({ endpoint, pageIri, success }: FinishFetchEvent) {
     const isFetching = success === undefined
     // do not action if the primary started endpoint is different, or do not start if already in progress
-    if (endpoint !== this.status.fetchingEndpoint || (this.status.isFetching && isFetching)) {
+    if (endpoint === this.status.fetchingEndpoint || (this.status.fetchingEndpoint && isFetching)) {
       return
     }
     if (isFetching) {

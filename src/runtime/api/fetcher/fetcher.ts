@@ -57,6 +57,10 @@ export class Fetcher {
       return
     }
 
+    // we do not need to wait for this, it will fetch everything from the manifest while we traverse the fetches
+    // thereby not relying on this manifest to resolve everything, but an enhancement to fetch everything we can in a batch
+    this.fetchRoutesManifest(path)
+
     let data: CwaResource|undefined
     try {
       const response = await this.fetchAndSaveResource({
@@ -73,6 +77,20 @@ export class Fetcher {
         success: false,
         pageIri: data?.pageData || data?.page
       })
+    }
+  }
+
+  private async fetchRoutesManifest (path: string) {
+    let response: FetchResponse<any>|undefined
+    try {
+      response = await this.doFetch({ path: `/_/routes_manifest/${path}` })
+      if (!response) {
+        return
+      }
+      const manifestResources = response._data.resource_iris
+      await this.fetchBatch({ paths: manifestResources })
+    } catch (error) {
+      // noop
     }
   }
 
