@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import {
   ResourcesStore
-} from '@cwa/nuxt-module/runtime/storage/stores/resources/resources-store'
+} from './stores/resources/resources-store'
 
 export interface CwaStores {
   resources: ResourcesStore

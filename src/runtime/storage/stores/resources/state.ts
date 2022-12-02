@@ -21,9 +21,6 @@ export interface CwaResourcesStateInterface {
     },
     allIds: Array<string>
   }
-  categories: {
-    [key: string]: string
-  }
 }
 
 export default function (): CwaResourcesStateInterface {
@@ -36,7 +33,6 @@ export default function (): CwaResourcesStateInterface {
     new: {
       byId: {},
       allIds: []
-    },
-    categories: {}
+    }
   })
 }

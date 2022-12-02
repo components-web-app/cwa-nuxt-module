@@ -1,6 +1,6 @@
 <template>
   <div>
-    <pre>{{ resourcesStore.$state }}</pre>
+    <pre>{{ resourcesStore.$state.current.allIds }}</pre>
   </div>
 </template>
 

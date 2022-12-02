@@ -1,7 +1,7 @@
 import { NuxtApp } from '#app/nuxt'
+import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
-import { CwaModuleOptions } from '@cwa/nuxt-module/module'
-import { Fetcher } from '@cwa/nuxt-module/runtime/api/fetcher'
+import { Fetcher } from './api/fetcher/fetcher'
 
 export default class Cwa {
   private readonly nuxtApp: NuxtApp
@@ -14,7 +14,8 @@ export default class Cwa {
     this.nuxtApp = nuxtApp
     this.options = options
     this.storage = new Storage(this.options.storeName)
-    this.fetcher = new Fetcher(apiUrl, this.storage.stores.resources)
+    const currentRoute = nuxtApp._route
+    this.fetcher = new Fetcher(apiUrl, this.storage.stores.resources, currentRoute)
   }
 
   public get stores () {

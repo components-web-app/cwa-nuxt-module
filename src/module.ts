@@ -25,6 +25,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     nuxt.options.build.transpile.push(runtimeDir)
 
     addPluginTemplate({
+      mode: 'all',
       src: resolve(runtimeDir, 'plugin.template.ts'),
       filename: join('cwa', 'cwa-plugin.ts'),
       options

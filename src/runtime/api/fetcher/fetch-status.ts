@@ -1,10 +1,10 @@
 import { AsyncData } from '#app'
 import { FetchError } from 'ohmyfetch'
-import { CwaFetcherAsyncResponse } from './fetcher'
 import {
   CwaResourcesInterface,
   ResourcesStore
-} from '@cwa/nuxt-module/runtime/storage/stores/resources/resources-store'
+} from '../../storage/stores/resources/resources-store'
+import { CwaFetcherAsyncResponse } from './fetcher'
 import { reactive } from '#imports'
 
 interface FetchStatusInterface {
@@ -43,7 +43,7 @@ export default class FetchStatus {
     return this.status.fetchingEndpoint || this.status.fetchedEndpoint
   }
 
-  public getFetchingEndpointPromise (endpoint: string): AsyncData<any, FetchError|null> | null {
+  public getFetchingEndpointPromise (endpoint: string): CwaFetcherAsyncResponse | null {
     return this.status?.endpoints[endpoint] || null
   }
 
@@ -57,7 +57,6 @@ export default class FetchStatus {
       return this.status.endpoints[endpoint] || null
     }
 
-    this.resourcesStore.resetCurrentResources()
     this.initFetchStatus({ endpoint })
     return null
   }
@@ -82,9 +81,12 @@ export default class FetchStatus {
    */
   private initFetchStatus ({ endpoint, pageIri, success }: FinishFetchEvent) {
     const isFetching = success === undefined
-    // do not start/finish if the primary endpoint is different, or do not start if already in progress
+    // do not action if the primary started endpoint is different, or do not start if already in progress
     if (endpoint !== this.status.fetchingEndpoint || (this.status.isFetching && isFetching)) {
       return
+    }
+    if (isFetching) {
+      this.resourcesStore.resetCurrentResources()
     }
 
     // fetchedEndpoint should be the last successfully fetched endpoint
