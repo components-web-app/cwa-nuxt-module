@@ -55,3 +55,8 @@ coverage
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Custom
+playground/ssl/*
+!playground/ssl/.gitignore
+playground/.env

@@ -10,8 +10,7 @@ export default class Cwa {
   public readonly fetcher: Fetcher
 
   constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
-    const apiUrl = nuxtApp.$config.API_URL_BROWSER || nuxtApp.$config.API_URL || 'https://api-url-not-set.com'
-
+    const apiUrl = options.apiUrlBrowser || options.apiUrl || 'https://api-url-not-set.com'
     this.nuxtApp = nuxtApp
     this.options = options
     this.storage = new Storage(this.options.storeName)

@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "prepack": "nuxt-module-build",
-    "dev": "nuxi dev playground",
+    "dev": "nuxi dev playground --https",
+    "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
     "lint": "eslint --ext .ts,.js,.vue .",

@@ -4,6 +4,8 @@ import { defineNuxtModule, createResolver, addPluginTemplate, installModule } fr
 
 export interface CwaModuleOptions {
   storeName: string
+  apiUrlBrowser?: string
+  apiUrl?: string
 }
 
 export default defineNuxtModule<CwaModuleOptions>({

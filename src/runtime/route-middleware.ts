@@ -1,11 +1,11 @@
 import { defineNuxtRouteMiddleware, useNuxtApp } from '#app'
 
-export default defineNuxtRouteMiddleware((to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   const { $cwa } = useNuxtApp()
 
   if (to.meta?.cwa === false) {
     return
   }
 
-  $cwa.fetcher.fetchRoute(to.path)
+  await $cwa.fetcher.fetchRoute(to.path)
 })
