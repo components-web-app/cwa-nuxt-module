@@ -1,11 +1,27 @@
+import { FetchError } from 'ohmyfetch'
 import { CwaResource } from '../../../resource-types'
-import { CwaResourcesStateInterface } from './state'
+import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
+export interface SetResourceStatusEvent { iri: string, status: -1 | 0 | 1 }
+export interface SetResourceFetchErrorEvent { iri: string, fetchError: FetchError }
 
 export interface CwaResourcesActionsInterface {
   resetCurrentResources (): void
+  setResourceFetchStatus (event: SetResourceStatusEvent): void
+  setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent): void
+}
+
+function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: string): CwaCurrentResourceInterface {
+  if (!resourcesState.current.byId[iri]) {
+    resourcesState.current.byId[iri] = {
+      fetchState: {
+        status: null
+      }
+    }
+  }
+  return resourcesState.current.byId[iri]
 }
 
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
@@ -17,15 +33,32 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
       resourcesState.current.currentIds = []
     },
-    saveResource ({ resource, isNew }: SaveResourceEvent) {
+    setResourceFetchStatus ({ iri, status }: SetResourceStatusEvent): void {
+      const data = initCurrentResource(resourcesState, iri)
+      data.fetchState.status = status
+      if (status !== -1) {
+        data.fetchState.fetchError = undefined
+      }
+    },
+    setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
+      const data = initCurrentResource(resourcesState, iri)
+      data.fetchState.fetchError = {
+        statusCode: fetchError.statusCode,
+        statusText: fetchError.statusText,
+        statusMessage: fetchError.statusMessage,
+        path: fetchError.request?.toString(),
+        error: fetchError.toString()
+      }
+    },
+    saveResource ({ resource, isNew }: SaveResourceEvent): void {
       if (isNew === true) {
         console.log('SAVE NEW MERCURE RESOURCE TO DO')
         return
       }
       const iri = resource['@id']
-      resourcesState.current.byId[iri] = {
-        data: resource
-      }
+      const data = initCurrentResource(resourcesState, iri)
+      data.data = resource
+
       if (!resourcesState.current.allIds.includes(iri)) {
         resourcesState.current.allIds.push(iri)
       }

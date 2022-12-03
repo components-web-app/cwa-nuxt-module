@@ -30,12 +30,15 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStore:
       if (startFetch) {
         const previousFetchSame = path === fetcherState.status.fetched.path
         if (previousFetchSame) {
+          // we should not init, it is the same as previous
           return false
         }
         if (fetchInProgress) {
+          // we are already init and in progress
           return true
         }
       } else if (!isExistingFetchPathSame) {
+        // we should not finish up the init, it is a sub request happening and does not match the main endpoint in progress
         return false
       }
 

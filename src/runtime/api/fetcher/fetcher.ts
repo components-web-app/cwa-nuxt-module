@@ -52,9 +52,58 @@ export class Fetcher {
   }
 
   /**
-   * Public interfaces for fetching
+   * PRIMARY FETCHER INTERFACE
    */
+  public async fetchAndSaveResource ({ path, preload }: FetchEventInterface): Promise<CwaFetcherAsyncResponse|undefined> {
+    const startFetch = this.fetchStatus.startFetch(path)
+    if (startFetch !== true) {
+      if (startFetch !== false) {
+        return startFetch
+      }
+      return
+    }
 
+    if (!preload) {
+      preload = this.getPreloadHeadersForPath(path)
+    }
+
+    let response: FetchResponse<any>|undefined
+    try {
+      this.resourcesStore.setResourceFetchStatus({ iri: path, status: 0 })
+      response = await this.doFetch({ path, preload })
+      this.resourcesStore.setResourceFetchStatus({ iri: path, status: 1 })
+    } catch (error) {
+      this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
+      if (error instanceof FetchError) {
+        this.resourcesStore.setResourceFetchError({ iri: path, fetchError: error })
+        // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
+        if (error.statusCode === 404) {
+          return
+        }
+        // network request error
+        if (!error.response) {
+          console.error('[NETWORK ERROR]')
+        }
+        console.error(error.message, JSON.stringify(error))
+        return
+      }
+      throw error
+    }
+
+    if (response?._data) {
+      this.resourcesStore.saveResource({
+        resource: response._data
+      })
+      await this.fetchNestedResources(response._data)
+    }
+
+    this.fetchStatus.finishFetch({ path, success: !!response?._data })
+    return response
+  }
+
+  /**
+   * Public interfaces for fetching for route middleware
+   */
   public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
     const startFetch = this.fetchStatus.startFetch(path)
     if (startFetch !== true) {
@@ -95,21 +144,6 @@ export class Fetcher {
     }
   }
 
-  private async fetchRoutesManifest (path: string): Promise<Array<string>|undefined> {
-    let response: FetchResponse<any>|undefined
-    try {
-      response = await this.doFetch({ path: `/_/routes_manifest/${path}` })
-      if (!response) {
-        return
-      }
-      const manifestResources = response._data.resource_iris
-      await this.fetchBatch({ paths: manifestResources })
-      return manifestResources
-    } catch (error) {
-      // noop
-    }
-  }
-
   public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
     const startFetch = this.fetchStatus.startFetch(pageIri)
     if (startFetch !== true) {
@@ -140,51 +174,24 @@ export class Fetcher {
     this.fetchStatus.finishFetch({ path: pageIri, success: false, pageIri })
   }
 
-  public async fetchAndSaveResource ({ path, preload }: FetchEventInterface): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(path)
-    if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
-    }
-
-    if (!preload) {
-      preload = this.getPreloadHeadersForPath(path)
-    }
-
-    let response: FetchResponse<any>|undefined
-    try {
-      response = await this.doFetch({ path, preload })
-    } catch (error) {
-      if (error instanceof FetchError) {
-        // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
-        if (error.statusCode === 404) {
-          return
-        }
-        // network request error
-        if (!error.response) {
-          console.error('[NETWORK ERROR]')
-        }
-        console.error(error.message, JSON.stringify(error))
-      }
-      // throw error
-    }
-
-    if (response?._data) {
-      this.resourcesStore.saveResource({
-        resource: response._data
-      })
-      await this.fetchNestedResources(response._data)
-    }
-
-    this.fetchStatus.finishFetch({ path, success: !!response?._data })
-    return response
-  }
-
   /**
    * Internal: fetching
    */
+  private async fetchRoutesManifest (path: string): Promise<Array<string>|undefined> {
+    let response: FetchResponse<any>|undefined
+    try {
+      response = await this.doFetch({ path: `/_/routes_manifest/${path}` })
+      if (!response) {
+        return
+      }
+      const manifestResources = response._data.resource_iris
+      await this.fetchBatch({ paths: manifestResources })
+      return manifestResources
+    } catch (error) {
+      // noop
+    }
+  }
+
   private fetchBatch ({ paths }: { paths: Array<string> }): bluebird<(CwaFetcherAsyncResponse|undefined)[]> {
     return bluebird
       .map(
