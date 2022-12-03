@@ -15,7 +15,7 @@ export default class Cwa {
     this.options = options
     this.storage = new Storage(this.options.storeName)
     const currentRoute = nuxtApp._route
-    this.fetcher = new Fetcher(apiUrl, this.storage.stores.resources, currentRoute)
+    this.fetcher = new Fetcher(apiUrl, this.storage.stores.fetcher, this.storage.stores.resources, currentRoute)
   }
 
   public get stores () {

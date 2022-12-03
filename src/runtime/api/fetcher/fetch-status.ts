@@ -1,76 +1,56 @@
-import { AsyncData } from '#app'
-import { FetchError } from 'ohmyfetch'
-import {
-  CwaResourcesInterface,
-  ResourcesStore
-} from '../../storage/stores/resources/resources-store'
+import { CwaFetcherInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { CwaFetcherAsyncResponse } from './fetcher'
-import { reactive } from '#imports'
-
-interface FetchStatusInterface {
-  fetchingEndpoint?: string
-  endpoints: { [key: string]: CwaFetcherAsyncResponse }
-  isFetching: boolean
-  fetchedEndpoint?: string
-  fetchedPage?: {
-    pageIri: string
-    endpoint: string
-  }
-}
-
-interface FinishFetchEvent {
-  endpoint: string
-  pageIri?: string
-  success?: boolean
-}
+import { FinishFetchEvent } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/actions'
 
 export default class FetchStatus {
-  private status: FetchStatusInterface
-  private resourcesStoreDefinition: ResourcesStore
+  private fetcherStoreDefinition: FetcherStore
 
-  constructor (resourcesStore: ResourcesStore) {
-    this.resourcesStoreDefinition = resourcesStore
-    this.status = reactive({
-      endpoints: {},
-      isFetching: false
-    })
+  constructor (fetcherStore: FetcherStore) {
+    this.fetcherStoreDefinition = fetcherStore
   }
 
   /**
    * Data getters
    */
   public get path (): string|undefined {
-    return this.status.fetchingEndpoint || this.status.fetchedEndpoint
+    return this.status.fetch.path || this.status.fetched.path
   }
 
-  public getFetchingEndpointPromise (endpoint: string): CwaFetcherAsyncResponse | null {
-    return this.status.endpoints[endpoint] || null
+  public getFetchingPathPromise (path: string): CwaFetcherAsyncResponse | null {
+    return this.status.fetch.paths[path] || null
   }
 
   /**
    * Interface for updating/managing the fetch state
    */
-  public startFetch (endpoint: string): CwaFetcherAsyncResponse|null {
-    if (this.status.fetchingEndpoint !== undefined) {
-      // we are in the process of fetching
-      // do we have a promise to return for this resource already / prevent duplicate response in the stack of requests..
-      return this.status.endpoints[endpoint] || null
+
+  /**
+   * A promise or true boolean should cancel the request being started
+   */
+  public startFetch (path: string): CwaFetcherAsyncResponse|boolean {
+    if (this.status.fetch.inProgress) {
+      const existingFetchPromise = this.status.fetch.paths?.[path]
+      if (existingFetchPromise) {
+        return existingFetchPromise
+      }
+    }
+    if (this.status.fetched.path === path) {
+      // we already did this request last, and it's finished and successful
+      // prevents loading again from route middleware that'll run server and client side
+      // this is also why we use a store for fetcher data to persist state between the two
+      return false
     }
 
-    this.initFetchStatus({ endpoint })
-    return null
+    return this.fetcherStore.initFetchStatus({ path })
   }
 
   public addEndpoint (endpoint: string, promise: CwaFetcherAsyncResponse) {
-    if (undefined === this.status.fetchingEndpoint) {
-      return
-    }
-    this.status.endpoints[endpoint] = promise
+    this.fetcherStore.addPath(endpoint, promise)
   }
 
-  public finishFetch ({ endpoint, pageIri, success }: FinishFetchEvent & { success: boolean }) {
-    this.initFetchStatus({
-      endpoint,
+  public finishFetch ({ path, pageIri, success }: FinishFetchEvent & { success: boolean }) {
+    this.fetcherStore.initFetchStatus({
+      path,
       pageIri,
       success
     })
@@ -79,33 +59,11 @@ export default class FetchStatus {
   /**
    * Internal
    */
-  private initFetchStatus ({ endpoint, pageIri, success }: FinishFetchEvent) {
-    const isFetching = success === undefined
-    // do not action if the primary started endpoint is different, or do not start if already in progress
-    if (endpoint === this.status.fetchingEndpoint || (this.status.fetchingEndpoint && isFetching)) {
-      return
-    }
-    if (isFetching) {
-      this.resourcesStore.resetCurrentResources()
-    }
-
-    // fetchedEndpoint should be the last successfully fetched endpoint
-    if (success && !isFetching && this.status.fetchingEndpoint) {
-      if (pageIri) {
-        this.status.fetchedPage = {
-          endpoint: this.status.fetchingEndpoint,
-          pageIri
-        }
-      }
-      this.status.fetchedEndpoint = this.status.fetchingEndpoint
-    }
-
-    this.status.fetchingEndpoint = isFetching ? endpoint : undefined
-    this.status.endpoints = {}
-    this.status.isFetching = isFetching
+  private get status () {
+    return this.fetcherStore.status
   }
 
-  private get resourcesStore (): CwaResourcesInterface {
-    return this.resourcesStoreDefinition.useStore()
+  private get fetcherStore (): CwaFetcherInterface {
+    return this.fetcherStoreDefinition.useStore()
   }
 }
