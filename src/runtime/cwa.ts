@@ -4,6 +4,7 @@ import { Storage } from './storage/storage'
 import { Fetcher } from './api/fetcher/fetcher'
 import Mercure from './api/mercure'
 import ApiDocumentation from './api/api-documentation'
+import { CwaApiDocumentationDataInterface } from './storage/stores/api-documentation/state'
 
 export default class Cwa {
   private readonly nuxtApp: NuxtApp
@@ -21,7 +22,7 @@ export default class Cwa {
     this.storage = new Storage(this.options.storeName)
     const currentRoute = nuxtApp._route
     this.mercure = new Mercure(this.storage.stores.mercure)
-    this.apiDocumentation = new ApiDocumentation(this.storage.stores.apiDocumentation)
+    this.apiDocumentation = new ApiDocumentation(apiUrl, this.storage.stores.apiDocumentation)
     this.fetcher = new Fetcher(apiUrl, this.storage.stores.fetcher, this.storage.stores.resources, currentRoute, this.mercure, this.apiDocumentation)
   }
 
@@ -29,7 +30,7 @@ export default class Cwa {
     return this.storage.stores
   }
 
-  public initMercure () {
-    this.mercure.init()
+  public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
+    return await this.apiDocumentation.getApiDocumentation()
   }
 }

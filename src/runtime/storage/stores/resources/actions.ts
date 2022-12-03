@@ -44,10 +44,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       const data = initCurrentResource(resourcesState, iri)
       data.fetchState.fetchError = {
         statusCode: fetchError.statusCode,
-        statusText: fetchError.statusText,
-        statusMessage: fetchError.statusMessage,
-        path: fetchError.request?.toString(),
-        error: fetchError.toString()
+        path: fetchError.request?.toString()
       }
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {

@@ -8,8 +8,8 @@ export default class Mercure {
 
   constructor (store: MercureStore) {
     this.storeDefinition = store
-    this.store.$subscribe((_, { hub }) => {
-      if (hub) {
+    this.store.$subscribe((mutation) => {
+      if (mutation.type === 'patch object' && mutation.payload.hub) {
         this.init()
       }
     })
