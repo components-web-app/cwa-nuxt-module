@@ -1,8 +1,21 @@
 import { ref, Ref } from 'vue'
 import consola from 'consola'
+import {
+  ApiDocumentationStore
+} from '../storage/stores/api-documentation/api-documentation-store'
+import { CwaApiDocumentationStateInterface } from '../storage/stores/api-documentation/state'
 
 export default class ApiDocumentation {
   private docsPath?: Ref<string>
+  private storeDefinition: ApiDocumentationStore
+
+  constructor (store: ApiDocumentationStore) {
+    this.storeDefinition = store
+  }
+
+  private get store (): CwaApiDocumentationStateInterface {
+    return this.storeDefinition.useStore()
+  }
 
   public setDocsPathFromLinkHeader (linkHeader: string) {
     if (this.docsPath) {

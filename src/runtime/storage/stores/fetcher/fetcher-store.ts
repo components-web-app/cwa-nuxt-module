@@ -1,10 +1,11 @@
 import {
-  _ExtractActionsFromSetupStore,
-  _ExtractGettersFromSetupStore,
-  _ExtractStateFromSetupStore,
-  defineStore, StoreDefinition
+  defineStore
 } from 'pinia'
-import { CwaStoreInterface } from '../cwa-store-interface'
+import {
+  CwaPiniaStoreDefinitionInterface,
+  CwaPiniaStoreWithStateDefinitionInterface,
+  CwaStoreInterface
+} from '../cwa-store-interface'
 import { ResourcesStore } from '../resources/resources-store'
 import CwaFetcherActions, { CwaFetcherActionsInterface } from './actions'
 import CwaFetcherState, { CwaFetcherStateInterface } from './state'
@@ -13,7 +14,8 @@ import CwaFetcherState, { CwaFetcherStateInterface } from './state'
  * Interface Definitions
  */
 export interface CwaFetcherInterface extends CwaFetcherStateInterface, CwaFetcherActionsInterface {}
-export interface CwaFetcherStoreInterface extends StoreDefinition<`${string}.fetcher`, _ExtractStateFromSetupStore<CwaFetcherInterface>, _ExtractGettersFromSetupStore<CwaFetcherInterface>, _ExtractActionsFromSetupStore<CwaFetcherInterface>> {}
+export interface CwaFetcherStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.fetcher`, CwaFetcherInterface> {}
+export interface CwaFetcherStoreWithStateInterface extends CwaFetcherInterface, CwaPiniaStoreWithStateDefinitionInterface<`${string}.fetcher`, CwaFetcherInterface> {}
 
 /**
  * Main Store Class
@@ -23,15 +25,15 @@ export class FetcherStore implements CwaStoreInterface {
 
   constructor (storeName: string, resourcesStore: ResourcesStore) {
     this.storeDefinition = defineStore(`${storeName}.fetcher`, (): CwaFetcherInterface => {
-      const resourcesState = CwaFetcherState()
+      const fetcherState = CwaFetcherState()
       return {
-        ...resourcesState,
-        ...CwaFetcherActions(resourcesState, resourcesStore)
+        ...fetcherState,
+        ...CwaFetcherActions(fetcherState, resourcesStore)
       }
     })
   }
 
-  public useStore (): CwaFetcherInterface {
+  public useStore (): CwaFetcherStoreWithStateInterface {
     return this.storeDefinition()
   }
 }

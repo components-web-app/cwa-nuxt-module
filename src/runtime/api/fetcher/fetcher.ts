@@ -2,13 +2,18 @@ import bluebird from 'bluebird'
 import { $fetch, createFetchError, FetchContext, FetchError, FetchResponse } from 'ohmyfetch'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import consola from 'consola'
-import { CwaResourcesInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
+import {
+  CwaResourcesInterface,
+  CwaResourcesStoreWithStateInterface,
+  ResourcesStore
+} from '../../storage/stores/resources/resources-store'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resource-types'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import FetchStatus from './fetch-status'
 import preloadHeaders from './preload-headers'
+import { FinishFetchEvent } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/actions'
 
 interface FetchEventInterface {
   path: string
@@ -36,18 +41,24 @@ export class Fetcher {
   private readonly fetcherStoreDefinition: FetcherStore
   private readonly resourcesStoreDefinition: ResourcesStore
   private readonly currentRoute: RouteLocationNormalizedLoaded
-  private readonly mercure: Mercure
-  private readonly apiDocumentation: ApiDocumentation
+  public readonly mercure: Mercure
+  public readonly apiDocumentation: ApiDocumentation
   private readonly fetchStatus: FetchStatus
 
-  constructor (apiUrl: string, fetcherStore: FetcherStore, resourcesStore: ResourcesStore, currentRoute: RouteLocationNormalizedLoaded) {
+  constructor (
+    apiUrl: string,
+    fetcherStore: FetcherStore,
+    resourcesStore: ResourcesStore,
+    currentRoute: RouteLocationNormalizedLoaded,
+    mercure: Mercure,
+    apiDocumentation: ApiDocumentation
+  ) {
     this.apiUrl = apiUrl
     this.fetcherStoreDefinition = fetcherStore
     this.resourcesStoreDefinition = resourcesStore
     this.currentRoute = currentRoute
-
-    this.mercure = new Mercure()
-    this.apiDocumentation = new ApiDocumentation()
+    this.mercure = mercure
+    this.apiDocumentation = apiDocumentation
     this.fetchStatus = new FetchStatus(this.fetcherStoreDefinition)
   }
 
@@ -55,12 +66,9 @@ export class Fetcher {
    * PRIMARY FETCHER INTERFACE
    */
   public async fetchAndSaveResource ({ path, preload }: FetchEventInterface): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(path)
+    const startFetch = this.startFetch(path)
     if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
+      return startFetch
     }
 
     if (!preload) {
@@ -97,7 +105,7 @@ export class Fetcher {
       await this.fetchNestedResources(response._data)
     }
 
-    this.fetchStatus.finishFetch({ path, success: !!response?._data })
+    this.finishFetch({ path, success: !!response?._data })
     return response
   }
 
@@ -105,12 +113,9 @@ export class Fetcher {
    * Public interfaces for fetching for route middleware
    */
   public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(path)
+    const startFetch = this.startFetch(path)
     if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
+      return startFetch
     }
 
     // we do not need to wait for this, it will fetch everything from the manifest while we traverse the fetches
@@ -136,7 +141,7 @@ export class Fetcher {
       return response
     } finally {
       // todo: do we need to handle if it was a redirect from prop data?.redirectPath
-      this.fetchStatus.finishFetch({
+      this.finishFetch({
         path,
         success: data !== undefined,
         pageIri: data?.pageData || data?.page
@@ -145,12 +150,9 @@ export class Fetcher {
   }
 
   public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(pageIri)
+    const startFetch = this.startFetch(pageIri)
     if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
+      return startFetch
     }
 
     let data: CwaResource|undefined
@@ -164,19 +166,40 @@ export class Fetcher {
       data = response._data
       return response
     } finally {
-      this.fetchStatus.finishFetch({
+      this.finishFetch({
         path: pageIri,
         success: data !== undefined,
         pageIri
       })
     }
 
-    this.fetchStatus.finishFetch({ path: pageIri, success: false, pageIri })
+    this.finishFetch({ path: pageIri, success: false, pageIri })
   }
 
   /**
    * Internal: fetching
    */
+  private startFetch (path: string) {
+    const startFetch = this.fetchStatus.startFetch(path)
+    if (startFetch !== true) {
+      // return the promise for this endpoint
+      if (startFetch !== false) {
+        return startFetch
+      }
+      // no promise to return, start fetch determined we should stop now
+      this.mercure.init()
+      return
+    }
+    return true
+  }
+
+  private finishFetch (event: FinishFetchEvent & { success: boolean }) {
+    if (this.fetchStatus.finishFetch(event) && process.client) {
+      // event source may have died, re-initialise
+      this.mercure.init()
+    }
+  }
+
   private async fetchRoutesManifest (path: string): Promise<Array<string>|undefined> {
     let response: FetchResponse<any>|undefined
     try {
@@ -284,7 +307,7 @@ export class Fetcher {
   /**
    * Internal: getters
    */
-  private get resourcesStore (): CwaResourcesInterface {
+  private get resourcesStore (): CwaResourcesStoreWithStateInterface {
     return this.resourcesStoreDefinition.useStore()
   }
 

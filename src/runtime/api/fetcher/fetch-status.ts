@@ -49,7 +49,7 @@ export default class FetchStatus {
   }
 
   public finishFetch ({ path, pageIri, success }: FinishFetchEvent & { success: boolean }) {
-    this.fetcherStore.initFetchStatus({
+    return this.fetcherStore.initFetchStatus({
       path,
       pageIri,
       success

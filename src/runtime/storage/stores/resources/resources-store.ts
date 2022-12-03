@@ -1,10 +1,11 @@
 import {
-  _ExtractActionsFromSetupStore,
-  _ExtractGettersFromSetupStore,
-  _ExtractStateFromSetupStore,
-  defineStore, StoreDefinition
+  defineStore
 } from 'pinia'
-import { CwaStoreInterface } from '../cwa-store-interface'
+import {
+  CwaPiniaStoreDefinitionInterface,
+  CwaPiniaStoreWithStateDefinitionInterface,
+  CwaStoreInterface
+} from '../cwa-store-interface'
 import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
 import CwaResourcesState, { CwaResourcesStateInterface } from './state'
 
@@ -12,7 +13,8 @@ import CwaResourcesState, { CwaResourcesStateInterface } from './state'
  * Interface Definitions
  */
 export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesActionsInterface {}
-export interface CwaResourcesStoreInterface extends StoreDefinition<`${string}.resources`, _ExtractStateFromSetupStore<CwaResourcesInterface>, _ExtractGettersFromSetupStore<CwaResourcesInterface>, _ExtractActionsFromSetupStore<CwaResourcesInterface>> {}
+export interface CwaResourcesStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
+export interface CwaResourcesStoreWithStateInterface extends CwaResourcesInterface, CwaPiniaStoreWithStateDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
 
 /**
  * Main Store Class
@@ -30,7 +32,7 @@ export class ResourcesStore implements CwaStoreInterface {
     })
   }
 
-  public useStore (): CwaResourcesInterface {
+  public useStore (): CwaResourcesStoreWithStateInterface {
     return this.storeDefinition()
   }
 }

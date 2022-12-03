@@ -30,7 +30,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStore:
       if (startFetch) {
         const previousFetchSame = path === fetcherState.status.fetched.path
         if (previousFetchSame) {
-          // we should not init, it is the same as previous
+          // we should not initialise, it is the same as previous
           return false
         }
         if (fetchInProgress) {

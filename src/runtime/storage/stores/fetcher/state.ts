@@ -1,17 +1,7 @@
 import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
 import { reactive } from '#imports'
 
-interface FetchStatusInterface {
-  // fetchingEndpoint?: string
-  // endpoints: { [key: string]: CwaFetcherAsyncResponse }
-  // isFetching: boolean
-  // lastFetchSuccess?: boolean
-  // fetchedEndpoint?: string
-  // fetchedPage?: {
-  //   pageIri: string
-  //   endpoint: string
-  // }
-
+interface FetcherStatusInterface {
   fetch: {
     path?: string
     inProgress: boolean
@@ -24,7 +14,7 @@ interface FetchStatusInterface {
 }
 
 export interface CwaFetcherStateInterface {
-  status: FetchStatusInterface
+  status: FetcherStatusInterface
   fetchedPage?: {
     iri: string
     path: string
