@@ -1,9 +1,11 @@
 import { fileURLToPath } from 'url'
-import { defineNuxtModule, createResolver, addPluginTemplate } from '@nuxt/kit'
 import { join } from 'path'
+import { defineNuxtModule, createResolver, addPluginTemplate, installModule } from '@nuxt/kit'
 
 export interface CwaModuleOptions {
-
+  storeName: string
+  apiUrlBrowser?: string
+  apiUrl?: string
 }
 
 export default defineNuxtModule<CwaModuleOptions>({
@@ -15,16 +17,20 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
   },
   defaults: {
+    storeName: 'cwa'
   },
-  setup (options: CwaModuleOptions, nuxt) {
+  async setup (options: CwaModuleOptions, nuxt) {
     const { resolve } = createResolver(import.meta.url)
     const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
     nuxt.options.build.transpile.push(runtimeDir)
 
     addPluginTemplate({
-      src: resolve(runtimeDir, 'plugin.ts'),
+      mode: 'all',
+      src: resolve(runtimeDir, 'plugin.template.ts'),
       filename: join('cwa', 'cwa-plugin.ts'),
       options
     })
+
+    await installModule('@pinia/nuxt')
   }
 })
