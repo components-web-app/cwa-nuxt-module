@@ -44,3 +44,4 @@ export interface CwaResource {
   }
   [key: string]: any
 }
+

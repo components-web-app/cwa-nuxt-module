@@ -1,5 +1,5 @@
 import { FetchError } from 'ohmyfetch'
-import { CwaResource } from '../../../resource-types'
+import { CwaResource } from '../../../resources/resource-types'
 import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
@@ -16,7 +16,7 @@ export interface CwaResourcesActionsInterface {
 function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: string): CwaCurrentResourceInterface {
   if (!resourcesState.current.byId[iri]) {
     resourcesState.current.byId[iri] = {
-      fetchState: {
+      apiState: {
         status: null
       }
     }
@@ -35,14 +35,14 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     },
     setResourceFetchStatus ({ iri, status }: SetResourceStatusEvent): void {
       const data = initCurrentResource(resourcesState, iri)
-      data.fetchState.status = status
+      data.apiState.status = status
       if (status !== -1) {
-        data.fetchState.fetchError = undefined
+        data.apiState.fetchError = undefined
       }
     },
     setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
       const data = initCurrentResource(resourcesState, iri)
-      data.fetchState.fetchError = {
+      data.apiState.fetchError = {
         statusCode: fetchError.statusCode,
         path: fetchError.request?.toString()
       }

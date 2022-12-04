@@ -1,7 +1,7 @@
 import { FetchError } from 'ohmyfetch'
 import { reactive } from '#imports'
 
-export interface CwaResourceFetchState {
+export interface CwaResourceApiState {
   status: number|null
   fetchError?: {
     statusCode?: number
@@ -14,7 +14,7 @@ export interface CwaResourceFetchState {
 
 export interface CwaCurrentResourceInterface {
   data?: any
-  fetchState: CwaResourceFetchState
+  apiState: CwaResourceApiState
 }
 
 export interface CwaResourcesStateInterface {

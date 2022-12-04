@@ -1,17 +1,50 @@
 import consola from 'consola'
+import { storeToRefs } from 'pinia'
+import { Ref, watch } from 'vue'
 import { CwaMercureStoreWithStateInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
+import { CwaResource } from '../resources/resource-types'
+import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { getPublishedResourceIri } from '../resources/resource-utils'
+import { FetcherStore } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/fetcher-store'
+import { computed, ref } from '#imports'
+
+interface MercureMessageInterface {
+  event: MessageEvent,
+  data: CwaResource & { '@type'?: string }
+}
 
 export default class Mercure {
   private eventSource?: EventSource
   private lastEventId?: string
   private storeDefinition: MercureStore
+  private resourcesStore: ResourcesStore
+  private mercureMessageQueue: MercureMessageInterface[] = []
+  private fetcherInProgress: Ref<boolean> = ref(false)
+  private readonly resourcesApiStateIsPending: Ref<boolean>
 
-  constructor (store: MercureStore) {
+  constructor (store: MercureStore, resourcesStore: ResourcesStore, fetcherStore: FetcherStore) {
     this.storeDefinition = store
+    this.resourcesStore = resourcesStore
+
     this.store.$subscribe((mutation) => {
       if (mutation.type === 'patch object' && mutation.payload.hub) {
         this.init()
       }
+    })
+
+    const { resourcesApiStateIsPending } = storeToRefs(this.resourcesStore.useStore())
+    this.resourcesApiStateIsPending = resourcesApiStateIsPending
+
+    fetcherStore.useStore().$subscribe((_, state) => {
+      this.fetcherInProgress.value = state.status.fetch.inProgress
+    }, {
+      immediate: true
+    })
+  }
+
+  private get mercureMessageQueueActive () {
+    return computed(() => {
+      return !this.fetcherInProgress.value && !this.resourcesApiStateIsPending
     })
   }
 
@@ -21,6 +54,18 @@ export default class Mercure {
 
   private get store (): CwaMercureStoreWithStateInterface {
     return this.storeDefinition.useStore()
+  }
+
+  private get hubUrl (): string|undefined {
+    if (!this.hub) {
+      return
+    }
+    const hub = new URL(this.hub)
+    hub.searchParams.append('topic', '*')
+    if (this.lastEventId) {
+      hub.searchParams.append('Last-Event-ID', this.lastEventId)
+    }
+    return hub.toString()
   }
 
   public setMercureHubFromLinkHeader (linkHeader: string) {
@@ -76,18 +121,49 @@ export default class Mercure {
   }
 
   private handleMercureMessage (event: MessageEvent) {
+    const mercureMessage: MercureMessageInterface = {
+      event,
+      data: JSON.parse(event.data)
+    }
 
-  }
-
-  private get hubUrl (): string|undefined {
-    if (!this.hub) {
+    if (!this.isMessageForCurrentResource(mercureMessage)) {
       return
     }
-    const hub = new URL(this.hub)
-    hub.searchParams.append('topic', '*')
-    if (this.lastEventId) {
-      hub.searchParams.append('Last-Event-ID', this.lastEventId)
+
+    this.addMercureMessageToQueue(mercureMessage)
+
+    if (this.mercureMessageQueueActive) {
+      this.processMessageQueue()
+    } else {
+      const unwatch = watch(this.mercureMessageQueueActive, () => {
+        this.processMessageQueue()
+        unwatch()
+      })
     }
-    return hub.toString()
+  }
+
+  private isMessageForCurrentResource (mercureMessage: MercureMessageInterface): boolean {
+    const currentResources = this.resourcesStore.useStore().current.currentIds
+    const mercureMessageResource = mercureMessage.data
+    if (!currentResources.includes(mercureMessageResource['@id'])) {
+      const publishedIri = getPublishedResourceIri(mercureMessageResource)
+      if (!publishedIri || !currentResources.includes(publishedIri)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  private addMercureMessageToQueue (mercureMessage: MercureMessageInterface) {
+    this.mercureMessageQueue = [
+      ...this.mercureMessageQueue.filter((existingMessage: MercureMessageInterface) => {
+        return existingMessage.data['@id'] !== mercureMessage.data['@id']
+      }),
+      mercureMessage
+    ]
+  }
+
+  private processMessageQueue () {
+    console.log('PROCESS MERCURE MESSAGE QUEUE NOW', this.mercureMessageQueue)
   }
 }

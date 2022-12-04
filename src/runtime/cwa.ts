@@ -21,7 +21,7 @@ export default class Cwa {
     this.options = options
     this.storage = new Storage(this.options.storeName)
     const currentRoute = nuxtApp._route
-    this.mercure = new Mercure(this.storage.stores.mercure)
+    this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     this.apiDocumentation = new ApiDocumentation(apiUrl, this.storage.stores.apiDocumentation)
     this.fetcher = new Fetcher(apiUrl, this.storage.stores.fetcher, this.storage.stores.resources, currentRoute, this.mercure, this.apiDocumentation)
   }

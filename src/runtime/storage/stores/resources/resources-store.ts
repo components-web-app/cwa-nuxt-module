@@ -6,13 +6,14 @@ import {
   CwaPiniaStoreWithStateDefinitionInterface,
   CwaStoreInterface
 } from '../cwa-store-interface'
-import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
 import CwaResourcesState, { CwaResourcesStateInterface } from './state'
+import CwaResourcesGetters, { CwaResourcesGettersInterface } from './getters'
+import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
 
 /**
  * Interface Definitions
  */
-export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesActionsInterface {}
+export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesGettersInterface, CwaResourcesActionsInterface {}
 export interface CwaResourcesStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
 export interface CwaResourcesStoreWithStateInterface extends CwaResourcesInterface, CwaPiniaStoreWithStateDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
 
@@ -27,6 +28,7 @@ export class ResourcesStore implements CwaStoreInterface {
       const resourcesState = CwaResourcesState()
       return {
         ...resourcesState,
+        ...CwaResourcesGetters(resourcesState),
         ...CwaResourcesActions(resourcesState)
       }
     })

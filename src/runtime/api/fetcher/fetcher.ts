@@ -7,7 +7,7 @@ import {
   CwaResourcesStoreWithStateInterface,
   ResourcesStore
 } from '../../storage/stores/resources/resources-store'
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resource-types'
+import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-types'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
