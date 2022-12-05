@@ -1,7 +1,7 @@
 import { FetchError } from 'ohmyfetch'
+import consola from 'consola'
 import { CwaResource } from '../../../resources/resource-types'
 import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
-import consola from 'consola'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
 export interface SetResourceStatusEvent { iri: string, status: -1 | 0 | 1 }
