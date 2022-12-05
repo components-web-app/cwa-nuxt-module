@@ -1,0 +1,109 @@
+name: ci
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [lts/*,latest]
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+      - name: Install dependencies
+        run: npm install
+      - name: Prepare and build module
+        run: |
+          npm run dev:prepare
+          npm run dev:build
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm run test
+        env:
+          CI: true
+      - name: Audit
+        run: npm audit
+
+#  e2e:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        node: [16]
+#      fail-fast: true
+#    container: cypress/included:10.11.0
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#      - name: Install SASS dependencies
+#        run: |
+#          apt-get update
+#          apt-get install -y g++ build-essential
+#      - name: Use Node.js ${{ matrix.node }}
+#        uses: actions/setup-node@v3
+#        with:
+#          node-version: ${{ matrix.node }}
+#      - name: Cache Node.js modules
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.yarn
+#          key: ${{ runner.OS }}-node-${{ hashFiles('**/yarn.lock') }}
+#          restore-keys: |
+#            ${{ runner.OS }}-node-
+#            ${{ runner.OS }}-
+#      - name: Install dependencies
+#        run: yarn --frozen-lockfile
+#      - name: Start API, Build and Start Demo Application
+#        env:
+#          API_PORT: 3100
+#          API_URL: http://localhost:3100
+#          NODE_TLS_REJECT_UNAUTHORIZED: 0
+#          DISABLE_HTTPS: true
+#          TESTING: true
+#        run: |
+#          yarn api &
+#          yarn run demo:build
+#          yarn run demo:start &
+#          npx wait-on 'http://localhost:3000'
+#          curl -XGET localhost:3000
+#      - name: Run E2E
+#        env:
+#          CYPRESS_BASE_URL: http://localhost:3000
+#        run: yarn e2e --record --key=${{secrets.CYPRESS_RECORD_KEY}}
+#
+#  deploy-next:
+#    if: github.ref == 'refs/heads/dev'
+#    needs: [test,e2e]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Install dependencies
+#        run: yarn --frozen-lockfile
+#      - name: Update package name and version number
+#        run: node ./scripts/bump-next.cjs
+#      - name: Build
+#        run: |
+#          yarn clean
+#          yarn build
+#      - name: Publish Next
+#        run: |
+#            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+#            npm publish
+#        env:
+#            GIT_REF: ${{ github.ref }}
+#            NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
