@@ -22,11 +22,11 @@ export default class Mercure {
   private fetcherInProgress: Ref<boolean> = ref(false)
   private readonly resourcesApiStateIsPending: Ref<boolean>
 
-  constructor (store: MercureStore, resourcesStore: ResourcesStore, fetcherStore: FetcherStore) {
-    this.storeDefinition = store
+  constructor (mercureStore: MercureStore, resourcesStore: ResourcesStore, fetcherStore: FetcherStore) {
+    this.storeDefinition = mercureStore
     this.resourcesStore = resourcesStore
 
-    this.store.$subscribe((mutation) => {
+    this.mercureStore.$subscribe((mutation) => {
       if (mutation.type === 'patch object' && mutation.payload.hub) {
         this.init()
       }
@@ -49,10 +49,10 @@ export default class Mercure {
   }
 
   private get hub () {
-    return this.store.$state.hub
+    return this.mercureStore.$state.hub
   }
 
-  private get store (): CwaMercureStoreWithStateInterface {
+  private get mercureStore (): CwaMercureStoreWithStateInterface {
     return this.storeDefinition.useStore()
   }
 
@@ -78,7 +78,7 @@ export default class Mercure {
       return
     }
 
-    this.store.$patch({
+    this.mercureStore.$patch({
       hub: matches[1]
     })
     consola.debug('Mercure hub set', this.hub)

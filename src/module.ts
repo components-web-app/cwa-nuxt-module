@@ -21,16 +21,17 @@ export default defineNuxtModule<CwaModuleOptions>({
   },
   async setup (options: CwaModuleOptions, nuxt) {
     const { resolve } = createResolver(import.meta.url)
+
+    await installModule('@pinia/nuxt')
+
     const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
     nuxt.options.build.transpile.push(runtimeDir)
 
+    const templatesDir = fileURLToPath(new URL('./templates', import.meta.url))
     addPluginTemplate({
-      mode: 'all',
-      src: resolve(runtimeDir, 'plugin.template.ts'),
+      src: resolve(templatesDir, 'plugin.template.ts'),
       filename: join('cwa', 'cwa-plugin.ts'),
       options
     })
-
-    await installModule('@pinia/nuxt')
   }
 })

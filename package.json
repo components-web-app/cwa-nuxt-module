@@ -21,13 +21,18 @@
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
     "lint": "eslint --ext .ts,.js,.vue .",
-    "lint:fix": "eslint --fix --ext .ts,.js,.vue ."
+    "lint:fix": "eslint --fix --ext .ts,.js,.vue .",
+    "test": "vitest --run --reporter verbose --globals",
+    "test:watch": "vitest --watch --reporter verbose --globals",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@nuxt/kit": "^3.0.0",
+    "@nuxt/test-utils-edge": "^3.0.1-rc.0-27837318.5fe7c1c",
     "@pinia/nuxt": "^0.4.6",
     "bluebird": "^3.7.2",
-    "pinia": "^2.0.27"
+    "pinia": "^2.0.27",
+    "vitest": "^0.25.3"
   },
   "devDependencies": {
     "@nuxt/module-builder": "^0.2.1",

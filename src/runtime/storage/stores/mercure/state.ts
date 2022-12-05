@@ -1,11 +1,12 @@
-import { reactive } from '#imports'
+import { Ref } from 'vue'
+import { ref } from '#imports'
 
 export interface CwaMercureStateInterface {
-  hub: string|null
+  hub: Ref<string|null>
 }
 
 export default function (): CwaMercureStateInterface {
-  return reactive({
-    hub: null
-  })
+  return {
+    hub: ref(null)
+  }
 }

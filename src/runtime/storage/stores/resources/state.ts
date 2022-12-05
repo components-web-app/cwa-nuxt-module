@@ -1,4 +1,3 @@
-import { FetchError } from 'ohmyfetch'
 import { reactive } from '#imports'
 
 export interface CwaResourceApiState {
