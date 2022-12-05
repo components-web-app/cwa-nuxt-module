@@ -90,9 +90,9 @@ export class Fetcher {
         }
         // network request error
         if (!error.response) {
-          console.error('[NETWORK ERROR]')
+          consola.error('[NETWORK ERROR]')
         }
-        console.error(error.message, JSON.stringify(error))
+        consola.error(error.message, JSON.stringify(error))
         return
       }
       throw error

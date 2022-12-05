@@ -164,6 +164,6 @@ export default class Mercure {
   }
 
   private processMessageQueue () {
-    console.log('PROCESS MERCURE MESSAGE QUEUE NOW', this.mercureMessageQueue)
+    consola.log('PROCESS MERCURE MESSAGE QUEUE NOW', this.mercureMessageQueue)
   }
 }

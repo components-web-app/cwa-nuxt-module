@@ -1,6 +1,7 @@
 import { FetchError } from 'ohmyfetch'
 import { CwaResource } from '../../../resources/resource-types'
 import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
+import consola from 'consola'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
 export interface SetResourceStatusEvent { iri: string, status: -1 | 0 | 1 }
@@ -49,7 +50,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {
       if (isNew === true) {
-        console.log('SAVE NEW MERCURE RESOURCE TO DO')
+        consola.log('SAVE NEW MERCURE RESOURCE TO DO')
         return
       }
       const iri = resource['@id']
