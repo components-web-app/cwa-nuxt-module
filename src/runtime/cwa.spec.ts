@@ -1,10 +1,17 @@
-import { describe, vi, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
 import ApiDocumentation from './api/api-documentation'
 import Mercure from './api/mercure'
 import Fetcher from './api/fetcher/fetcher'
+
+interface globalThisType {
+  mockApiDocumentation?: {
+    getApiDocumentation(): void
+  }
+}
+declare const globalThis: globalThisType
 
 vi.mock('./storage/storage', () => {
   return {
@@ -21,23 +28,26 @@ vi.mock('./storage/storage', () => {
 
 vi.mock('./api/fetcher/fetcher', () => {
   return {
-    default: vi.fn().mockReturnValue('Fetcher Mock')
+    default: vi.fn()
   }
 })
 
 vi.mock('./api/mercure', () => {
   return {
-    default: vi.fn().mockReturnValue('Mercure Mock')
+    default: vi.fn()
   }
 })
 
 vi.mock('./api/api-documentation', () => {
-  const ApiDocumentation = vi.fn()
-  ApiDocumentation.prototype.getApiDocumentation = vi.fn((refresh = false) => {
-    return 'refresh:' + refresh
-  })
-  ApiDocumentation.mockReturnValue('API Documentation Mock')
-  return { default: ApiDocumentation }
+  const mockApiDocumentation = {
+    getApiDocumentation: vi.fn((refresh = false) => {
+      return 'refresh:' + refresh
+    })
+  }
+  vi.stubGlobal('mockApiDocumentation', mockApiDocumentation)
+  return {
+    default: vi.fn(() => (mockApiDocumentation))
+  }
 })
 
 const path = 'something'
@@ -106,12 +116,10 @@ describe('Cwa class test', () => {
 
   test('Mercure is setup and accessible', () => {
     expect(Mercure).toBeCalledWith($cwa.stores.mercure, $cwa.stores.resources, $cwa.stores.fetcher)
-    // how can I check this is the same as what the mock should be.. that it is set
-    expect($cwa.mercure).toBe('Mercure Mock')
+    expect($cwa.mercure).toBeInstanceOf(Mercure)
   })
 
   test('Fetcher is setup and accessible', () => {
-    // same issue as above, how can I test that a private variable that is a mock has been passed to another mock
-    expect(Fetcher).toBeCalledWith('https://api-url-not-set.com', $cwa.stores.fetcher, $cwa.stores.resources, { path }, $cwa.mercure, 'API Documentation Mock')
+    expect(Fetcher).toBeCalledWith('https://api-url-not-set.com', $cwa.stores.fetcher, $cwa.stores.resources, { path }, $cwa.mercure, globalThis.mockApiDocumentation)
   })
 })
