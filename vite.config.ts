@@ -1,9 +1,11 @@
 import { defineConfig } from 'vitest/config'
+import NuxtVitest from 'vite-plugin-nuxt-test'
 
 export default defineConfig({
+  plugins: [NuxtVitest()],
   test: {
     deps: {
-      inline: [/@nuxt\/test-utils-edge/, /#app/, /#imports/]
+      inline: ['@nuxt/test-utils-edge']
     }
   }
 })
