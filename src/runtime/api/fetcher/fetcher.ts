@@ -36,7 +36,7 @@ export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap =
 
 export interface CwaFetcherAsyncResponse extends Promise<FetchResponse<CwaResource|any>> {}
 
-export class Fetcher {
+export default class Fetcher {
   private readonly apiUrl: string
   private readonly fetcherStoreDefinition: FetcherStore
   private readonly resourcesStoreDefinition: ResourcesStore

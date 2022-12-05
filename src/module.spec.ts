@@ -3,7 +3,7 @@ import { setup, useTestContext } from '@nuxt/test-utils-edge'
 import { describe, test, expect } from 'vitest'
 import CwaModule from './module'
 
-describe('Functional: Test modules are defined when Nuxt App is setup', async () => {
+describe.concurrent('Functional: Test modules are defined when Nuxt App is setup', async () => {
   await setup({
     rootDir: fileURLToPath(new URL('../playground', import.meta.url)),
     nuxtConfig: {
