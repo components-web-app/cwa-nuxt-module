@@ -22,9 +22,9 @@
     "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
     "lint": "eslint --ext .ts,.js,.vue .",
     "lint:fix": "eslint --fix --ext .ts,.js,.vue .",
-    "test": "vitest --run --reporter verbose --globals",
-    "test:watch": "vitest --watch --reporter verbose --globals",
-    "coverage": "vitest run --coverage"
+    "test": "vitest --run --reporter verbose",
+    "test:watch": "vitest --watch --reporter verbose",
+    "test:coverage": "vitest --run --coverage"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.4.6",
@@ -37,6 +37,7 @@
     "@nuxt/test-utils": "^3.0.0",
     "@nuxtjs/eslint-config-typescript": "^12.0.0",
     "@types/bluebird": "^3.5.38",
+    "@vitest/coverage-c8": "^0.25.4",
     "eslint": "^8.28.0",
     "nuxt": "^3.0.0",
     "vite-plugin-nuxt-test": "^0.0.10",

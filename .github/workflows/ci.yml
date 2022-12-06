@@ -8,6 +8,9 @@ jobs:
     strategy:
       matrix:
         node: [lts/*,latest]
+        include:
+          - node: latest
+            coverage: true
       fail-fast: true
     steps:
       - name: Checkout
@@ -32,10 +35,34 @@ jobs:
           npm run dev:build
       - name: Lint
         run: npm run lint
+      - name: Enable code coverage
+        if: matrix.coverage
+        run: echo "COVERAGE=1" >> $GITHUB_ENV
       - name: Unit tests
-        run: npm run test
+        run: |
+          mkdir -p coverage
+          if [ "$COVERAGE" = '1' ]; then
+            npm run test:coverage
+          else
+            npm run test
+          fi
         env:
           CI: true
+      - name: Upload test artifacts
+        if: matrix.coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: vitest-logs-unit${{ matrix.node }}
+          path: coverage
+      - name: Upload coverage results to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@v3
+        with:
+          name: unit${{ matrix.node }}
+          flags: vitest
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/clover.xml
       - name: Audit
         run: npm audit
 

@@ -26,7 +26,7 @@ export default defineNuxtConfig({
         '../src'
       ],
       exclude: [
-        '../src/**/*.spec.ts'
+        '../**/*.spec.ts'
       ]
     }
   }
