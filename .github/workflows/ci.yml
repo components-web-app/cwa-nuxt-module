@@ -58,7 +58,7 @@ jobs:
         if: matrix.coverage
         uses: codecov/codecov-action@v3
         with:
-          name: unit${{ matrix.node }}
+          name: vitest-node-${{ matrix.node }}
           flags: vitest
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -11,8 +11,8 @@ export default defineConfig({
     typecheck: { checker: 'vue-tsc' },
     coverage: {
       provider: 'c8',
-      include: ['./src/**'],
-      exclude: ['./src/templates/**']
+      include: ['src/**'],
+      exclude: ['src/templates/**']
     }
   }
 })
