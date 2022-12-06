@@ -1,14 +1,17 @@
 import { fileURLToPath } from 'url'
-import { setup, useTestContext } from '@nuxt/test-utils-edge'
+import { setup, useTestContext } from '@nuxt/test-utils'
 import { describe, test, expect } from 'vitest'
+import { NuxtModule } from '@nuxt/schema'
 import CwaModule from './module'
 
 describe.concurrent('Functional: Test modules are defined when Nuxt App is setup', async () => {
+  // @ts-ignore
+  const module: NuxtModule = CwaModule
   await setup({
     rootDir: fileURLToPath(new URL('../playground', import.meta.url)),
     nuxtConfig: {
       modules: [
-        CwaModule
+        module
       ],
       cwa: {
         apiUrl: 'https://localhost:8443',
@@ -28,6 +31,7 @@ describe.concurrent('Functional: Test modules are defined when Nuxt App is setup
     expect(requiredModules).toContain('@cwa/nuxt-module')
     expect(requiredModules).toContain('pinia')
   })
+
   test('Runtime is added to build transpile', () => {
     const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
     expect(context.nuxt?.options.build.transpile).toContain(runtimeDir)

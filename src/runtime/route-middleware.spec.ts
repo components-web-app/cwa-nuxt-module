@@ -3,7 +3,7 @@ import { RouteLocationNormalizedLoaded } from 'vue-router'
 import * as nuxt from '#app'
 import routeMiddleware from './route-middleware'
 
-describe.concurrent('Test route middleware', () => {
+describe('Test route middleware', () => {
   const fetcher = {
     fetchRoute: vi.fn()
   }

@@ -27,21 +27,21 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@nuxt/kit": "^3.0.0",
-    "@nuxt/test-utils-edge": "^3.0.1-rc.0-27837318.5fe7c1c",
     "@pinia/nuxt": "^0.4.6",
     "bluebird": "^3.7.2",
     "pinia": "^2.0.27",
-    "vitest": "^0.25.3",
     "vue": "^3.2"
   },
   "devDependencies": {
     "@nuxt/module-builder": "^0.2.1",
-    "@nuxt/schema": "^3.0.0",
+    "@nuxt/test-utils": "^3.0.0",
     "@nuxtjs/eslint-config-typescript": "^12.0.0",
     "@types/bluebird": "^3.5.38",
     "eslint": "^8.28.0",
     "nuxt": "^3.0.0",
-    "vite-plugin-nuxt-test": "^0.0.10"
+    "vite-plugin-nuxt-test": "^0.0.10",
+    "vitest": "^0.25.4",
+    "vitest-mock-extended": "^1.0.7",
+    "vue-tsc": "^1.0.11"
   }
 }

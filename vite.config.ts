@@ -5,7 +5,9 @@ export default defineConfig({
   plugins: [NuxtVitest()],
   test: {
     deps: {
-      inline: ['@nuxt/test-utils-edge']
-    }
+      inline: ['@nuxt/test-utils']
+    },
+    clearMocks: true,
+    typecheck: { checker: 'vue-tsc' }
   }
 })

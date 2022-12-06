@@ -1,4 +1,5 @@
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, SpyInstance, test, vi, beforeEach } from 'vitest'
+import { SpyFn } from 'tinyspy'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -7,9 +8,10 @@ import Mercure from './api/mercure'
 import Fetcher from './api/fetcher/fetcher'
 
 interface globalThisType {
-  mockApiDocumentation?: {
-    getApiDocumentation(): void
-  }
+  mockApiDocumentation: {
+    getApiDocumentation: SpyInstance
+  },
+  MercureInstance: SpyFn<[], { name: string }>
 }
 declare const globalThis: globalThisType
 
@@ -33,8 +35,10 @@ vi.mock('./api/fetcher/fetcher', () => {
 })
 
 vi.mock('./api/mercure', () => {
+  const MercureInstance = vi.fn(() => ({ name: 'MERCURE' })).mockReturnThis()
+  vi.stubGlobal('MercureInstance', MercureInstance)
   return {
-    default: vi.fn()
+    default: MercureInstance
   }
 })
 
@@ -96,7 +100,10 @@ describe('$cwa.apiUrl tests', () => {
 })
 
 describe('Cwa class test', () => {
-  const $cwa = createCwa({ storeName })
+  let $cwa: Cwa
+  beforeEach(() => {
+    $cwa = createCwa({ storeName })
+  })
 
   test('Storage class is setup', () => {
     expect(Storage).toBeCalledWith(storeName)
@@ -112,14 +119,12 @@ describe('Cwa class test', () => {
     expect(await $cwa.getApiDocumentation(true)).toBe('refresh:true')
     expect(await $cwa.getApiDocumentation(false)).toBe('refresh:false')
     expect(await $cwa.getApiDocumentation()).toBe('refresh:false')
+    expect(globalThis.mockApiDocumentation.getApiDocumentation).toBeCalledTimes(3)
   })
 
-  test('Mercure is setup and accessible', () => {
+  test('Mercure and Fetcher are setup and accessible', () => {
     expect(Mercure).toBeCalledWith($cwa.stores.mercure, $cwa.stores.resources, $cwa.stores.fetcher)
-    expect($cwa.mercure).toBeInstanceOf(Mercure)
-  })
-
-  test('Fetcher is setup and accessible', () => {
+    expect($cwa.mercure).toBe(globalThis.MercureInstance.results[0][1])
     expect(Fetcher).toBeCalledWith('https://api-url-not-set.com', $cwa.stores.fetcher, $cwa.stores.resources, { path }, $cwa.mercure, globalThis.mockApiDocumentation)
   })
 })

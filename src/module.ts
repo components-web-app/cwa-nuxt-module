@@ -1,8 +1,9 @@
 import { fileURLToPath } from 'url'
 import { join } from 'path'
 import { defineNuxtModule, createResolver, addPluginTemplate, installModule } from '@nuxt/kit'
+import { ModuleOptions } from '@nuxt/schema'
 
-export interface CwaModuleOptions {
+export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
   apiUrlBrowser?: string
   apiUrl?: string
