@@ -12,7 +12,8 @@ export default defineConfig({
     coverage: {
       provider: 'c8',
       include: ['src/**'],
-      exclude: ['src/templates/**']
+      exclude: ['src/templates/**', 'src/**/*.spec.ts'],
+      all: true
     }
   }
 })
