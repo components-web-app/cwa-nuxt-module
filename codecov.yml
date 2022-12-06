@@ -1,0 +1,3 @@
+ignore:
+  - "src/**/*.spec.ts"
+path: ^src/.*
