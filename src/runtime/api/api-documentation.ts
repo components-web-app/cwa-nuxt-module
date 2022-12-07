@@ -50,34 +50,46 @@ export default class ApiDocumentation {
     // check if api docs is set and if not, wait for it to be set and continue
     if (!this.docsPath) {
       consola.debug('Waiting for docsPath to bet set to fetch API Documentation')
-      return new Promise((resolve) => {
-        watch(this.apiDocsSet, async (isSet: boolean) => {
-          if (isSet) {
-            const docs = await this.getApiDocumentation(refresh)
-            resolve(docs)
-          }
-        })
-      })
+      return this.reRunGetApiDocumentationWhenReady(refresh)
     }
 
-    // if we are already fetching api docs then we will return when that is complete
+    const currentDocs = await this.getCurrentApiDocs(refresh)
+    if (currentDocs) {
+      return currentDocs
+    }
+
+    consola.debug('Fetching API Documentation')
+    return await this.fetchAllApiDocumentation(this.docsPath)
+  }
+
+  private reRunGetApiDocumentationWhenReady (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
+    return new Promise((resolve) => {
+      watch(this.apiDocsSet, async (isSet: boolean) => {
+        if (isSet) {
+          const docs = await this.getApiDocumentation(refresh)
+          resolve(docs)
+        }
+      })
+    })
+  }
+
+  private async getCurrentApiDocs (refresh: boolean) {
     if (this.apiDocPromise) {
       consola.debug('Waiting for previous request to complete for API Documentation')
       await this.apiDocPromise
       return this.store.$state.apiDocumentation
     }
-
-    // if we already have api docs and do not want to refresh, return what we have
     if (!refresh && this.store.apiDocumentation) {
       consola.debug('Not refreshing API Documentation. Returning cached data.')
       return this.store.$state.apiDocumentation
     }
+    return null
+  }
 
-    // create a promise to fetch the 2 endpoints for all api documentation
-    consola.debug('Fetching API Documentation')
+  private async fetchAllApiDocumentation (docsPath: string): Promise<CwaApiDocumentationDataInterface|undefined> {
     this.apiDocPromise = Promise.all([
       this.doRequest(this.apiUrl),
-      this.doRequest(this.docsPath)
+      this.doRequest(docsPath)
     ]).then((responses) => {
       this.store.$patch({
         apiDocumentation: {
@@ -86,14 +98,9 @@ export default class ApiDocumentation {
         }
       })
       consola.debug('New API Documentation Saved')
+      this.apiDocPromise = undefined
     })
-
-    // wait for the promises to resolve
     await this.apiDocPromise
-
-    // unset the promise and return as we will have patched the docs now
-    this.apiDocPromise = undefined
-
     return this.store.$state.apiDocumentation
   }
 

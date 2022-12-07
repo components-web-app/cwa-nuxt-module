@@ -1,4 +1,4 @@
-import { reactive } from '#imports'
+import { reactive } from 'vue'
 
 export interface CwaApiDocumentationDataInterface {
   entrypoint?: {
