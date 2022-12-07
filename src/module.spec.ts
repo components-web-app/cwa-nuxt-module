@@ -10,7 +10,7 @@ vi.mock('@nuxt/kit', async () => {
   const newModule = {
     ...module,
     defineNuxtModule: vi.fn((ops) => { return module.defineNuxtModule(ops) }),
-    addPluginTemplate: vi.fn()
+    addPluginTemplate: vi.fn(module.addPluginTemplate)
   }
   return {
     ...newModule,
