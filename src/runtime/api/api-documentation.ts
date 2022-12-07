@@ -16,13 +16,6 @@ export default class ApiDocumentation {
     this.apiUrl = apiUrl
     this.storeDefinition = store
     this.apiDocsSet = ref(!!this.docsPath)
-    if (!this.apiDocsSet.value) {
-      this.store.$subscribe((mutation) => {
-        if (!this.apiDocsSet.value && mutation.type === 'patch object' && mutation.payload.docsPath) {
-          this.apiDocsSet.value = true
-        }
-      })
-    }
   }
 
   public setDocsPathFromLinkHeader (linkHeader: string) {
@@ -43,6 +36,7 @@ export default class ApiDocumentation {
     this.store.$patch({
       docsPath: matches[1]
     })
+    this.apiDocsSet.value = true
     consola.debug('ApiDocumentation docsPath', this.docsPath)
   }
 
@@ -79,7 +73,7 @@ export default class ApiDocumentation {
       await this.apiDocPromise
       return this.store.$state.apiDocumentation
     }
-    if (!refresh && this.store.apiDocumentation) {
+    if (!refresh && this.store.$state.apiDocumentation) {
       consola.debug('Not refreshing API Documentation. Returning cached data.')
       return this.store.$state.apiDocumentation
     }

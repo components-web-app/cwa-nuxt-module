@@ -11,6 +11,7 @@ jobs:
         include:
           - node: latest
             coverage: true
+            lint: true
       fail-fast: true
     steps:
       - name: Checkout
@@ -34,7 +35,7 @@ jobs:
           npm run dev:prepare
           npm run dev:build
       - name: Lint
-        if: matrix.node == 'latest'
+        if: matrix.lint
         run: npm run lint
       - name: Enable code coverage
         if: matrix.coverage
