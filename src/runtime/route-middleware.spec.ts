@@ -1,56 +1,53 @@
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi, beforeEach } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import * as nuxt from '#app'
 import routeMiddleware from './route-middleware'
+import { RouteMiddleware } from 'nuxt/dist/app/composables/router'
+
+function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded {
+  return {
+    name: '',
+    path: '/',
+    fullPath: '/',
+    query: {},
+    hash: '',
+    matched: [],
+    params: {},
+    meta: {
+      cwa
+    },
+    redirectedFrom: undefined
+  }
+}
 
 describe('Test route middleware', () => {
-  const fetcher = {
-    fetchRoute: vi.fn()
-  }
-
-  // We are not returning an entire NuxtApp interface, ignore.
+  const fetchRouteFn = vi.fn()
   // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
     return {
-      $cwa: { fetcher }
+      $cwa: { fetcher: { fetchRoute: fetchRouteFn } }
     }
   })
 
-  test.concurrent('Test route middleware can be disabled', () => {
-    const toRoute: RouteLocationNormalizedLoaded = {
-      name: '',
-      path: '/',
-      fullPath: '/',
-      query: {},
-      hash: '',
-      matched: [],
-      params: {},
-      meta: {
-        cwa: false
-      },
-      redirectedFrom: undefined
-    }
-
-    routeMiddleware(toRoute, toRoute)
-
-    expect(fetcher.fetchRoute).toHaveBeenCalledTimes(0)
+  afterEach(() => {
+    fetchRouteFn.mockReset()
   })
 
-  test.concurrent('Test route middleware can be disabled', () => {
-    const toRoute: RouteLocationNormalizedLoaded = {
-      name: '',
-      path: '/',
-      fullPath: '/',
-      query: {},
-      hash: '',
-      matched: [],
-      params: {},
-      meta: {},
-      redirectedFrom: undefined
-    }
-
+  test('Test route middleware is enabled by default', () => {
+    const toRoute = createToRoute()
     routeMiddleware(toRoute, toRoute)
-
-    expect(fetcher.fetchRoute).toHaveBeenCalledWith(toRoute.path)
+    expect(fetchRouteFn).toHaveBeenCalledTimes(1)
+    expect(fetchRouteFn).toHaveBeenCalledWith(toRoute.path)
+  })
+  test('Test route middleware can be set to true', () => {
+    const toRoute = createToRoute(true)
+    routeMiddleware(toRoute, toRoute)
+    expect(fetchRouteFn).toHaveBeenCalledTimes(1)
+    expect(fetchRouteFn).toHaveBeenCalledWith(toRoute.path)
+  })
+  test('Test route middleware can be disabled', () => {
+    const toRoute = createToRoute(false)
+    routeMiddleware(toRoute, toRoute)
+    expect(fetchRouteFn).not.toHaveBeenCalled()
   })
 })
