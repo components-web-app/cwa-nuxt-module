@@ -1,4 +1,4 @@
-import { describe, expect, SpyInstance, test, vi, beforeEach } from 'vitest'
+import { describe, expect, SpyInstance, test, vi, beforeEach, afterEach } from 'vitest'
 import { SpyFn } from 'tinyspy'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
@@ -103,6 +103,10 @@ describe('Cwa class test', () => {
   let $cwa: Cwa
   beforeEach(() => {
     $cwa = createCwa({ storeName })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   test('Storage class is setup', () => {

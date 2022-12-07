@@ -24,6 +24,7 @@
     "lint:fix": "eslint --fix --ext .ts,.js,.vue .",
     "test": "vitest --run --reporter verbose",
     "test:watch": "vitest --watch --reporter verbose",
+    "test:watch:coverage": "vitest --watch --coverage --reporter verbose",
     "test:coverage": "vitest --run --coverage"
   },
   "dependencies": {
