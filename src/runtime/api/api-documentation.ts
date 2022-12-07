@@ -67,20 +67,27 @@ export default class ApiDocumentation {
     })
   }
 
-  private async getCurrentApiDocs (refresh: boolean) {
-    if (this.apiDocPromise) {
-      consola.debug('Waiting for previous request to complete for API Documentation')
-      await this.apiDocPromise
-      return this.store.$state.apiDocumentation
-    }
-    if (!refresh && this.store.$state.apiDocumentation) {
+  private getCurrentApiDocs (refresh: boolean) {
+    if (!this.apiDocPromise && !refresh && this.store.$state.apiDocumentation) {
       consola.debug('Not refreshing API Documentation. Returning cached data.')
       return this.store.$state.apiDocumentation
     }
     return null
   }
 
+  private async awaitApiDocPromise () {
+    if (this.apiDocPromise) {
+      consola.debug('Waiting for previous request to complete for API Documentation')
+      await this.apiDocPromise
+      return this.store.$state.apiDocumentation
+    }
+    return this.store.$state.apiDocumentation
+  }
+
   private async fetchAllApiDocumentation (docsPath: string): Promise<CwaApiDocumentationDataInterface|undefined> {
+    if (this.apiDocPromise) {
+      return this.awaitApiDocPromise()
+    }
     this.apiDocPromise = Promise.all([
       this.doRequest(this.apiUrl),
       this.doRequest(docsPath)

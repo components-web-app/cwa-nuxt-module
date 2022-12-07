@@ -9,12 +9,12 @@ import ApiDocumentation from './api-documentation'
 
 vi.mock('consola')
 
-const mockedFetchResponseTime = 20
+const mockedFetchResponseTime = 100
 vi.mock('ohmyfetch', () => {
   return {
     $fetch: vi.fn(async (path) => {
       await new Promise((resolve) => {
-        setTimeout(resolve, 20)
+        setTimeout(resolve, 100)
       })
       return 'response from ' + path
     })
@@ -129,7 +129,6 @@ describe('API Documentation getApiDocumentation functionality', () => {
 
   test('We do not re-fetch on a second call', async () => {
     vi.clearAllMocks()
-
     const docs = await apiDocumentation.getApiDocumentation()
     const piniaStore = apiDocumentationStore.useStore()
 
@@ -139,11 +138,14 @@ describe('API Documentation getApiDocumentation functionality', () => {
 
   test('We can force the API documentation to be fetched again and another request for docs will wait and use the result from the first', async () => {
     vi.clearAllMocks()
-    const docs = await apiDocumentation.getApiDocumentation(true)
-    const docsAwait = await apiDocumentation.getApiDocumentation()
-    const piniaStore = apiDocumentationStore.useStore()
-    expect(docs).toEqual(apiDocsObject)
-    expect(docsAwait).toEqual(apiDocsObject)
+    const docs = apiDocumentation.getApiDocumentation(true)
+    const docsAwait = apiDocumentation.getApiDocumentation(true)
+
+    const piniaStore = await apiDocumentationStore.useStore()
+    expect(await docs).toEqual(apiDocsObject)
+    expect(await docsAwait).toEqual(apiDocsObject)
+    expect(consola.debug).toHaveBeenCalledWith('Waiting for previous request to complete for API Documentation')
+    await delay(mockedFetchResponseTime)
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
   })
 })
