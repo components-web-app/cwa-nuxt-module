@@ -47,7 +47,7 @@ export default class ApiDocumentation {
       return this.reRunGetApiDocumentationWhenReady(refresh)
     }
 
-    const currentDocs = await this.getCurrentApiDocs(refresh)
+    const currentDocs = this.getCurrentApiDocs(refresh)
     if (currentDocs) {
       return currentDocs
     }
@@ -76,17 +76,14 @@ export default class ApiDocumentation {
   }
 
   private async awaitApiDocPromise () {
-    if (this.apiDocPromise) {
-      consola.debug('Waiting for previous request to complete for API Documentation')
-      await this.apiDocPromise
-      return this.store.$state.apiDocumentation
-    }
+    consola.debug('Waiting for previous request to complete for API Documentation')
+    await this.apiDocPromise
     return this.store.$state.apiDocumentation
   }
 
   private async fetchAllApiDocumentation (docsPath: string): Promise<CwaApiDocumentationDataInterface|undefined> {
     if (this.apiDocPromise) {
-      return this.awaitApiDocPromise()
+      return await this.awaitApiDocPromise()
     }
     this.apiDocPromise = Promise.all([
       this.doRequest(this.apiUrl),
