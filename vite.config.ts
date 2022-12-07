@@ -10,9 +10,9 @@ export default defineConfig({
     // clearMocks: true,
     typecheck: { checker: 'vue-tsc' },
     coverage: {
-      provider: 'c8',
+      provider: 'istanbul',
       include: ['src/**'],
-      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+      exclude: ['src/templates/**', 'src/**/*.spec.ts', 'src/**/*.test.ts'],
       all: true
     }
   }
