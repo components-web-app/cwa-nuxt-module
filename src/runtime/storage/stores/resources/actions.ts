@@ -1,5 +1,6 @@
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
+import { reactive, toRef } from 'vue'
 import { CwaResource } from '../../../resources/resource-utils'
 import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 
@@ -44,10 +45,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
       const data = initCurrentResource(resourcesState, iri)
       data.apiState.status = -1
-      data.apiState.fetchError = {
+      data.apiState.fetchError = reactive({
         statusCode: fetchError.statusCode,
         path: fetchError.request?.toString()
-      }
+      })
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {
       if (isNew === true) {

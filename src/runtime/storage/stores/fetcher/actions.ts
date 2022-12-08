@@ -4,7 +4,7 @@ import { CwaFetcherStateInterface } from './state'
 import { CwaFetcherGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/getters'
 
 export enum fetcherInitTypes {
-  START= 'start',
+  START = 'start',
   FINISH = 'finish'
 }
 
@@ -52,19 +52,14 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
       function callerToContinue (): boolean|undefined {
         if (startFetch) {
-          const previousFetchSame = event.path === fetcherState.status.fetched.path
+          const previousFetchSame = event.path === fetcherState.status.fetched.path || event.path === fetcherState.status.fetch.path
           if (previousFetchSame) {
             // we should not initialise, it is the same as previous
             return false
           }
-          if (fetchInProgress) {
-            // we are already init and in progress
-            return true
-          }
-        } else if (!isExistingFetchPathSame) {
-          // we should not finish up the init, it is a sub request happening and does not match the main endpoint in progress
-          return false
+          return fetchInProgress ? true : undefined
         }
+        return isExistingFetchPathSame ? undefined : true
       }
 
       const prematureResult = callerToContinue()
@@ -77,24 +72,26 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
           resourcesStore.useStore().resetCurrentResources()
         }
         fetcherState.status.fetch.path = event.path
-      } else {
-        fetcherState.status.fetch.success = event.fetchSuccess
-
-        if (event.fetchSuccess === true) {
-          fetcherState.status.fetched.path = event.path
-          fetcherState.status.fetch.path = undefined
-          fetcherState.status.fetch.paths = {}
-          // if we specify the page then we want to know what endpoint was used to load this page in
-          // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
-          if (event.pageIri) {
-            fetcherState.fetchedPage = {
-              path: event.path,
-              iri: event.pageIri
-            }
-          }
-        }
+        return true
       }
 
+      fetcherState.status.fetch.success = event.fetchSuccess
+      if (!event.fetchSuccess) {
+        return true
+      }
+
+      fetcherState.status.fetched.path = event.path
+      fetcherState.status.fetch.path = undefined
+      fetcherState.status.fetch.paths = {}
+
+      // if we specify the page then we want to know what endpoint was used to load this page in
+      // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
+      if (event.pageIri) {
+        fetcherState.fetchedPage = {
+          path: event.path,
+          iri: event.pageIri
+        }
+      }
       return true
     }
   }

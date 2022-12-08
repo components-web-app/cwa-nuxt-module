@@ -9,7 +9,7 @@ import {
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { fetcherInitTypes, FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
+import { FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
 import { getResourceTypeFromIri, CwaResource, CwaResourceTypes } from '../../resources/resource-utils'
 import FetchStatus from './fetch-status'
 import preloadHeaders from './preload-headers'
@@ -83,13 +83,17 @@ export default class Fetcher {
       if (error instanceof FetchError) {
         this.handleFetchError(path, error)
         return
-      } else {
-        this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
       }
+      this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
       throw error
     }
 
     if (response?._data) {
+      // TODO: fix...
+      if (!response._data['@id']) {
+        return
+      }
+
       this.resourcesStore.saveResource({
         resource: response._data
       })
@@ -228,7 +232,7 @@ export default class Fetcher {
       )
   }
 
-  private fetchNestedResources (resource: any): bluebird<(CwaFetcherAsyncResponse|undefined)[]>|undefined {
+  private fetchNestedResources (resource: CwaResource): bluebird<(CwaFetcherAsyncResponse|undefined)[]>|undefined {
     // check resource type
     const type = getResourceTypeFromIri(resource['@id'])
     if (!type) {
