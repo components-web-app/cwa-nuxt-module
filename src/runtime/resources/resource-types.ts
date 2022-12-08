@@ -34,6 +34,7 @@ export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined
 export interface CwaResource {
   '@id': string
   '@type': string
+  publishedResource?: string
   _metadata?: {
     persisted: boolean
     publishable?: {
