@@ -33,15 +33,15 @@ export interface CwaResourcesStateInterface {
 }
 
 export default function (): CwaResourcesStateInterface {
-  return reactive({
-    current: {
+  return {
+    current: reactive({
       byId: {},
       allIds: [],
       currentIds: []
-    },
-    new: {
+    }),
+    new: reactive({
       byId: {},
       allIds: []
-    }
-  })
+    })
+  }
 }
