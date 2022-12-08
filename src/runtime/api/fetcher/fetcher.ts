@@ -6,12 +6,11 @@ import {
   CwaResourcesStoreWithStateInterface,
   ResourcesStore
 } from '../../storage/stores/resources/resources-store'
-import { CwaResource, CwaResourceTypes } from '../../resources/resource-types'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { FinishFetchEvent } from '../../storage/stores/fetcher/actions'
-import { getResourceTypeFromIri } from '../../resources/resource-utils'
+import { getResourceTypeFromIri, CwaResource, CwaResourceTypes } from '../../resources/resource-utils'
 import FetchStatus from './fetch-status'
 import preloadHeaders from './preload-headers'
 

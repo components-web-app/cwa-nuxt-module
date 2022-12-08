@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { getPublishedResourceIri, getResourceTypeFromIri } from './resource-utils'
-import { CwaResource, CwaResourceTypes } from './resource-types'
+import { getPublishedResourceIri, getResourceTypeFromIri, CwaResource, CwaResourceTypes } from './resource-utils'
 
 describe('Resource Utilities Test Context', () => {
   test('getPublishedResourceIri function', () => {

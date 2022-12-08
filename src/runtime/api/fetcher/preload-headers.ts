@@ -1,4 +1,4 @@
-import { CwaResourceTypes } from '../../resources/resource-types'
+import { CwaResourceTypes } from '../../resources/resource-utils'
 
 type PreloadMap = {
   [T in CwaResourceTypes]: Array<string>;
