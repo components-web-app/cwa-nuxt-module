@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
+import { fetcherInitTypes } from '../../storage/stores/fetcher/actions'
 import FetchStatus from './fetch-status'
 
 let fetcherStoreDefinition: FetcherStore
@@ -62,9 +63,10 @@ describe('FetchStatus::startFetch', () => {
   })
 
   test('Test startFetch function', () => {
-    fetchStatus.startFetch('any-path')
+    fetchStatus.startFetch({ path: 'any-path' })
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
-      path: 'any-path'
+      path: 'any-path',
+      type: fetcherInitTypes.START
     })
   })
 
@@ -80,9 +82,11 @@ describe('FetchStatus::startFetch', () => {
         }
       }
     })
-    fetchStatus.startFetch('any-path')
+    fetchStatus.startFetch({ path: 'any-path', resetCurrentResources: true })
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
-      path: 'any-path'
+      path: 'any-path',
+      resetCurrentResources: true,
+      type: fetcherInitTypes.START
     })
   })
 
@@ -98,7 +102,7 @@ describe('FetchStatus::startFetch', () => {
         }
       }
     })
-    expect(fetchStatus.startFetch('existing-endpoint')).toBe('some-promise')
+    expect(fetchStatus.startFetch({ path: 'existing-endpoint' })).toBe('some-promise')
     expect(fetcherStore.initFetchStatus).not.toHaveBeenCalled()
   })
 })
@@ -128,6 +132,9 @@ describe('FetchStatus public interface functionality', () => {
       fetchSuccess: true
     }
     fetchStatus.finishFetch(finishFetchObj)
-    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith(finishFetchObj)
+    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
+      ...finishFetchObj,
+      type: fetcherInitTypes.FINISH
+    })
   })
 })

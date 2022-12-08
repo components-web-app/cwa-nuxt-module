@@ -45,8 +45,15 @@ describe('FetcherStore addPath context', () => {
   })
 })
 
-describe.todo('FetcherStore actions context', () => {
-  test('initFetchStatus action', () => {
+describe('FetcherStore initFetchStatus context', () => {
+  test.todo('When starting a fetch we should not continue if the previous fetch is the same path', () => {
 
   })
+  test.todo('When starting a fetch we should tell the caller to continue if a fetch is already in progress so it can do the fetch and add a new endpoint to the paths', () => {
+
+  })
+  test.todo('When completing a fetch, we should only continue if the path matches what we are initially fetching', () => {
+
+  })
+  test.todo('When starting a fetch we should call to reset the current resources')
 })

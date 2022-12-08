@@ -9,7 +9,7 @@ import {
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { FinishFetchEvent } from '../../storage/stores/fetcher/actions'
+import { fetcherInitTypes, FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
 import { getResourceTypeFromIri, CwaResource, CwaResourceTypes } from '../../resources/resource-utils'
 import FetchStatus from './fetch-status'
 import preloadHeaders from './preload-headers'
@@ -65,7 +65,7 @@ export default class Fetcher {
    * PRIMARY FETCHER INTERFACE
    */
   public async fetchAndSaveResource ({ path, preload }: FetchEventInterface): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.startFetch(path)
+    const startFetch = this.startFetch({ path })
     if (startFetch !== true) {
       return startFetch
     }
@@ -117,7 +117,7 @@ export default class Fetcher {
    * Public interfaces for fetching for route middleware
    */
   public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.startFetch(path)
+    const startFetch = this.startFetch({ path, resetCurrentResources: true })
     if (startFetch !== true) {
       return startFetch
     }
@@ -154,7 +154,7 @@ export default class Fetcher {
   }
 
   public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.startFetch(pageIri)
+    const startFetch = this.startFetch({ path: pageIri, resetCurrentResources: true })
     if (startFetch !== true) {
       return startFetch
     }
@@ -176,15 +176,13 @@ export default class Fetcher {
         pageIri
       })
     }
-
-    this.finishFetch({ path: pageIri, fetchSuccess: false, pageIri })
   }
 
   /**
    * Internal: fetching
    */
-  private startFetch (path: string) {
-    const startFetch = this.fetchStatus.startFetch(path)
+  private startFetch (event: StartFetchEvent) {
+    const startFetch = this.fetchStatus.startFetch(event)
     if (startFetch !== true) {
       // return the promise for this endpoint
       if (startFetch !== false) {
@@ -197,7 +195,7 @@ export default class Fetcher {
     return true
   }
 
-  private finishFetch (event: FinishFetchEvent & { success: boolean }) {
+  private finishFetch (event: FinishFetchEvent) {
     if (this.fetchStatus.finishFetch(event) && process.client) {
       // event source may have died, re-initialise
       this.mercure.init()

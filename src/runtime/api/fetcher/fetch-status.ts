@@ -1,5 +1,5 @@
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { FinishFetchEvent } from '../../storage/stores/fetcher/actions'
+import { fetcherInitTypes, FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
 import { CwaFetcherAsyncResponse } from './fetcher'
 
 export default class FetchStatus {
@@ -23,27 +23,23 @@ export default class FetchStatus {
   /**
    * Interface for updating/managing the fetch state
    */
-  public startFetch (path: string): CwaFetcherAsyncResponse|boolean {
+  public startFetch (event: StartFetchEvent): CwaFetcherAsyncResponse|boolean {
     if (this.fetcherStore.inProgress) {
-      const existingFetchPromise = this.getFetchingPathPromise(path)
+      const existingFetchPromise = this.getFetchingPathPromise(event.path)
       if (existingFetchPromise) {
         return existingFetchPromise
       }
     }
 
-    return this.fetcherStore.initFetchStatus({ path })
+    return this.fetcherStore.initFetchStatus({ ...event, type: fetcherInitTypes.START })
   }
 
   public addEndpoint (endpoint: string, promise: CwaFetcherAsyncResponse) {
     this.fetcherStore.addPath(endpoint, promise)
   }
 
-  public finishFetch ({ path, pageIri, fetchSuccess }: FinishFetchEvent & { fetchSuccess: boolean }) {
-    return this.fetcherStore.initFetchStatus({
-      path,
-      pageIri,
-      fetchSuccess
-    })
+  public finishFetch (event: FinishFetchEvent) {
+    return this.fetcherStore.initFetchStatus({ ...event, type: fetcherInitTypes.FINISH })
   }
 
   /**
