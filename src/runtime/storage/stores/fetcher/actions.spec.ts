@@ -205,4 +205,22 @@ describe('FetcherStore initFetchStatus context', () => {
       iri: 'page-iri'
     })
   })
+
+  test('When finishing a fetch that was not successful we should not update the fetched path or reset nested paths fetched', () => {
+    // @ts-ignore
+    const state = createState({ fetch: { path: 'fetching-path', paths: { currentPath: 'else' } } })
+    const getterFns = getters(state)
+    const fetcherActions = actions(state, getterFns, resourcesStore)
+    const shouldContinue = fetcherActions.initFetchStatus({
+      type: fetcherInitTypes.FINISH,
+      path: 'fetching-path',
+      fetchSuccess: false
+    })
+    expect(shouldContinue).toBeTruthy()
+    expect(state.status.fetch.paths).toStrictEqual({ currentPath: 'else' })
+    expect(state.status.fetch.success).toBeFalsy()
+    expect(state.status.fetch.path).toBe('fetching-path')
+    expect(state.status.fetched.path).toBeUndefined()
+    expect(state.fetchedPage).toBeUndefined()
+  })
 })
