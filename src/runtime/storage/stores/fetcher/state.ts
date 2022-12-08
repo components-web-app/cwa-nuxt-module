@@ -1,6 +1,5 @@
 import { reactive } from 'vue'
 import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
-import { ReactiveVariable } from 'vue/macros'
 
 interface FetcherStatusInterface {
   fetch: {
@@ -14,7 +13,7 @@ interface FetcherStatusInterface {
 }
 
 export interface CwaFetcherStateInterface {
-  status: ReactiveVariable<FetcherStatusInterface>
+  status: FetcherStatusInterface
   fetchedPage?: {
     iri: string
     path: string
@@ -25,7 +24,6 @@ export default function (): CwaFetcherStateInterface {
   return {
     status: reactive({
       fetch: {
-        inProgress: false,
         paths: {}
       },
       fetched: {}

@@ -21,7 +21,7 @@ export default class Mercure {
   private fetcherInProgress: Ref<boolean> = ref(false)
   private readonly resourcesApiStateIsPending: Ref<boolean>
 
-  constructor (mercureStore: MercureStore, resourcesStore: ResourcesStore, fetcherStore: FetcherStore) {
+  constructor (mercureStore: MercureStore, resourcesStore: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
     this.storeDefinition = mercureStore
     this.resourcesStore = resourcesStore
 
@@ -34,11 +34,8 @@ export default class Mercure {
     const { resourcesApiStateIsPending } = storeToRefs(this.resourcesStore.useStore())
     this.resourcesApiStateIsPending = resourcesApiStateIsPending
 
-    fetcherStore.useStore().$subscribe((_, state) => {
-      this.fetcherInProgress.value = state.status.fetch.inProgress
-    }, {
-      immediate: true
-    })
+    const fetcherStore = storeToRefs(fetcherStoreDefinition.useStore())
+    this.fetcherInProgress = fetcherStore.inProgress
   }
 
   private get mercureMessageQueueActive () {

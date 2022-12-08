@@ -96,7 +96,7 @@ export default class Fetcher {
       await this.fetchNestedResources(response._data)
     }
 
-    this.finishFetch({ path, success: !!response?._data })
+    this.finishFetch({ path, fetchSuccess: !!response?._data })
     return response
   }
 
@@ -147,7 +147,7 @@ export default class Fetcher {
       // todo: do we need to handle if it was a redirect from prop data?.redirectPath
       this.finishFetch({
         path,
-        success: data !== undefined,
+        fetchSuccess: data !== undefined,
         pageIri: data?.pageData || data?.page
       })
     }
@@ -172,12 +172,12 @@ export default class Fetcher {
     } finally {
       this.finishFetch({
         path: pageIri,
-        success: data !== undefined,
+        fetchSuccess: data !== undefined,
         pageIri
       })
     }
 
-    this.finishFetch({ path: pageIri, success: false, pageIri })
+    this.finishFetch({ path: pageIri, fetchSuccess: false, pageIri })
   }
 
   /**

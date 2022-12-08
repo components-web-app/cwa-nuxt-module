@@ -1,15 +1,15 @@
 import { describe, vi, test, expect, beforeEach } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import FetchStatus from './fetch-status'
 
-let fetcherStore: FetcherStore
+let fetcherStoreDefinition: FetcherStore
 function createFetchStatus (): FetchStatus {
   const resourcesStore = new ResourcesStore('storeName')
-  fetcherStore = new FetcherStore('storeName', resourcesStore)
-  return new FetchStatus(fetcherStore)
+  fetcherStoreDefinition = new FetcherStore('storeName', resourcesStore)
+  return new FetchStatus(fetcherStoreDefinition)
 }
 
 describe('FetchStatus getters functionality', () => {
@@ -32,19 +32,74 @@ describe('FetchStatus getters functionality', () => {
     setActivePinia(pinia)
 
     const fetchStatus = createFetchStatus()
-    const fetcherStoreDefinition = fetcherStore.useStore()
+    const fetcherStore = fetcherStoreDefinition.useStore()
 
     expect(fetchStatus.path).toBe(undefined)
 
-    fetcherStoreDefinition.$state.status.fetched.path = 'fetched-path'
+    fetcherStore.$state.status.fetched.path = 'fetched-path'
     expect(fetchStatus.path).toBe('fetched-path')
 
-    fetcherStoreDefinition.$state.status.fetch.path = 'fetch-path'
+    fetcherStore.$state.status.fetch.path = 'fetch-path'
     expect(fetchStatus.path).toBe('fetch-path')
 
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
 
     expect(fetchStatus.getFetchingPathPromise('non-existent-endpoint')).toBeNull()
+  })
+})
+
+describe('FetchStatus::startFetch', () => {
+  const fetchStatus = createFetchStatus()
+  let fetcherStore: CwaFetcherStoreInterface
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn
+    })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+    fetcherStore = fetcherStoreDefinition.useStore()
+  })
+
+  test('Test startFetch function', () => {
+    fetchStatus.startFetch('any-path')
+    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
+      path: 'any-path'
+    })
+  })
+
+  test('Test startFetch if in progress without an existing fetch path', () => {
+    // @ts-ignore
+    fetcherStore.$patch({
+      status: {
+        fetch: {
+          path: 'fetching-path',
+          paths: {
+            'existing-endpoint': 'some-promise'
+          }
+        }
+      }
+    })
+    fetchStatus.startFetch('any-path')
+    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
+      path: 'any-path'
+    })
+  })
+
+  test('Test startFetch if in progress where existing fetch exists', () => {
+    // @ts-ignore
+    fetcherStore.$patch({
+      status: {
+        fetch: {
+          path: 'fetching-path',
+          paths: {
+            'existing-endpoint': 'some-promise'
+          }
+        }
+      }
+    })
+    expect(fetchStatus.startFetch('existing-endpoint')).toBe('some-promise')
+    expect(fetcherStore.initFetchStatus).not.toHaveBeenCalled()
   })
 })
 
@@ -56,55 +111,23 @@ describe('FetchStatus public interface functionality', () => {
     setActivePinia(pinia)
   })
 
-  test('Test startFetch function', () => {
-    const fetchStatus = createFetchStatus()
-    const fetcherStoreDefinition = fetcherStore.useStore()
-
-    fetchStatus.startFetch('any-path')
-    expect(fetcherStoreDefinition.initFetchStatus).toHaveBeenCalledWith({
-      path: 'any-path'
-    })
-
-    // @ts-ignore
-    fetcherStoreDefinition.$patch({
-      status: {
-        fetch: {
-          inProgress: true,
-          paths: {
-            'existing-endpoint': 'some-promise'
-          }
-        }
-      }
-    })
-
-    vi.clearAllMocks()
-    fetchStatus.startFetch('any-path')
-    expect(fetcherStoreDefinition.initFetchStatus).toHaveBeenCalledWith({
-      path: 'any-path'
-    })
-
-    vi.clearAllMocks()
-    expect(fetchStatus.startFetch('existing-endpoint')).toBe('some-promise')
-    expect(fetcherStoreDefinition.initFetchStatus).not.toHaveBeenCalled()
-  })
-
   test('Test addEndpoint function', () => {
     const fetchStatus = createFetchStatus()
-    const fetcherStoreDefinition = fetcherStore.useStore()
+    const fetcherStore = fetcherStoreDefinition.useStore()
     // @ts-ignore
     fetchStatus.addEndpoint('new-endpoint', 'some-promise')
-    expect(fetcherStoreDefinition.addPath).toHaveBeenCalledWith('new-endpoint', 'some-promise')
+    expect(fetcherStore.addPath).toHaveBeenCalledWith('new-endpoint', 'some-promise')
   })
 
   test('Test finishFetch function', () => {
     const fetchStatus = createFetchStatus()
-    const fetcherStoreDefinition = fetcherStore.useStore()
+    const fetcherStore = fetcherStoreDefinition.useStore()
     const finishFetchObj = {
       path: 'path',
       pageIri: 'iri',
-      success: true
+      fetchSuccess: true
     }
     fetchStatus.finishFetch(finishFetchObj)
-    expect(fetcherStoreDefinition.initFetchStatus).toHaveBeenCalledWith(finishFetchObj)
+    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith(finishFetchObj)
   })
 })
