@@ -15,7 +15,7 @@ import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
  */
 export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesGettersInterface, CwaResourcesActionsInterface {}
 export interface CwaResourcesStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
-export interface CwaResourcesStoreWithStateInterface extends CwaResourcesInterface, CwaPiniaStoreWithStateDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
+export interface CwaResourcesStoreWithStateInterface extends CwaPiniaStoreWithStateDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
 
 /**
  * Main Store Class
