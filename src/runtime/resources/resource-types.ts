@@ -22,15 +22,6 @@ export const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
   [CwaResourceTypes.COMPONENT]: '/component/'
 }
 
-export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined {
-  for (const type of Object.values(CwaResourceTypes)) {
-    const prefix: string = resourceTypeToIriPrefix[type]
-    if (iri.startsWith(prefix)) {
-      return type
-    }
-  }
-}
-
 export interface CwaResource {
   '@id': string
   '@type': string
@@ -45,3 +36,4 @@ export interface CwaResource {
   }
   [key: string]: any
 }
+

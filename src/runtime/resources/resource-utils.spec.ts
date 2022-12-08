@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { getPublishedResourceIri } from './resource-utils'
-import { CwaResource } from './resource-types'
+import { getPublishedResourceIri, getResourceTypeFromIri } from './resource-utils'
+import { CwaResource, CwaResourceTypes } from './resource-types'
 
 describe('Resource Utilities Test Context', () => {
   test('getPublishedResourceIri function', () => {
@@ -24,5 +24,15 @@ describe('Resource Utilities Test Context', () => {
 
     resource.publishedResource = 'published-id'
     expect(getPublishedResourceIri(resource)).toBe('published-id')
+  })
+
+  test('getResourceTypeFromIri function', () => {
+    expect(getResourceTypeFromIri('/_/routes/abcdefg')).toBe(CwaResourceTypes.ROUTE)
+    expect(getResourceTypeFromIri('/_/pages/abcdefg')).toBe(CwaResourceTypes.PAGE)
+    expect(getResourceTypeFromIri('/page_data/abcdefg')).toBe(CwaResourceTypes.PAGE_DATA)
+    expect(getResourceTypeFromIri('/_/layouts/abcdefg')).toBe(CwaResourceTypes.LAYOUT)
+    expect(getResourceTypeFromIri('/_/component_groups/abcdefg')).toBe(CwaResourceTypes.COMPONENT_GROUP)
+    expect(getResourceTypeFromIri('/_/component_positions/abcdefg')).toBe(CwaResourceTypes.COMPONENT_POSITION)
+    expect(getResourceTypeFromIri('/component/abcdefg')).toBe(CwaResourceTypes.COMPONENT)
   })
 })

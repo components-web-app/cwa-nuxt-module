@@ -6,13 +6,14 @@ import {
   CwaResourcesStoreWithStateInterface,
   ResourcesStore
 } from '../../storage/stores/resources/resources-store'
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-types'
+import { CwaResource, CwaResourceTypes } from '../../resources/resource-types'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import { FinishFetchEvent } from '../../storage/stores/fetcher/actions'
+import { getResourceTypeFromIri } from '../../resources/resource-utils'
 import FetchStatus from './fetch-status'
 import preloadHeaders from './preload-headers'
-import { FinishFetchEvent } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/actions'
 
 interface FetchEventInterface {
   path: string
