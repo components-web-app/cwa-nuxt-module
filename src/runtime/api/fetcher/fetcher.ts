@@ -3,7 +3,7 @@ import { $fetch, createFetchError, FetchContext, FetchError, FetchResponse } fro
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import consola from 'consola'
 import {
-  CwaResourcesStoreWithStateInterface,
+  CwaResourcesStoreInterface,
   ResourcesStore
 } from '../../storage/stores/resources/resources-store'
 import Mercure from '../mercure'
@@ -311,7 +311,7 @@ export default class Fetcher {
   /**
    * Internal: getters
    */
-  private get resourcesStore (): CwaResourcesStoreWithStateInterface {
+  private get resourcesStore (): CwaResourcesStoreInterface {
     return this.resourcesStoreDefinition.useStore()
   }
 

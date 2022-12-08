@@ -14,14 +14,14 @@ import CwaFetcherState, { CwaFetcherStateInterface } from './state'
  * Interface Definitions
  */
 export interface CwaFetcherInterface extends CwaFetcherStateInterface, CwaFetcherActionsInterface {}
-export interface CwaFetcherStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.fetcher`, CwaFetcherInterface> {}
-export interface CwaFetcherStoreWithStateInterface extends CwaFetcherInterface, CwaPiniaStoreInterface<`${string}.fetcher`, CwaFetcherInterface> {}
+export interface CwaFetcherStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.fetcher`, CwaFetcherInterface> {}
+export interface CwaFetcherStoreInterface extends CwaPiniaStoreInterface<`${string}.fetcher`, CwaFetcherInterface> {}
 
 /**
  * Main Store Class
  */
 export class FetcherStore implements CwaStore {
-  private readonly storeDefinition: CwaFetcherStoreInterface
+  private readonly storeDefinition: CwaFetcherStoreDefinitionInterface
 
   constructor (storeName: string, resourcesStore: ResourcesStore) {
     this.storeDefinition = defineStore(`${storeName}.fetcher`, (): CwaFetcherInterface => {
@@ -33,7 +33,7 @@ export class FetcherStore implements CwaStore {
     })
   }
 
-  public useStore (): CwaFetcherStoreWithStateInterface {
+  public useStore (): CwaFetcherStoreInterface {
     return this.storeDefinition()
   }
 }

@@ -13,14 +13,14 @@ import CwaApiDocumentationState, { CwaApiDocumentationStateInterface } from './s
  * Interface Definitions
  */
 export interface CwaApiDocumentationInterface extends CwaApiDocumentationStateInterface {}
-export interface CwaApiDocumentationStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
-export interface CwaApiDocumentationStoreWithStateInterface extends CwaPiniaStoreInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
+export interface CwaApiDocumentationStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
+export interface CwaApiDocumentationStoreInterface extends CwaPiniaStoreInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
 
 /**
  * Main Store Class
  */
 export class ApiDocumentationStore implements CwaStore {
-  private readonly storeDefinition: CwaApiDocumentationStoreInterface
+  private readonly storeDefinition: CwaApiDocumentationStoreDefinitionInterface
 
   constructor (storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.apiDocumentation`, (): CwaApiDocumentationInterface => {
@@ -31,7 +31,7 @@ export class ApiDocumentationStore implements CwaStore {
     })
   }
 
-  public useStore (): CwaApiDocumentationStoreWithStateInterface {
+  public useStore (): CwaApiDocumentationStoreInterface {
     return this.storeDefinition()
   }
 }

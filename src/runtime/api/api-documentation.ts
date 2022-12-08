@@ -2,7 +2,7 @@ import { ref, Ref, watch } from 'vue'
 import consola from 'consola'
 import { $fetch } from 'ohmyfetch'
 import {
-  ApiDocumentationStore, CwaApiDocumentationStoreWithStateInterface
+  ApiDocumentationStore, CwaApiDocumentationStoreInterface
 } from '../storage/stores/api-documentation/api-documentation-store'
 import { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
 
@@ -109,7 +109,7 @@ export default class ApiDocumentation {
     return await $fetch(path, { headers })
   }
 
-  private get store (): CwaApiDocumentationStoreWithStateInterface {
+  private get store (): CwaApiDocumentationStoreInterface {
     return this.storeDefinition.useStore()
   }
 

@@ -14,14 +14,14 @@ import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
  * Interface Definitions
  */
 export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesGettersInterface, CwaResourcesActionsInterface {}
-export interface CwaResourcesStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
-export interface CwaResourcesStoreWithStateInterface extends CwaPiniaStoreInterface<`${string}.resources`, CwaResourcesInterface> {}
+export interface CwaResourcesStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
+export interface CwaResourcesStoreInterface extends CwaPiniaStoreInterface<`${string}.resources`, CwaResourcesInterface> {}
 
 /**
  * Main Store Class
  */
 export class ResourcesStore implements CwaStore {
-  private readonly storeDefinition: CwaResourcesStoreInterface
+  private readonly storeDefinition: CwaResourcesStoreDefinitionInterface
 
   constructor (storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.resources`, (): CwaResourcesInterface => {
@@ -34,7 +34,7 @@ export class ResourcesStore implements CwaStore {
     })
   }
 
-  public useStore (): CwaResourcesStoreWithStateInterface {
+  public useStore (): CwaResourcesStoreInterface {
     return this.storeDefinition()
   }
 }
