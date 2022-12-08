@@ -12,3 +12,17 @@ This module is designed to work with the [API Component Bundle](https://github.c
 
 - Run `npm run dev:prepare` to generate type stubs.
 - Use `npm run dev` to start [playground](./playground) in development mode.
+
+### Linting
+
+- Run `npm run lint` or `npm run lint:fix`
+
+### Testing
+
+We have built in testing using `vitest`.
+
+- To run tests as a one-off use `npm run test`
+- To include coverage run `npm run test:coverage`
+- To run tests in watch mode during development run `npm run test:watch`
+- If you want to check coverage updates at the same time as watching for file changes you can run `npm run test:watch:coverage`
+
