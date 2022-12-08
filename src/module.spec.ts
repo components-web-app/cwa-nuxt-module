@@ -3,6 +3,7 @@ import { join } from 'path'
 import { setup, useTestContext } from '@nuxt/test-utils'
 import { describe, test, expect, vi } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
+import { NuxtModule } from '@nuxt/schema'
 import CwaModule from './module'
 
 vi.mock('@nuxt/kit', async () => {
@@ -19,11 +20,13 @@ vi.mock('@nuxt/kit', async () => {
 })
 
 describe('Functional: Test modules are defined when Nuxt App is setup', async () => {
+  // @ts-ignore
+  const module: NuxtModule = CwaModule
   await setup({
     rootDir: fileURLToPath(new URL('../playground', import.meta.url)),
     nuxtConfig: {
       modules: [
-        CwaModule
+        module
       ],
       cwa: {
         apiUrl: 'https://localhost:8443',
