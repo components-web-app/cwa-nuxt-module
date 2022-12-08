@@ -1,4 +1,27 @@
-import { CwaResource, CwaResourceTypes, resourceTypeToIriPrefix } from './resource-types'
+import { CwaResource, CwaResourceTypes } from './resource-types'
+
+type TypeToPathPrefixMap = {
+  [T in CwaResourceTypes]: string;
+}
+
+const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
+  [CwaResourceTypes.ROUTE]: '/_/routes/',
+  [CwaResourceTypes.PAGE]: '/_/pages/',
+  [CwaResourceTypes.PAGE_DATA]: '/page_data/',
+  [CwaResourceTypes.LAYOUT]: '/_/layouts/',
+  [CwaResourceTypes.COMPONENT_GROUP]: '/_/component_groups/',
+  [CwaResourceTypes.COMPONENT_POSITION]: '/_/component_positions/',
+  [CwaResourceTypes.COMPONENT]: '/component/'
+}
+
+export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined {
+  for (const type of Object.values(CwaResourceTypes)) {
+    const prefix: string = resourceTypeToIriPrefix[type]
+    if (iri.startsWith(prefix)) {
+      return type
+    }
+  }
+}
 
 export function getPublishedResourceIri (resource: CwaResource): string|null {
   const publishableMetadata = resource._metadata?.publishable
@@ -11,13 +34,4 @@ export function getPublishedResourceIri (resource: CwaResource): string|null {
     return resourceIri
   }
   return resource.publishedResource || null
-}
-
-export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined {
-  for (const type of Object.values(CwaResourceTypes)) {
-    const prefix: string = resourceTypeToIriPrefix[type]
-    if (iri.startsWith(prefix)) {
-      return type
-    }
-  }
 }
