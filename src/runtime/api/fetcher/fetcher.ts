@@ -3,7 +3,6 @@ import { $fetch, createFetchError, FetchContext, FetchError, FetchResponse } fro
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import consola from 'consola'
 import {
-  CwaResourcesInterface,
   CwaResourcesStoreWithStateInterface,
   ResourcesStore
 } from '../../storage/stores/resources/resources-store'
