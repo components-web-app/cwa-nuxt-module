@@ -1,7 +1,7 @@
 <!---
 This file is auto-generate by a github hook please modify README.template.md if you don't want to lose your work
 -->
-# CWA Nuxt Module
+# CWA Nuxt 3 Module (in development)
 
 [![codecov](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/feat/mercure-and-api-docs/graph/badge.svg?token=Z6GQJN413O)](https://codecov.io/github/components-web-app/cwa-nuxt-module)
 
