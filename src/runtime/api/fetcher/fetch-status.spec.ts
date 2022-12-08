@@ -21,11 +21,7 @@ describe('FetchStatus getters functionality', () => {
         'storeName.fetcher': {
           status: {
             fetched: {},
-            fetch: {
-              paths: {
-                'existing-endpoint': 'some-promise'
-              }
-            }
+            fetch: {}
           }
         }
       }
@@ -42,6 +38,9 @@ describe('FetchStatus getters functionality', () => {
 
     fetcherStore.$state.status.fetch.path = 'fetch-path'
     expect(fetchStatus.path).toBe('fetch-path')
+
+    // @ts-ignore
+    fetchStatus.addEndpoint('existing-endpoint', 'some-promise')
 
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
 
@@ -75,13 +74,14 @@ describe('FetchStatus::startFetch', () => {
     fetcherStore.$patch({
       status: {
         fetch: {
-          path: 'fetching-path',
-          paths: {
-            'existing-endpoint': 'some-promise'
-          }
+          path: 'fetching-path'
         }
       }
     })
+
+    // @ts-ignore
+    fetchStatus.addEndpoint('existing-endpoint', 'some-promise')
+
     fetchStatus.startFetch({ path: 'any-path', resetCurrentResources: true })
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
       path: 'any-path',
@@ -120,7 +120,6 @@ describe('FetchStatus public interface functionality', () => {
     const fetcherStore = fetcherStoreDefinition.useStore()
     // @ts-ignore
     fetchStatus.addEndpoint('new-endpoint', 'some-promise')
-    expect(fetcherStore.addPath).toHaveBeenCalledWith('new-endpoint', 'some-promise')
   })
 
   test('Test finishFetch function', () => {

@@ -34,30 +34,6 @@ function createState (state?: {
 
 const resourcesStore = new ResourcesStore('storeName')
 
-describe('FetcherStore addPath context', () => {
-  test('path is not added if we are not fetching', () => {
-    const state = createState()
-    const getterFns = getters(state)
-    const fetcherActions = actions(state, getterFns, resourcesStore)
-
-    // @ts-ignore
-    fetcherActions.addPath('endpoint', 'something')
-    expect(state.status.fetch.paths).toStrictEqual({})
-  })
-
-  test('path is added if we are fetching', () => {
-    const state = createState({ fetch: { path: 'fetching-path' } })
-    const getterFns = getters(state)
-    const fetcherActions = actions(state, getterFns, resourcesStore)
-
-    // @ts-ignore
-    fetcherActions.addPath('endpoint', 'something')
-    expect(state.status.fetch.paths).toStrictEqual({
-      endpoint: 'something'
-    })
-  })
-})
-
 describe('FetcherStore initFetchStatus context', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -182,7 +158,6 @@ describe('FetcherStore initFetchStatus context', () => {
       fetchSuccess: true
     })
     expect(shouldContinue).toBeTruthy()
-    expect(state.status.fetch.paths).toStrictEqual({})
     expect(state.status.fetch.success).toBeTruthy()
     expect(state.status.fetch.path).toBeUndefined()
     expect(state.status.fetched.path).toBe('fetching-path')
@@ -217,7 +192,6 @@ describe('FetcherStore initFetchStatus context', () => {
       fetchSuccess: false
     })
     expect(shouldContinue).toBeTruthy()
-    expect(state.status.fetch.paths).toStrictEqual({ currentPath: 'else' })
     expect(state.status.fetch.success).toBeFalsy()
     expect(state.status.fetch.path).toBe('fetching-path')
     expect(state.status.fetched.path).toBeUndefined()
