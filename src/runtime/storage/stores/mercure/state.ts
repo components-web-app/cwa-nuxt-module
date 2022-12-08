@@ -1,5 +1,4 @@
-import { Ref } from 'vue'
-import { ref } from '#imports'
+import { Ref, ref } from 'vue'
 
 export interface CwaMercureStateInterface {
   hub: Ref<string|null>

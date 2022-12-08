@@ -1,6 +1,6 @@
 import { CwaFetcherInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import { FinishFetchEvent } from '../../storage/stores/fetcher/actions'
 import { CwaFetcherAsyncResponse } from './fetcher'
-import { FinishFetchEvent } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/actions'
 
 export default class FetchStatus {
   private fetcherStoreDefinition: FetcherStore
@@ -23,22 +23,12 @@ export default class FetchStatus {
   /**
    * Interface for updating/managing the fetch state
    */
-
-  /**
-   * A promise or true boolean should cancel the request being started
-   */
   public startFetch (path: string): CwaFetcherAsyncResponse|boolean {
     if (this.status.fetch.inProgress) {
-      const existingFetchPromise = this.status.fetch.paths?.[path]
+      const existingFetchPromise = this.getFetchingPathPromise(path)
       if (existingFetchPromise) {
         return existingFetchPromise
       }
-    }
-    if (this.status.fetched.path === path) {
-      // we already did this request last, and it's finished and successful
-      // prevents loading again from route middleware that'll run server and client side
-      // this is also why we use a store for fetcher data to persist state between the two
-      return false
     }
 
     return this.fetcherStore.initFetchStatus({ path })

@@ -7,7 +7,6 @@ export default defineConfig({
     deps: {
       inline: ['@nuxt/test-utils']
     },
-    // clearMocks: true,
     typecheck: { checker: 'vue-tsc' },
     coverage: {
       provider: 'c8',

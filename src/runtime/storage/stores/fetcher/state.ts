@@ -1,5 +1,5 @@
+import { reactive } from 'vue'
 import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
-import { reactive } from '#imports'
 
 interface FetcherStatusInterface {
   fetch: {

@@ -1,6 +1,5 @@
-import { ComputedRef } from 'vue'
+import { ComputedRef, computed } from 'vue'
 import { CwaResourcesStateInterface } from './state'
-import { computed } from '#imports'
 
 export interface CwaResourcesGettersInterface {
   resourcesApiStateIsPending: ComputedRef<boolean>|boolean
