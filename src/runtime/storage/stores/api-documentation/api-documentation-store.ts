@@ -1,4 +1,5 @@
 import {
+  _ExtractStateFromSetupStore,
   defineStore
 } from 'pinia'
 import {
@@ -13,7 +14,7 @@ import CwaApiDocumentationState, { CwaApiDocumentationStateInterface } from './s
  */
 export interface CwaApiDocumentationInterface extends CwaApiDocumentationStateInterface {}
 export interface CwaApiDocumentationStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
-export interface CwaApiDocumentationStoreWithStateInterface extends CwaApiDocumentationInterface, CwaPiniaStoreWithStateDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
+export interface CwaApiDocumentationStoreWithStateInterface extends CwaPiniaStoreWithStateDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
 
 /**
  * Main Store Class

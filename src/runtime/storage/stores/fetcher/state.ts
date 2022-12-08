@@ -22,13 +22,13 @@ export interface CwaFetcherStateInterface {
 }
 
 export default function (): CwaFetcherStateInterface {
-  return reactive({
-    status: {
+  return {
+    status: reactive({
       fetch: {
         inProgress: false,
         paths: {}
       },
       fetched: {}
-    }
-  })
+    })
+  }
 }

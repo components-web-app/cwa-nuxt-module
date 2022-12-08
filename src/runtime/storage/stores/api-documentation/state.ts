@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { ref, Ref } from 'vue'
 
 export interface CwaApiDocumentationDataInterface {
   entrypoint?: {
@@ -49,12 +49,12 @@ export interface CwaApiDocumentationDataInterface {
 }
 
 export interface CwaApiDocumentationStateInterface {
-  docsPath: string|null,
+  docsPath: Ref<string|null>,
   apiDocumentation?: CwaApiDocumentationDataInterface
 }
 
 export default function (): CwaApiDocumentationStateInterface {
-  return reactive({
-    docsPath: null
-  })
+  return {
+    docsPath: ref(null)
+  }
 }
