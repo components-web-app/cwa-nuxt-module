@@ -4,9 +4,9 @@ import {
 } from 'pinia'
 import {
   CwaPiniaStoreDefinitionInterface,
-  CwaPiniaStoreWithStateDefinitionInterface,
-  CwaStoreInterface
-} from '../cwa-store-interface'
+  CwaPiniaStoreInterface,
+  CwaStore
+} from '../cwa-store-types'
 import CwaApiDocumentationState, { CwaApiDocumentationStateInterface } from './state'
 
 /**
@@ -14,12 +14,12 @@ import CwaApiDocumentationState, { CwaApiDocumentationStateInterface } from './s
  */
 export interface CwaApiDocumentationInterface extends CwaApiDocumentationStateInterface {}
 export interface CwaApiDocumentationStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
-export interface CwaApiDocumentationStoreWithStateInterface extends CwaPiniaStoreWithStateDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
+export interface CwaApiDocumentationStoreWithStateInterface extends CwaPiniaStoreInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
 
 /**
  * Main Store Class
  */
-export class ApiDocumentationStore implements CwaStoreInterface {
+export class ApiDocumentationStore implements CwaStore {
   private readonly storeDefinition: CwaApiDocumentationStoreInterface
 
   constructor (storeName: string) {

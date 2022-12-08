@@ -16,7 +16,7 @@ export interface CwaFetcherActionsInterface {
 export default function (fetcherState: CwaFetcherStateInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
   return {
     addPath (path: string, promise: CwaFetcherAsyncResponse) {
-      if (undefined === fetcherState.status.fetch?.path) {
+      if (undefined === fetcherState.status.fetch.path) {
         return
       }
       fetcherState.status.fetch.paths[path] = promise

@@ -3,9 +3,9 @@ import {
 } from 'pinia'
 import {
   CwaPiniaStoreDefinitionInterface,
-  CwaPiniaStoreWithStateDefinitionInterface,
-  CwaStoreInterface
-} from '../cwa-store-interface'
+  CwaPiniaStoreInterface,
+  CwaStore
+} from '../cwa-store-types'
 import CwaMercureState, { CwaMercureStateInterface } from './state'
 
 /**
@@ -13,12 +13,12 @@ import CwaMercureState, { CwaMercureStateInterface } from './state'
  */
 export interface CwaMercureInterface extends CwaMercureStateInterface {}
 export interface CwaMercureStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.mercure`, CwaMercureInterface> {}
-export interface CwaMercureStoreWithStateInterface extends CwaPiniaStoreWithStateDefinitionInterface<`${string}.mercure`, CwaMercureInterface> {}
+export interface CwaMercureStoreWithStateInterface extends CwaPiniaStoreInterface<`${string}.mercure`, CwaMercureInterface> {}
 
 /**
  * Main Store Class
  */
-export class MercureStore implements CwaStoreInterface {
+export class MercureStore implements CwaStore {
   private readonly storeDefinition: CwaMercureStoreInterface
 
   constructor (storeName: string) {

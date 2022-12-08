@@ -3,9 +3,9 @@ import {
 } from 'pinia'
 import {
   CwaPiniaStoreDefinitionInterface,
-  CwaPiniaStoreWithStateDefinitionInterface,
-  CwaStoreInterface
-} from '../cwa-store-interface'
+  CwaPiniaStoreInterface,
+  CwaStore
+} from '../cwa-store-types'
 import CwaResourcesState, { CwaResourcesStateInterface } from './state'
 import CwaResourcesGetters, { CwaResourcesGettersInterface } from './getters'
 import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
@@ -15,12 +15,12 @@ import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
  */
 export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesGettersInterface, CwaResourcesActionsInterface {}
 export interface CwaResourcesStoreInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
-export interface CwaResourcesStoreWithStateInterface extends CwaPiniaStoreWithStateDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
+export interface CwaResourcesStoreWithStateInterface extends CwaPiniaStoreInterface<`${string}.resources`, CwaResourcesInterface> {}
 
 /**
  * Main Store Class
  */
-export class ResourcesStore implements CwaStoreInterface {
+export class ResourcesStore implements CwaStore {
   private readonly storeDefinition: CwaResourcesStoreInterface
 
   constructor (storeName: string) {
