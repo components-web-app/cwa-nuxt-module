@@ -2,7 +2,7 @@ import { ComputedRef, computed } from 'vue'
 import { CwaResourcesStateInterface } from './state'
 
 export interface CwaResourcesGettersInterface {
-  resourcesApiStateIsPending: ComputedRef<boolean>|boolean
+  resourcesApiStateIsPending: ComputedRef<boolean>
 }
 
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesGettersInterface {

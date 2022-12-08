@@ -9,11 +9,12 @@ import {
 import { ResourcesStore } from '../resources/resources-store'
 import CwaFetcherActions, { CwaFetcherActionsInterface } from './actions'
 import CwaFetcherState, { CwaFetcherStateInterface } from './state'
+import CwaFetcherGetters, { CwaFetcherGettersInterface } from './getters'
 
 /**
  * Interface Definitions
  */
-export interface CwaFetcherInterface extends CwaFetcherStateInterface, CwaFetcherActionsInterface {}
+export interface CwaFetcherInterface extends CwaFetcherStateInterface, CwaFetcherActionsInterface, CwaFetcherGettersInterface {}
 export interface CwaFetcherStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.fetcher`, CwaFetcherInterface> {}
 export interface CwaFetcherStoreInterface extends CwaPiniaStoreInterface<`${string}.fetcher`, CwaFetcherInterface> {}
 
@@ -26,9 +27,11 @@ export class FetcherStore implements CwaStore {
   constructor (storeName: string, resourcesStore: ResourcesStore) {
     this.storeDefinition = defineStore(`${storeName}.fetcher`, (): CwaFetcherInterface => {
       const fetcherState = CwaFetcherState()
+      const getters = CwaFetcherGetters(fetcherState)
       return {
         ...fetcherState,
-        ...CwaFetcherActions(fetcherState, resourcesStore)
+        ...getters,
+        ...CwaFetcherActions(fetcherState, getters, resourcesStore)
       }
     })
   }

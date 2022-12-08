@@ -1,6 +1,7 @@
 import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
 import { ResourcesStore } from '../resources/resources-store'
 import { CwaFetcherStateInterface } from './state'
+import { CwaFetcherGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/getters'
 
 export interface FinishFetchEvent {
   path: string
@@ -13,10 +14,10 @@ export interface CwaFetcherActionsInterface {
   initFetchStatus (event: FinishFetchEvent): boolean
 }
 
-export default function (fetcherState: CwaFetcherStateInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
+export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
   return {
     addPath (path: string, promise: CwaFetcherAsyncResponse) {
-      if (undefined === fetcherState.status.fetch.path) {
+      if (!fetcherGetters.inProgress.value) {
         return
       }
       fetcherState.status.fetch.paths[path] = promise
@@ -24,7 +25,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStore:
     initFetchStatus ({ path, pageIri, success }: FinishFetchEvent): boolean {
       const startFetch = success === undefined
       // do not action if the primary started endpoint is different, or do not start if already in progress
-      const fetchInProgress = fetcherState.status.fetch.inProgress
+      const fetchInProgress = fetcherGetters.inProgress.value
       const isExistingFetchPathSame = path === fetcherState.status.fetch.path
 
       if (startFetch) {
@@ -59,7 +60,6 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStore:
       }
 
       fetcherState.status.fetch.path = startFetch ? path : undefined
-      fetcherState.status.fetch.inProgress = startFetch
       if (!startFetch) {
         fetcherState.status.fetch.success = success
       }
