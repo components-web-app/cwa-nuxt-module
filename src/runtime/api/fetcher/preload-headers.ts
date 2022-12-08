@@ -5,6 +5,7 @@ type PreloadMap = {
 }
 
 const preloadToNextComponent = '/componentGroups/*/componentPositions/*/component'
+
 export default {
   [CwaResourceTypes.ROUTE]: [
     `/page/layout${preloadToNextComponent}${preloadToNextComponent}`,

@@ -43,6 +43,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     },
     setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
       const data = initCurrentResource(resourcesState, iri)
+      data.apiState.status = -1
       data.apiState.fetchError = {
         statusCode: fetchError.statusCode,
         path: fetchError.request?.toString()

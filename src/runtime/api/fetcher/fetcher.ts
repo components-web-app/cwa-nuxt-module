@@ -81,19 +81,11 @@ export default class Fetcher {
       response = await this.doFetch({ path, preload })
       this.resourcesStore.setResourceFetchStatus({ iri: path, status: 1 })
     } catch (error) {
-      this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
       if (error instanceof FetchError) {
-        this.resourcesStore.setResourceFetchError({ iri: path, fetchError: error })
-        // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
-        if (error.statusCode === 404) {
-          return
-        }
-        // network request error
-        if (!error.response) {
-          consola.error('[NETWORK ERROR]')
-        }
-        consola.error(error.message, JSON.stringify(error))
+        this.handleFetchError(path, error)
         return
+      } else {
+        this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
       }
       throw error
     }
@@ -107,6 +99,19 @@ export default class Fetcher {
 
     this.finishFetch({ path, success: !!response?._data })
     return response
+  }
+
+  private handleFetchError (path: string, error: FetchError) {
+    this.resourcesStore.setResourceFetchError({ iri: path, fetchError: error })
+    // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
+    if (error.statusCode === 404) {
+      return
+    }
+    // network request error
+    if (!error.response) {
+      consola.error('[NETWORK ERROR]')
+    }
+    consola.error(error.message, JSON.stringify(error))
   }
 
   /**
