@@ -4,7 +4,6 @@ import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
 interface FetcherStatusInterface {
   fetch: {
     path?: string
-    paths: { [key: string]: CwaFetcherAsyncResponse|undefined }
     success?: boolean
   }
   fetched: {
@@ -23,9 +22,7 @@ export interface CwaFetcherStateInterface {
 export default function (): CwaFetcherStateInterface {
   return {
     status: reactive({
-      fetch: {
-        paths: {}
-      },
+      fetch: {},
       fetched: {}
     })
   }

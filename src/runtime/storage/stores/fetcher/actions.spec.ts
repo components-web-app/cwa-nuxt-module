@@ -114,7 +114,7 @@ describe('FetcherStore initFetchStatus context', () => {
       path: 'another-path',
       fetchSuccess: true
     })
-    expect(shouldContinue).toBeTruthy()
+    expect(shouldContinue).toBeFalsy()
     expect(resourcesStore.useStore).not.toHaveBeenCalled()
     expect(state.status.fetch.success).toBeUndefined()
     expect(state.status.fetch.path).toBe('fetching-path')

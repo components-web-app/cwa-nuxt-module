@@ -4,6 +4,7 @@ import { CwaFetcherAsyncResponse } from './fetcher'
 
 export default class FetchStatus {
   private fetcherStoreDefinition: FetcherStore
+  private paths: { [key: string]: CwaFetcherAsyncResponse|undefined } = {}
 
   constructor (fetcherStore: FetcherStore) {
     this.fetcherStoreDefinition = fetcherStore
@@ -17,7 +18,7 @@ export default class FetchStatus {
   }
 
   public getFetchingPathPromise (path: string): CwaFetcherAsyncResponse | null {
-    return this.status.fetch.paths[path] || null
+    return this.paths[path] || null
   }
 
   /**
@@ -35,11 +36,18 @@ export default class FetchStatus {
   }
 
   public addEndpoint (endpoint: string, promise: CwaFetcherAsyncResponse) {
-    this.fetcherStore.addPath(endpoint, promise)
+    if (!this.fetcherStore.inProgress) {
+      return
+    }
+    this.paths[endpoint] = promise
   }
 
   public finishFetch (event: FinishFetchEvent) {
-    return this.fetcherStore.initFetchStatus({ ...event, type: fetcherInitTypes.FINISH })
+    const finishSuccess = this.fetcherStore.initFetchStatus({ ...event, type: fetcherInitTypes.FINISH })
+    if (finishSuccess) {
+      this.paths = {}
+    }
+    return finishSuccess
   }
 
   /**

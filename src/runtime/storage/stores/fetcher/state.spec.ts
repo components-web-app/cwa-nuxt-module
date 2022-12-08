@@ -7,9 +7,7 @@ describe('Fetcher State context', () => {
     const initialState = state()
     expect(initialState).toStrictEqual({
       status: reactive({
-        fetch: {
-          paths: {}
-        },
+        fetch: {},
         fetched: {}
       })
     })

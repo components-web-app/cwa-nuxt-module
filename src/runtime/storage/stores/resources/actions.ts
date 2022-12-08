@@ -1,12 +1,11 @@
 import { FetchError } from 'ohmyfetch'
-import consola from 'consola'
 import { reactive } from 'vue'
 import { CwaResource } from '../../../resources/resource-utils'
 import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
 export interface SetResourceStatusEvent { iri: string, status: 0 | 1 }
-export interface SetResourceFetchErrorEvent { iri: string, fetchError: FetchError }
+export interface SetResourceFetchErrorEvent { iri: string, fetchError?: FetchError }
 
 export interface CwaResourcesActionsInterface {
   resetCurrentResources (): void
@@ -15,18 +14,18 @@ export interface CwaResourcesActionsInterface {
   saveResource(event: SaveResourceEvent): void
 }
 
-function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: string): CwaCurrentResourceInterface {
-  if (!resourcesState.current.byId[iri]) {
-    resourcesState.current.byId[iri] = reactive({
-      apiState: reactive({
-        status: null
-      })
-    })
-  }
-  return resourcesState.current.byId[iri]
-}
-
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
+  function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: string): CwaCurrentResourceInterface {
+    if (!resourcesState.current.byId[iri]) {
+      resourcesState.current.byId[iri] = reactive({
+        apiState: reactive({
+          status: null
+        })
+      })
+    }
+    return resourcesState.current.byId[iri]
+  }
+
   return {
     resetCurrentResources (): void {
       resourcesState.new = reactive({
@@ -43,9 +42,11 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
       const data = initCurrentResource(resourcesState, iri)
       data.apiState.status = -1
-      data.apiState.fetchError = {
-        statusCode: fetchError.statusCode,
-        path: fetchError.request?.toString()
+      if (fetchError) {
+        data.apiState.fetchError = {
+          statusCode: fetchError.statusCode,
+          path: fetchError.request?.toString()
+        }
       }
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {

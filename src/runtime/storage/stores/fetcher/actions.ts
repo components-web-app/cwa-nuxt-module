@@ -32,18 +32,11 @@ interface _StartFetchEvent extends StartFetchEvent {
 declare type InitFetchEvent = _FinishFetchEvent | _StartFetchEvent
 
 export interface CwaFetcherActionsInterface {
-  addPath (endpoint: string, promise: CwaFetcherAsyncResponse): void
   initFetchStatus (event: InitFetchEvent): boolean
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
   return {
-    addPath (path: string, promise: CwaFetcherAsyncResponse) {
-      if (!fetcherGetters.inProgress.value) {
-        return
-      }
-      fetcherState.status.fetch.paths[path] = promise
-    },
     initFetchStatus (event: InitFetchEvent): boolean {
       const startFetch = event.type === 'start'
       // do not action if the primary started endpoint is different, or do not start if already in progress
@@ -59,7 +52,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
           }
           return fetchInProgress ? true : undefined
         }
-        return isExistingFetchPathSame ? undefined : true
+        return isExistingFetchPathSame ? undefined : false
       }
 
       const prematureResult = callerToContinue()
@@ -82,7 +75,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
       fetcherState.status.fetched.path = event.path
       fetcherState.status.fetch.path = undefined
-      fetcherState.status.fetch.paths = {}
 
       // if we specify the page then we want to know what endpoint was used to load this page in
       // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.

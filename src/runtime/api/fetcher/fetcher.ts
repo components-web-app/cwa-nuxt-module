@@ -23,7 +23,7 @@ type TypeToNestedPropertiesMap = {
   [T in CwaResourceTypes]: Array<string>;
 }
 
-export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
+const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
   [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
   [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
   [CwaResourceTypes.PAGE_DATA]: ['page'],
@@ -75,46 +75,28 @@ export default class Fetcher {
     }
 
     let response: FetchResponse<any>|undefined
+    let fetchError: FetchError|undefined
     try {
       this.resourcesStore.setResourceFetchStatus({ iri: path, status: 0 })
       response = await this.doFetch({ path, preload })
-      this.resourcesStore.setResourceFetchStatus({ iri: path, status: 1 })
     } catch (error) {
       if (error instanceof FetchError) {
-        this.handleFetchError(path, error)
-        return
+        fetchError = error
       }
-      this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
-      throw error
     }
 
-    if (response?._data) {
-      // TODO: fix...
-      if (!response._data['@id']) {
-        return
-      }
+    const cwaResource = response?._data
+    const isCwaResource = cwaResource && cwaResource['@id'] !== undefined
 
+    if (isCwaResource) {
       this.resourcesStore.saveResource({
-        resource: response._data
+        resource: cwaResource
       })
-      await this.fetchNestedResources(response._data)
+      await this.fetchNestedResources(cwaResource)
     }
 
-    this.finishFetch({ path, fetchSuccess: !!response?._data })
+    this.finishFetch({ path, fetchSuccess: isCwaResource, fetchError })
     return response
-  }
-
-  private handleFetchError (path: string, error: FetchError) {
-    this.resourcesStore.setResourceFetchError({ iri: path, fetchError: error })
-    // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
-    if (error.statusCode === 404) {
-      return
-    }
-    // network request error
-    if (!error.response) {
-      consola.error('[NETWORK ERROR]')
-    }
-    consola.error(error.message, JSON.stringify(error))
   }
 
   /**
@@ -185,6 +167,7 @@ export default class Fetcher {
   /**
    * Internal: fetching
    */
+
   private startFetch (event: StartFetchEvent) {
     const startFetch = this.fetchStatus.startFetch(event)
     if (startFetch !== true) {
@@ -199,11 +182,35 @@ export default class Fetcher {
     return true
   }
 
-  private finishFetch (event: FinishFetchEvent) {
+  private finishFetch (event: FinishFetchEvent & { fetchError?: FetchError }) {
+    if (event.fetchError) {
+      this.handleFetchError(event.fetchError)
+    }
+
+    // finish the status in resources storage
+    if (event.fetchSuccess) {
+      this.resourcesStore.setResourceFetchStatus({ iri: event.path, status: 1 })
+    } else {
+      this.resourcesStore.setResourceFetchError({ iri: event.path, fetchError: event.fetchError })
+    }
+
+    // finish status in the fetcher
     if (this.fetchStatus.finishFetch(event) && process.client) {
-      // event source may have died, re-initialise
+      // event source may have died, re-initialise - true if it is a final fetch
       this.mercure.init()
     }
+  }
+
+  private handleFetchError (error: FetchError) {
+    // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
+    if (error.statusCode === 404) {
+      return
+    }
+    // network request error
+    if (!error.response) {
+      consola.error('[NETWORK ERROR]')
+    }
+    consola.error(error.message)
   }
 
   private async fetchRoutesManifest (path: string): Promise<Array<string>|undefined> {

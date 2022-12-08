@@ -48,6 +48,11 @@ describe('resources action setResourceFetchError', () => {
   const resourcesState = state()
   const resourcesActions = actions(resourcesState)
   test('We can set an error on a new resource', () => {
+    resourcesActions.setResourceFetchError({ iri: 'id' })
+    expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
+    expect(resourcesState.current.byId.id.apiState.fetchError).toBeUndefined()
+  })
+  test('We can set an error on a new resource with a fetch error', () => {
     const fetchError: FetchError = { name: 'FetchError', message: 'my error', statusCode: 404, request: 'request-url' }
     resourcesActions.setResourceFetchError({ iri: 'id', fetchError })
     expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
