@@ -67,38 +67,35 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         }
       }
 
-      let result = callerToContinue()
-      if (result !== undefined) {
-        return result
-      }
-      result = true
-
-      if (startFetch && event.resetCurrentResources) {
-        resourcesStore.useStore().resetCurrentResources()
+      const prematureResult = callerToContinue()
+      if (prematureResult !== undefined) {
+        return prematureResult
       }
 
-      if (event.fetchSuccess === true && fetcherState.status.fetch.path) {
-        // if we specify the page then we want to know what endpoint was used to load this page in
-        // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
-        if (event.pageIri) {
-          fetcherState.fetchedPage = {
-            path: fetcherState.status.fetch.path,
-            iri: event.pageIri
+      if (startFetch) {
+        if (event.resetCurrentResources) {
+          resourcesStore.useStore().resetCurrentResources()
+        }
+        fetcherState.status.fetch.path = event.path
+      } else {
+        fetcherState.status.fetch.success = event.fetchSuccess
+
+        if (event.fetchSuccess === true) {
+          fetcherState.status.fetched.path = event.path
+          fetcherState.status.fetch.path = undefined
+          fetcherState.status.fetch.paths = {}
+          // if we specify the page then we want to know what endpoint was used to load this page in
+          // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
+          if (event.pageIri) {
+            fetcherState.fetchedPage = {
+              path: event.path,
+              iri: event.pageIri
+            }
           }
         }
-        fetcherState.status.fetched.path = fetcherState.status.fetch.path
       }
 
-      fetcherState.status.fetch.path = startFetch ? event.path : undefined
-      if (!startFetch) {
-        fetcherState.status.fetch.success = event.fetchSuccess
-      }
-      // clear previous endpoints on new request, or we have successfully finished the request stack
-      if (startFetch || event.fetchSuccess) {
-        fetcherState.status.fetch.paths = {}
-      }
-
-      return result
+      return true
     }
   }
 }

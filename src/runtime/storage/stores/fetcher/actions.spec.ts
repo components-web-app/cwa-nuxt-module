@@ -52,8 +52,22 @@ describe('FetcherStore initFetchStatus context', () => {
   test.todo('When starting a fetch we should tell the caller to continue if a fetch is already in progress so it can do the fetch and add a new endpoint to the paths', () => {
 
   })
-  test.todo('When completing a fetch, we should only continue if the path matches what we are initially fetching', () => {
+  test.todo('When finishing a fetch, we should only continue if the path matches what we are initially fetching', () => {
 
   })
-  test.todo('When starting a fetch we should call to reset the current resources')
+  test.todo('When starting a fetch we should call to reset the current resources. Response should be true', () => {
+
+  })
+  test.todo('When starting a fetch we should assign the fetching path to the store', () => {
+
+  })
+  test.todo('When finishing a fetch, we should set the fetch status. Response should be true', () => {
+
+  })
+  test.todo('When finishing a fetch, if successful the fetched path should be updated and current path set as undefined. Paths should be cleared. fetchedPage should not be set', () => {
+
+  })
+  test.todo('When finishing a fetch, if successful and a page iri is provided the fetchedPage should be set', () => {
+
+  })
 })
