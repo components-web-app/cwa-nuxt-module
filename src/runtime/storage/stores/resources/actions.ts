@@ -1,11 +1,11 @@
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
-import { reactive, toRef } from 'vue'
+import { reactive } from 'vue'
 import { CwaResource } from '../../../resources/resource-utils'
 import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
-export interface SetResourceStatusEvent { iri: string, status: -1 | 0 | 1 }
+export interface SetResourceStatusEvent { iri: string, status: 0 | 1 }
 export interface SetResourceFetchErrorEvent { iri: string, fetchError: FetchError }
 
 export interface CwaResourcesActionsInterface {
@@ -17,11 +17,11 @@ export interface CwaResourcesActionsInterface {
 
 function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: string): CwaCurrentResourceInterface {
   if (!resourcesState.current.byId[iri]) {
-    resourcesState.current.byId[iri] = {
-      apiState: {
+    resourcesState.current.byId[iri] = reactive({
+      apiState: reactive({
         status: null
-      }
-    }
+      })
+    })
   }
   return resourcesState.current.byId[iri]
 }
@@ -29,33 +29,35 @@ function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: s
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
   return {
     resetCurrentResources (): void {
-      resourcesState.new = {
+      resourcesState.new = reactive({
         byId: {},
         allIds: []
-      }
+      })
       resourcesState.current.currentIds = []
     },
     setResourceFetchStatus ({ iri, status }: SetResourceStatusEvent): void {
       const data = initCurrentResource(resourcesState, iri)
       data.apiState.status = status
-      if (status !== -1) {
-        data.apiState.fetchError = undefined
-      }
+      data.apiState.fetchError = undefined
     },
     setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
       const data = initCurrentResource(resourcesState, iri)
       data.apiState.status = -1
-      data.apiState.fetchError = reactive({
+      data.apiState.fetchError = {
         statusCode: fetchError.statusCode,
         path: fetchError.request?.toString()
-      })
+      }
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {
+      const iri = resource['@id']
       if (isNew === true) {
-        consola.log('SAVE NEW MERCURE RESOURCE TO DO')
+        resourcesState.new.byId[iri] = resource
+        if (!resourcesState.new.allIds.includes(iri)) {
+          resourcesState.new.allIds.push(iri)
+        }
         return
       }
-      const iri = resource['@id']
+
       const data = initCurrentResource(resourcesState, iri)
       data.data = resource
 

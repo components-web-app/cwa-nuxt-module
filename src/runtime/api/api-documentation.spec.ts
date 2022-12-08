@@ -9,12 +9,12 @@ import ApiDocumentation from './api-documentation'
 
 vi.mock('consola')
 
-const mockedFetchResponseTime = 100
+const mockedFetchResponseTime = 20
 vi.mock('ohmyfetch', () => {
   return {
     $fetch: vi.fn(async (path) => {
       await new Promise((resolve) => {
-        setTimeout(resolve, 100)
+        setTimeout(resolve, 20)
       })
       return 'response from ' + path
     })
