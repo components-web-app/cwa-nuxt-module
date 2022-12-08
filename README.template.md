@@ -1,5 +1,7 @@
 # CWA Nuxt Module
 
+## Test coverage for branch `{{ current.branch }}`
+
 [![codecov](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/{{ current.branch }}/graph/badge.svg?token=Z6GQJN413O)](https://codecov.io/github/components-web-app/cwa-nuxt-module)
 
 ![Codecov sunburst image](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/{{ current.branch }}/graphs/sunburst.svg?token=Z6GQJN413O)

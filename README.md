@@ -3,6 +3,8 @@ This file is auto-generate by a github hook please modify README.template.md if 
 -->
 # CWA Nuxt Module
 
+## Test coverage for branch `feat/mercure-and-api-docs`
+
 [![codecov](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/feat/mercure-and-api-docs/graph/badge.svg?token=Z6GQJN413O)](https://codecov.io/github/components-web-app/cwa-nuxt-module)
 
 ![Codecov sunburst image](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/feat/mercure-and-api-docs/graphs/sunburst.svg?token=Z6GQJN413O)
