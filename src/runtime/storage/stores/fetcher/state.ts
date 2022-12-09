@@ -1,13 +1,13 @@
 import { reactive } from 'vue'
-import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
 
 interface FetcherStatusInterface {
-  fetch: {
-    path?: string
+  fetch?: {
+    token: string
+    path: string
     success?: boolean
   }
-  fetched: {
-    path?: string
+  fetched?: {
+    path: string
   }
 }
 
@@ -21,9 +21,6 @@ export interface CwaFetcherStateInterface {
 
 export default function (): CwaFetcherStateInterface {
   return {
-    status: reactive({
-      fetch: {},
-      fetched: {}
-    })
+    status: reactive({})
   }
 }

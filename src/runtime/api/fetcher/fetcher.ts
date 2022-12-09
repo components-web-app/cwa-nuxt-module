@@ -296,7 +296,7 @@ export default class Fetcher {
         throw createFetchError<undefined>(ctx.request, ctx.error)
       }
     })
-    this.fetchStatus.addEndpoint(finalUrl, fetchPromise)
+    this.fetchStatus.addPath(finalUrl, fetchPromise)
     return fetchPromise
   }
 

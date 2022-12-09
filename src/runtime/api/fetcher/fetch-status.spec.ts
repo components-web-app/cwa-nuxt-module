@@ -1,10 +1,16 @@
-import { describe, vi, test, expect, beforeEach } from 'vitest'
+import { describe, vi, test, expect, beforeEach, beforeAll } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { fetcherInitTypes } from '../../storage/stores/fetcher/actions'
 import FetchStatus from './fetch-status'
+
+vi.mock('uuid', () => {
+  return {
+    v4: vi.fn(() => ('my-token'))
+  }
+})
 
 let fetcherStoreDefinition: FetcherStore
 function createFetchStatus (): FetchStatus {
@@ -14,7 +20,7 @@ function createFetchStatus (): FetchStatus {
 }
 
 describe('FetchStatus getters functionality', () => {
-  test('Test getters', () => {
+  beforeAll(() => {
     const pinia = createTestingPinia({
       createSpy: vi.fn,
       initialState: {
@@ -27,20 +33,26 @@ describe('FetchStatus getters functionality', () => {
       }
     })
     setActivePinia(pinia)
+  })
 
+  test('Test path getter', () => {
     const fetchStatus = createFetchStatus()
     const fetcherStore = fetcherStoreDefinition.useStore()
 
     expect(fetchStatus.path).toBe(undefined)
 
-    fetcherStore.$state.status.fetched.path = 'fetched-path'
+    const fetchedObj = { path: 'fetched-path' }
+    fetcherStore.$state.status.fetched = fetchedObj
     expect(fetchStatus.path).toBe('fetched-path')
 
-    fetcherStore.$state.status.fetch.path = 'fetch-path'
+    fetchedObj.path = 'fetch-path'
     expect(fetchStatus.path).toBe('fetch-path')
+  })
 
+  test('Test add and get path promises', () => {
+    const fetchStatus = createFetchStatus()
     // @ts-ignore
-    fetchStatus.addEndpoint('existing-endpoint', 'some-promise')
+    fetchStatus.addPath('existing-endpoint', 'some-promise')
 
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
 
@@ -62,14 +74,30 @@ describe('FetchStatus::startFetch', () => {
   })
 
   test('Test startFetch function', () => {
-    fetchStatus.startFetch({ path: 'any-path' })
+    // @ts-ignore
+    fetcherStore.initFetchStatus.mockImplementation(() => true)
+
+    const startFetchToken = fetchStatus.startFetch({ path: 'start-path' })
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
-      path: 'any-path',
-      type: fetcherInitTypes.START
+      path: 'start-path',
+      type: fetcherInitTypes.START,
+      token: 'my-token'
+    })
+    expect(startFetchToken).toStrictEqual({
+      startFetchToken: {
+        startEvent: {
+          path: 'start-path'
+        },
+        token: 'my-token'
+      },
+      continueFetching: true
     })
   })
 
-  test('Test startFetch if in progress without an existing fetch path', () => {
+  test('Test startFetch if in existing fetch in progress without an existing fetch path', () => {
+    // @ts-ignore
+    fetcherStore.initFetchStatus.mockImplementation(() => 'init-fetch-response')
+
     // @ts-ignore
     fetcherStore.$patch({
       status: {
@@ -80,53 +108,86 @@ describe('FetchStatus::startFetch', () => {
     })
 
     // @ts-ignore
-    fetchStatus.addEndpoint('existing-endpoint', 'some-promise')
+    fetchStatus.addPath('existing-path', 'some-promise')
 
-    fetchStatus.startFetch({ path: 'any-path', resetCurrentResources: true })
+    const startEvent = { path: 'any-path', resetCurrentResources: true }
+    const startFetchToken = fetchStatus.startFetch(startEvent)
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
-      path: 'any-path',
-      resetCurrentResources: true,
-      type: fetcherInitTypes.START
+      ...startEvent,
+      type: fetcherInitTypes.START,
+      token: 'my-token'
+    })
+    expect(startFetchToken).toStrictEqual({
+      startFetchToken: {
+        startEvent,
+        token: 'my-token'
+      },
+      continueFetching: 'init-fetch-response'
     })
   })
 
-  test('Test startFetch if in progress where existing fetch exists', () => {
+  test('Test startFetch if in progress where existing fetch path exists', () => {
     // @ts-ignore
     fetcherStore.$patch({
       status: {
         fetch: {
-          path: 'fetching-path',
-          paths: {
-            'existing-endpoint': 'some-promise'
-          }
+          path: 'fetching-path'
         }
       }
     })
-    expect(fetchStatus.startFetch({ path: 'existing-endpoint' })).toBe('some-promise')
+
+    // @ts-ignore
+    fetchStatus.addPath('existing-endpoint', 'some-promise')
+
+    const startEvent = { path: 'existing-endpoint' }
+
+    expect(fetchStatus.startFetch(startEvent)).toStrictEqual({
+      startFetchToken: {
+        startEvent,
+        token: 'my-token',
+        existingFetchPromise: 'some-promise'
+      },
+      continueFetching: false
+    })
+
     expect(fetcherStore.initFetchStatus).not.toHaveBeenCalled()
   })
 })
 
-describe('FetchStatus public interface functionality', () => {
+describe('FetchStatus::finishFetch', () => {
+  let fetchStatus: FetchStatus
+  let fetcherStore: CwaFetcherStoreInterface
+
   beforeEach(() => {
     const pinia = createTestingPinia({
       createSpy: vi.fn
     })
     setActivePinia(pinia)
-  })
 
-  test('Test addEndpoint function', () => {
-    const fetchStatus = createFetchStatus()
-    const fetcherStore = fetcherStoreDefinition.useStore()
+    fetchStatus = createFetchStatus()
+    fetcherStore = fetcherStoreDefinition.useStore()
+
     // @ts-ignore
-    fetchStatus.addEndpoint('new-endpoint', 'some-promise')
+    fetcherStore.$patch({
+      status: {
+        fetch: {
+          path: 'fetching-path'
+        }
+      }
+    })
+
+    // @ts-ignore
+    fetchStatus.addPath('existing-endpoint', 'some-promise')
   })
 
-  test('Test finishFetch function', () => {
-    const fetchStatus = createFetchStatus()
-    const fetcherStore = fetcherStoreDefinition.useStore()
+  test('Test finishFetch paths are cleared if init status is successful', () => {
+    expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
+
+    // @ts-ignore
+    fetcherStore.initFetchStatus.mockImplementation(() => true)
+
     const finishFetchObj = {
-      path: 'path',
+      token: 'anything',
       pageIri: 'iri',
       fetchSuccess: true
     }
@@ -135,5 +196,24 @@ describe('FetchStatus public interface functionality', () => {
       ...finishFetchObj,
       type: fetcherInitTypes.FINISH
     })
+
+    expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBeNull()
+  })
+
+  test('Test finishFetch paths are NOT cleared if status is NOT successful', () => {
+    // @ts-ignore
+    fetcherStore.initFetchStatus.mockImplementation(() => false)
+
+    const finishFetchObj = {
+      token: 'anything',
+      fetchSuccess: false
+    }
+    fetchStatus.finishFetch(finishFetchObj)
+    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
+      ...finishFetchObj,
+      type: fetcherInitTypes.FINISH
+    })
+
+    expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
   })
 })

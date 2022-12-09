@@ -8,7 +8,10 @@ export interface CwaFetcherGettersInterface {
 export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGettersInterface {
   return {
     inProgress: computed<boolean>(() => {
-      return fetcherState.status.fetch.path !== undefined
+      if (fetcherState.status.fetch === undefined) {
+        return false
+      }
+      return fetcherState.status.fetch.success === undefined
     })
   }
 }

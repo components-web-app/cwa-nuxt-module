@@ -1,6 +1,32 @@
+import { v4 as uuidv4 } from 'uuid'
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { fetcherInitTypes, FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
+import { fetcherInitTypes } from '../../storage/stores/fetcher/actions'
 import { CwaFetcherAsyncResponse } from './fetcher'
+
+export interface StartFetchEvent {
+  path: string
+  resetCurrentResources?: boolean // should only be allowed if fetchSuccess is not defined
+}
+
+export interface FinishFetchEvent {
+  token: string
+  pageIri?: string
+  fetchSuccess: boolean
+}
+
+interface CreateTokenEvent {
+  existingFetchPromise?: CwaFetcherAsyncResponse
+  startEvent: StartFetchEvent
+}
+
+interface StartFetchToken extends CreateTokenEvent {
+  token: string
+}
+
+interface StartFetchResponse {
+  startFetchToken: StartFetchToken,
+  continueFetching: boolean
+}
 
 export default class FetchStatus {
   private fetcherStoreDefinition: FetcherStore
@@ -14,7 +40,7 @@ export default class FetchStatus {
    * Data getters
    */
   public get path (): string|undefined {
-    return this.status.fetch.path || this.status.fetched.path
+    return this.status.fetch?.path || this.status.fetched?.path
   }
 
   public getFetchingPathPromise (path: string): CwaFetcherAsyncResponse | null {
@@ -24,22 +50,31 @@ export default class FetchStatus {
   /**
    * Interface for updating/managing the fetch state
    */
-  public startFetch (event: StartFetchEvent): CwaFetcherAsyncResponse|boolean {
+  public startFetch (event: StartFetchEvent): StartFetchResponse {
     if (this.fetcherStore.inProgress) {
       const existingFetchPromise = this.getFetchingPathPromise(event.path)
       if (existingFetchPromise) {
-        return existingFetchPromise
+        return {
+          startFetchToken: this.createStartFetchToken({ existingFetchPromise, startEvent: event }),
+          continueFetching: false
+        }
       }
     }
 
-    return this.fetcherStore.initFetchStatus({ ...event, type: fetcherInitTypes.START })
+    const startFetchToken = this.createStartFetchToken({ startEvent: event })
+    const continueFetching = this.fetcherStore.initFetchStatus({ ...event, token: startFetchToken.token, type: fetcherInitTypes.START })
+    return {
+      startFetchToken,
+      continueFetching
+    }
   }
 
-  public addEndpoint (endpoint: string, promise: CwaFetcherAsyncResponse) {
-    if (!this.fetcherStore.inProgress) {
-      return
+  private createStartFetchToken (event: CreateTokenEvent): StartFetchToken {
+    const token = uuidv4()
+    return {
+      ...event,
+      token
     }
-    this.paths[endpoint] = promise
   }
 
   public finishFetch (event: FinishFetchEvent) {
@@ -48,6 +83,13 @@ export default class FetchStatus {
       this.paths = {}
     }
     return finishSuccess
+  }
+
+  public addPath (endpoint: string, promise: CwaFetcherAsyncResponse) {
+    if (!this.fetcherStore.inProgress) {
+      return
+    }
+    this.paths[endpoint] = promise
   }
 
   /**
