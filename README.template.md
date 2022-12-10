@@ -24,4 +24,6 @@ We have built in testing using `vitest`.
 
 ## Test coverage for branch `{{ current.branch }}`
 
+> Please note: Partial line matches are far from accurate due to the test suite's clover report. Although every attempt is made to cover all conditions, code coverage is an indication that a line was hit, but not that the results have been asserted (although every attempt has been made to check for this). If you find a bug, please report it and appropriate tests can be written to harden the code. If you find a test that has not fully covered the functionality expected, please submit a pull request with an updated or new test.
+
 ![Codecov sunburst image](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/{{ current.branch }}/graphs/sunburst.svg?token=Z6GQJN413O)
