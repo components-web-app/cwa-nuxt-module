@@ -1,7 +1,6 @@
 import { describe, vi, test, expect, beforeEach } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
-import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
 import actions, { fetcherInitTypes, SetFetchManifestEvent } from './actions'
 import { CwaFetcherStateInterface } from './state'
 import getters from './getters'

@@ -4,7 +4,6 @@ import consola from 'consola'
 import { createTestingPinia } from '@pinia/testing'
 import { $fetch } from 'ohmyfetch'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
-import { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
 import ApiDocumentation from './api-documentation'
 
 vi.mock('consola')
@@ -90,7 +89,7 @@ describe('API Documentation setDocsPathFromLinkHeader functionality', () => {
 
 describe('API Documentation getApiDocumentation functionality', () => {
   let apiDocumentation: ApiDocumentation
-  let getDocsPromise: Promise<CwaApiDocumentationDataInterface|undefined>
+
   const apiDocsObject = {
     docs: 'response from https://some-domain/docs.jsonld',
     entrypoint: 'response from https://dummy-api-url'
@@ -104,7 +103,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
   })
 
   test('We will wait for docsPath to be set before continuing', async () => {
-    getDocsPromise = apiDocumentation.getApiDocumentation()
+    apiDocumentation.getApiDocumentation()
     expect(consola.debug).toHaveBeenLastCalledWith('Waiting for docsPath to bet set to fetch API Documentation')
     await delay(5)
     expect($fetch).not.toHaveBeenCalled()

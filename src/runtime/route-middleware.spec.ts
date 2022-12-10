@@ -1,7 +1,6 @@
-import { afterEach, describe, expect, test, vi, beforeEach } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import * as nuxt from '#app'
-import { RouteMiddleware } from 'nuxt/dist/app/composables/router'
 import routeMiddleware from './route-middleware'
 
 function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded {

@@ -1,11 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { fetcherInitTypes, SetFetchManifestEvent } from '../../storage/stores/fetcher/actions'
+import { SetFetchManifestEvent } from '../../storage/stores/fetcher/actions'
 import { CwaFetcherAsyncResponse } from './fetcher'
-import { storeToRefs } from 'pinia'
-import { watch } from 'vue'
-
-declare function manifestFunction<T = any>(): Promise<T>;
 
 export interface StartFetchEvent {
   path: string,
@@ -105,10 +101,6 @@ export default class FetchStatus {
 
   private get status () {
     return this.fetcherStore.$state.status
-  }
-
-  private get manifests () {
-    return this.fetcherStore.$state.manifests
   }
 
   private get fetcherStore (): CwaFetcherStoreInterface {

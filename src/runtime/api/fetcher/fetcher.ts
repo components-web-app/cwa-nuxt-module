@@ -2,7 +2,6 @@ import bluebird from 'bluebird'
 import { $fetch, createFetchError, FetchContext, FetchError, FetchResponse } from 'ohmyfetch'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import consola from 'consola'
-import { ref, watch } from 'vue'
 import {
   CwaResourcesStoreInterface,
   ResourcesStore
@@ -11,11 +10,8 @@ import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { getResourceTypeFromIri, CwaResource, CwaResourceTypes, isCwaResource } from '../../resources/resource-utils'
-import InvalidResourceResponse from '../../errors/invalid-resource-response'
 import FetchStatus, { FinishFetchEvent, StartFetchEvent, StartFetchResponse } from './fetch-status'
 import preloadHeaders from './preload-headers'
-import NestedFetchError from '@cwa/nuxt-module/runtime/errors/nested-fetch-error'
-import FetchAndSaveError from '@cwa/nuxt-module/runtime/errors/fetch-and-save-error'
 
 interface FetchEventInterface {
   path: string

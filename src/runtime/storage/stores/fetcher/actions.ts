@@ -1,4 +1,4 @@
-import { reactive, watch, WatchStopHandle } from 'vue'
+import { reactive, watch } from 'vue'
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
 import { ResourcesStore } from '../resources/resources-store'

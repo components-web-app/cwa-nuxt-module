@@ -1,5 +1,4 @@
 import {
-  _ExtractStateFromSetupStore,
   defineStore
 } from 'pinia'
 import {
