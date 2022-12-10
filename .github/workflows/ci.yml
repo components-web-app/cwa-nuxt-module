@@ -12,7 +12,7 @@ jobs:
           - node: latest
             coverage: true
             lint: true
-      fail-fast: true
+      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v3
