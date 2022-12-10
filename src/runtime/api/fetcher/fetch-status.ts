@@ -1,10 +1,14 @@
 import { v4 as uuidv4 } from 'uuid'
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { fetcherInitTypes } from '../../storage/stores/fetcher/actions'
+import { fetcherInitTypes, SetFetchManifestEvent } from '../../storage/stores/fetcher/actions'
 import { CwaFetcherAsyncResponse } from './fetcher'
+import { storeToRefs } from 'pinia'
+import { watch } from 'vue'
+
+declare function manifestFunction<T = any>(): Promise<T>;
 
 export interface StartFetchEvent {
-  path: string
+  path: string,
   resetCurrentResources?: boolean // should only be allowed if fetchSuccess is not defined
 }
 
@@ -23,7 +27,7 @@ interface StartFetchToken extends CreateTokenEvent {
   token: string
 }
 
-interface StartFetchResponse {
+export interface StartFetchResponse {
   startFetchToken: StartFetchToken,
   continueFetching: boolean
 }
@@ -50,6 +54,10 @@ export default class FetchStatus {
   /**
    * Interface for updating/managing the fetch state
    */
+  public setFetchManifestStatus (event: SetFetchManifestEvent): boolean {
+    return this.fetcherStore.setFetchManifestStatus(event)
+  }
+
   public startFetch (event: StartFetchEvent): StartFetchResponse {
     if (this.fetcherStore.inProgress) {
       const existingFetchPromise = this.getFetchingPathPromise(event.path)
@@ -62,27 +70,19 @@ export default class FetchStatus {
     }
 
     const startFetchToken = this.createStartFetchToken({ startEvent: event })
-    const continueFetching = this.fetcherStore.initFetchStatus({ ...event, token: startFetchToken.token, type: fetcherInitTypes.START })
+    const continueFetching = this.fetcherStore.startFetchStatus({ ...event, token: startFetchToken.token })
     return {
       startFetchToken,
       continueFetching
     }
   }
 
-  private createStartFetchToken (event: CreateTokenEvent): StartFetchToken {
-    const token = uuidv4()
-    return {
-      ...event,
-      token
-    }
-  }
-
-  public finishFetch (event: FinishFetchEvent) {
-    const finishSuccess = this.fetcherStore.initFetchStatus({ ...event, type: fetcherInitTypes.FINISH })
-    if (finishSuccess) {
+  public async finishFetch (event: FinishFetchEvent): Promise<boolean> {
+    const allFetchesFinished = await this.fetcherStore.finishFetchStatus(event)
+    if (allFetchesFinished) {
       this.paths = {}
     }
-    return finishSuccess
+    return await allFetchesFinished
   }
 
   public addPath (endpoint: string, promise: CwaFetcherAsyncResponse) {
@@ -95,8 +95,20 @@ export default class FetchStatus {
   /**
    * Internal
    */
+  private createStartFetchToken (event: CreateTokenEvent): StartFetchToken {
+    const token = uuidv4()
+    return {
+      ...event,
+      token
+    }
+  }
+
   private get status () {
-    return this.fetcherStore.status
+    return this.fetcherStore.$state.status
+  }
+
+  private get manifests () {
+    return this.fetcherStore.$state.manifests
   }
 
   private get fetcherStore (): CwaFetcherStoreInterface {

@@ -1,4 +1,6 @@
-import { reactive } from 'vue'
+import { reactive, watch, WatchStopHandle } from 'vue'
+import { FetchError } from 'ohmyfetch'
+import consola from 'consola'
 import { ResourcesStore } from '../resources/resources-store'
 import { FinishFetchEvent, StartFetchEvent } from '../../../api/fetcher/fetch-status'
 import { CwaFetcherStateInterface } from './state'
@@ -9,54 +11,94 @@ export enum fetcherInitTypes {
   FINISH = 'finish'
 }
 
-interface _FinishFetchEvent extends FinishFetchEvent {
-  type: fetcherInitTypes.FINISH
-}
-
 interface _StartFetchEvent extends StartFetchEvent {
   token: string
-  type: fetcherInitTypes.START
 }
 
-declare type InitFetchEvent = _FinishFetchEvent | _StartFetchEvent
+export interface SetFetchManifestEvent {
+  path: string
+  inProgress: boolean
+  fetchError?: FetchError
+}
 
 export interface CwaFetcherActionsInterface {
-  initFetchStatus (event: InitFetchEvent): boolean
+  setFetchManifestStatus (event: SetFetchManifestEvent): boolean
+  startFetchStatus (event: _StartFetchEvent): boolean
+  finishFetchStatus (event: FinishFetchEvent): Promise<boolean>
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
+  // This function is internal and should not be accessible as a store action
+  async function waitForManifestResolve (eventToken: string) {
+    // Create a resolver what we can call elsewhere
+    let watchManifestResolve: (value: void | PromiseLike<void>) => void
+    const watchManifestPromise = new Promise((resolve) => {
+      watchManifestResolve = resolve
+    })
+
+    // start watching immediately for the manifest fetch to complete
+    const stopWatchingFn = watch(fetcherGetters.manifestsInProgress, (newInProgressValue) => {
+      if (!newInProgressValue) {
+        consola.trace('Manifests status OK', eventToken)
+        watchManifestResolve()
+      }
+    }, {
+      immediate: true
+    })
+
+    // wait for the custom resolver to be called inside the watch function
+    await watchManifestPromise
+
+    // has to be called outside the watch method itself, or it is called sometimes before initialised
+    stopWatchingFn()
+  }
+
   return {
-    initFetchStatus (event: InitFetchEvent): boolean {
-      const startFetch = event.type === 'start'
-      // do not action if the primary started endpoint is different, or do not start if already in progress
-      const fetchInProgress = fetcherGetters.inProgress.value
-      const fetchObj = fetcherState.status.fetch
-      const isExistingFetchSame = event.token === fetchObj?.token
-
-      // premature result to caller
-      if (startFetch) {
-        const previousFetchSame = event.path === fetcherState.status.fetch?.path || event.path === fetcherState.status.fetched?.path
-        if (previousFetchSame) {
-          // we should not initialise, it is the same as previous
-          return false
-        }
-        if (fetchInProgress) {
-          return true
-        }
-
-        if (event.resetCurrentResources) {
-          resourcesStore.useStore().resetCurrentResources()
-        }
-        fetcherState.status.fetch = reactive({
-          path: event.path,
-          token: event.token
-        })
+    setFetchManifestStatus (event: SetFetchManifestEvent): boolean {
+      if (event.inProgress && fetcherGetters.manifestInProgress.value(event.path)) {
+        return false
+      }
+      fetcherState.manifests[event.path] = reactive({
+        inProgress: event.inProgress,
+        fetchError: event.fetchError
+      })
+      return true
+    },
+    startFetchStatus (event: _StartFetchEvent): boolean {
+      // there are other fetches ongoing, so we have not re-initialised the primary state
+      if (fetcherGetters.inProgress.value) {
         return true
       }
+
+      const previousSuccessfulFetchSame = event.path === fetcherState.status.fetched?.path
+      // we should not re-initialise if the previous fetch is the same or there is any other fetch ongoing
+      if (previousSuccessfulFetchSame) {
+        // we should not initialise, it is the same as previous
+        return false
+      }
+
+      if (event.resetCurrentResources) {
+        resourcesStore.useStore().resetCurrentResources()
+      }
+      fetcherState.status.fetch = reactive({
+        path: event.path,
+        token: event.token
+      })
+      consola.debug('Primary fetch status initialised', event)
+
+      return true
+    },
+    async finishFetchStatus (event: FinishFetchEvent): Promise<boolean> {
+      const fetchObj = fetcherState.status.fetch
+      const isExistingFetchSame = event.token === fetchObj?.token
 
       if (!isExistingFetchSame) {
         return false
       }
+
+      await waitForManifestResolve(event.token)
+
+      consola.debug('Primary fetch status finished', event)
 
       fetchObj.success = event.fetchSuccess
       if (!event.fetchSuccess) {

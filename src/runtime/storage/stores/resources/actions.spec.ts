@@ -25,6 +25,8 @@ describe('resources action setResourceFetchStatus', () => {
   test('We can set the status on a new resource', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', status: 0 })
     expect(resourcesState.current.byId.id.apiState.status).toBe(0)
+    expect(resourcesState.current.allIds).toStrictEqual(['id'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['id'])
   })
   test('We can set the status on an existing resource', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', status: 1 })
@@ -51,6 +53,8 @@ describe('resources action setResourceFetchError', () => {
     resourcesActions.setResourceFetchError({ iri: 'id' })
     expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
     expect(resourcesState.current.byId.id.apiState.fetchError).toBeUndefined()
+    expect(resourcesState.current.allIds).toStrictEqual(['id'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['id'])
   })
   test('We can set an error on a new resource with a fetch error', () => {
     const fetchError: FetchError = { name: 'FetchError', message: 'my error', statusCode: 404, request: 'request-url' }

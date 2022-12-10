@@ -2,7 +2,7 @@ import { describe, vi, test, expect, beforeEach } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
 import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
-import actions, { fetcherInitTypes } from './actions'
+import actions, { fetcherInitTypes, SetFetchManifestEvent } from './actions'
 import { CwaFetcherStateInterface } from './state'
 import getters from './getters'
 
@@ -22,11 +22,72 @@ function createState (state?: {
     status: reactive({
       fetch: state?.fetch,
       fetched: state?.fetched
-    })
+    }),
+    manifests: reactive({})
   }
 }
 
 const resourcesStore = new ResourcesStore('storeName')
+
+describe('FetcherStore setFetchManifestStatus context', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('should not update the status if a manifest fetch is already in progress', () => {
+    const state = createState()
+    const getterFns = getters(state)
+    const fetcherActions = actions(state, getterFns, resourcesStore)
+    state.manifests['manifest-path'] = reactive({
+      inProgress: true,
+      fetchError: 'previous'
+    })
+    const setManifestEvent: SetFetchManifestEvent = {
+      path: 'manifest-path',
+      inProgress: true,
+      fetchError: 'something'
+    }
+    const result = fetcherActions.setFetchManifestStatus(setManifestEvent)
+    expect(result).toBeFalsy()
+    expect(state.manifests['manifest-path'].fetchError).toBe('previous')
+  })
+
+  test('should update the status if a manifest fetch is not currently in progress', () => {
+    const state = createState()
+    const getterFns = getters(state)
+    const fetcherActions = actions(state, getterFns, resourcesStore)
+    state.manifests['manifest-path'] = reactive({
+      inProgress: false,
+      fetchError: 'previous'
+    })
+    const setManifestEvent: SetFetchManifestEvent = {
+      path: 'manifest-path',
+      inProgress: true,
+      fetchError: 'something'
+    }
+    const result = fetcherActions.setFetchManifestStatus(setManifestEvent)
+    expect(result).toBeTruthy()
+    expect(state.manifests['manifest-path'].fetchError).toBe('something')
+  })
+
+  test('should update the status if a manifest fetch is in progress and we want to finish it', () => {
+    const state = createState()
+    const getterFns = getters(state)
+    const fetcherActions = actions(state, getterFns, resourcesStore)
+    state.manifests['manifest-path'] = reactive({
+      inProgress: true,
+      fetchError: 'previous'
+    })
+    const setManifestEvent: SetFetchManifestEvent = {
+      path: 'manifest-path',
+      inProgress: false,
+      fetchError: 'something'
+    }
+    const result = fetcherActions.setFetchManifestStatus(setManifestEvent)
+    expect(result).toBeTruthy()
+    expect(state.manifests['manifest-path'].fetchError).toBe('something')
+  })
+})
 
 describe('FetcherStore initFetchStatus context', () => {
   beforeEach(() => {
@@ -93,6 +154,21 @@ describe('FetcherStore initFetchStatus context', () => {
   })
 
   // will successfully initialise
+  test('When starting a fetch we should continue if the current fetch is the same path but we already have a result', () => {
+    const state = createState({ fetch: { path: 'fetching-path', token: 'start-token', success: false } })
+    const getterFns = getters(state)
+    const fetcherActions = actions(state, getterFns, resourcesStore)
+    const shouldContinue = fetcherActions.initFetchStatus({
+      type: fetcherInitTypes.START,
+      path: 'new-fetching-path',
+      token: 'new-start-token'
+    })
+    expect(shouldContinue).toBeTruthy()
+    expect(resourcesStore.useStore).not.toHaveBeenCalled()
+    expect(state.status.fetch?.success).toBeUndefined()
+    expect(state.status.fetch?.path).toBe('new-fetching-path')
+  })
+
   test('When starting a fetch we should call to reset the current resources. Response should be true', () => {
     const resetCurrentResources = vi.fn()
     // @ts-ignore

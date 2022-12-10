@@ -23,6 +23,12 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         })
       })
     }
+    if (!resourcesState.current.allIds.includes(iri)) {
+      resourcesState.current.allIds.push(iri)
+    }
+    if (!resourcesState.current.currentIds.includes(iri)) {
+      resourcesState.current.currentIds.push(iri)
+    }
     return resourcesState.current.byId[iri]
   }
 
@@ -61,13 +67,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
 
       const data = initCurrentResource(resourcesState, iri)
       data.data = resource
-
-      if (!resourcesState.current.allIds.includes(iri)) {
-        resourcesState.current.allIds.push(iri)
-      }
-      if (!resourcesState.current.currentIds.includes(iri)) {
-        resourcesState.current.currentIds.push(iri)
-      }
     }
   }
 }

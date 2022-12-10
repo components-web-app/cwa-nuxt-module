@@ -12,7 +12,7 @@ export interface CwaResource {
   '@id': string
   '@type': string
   publishedResource?: string
-  _metadata?: {
+  _metadata: {
     persisted: boolean
     publishable?: {
       published: boolean
@@ -57,4 +57,11 @@ export function getPublishedResourceIri (resource: CwaResource): string|null {
     return resourceIri
   }
   return resource.publishedResource || null
+}
+
+export function isCwaResource (obj: any): obj is CwaResource {
+  if (typeof obj !== 'object') {
+    return false
+  }
+  return obj['@id'] !== undefined && obj['@type'] !== undefined && obj._metadata !== undefined && typeof obj._metadata === 'object'
 }

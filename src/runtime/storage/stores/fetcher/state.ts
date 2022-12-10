@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { FetchError } from 'ohmyfetch'
 
 interface FetcherStatusInterface {
   fetch?: {
@@ -10,9 +11,16 @@ interface FetcherStatusInterface {
     path: string
   }
 }
+export interface FetcherManifestsInterface {
+  [path: string]: {
+    inProgress: boolean
+    fetchError?: FetchError
+  }
+}
 
 export interface CwaFetcherStateInterface {
   status: FetcherStatusInterface
+  manifests: FetcherManifestsInterface
   fetchedPage?: {
     iri: string
     path: string
@@ -21,6 +29,7 @@ export interface CwaFetcherStateInterface {
 
 export default function (): CwaFetcherStateInterface {
   return {
-    status: reactive({})
+    status: reactive({}),
+    manifests: reactive({})
   }
 }

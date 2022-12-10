@@ -12,6 +12,12 @@ vi.mock('uuid', () => {
   }
 })
 
+function delay (time: number, returnValue: any = undefined) {
+  return new Promise((resolve) => {
+    setTimeout(() => { resolve(returnValue) }, time)
+  })
+}
+
 let fetcherStoreDefinition: FetcherStore
 function createFetchStatus (): FetchStatus {
   const resourcesStore = new ResourcesStore('storeName')
@@ -57,6 +63,20 @@ describe('FetchStatus getters functionality', () => {
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
 
     expect(fetchStatus.getFetchingPathPromise('non-existent-endpoint')).toBeNull()
+  })
+})
+
+describe('FetchStatus::setFetchManifestStatus', () => {
+  test('We call the fetcher store and return its value', () => {
+    const fetchStatus = createFetchStatus()
+    const fetcherStore = fetcherStoreDefinition.useStore()
+    fetcherStore.setFetchManifestStatus.mockImplementation(() => true)
+    const event = {
+      path: 'my-path',
+      inProgress: true
+    }
+    expect(fetchStatus.setFetchManifestStatus(event)).toBeTruthy()
+    expect(fetcherStore.setFetchManifestStatus).toBeCalledWith(event)
   })
 })
 
@@ -180,7 +200,7 @@ describe('FetchStatus::finishFetch', () => {
     fetchStatus.addPath('existing-endpoint', 'some-promise')
   })
 
-  test('Test finishFetch paths are cleared if init status is successful', () => {
+  test('Test finishFetch paths are cleared if init status is successful', async () => {
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
 
     // @ts-ignore
@@ -191,7 +211,8 @@ describe('FetchStatus::finishFetch', () => {
       pageIri: 'iri',
       fetchSuccess: true
     }
-    fetchStatus.finishFetch(finishFetchObj)
+    const finishFetchResult = await fetchStatus.finishFetch(finishFetchObj)
+    expect(finishFetchResult).toBeTruthy()
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
       ...finishFetchObj,
       type: fetcherInitTypes.FINISH
@@ -200,7 +221,8 @@ describe('FetchStatus::finishFetch', () => {
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBeNull()
   })
 
-  test('Test finishFetch paths are NOT cleared if status is NOT successful', () => {
+  test('Test finishFetch paths are NOT cleared if status is NOT successful', async () => {
+    expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
     // @ts-ignore
     fetcherStore.initFetchStatus.mockImplementation(() => false)
 
@@ -208,12 +230,46 @@ describe('FetchStatus::finishFetch', () => {
       token: 'anything',
       fetchSuccess: false
     }
-    fetchStatus.finishFetch(finishFetchObj)
+    const finishFetchResult = await fetchStatus.finishFetch(finishFetchObj)
+    expect(finishFetchResult).toBeFalsy()
     expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
       ...finishFetchObj,
       type: fetcherInitTypes.FINISH
     })
 
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
+  })
+
+  test('finish fetch should only resolve when no manifests are fetching', async () => {
+    fetcherStore.$patch({
+      manifests: {
+        somePath: {
+          inProgress: true
+        }
+      }
+    })
+
+    // @ts-ignore
+    fetcherStore.initFetchStatus.mockImplementation(() => true)
+    const finishFetchObj = {
+      token: 'anything',
+      fetchSuccess: false
+    }
+    let returned: boolean|undefined
+    fetchStatus.finishFetch(finishFetchObj).then((resolvedValue: boolean) => {
+      returned = resolvedValue
+    })
+    await delay(1)
+    expect(returned).toBeUndefined()
+
+    fetcherStore.$patch({
+      manifests: {
+        somePath: {
+          inProgress: false
+        }
+      }
+    })
+    await delay(1)
+    expect(returned).toBeTruthy()
   })
 })
