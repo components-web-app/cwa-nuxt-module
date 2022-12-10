@@ -3,7 +3,6 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { fetcherInitTypes } from '../../storage/stores/fetcher/actions'
 import FetchStatus from './fetch-status'
 
 vi.mock('uuid', () => {
@@ -11,12 +10,6 @@ vi.mock('uuid', () => {
     v4: vi.fn(() => ('my-token'))
   }
 })
-
-function delay (time: number, returnValue: any = undefined) {
-  return new Promise((resolve) => {
-    setTimeout(() => { resolve(returnValue) }, time)
-  })
-}
 
 let fetcherStoreDefinition: FetcherStore
 function createFetchStatus (): FetchStatus {
