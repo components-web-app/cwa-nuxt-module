@@ -95,12 +95,11 @@ describe('FetchStatus::startFetch', () => {
 
   test('Test startFetch function', () => {
     // @ts-ignore
-    fetcherStore.initFetchStatus.mockImplementation(() => true)
+    fetcherStore.startFetchStatus.mockImplementation(() => true)
 
     const startFetchToken = fetchStatus.startFetch({ path: 'start-path' })
-    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
+    expect(fetcherStore.startFetchStatus).toHaveBeenCalledWith({
       path: 'start-path',
-      type: fetcherInitTypes.START,
       token: 'my-token'
     })
     expect(startFetchToken).toStrictEqual({
@@ -116,7 +115,7 @@ describe('FetchStatus::startFetch', () => {
 
   test('Test startFetch if in existing fetch in progress without an existing fetch path', () => {
     // @ts-ignore
-    fetcherStore.initFetchStatus.mockImplementation(() => 'init-fetch-response')
+    fetcherStore.startFetchStatus.mockImplementation(() => 'init-fetch-response')
 
     // @ts-ignore
     fetcherStore.$patch({
@@ -132,9 +131,8 @@ describe('FetchStatus::startFetch', () => {
 
     const startEvent = { path: 'any-path', resetCurrentResources: true }
     const startFetchToken = fetchStatus.startFetch(startEvent)
-    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
+    expect(fetcherStore.startFetchStatus).toHaveBeenCalledWith({
       ...startEvent,
-      type: fetcherInitTypes.START,
       token: 'my-token'
     })
     expect(startFetchToken).toStrictEqual({
@@ -170,7 +168,7 @@ describe('FetchStatus::startFetch', () => {
       continueFetching: false
     })
 
-    expect(fetcherStore.initFetchStatus).not.toHaveBeenCalled()
+    expect(fetcherStore.startFetchStatus).not.toHaveBeenCalled()
   })
 })
 
@@ -204,7 +202,7 @@ describe('FetchStatus::finishFetch', () => {
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
 
     // @ts-ignore
-    fetcherStore.initFetchStatus.mockImplementation(() => true)
+    fetcherStore.finishFetchStatus.mockImplementation(() => true)
 
     const finishFetchObj = {
       token: 'anything',
@@ -213,9 +211,8 @@ describe('FetchStatus::finishFetch', () => {
     }
     const finishFetchResult = await fetchStatus.finishFetch(finishFetchObj)
     expect(finishFetchResult).toBeTruthy()
-    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
-      ...finishFetchObj,
-      type: fetcherInitTypes.FINISH
+    expect(fetcherStore.finishFetchStatus).toHaveBeenCalledWith({
+      ...finishFetchObj
     })
 
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBeNull()
@@ -224,7 +221,7 @@ describe('FetchStatus::finishFetch', () => {
   test('Test finishFetch paths are NOT cleared if status is NOT successful', async () => {
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
     // @ts-ignore
-    fetcherStore.initFetchStatus.mockImplementation(() => false)
+    fetcherStore.finishFetchStatus.mockImplementation(() => false)
 
     const finishFetchObj = {
       token: 'anything',
@@ -232,44 +229,10 @@ describe('FetchStatus::finishFetch', () => {
     }
     const finishFetchResult = await fetchStatus.finishFetch(finishFetchObj)
     expect(finishFetchResult).toBeFalsy()
-    expect(fetcherStore.initFetchStatus).toHaveBeenCalledWith({
-      ...finishFetchObj,
-      type: fetcherInitTypes.FINISH
+    expect(fetcherStore.finishFetchStatus).toHaveBeenCalledWith({
+      ...finishFetchObj
     })
 
     expect(fetchStatus.getFetchingPathPromise('existing-endpoint')).toBe('some-promise')
-  })
-
-  test('finish fetch should only resolve when no manifests are fetching', async () => {
-    fetcherStore.$patch({
-      manifests: {
-        somePath: {
-          inProgress: true
-        }
-      }
-    })
-
-    // @ts-ignore
-    fetcherStore.initFetchStatus.mockImplementation(() => true)
-    const finishFetchObj = {
-      token: 'anything',
-      fetchSuccess: false
-    }
-    let returned: boolean|undefined
-    fetchStatus.finishFetch(finishFetchObj).then((resolvedValue: boolean) => {
-      returned = resolvedValue
-    })
-    await delay(1)
-    expect(returned).toBeUndefined()
-
-    fetcherStore.$patch({
-      manifests: {
-        somePath: {
-          inProgress: false
-        }
-      }
-    })
-    await delay(1)
-    expect(returned).toBeTruthy()
   })
 })

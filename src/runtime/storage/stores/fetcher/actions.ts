@@ -6,11 +6,6 @@ import { FinishFetchEvent, StartFetchEvent } from '../../../api/fetcher/fetch-st
 import { CwaFetcherStateInterface } from './state'
 import { CwaFetcherGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/getters'
 
-export enum fetcherInitTypes {
-  START = 'start',
-  FINISH = 'finish'
-}
-
 interface _StartFetchEvent extends StartFetchEvent {
   token: string
 }
@@ -67,7 +62,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     startFetchStatus (event: _StartFetchEvent): boolean {
       // there are other fetches ongoing, so we have not re-initialised the primary state
       if (fetcherGetters.inProgress.value) {
-        return true
+        return event.path !== fetcherState.status.fetch?.path
       }
 
       const previousSuccessfulFetchSame = event.path === fetcherState.status.fetched?.path
