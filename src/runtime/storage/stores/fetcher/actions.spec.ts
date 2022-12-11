@@ -1,5 +1,6 @@
 import { describe, vi, test, expect, beforeEach } from 'vitest'
 import { reactive } from 'vue'
+import { FetchError } from 'ohmyfetch'
 import { ResourcesStore } from '../resources/resources-store'
 import actions, { SetFetchManifestEvent } from './actions'
 import { CwaFetcherStateInterface } from './state'
@@ -7,22 +8,36 @@ import getters from './getters'
 
 vi.mock('../resources/resources-store')
 
-function createState (state?: {
-  fetch?: {
-    path: string
-    success?: boolean,
-    token: string
+function delay (time: number, returnValue: any = undefined) {
+  return new Promise((resolve) => {
+    setTimeout(() => { resolve(returnValue) }, time)
+  })
+}
+
+function createState (
+  state?: {
+    fetch?: {
+      path: string
+      success?: boolean,
+      token: string
+    }
+    fetched?: {
+      path: string
+    }
+  },
+  manifests?: {
+    [path: string]: {
+      inProgress: boolean
+      fetchError?: FetchError
+    }
   }
-  fetched?: {
-    path: string
-  }
-}): CwaFetcherStateInterface {
+): CwaFetcherStateInterface {
   return {
     status: reactive({
       fetch: state?.fetch,
       fetched: state?.fetched
     }),
-    manifests: reactive({})
+    manifests: reactive(manifests || {})
   }
 }
 
@@ -191,17 +206,16 @@ describe('FetcherStore startFetchStatus context', () => {
 })
 
 // TODO: ALL FINISH FETCH TESTS RE-CHECK
-describe.todo('FetcherStore finishFetchStatus context', () => {
+describe('FetcherStore finishFetchStatus context', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  test('When finishing a fetch, we should not continue if the token does not match what we are initially fetching', () => {
+  test('When finishing a fetch, we should not continue if the token does not match what we are initially fetching', async () => {
     const state = createState({ fetch: { path: 'fetching-path', token: 'start-token' } })
     const getterFns = getters(state)
     const fetcherActions = actions(state, getterFns, resourcesStore)
-    const shouldContinue = fetcherActions.initFetchStatus({
-      type: fetcherInitTypes.FINISH,
+    const shouldContinue = await fetcherActions.finishFetchStatus({
       fetchSuccess: true,
       token: 'different-start-token'
     })
@@ -211,12 +225,11 @@ describe.todo('FetcherStore finishFetchStatus context', () => {
     expect(state.status.fetch?.path).toBe('fetching-path')
   })
 
-  test('When finishing a fetch, we should set the fetch success. Response should be true', () => {
+  test('When finishing a fetch, we should set the fetch success. Response should be true', async () => {
     const state = createState({ fetch: { path: 'fetching-path', token: 'my-token' } })
     const getterFns = getters(state)
     const fetcherActions = actions(state, getterFns, resourcesStore)
-    const shouldContinue = fetcherActions.initFetchStatus({
-      type: fetcherInitTypes.FINISH,
+    const shouldContinue = await fetcherActions.finishFetchStatus({
       fetchSuccess: true,
       token: 'my-token'
     })
@@ -229,12 +242,11 @@ describe.todo('FetcherStore finishFetchStatus context', () => {
     })
   })
 
-  test('When finishing a fetch, if successful the fetched path should be updated and current path set as undefined. fetchedPage should not be set', () => {
+  test('When finishing a fetch, if successful the fetched path should be updated and current path set as undefined. fetchedPage should not be set', async () => {
     const state = createState({ fetch: { path: 'fetching-path', token: 'token' } })
     const getterFns = getters(state)
     const fetcherActions = actions(state, getterFns, resourcesStore)
-    const shouldContinue = fetcherActions.initFetchStatus({
-      type: fetcherInitTypes.FINISH,
+    const shouldContinue = await fetcherActions.finishFetchStatus({
       token: 'token',
       fetchSuccess: true
     })
@@ -248,12 +260,11 @@ describe.todo('FetcherStore finishFetchStatus context', () => {
     expect(state.fetchedPage).toBeUndefined()
   })
 
-  test('When finishing a fetch, if successful and a page iri is provided the fetchedPage should be set', () => {
+  test('When finishing a fetch, if successful and a page iri is provided the fetchedPage should be set', async () => {
     const state = createState({ fetch: { path: 'fetching-path', token: 'set-page-token' } })
     const getterFns = getters(state)
     const fetcherActions = actions(state, getterFns, resourcesStore)
-    const shouldContinue = fetcherActions.initFetchStatus({
-      type: fetcherInitTypes.FINISH,
+    const shouldContinue = await fetcherActions.finishFetchStatus({
       token: 'set-page-token',
       fetchSuccess: true,
       pageIri: 'page-iri'
@@ -265,12 +276,11 @@ describe.todo('FetcherStore finishFetchStatus context', () => {
     })
   })
 
-  test('When finishing a fetch that was not successful we should not update the fetched path', () => {
+  test('When finishing a fetch that was not successful we should not update the fetched path', async () => {
     const state = createState({ fetch: { path: 'fetching-path', token: 'toe-can' } })
     const getterFns = getters(state)
     const fetcherActions = actions(state, getterFns, resourcesStore)
-    const shouldContinue = fetcherActions.initFetchStatus({
-      type: fetcherInitTypes.FINISH,
+    const shouldContinue = await fetcherActions.finishFetchStatus({
       token: 'toe-can',
       fetchSuccess: false
     })
@@ -284,36 +294,30 @@ describe.todo('FetcherStore finishFetchStatus context', () => {
     expect(state.fetchedPage).toBeUndefined()
   })
 
-  test.todo('finish fetch should only resolve when no manifests are fetching', async () => {
-    fetcherStore.$patch({
-      manifests: {
-        somePath: {
-          inProgress: true
-        }
-      }
-    })
+  test('When finishing a fetch we should only resolve and update the status once manifests are resolved', async () => {
+    const state = createState({ fetch: { path: 'fetching-path', token: 'something' } }, { somePath: { inProgress: true } })
+    const getterFns = getters(state)
+    const fetcherActions = actions(state, getterFns, resourcesStore)
 
-    // @ts-ignore
-    fetcherStore.finishFetchStatus.mockImplementation(() => true)
     const finishFetchObj = {
-      token: 'anything',
-      fetchSuccess: false
+      token: 'something',
+      fetchSuccess: true
     }
+
     let returned: boolean|undefined
-    fetchStatus.finishFetch(finishFetchObj).then((resolvedValue: boolean) => {
-      returned = resolvedValue
-    })
+    fetcherActions
+      .finishFetchStatus(finishFetchObj)
+      .then((resolvedValue: boolean) => {
+        returned = resolvedValue
+      })
     await delay(1)
     expect(returned).toBeUndefined()
-
-    fetcherStore.$patch({
-      manifests: {
-        somePath: {
-          inProgress: false
-        }
-      }
-    })
+    expect(state.status.fetched).toBeUndefined()
+    state.manifests.somePath.inProgress = false
     await delay(1)
     expect(returned).toBeTruthy()
+    expect(state.status.fetched).toStrictEqual({
+      path: 'fetching-path'
+    })
   })
 })
