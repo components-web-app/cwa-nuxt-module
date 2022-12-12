@@ -251,8 +251,9 @@ describe('Fetcher startResourceFetch context', () => {
         _data: {}
       })
     })
-    await fetcher.fetchRoute('/some-fetch-path')
+    const result = await fetcher.fetchRoute('/some-fetch-path')
     expect(consola.warn).toBeCalledWith('Unable to fetch manifest resources')
+    expect(result).toBeUndefined()
   })
 
   test('If there is a network or fetch error getting the manifest, we save the error', async () => {
@@ -263,12 +264,13 @@ describe('Fetcher startResourceFetch context', () => {
     })
     // Handle errors
     const exampleFetchError = new FetchError()
-    await fetcher.fetchRoute('/some-fetch-path')
+    const result = await fetcher.fetchRoute('/some-fetch-path')
     expect(fetchStatusInstance.setFetchManifestStatus).toBeCalledWith({
       path: '/_/routes_manifest//some-fetch-path',
       inProgress: false,
       fetchError: exampleFetchError
     })
+    expect(result).toBeUndefined()
   })
 
   test('startResourceFetch will return the fetchStatus.startFetch result', async () => {
@@ -311,8 +313,9 @@ describe('fetcher fetchAndSaveResource context', () => {
       }
     })
 
-    await fetcher.fetchAndSaveResource(startFetchEvent)
+    const result = await fetcher.fetchAndSaveResource(startFetchEvent)
     expect(fetcher.doFetch).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
   })
 
   test('doFetch is not called if startResourceFetch.continueFetching is false and an existing promise is returned', async () => {
