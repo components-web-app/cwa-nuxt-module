@@ -11,11 +11,11 @@ import { MercureStore } from '../../storage/stores/mercure/mercure-store'
 import ApiDocumentation from '../api-documentation'
 import { ApiDocumentationStore } from '../../storage/stores/api-documentation/api-documentation-store'
 import { CwaResourceTypes } from '../../resources/resource-utils'
+import InvalidResourceResponse from '../../errors/invalid-resource-response'
 import Fetcher from './fetcher'
 import FetchStatus from './fetch-status'
 import CwaFetch from './cwa-fetch'
 import preloadHeaders from './preload-headers'
-import InvalidResourceResponse from '../../errors/invalid-resource-response'
 
 function createRoute (path = '/', query = {}): RouteLocationNormalizedLoaded {
   return reactive({
@@ -818,20 +818,103 @@ describe('finishResourceFetch functionality', () => {
   })
 })
 
-describe.todo('fetchRoute functionality, mocking all calls as they are re-used processes from other tests, just ensure functions are all called', () => {
+describe('fetchRoute functionality, mocking all calls as they are re-used processes from other tests, just ensure functions are all called', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation((startEvent) => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'fetchAndSaveResource').mockImplementation(() => {
+      return Promise.resolve({
+        '@id': 'my-resource',
+        pageData: 'page-data-iri'
+      })
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch')
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('If startFetchStatusResponse.continueFetching is false we return the result of an existing promise (promise or undefined)', () => {
-
+  test('We start and finish resource fetch with page data parameter', async () => {
+    const result = await fetcher.fetchRoute('path')
+    expect(fetcher.startResourceFetch).toHaveBeenCalledWith({
+      path: '/_/routes/path',
+      resetCurrentResources: true,
+      manifestPath: '/_/routes_manifest/path'
+    })
+    expect(fetcher.fetchAndSaveResource).toHaveBeenCalledWith({
+      path: '/_/routes/path'
+    })
+    expect(fetcher.finishResourceFetch).toHaveBeenCalledWith({
+      token: 'abc',
+      path: '/_/routes/path',
+      fetchSuccess: true,
+      pageIri: 'page-data-iri'
+    })
+    expect(result).toStrictEqual({
+      '@id': 'my-resource',
+      pageData: 'page-data-iri'
+    })
   })
 
-  test('We call fetchAndSaveResource if successful test the finishResourceFetch parameters', () => {
-
+  test('We start and finish resource fetch with page parameter', async () => {
+    vi.spyOn(fetcher, 'fetchAndSaveResource').mockImplementationOnce(() => {
+      return Promise.resolve({
+        '@id': 'my-resource',
+        page: 'page-iri'
+      })
+    })
+    const result = await fetcher.fetchRoute('path')
+    expect(fetcher.finishResourceFetch).toHaveBeenCalledWith({
+      token: 'abc',
+      path: '/_/routes/path',
+      fetchSuccess: true,
+      pageIri: 'page-iri'
+    })
+    expect(result).toStrictEqual({
+      '@id': 'my-resource',
+      page: 'page-iri'
+    })
   })
 
-  test('We call fetchAndSaveResource if unsuccessful test the finishResourceFetch parameters', () => {
+  test('We start and finish resource fetch with no resource returned', async () => {
+    vi.spyOn(fetcher, 'fetchAndSaveResource').mockImplementationOnce(() => {
+      return Promise.resolve(undefined)
+    })
+    const result = await fetcher.fetchRoute('path')
+    expect(fetcher.finishResourceFetch).toHaveBeenCalledWith({
+      token: 'abc',
+      path: '/_/routes/path',
+      fetchSuccess: false
+    })
+    expect(result).toBeUndefined()
+  })
 
+  test('If startFetchStatusResponse.continueFetching is false we return the result of an existing promise (promise or undefined)', async () => {
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation((startEvent) => {
+      return {
+        continueFetching: false,
+        startFetchToken: {
+          token: 'abc',
+          startEvent,
+          existingFetchPromise: 'existing-fetch-promise'
+        }
+      }
+    })
+
+    const result = await fetcher.fetchRoute('path')
+    expect(fetcher.fetchAndSaveResource).not.toHaveBeenCalled()
+    expect(fetcher.finishResourceFetch).not.toHaveBeenCalled()
+    expect(result).toBe('existing-fetch-promise')
   })
 })

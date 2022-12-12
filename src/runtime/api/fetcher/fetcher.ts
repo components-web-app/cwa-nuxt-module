@@ -115,7 +115,7 @@ export default class Fetcher {
   /**
    * Public interfaces for fetching for route middleware
    */
-  public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
+  public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|CwaResource|undefined> {
     const iri = `/_/routes/${path}`
     const startFetchStatusResponse = this.startResourceFetch({ path: iri, resetCurrentResources: true, manifestPath: `/_/routes_manifest/${path}` })
     if (!startFetchStatusResponse.continueFetching) {
@@ -137,6 +137,7 @@ export default class Fetcher {
       fetchSuccess: routeResource !== undefined,
       pageIri: routeResource?.pageData || routeResource?.page
     })
+    return routeResource
   }
 
   // public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
