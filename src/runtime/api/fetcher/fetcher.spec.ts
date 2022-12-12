@@ -603,23 +603,57 @@ describe('handleFetchResponse', () => {
   })
 })
 
-describe.todo('fetchNestedResources will loop through nested resources to fetch appropriate properties', () => {
+describe('fetchNestedResources & fetchBatch & bluebird will loop through nested resources to fetch appropriate properties', () => {
+  const pageResource = {
+    '@id': '/_/pages/page-id',
+    layout: '/_/layouts/layout-id',
+    componentGroups: [
+      '/_/component_groups/cg1',
+      '/_/component_groups/cg2'
+    ]
+  }
+  let fetcher: Fetcher
+
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('We populate an array of nested resources and pass this to the fetchBatch function for a specific resource', () => {
-
+  beforeAll(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation((startEvent) => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'doFetch').mockImplementation((startFetchEvent) => {
+      return startFetchEvent.path
+    })
+    vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation((path) => {
+      if (path === '/_/pages/page-id') {
+        return Promise.resolve(pageResource)
+      }
+    })
+    vi.spyOn(fetcher, 'fetchNestedResources')
+    vi.spyOn(fetcher, 'fetchBatch')
+    vi.spyOn(fetcher, 'fetchAndSaveResource')
   })
-})
 
-describe.todo('fetchBatch returns a bluebird promise map', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('We create a bluebird promise map to call fetchAndSaveResource from an array of paths', () => {
-
+  test('We populate an array of nested resources and pass this to the fetchBatch function for a specific resource', async () => {
+    await fetcher.fetchAndSaveResource({ path: '/_/pages/page-id' })
+    expect(fetcher.fetchNestedResources).toBeCalledWith(pageResource)
+    expect(fetcher.fetchBatch).toBeCalledWith({
+      paths: [
+        '/_/layouts/layout-id',
+        '/_/component_groups/cg1',
+        '/_/component_groups/cg2'
+      ]
+    })
+    expect(fetcher.fetchAndSaveResource).toBeCalledTimes(4)
   })
 })
 
