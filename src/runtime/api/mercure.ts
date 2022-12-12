@@ -101,7 +101,7 @@ export default class Mercure {
       this.closeMercure()
     }
 
-    consola.log(`Initializing Mercure '${this.hubUrl}'`)
+    consola.info(`Initializing Mercure '${this.hubUrl}'`)
     this.eventSource = new EventSource(this.hubUrl, { withCredentials: true })
     this.eventSource.onmessage = async (messageEvent: MessageEvent) => {
       await this.handleMercureMessage(messageEvent)

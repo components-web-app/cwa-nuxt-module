@@ -136,6 +136,12 @@ describe('Fetcher startResourceFetch context', () => {
   })
 
   test('Fetch status is started and resource is initialised in store', async () => {
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
+      return Promise.resolve({
+        _data: {}
+      })
+    })
+
     const fetchStatusInstance = FetchStatus.mock.results[0].value
     const mercureInstance = Mercure.mock.results[0].value
 
@@ -169,15 +175,13 @@ describe('Fetcher startResourceFetch context', () => {
 
     // we will test doFetch elsewhere
     vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
-      return new Promise((resolve) => {
-        resolve({
-          _data: {
-            resource_iris: [
-              '/manifest-resource-1',
-              '/manifest-resource-2'
-            ]
-          }
-        })
+      return Promise.resolve({
+        _data: {
+          resource_iris: [
+            '/manifest-resource-1',
+            '/manifest-resource-2'
+          ]
+        }
       })
     })
 
@@ -208,12 +212,10 @@ describe('Fetcher startResourceFetch context', () => {
   test('We log if no manifest resources are found', async () => {
     // we will test doFetch elsewhere
     vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
-      return new Promise((resolve) => {
-        resolve({
-          _data: {
-            resource_iris: []
-          }
-        })
+      return Promise.resolve({
+        _data: {
+          resource_iris: []
+        }
       })
     })
     await fetcher.fetchRoute('/some-fetch-path')
@@ -222,10 +224,8 @@ describe('Fetcher startResourceFetch context', () => {
 
   test('We log if the data returned does not contain manifest resources', async () => {
     vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
-      return new Promise((resolve) => {
-        resolve({
-          _data: {}
-        })
+      return Promise.resolve({
+        _data: {}
       })
     })
     await fetcher.fetchRoute('/some-fetch-path')
@@ -328,9 +328,7 @@ describe('fetcher fetchAndSaveResource context', () => {
         }
       }
     })
-    // vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation(() => {
-    //   return Promise.resolve('fetchValidateResponse')
-    // })
+
     const apiCwaResource = {
       '@id': '/resource-id',
       '@type': 'mytype',
@@ -420,6 +418,10 @@ describe('doFetch will add path and call to create the promise and return the ge
     vi.spyOn(fetcher, 'createFetchPromise').mockImplementation(() => {
       return 'someFetchPromise'
     })
+    vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation(() => {
+      return 'fetchValidateResponse'
+    })
+
     const fetchStatusInstance = FetchStatus.mock.results[0].value
     vi.spyOn(fetchStatusInstance, 'addPath')
 
@@ -434,7 +436,11 @@ describe('doFetch will add path and call to create the promise and return the ge
   })
 })
 
-describe.todo('createFetchPromise')
+describe.todo('createFetchPromise', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+})
 
 describe.todo('fetchNestedResources will loop through nested resources to fetch appropriate properties', () => {
   afterEach(() => {
@@ -459,3 +465,5 @@ describe.todo('fetchRoute functionality, mocking all calls as they are re-used p
     vi.clearAllMocks()
   })
 })
+
+// TEST WE SHOULD ONLY INITIALISE MECURE ONCE

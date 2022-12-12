@@ -84,6 +84,9 @@ export default class Fetcher {
       const fetchPromise = this.doFetch(fetchEvent)
       resource = await this.fetchAndValidateCwaResource(fetchPromise)
     } catch (error) {
+      if (!(error instanceof FetchError) && !(error instanceof InvalidResourceResponse)) {
+        throw error
+      }
     }
 
     if (resource) {
@@ -92,7 +95,7 @@ export default class Fetcher {
       })
       try {
         await this.fetchNestedResources(resource)
-      } catch (fetchNestedResourcesError) {}
+      } catch (error) {}
     }
 
     const finishFetchEvent: FinishResourceFetchEvent = {
@@ -165,7 +168,7 @@ export default class Fetcher {
     const responseData = response._data
     const isValidResponse = isCwaResource(responseData)
     if (!isValidResponse) {
-      throw new InvalidResourceResponse('The response provided by the API was not a valid CWA Resource', responseData)
+      throw new InvalidResourceResponse('The response provided by the API is not a valid CWA Resource', responseData)
     }
     return responseData
   }
@@ -217,7 +220,7 @@ export default class Fetcher {
 
     // handle fetch errors whether we are getting a resource or manifest
     if (event.fetchError) {
-      this.handleFetchError(event.fetchError)
+      this.handleEventFetchError(event.fetchError)
     }
   }
 
@@ -233,7 +236,7 @@ export default class Fetcher {
     consola.success(`Manifest fetched ${manifestResources.length} resources`)
   }
 
-  private handleFetchError (error: FetchError) {
+  private handleEventFetchError (error: FetchError) {
     // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
     if (error.statusCode === 404) {
       return
@@ -255,6 +258,8 @@ export default class Fetcher {
     } catch (error) {
       if (error instanceof FetchError) {
         fetchError = error
+      } else {
+        throw error
       }
     }
     if (manifestResources) {
@@ -319,25 +324,24 @@ export default class Fetcher {
   private createFetchPromise (event: FetchEventInterface): CwaFetcherAsyncResponse {
     const url = this.appendQueryToPath(event.path)
     const headers = this.createRequestHeaders(event)
-
-    const onResponse = (context: FetchContext & { response: FetchResponse<any> }): Promise<void> | void => {
-      const linkHeader = context.response.headers.get('link')
-      if (linkHeader) {
-        this.mercure.setMercureHubFromLinkHeader(linkHeader)
-        this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
-      }
-      return context.response._data
-    }
-
-    const onRequestError = (ctx: FetchContext & { error: Error }): Promise<void> | void => {
-      throw createFetchError<undefined>(ctx.request, ctx.error)
-    }
-
     return this.cwaFetch.fetch.raw<any>(url, {
       headers,
-      onResponse,
-      onRequestError
+      onResponse: context => (this.handleFetchResponse(context)),
+      onRequestError: this.handleFetchError
     })
+  }
+
+  private handleFetchResponse (context: FetchContext & { response: FetchResponse<any> }): Promise<void> | void {
+    const linkHeader = context.response.headers.get('link')
+    if (linkHeader) {
+      this.mercure.setMercureHubFromLinkHeader(linkHeader)
+      this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
+    }
+    return context.response._data
+  }
+
+  private handleFetchError (ctx: FetchContext & { error: Error }): Promise<void> | void {
+    throw createFetchError<undefined>(ctx.request, ctx.error)
   }
 
   private createRequestHeaders (event: FetchEventInterface): { path: string; preload?: string } {
