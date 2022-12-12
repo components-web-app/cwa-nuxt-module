@@ -61,8 +61,10 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     },
     startFetchStatus (event: _StartFetchEvent): boolean {
       // there are other fetches ongoing, so we have not re-initialised the primary state
+      // even if it is the same fetch path, it is not this status responsibility to return an existing promise
+      // it may not exist yet so we can continue to create it
       if (fetcherGetters.inProgress.value) {
-        return event.path !== fetcherState.status.fetch?.path
+        return true
       }
 
       const previousSuccessfulFetchSame = event.path === fetcherState.status.fetched?.path

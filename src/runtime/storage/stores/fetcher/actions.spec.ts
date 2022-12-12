@@ -108,7 +108,7 @@ describe('FetcherStore startFetchStatus context', () => {
     vi.clearAllMocks()
   })
   // should not initialise
-  test('When starting a fetch we should not continue if the current fetch is the same path even with a new token', () => {
+  test('When starting a fetch we should can continue if the current fetch path is the same, the fetch promise may not exist yet. FetchStatus will determine this', () => {
     const state = createState({ fetch: { path: 'fetching-path', token: 'start-token' } })
     const getterFns = getters(state)
     const fetcherActions = actions(state, getterFns, resourcesStore)
@@ -117,7 +117,7 @@ describe('FetcherStore startFetchStatus context', () => {
       path: 'fetching-path',
       token: 'new-start-token'
     })
-    expect(shouldContinue).toBeFalsy()
+    expect(shouldContinue).toBeTruthy()
     expect(resourcesStore.useStore).not.toHaveBeenCalled()
     expect(state.status.fetch?.success).toBeUndefined()
     expect(state.status.fetch?.path).toBe('fetching-path')
