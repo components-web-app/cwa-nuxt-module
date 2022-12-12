@@ -1,6 +1,7 @@
-import { describe, test, vi, expect, afterEach } from 'vitest'
+import { describe, test, vi, expect, afterEach, beforeAll, beforeEach } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ohmyfetch'
+import consola from 'consola'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -23,6 +24,9 @@ function createRoute (): RouteLocationNormalizedLoaded {
     redirectedFrom: undefined
   }
 }
+
+
+vi.mock('consola')
 
 type TestStore = { useStore(): any }
 
@@ -91,24 +95,21 @@ describe('Initialise a fetcher', () => {
 })
 
 describe('Fetcher startResourceFetch context', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
+  let fetcher: Fetcher
 
-  test('Fetch status is started and resource is initialised in store', async () => {
+  beforeEach(() => {
     FetchStatus.mockImplementation(() => {
       return {
         startFetch: vi.fn(),
         finishFetch: vi.fn(() => {
           return new Promise(resolve => (resolve(true)))
-        })
+        }),
+        setFetchManifestStatus: vi.fn(() => true)
       }
     })
-    const fetcher = createFetcher()
+    fetcher = createFetcher()
 
     const fetchStatusInstance = FetchStatus.mock.results[0].value
-    const mercureInstance = Mercure.mock.results[0].value
-
     const startFetchEvent = { path: '/some-fetch-path' }
     vi.spyOn(fetchStatusInstance, 'startFetch').mockImplementation(() => {
       return {
@@ -119,6 +120,21 @@ describe('Fetcher startResourceFetch context', () => {
         }
       }
     })
+
+    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {
+      return Promise.resolve()
+    })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Fetch status is started and resource is initialised in store', async () => {
+    const fetchStatusInstance = FetchStatus.mock.results[0].value
+    const mercureInstance = Mercure.mock.results[0].value
+
+    const startFetchEvent = { path: '/some-fetch-path' }
 
     await fetcher.fetchAndSaveResource(startFetchEvent)
 
@@ -132,18 +148,7 @@ describe('Fetcher startResourceFetch context', () => {
     expect(mercureInstance.init).toHaveBeenCalledTimes(1)
   })
 
-  test('Manifest fetching is started and errors are handled', async () => {
-    FetchStatus.mockImplementation(() => {
-      return {
-        startFetch: vi.fn(),
-        finishFetch: vi.fn(() => {
-          return new Promise(resolve => (resolve(true)))
-        }),
-        setFetchManifestStatus: vi.fn(() => true)
-      }
-    })
-    const fetcher = createFetcher()
-
+  test('Manifest fetching is started', async () => {
     const fetchStatusInstance = FetchStatus.mock.results[0].value
 
     const startFetchEvent = { path: '/some-fetch-path' }
@@ -171,21 +176,10 @@ describe('Fetcher startResourceFetch context', () => {
       })
     })
 
-    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {
-      return Promise.resolve()
-    })
-
     // we will actually fetch the resolved manifest endpoints
     await fetcher.fetchRoute(startFetchEvent.path)
-    expect(fetcher.fetchBatch).toBeCalledWith({
-      paths: [
-        '/manifest-resource-1',
-        '/manifest-resource-2'
-      ]
-    })
 
     // fetch manifest statuses are updated
-    expect(fetchStatusInstance.setFetchManifestStatus).toBeCalledTimes(2)
     expect(fetchStatusInstance.setFetchManifestStatus).toBeCalledWith({
       path: '/_/routes_manifest//some-fetch-path',
       inProgress: true
@@ -194,12 +188,53 @@ describe('Fetcher startResourceFetch context', () => {
       path: '/_/routes_manifest//some-fetch-path',
       inProgress: false
     })
+    expect(fetchStatusInstance.setFetchManifestStatus).toBeCalledTimes(2)
 
-    // Handle errors
-    const exampleFetchError = new FetchError()
-    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {
+    expect(fetcher.fetchBatch).toBeCalledWith({
+      paths: [
+        '/manifest-resource-1',
+        '/manifest-resource-2'
+      ]
+    })
+
+    expect(consola.success).toBeCalledWith('Manifest fetched 2 resources')
+  })
+
+  test('We log if no manifest resources are found', async () => {
+    // we will test doFetch elsewhere
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolve({
+          _data: {
+            resource_iris: []
+          }
+        })
+      })
+    })
+    await fetcher.fetchRoute('/some-fetch-path')
+    expect(consola.info).toBeCalledWith('Manifest fetch did not return any resources')
+  })
+
+  test('We log if the data returned does not contain manifest resources', async () => {
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolve({
+          _data: {}
+        })
+      })
+    })
+    await fetcher.fetchRoute('/some-fetch-path')
+    expect(consola.warn).toBeCalledWith('Unable to fetch manifest resources')
+  })
+
+  test('If there is a network or fetch error getting the manifest, we save the error', async () => {
+    const fetchStatusInstance = FetchStatus.mock.results[0].value
+    // we will test doFetch elsewhere
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
       throw exampleFetchError
     })
+    // Handle errors
+    const exampleFetchError = new FetchError()
     await fetcher.fetchRoute('/some-fetch-path')
     expect(fetchStatusInstance.setFetchManifestStatus).toBeCalledWith({
       path: '/_/routes_manifest//some-fetch-path',
@@ -208,7 +243,26 @@ describe('Fetcher startResourceFetch context', () => {
     })
   })
 
-  test('startResourceFetch will return the fetchStatus.startFetch result', async () => {
+  test('fetchManifest catches fetchBatch errors silently', async () => {
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
+      return new Promise((resolve) => {
+        resolve({
+          _data: {
+            resource_iris: []
+          }
+        })
+      })
+    })
+    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {
+      throw Error()
+    })
+    vi.spyOn(fetcher, 'fetchManifest')
+
+    await fetcher.fetchRoute('/some-fetch-path')
+    expect(fetcher.fetchManifest).not.toThrowError
+  })
+
+  test.todo('startResourceFetch will return the fetchStatus.startFetch result', async () => {
     const startFetchEvent = { path: '/some-fetch-path' }
     const startFetchResponse = {
       continueFetching: false,
@@ -354,3 +408,19 @@ describe('fetcher fetchAndSaveResource context', () => {
     expect(resource).toBeUndefined()
   })
 })
+
+describe.todo('doFetch will add path and promise and do the fetch', () => {
+
+})
+
+describe.todo('fetchNestedResources will loop through nexted resources to fetch appropriate properties', () => {
+
+})
+
+describe.todo('fetchBatch returns a bluebird promise map', () => {
+
+})
+
+describe.todo('finishResourceFetch functionality', () => {})
+
+describe.todo('fetchRoute functionality, mocking all calls as they are re-used processes from other tests, just ensure functions are all called', () => {})

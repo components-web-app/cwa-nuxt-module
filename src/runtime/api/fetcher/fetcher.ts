@@ -251,20 +251,23 @@ export default class Fetcher {
     try {
       response = await this.doFetch({ path })
       manifestResources = response?._data?.resource_iris
-      if (manifestResources) {
-        await this.fetchBatch({ paths: manifestResources })
-      }
     } catch (error) {
       if (error instanceof FetchError) {
         fetchError = error
       }
-    } finally {
-      this.fetchStatus.setFetchManifestStatus({
-        path,
-        inProgress: false,
-        fetchError
-      })
     }
+    if (manifestResources) {
+      try {
+        await this.fetchBatch({ paths: manifestResources })
+      } catch (err) {
+        // noop
+      }
+    }
+    this.fetchStatus.setFetchManifestStatus({
+      path,
+      inProgress: false,
+      fetchError
+    })
     return manifestResources
   }
 
