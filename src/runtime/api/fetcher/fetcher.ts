@@ -187,7 +187,9 @@ export default class Fetcher {
     const startFetchStatusResponse = this.fetchStatus.startFetch(startFetchEvent)
 
     if (!startFetchStatusResponse.continueFetching) {
-      this.mercure.init()
+      if (!startFetchStatusResponse.startFetchToken.existingFetchPromise) {
+        this.mercure.init()
+      }
       return startFetchStatusResponse
     }
 

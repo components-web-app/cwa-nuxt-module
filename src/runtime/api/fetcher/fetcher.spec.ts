@@ -292,6 +292,59 @@ describe('Fetcher startResourceFetch context', () => {
     await fetcher.fetchAndSaveResource(startFetchEvent)
     expect(fetcher.startResourceFetch.mock.results[0].value).toStrictEqual(startFetchResponse)
   })
+
+  test('startResourceFetch will not initialise mercure if continuing and there is an existing promise', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const startFetchResponse = {
+      continueFetching: false,
+      startFetchToken: {
+        token: 'new-token',
+        startEvent: startFetchEvent,
+        existingFetchPromise: 'existing-promise'
+      }
+    }
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation(() => {
+      return {}
+    })
+
+    const fetchStatusInstance = FetchStatus.mock.results[0].value
+    fetchStatusInstance.startFetch.mockImplementationOnce(() => {
+      return startFetchResponse
+    })
+
+    const mercureInstance = Mercure.mock.results[0].value
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+
+    expect(fetchStatusInstance.startFetch).toBeCalledWith(startFetchEvent)
+    // in the finish it will have been called
+    expect(mercureInstance.init).not.toHaveBeenCalled()
+  })
+
+  test('startResourceFetch will initialise mercure if continuing and there is not an existing promise', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const startFetchResponse = {
+      continueFetching: false,
+      startFetchToken: {
+        token: 'new-token',
+        startEvent: startFetchEvent
+      }
+    }
+
+    const fetchStatusInstance = FetchStatus.mock.results[0].value
+    fetchStatusInstance.startFetch.mockImplementationOnce(() => {
+      return startFetchResponse
+    })
+
+    const mercureInstance = Mercure.mock.results[0].value
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+
+    expect(fetchStatusInstance.startFetch).toBeCalledWith(startFetchEvent)
+    // in the finish it will have been called
+    expect(mercureInstance.init).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('fetcher fetchAndSaveResource context', () => {
