@@ -1,4 +1,4 @@
-import { describe, test, vi, expect, afterEach, beforeEach } from 'vitest'
+import { describe, test, vi, expect, afterEach, beforeEach, beforeAll } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
@@ -8,16 +8,18 @@ import Mercure from '../mercure'
 import { MercureStore } from '../../storage/stores/mercure/mercure-store'
 import ApiDocumentation from '../api-documentation'
 import { ApiDocumentationStore } from '../../storage/stores/api-documentation/api-documentation-store'
+import { CwaResourceTypes } from '../../resources/resource-utils'
 import Fetcher from './fetcher'
 import FetchStatus from './fetch-status'
 import CwaFetch from './cwa-fetch'
+import preloadHeaders from './preload-headers'
 
-function createRoute (): RouteLocationNormalizedLoaded {
+function createRoute (path = '/', query = {}): RouteLocationNormalizedLoaded {
   return {
     name: '',
-    path: '/',
+    path,
     fullPath: '/',
-    query: {},
+    query,
     hash: '',
     matched: [],
     params: {},
@@ -77,15 +79,24 @@ vi.mock('./fetch-status', () => {
         finishFetch: vi.fn(() => {
           return new Promise(resolve => (resolve(true)))
         }),
-        setFetchManifestStatus: vi.fn(() => true)
+        setFetchManifestStatus: vi.fn(() => true),
+        path: '/fetch-status-path'
       }
     })
   }
 })
-vi.mock('./cwa-fetch')
+vi.mock('./cwa-fetch', () => {
+  return {
+    default: vi.fn(() => ({
+      fetch: {
+        raw: vi.fn()
+      }
+    }))
+  }
+})
 
 let fetcherStoreMock: FetcherStore
-function createFetcher () {
+function createFetcher (currentPath = '/', query = {}) {
   const storeName = 'customStoreName'
   const resourcesStoreMock = new ResourcesStore(storeName)
   fetcherStoreMock = new FetcherStore(storeName, resourcesStoreMock)
@@ -96,7 +107,7 @@ function createFetcher () {
   const cwaFetch = new CwaFetch('https://api-url')
   const apiDocumentationMock = new ApiDocumentation(apiUrl, apiDocumentationStoreMock)
 
-  return new Fetcher(cwaFetch, fetcherStoreMock, resourcesStoreMock, createRoute(), mercureMock, apiDocumentationMock)
+  return new Fetcher(cwaFetch, fetcherStoreMock, resourcesStoreMock, createRoute(currentPath, query), mercureMock, apiDocumentationMock)
 }
 
 describe('Initialise a fetcher', () => {
@@ -436,9 +447,58 @@ describe('doFetch will add path and call to create the promise and return the ge
   })
 })
 
-describe.todo('createFetchPromise', () => {
-  afterEach(() => {
+describe('createFetchPromise', () => {
+  const startFetchEvent = { path: '/_/routes//some-fetch-path' }
+  let fetcher: Fetcher
+
+  beforeAll(() => {
+    fetcher = createFetcher('/?queryParam=value', { queryParam: 'value' })
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent: startFetchEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'appendQueryToPath')
+    vi.spyOn(fetcher, 'createRequestHeaders')
+    CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {
+      return Promise.resolve({
+        _data: {}
+      })
+    })
+  })
+
+  test('Requests have the current querystring appended and the return is the result of fetch.raw', async () => {
+    vi.spyOn(fetcher, 'createFetchPromise')
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+
+    expect(fetcher.appendQueryToPath).toBeCalledWith(startFetchEvent.path)
+    expect(fetcher.appendQueryToPath.mock.results[0].value).toBe('/_/routes//some-fetch-path?queryParam=value')
+    expect(fetcher.createFetchPromise.mock.results[0]).toStrictEqual(CwaFetch.mock.results[0].value.fetch.raw.mock.results[0])
+  })
+
+  test('We create the appropriate request headers', () => {
+    expect(fetcher.createRequestHeaders).toBeCalledWith(startFetchEvent)
+    expect(fetcher.createRequestHeaders.mock.results[0].value).toStrictEqual({
+      path: '/fetch-status-path',
+      preload: preloadHeaders[CwaResourceTypes.ROUTE].join(',')
+    })
+  })
+
+  test('We can override the preload headers', async () => {
     vi.clearAllMocks()
+    startFetchEvent.preload = ['/some-preload']
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.createRequestHeaders.mock.results[0].value).toStrictEqual({
+      path: '/fetch-status-path',
+      preload: '/some-preload'
+    })
   })
 })
 
@@ -446,6 +506,8 @@ describe.todo('fetchNestedResources will loop through nested resources to fetch 
   afterEach(() => {
     vi.clearAllMocks()
   })
+
+  test('We only initialise Mercure once', () => {})
 })
 
 describe.todo('fetchBatch returns a bluebird promise map', () => {
@@ -465,5 +527,3 @@ describe.todo('fetchRoute functionality, mocking all calls as they are re-used p
     vi.clearAllMocks()
   })
 })
-
-// TEST WE SHOULD ONLY INITIALISE MECURE ONCE
