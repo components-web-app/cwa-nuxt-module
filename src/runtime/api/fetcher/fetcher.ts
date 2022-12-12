@@ -257,11 +257,7 @@ export default class Fetcher {
       }
     }
     if (manifestResources) {
-      try {
-        await this.fetchBatch({ paths: manifestResources })
-      } catch (err) {
-        // noop
-      }
+      await this.fetchBatch({ paths: manifestResources })
     }
     this.fetchStatus.setFetchManifestStatus({
       path,

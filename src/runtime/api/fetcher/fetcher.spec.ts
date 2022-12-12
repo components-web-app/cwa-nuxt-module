@@ -67,7 +67,19 @@ vi.mock('../mercure', () => {
   }
 })
 vi.mock('../api-documentation')
-vi.mock('./fetch-status')
+vi.mock('./fetch-status', () => {
+  return {
+    default: vi.fn(() => {
+      return {
+        startFetch: vi.fn(),
+        finishFetch: vi.fn(() => {
+          return new Promise(resolve => (resolve(true)))
+        }),
+        setFetchManifestStatus: vi.fn(() => true)
+      }
+    })
+  }
+})
 
 let fetcherStoreMock: FetcherStore
 function createFetcher () {
@@ -97,17 +109,7 @@ describe('Fetcher startResourceFetch context', () => {
   let fetcher: Fetcher
 
   beforeEach(() => {
-    FetchStatus.mockImplementation(() => {
-      return {
-        startFetch: vi.fn(),
-        finishFetch: vi.fn(() => {
-          return new Promise(resolve => (resolve(true)))
-        }),
-        setFetchManifestStatus: vi.fn(() => true)
-      }
-    })
     fetcher = createFetcher()
-
     const fetchStatusInstance = FetchStatus.mock.results[0].value
     const startFetchEvent = { path: '/some-fetch-path' }
     vi.spyOn(fetchStatusInstance, 'startFetch').mockImplementation(() => {
@@ -242,26 +244,7 @@ describe('Fetcher startResourceFetch context', () => {
     })
   })
 
-  test('fetchManifest catches fetchBatch errors silently', async () => {
-    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
-      return new Promise((resolve) => {
-        resolve({
-          _data: {
-            resource_iris: []
-          }
-        })
-      })
-    })
-    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {
-      throw new Error('Any error')
-    })
-    vi.spyOn(fetcher, 'fetchManifest')
-
-    await fetcher.fetchRoute('/some-fetch-path')
-    expect(fetcher.fetchManifest).not.toThrowError()
-  })
-
-  test.todo('startResourceFetch will return the fetchStatus.startFetch result', async () => {
+  test('startResourceFetch will return the fetchStatus.startFetch result', async () => {
     const startFetchEvent = { path: '/some-fetch-path' }
     const startFetchResponse = {
       continueFetching: false,
