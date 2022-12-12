@@ -3,6 +3,7 @@ import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
 import { reactive } from 'vue'
+import * as ohmyfetch from 'ohmyfetch'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -102,6 +103,7 @@ vi.mock('./cwa-fetch', () => {
     }))
   }
 })
+vi.mock('ohmyfetch')
 
 let fetcherStoreMock: FetcherStore
 let currentRoute: RouteLocationNormalizedLoaded
@@ -577,22 +579,27 @@ describe('handleFetchResponse', () => {
 
   test('call to set the api documentation and mercure url\'s from the link header and return the response data', async () => {
     await fetcher.fetchAndSaveResource(startFetchEvent)
-    CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].onResponse({ response: { _data: { dataKey: 'dataValue' }, headers: { get: vi.fn((type) => (type === 'link' ? 'linkheader' : undefined)) } } })
+    CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].onResponse({ response: { _data: { dataKey: 'dataValue' }, headers: { get: vi.fn(type => (type === 'link' ? 'linkheader' : undefined)) } } })
     expect(Mercure.mock.results[0].value.setMercureHubFromLinkHeader).toHaveBeenCalledWith('linkheader')
     expect(ApiDocumentation.mock.results[0].value.setDocsPathFromLinkHeader).toHaveBeenCalledWith('linkheader')
     expect(fetcher.handleFetchResponse.mock.results[0].value).toStrictEqual({
       dataKey: 'dataValue'
     })
   })
-})
-
-describe.todo('handleFetchError', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
 
   test('create a fetch error', () => {
-
+    // @ts-ignore
+    vi.spyOn(ohmyfetch, 'createFetchError').mockImplementation(() => {
+      return new Error('mocked-fetch-error')
+    })
+    const omfOnRequestErrorFn = CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].onRequestError
+    expect(() => {
+      omfOnRequestErrorFn({
+        request: 'my-request',
+        error: 'this is the error'
+      })
+    }).toThrowError('mocked-fetch-error')
+    expect(ohmyfetch.createFetchError).toHaveBeenCalledWith('my-request', 'this is the error')
   })
 })
 
