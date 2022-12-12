@@ -485,18 +485,28 @@ describe('createFetchPromise', () => {
     expect(fetcher.createFetchPromise.mock.results[0]).toStrictEqual(CwaFetch.mock.results[0].value.fetch.raw.mock.results[0])
   })
 
+  test('Use an ampersand delimiter if the current path has a query already', async () => {
+    vi.spyOn(fetcher, 'createFetchPromise')
+
+    fetcher.appendQueryToPath.mockClear()
+    await fetcher.fetchAndSaveResource({ path: '/_/routes//some-fetch-path?existingQuery' })
+    expect(fetcher.appendQueryToPath.mock.results[0].value).toBe('/_/routes//some-fetch-path?existingQuery&queryParam=value')
+  })
+
   test('Requests can handle no query existing so will not append to fetch.raw', async () => {
     currentRoute.query = {}
 
+    fetcher.appendQueryToPath.mockClear()
     await fetcher.fetchAndSaveResource(startFetchEvent)
-    expect(fetcher.appendQueryToPath.mock.results[1].value).toBe('/_/routes//some-fetch-path')
+    expect(fetcher.appendQueryToPath.mock.results[0].value).toBe('/_/routes//some-fetch-path')
   })
 
   test('Requests can handle no query existing so will not append to fetch.raw', async () => {
     currentRoute.query = undefined
 
+    fetcher.appendQueryToPath.mockClear()
     await fetcher.fetchAndSaveResource(startFetchEvent)
-    expect(fetcher.appendQueryToPath.mock.results[2].value).toBe('/_/routes//some-fetch-path')
+    expect(fetcher.appendQueryToPath.mock.results[0].value).toBe('/_/routes//some-fetch-path')
   })
 
   test('We create the appropriate request headers', () => {
