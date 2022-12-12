@@ -66,11 +66,18 @@ vi.mock('../../storage/stores/api-documentation/api-documentation-store', () => 
 vi.mock('../mercure', () => {
   return {
     default: vi.fn(() => ({
-      init: vi.fn()
+      init: vi.fn(),
+      setMercureHubFromLinkHeader: vi.fn()
     }))
   }
 })
-vi.mock('../api-documentation')
+vi.mock('../api-documentation', () => {
+  return {
+    default: vi.fn(() => ({
+      setDocsPathFromLinkHeader: vi.fn()
+    }))
+  }
+})
 vi.mock('./fetch-status', () => {
   return {
     default: vi.fn(() => {
@@ -538,7 +545,7 @@ describe('createFetchPromise', () => {
   })
 })
 
-describe.todo('handleFetchResponse', () => {
+describe('handleFetchResponse', () => {
   const startFetchEvent = { path: '/_/routes//some-fetch-path' }
   let fetcher: Fetcher
 
@@ -557,6 +564,8 @@ describe.todo('handleFetchResponse', () => {
     vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
     vi.spyOn(fetcher, 'appendQueryToPath')
     vi.spyOn(fetcher, 'createRequestHeaders')
+    vi.spyOn(fetcher, 'handleFetchError')
+    vi.spyOn(fetcher, 'handleFetchResponse')
     CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {
       return Promise.resolve({
         _data: {
@@ -568,6 +577,12 @@ describe.todo('handleFetchResponse', () => {
 
   test('call to set the api documentation and mercure url\'s from the link header and return the response data', async () => {
     await fetcher.fetchAndSaveResource(startFetchEvent)
+    CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].onResponse({ response: { _data: { dataKey: 'dataValue' }, headers: { get: vi.fn((type) => (type === 'link' ? 'linkheader' : undefined)) } } })
+    expect(Mercure.mock.results[0].value.setMercureHubFromLinkHeader).toHaveBeenCalledWith('linkheader')
+    expect(ApiDocumentation.mock.results[0].value.setDocsPathFromLinkHeader).toHaveBeenCalledWith('linkheader')
+    expect(fetcher.handleFetchResponse.mock.results[0].value).toStrictEqual({
+      dataKey: 'dataValue'
+    })
   })
 })
 
