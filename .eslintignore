@@ -1,4 +1,4 @@
 dist
 node_modules
 docs
-src/runtime/plugin.template.ts
+src/templates/

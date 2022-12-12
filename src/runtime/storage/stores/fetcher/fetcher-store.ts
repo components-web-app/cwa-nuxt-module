@@ -1,37 +1,42 @@
 import {
-  _ExtractActionsFromSetupStore,
-  _ExtractGettersFromSetupStore,
-  _ExtractStateFromSetupStore,
-  defineStore, StoreDefinition
+  defineStore
 } from 'pinia'
-import { CwaStoreInterface } from '../cwa-store-interface'
+import {
+  CwaPiniaStoreDefinitionInterface,
+  CwaPiniaStoreInterface,
+  CwaStore
+} from '../cwa-store-types'
 import { ResourcesStore } from '../resources/resources-store'
 import CwaFetcherActions, { CwaFetcherActionsInterface } from './actions'
 import CwaFetcherState, { CwaFetcherStateInterface } from './state'
+import CwaFetcherGetters, { CwaFetcherGettersInterface } from './getters'
 
 /**
  * Interface Definitions
  */
-export interface CwaFetcherInterface extends CwaFetcherStateInterface, CwaFetcherActionsInterface {}
-export interface CwaFetcherStoreInterface extends StoreDefinition<`${string}.fetcher`, _ExtractStateFromSetupStore<CwaFetcherInterface>, _ExtractGettersFromSetupStore<CwaFetcherInterface>, _ExtractActionsFromSetupStore<CwaFetcherInterface>> {}
+export interface CwaFetcherInterface extends CwaFetcherStateInterface, CwaFetcherActionsInterface, CwaFetcherGettersInterface {}
+export interface CwaFetcherStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.fetcher`, CwaFetcherInterface> {}
+export interface CwaFetcherStoreInterface extends CwaPiniaStoreInterface<`${string}.fetcher`, CwaFetcherInterface> {}
 
 /**
  * Main Store Class
  */
-export class FetcherStore implements CwaStoreInterface {
-  private readonly storeDefinition: CwaFetcherStoreInterface
+export class FetcherStore implements CwaStore {
+  private readonly storeDefinition: CwaFetcherStoreDefinitionInterface
 
   constructor (storeName: string, resourcesStore: ResourcesStore) {
     this.storeDefinition = defineStore(`${storeName}.fetcher`, (): CwaFetcherInterface => {
-      const resourcesState = CwaFetcherState()
+      const fetcherState = CwaFetcherState()
+      const getters = CwaFetcherGetters(fetcherState)
       return {
-        ...resourcesState,
-        ...CwaFetcherActions(resourcesState, resourcesStore)
+        ...fetcherState,
+        ...getters,
+        ...CwaFetcherActions(fetcherState, getters, resourcesStore)
       }
     })
   }
 
-  public useStore (): CwaFetcherInterface {
+  public useStore (): CwaFetcherStoreInterface {
     return this.storeDefinition()
   }
 }

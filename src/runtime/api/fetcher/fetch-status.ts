@@ -1,9 +1,36 @@
-import { CwaFetcherInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import { v4 as uuidv4 } from 'uuid'
+import { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import { SetFetchManifestEvent } from '../../storage/stores/fetcher/actions'
 import { CwaFetcherAsyncResponse } from './fetcher'
-import { FinishFetchEvent } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/actions'
+
+export interface StartFetchEvent {
+  path: string,
+  resetCurrentResources?: boolean // should only be allowed if fetchSuccess is not defined
+}
+
+export interface FinishFetchEvent {
+  token: string
+  pageIri?: string
+  fetchSuccess: boolean
+}
+
+interface CreateTokenEvent {
+  existingFetchPromise?: CwaFetcherAsyncResponse
+  startEvent: StartFetchEvent
+}
+
+interface StartFetchToken extends CreateTokenEvent {
+  token: string
+}
+
+export interface StartFetchResponse {
+  startFetchToken: StartFetchToken,
+  continueFetching: boolean
+}
 
 export default class FetchStatus {
   private fetcherStoreDefinition: FetcherStore
+  private paths: { [key: string]: CwaFetcherAsyncResponse|undefined } = {}
 
   constructor (fetcherStore: FetcherStore) {
     this.fetcherStoreDefinition = fetcherStore
@@ -13,57 +40,70 @@ export default class FetchStatus {
    * Data getters
    */
   public get path (): string|undefined {
-    return this.status.fetch.path || this.status.fetched.path
+    return this.status.fetch?.path || this.status.fetched?.path
   }
 
   public getFetchingPathPromise (path: string): CwaFetcherAsyncResponse | null {
-    return this.status.fetch.paths[path] || null
+    return this.paths[path] || null
   }
 
   /**
    * Interface for updating/managing the fetch state
    */
+  public setFetchManifestStatus (event: SetFetchManifestEvent): boolean {
+    return this.fetcherStore.setFetchManifestStatus(event)
+  }
 
-  /**
-   * A promise or true boolean should cancel the request being started
-   */
-  public startFetch (path: string): CwaFetcherAsyncResponse|boolean {
-    if (this.status.fetch.inProgress) {
-      const existingFetchPromise = this.status.fetch.paths?.[path]
+  public startFetch (event: StartFetchEvent): StartFetchResponse {
+    if (this.fetcherStore.inProgress) {
+      const existingFetchPromise = this.getFetchingPathPromise(event.path)
       if (existingFetchPromise) {
-        return existingFetchPromise
+        return {
+          startFetchToken: this.createStartFetchToken({ existingFetchPromise, startEvent: event }),
+          continueFetching: false
+        }
       }
     }
-    if (this.status.fetched.path === path) {
-      // we already did this request last, and it's finished and successful
-      // prevents loading again from route middleware that'll run server and client side
-      // this is also why we use a store for fetcher data to persist state between the two
-      return false
+
+    const startFetchToken = this.createStartFetchToken({ startEvent: event })
+    const continueFetching = this.fetcherStore.startFetchStatus({ ...event, token: startFetchToken.token })
+    return {
+      startFetchToken,
+      continueFetching
     }
-
-    return this.fetcherStore.initFetchStatus({ path })
   }
 
-  public addEndpoint (endpoint: string, promise: CwaFetcherAsyncResponse) {
-    this.fetcherStore.addPath(endpoint, promise)
+  public async finishFetch (event: FinishFetchEvent): Promise<boolean> {
+    const allFetchesFinished = await this.fetcherStore.finishFetchStatus(event)
+    if (allFetchesFinished) {
+      this.paths = {}
+    }
+    return await allFetchesFinished
   }
 
-  public finishFetch ({ path, pageIri, success }: FinishFetchEvent & { success: boolean }) {
-    this.fetcherStore.initFetchStatus({
-      path,
-      pageIri,
-      success
-    })
+  public addPath (endpoint: string, promise: CwaFetcherAsyncResponse) {
+    if (!this.fetcherStore.inProgress) {
+      return
+    }
+    this.paths[endpoint] = promise
   }
 
   /**
    * Internal
    */
-  private get status () {
-    return this.fetcherStore.status
+  private createStartFetchToken (event: CreateTokenEvent): StartFetchToken {
+    const token = uuidv4()
+    return {
+      ...event,
+      token
+    }
   }
 
-  private get fetcherStore (): CwaFetcherInterface {
+  private get status () {
+    return this.fetcherStore.$state.status
+  }
+
+  private get fetcherStore (): CwaFetcherStoreInterface {
     return this.fetcherStoreDefinition.useStore()
   }
 }

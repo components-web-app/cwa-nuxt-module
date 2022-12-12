@@ -1,30 +1,26 @@
-import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
-import { reactive } from '#imports'
+import { reactive } from 'vue'
+import { FetchError } from 'ohmyfetch'
 
-interface FetchStatusInterface {
-  // fetchingEndpoint?: string
-  // endpoints: { [key: string]: CwaFetcherAsyncResponse }
-  // isFetching: boolean
-  // lastFetchSuccess?: boolean
-  // fetchedEndpoint?: string
-  // fetchedPage?: {
-  //   pageIri: string
-  //   endpoint: string
-  // }
-
-  fetch: {
-    path?: string
-    inProgress: boolean
-    paths: { [key: string]: CwaFetcherAsyncResponse|undefined }
+interface FetcherStatusInterface {
+  fetch?: {
+    token: string
+    path: string
     success?: boolean
   }
-  fetched: {
-    path?: string
+  fetched?: {
+    path: string
+  }
+}
+export interface FetcherManifestsInterface {
+  [path: string]: {
+    inProgress: boolean
+    fetchError?: FetchError
   }
 }
 
 export interface CwaFetcherStateInterface {
-  status: FetchStatusInterface
+  status: FetcherStatusInterface
+  manifests: FetcherManifestsInterface
   fetchedPage?: {
     iri: string
     path: string
@@ -32,13 +28,8 @@ export interface CwaFetcherStateInterface {
 }
 
 export default function (): CwaFetcherStateInterface {
-  return reactive({
-    status: {
-      fetch: {
-        inProgress: false,
-        paths: {}
-      },
-      fetched: {}
-    }
-  })
+  return {
+    status: reactive({}),
+    manifests: reactive({})
+  }
 }

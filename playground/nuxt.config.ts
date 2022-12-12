@@ -1,21 +1,17 @@
 import { fileURLToPath } from 'url'
 import { defineNuxtConfig } from 'nuxt/config'
+import { NuxtModule } from '@nuxt/schema'
 import CwaModule from '../src/module'
 
 const API_URL = process.env.API_URL || 'https://localhost:8443'
 const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
-const HOST = process.env.HOST || '0.0.0.0'
 
-const https = process.env.DISABLE_HTTPS
-  ? false
-  : {
-      key: fileURLToPath(new URL('ssl/localhost.key', import.meta.url)),
-      cert: fileURLToPath(new URL('ssl/localhost.crt', import.meta.url))
-    }
+// @ts-ignore
+const module: NuxtModule = CwaModule
 
 export default defineNuxtConfig({
   modules: [
-    CwaModule
+    module
   ],
   cwa: {
     apiUrl: API_URL,
@@ -27,10 +23,11 @@ export default defineNuxtConfig({
   typescript: {
     tsConfig: {
       include: [
-        './src'
+        '../src'
       ],
       exclude: [
-        './src/**/*.spec.ts'
+        '../**/*.spec.ts',
+        '../**/*.test.ts'
       ]
     }
   }

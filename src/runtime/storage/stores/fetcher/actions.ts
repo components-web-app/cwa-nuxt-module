@@ -1,71 +1,114 @@
-import { CwaFetcherAsyncResponse } from '../../../api/fetcher/fetcher'
+import { reactive, watch } from 'vue'
+import { FetchError } from 'ohmyfetch'
+import consola from 'consola'
 import { ResourcesStore } from '../resources/resources-store'
+import { FinishFetchEvent, StartFetchEvent } from '../../../api/fetcher/fetch-status'
 import { CwaFetcherStateInterface } from './state'
+import { CwaFetcherGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/getters'
 
-export interface FinishFetchEvent {
+interface _StartFetchEvent extends StartFetchEvent {
+  token: string
+}
+
+export interface SetFetchManifestEvent {
   path: string
-  pageIri?: string
-  success?: boolean
+  inProgress: boolean
+  fetchError?: FetchError
 }
 
 export interface CwaFetcherActionsInterface {
-  addPath (endpoint: string, promise: CwaFetcherAsyncResponse): void
-  initFetchStatus (event: FinishFetchEvent): boolean
+  setFetchManifestStatus (event: SetFetchManifestEvent): boolean
+  startFetchStatus (event: _StartFetchEvent): boolean
+  finishFetchStatus (event: FinishFetchEvent): Promise<boolean>
 }
 
-export default function (fetcherState: CwaFetcherStateInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
-  return {
-    addPath (path: string, promise: CwaFetcherAsyncResponse) {
-      if (undefined === fetcherState.status.fetch?.path) {
-        return
-      }
-      fetcherState.status.fetch.paths[path] = promise
-    },
-    initFetchStatus ({ path, pageIri, success }: FinishFetchEvent): boolean {
-      const startFetch = success === undefined
-      // do not action if the primary started endpoint is different, or do not start if already in progress
-      const fetchInProgress = fetcherState.status.fetch.inProgress
-      const isExistingFetchPathSame = path === fetcherState.status.fetch.path
+export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
+  // This function is internal and should not be accessible as a store action
+  async function waitForManifestResolve (eventToken: string) {
+    // Create a resolver what we can call elsewhere
+    let watchManifestResolve: (value: void | PromiseLike<void>) => void
+    const watchManifestPromise = new Promise((resolve) => {
+      watchManifestResolve = resolve
+    })
 
-      if (startFetch) {
-        const previousFetchSame = path === fetcherState.status.fetched.path
-        if (previousFetchSame) {
-          // we should not init, it is the same as previous
-          return false
-        }
-        if (fetchInProgress) {
-          // we are already init and in progress
-          return true
-        }
-      } else if (!isExistingFetchPathSame) {
-        // we should not finish up the init, it is a sub request happening and does not match the main endpoint in progress
+    // start watching immediately for the manifest fetch to complete
+    const stopWatchingFn = watch(fetcherGetters.manifestsInProgress, (newInProgressValue) => {
+      if (!newInProgressValue) {
+        consola.trace('Manifests status OK', eventToken)
+        watchManifestResolve()
+      }
+    }, {
+      immediate: true
+    })
+
+    // wait for the custom resolver to be called inside the watch function
+    await watchManifestPromise
+
+    // has to be called outside the watch method itself, or it is called sometimes before initialised
+    stopWatchingFn()
+  }
+
+  return {
+    setFetchManifestStatus (event: SetFetchManifestEvent): boolean {
+      if (event.inProgress && fetcherGetters.manifestInProgress.value(event.path)) {
+        return false
+      }
+      fetcherState.manifests[event.path] = reactive({
+        inProgress: event.inProgress,
+        fetchError: event.fetchError
+      })
+      return true
+    },
+    startFetchStatus (event: _StartFetchEvent): boolean {
+      // there are other fetches ongoing, so we have not re-initialised the primary state
+      if (fetcherGetters.inProgress.value) {
+        return event.path !== fetcherState.status.fetch?.path
+      }
+
+      const previousSuccessfulFetchSame = event.path === fetcherState.status.fetched?.path
+      // we should not re-initialise if the previous fetch is the same or there is any other fetch ongoing
+      if (previousSuccessfulFetchSame) {
+        // we should not initialise, it is the same as previous
         return false
       }
 
-      if (startFetch) {
+      if (event.resetCurrentResources) {
         resourcesStore.useStore().resetCurrentResources()
       }
+      fetcherState.status.fetch = reactive({
+        path: event.path,
+        token: event.token
+      })
+      consola.debug('Primary fetch status initialised', event)
 
-      if (success === true && fetcherState.status.fetch.path) {
-        // if we specify the page then we want to know what endpoint was used to load this page in
-        // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
-        if (pageIri) {
-          fetcherState.fetchedPage = {
-            path: fetcherState.status.fetch.path,
-            iri: pageIri
-          }
-        }
-        fetcherState.status.fetched.path = fetcherState.status.fetch.path
+      return true
+    },
+    async finishFetchStatus (event: FinishFetchEvent): Promise<boolean> {
+      const fetchObj = fetcherState.status.fetch
+      const isExistingFetchSame = event.token === fetchObj?.token
+
+      if (!isExistingFetchSame) {
+        return false
       }
 
-      fetcherState.status.fetch.path = startFetch ? path : undefined
-      fetcherState.status.fetch.inProgress = startFetch
-      if (!startFetch) {
-        fetcherState.status.fetch.success = success
+      await waitForManifestResolve(event.token)
+
+      consola.debug('Primary fetch status finished', event)
+
+      fetchObj.success = event.fetchSuccess
+      if (!event.fetchSuccess) {
+        return true
       }
-      // clear previous endpoints on new request, or we have successfully finished the request stack
-      if (startFetch || success) {
-        fetcherState.status.fetch.paths = {}
+
+      fetcherState.status.fetched = reactive({ path: fetchObj.path })
+
+      // if we specify the page then we want to know what endpoint was used to load this page in
+      // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
+      if (event.pageIri) {
+        fetcherState.fetchedPage = reactive({
+          path: fetchObj.path,
+          iri: event.pageIri
+        })
       }
       return true
     }

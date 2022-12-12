@@ -1,7 +1,6 @@
-import { FetchError } from 'ohmyfetch'
-import { reactive } from '#imports'
+import { reactive } from 'vue'
 
-export interface CwaResourceFetchState {
+export interface CwaResourceApiState {
   status: number|null
   fetchError?: {
     statusCode?: number
@@ -14,7 +13,7 @@ export interface CwaResourceFetchState {
 
 export interface CwaCurrentResourceInterface {
   data?: any
-  fetchState: CwaResourceFetchState
+  apiState: CwaResourceApiState
 }
 
 export interface CwaResourcesStateInterface {
@@ -34,15 +33,15 @@ export interface CwaResourcesStateInterface {
 }
 
 export default function (): CwaResourcesStateInterface {
-  return reactive({
-    current: {
-      byId: {},
+  return {
+    current: reactive({
+      byId: reactive({}),
       allIds: [],
       currentIds: []
-    },
-    new: {
-      byId: {},
+    }),
+    new: reactive({
+      byId: reactive({}),
       allIds: []
-    }
-  })
+    })
+  }
 }

@@ -60,3 +60,6 @@ Temporary Items
 playground/ssl/*
 !playground/ssl/.gitignore
 playground/.env
+
+# stryker temp files
+.stryker-tmp

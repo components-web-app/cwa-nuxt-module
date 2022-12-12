@@ -1,14 +1,19 @@
 import bluebird from 'bluebird'
-import { $fetch, createFetchError, FetchContext, FetchError, FetchResponse } from 'ohmyfetch'
+import { createFetchError, FetchContext, FetchError, FetchResponse } from 'ohmyfetch'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import consola from 'consola'
-import { CwaResourcesInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resource-types'
+import {
+  CwaResourcesStoreInterface,
+  ResourcesStore
+} from '../../storage/stores/resources/resources-store'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import FetchStatus from './fetch-status'
+import { getResourceTypeFromIri, CwaResource, CwaResourceTypes, isCwaResource } from '../../resources/resource-utils'
+import InvalidResourceResponse from '../../errors/invalid-resource-response'
+import FetchStatus, { FinishFetchEvent, StartFetchEvent, StartFetchResponse } from './fetch-status'
 import preloadHeaders from './preload-headers'
+import CwaFetch from './cwa-fetch'
 
 interface FetchEventInterface {
   path: string
@@ -19,7 +24,7 @@ type TypeToNestedPropertiesMap = {
   [T in CwaResourceTypes]: Array<string>;
 }
 
-export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
+const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
   [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
   [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
   [CwaResourceTypes.PAGE_DATA]: ['page'],
@@ -31,181 +36,254 @@ export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap =
 
 export interface CwaFetcherAsyncResponse extends Promise<FetchResponse<CwaResource|any>> {}
 
-export class Fetcher {
-  private readonly apiUrl: string
-  private readonly fetcherStoreDefinition: FetcherStore
+type StartResourceFetchEvent = StartFetchEvent & { manifestPath?: string }
+type FinishResourceFetchEvent = FinishFetchEvent & { fetchError?: FetchError, path: string }
+
+// Todo: How to handle fetching a new page when the previous is still being loaded
+// Todo: how to handle errors produced when fetching. The first primary request should have first class status. All should be put into store
+
+export default class Fetcher {
+  private readonly cwaFetch: CwaFetch
   private readonly resourcesStoreDefinition: ResourcesStore
   private readonly currentRoute: RouteLocationNormalizedLoaded
-  private readonly mercure: Mercure
-  private readonly apiDocumentation: ApiDocumentation
+  public readonly mercure: Mercure
+  public readonly apiDocumentation: ApiDocumentation
   private readonly fetchStatus: FetchStatus
 
-  constructor (apiUrl: string, fetcherStore: FetcherStore, resourcesStore: ResourcesStore, currentRoute: RouteLocationNormalizedLoaded) {
-    this.apiUrl = apiUrl
-    this.fetcherStoreDefinition = fetcherStore
+  constructor (
+    cwaFetch: CwaFetch,
+    fetcherStore: FetcherStore,
+    resourcesStore: ResourcesStore,
+    currentRoute: RouteLocationNormalizedLoaded,
+    mercure: Mercure,
+    apiDocumentation: ApiDocumentation
+  ) {
+    this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStore
     this.currentRoute = currentRoute
-
-    this.mercure = new Mercure()
-    this.apiDocumentation = new ApiDocumentation()
-    this.fetchStatus = new FetchStatus(this.fetcherStoreDefinition)
+    this.mercure = mercure
+    this.apiDocumentation = apiDocumentation
+    this.fetchStatus = new FetchStatus(fetcherStore)
   }
 
   /**
    * PRIMARY FETCHER INTERFACE
    */
-  public async fetchAndSaveResource ({ path, preload }: FetchEventInterface): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(path)
-    if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
-    }
-
-    if (!preload) {
-      preload = this.getPreloadHeadersForPath(path)
-    }
-
-    let response: FetchResponse<any>|undefined
-    try {
-      this.resourcesStore.setResourceFetchStatus({ iri: path, status: 0 })
-      response = await this.doFetch({ path, preload })
-      this.resourcesStore.setResourceFetchStatus({ iri: path, status: 1 })
-    } catch (error) {
-      this.resourcesStore.setResourceFetchStatus({ iri: path, status: -1 })
-      if (error instanceof FetchError) {
-        this.resourcesStore.setResourceFetchError({ iri: path, fetchError: error })
-        // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
-        if (error.statusCode === 404) {
-          return
-        }
-        // network request error
-        if (!error.response) {
-          console.error('[NETWORK ERROR]')
-        }
-        console.error(error.message, JSON.stringify(error))
+  public async fetchAndSaveResource (fetchEvent: FetchEventInterface): Promise<CwaResource|undefined> {
+    const startFetchStatusResponse = this.startResourceFetch({ path: fetchEvent.path })
+    if (!startFetchStatusResponse.continueFetching) {
+      const currentPromise = startFetchStatusResponse.startFetchToken.existingFetchPromise
+      if (!currentPromise) {
         return
       }
-      throw error
+      return this.fetchAndValidateCwaResource(currentPromise)
     }
 
-    if (response?._data) {
+    let resource: CwaResource|undefined
+    let fetchError: FetchError|undefined
+    try {
+      const fetchPromise = this.doFetch(fetchEvent)
+      resource = await this.fetchAndValidateCwaResource(fetchPromise)
+    } catch (error) {
+      if (error instanceof FetchError) {
+        fetchError = error
+      }
+      if (!(error instanceof FetchError) && !(error instanceof InvalidResourceResponse)) {
+        throw error
+      }
+    }
+
+    if (resource) {
       this.resourcesStore.saveResource({
-        resource: response._data
+        resource
       })
-      await this.fetchNestedResources(response._data)
+      try {
+        await this.fetchNestedResources(resource)
+      } catch (error) {}
     }
 
-    this.fetchStatus.finishFetch({ path, success: !!response?._data })
-    return response
+    const finishFetchEvent: FinishResourceFetchEvent = {
+      token: startFetchStatusResponse.startFetchToken.token,
+      path: startFetchStatusResponse.startFetchToken.startEvent.path,
+      fetchSuccess: !!resource,
+      fetchError
+    }
+    await this.finishResourceFetch(finishFetchEvent)
+    return resource
   }
 
   /**
    * Public interfaces for fetching for route middleware
    */
-  public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(path)
-    if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
+  public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|CwaResource|undefined> {
+    const iri = `/_/routes/${path}`
+    const startFetchStatusResponse = this.startResourceFetch({ path: iri, resetCurrentResources: true, manifestPath: `/_/routes_manifest/${path}` })
+    if (!startFetchStatusResponse.continueFetching) {
+      return startFetchStatusResponse.startFetchToken.existingFetchPromise
     }
 
-    // we do not need to wait for this, it will fetch everything from the manifest while we traverse the fetches
-    // thereby not relying on this manifest to resolve everything, but an enhancement to fetch everything we can in a batch
-    this.fetchRoutesManifest(path).then((endpoints) => {
-      if (endpoints) {
-        consola.success('Route manifest fetch complete')
-        consola.trace(endpoints)
-      } else {
-        consola.warn('Route manifest fetch did not resolve any endpoints')
+    let routeResource: CwaResource|undefined
+    try {
+      const fetchAndSaveResponse: CwaResource|undefined = await this.fetchAndSaveResource({ path: iri })
+      if (fetchAndSaveResponse) {
+        routeResource = fetchAndSaveResponse
       }
+    } catch (err) {}
+
+    // todo: do we need to handle if it was a red irect from prop data?.redirectPath
+    await this.finishResourceFetch({
+      token: startFetchStatusResponse.startFetchToken.token,
+      path: startFetchStatusResponse.startFetchToken.startEvent.path,
+      fetchSuccess: routeResource !== undefined,
+      pageIri: routeResource?.pageData || routeResource?.page
     })
-
-    let data: CwaResource|undefined
-    try {
-      const response = await this.fetchAndSaveResource({
-        path: `/_/routes/${path}`
-      })
-      if (!response) {
-        return
-      }
-      data = response._data
-      return response
-    } finally {
-      // todo: do we need to handle if it was a redirect from prop data?.redirectPath
-      this.fetchStatus.finishFetch({
-        path,
-        success: data !== undefined,
-        pageIri: data?.pageData || data?.page
-      })
-    }
+    return routeResource
   }
 
-  public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const startFetch = this.fetchStatus.startFetch(pageIri)
-    if (startFetch !== true) {
-      if (startFetch !== false) {
-        return startFetch
-      }
-      return
-    }
-
-    let data: CwaResource|undefined
-    try {
-      const response = await this.fetchAndSaveResource({
-        path: pageIri
-      })
-      if (!response) {
-        return
-      }
-      data = response._data
-      return response
-    } finally {
-      this.fetchStatus.finishFetch({
-        path: pageIri,
-        success: data !== undefined,
-        pageIri
-      })
-    }
-
-    this.fetchStatus.finishFetch({ path: pageIri, success: false, pageIri })
-  }
+  // public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
+  //   const startFetch = this.startFetch({ path: pageIri, resetCurrentResources: true })
+  //   if (!startFetch) {
+  //     return startFetch
+  //   }
+  //
+  //   let data: CwaResource|undefined
+  //   try {
+  //     const response = await this.fetchAndSaveResource({
+  //       path: pageIri
+  //     })
+  //     if (!response) {
+  //       return
+  //     }
+  //     data = response._data
+  //     return response
+  //   } finally {
+  //     this.finishFetch({
+  //       path: pageIri,
+  //       fetchSuccess: data !== undefined,
+  //       pageIri
+  //     })
+  //   }
+  // }
 
   /**
-   * Internal: fetching
+   * Internal
    */
-  private async fetchRoutesManifest (path: string): Promise<Array<string>|undefined> {
-    let response: FetchResponse<any>|undefined
-    try {
-      response = await this.doFetch({ path: `/_/routes_manifest/${path}` })
-      if (!response) {
-        return
+
+  private async fetchAndValidateCwaResource (fetchPromise: CwaFetcherAsyncResponse): Promise<CwaResource|undefined> {
+    const response = await fetchPromise
+    const responseData = response._data
+    const isValidResponse = isCwaResource(responseData)
+    if (!isValidResponse) {
+      throw new InvalidResourceResponse('The response provided by the API is not a valid CWA Resource', responseData)
+    }
+    return responseData
+  }
+
+  private startResourceFetch (event: StartResourceFetchEvent): StartFetchResponse {
+    const startFetchEvent: StartFetchEvent = {
+      path: event.path,
+      resetCurrentResources: event.resetCurrentResources
+    }
+    const startFetchStatusResponse = this.fetchStatus.startFetch(startFetchEvent)
+
+    if (!startFetchStatusResponse.continueFetching) {
+      this.mercure.init()
+      return startFetchStatusResponse
+    }
+
+    this.resourcesStore.setResourceFetchStatus({ iri: event.path, status: 0 })
+    if (event.manifestPath) {
+      const doManifestFetch = this.fetchStatus.setFetchManifestStatus({
+        path: event.manifestPath,
+        inProgress: true
+      })
+      if (doManifestFetch) {
+        this.fetchManifest(event.manifestPath).then(this.outputManifestResultsToConsole)
       }
-      const manifestResources = response._data.resource_iris
-      await this.fetchBatch({ paths: manifestResources })
-      return manifestResources
-    } catch (error) {
-      // noop
+    }
+    return startFetchStatusResponse
+  }
+
+  private async finishResourceFetch (event: FinishResourceFetchEvent) {
+    // finish the status in resources storage
+    if (event.fetchSuccess) {
+      this.resourcesStore.setResourceFetchStatus({ iri: event.path, status: 1 })
+    } else {
+      this.resourcesStore.setResourceFetchError({ iri: event.path, fetchError: event.fetchError })
+    }
+
+    const finishedAllFetches = await this.fetchStatus.finishFetch({
+      token: event.token,
+      pageIri: event.pageIri,
+      fetchSuccess: event.fetchSuccess
+    })
+
+    // finish status in the fetcher
+    if (finishedAllFetches) {
+      // event source may have died, re-initialise - true if it is a final fetch
+      this.mercure.init()
+    }
+
+    // handle fetch errors whether we are getting a resource or manifest
+    if (event.fetchError) {
+      this.handleEventFetchError(event.fetchError)
     }
   }
 
-  private fetchBatch ({ paths }: { paths: Array<string> }): bluebird<(CwaFetcherAsyncResponse|undefined)[]> {
-    return bluebird
-      .map(
-        paths,
-        (path: string) => {
-          return this.fetchAndSaveResource({ path })
-        },
-        { concurrency: 500 }
-      )
+  private outputManifestResultsToConsole (manifestResources: string[]|undefined) {
+    if (!manifestResources) {
+      consola.warn('Unable to fetch manifest resources')
+      return
+    }
+    if (!manifestResources.length) {
+      consola.info('Manifest fetch did not return any resources')
+      return
+    }
+    consola.success(`Manifest fetched ${manifestResources.length} resources`)
   }
 
-  private fetchNestedResources (resource: any): bluebird<(CwaFetcherAsyncResponse|undefined)[]>|undefined {
+  private handleEventFetchError (error: FetchError) {
+    // 404 can be expected, components which are draft some users may not have access to, we can ignore 404s
+    if (error.statusCode === 404) {
+      return
+    }
+    // network request error
+    if (!error.response) {
+      consola.error('[NETWORK ERROR]')
+    }
+    consola.error(error.message)
+  }
+
+  private async fetchManifest (path: string): Promise<Array<string>|undefined> {
+    let response: FetchResponse<any>|undefined
+    let fetchError: FetchError|undefined
+    let manifestResources: Array<string>|undefined
+    try {
+      response = await this.doFetch({ path })
+      manifestResources = response?._data?.resource_iris
+    } catch (error) {
+      if (error instanceof FetchError) {
+        fetchError = error
+      } else {
+        throw error
+      }
+    }
+    if (manifestResources) {
+      await this.fetchBatch({ paths: manifestResources })
+    }
+    this.fetchStatus.setFetchManifestStatus({
+      path,
+      inProgress: false,
+      fetchError
+    })
+    return manifestResources
+  }
+
+  private fetchNestedResources (resource: CwaResource): bluebird<(CwaResource|undefined)[]>|undefined {
     // check resource type
-    const type = getResourceTypeFromIri(resource['@id'])
+    const iri = resource['@id']
+    consola.trace(`fetchNestedResources for ${iri}`)
+    const type = getResourceTypeFromIri(iri)
     if (!type) {
       return
     }
@@ -225,43 +303,68 @@ export class Fetcher {
     return this.fetchBatch({ paths: nestedIris })
   }
 
-  private doFetch ({ path, preload }: FetchEventInterface): CwaFetcherAsyncResponse|undefined {
-    // pass front-end query parameters to back-end as well
-    const finalUrl = this.appendQueryToPath(path)
-
-    // check if this endpoint is already being called in the current request batch
-    const existingFetch = this.fetchStatus.getFetchingPathPromise(finalUrl)
-    if (existingFetch) {
-      return existingFetch
-    }
-
-    // Apply common required headers
-    const requestHeaders = {
-      path: this.fetchStatus.path,
-      accept: 'application/ld+json,application/json'
-    } as { path: string; accept: string; preload?: string }
-    // Preload headers for Vulcain prefetching support
-    if (preload) {
-      requestHeaders.preload = preload.join(',')
-    }
-
-    // Fetch the endpoint
-    const fetchPromise: CwaFetcherAsyncResponse = $fetch.raw<any>(finalUrl, {
-      baseURL: this.apiUrl,
-      onResponse: (context: FetchContext & { response: FetchResponse<CwaResource> }): Promise<void> | void => {
-        const linkHeader = context.response.headers.get('link')
-        if (linkHeader) {
-          this.mercure.setMercureHubFromLinkHeader(linkHeader)
-          this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
+  private fetchBatch ({ paths }: { paths: Array<string> }): bluebird<(CwaResource|undefined)[]> {
+    // bluebird seems to resolve server-side earlier
+    return bluebird
+      .map(
+        paths,
+        (path: string) => {
+          return this.fetchAndSaveResource({ path })
+        },
+        {
+          concurrency: 10000
         }
-        return context.response._data
-      },
-      onRequestError (ctx: FetchContext & { error: Error }): Promise<void> | void {
-        throw createFetchError<undefined>(ctx.request, ctx.error)
-      }
-    })
-    this.fetchStatus.addEndpoint(finalUrl, fetchPromise)
+      )
+  }
+
+  /**
+   * API fetching functions
+   */
+  private doFetch (event: FetchEventInterface): CwaFetcherAsyncResponse {
+    // Fetch the endpoint
+    const fetchPromise = this.createFetchPromise(event)
+    this.fetchStatus.addPath(event.path, fetchPromise)
     return fetchPromise
+  }
+
+  private createFetchPromise (event: FetchEventInterface): CwaFetcherAsyncResponse {
+    const url = this.appendQueryToPath(event.path)
+    const headers = this.createRequestHeaders(event)
+    return this.cwaFetch.fetch.raw<any>(url, {
+      headers,
+      onResponse: context => (this.handleFetchResponse(context)),
+      onRequestError: this.handleFetchError
+    })
+  }
+
+  private handleFetchResponse (context: FetchContext & { response: FetchResponse<any> }): Promise<void> | void {
+    const linkHeader = context.response.headers.get('link')
+    if (linkHeader) {
+      this.mercure.setMercureHubFromLinkHeader(linkHeader)
+      this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
+    }
+    return context.response._data
+  }
+
+  private handleFetchError (ctx: FetchContext & { error: Error }): Promise<void> | void {
+    throw createFetchError<undefined>(ctx.request, ctx.error)
+  }
+
+  private createRequestHeaders (event: FetchEventInterface): { path: string; preload?: string } {
+    if (!this.fetchStatus.path) {
+      throw new Error('Cannot create a new request to the API before setting the fetch status path.')
+    }
+    let preload = event.preload
+    if (!preload) {
+      const resourceType = getResourceTypeFromIri(event.path)
+      if (resourceType) {
+        preload = preloadHeaders[resourceType]
+      }
+    }
+    return {
+      path: this.fetchStatus.path,
+      preload: preload ? preload.join(',') : undefined
+    }
   }
 
   private appendQueryToPath (path: string): string {
@@ -284,15 +387,7 @@ export class Fetcher {
   /**
    * Internal: getters
    */
-  private get resourcesStore (): CwaResourcesInterface {
+  private get resourcesStore (): CwaResourcesStoreInterface {
     return this.resourcesStoreDefinition.useStore()
-  }
-
-  private getPreloadHeadersForPath (path: string): Array<string>|undefined {
-    const resourceType = getResourceTypeFromIri(path)
-    if (!resourceType) {
-      return
-    }
-    return preloadHeaders[resourceType]
   }
 }
