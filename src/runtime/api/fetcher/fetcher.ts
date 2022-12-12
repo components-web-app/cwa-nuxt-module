@@ -10,6 +10,7 @@ import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { getResourceTypeFromIri, CwaResource, CwaResourceTypes, isCwaResource } from '../../resources/resource-utils'
+import InvalidResourceResponse from '../../errors/invalid-resource-response'
 import FetchStatus, { FinishFetchEvent, StartFetchEvent, StartFetchResponse } from './fetch-status'
 import preloadHeaders from './preload-headers'
 
@@ -34,11 +35,11 @@ const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
 
 export interface CwaFetcherAsyncResponse extends Promise<FetchResponse<CwaResource|any>> {}
 
-declare type StartResourceFetchEvent = StartFetchEvent & { manifestPath?: string }
-declare type FinishResourceFetchEvent = FinishFetchEvent & { fetchError?: FetchError, path: string }
+type StartResourceFetchEvent = StartFetchEvent & { manifestPath?: string }
+type FinishResourceFetchEvent = FinishFetchEvent & { fetchError?: FetchError, path: string }
 
-// TODO: sometimes finish fetch for the route returns before all nested are done
-// TODO: sometimes the fetch manifest seems to be cancelled, in the above circumstance as well
+// Todo: How to handle fetching a new page when the previous is still being loaded
+// Todo: how to handle errors produced when fetching. The first primary request should have first class status. All should be put into store
 
 export default class Fetcher {
   private readonly apiUrl: string
@@ -63,58 +64,6 @@ export default class Fetcher {
     this.apiDocumentation = apiDocumentation
     this.fetchStatus = new FetchStatus(fetcherStore)
   }
-
-  /**
-   * Public interfaces for fetching for route middleware
-   */
-  public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
-    const iri = `/_/routes/${path}`
-    const startFetchStatusResponse = this.startResourceFetch({ path: iri, resetCurrentResources: true, manifestPath: `/_/routes_manifest/${path}` })
-    if (!startFetchStatusResponse.continueFetching) {
-      return startFetchStatusResponse.startFetchToken.existingFetchPromise
-    }
-
-    let routeResource: CwaResource|undefined
-    try {
-      const fetchAndSaveResponse: CwaResource|undefined = await this.fetchAndSaveResource({ path: iri })
-      if (isCwaResource(fetchAndSaveResponse)) {
-        routeResource = fetchAndSaveResponse
-      }
-    } catch (err) {}
-
-    // todo: do we need to handle if it was a redirect from prop data?.redirectPath
-    await this.finishResourceFetch({
-      token: startFetchStatusResponse.startFetchToken.token,
-      path: startFetchStatusResponse.startFetchToken.startEvent.path,
-      fetchSuccess: routeResource !== undefined,
-      pageIri: routeResource?.pageData || routeResource?.page
-    })
-  }
-
-  // public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
-  //   const startFetch = this.startFetch({ path: pageIri, resetCurrentResources: true })
-  //   if (!startFetch) {
-  //     return startFetch
-  //   }
-  //
-  //   let data: CwaResource|undefined
-  //   try {
-  //     const response = await this.fetchAndSaveResource({
-  //       path: pageIri
-  //     })
-  //     if (!response) {
-  //       return
-  //     }
-  //     data = response._data
-  //     return response
-  //   } finally {
-  //     this.finishFetch({
-  //       path: pageIri,
-  //       fetchSuccess: data !== undefined,
-  //       pageIri
-  //     })
-  //   }
-  // }
 
   /**
    * PRIMARY FETCHER INTERFACE
@@ -154,6 +103,58 @@ export default class Fetcher {
   }
 
   /**
+   * Public interfaces for fetching for route middleware
+   */
+  public async fetchRoute (path: string): Promise<CwaFetcherAsyncResponse|undefined> {
+    const iri = `/_/routes/${path}`
+    const startFetchStatusResponse = this.startResourceFetch({ path: iri, resetCurrentResources: true, manifestPath: `/_/routes_manifest/${path}` })
+    if (!startFetchStatusResponse.continueFetching) {
+      return startFetchStatusResponse.startFetchToken.existingFetchPromise
+    }
+
+    let routeResource: CwaResource|undefined
+    try {
+      const fetchAndSaveResponse: CwaResource|undefined = await this.fetchAndSaveResource({ path: iri })
+      if (fetchAndSaveResponse) {
+        routeResource = fetchAndSaveResponse
+      }
+    } catch (err) {}
+
+    // todo: do we need to handle if it was a red irect from prop data?.redirectPath
+    await this.finishResourceFetch({
+      token: startFetchStatusResponse.startFetchToken.token,
+      path: startFetchStatusResponse.startFetchToken.startEvent.path,
+      fetchSuccess: routeResource !== undefined,
+      pageIri: routeResource?.pageData || routeResource?.page
+    })
+  }
+
+  // public async fetchPage (pageIri: string): Promise<CwaFetcherAsyncResponse|undefined> {
+  //   const startFetch = this.startFetch({ path: pageIri, resetCurrentResources: true })
+  //   if (!startFetch) {
+  //     return startFetch
+  //   }
+  //
+  //   let data: CwaResource|undefined
+  //   try {
+  //     const response = await this.fetchAndSaveResource({
+  //       path: pageIri
+  //     })
+  //     if (!response) {
+  //       return
+  //     }
+  //     data = response._data
+  //     return response
+  //   } finally {
+  //     this.finishFetch({
+  //       path: pageIri,
+  //       fetchSuccess: data !== undefined,
+  //       pageIri
+  //     })
+  //   }
+  // }
+
+  /**
    * Internal
    */
 
@@ -162,8 +163,7 @@ export default class Fetcher {
     const responseData = response._data
     const isValidResponse = isCwaResource(responseData)
     if (!isValidResponse) {
-      return
-      // throw new InvalidResourceResponse('The response provided by the API was not a valid CWA Resource', responseData)
+      throw new InvalidResourceResponse('The response provided by the API was not a valid CWA Resource', responseData)
     }
     return responseData
   }
@@ -206,8 +206,9 @@ export default class Fetcher {
       pageIri: event.pageIri,
       fetchSuccess: event.fetchSuccess
     })
+
     // finish status in the fetcher
-    if (finishedAllFetches && process.client) {
+    if (finishedAllFetches) {
       // event source may have died, re-initialise - true if it is a final fetch
       this.mercure.init()
     }

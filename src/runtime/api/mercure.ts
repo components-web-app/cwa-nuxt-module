@@ -1,11 +1,10 @@
 import consola from 'consola'
 import { storeToRefs } from 'pinia'
-import { Ref, watch } from 'vue'
+import { Ref, watch, computed, ref } from 'vue'
 import { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { getPublishedResourceIri, CwaResource } from '../resources/resource-utils'
 import { FetcherStore } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/fetcher-store'
-import { computed, ref } from '#imports'
 
 interface MercureMessageInterface {
   event: MessageEvent,
