@@ -1,4 +1,4 @@
-import { describe, test, vi, expect, afterEach, beforeAll, beforeEach } from 'vitest'
+import { describe, test, vi, expect, afterEach, beforeEach } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
@@ -24,7 +24,6 @@ function createRoute (): RouteLocationNormalizedLoaded {
     redirectedFrom: undefined
   }
 }
-
 
 vi.mock('consola')
 
@@ -254,12 +253,12 @@ describe('Fetcher startResourceFetch context', () => {
       })
     })
     vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {
-      throw Error()
+      throw new Error('Any error')
     })
     vi.spyOn(fetcher, 'fetchManifest')
 
     await fetcher.fetchRoute('/some-fetch-path')
-    expect(fetcher.fetchManifest).not.toThrowError
+    expect(fetcher.fetchManifest).not.toThrowError()
   })
 
   test.todo('startResourceFetch will return the fetchStatus.startFetch result', async () => {
