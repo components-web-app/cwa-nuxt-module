@@ -72,9 +72,10 @@ export default class Fetcher {
     const startFetchStatusResponse = this.startResourceFetch({ path: fetchEvent.path })
     if (!startFetchStatusResponse.continueFetching) {
       const currentPromise = startFetchStatusResponse.startFetchToken.existingFetchPromise
-      if (currentPromise) {
-        return this.fetchAndValidateCwaResource(currentPromise)
+      if (!currentPromise) {
+        return
       }
+      return this.fetchAndValidateCwaResource(currentPromise)
     }
 
     let resource: CwaResource|undefined

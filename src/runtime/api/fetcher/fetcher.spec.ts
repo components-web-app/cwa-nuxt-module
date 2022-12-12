@@ -8,7 +8,7 @@ import { MercureStore } from '../../storage/stores/mercure/mercure-store'
 import ApiDocumentation from '../api-documentation'
 import { ApiDocumentationStore } from '../../storage/stores/api-documentation/api-documentation-store'
 import Fetcher from './fetcher'
-import FetchStatus from './fetch-status'
+import FetchStatus, { StartFetchResponse } from './fetch-status'
 
 function createRoute (): RouteLocationNormalizedLoaded {
   return {
@@ -29,7 +29,8 @@ type TestStore = { useStore(): any }
 vi.mock('../../storage/stores/resources/resources-store', () => {
   const resourcesStoreInstance = {
     setResourceFetchStatus: vi.fn(),
-    setResourceFetchError: vi.fn()
+    setResourceFetchError: vi.fn(),
+    saveResource: vi.fn()
   }
   return {
     ResourcesStore: vi.fn<[], TestStore>(() => ({
@@ -89,7 +90,7 @@ describe('Initialise a fetcher', () => {
   })
 })
 
-describe('Fetcher starting resource fetches', () => {
+describe('Fetcher startResourceFetch context', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -205,5 +206,151 @@ describe('Fetcher starting resource fetches', () => {
       inProgress: false,
       fetchError: exampleFetchError
     })
+  })
+
+  test('startResourceFetch will return the fetchStatus.startFetch result', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const startFetchResponse = {
+      continueFetching: false,
+      startFetchToken: {
+        token: 'new-token',
+        startEvent: startFetchEvent
+      }
+    }
+    FetchStatus.mockImplementation(() => {
+      return {
+        startFetch: vi.fn((): StartFetchResponse => {
+          return startFetchResponse
+        })
+      }
+    })
+    const fetcher = createFetcher()
+
+    vi.spyOn(fetcher, 'startResourceFetch')
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.startResourceFetch.mock.results[0].value).toStrictEqual(startFetchResponse)
+  })
+})
+
+describe('fetcher fetchAndSaveResource context', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('doFetch is not called if startResourceFetch.continueFetching is false', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const fetcher = createFetcher()
+
+    vi.spyOn(fetcher, 'doFetch')
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: false,
+        startFetchToken: {
+          existingFetchPromise: undefined
+        }
+      }
+    })
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.doFetch).not.toHaveBeenCalled()
+  })
+
+  test('doFetch is not called if startResourceFetch.continueFetching is false and an existing promise is returned', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const fetcher = createFetcher()
+
+    const existingFetchPromise = vi.fn()
+    vi.spyOn(fetcher, 'doFetch')
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: false,
+        startFetchToken: {
+          existingFetchPromise
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation(() => {
+      return 'fetchValidateResponse'
+    })
+
+    const resource = await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.fetchAndValidateCwaResource).toHaveBeenCalledWith(existingFetchPromise)
+    expect(fetcher.doFetch).not.toHaveBeenCalled()
+    expect(resource).toBe('fetchValidateResponse')
+  })
+
+  test('Resource fetch functions are called and resources saved to store - tests the fetchAndValidateCwaResource function for valid resource', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent: startFetchEvent
+        }
+      }
+    })
+    // vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation(() => {
+    //   return Promise.resolve('fetchValidateResponse')
+    // })
+    const apiCwaResource = {
+      '@id': '/resource-id',
+      '@type': 'mytype',
+      _metadata: {}
+    }
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
+      return Promise.resolve({
+        _data: apiCwaResource
+      })
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+
+    const resource = await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.doFetch).toHaveBeenCalledTimes(1)
+    expect(fetcher.doFetch).toHaveBeenCalledWith(startFetchEvent)
+
+    const resourcesStoreInstance = ResourcesStore.mock.results[0].value.useStore.mock.results[0].value
+    expect(resourcesStoreInstance.saveResource).toHaveBeenCalledWith({
+      resource: apiCwaResource
+    })
+    expect(fetcher.fetchNestedResources).toHaveBeenCalledWith(apiCwaResource)
+    expect(fetcher.finishResourceFetch).toHaveBeenCalledWith({
+      fetchSuccess: true,
+      path: '/some-fetch-path',
+      token: 'abc'
+    })
+    expect(resource).toBe(apiCwaResource)
+  })
+
+  test('Invalid resources are not saved and the fetchSuccess response is false - tests the fetchAndValidateCwaResource for invalid resource', async () => {
+    const startFetchEvent = { path: '/some-fetch-path' }
+    const fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent: startFetchEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {
+      return 'invalidCwaResourceResponse'
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+
+    const resource = await fetcher.fetchAndSaveResource(startFetchEvent)
+
+    expect(ResourcesStore.mock.results[0].value.useStore).not.toHaveBeenCalled()
+    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+    expect(fetcher.finishResourceFetch).toHaveBeenCalledWith({
+      fetchSuccess: false,
+      path: '/some-fetch-path',
+      token: 'abc'
+    })
+    expect(resource).toBeUndefined()
   })
 })
