@@ -468,6 +468,8 @@ describe('createFetchPromise', () => {
     vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
     vi.spyOn(fetcher, 'appendQueryToPath')
     vi.spyOn(fetcher, 'createRequestHeaders')
+    vi.spyOn(fetcher, 'handleFetchError')
+    vi.spyOn(fetcher, 'handleFetchResponse').mockImplementation(() => {})
     CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {
       return Promise.resolve({
         _data: {}
@@ -483,6 +485,7 @@ describe('createFetchPromise', () => {
     expect(fetcher.appendQueryToPath).toBeCalledWith(startFetchEvent.path)
     expect(fetcher.appendQueryToPath.mock.results[0].value).toBe('/_/routes//some-fetch-path?queryParam=value')
     expect(fetcher.createFetchPromise.mock.results[0]).toStrictEqual(CwaFetch.mock.results[0].value.fetch.raw.mock.results[0])
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/_/routes//some-fetch-path?queryParam=value')
   })
 
   test('Use an ampersand delimiter if the current path has a query already', async () => {
@@ -515,6 +518,13 @@ describe('createFetchPromise', () => {
       path: '/fetch-status-path',
       preload: preloadHeaders[CwaResourceTypes.ROUTE].join(',')
     })
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].headers).toStrictEqual(fetcher.createRequestHeaders.mock.results[0].value)
+  })
+
+  test('We set the correct handlers for the fetch call', () => {
+    CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].onResponse({ ctx: 'value' })
+    expect(fetcher.handleFetchResponse).toHaveBeenCalledWith({ ctx: 'value' })
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].onRequestError).toBe(fetcher.handleFetchError)
   })
 
   test('We can override the preload headers', async () => {
@@ -529,12 +539,35 @@ describe('createFetchPromise', () => {
 })
 
 describe.todo('handleFetchResponse', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
+  const startFetchEvent = { path: '/_/routes//some-fetch-path' }
+  let fetcher: Fetcher
+
+  beforeAll(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent: startFetchEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'appendQueryToPath')
+    vi.spyOn(fetcher, 'createRequestHeaders')
+    CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {
+      return Promise.resolve({
+        _data: {
+          someKey: 'my value'
+        }
+      })
+    })
   })
 
-  test('call to set the api documentation and mercure url\'s from the link header and return the response data', () => {
-
+  test('call to set the api documentation and mercure url\'s from the link header and return the response data', async () => {
+    await fetcher.fetchAndSaveResource(startFetchEvent)
   })
 })
 
@@ -552,8 +585,6 @@ describe.todo('fetchNestedResources will loop through nested resources to fetch 
   afterEach(() => {
     vi.clearAllMocks()
   })
-
-  test('We only initialise Mercure once', () => {})
 
   test('We populate an array of nested resources and pass this to the fetchBatch function for a specific resource', () => {
 
