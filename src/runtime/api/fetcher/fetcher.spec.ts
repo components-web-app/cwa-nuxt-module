@@ -2,6 +2,7 @@ import { describe, test, vi, expect, afterEach, beforeEach, beforeAll } from 'vi
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ohmyfetch'
 import consola from 'consola'
+import { reactive } from 'vue'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -15,7 +16,7 @@ import CwaFetch from './cwa-fetch'
 import preloadHeaders from './preload-headers'
 
 function createRoute (path = '/', query = {}): RouteLocationNormalizedLoaded {
-  return {
+  return reactive({
     name: '',
     path,
     fullPath: '/',
@@ -25,7 +26,7 @@ function createRoute (path = '/', query = {}): RouteLocationNormalizedLoaded {
     params: {},
     meta: {},
     redirectedFrom: undefined
-  }
+  })
 }
 
 vi.mock('consola')
@@ -96,6 +97,7 @@ vi.mock('./cwa-fetch', () => {
 })
 
 let fetcherStoreMock: FetcherStore
+let currentRoute: RouteLocationNormalizedLoaded
 function createFetcher (currentPath = '/', query = {}) {
   const storeName = 'customStoreName'
   const resourcesStoreMock = new ResourcesStore(storeName)
@@ -103,11 +105,11 @@ function createFetcher (currentPath = '/', query = {}) {
   const mercureStoreMock = new MercureStore(storeName)
   const mercureMock = new Mercure(mercureStoreMock, resourcesStoreMock, fetcherStoreMock)
   const apiDocumentationStoreMock = new ApiDocumentationStore(storeName)
-  const apiUrl = 'https://api-url'
   const cwaFetch = new CwaFetch('https://api-url')
-  const apiDocumentationMock = new ApiDocumentation(apiUrl, apiDocumentationStoreMock)
+  const apiDocumentationMock = new ApiDocumentation(cwaFetch, apiDocumentationStoreMock)
+  currentRoute = createRoute(currentPath, query)
 
-  return new Fetcher(cwaFetch, fetcherStoreMock, resourcesStoreMock, createRoute(currentPath, query), mercureMock, apiDocumentationMock)
+  return new Fetcher(cwaFetch, fetcherStoreMock, resourcesStoreMock, currentRoute, mercureMock, apiDocumentationMock)
 }
 
 describe('Initialise a fetcher', () => {
@@ -483,6 +485,20 @@ describe('createFetchPromise', () => {
     expect(fetcher.createFetchPromise.mock.results[0]).toStrictEqual(CwaFetch.mock.results[0].value.fetch.raw.mock.results[0])
   })
 
+  test('Requests can handle no query existing so will not append to fetch.raw', async () => {
+    currentRoute.query = {}
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.appendQueryToPath.mock.results[1].value).toBe('/_/routes//some-fetch-path')
+  })
+
+  test('Requests can handle no query existing so will not append to fetch.raw', async () => {
+    currentRoute.query = undefined
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.appendQueryToPath.mock.results[2].value).toBe('/_/routes//some-fetch-path')
+  })
+
   test('We create the appropriate request headers', () => {
     expect(fetcher.createRequestHeaders).toBeCalledWith(startFetchEvent)
     expect(fetcher.createRequestHeaders.mock.results[0].value).toStrictEqual({
@@ -499,6 +515,18 @@ describe('createFetchPromise', () => {
       path: '/fetch-status-path',
       preload: '/some-preload'
     })
+  })
+})
+
+describe.todo('handleFetchResponse', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+})
+
+describe.todo('handleFetchError', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 })
 
