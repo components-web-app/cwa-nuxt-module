@@ -1,19 +1,19 @@
 import { ref, Ref, watch } from 'vue'
 import consola from 'consola'
-import { $fetch } from 'ohmyfetch'
 import {
   ApiDocumentationStore, CwaApiDocumentationStoreInterface
 } from '../storage/stores/api-documentation/api-documentation-store'
 import { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
+import CwaFetch from '@cwa/nuxt-module/runtime/api/fetcher/cwa-fetch'
 
 export default class ApiDocumentation {
-  private readonly apiUrl: string
+  private readonly cwaFetch: CwaFetch
   private readonly storeDefinition: ApiDocumentationStore
   private readonly apiDocsSet: Ref<boolean> = ref(false)
   private apiDocPromise: Promise<void>|undefined
 
-  constructor (apiUrl: string, store: ApiDocumentationStore) {
-    this.apiUrl = apiUrl
+  constructor (cwaFetch: CwaFetch, store: ApiDocumentationStore) {
+    this.cwaFetch = cwaFetch
     this.storeDefinition = store
     this.apiDocsSet = ref(!!this.docsPath)
   }
@@ -86,7 +86,7 @@ export default class ApiDocumentation {
       return await this.awaitApiDocPromise()
     }
     this.apiDocPromise = Promise.all([
-      this.doRequest(this.apiUrl),
+      this.doRequest('/'),
       this.doRequest(docsPath)
     ]).then((responses) => {
       this.store.$patch({
@@ -103,10 +103,7 @@ export default class ApiDocumentation {
   }
 
   private async doRequest (path: string) {
-    const headers = {
-      accept: 'application/ld+json,application/json'
-    }
-    return await $fetch(path, { headers })
+    return await this.cwaFetch.fetch(path)
   }
 
   private get store (): CwaApiDocumentationStoreInterface {

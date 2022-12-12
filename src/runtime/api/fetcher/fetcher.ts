@@ -1,5 +1,5 @@
 import bluebird from 'bluebird'
-import { $fetch, createFetchError, FetchContext, FetchError, FetchResponse } from 'ohmyfetch'
+import { createFetchError, FetchContext, FetchError, FetchResponse } from 'ohmyfetch'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import consola from 'consola'
 import {
@@ -13,6 +13,7 @@ import { getResourceTypeFromIri, CwaResource, CwaResourceTypes, isCwaResource } 
 import InvalidResourceResponse from '../../errors/invalid-resource-response'
 import FetchStatus, { FinishFetchEvent, StartFetchEvent, StartFetchResponse } from './fetch-status'
 import preloadHeaders from './preload-headers'
+import CwaFetch from './cwa-fetch'
 
 interface FetchEventInterface {
   path: string
@@ -42,7 +43,7 @@ type FinishResourceFetchEvent = FinishFetchEvent & { fetchError?: FetchError, pa
 // Todo: how to handle errors produced when fetching. The first primary request should have first class status. All should be put into store
 
 export default class Fetcher {
-  private readonly apiUrl: string
+  private readonly cwaFetch: CwaFetch
   private readonly resourcesStoreDefinition: ResourcesStore
   private readonly currentRoute: RouteLocationNormalizedLoaded
   public readonly mercure: Mercure
@@ -50,14 +51,14 @@ export default class Fetcher {
   private readonly fetchStatus: FetchStatus
 
   constructor (
-    apiUrl: string,
+    cwaFetch: CwaFetch,
     fetcherStore: FetcherStore,
     resourcesStore: ResourcesStore,
     currentRoute: RouteLocationNormalizedLoaded,
     mercure: Mercure,
     apiDocumentation: ApiDocumentation
   ) {
-    this.apiUrl = apiUrl
+    this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStore
     this.currentRoute = currentRoute
     this.mercure = mercure
@@ -317,7 +318,6 @@ export default class Fetcher {
 
   private createFetchPromise (event: FetchEventInterface): CwaFetcherAsyncResponse {
     const url = this.appendQueryToPath(event.path)
-    const baseURL = this.apiUrl
     const headers = this.createRequestHeaders(event)
 
     const onResponse = (context: FetchContext & { response: FetchResponse<any> }): Promise<void> | void => {
@@ -333,15 +333,14 @@ export default class Fetcher {
       throw createFetchError<undefined>(ctx.request, ctx.error)
     }
 
-    return $fetch.raw<any>(url, {
-      baseURL,
+    return this.cwaFetch.fetch.raw<any>(url, {
       headers,
       onResponse,
       onRequestError
     })
   }
 
-  private createRequestHeaders (event: FetchEventInterface): { path: string; accept: string; preload?: string } {
+  private createRequestHeaders (event: FetchEventInterface): { path: string; preload?: string } {
     if (!this.fetchStatus.path) {
       throw new Error('Cannot create a new request to the API before setting the fetch status path.')
     }
@@ -354,7 +353,6 @@ export default class Fetcher {
     }
     return {
       path: this.fetchStatus.path,
-      accept: 'application/ld+json,application/json',
       preload: preload ? preload.join(',') : undefined
     }
   }

@@ -9,7 +9,8 @@ import { MercureStore } from '../../storage/stores/mercure/mercure-store'
 import ApiDocumentation from '../api-documentation'
 import { ApiDocumentationStore } from '../../storage/stores/api-documentation/api-documentation-store'
 import Fetcher from './fetcher'
-import FetchStatus, { StartFetchResponse } from './fetch-status'
+import FetchStatus from './fetch-status'
+import CwaFetch from './cwa-fetch'
 
 function createRoute (): RouteLocationNormalizedLoaded {
   return {
@@ -71,6 +72,7 @@ vi.mock('./fetch-status', () => {
   return {
     default: vi.fn(() => {
       return {
+        addPath: vi.fn(),
         startFetch: vi.fn(),
         finishFetch: vi.fn(() => {
           return new Promise(resolve => (resolve(true)))
@@ -80,6 +82,7 @@ vi.mock('./fetch-status', () => {
     })
   }
 })
+vi.mock('./cwa-fetch')
 
 let fetcherStoreMock: FetcherStore
 function createFetcher () {
@@ -90,9 +93,10 @@ function createFetcher () {
   const mercureMock = new Mercure(mercureStoreMock, resourcesStoreMock, fetcherStoreMock)
   const apiDocumentationStoreMock = new ApiDocumentationStore(storeName)
   const apiUrl = 'https://api-url'
+  const cwaFetch = new CwaFetch('https://api-url')
   const apiDocumentationMock = new ApiDocumentation(apiUrl, apiDocumentationStoreMock)
 
-  return new Fetcher(apiUrl, fetcherStoreMock, resourcesStoreMock, createRoute(), mercureMock, apiDocumentationMock)
+  return new Fetcher(cwaFetch, fetcherStoreMock, resourcesStoreMock, createRoute(), mercureMock, apiDocumentationMock)
 }
 
 describe('Initialise a fetcher', () => {
@@ -253,16 +257,13 @@ describe('Fetcher startResourceFetch context', () => {
         startEvent: startFetchEvent
       }
     }
-    FetchStatus.mockImplementation(() => {
-      return {
-        startFetch: vi.fn((): StartFetchResponse => {
-          return startFetchResponse
-        })
-      }
-    })
-    const fetcher = createFetcher()
 
+    const fetchStatusInstance = FetchStatus.mock.results[0].value
+    fetchStatusInstance.startFetch.mockImplementationOnce(() => {
+      return startFetchResponse
+    })
     vi.spyOn(fetcher, 'startResourceFetch')
+
     await fetcher.fetchAndSaveResource(startFetchEvent)
     expect(fetcher.startResourceFetch.mock.results[0].value).toStrictEqual(startFetchResponse)
   })
@@ -391,18 +392,70 @@ describe('fetcher fetchAndSaveResource context', () => {
   })
 })
 
-describe.todo('doFetch will add path and promise and do the fetch', () => {
+describe('doFetch will add path and call to create the promise and return the generated promise', () => {
+  const startFetchEvent = { path: '/some-fetch-path' }
+  let fetcher: Fetcher
 
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation(() => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent: startFetchEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+  })
+
+  test('doFetch adds the path to the fetch status', async () => {
+    vi.spyOn(fetcher, 'doFetch')
+    vi.spyOn(fetcher, 'createFetchPromise').mockImplementation(() => {
+      return 'someFetchPromise'
+    })
+    const fetchStatusInstance = FetchStatus.mock.results[0].value
+    vi.spyOn(fetchStatusInstance, 'addPath')
+
+    await fetcher.fetchAndSaveResource(startFetchEvent)
+    expect(fetcher.createFetchPromise).toHaveBeenCalledTimes(1)
+    expect(fetcher.createFetchPromise).toHaveBeenCalledWith(startFetchEvent)
+    expect(fetchStatusInstance.addPath).toHaveBeenCalledWith(
+      startFetchEvent.path,
+      'someFetchPromise'
+    )
+    expect(fetcher.doFetch).toReturnWith('someFetchPromise')
+  })
 })
 
-describe.todo('fetchNestedResources will loop through nexted resources to fetch appropriate properties', () => {
+describe.todo('createFetchPromise')
 
+describe.todo('fetchNestedResources will loop through nested resources to fetch appropriate properties', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
 })
 
 describe.todo('fetchBatch returns a bluebird promise map', () => {
-
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
 })
 
-describe.todo('finishResourceFetch functionality', () => {})
+describe.todo('finishResourceFetch functionality', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+})
 
-describe.todo('fetchRoute functionality, mocking all calls as they are re-used processes from other tests, just ensure functions are all called', () => {})
+describe.todo('fetchRoute functionality, mocking all calls as they are re-used processes from other tests, just ensure functions are all called', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+})

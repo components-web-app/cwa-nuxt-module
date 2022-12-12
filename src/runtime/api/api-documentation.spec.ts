@@ -2,30 +2,33 @@ import { describe, test, vi, beforeEach, expect, beforeAll } from 'vitest'
 import { setActivePinia } from 'pinia'
 import consola from 'consola'
 import { createTestingPinia } from '@pinia/testing'
-import { $fetch } from 'ohmyfetch'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
 import ApiDocumentation from './api-documentation'
+import CwaFetch from './fetcher/cwa-fetch'
 
 vi.mock('consola')
 
 const mockedFetchResponseTime = 20
-vi.mock('ohmyfetch', () => {
+
+vi.mock('../storage/stores/api-documentation/state')
+vi.mock('./fetcher/cwa-fetch', () => {
   return {
-    $fetch: vi.fn(async (path) => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 20)
+    default: vi.fn(() => ({
+      fetch: vi.fn(async (path) => {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 20)
+        })
+        return 'response from ' + path
       })
-      return 'response from ' + path
-    })
+    }))
   }
 })
 
-vi.mock('../storage/stores/api-documentation/state')
-
 let apiDocumentationStore: ApiDocumentationStore
+const cwaFetchInstance = new CwaFetch('https://dummy-api-url')
 function createApiDocumentation (): ApiDocumentation {
   apiDocumentationStore = new ApiDocumentationStore('storeName')
-  return new ApiDocumentation('https://dummy-api-url', apiDocumentationStore)
+  return new ApiDocumentation(cwaFetchInstance, apiDocumentationStore)
 }
 
 function delay (time: number, returnValue: any = undefined) {
@@ -92,7 +95,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
 
   const apiDocsObject = {
     docs: 'response from https://some-domain/docs.jsonld',
-    entrypoint: 'response from https://dummy-api-url'
+    entrypoint: 'response from /'
   }
   beforeAll(() => {
     const pinia = createTestingPinia({
@@ -106,18 +109,16 @@ describe('API Documentation getApiDocumentation functionality', () => {
     apiDocumentation.getApiDocumentation()
     expect(consola.debug).toHaveBeenLastCalledWith('Waiting for docsPath to bet set to fetch API Documentation')
     await delay(5)
-    expect($fetch).not.toHaveBeenCalled()
+    expect(cwaFetchInstance.fetch).not.toHaveBeenCalled()
   })
+
   test('We proceed with fetching when set', async () => {
     // will proceed with fetching when set
     apiDocumentation.setDocsPathFromLinkHeader(validLinkHeader)
     vi.clearAllMocks()
     await delay(5)
-    const headers = {
-      accept: 'application/ld+json,application/json'
-    }
-    expect($fetch).toHaveBeenCalledWith('https://dummy-api-url', { headers })
-    expect($fetch).toHaveBeenCalledWith('https://some-domain/docs.jsonld', { headers })
+    expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('/')
+    expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('https://some-domain/docs.jsonld')
     await delay(mockedFetchResponseTime)
     const piniaStore = apiDocumentationStore.useStore()
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
