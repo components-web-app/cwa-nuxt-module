@@ -15,6 +15,7 @@ import Fetcher from './fetcher'
 import FetchStatus from './fetch-status'
 import CwaFetch from './cwa-fetch'
 import preloadHeaders from './preload-headers'
+import InvalidResourceResponse from '../../errors/invalid-resource-response'
 
 function createRoute (path = '/', query = {}): RouteLocationNormalizedLoaded {
   return reactive({
@@ -657,29 +658,163 @@ describe('fetchNestedResources & fetchBatch & bluebird will loop through nested 
   })
 })
 
-describe.todo('finishResourceFetch functionality', () => {
+describe('finishResourceFetch functionality', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'startResourceFetch').mockImplementation((startEvent) => {
+      return {
+        continueFetching: true,
+        startFetchToken: {
+          token: 'abc',
+          startEvent
+        }
+      }
+    })
+    vi.spyOn(fetcher, 'finishResourceFetch')
+    vi.spyOn(fetcher, 'doFetch').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementation(() => {
+      return Promise.resolve({
+        '@id': 'my-resource'
+      })
+    })
+    vi.spyOn(fetcher, 'handleEventFetchError')
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('We set the resource state to successful', () => {
+  test('We set the resource state to successful', async () => {
+    FetchStatus.mock.results[0].value.finishFetch.mockImplementation(() => {
+      return Promise.resolve(true)
+    })
 
+    await fetcher.fetchAndSaveResource({ path: 'my-resource' })
+    expect(fetcher.finishResourceFetch).toBeCalledWith({
+      fetchSuccess: true,
+      path: 'my-resource',
+      token: 'abc'
+    })
+    expect(FetchStatus.mock.results[0].value.finishFetch).toHaveBeenCalledWith({
+      token: 'abc',
+      pageIri: undefined,
+      fetchSuccess: true
+    })
+    expect(Mercure.mock.results[0].value.init).toHaveBeenCalledTimes(1)
+
+    const setResourceFetchStatusMock = ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus
+    expect(setResourceFetchStatusMock).toBeCalledWith({
+      iri: 'my-resource',
+      status: 1
+    })
   })
 
-  test('We set the resource state to failure', () => {
+  test('We set the resource state to failure', async () => {
+    vi.spyOn(fetcher, 'fetchAndValidateCwaResource').mockImplementationOnce(() => {
+      throw new InvalidResourceResponse('The response provided by the API is not a valid CWA Resource')
+    })
+    FetchStatus.mock.results[0].value.finishFetch.mockImplementation(() => {
+      return Promise.resolve(true)
+    })
 
+    await fetcher.fetchAndSaveResource({ path: 'my-resource' })
+    expect(fetcher.finishResourceFetch).toBeCalledWith({
+      fetchSuccess: false,
+      path: 'my-resource',
+      token: 'abc',
+      fetchError: undefined
+    })
+    expect(FetchStatus.mock.results[0].value.finishFetch).toHaveBeenCalledWith({
+      token: 'abc',
+      pageIri: undefined,
+      fetchSuccess: false
+    })
+    expect(Mercure.mock.results[0].value.init).toHaveBeenCalledTimes(1)
+
+    const setResourceFetchStatusMock = ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError
+
+    expect(setResourceFetchStatusMock).toBeCalledWith({
+      iri: 'my-resource',
+      fetchError: undefined
+    })
   })
 
-  test('We call fetchStatus.finishFetch', () => {
+  test('We set the resource state to failure with a fetch error', async () => {
+    const mockFetchError = new FetchError()
+    mockFetchError.statusCode = 101
+    mockFetchError.response = 'a response'
+    mockFetchError.message = 'error message'
+    vi.spyOn(fetcher, 'doFetch').mockImplementationOnce(() => {
+      throw mockFetchError
+    })
 
+    await fetcher.fetchAndSaveResource({ path: 'my-resource' })
+    expect(fetcher.finishResourceFetch).toBeCalledWith({
+      fetchSuccess: false,
+      path: 'my-resource',
+      token: 'abc',
+      fetchError: mockFetchError
+    })
+    const setResourceFetchStatusMock = ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError
+    expect(setResourceFetchStatusMock).toBeCalledWith({
+      iri: 'my-resource',
+      fetchError: mockFetchError
+    })
+
+    expect(fetcher.handleEventFetchError).toBeCalledWith(mockFetchError)
+    expect(consola.error).toHaveBeenCalledTimes(1)
+    expect(consola.error).toHaveBeenCalledWith('error message')
   })
 
-  test('If all fetches are finished we initialise mercure', () => {
+  test('Handle event error outputs if there is no response', async () => {
+    const mockFetchError = new FetchError()
+    mockFetchError.statusCode = 101
+    mockFetchError.message = 'error message'
+    vi.spyOn(fetcher, 'doFetch').mockImplementationOnce(() => {
+      throw mockFetchError
+    })
 
+    await fetcher.fetchAndSaveResource({ path: 'my-resource' })
+    expect(fetcher.handleEventFetchError).toBeCalledWith(mockFetchError)
+    expect(consola.error).toHaveBeenCalledTimes(2)
+    expect(consola.error).toHaveBeenCalledWith('error message')
+    expect(consola.error).toHaveBeenCalledWith('[NETWORK ERROR]')
   })
 
-  test('We log to the console in the event of a fetch error in the event', () => {
+  test('Handle event error does not log 404 errors', async () => {
+    const mockFetchError = new FetchError('error message')
+    mockFetchError.statusCode = 404
+    mockFetchError.response = 'a response'
+    vi.spyOn(fetcher, 'doFetch').mockImplementationOnce(() => {
+      throw mockFetchError
+    })
 
+    await fetcher.fetchAndSaveResource({ path: 'my-resource' })
+    expect(fetcher.handleEventFetchError).toBeCalledWith(mockFetchError)
+    expect(consola.error).not.toHaveBeenCalled()
+  })
+
+  test('If all fetches are not finished we do not initialise mercure', async () => {
+    FetchStatus.mock.results[0].value.finishFetch.mockImplementationOnce(() => {
+      return Promise.resolve(false)
+    })
+
+    await fetcher.fetchAndSaveResource({ path: 'my-resource' })
+    expect(fetcher.finishResourceFetch).toBeCalledWith({
+      fetchSuccess: true,
+      path: 'my-resource',
+      token: 'abc'
+    })
+
+    expect(Mercure.mock.results[0].value.init).not.toHaveBeenCalled()
+
+    const setResourceFetchStatusMock = ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus
+    expect(setResourceFetchStatusMock).toBeCalledWith({
+      iri: 'my-resource',
+      status: 1
+    })
   })
 })
 

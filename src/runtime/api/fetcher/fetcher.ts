@@ -80,10 +80,14 @@ export default class Fetcher {
     }
 
     let resource: CwaResource|undefined
+    let fetchError: FetchError|undefined
     try {
       const fetchPromise = this.doFetch(fetchEvent)
       resource = await this.fetchAndValidateCwaResource(fetchPromise)
     } catch (error) {
+      if (error instanceof FetchError) {
+        fetchError = error
+      }
       if (!(error instanceof FetchError) && !(error instanceof InvalidResourceResponse)) {
         throw error
       }
@@ -101,7 +105,8 @@ export default class Fetcher {
     const finishFetchEvent: FinishResourceFetchEvent = {
       token: startFetchStatusResponse.startFetchToken.token,
       path: startFetchStatusResponse.startFetchToken.startEvent.path,
-      fetchSuccess: !!resource
+      fetchSuccess: !!resource,
+      fetchError
     }
     await this.finishResourceFetch(finishFetchEvent)
     return resource
