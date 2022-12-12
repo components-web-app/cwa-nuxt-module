@@ -532,11 +532,19 @@ describe.todo('handleFetchResponse', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
+
+  test('call to set the api documentation and mercure url\'s from the link header and return the response data', () => {
+
+  })
 })
 
 describe.todo('handleFetchError', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('create a fetch error', () => {
+
   })
 })
 
@@ -546,11 +554,19 @@ describe.todo('fetchNestedResources will loop through nested resources to fetch 
   })
 
   test('We only initialise Mercure once', () => {})
+
+  test('We populate an array of nested resources and pass this to the fetchBatch function for a specific resource', () => {
+
+  })
 })
 
 describe.todo('fetchBatch returns a bluebird promise map', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('We create a bluebird promise map to call fetchAndSaveResource from an array of paths', () => {
+
   })
 })
 
@@ -558,10 +574,42 @@ describe.todo('finishResourceFetch functionality', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
+
+  test('We set the resource state to successful', () => {
+
+  })
+
+  test('We set the resource state to failure', () => {
+
+  })
+
+  test('We call fetchStatus.finishFetch', () => {
+
+  })
+
+  test('If all fetches are finished we initialise mercure', () => {
+
+  })
+
+  test('We log to the console in the event of a fetch error in the event', () => {
+
+  })
 })
 
 describe.todo('fetchRoute functionality, mocking all calls as they are re-used processes from other tests, just ensure functions are all called', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('If startFetchStatusResponse.continueFetching is false we return the result of an existing promise (promise or undefined)', () => {
+
+  })
+
+  test('We call fetchAndSaveResource if successful test the finishResourceFetch parameters', () => {
+
+  })
+
+  test('We call fetchAndSaveResource if unsuccessful test the finishResourceFetch parameters', () => {
+
   })
 })

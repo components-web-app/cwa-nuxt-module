@@ -25,7 +25,9 @@
     "test": "vitest --run --reporter verbose",
     "test:watch": "vitest --watch --reporter verbose",
     "test:watch:coverage": "vitest --watch --coverage --reporter verbose",
-    "test:coverage": "vitest --run --coverage"
+    "test:coverage": "vitest --run --coverage",
+    "stryker:init": "stryker init",
+    "stryker:run": "stryker run"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.4.6",
@@ -39,6 +41,8 @@
     "@nuxt/test-utils": "^3.0.0",
     "@nuxtjs/eslint-config-typescript": "^12.0.0",
     "@pinia/testing": "^0.0.14",
+    "@stryker-mutator/core": "^6.3.0",
+    "@stryker-mutator/jest-runner": "^6.3.0",
     "@types/bluebird": "^3.5.38",
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.25.5",
