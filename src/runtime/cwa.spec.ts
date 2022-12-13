@@ -122,6 +122,6 @@ describe('Cwa class test', () => {
     expect(Mercure).toBeCalledWith($cwa.stores.mercure, $cwa.stores.resources, $cwa.stores.fetcher)
     expect($cwa.mercure).toBe(Mercure.mock.instances[0])
     expect(CwaFetch).toBeCalledWith('https://api-url-not-set.com')
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], $cwa.stores.fetcher, $cwa.stores.resources, { path }, $cwa.mercure, ApiDocumentation.mock.results[0].value)
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], { path }, $cwa.mercure, ApiDocumentation.mock.results[0].value)
   })
 })

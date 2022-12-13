@@ -1,35 +1,33 @@
 import { reactive } from 'vue'
 import { FetchError } from 'ohmyfetch'
 
-interface FetcherStatusInterface {
-  fetch?: {
-    token: string
-    path: string
-    success?: boolean
-  }
-  fetched?: {
-    path: string
-  }
+interface FetchManifestInterface {
+  resources?: string[]
+  path: string
+  fetchError?: FetchError
 }
-export interface FetcherManifestsInterface {
-  [path: string]: {
-    inProgress: boolean
-    fetchError?: FetchError
-  }
+
+interface TopLevelFetchPathInterface {
+  token: string,
+  resources: string[],
+  manifest?: FetchManifestInterface
+}
+
+export interface FetcherChainInterface {
+  [resource: string]: TopLevelFetchPathInterface
 }
 
 export interface CwaFetcherStateInterface {
-  status: FetcherStatusInterface
-  manifests: FetcherManifestsInterface
-  fetchedPage?: {
-    iri: string
-    path: string
+  primaryFetch: {
+    fetchingResource?: string
+    successResource?: string
   }
+  fetches: FetcherChainInterface
 }
 
 export default function (): CwaFetcherStateInterface {
   return {
-    status: reactive({}),
-    manifests: reactive({})
+    primaryFetch: reactive({}),
+    fetches: reactive({})
   }
 }

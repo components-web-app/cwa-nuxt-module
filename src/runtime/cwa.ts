@@ -29,7 +29,7 @@ export default class Cwa {
     this.storage = new Storage(this.options.storeName)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
-    this.fetcher = new Fetcher(this.cwaFetch, this.storage.stores.fetcher, this.storage.stores.resources, nuxtApp._route, this.mercure, this.apiDocumentation)
+    this.fetcher = new Fetcher(this.cwaFetch, nuxtApp._route, this.mercure, this.apiDocumentation)
   }
 
   public get stores () {
