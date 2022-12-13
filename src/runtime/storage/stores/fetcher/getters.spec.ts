@@ -9,4 +9,4 @@ function createState (): CwaFetcherStateInterface {
   }
 }
 
-describe.todo('Fetcher actions tests')
+describe.todo('Fetcher getters tests')

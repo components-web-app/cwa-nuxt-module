@@ -45,11 +45,11 @@ describe('ApiDocumentationStore tests', () => {
     expect(storeDefinition.stateKey).toBe('value')
 
     expect(actions).toBeCalledTimes(1)
-    expect(actions).toBeCalledWith({ stateKey: 'value' }, returnGetters, resourcesStore)
+    expect(actions).toBeCalledWith({ stateKey: 'value' }, returnGetters)
     expect(storeDefinition).toHaveProperty('someFunction')
 
     expect(getters).toBeCalledTimes(1)
-    expect(getters).toBeCalledWith({ stateKey: 'value' })
+    expect(getters).toBeCalledWith({ stateKey: 'value' }, resourcesStore)
     expect(storeDefinition).toHaveProperty('someGetter')
   })
 })

@@ -27,11 +27,11 @@ export class FetcherStore implements CwaStore {
   constructor (storeName: string, resourcesStore: ResourcesStore) {
     this.storeDefinition = defineStore(`${storeName}.fetcher`, (): CwaFetcherInterface => {
       const fetcherState = CwaFetcherState()
-      const getters = CwaFetcherGetters(fetcherState)
+      const getters = CwaFetcherGetters(fetcherState, resourcesStore)
       return {
         ...fetcherState,
         ...getters,
-        ...CwaFetcherActions(fetcherState, getters, resourcesStore)
+        ...CwaFetcherActions(fetcherState, getters)
       }
     })
   }

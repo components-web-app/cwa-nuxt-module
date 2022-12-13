@@ -7,20 +7,22 @@ interface FetchManifestInterface {
   fetchError?: FetchError
 }
 
-interface TopLevelFetchPathInterface {
-  token: string,
+export interface TopLevelFetchPathInterface {
+  isServerFetch: boolean
+  path: string,
+  isPrimary: boolean,
   resources: string[],
   manifest?: FetchManifestInterface
 }
 
 export interface FetcherChainInterface {
-  [resource: string]: TopLevelFetchPathInterface
+  [token: string]: TopLevelFetchPathInterface
 }
 
 export interface CwaFetcherStateInterface {
   primaryFetch: {
-    fetchingResource?: string
-    successResource?: string
+    fetchingToken?: string
+    successToken?: string
   }
   fetches: FetcherChainInterface
 }
