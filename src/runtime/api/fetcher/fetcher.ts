@@ -1,5 +1,4 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { FetchError } from 'ohmyfetch'
 import { CwaResource, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import CwaFetch from './cwa-fetch'
@@ -108,30 +107,31 @@ export default class Fetcher {
   }
 
   private async fetchManifest (event: FetchManifestEvent): Promise<void> {
-    // update fetcher store when the manifest resources have been fetched once we have called to fetch resources, because then they will be populated as being fetched
-    // do the fetching here
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true)
-      }, (Math.random() * 10) + 20)
-    })
+    let resources: string[] = []
+    try {
+      const response = await this.fetch({
+        path: event.manifestPath
+      })
+      resources = response._data.resource_iris || []
+      this.fetchStatusManager.finishManifestFetch({
+        type: FinishFetchManifestType.SUCCESS,
+        token: event.token,
+        resources
+      })
+    } catch (error: any) {
+      this.fetchStatusManager.finishManifestFetch({
+        type: FinishFetchManifestType.ERROR,
+        token: event.token,
+        error: {
+          statusCode: error?.statusCode,
+          message: error?.message || 'An unknown error occurred'
+        }
+      })
+    }
 
-    const resources: string[] = ['/some-resource']
-    // todo: fetch batch here...
-
-    this.fetchStatusManager.finishManifestFetch({
-      type: FinishFetchManifestType.SUCCESS,
-      token: event.token,
-      resources
-    })
-
-    // this.fetchStatusManager.finishManifestFetch({
-    //   type: FinishFetchManifestType.ERROR,
-    //   token: event.token,
-    //   error: {
-    //     message: 'manifest error message'
-    //   }
-    // })
+    if (resources.length) {
+      // todo: fetch batch here
+    }
   }
 
   private fetch (event: FetchEvent) {
@@ -139,8 +139,6 @@ export default class Fetcher {
     const headers = this.createRequestHeaders(event)
     return this.cwaFetch.fetch.raw<any>(url, {
       headers
-      // onResponse: context => (this.handleFetchResponse(context)),
-      // onRequestError: this.handleFetchError
     })
   }
 

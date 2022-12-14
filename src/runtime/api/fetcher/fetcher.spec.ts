@@ -297,6 +297,21 @@ describe('Fetcher -> fetchManifest', () => {
   })
 
   test('We finish the manifest status when completed', async () => {
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            _data: {
+              resource_iris: ['/manifest-resource-iri']
+            }
+          })
+        }, 1)
+      })
+    })
+
     const fetchResourceEvent = {
       path: '/new-path',
       token: 'any',
@@ -305,11 +320,41 @@ describe('Fetcher -> fetchManifest', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     // we will not be awaiting the manifest
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).not.toHaveBeenCalled()
-    await delay(60)
+    await delay(2)
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
-      resources: ['/some-resource'],
+      resources: ['/manifest-resource-iri'],
       token: 'any',
       type: FinishFetchManifestType.SUCCESS
+    })
+  })
+
+  test.each([
+    { errorMessage: 'fetch error message', expectedErrorMessage: 'fetch error message', statusCode: 101 },
+    { errorMessage: undefined, expectedErrorMessage: 'An unknown error occurred', statusCode: undefined }
+  ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, expectedErrorMessage, statusCode }) => {
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      const error = new FetchError('Some error message')
+      error.message = errorMessage
+      error.statusCode = statusCode
+      throw error
+    })
+
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
+      token: 'any',
+      type: FinishFetchManifestType.ERROR,
+      error: {
+        message: expectedErrorMessage,
+        statusCode
+      }
     })
   })
 })
@@ -344,7 +389,7 @@ describe('Fetcher -> fetch', () => {
     }
     await fetcher.fetchResource(fetchResourceEvent)
     expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/mock-path?query=value')
-    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].headers).toStrictEqual({ someHeader: 'someValue' })
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1]).toStrictEqual({ headers: { someHeader: 'someValue' } })
     expect(CwaFetch.mock.results[0].value.fetch.raw.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.appendQueryToPath.mock.invocationCallOrder[0])
   })
 })
