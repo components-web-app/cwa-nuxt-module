@@ -1,21 +1,26 @@
-import { FetchError } from 'ohmyfetch'
 import { reactive } from 'vue'
 import { CwaResource } from '../../../resources/resource-utils'
-import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
+import { CwaCurrentResourceInterface, CwaResourceError, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
-export interface SetResourceStatusEvent { iri: string, status: 0 | 1 }
-export interface SetResourceFetchErrorEvent { iri: string, fetchError?: FetchError }
+export interface SetResourceStatusEvent { iri: string, isComplete: boolean }
+export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean }
 
 export interface CwaResourcesActionsInterface {
-  resetCurrentResources (): void
+  resetCurrentResources (currentIds?: string[]): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent): void
 }
 
+interface InitResourceEvent {
+  iri: string
+  resourcesState: CwaResourcesStateInterface
+  isCurrent: boolean
+}
+
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
-  function initCurrentResource (resourcesState: CwaResourcesStateInterface, iri: string): CwaCurrentResourceInterface {
+  function initResource ({ iri, resourcesState, isCurrent }: InitResourceEvent): CwaCurrentResourceInterface {
     if (!resourcesState.current.byId[iri]) {
       resourcesState.current.byId[iri] = reactive({
         apiState: reactive({
@@ -26,33 +31,45 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     if (!resourcesState.current.allIds.includes(iri)) {
       resourcesState.current.allIds.push(iri)
     }
-    if (!resourcesState.current.currentIds.includes(iri)) {
+    if (isCurrent && !resourcesState.current.currentIds.includes(iri)) {
       resourcesState.current.currentIds.push(iri)
     }
     return resourcesState.current.byId[iri]
   }
 
   return {
-    resetCurrentResources (): void {
+    resetCurrentResources (currentIds?: string[]): void {
+      if (currentIds) {
+        for (const currentId of currentIds) {
+          if (!resourcesState.current.byId[currentId]) {
+            throw new Error(`Cannot set current resource ID '${currentId}'. It does not exist.`)
+          }
+        }
+      }
       resourcesState.new = reactive({
         byId: {},
         allIds: []
       })
-      resourcesState.current.currentIds = []
+      resourcesState.current.currentIds = currentIds || []
     },
-    setResourceFetchStatus ({ iri, status }: SetResourceStatusEvent): void {
-      const data = initCurrentResource(resourcesState, iri)
-      data.apiState.status = status
-      data.apiState.fetchError = undefined
+    setResourceFetchStatus ({ iri, isComplete }: SetResourceStatusEvent): void {
+      const data = initResource({
+        resourcesState,
+        iri,
+        isCurrent: true
+      })
+      data.apiState.status = isComplete ? 1 : 0
+      data.apiState.error = undefined
     },
-    setResourceFetchError ({ iri, fetchError }: SetResourceFetchErrorEvent): void {
-      const data = initCurrentResource(resourcesState, iri)
+    setResourceFetchError ({ iri, error, isCurrent }: SetResourceFetchErrorEvent): void {
+      const data = initResource({
+        resourcesState,
+        iri,
+        isCurrent: isCurrent === undefined ? true : isCurrent
+      })
       data.apiState.status = -1
-      if (fetchError) {
-        data.apiState.fetchError = {
-          statusCode: fetchError.statusCode,
-          path: fetchError.request?.toString()
-        }
+      if (error) {
+        data.apiState.error = error
       }
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {
@@ -65,7 +82,11 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         return
       }
 
-      const data = initCurrentResource(resourcesState, iri)
+      const data = initResource({
+        resourcesState,
+        iri,
+        isCurrent: true
+      })
       data.data = resource
     }
   }

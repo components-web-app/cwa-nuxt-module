@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'url'
 import { defineNuxtConfig } from 'nuxt/config'
-import { NuxtModule } from '@nuxt/schema'
 import CwaModule from '../src/module'
 
 const API_URL = process.env.API_URL || 'https://localhost:8443'

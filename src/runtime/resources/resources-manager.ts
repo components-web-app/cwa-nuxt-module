@@ -11,6 +11,13 @@ export class ResourcesManager {
     return this.resourcesStore.current.currentIds
   }
 
+  public get currentResources () {
+    return this.resourcesStore.current.currentIds.reduce((obj, id) => {
+      obj[id] = this.resourcesStore.current.byId[id]
+      return obj
+    }, {})
+  }
+
   private get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
   }

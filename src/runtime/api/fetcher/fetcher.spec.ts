@@ -27,13 +27,21 @@ describe('Fetcher -> fetchRoute', () => {
   beforeEach(() => {
     fetcher = createFetcher()
     vi.spyOn(fetcher, 'fetchResource').mockImplementation(() => (Promise.resolve(validCwaResource)))
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'startFetch').mockImplementation(() => {
+      return null
+    })
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('Initialises a fetch status. No token should not continue to fetch', async () => {
+  test('Initialises a fetch status. If continue if false, we should abort the fetch.', async () => {
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
+      return {
+        continue: false
+      }
+    })
     const result = await fetcher.fetchRoute('/some-route')
     expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledWith({
       path: '/_/routes//some-route',
@@ -46,11 +54,25 @@ describe('Fetcher -> fetchRoute', () => {
 
   test('calls fetchResource with the correct iri. Token produced, should continue', async () => {
     FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
-      return 'some-token'
+      return {
+        continue: true,
+        token: 'some-token'
+      }
+    })
+    fetcher.fetchResource.mockImplementation(() => {
+      return {
+        '@id': 'something'
+      }
     })
     const result = await fetcher.fetchRoute('/some-route')
-    expect(fetcher.fetchResource).toHaveBeenCalledWith('/_/routes//some-route', 'some-token')
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({ path: '/_/routes//some-route', token: 'some-token' })
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({ token: 'some-token' })
-    expect(result).toStrictEqual(fetcher.fetchResource.mock.results[0].value)
+    expect(result).toStrictEqual({
+      '@id': 'something'
+    })
   })
+})
+
+describe('Fetcher -> fetchResource', () => {
+  test.todo('Outline tests')
 })

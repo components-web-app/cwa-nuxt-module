@@ -3,13 +3,18 @@ import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { AddFetchResourceEvent, FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
 import { ResourcesStore } from '@cwa/nuxt-module/runtime/storage/stores/resources/resources-store'
+import { CwaResourceError } from '@cwa/nuxt-module/runtime/storage/stores/resources/state'
 
 export interface FinishFetchResourceEvent {
   resource: string,
-  status: 0|1,
+  success: boolean,
   token: string
+  error?: CwaResourceError
 }
 
+/**
+ * This class manages the state across the fetcher store, resources store and additional services for API Documentation and Mercure
+ */
 export default class FetchStatusManager {
   private fetcherStoreDefinition: FetcherStore
   private readonly mercure: Mercure
@@ -29,31 +34,44 @@ export default class FetchStatusManager {
   }
 
   public startFetch (event: StartFetchEvent) {
-    const token = this.fetcherStore.startFetch(event)
-    if (!token) {
-      this.mercure.init()
-    } else if (event.isPrimary) {
-      this.resourcesStore.resetCurrentResources()
+    const startFetchStatus = this.fetcherStore.startFetch(event)
+    if (event.isPrimary) {
+      this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
     }
-    return token
+    if (!startFetchStatus.continue) {
+      this.mercure.init()
+    }
+    return startFetchStatus
   }
 
   public startFetchResource (event: AddFetchResourceEvent) {
     const addedToFetcherResources = this.fetcherStore.addFetchResource(event)
     if (addedToFetcherResources) {
-      this.resourcesStore.setResourceFetchStatus({ iri: event.resource, status: 0 })
+      this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false })
     }
     return addedToFetcherResources
   }
 
   public finishFetchResource (event: FinishFetchResourceEvent) {
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, status: event.status })
-    if (this.fetcherStore.isFetchStatusCurrent(event.token)) {
-      // save the resource here? Only save if the fetcher state is still current and valid
-      // or should we save and just not add to current IDs? Probably not, we shouldn't really need that resource anymore..
-      // but then if that's the case.. should we be clearing resources on page changes instead of just the current page resources?
+    if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
+      this.resourcesStore.setResourceFetchError({
+        iri: event.resource,
+        error: {
+          message: `Not Saved. Fetching token '${event.token}' is no longer current`
+        },
+        isCurrent: false
+      })
+      return
     }
-    // if a finish that is a success we should check for link headers here for initialising mercure and pi docs headers??
+
+    if (!event.success) {
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: true })
+      return
+    }
+
+    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true })
+    // save the resource as well
+    // check for link headers to set mercure hub and api docs endpoints
   }
 
   public finishFetch (event: FinishFetchEvent) {

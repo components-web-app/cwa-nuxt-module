@@ -1,6 +1,6 @@
 <template>
   <div>
-    <pre>{{ $cwa.resourcesManager.currentIds }}</pre>
+    <pre>{{ $cwa.resourcesManager.currentResources }}</pre>
   </div>
 </template>
 

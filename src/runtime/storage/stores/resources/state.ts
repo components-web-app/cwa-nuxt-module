@@ -1,14 +1,13 @@
 import { reactive } from 'vue'
 
+export interface CwaResourceError {
+  statusCode?: number
+  message?: string
+}
+
 export interface CwaResourceApiState {
-  status: number|null
-  fetchError?: {
-    statusCode?: number
-    statusText?: string
-    statusMessage?: string
-    path?: string
-    error?: string
-  }
+  status: -1|0|1|null
+  error?: CwaResourceError
 }
 
 export interface CwaCurrentResourceInterface {

@@ -1,6 +1,6 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { reactive } from 'vue'
-import getters from './getters'
+import getters, { CwaResourcesGettersInterface } from './getters'
 import { CwaResourcesStateInterface } from './state'
 
 function createState (): CwaResourcesStateInterface {
@@ -17,9 +17,14 @@ function createState (): CwaResourcesStateInterface {
   }
 }
 
-describe('Fetcher::resourcesApiStateIsPending', () => {
-  const state = createState()
-  const getterFns = getters(state)
+describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
 
   test('returns false if not resources are pending', () => {
     expect(getterFns.resourcesApiStateIsPending.value).toBe(false)

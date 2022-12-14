@@ -1,14 +1,13 @@
 import { reactive } from 'vue'
-import { FetchError } from 'ohmyfetch'
+import { CwaResourceError } from '../resources/state'
 
 interface FetchManifestInterface {
-  resources?: string[]
   path: string
-  fetchError?: FetchError
+  resources?: string[]
+  error?: CwaResourceError
 }
 
 export interface TopLevelFetchPathInterface {
-  isServerFetch: boolean
   path: string,
   isPrimary: boolean,
   resources: string[],
