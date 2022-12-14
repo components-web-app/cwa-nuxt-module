@@ -4,11 +4,12 @@ import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
+import { CwaResourceTypes } from '../../resources/resource-utils'
 import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
-import { CwaResourceTypes } from '../../resources/resource-utils'
+import { FetchError } from 'ohmyfetch'
 
 vi.mock('./cwa-fetch', () => {
   return {
@@ -19,16 +20,8 @@ vi.mock('./cwa-fetch', () => {
     }))
   }
 })
-vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
-  FetcherStore: vi.fn(() => ({
-    useStore: vi.fn(() => ({primaryFetchPath: '/mock-primary-fetch-path'}))
-  }))
-}))
-vi.mock('../../storage/stores/resources/resources-store', () => ({
-  ResourcesStore: vi.fn(() => ({
-    useStore: vi.fn(() => ({}))
-  }))
-}))
+vi.mock('../../storage/stores/fetcher/fetcher-store')
+vi.mock('../../storage/stores/resources/resources-store')
 vi.mock('./fetch-status-manager')
 vi.mock('../mercure')
 vi.mock('../api-documentation')
@@ -184,6 +177,36 @@ describe('Fetcher -> fetchResource', () => {
     })
     expect(fetcher.fetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0])
 
+    expect(result).toBeUndefined()
+  })
+
+  test('Fetch error is caught and set', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any'
+    }
+
+    fetcher.fetch.mockImplementation(() => {
+      const error = new FetchError('Some error message')
+      error.message = 'fetch error message'
+      error.statusCode = 101
+      throw error
+    })
+
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(fetcher.fetchManifest).not.toHaveBeenCalled()
+
+    expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
+      resource: fetchResourceEvent.path,
+      token: fetchResourceEvent.token,
+      success: false,
+      error: {
+        message: 'fetch error message',
+        statusCode: 101
+      }
+    })
+    expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
     expect(result).toBeUndefined()
   })
 

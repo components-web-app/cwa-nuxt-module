@@ -4,6 +4,7 @@ import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
+import { FetchError } from 'ohmyfetch'
 
 interface FetchResourceEvent {
   path: string
@@ -74,19 +75,27 @@ export default class Fetcher {
       token: startFetchResult.token
     })
 
-    await this.fetch({
-      path,
-      preload
-    })
-
-    // todo: do fetch of nested resources here too
-    const resourceFetchSuccess = true
-
-    this.fetchStatusManager.finishFetchResource({
-      resource: path,
-      success: resourceFetchSuccess,
-      token: startFetchResult.token
-    })
+    try {
+      await this.fetch({
+        path,
+        preload
+      })
+      this.fetchStatusManager.finishFetchResource({
+        resource: path,
+        success: true,
+        token: startFetchResult.token
+      })
+    } catch (error: any) {
+      this.fetchStatusManager.finishFetchResource({
+        resource: path,
+        success: false,
+        token: startFetchResult.token,
+        error: {
+          statusCode: error?.statusCode,
+          message: error?.message || 'An unknown error occurred'
+        }
+      })
+    }
 
     // if an existing token was not provided, we can finish it
     if (!token) {
