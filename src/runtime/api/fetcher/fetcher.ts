@@ -1,13 +1,15 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { CwaResource } from '../../resources/resource-utils'
+import { CwaResource, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
+import preloadHeaders from './preload-headers'
 
 interface FetchResourceEvent {
   path: string
   token?: string
   manifestPath?: string
+  preload?: string[]
 }
 
 export interface FetchManifestEvent {
@@ -15,9 +17,15 @@ export interface FetchManifestEvent {
   token: string
 }
 
+interface FetchEvent {
+  path: string
+  preload?: string[]
+}
+
 export default class Fetcher {
   private readonly cwaFetch: CwaFetch
   private fetchStatusManager: FetchStatusManager
+  private currentRoute: RouteLocationNormalizedLoaded
 
   constructor (
     cwaFetch: CwaFetch,
@@ -30,6 +38,7 @@ export default class Fetcher {
   }
 
   public async fetchRoute (path: string): Promise<CwaResource|undefined> {
+    // todo: handle if the returned route is a redirect and we should change the path loaded for the user or a redirect etc.
     const iri = `/_/routes/${path}`
     const manifestPath = `/_/routes_manifest/${path}`
     const startFetchResult = this.fetchStatusManager.startFetch({
@@ -47,7 +56,7 @@ export default class Fetcher {
     return resource
   }
 
-  public async fetchResource ({ path, token, manifestPath }: FetchResourceEvent): Promise<CwaResource|undefined> {
+  public async fetchResource ({ path, token, manifestPath, preload }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token
@@ -65,14 +74,12 @@ export default class Fetcher {
       token: startFetchResult.token
     })
 
-    // do the fetching here
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true)
-      }, (Math.random() * 10) + 10)
+    await this.fetch({
+      path,
+      preload
     })
 
-    // do fetch of nested resources here too
+    // todo: do fetch of nested resources here too
     const resourceFetchSuccess = true
 
     this.fetchStatusManager.finishFetchResource({
@@ -95,11 +102,11 @@ export default class Fetcher {
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve(true)
-      }, (Math.random() * 10) + 50)
+      }, (Math.random() * 10) + 20)
     })
 
     const resources: string[] = ['/some-resource']
-    // fetch batch here...
+    // todo: fetch batch here...
 
     this.fetchStatusManager.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
@@ -114,5 +121,51 @@ export default class Fetcher {
     //     message: 'manifest error message'
     //   }
     // })
+  }
+
+  private fetch (event: FetchEvent) {
+    const url = this.appendQueryToPath(event.path)
+    // const headers = this.createRequestHeaders(event)
+    return this.cwaFetch.fetch.raw<any>(url, {
+      // headers,
+      // onResponse: context => (this.handleFetchResponse(context)),
+      // onRequestError: this.handleFetchError
+    })
+  }
+
+  private appendQueryToPath (path: string): string {
+    const queryObj = this.currentRoute.query
+    if (!queryObj) {
+      return path
+    }
+    const queryKeys = Object.keys(queryObj)
+    if (!queryKeys.length) {
+      return path
+    }
+
+    const queryString = queryKeys
+      .map((key: string) => key + '=' + queryObj[key])
+      .join('&')
+    const delimiter = path.includes('?') ? '&' : '?'
+    return `${path}${delimiter}${queryString}`
+  }
+
+  private createRequestHeaders (event: FetchEvent): { path: string; preload?: string } {
+    if (!this.fetchStatus.path) {
+      throw new Error('Cannot create a new request to the API before setting the fetch status path.')
+    }
+
+    let preload = event.preload
+    if (!preload) {
+      const resourceType = getResourceTypeFromIri(event.path)
+      if (resourceType) {
+        preload = preloadHeaders[resourceType]
+      }
+    }
+
+    return {
+      path: this.fetchStatus.path,
+      preload: preload ? preload.join(',') : undefined
+    }
   }
 }

@@ -4,7 +4,15 @@ import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 
-vi.mock('./cwa-fetch')
+vi.mock('./cwa-fetch', () => {
+  return {
+    default: vi.fn(() => ({
+      fetch: {
+        raw: vi.fn()
+      }
+    }))
+  }
+})
 vi.mock('./fetch-status-manager')
 
 function delay (time: number, returnValue: any = undefined) {
@@ -13,10 +21,10 @@ function delay (time: number, returnValue: any = undefined) {
   })
 }
 
-function createFetcher (): Fetcher {
+function createFetcher (query?: { [key: string]: string }): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
   const statusManager = new FetchStatusManager()
-  const currentRoute = { path: '/current-path' }
+  const currentRoute = { path: '/current-path', query }
   return new Fetcher(cwaFetch, statusManager, currentRoute)
 }
 
@@ -106,6 +114,9 @@ describe('Fetcher -> fetchResource', () => {
     vi.spyOn(fetcher, 'fetchManifest').mockImplementation(() => {
       return Promise.resolve()
     })
+    vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
+      return Promise.resolve()
+    })
   })
 
   afterEach(() => {
@@ -129,7 +140,7 @@ describe('Fetcher -> fetchResource', () => {
     expect(result).toBeUndefined()
   })
 
-  test('startFetchResource and fetchManifest are called if startFetch returns continue as true', async () => {
+  test('startFetchResource (without preload) and fetchManifest are called if startFetch returns continue as true', async () => {
     const fetchResourceEvent = {
       path: '/new-path',
       token: 'any',
@@ -148,23 +159,38 @@ describe('Fetcher -> fetchResource', () => {
       token: fetchResourceEvent.token
     })
     expect(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchManifest.mock.invocationCallOrder[0])
+
+    expect(fetcher.fetch).toHaveBeenCalledWith({
+      path: '/new-path',
+      preload: undefined
+    })
+    expect(fetcher.fetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0])
+
     expect(result).toBeUndefined()
   })
 
-  test('finishFetchResource is called if startFetch returns continue as true', async () => {
+  test('finishFetchResource after fetch (with preload) is called if startFetch returns continue as true', async () => {
     const fetchResourceEvent = {
       path: '/new-path',
-      token: 'any'
+      token: 'any',
+      preload: ['/something']
     }
     const result = await fetcher.fetchResource(fetchResourceEvent)
 
     expect(fetcher.fetchManifest).not.toHaveBeenCalled()
-    expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0])
+
+    expect(fetcher.fetch).toHaveBeenCalledWith({
+      path: '/new-path',
+      preload: ['/something']
+    })
+    expect(fetcher.fetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0])
+
     expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
       success: true
     })
+    expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
     expect(result).toBeUndefined()
   })
 
@@ -203,11 +229,14 @@ describe('Fetcher -> fetchResource', () => {
   })
 })
 
-describe('fetchManifest functionality', () => {
+describe('Fetcher -> fetchManifest', () => {
   let fetcher: Fetcher
 
   beforeEach(() => {
     fetcher = createFetcher()
+    vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
+      return Promise.resolve()
+    })
     FetchStatusManager.mock.instances[0].startFetch.mockImplementation((startEvent) => {
       return {
         continue: true,
@@ -239,4 +268,79 @@ describe('fetchManifest functionality', () => {
       type: FinishFetchManifestType.SUCCESS
     })
   })
+})
+
+describe('Fetcher -> fetch', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation(() => {
+      return {
+        continue: true
+      }
+    })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('The path has query parameters appended to the fetch url', async () => {
+    vi.spyOn(fetcher, 'appendQueryToPath').mockImplementation((path: string): string => {
+      return `${path}?query=value`
+    })
+    const fetchResourceEvent = {
+      path: '/mock-path',
+      token: 'any'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/mock-path?query=value')
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.appendQueryToPath.mock.invocationCallOrder[0])
+  })
+})
+
+describe('Fetcher -> appendQueryToPath', () => {
+  let fetcher: Fetcher
+
+  function setupMocks () {
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation(() => {
+      return {
+        continue: true
+      }
+    })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+    CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {})
+  }
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test
+    .each([
+      { query: { something: 1 }, path: '/mock-path', result: '/mock-path?something=1' },
+      { query: { something: 1 }, path: '/mock-path?existing=1', result: '/mock-path?existing=1&something=1' },
+      { query: undefined, path: '/mock-path', result: '/mock-path' },
+      { query: {}, path: '/mock-path', result: '/mock-path' }
+    ])("If query parameters are '$query' and the fetch path is $path we should call a fetch to the url $result", async ({
+      query,
+      path,
+      result
+    }) => {
+      fetcher = createFetcher(query)
+      setupMocks()
+      const fetchResourceEvent = {
+        path,
+        token: 'any'
+      }
+      await fetcher.fetchResource(fetchResourceEvent)
+
+      expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe(result)
+    })
 })
