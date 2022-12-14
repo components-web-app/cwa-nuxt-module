@@ -27,9 +27,6 @@ describe('Fetcher -> fetchRoute', () => {
   beforeEach(() => {
     fetcher = createFetcher()
     vi.spyOn(fetcher, 'fetchResource').mockImplementation(() => (Promise.resolve(validCwaResource)))
-    vi.spyOn(FetchStatusManager.mock.instances[0], 'startFetch').mockImplementation(() => {
-      return null
-    })
   })
 
   afterEach(() => {
@@ -66,6 +63,8 @@ describe('Fetcher -> fetchRoute', () => {
     })
     const result = await fetcher.fetchRoute('/some-route')
     expect(fetcher.fetchResource).toHaveBeenCalledWith({ path: '/_/routes//some-route', token: 'some-token' })
+
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({ token: 'some-token' })
     expect(result).toStrictEqual({
       '@id': 'something'
@@ -74,5 +73,92 @@ describe('Fetcher -> fetchRoute', () => {
 })
 
 describe('Fetcher -> fetchResource', () => {
-  test.todo('Outline tests')
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'startFetch').mockImplementation(() => {
+      return null
+    })
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation((obj) => {
+      return {
+        continue: true,
+        token: obj.token || 'new-token'
+      }
+    })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Start fetch is called and if returns false we stop calling functions', async () => {
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
+      return {
+        continue: false
+      }
+    })
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any'
+    }
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledWith(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].startFetchResource).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
+  })
+
+  test('startFetchResource is called if startFetch returns continue as true', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any'
+    }
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].startFetchResource).toHaveBeenCalledWith({
+      resource: fetchResourceEvent.path,
+      token: fetchResourceEvent.token
+    })
+    expect(result).toBeUndefined()
+  })
+
+  test('finishFetchResource is called if startFetch returns continue as true', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any'
+    }
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
+      resource: fetchResourceEvent.path,
+      token: fetchResourceEvent.token,
+      success: true
+    })
+    expect(result).toBeUndefined()
+  })
+
+  test('finish fetch is not called if a previous token is provided', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any'
+    }
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].finishFetch).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
+  })
+
+  test('finish fetch is called if no previous token is provided', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path'
+    }
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({
+      token: 'new-token'
+    })
+    expect(result).toBeUndefined()
+  })
 })

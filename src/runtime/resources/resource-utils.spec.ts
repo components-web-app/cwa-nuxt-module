@@ -9,28 +9,28 @@ import {
 
 describe('Resource isCwaResource function', () => {
   test('variable provided is not an object', () => {
-    expect(isCwaResource('string')).toBeFalsy()
+    expect(isCwaResource('string')).toBe(false)
   })
   test('variable provided does not have @id', () => {
     const resource = {
       '@type': 'something',
       _metadata: {}
     }
-    expect(isCwaResource(resource)).toBeFalsy()
+    expect(isCwaResource(resource)).toBe(false)
   })
   test('variable provided does not have @type', () => {
     const resource = {
       '@id': 'id',
       _metadata: {}
     }
-    expect(isCwaResource(resource)).toBeFalsy()
+    expect(isCwaResource(resource)).toBe(false)
   })
   test('variable provided does not have _metadata', () => {
     const resource = {
       '@id': 'id',
       '@type': 'something'
     }
-    expect(isCwaResource(resource)).toBeFalsy()
+    expect(isCwaResource(resource)).toBe(false)
   })
   test('variable provided _metadata is not an object', () => {
     const resource = {
@@ -38,7 +38,7 @@ describe('Resource isCwaResource function', () => {
       '@type': 'something',
       _metadata: 'not-an-object'
     }
-    expect(isCwaResource(resource)).toBeFalsy()
+    expect(isCwaResource(resource)).toBe(false)
   })
   test('variable provided has @id and @type so can be considered a resource', () => {
     const resource = {
@@ -46,7 +46,7 @@ describe('Resource isCwaResource function', () => {
       '@type': 'something',
       _metadata: {}
     }
-    expect(isCwaResource(resource)).toBeTruthy()
+    expect(isCwaResource(resource)).toBe(true)
   })
 })
 

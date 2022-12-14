@@ -133,7 +133,7 @@ describe('FetchStatusManager -> startFetchResource', () => {
     const result = fetchStatusManager.startFetchResource(startFetchResourceEvent)
     expect(fetcherStore.useStore.mock.results[0].value.addFetchResource).toHaveBeenCalledWith(startFetchResourceEvent)
     expect(ResourcesStore.mock.results[0].value.useStore).not.toHaveBeenCalled()
-    expect(result).toBeFalsy()
+    expect(result).toBe(false)
   })
 
   test('If fetcherStore.addFetchResource returns true, we set the resource fetch status', () => {
@@ -154,7 +154,7 @@ describe('FetchStatusManager -> startFetchResource', () => {
       iri: '/a-new-resource',
       isComplete: false
     })
-    expect(result).toBeTruthy()
+    expect(result).toBe(true)
   })
 })
 

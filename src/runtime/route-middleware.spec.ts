@@ -51,7 +51,7 @@ describe('Test route middleware', () => {
     await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute.path)
-    expect(resolved).toBeTruthy()
+    expect(resolved).toBe(true)
   })
 
   test('Test route middleware can be set to true', () => {
@@ -73,6 +73,6 @@ describe('Test route middleware', () => {
     await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute.path)
-    expect(resolved).toBeFalsy()
+    expect(resolved).toBe(false)
   })
 })

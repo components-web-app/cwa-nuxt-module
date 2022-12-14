@@ -57,7 +57,7 @@ export default class Fetcher {
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve(true)
-      }, (Math.random() * 100) + 500)
+      }, (Math.random() * 10) + 10)
     })
 
     // do fetching of nested resources here too

@@ -84,7 +84,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
         resources: ['/success-resource', '/errored-resource', '/in-progress-resource']
       }
     }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBeFalsy()
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
   })
 
   test('Returns true if all resources in a completed state', () => {
@@ -95,7 +95,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
         resources: ['/success-resource', '/errored-resource']
       }
     }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBeTruthy()
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
   })
 })
 
@@ -122,7 +122,7 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
         resources: ['/success-resource', '/errored-resource']
       }
     }
-    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBeTruthy()
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
   })
 
   test('Tokens matching an in progress primary fetching token return true', () => {
@@ -134,7 +134,7 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
         resources: ['/success-resource', '/errored-resource']
       }
     }
-    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBeTruthy()
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
   })
 
   test('Tokens not matching the current primary fetching token return false', () => {
@@ -146,6 +146,6 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
         resources: ['/success-resource', '/errored-resource']
       }
     }
-    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBeFalsy()
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)
   })
 })

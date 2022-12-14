@@ -330,7 +330,7 @@ describe('Fetcher store action -> addFetchResource', () => {
       token: 'existing-token',
       resource: '/existing-path'
     })
-    expect(result).toBeFalsy()
+    expect(result).toBe(false)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual(existingFetchState.resources)
   })
 
@@ -340,7 +340,7 @@ describe('Fetcher store action -> addFetchResource', () => {
       token: 'existing-incomplete-primary-token',
       resource: '/existing-path'
     })
-    expect(result).toBeFalsy()
+    expect(result).toBe(false)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual(existingFetchState.resources)
   })
 
@@ -350,7 +350,7 @@ describe('Fetcher store action -> addFetchResource', () => {
       token: 'existing-token',
       resource: '/another-path-2'
     })
-    expect(result).toBeTruthy()
+    expect(result).toBe(true)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual([
       '/existing-path',
       '/errored-resource',
@@ -364,7 +364,7 @@ describe('Fetcher store action -> addFetchResource', () => {
       token: 'existing-complete-primary-token',
       resource: '/another-path-2'
     })
-    expect(result).toBeTruthy()
+    expect(result).toBe(true)
     expect(fetcherState.fetches['existing-complete-primary-token'].resources).toStrictEqual([
       '/existing-primary-path',
       '/existing-path',
@@ -378,7 +378,7 @@ describe('Fetcher store action -> addFetchResource', () => {
       token: 'existing-complete-primary-token',
       resource: '/another-path-2'
     })
-    expect(result).toBeFalsy()
+    expect(result).toBe(false)
     expect(fetcherState.fetches['existing-complete-primary-token'].resources).toStrictEqual([
       '/existing-primary-path',
       '/existing-path'
