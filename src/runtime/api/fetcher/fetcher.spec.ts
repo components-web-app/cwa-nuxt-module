@@ -64,7 +64,9 @@ describe('Fetcher -> fetchRoute', () => {
     const result = await fetcher.fetchRoute('/some-route')
     expect(fetcher.fetchResource).toHaveBeenCalledWith({ path: '/_/routes//some-route', token: 'some-token' })
 
-    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledTimes(1)
+    expect(fetcher.fetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchResource.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({ token: 'some-token' })
     expect(result).toStrictEqual({
       '@id': 'something'
