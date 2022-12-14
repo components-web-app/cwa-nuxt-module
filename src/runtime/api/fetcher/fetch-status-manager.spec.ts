@@ -347,3 +347,25 @@ describe('FetchStatusManager -> finishManifestFetch', () => {
     expect(fetcherStore.useStore.mock.results[0].value.finishManifestFetch).toHaveBeenCalledWith(errorEvent)
   })
 })
+
+describe('FetchStatusManager -> primaryFetchPath', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Returns the fetcher store getter result', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        primaryFetchPath: 'anything'
+      }
+    })
+    expect(fetchStatusManager.primaryFetchPath).toBe('anything')
+  })
+})

@@ -37,6 +37,40 @@ vi.mock('../resources/resources-store', () => ({
   }))
 }))
 
+describe('FetcherStore getters -> primaryFetchPath', () => {
+  let state: CwaFetcherStateInterface
+  let getterFns: CwaFetcherGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state, new ResourcesStore())
+    state.fetches = {
+      'token-a': {
+        path: 'path-a',
+        isPrimary: true,
+        resources: []
+      },
+      'token-b': {
+        path: 'path-b',
+        isPrimary: true,
+        resources: []
+      }
+    }
+  })
+
+  test
+    .each([
+      { fetchingToken: undefined, successToken: undefined, result: undefined },
+      { fetchingToken: 'token-a', successToken: 'token-b', result: 'path-a' },
+      { fetchingToken: undefined, successToken: 'token-b', result: 'path-b' },
+      { fetchingToken: 'token-a', successToken: undefined, result: 'path-a' }
+    ])('If the fetching token is $fetchingToken and the success token is $successToken then the path should be $result', ({ fetchingToken, successToken, result }) => {
+      state.primaryFetch.successToken = successToken
+      state.primaryFetch.fetchingToken = fetchingToken
+      expect(getterFns.primaryFetchPath.value).toBe(result)
+    })
+})
+
 describe('FetcherStore getters -> isFetchChainComplete', () => {
   let state: CwaFetcherStateInterface
   let getterFns: CwaFetcherGettersInterface

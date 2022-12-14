@@ -3,12 +3,21 @@ import { ResourcesStore } from '../resources/resources-store'
 import { CwaFetcherStateInterface } from './state'
 
 export interface CwaFetcherGettersInterface {
+  primaryFetchPath: ComputedRef<string|undefined>
   isFetchChainComplete: ComputedRef<(token: string) => boolean|undefined>
   isCurrentFetchingToken: ComputedRef<(token: string) => boolean|undefined>
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreDefinition: ResourcesStore): CwaFetcherGettersInterface {
   return {
+    primaryFetchPath: computed(() => {
+      const primaryFetchToken = fetcherState.primaryFetch.fetchingToken || fetcherState.primaryFetch.successToken
+      if (!primaryFetchToken) {
+        return
+      }
+      const fetchStatus = fetcherState.fetches[primaryFetchToken]
+      return fetchStatus.path
+    }),
     isFetchChainComplete: computed(() => {
       return (token: string) => {
         const fetchStatus = fetcherState.fetches[token]

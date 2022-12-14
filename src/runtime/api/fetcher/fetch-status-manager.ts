@@ -108,6 +108,10 @@ export default class FetchStatusManager {
     this.fetcherStore.finishManifestFetch(event)
   }
 
+  public get primaryFetchPath (): string|undefined {
+    return this.fetcherStore.primaryFetchPath
+  }
+
   private get fetcherStore () {
     return this.fetcherStoreDefinition.useStore()
   }
