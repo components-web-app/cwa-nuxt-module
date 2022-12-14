@@ -1,10 +1,10 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { FetchError } from 'ohmyfetch'
 import { CwaResource, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
-import { FetchError } from 'ohmyfetch'
 
 interface FetchResourceEvent {
   path: string
@@ -75,21 +75,23 @@ export default class Fetcher {
       token: startFetchResult.token
     })
 
+    const finishFetchResourceEvent = {
+      resource: path,
+      token: startFetchResult.token
+    }
     try {
       await this.fetch({
         path,
         preload
       })
       this.fetchStatusManager.finishFetchResource({
-        resource: path,
-        success: true,
-        token: startFetchResult.token
+        ...finishFetchResourceEvent,
+        success: true
       })
     } catch (error: any) {
       this.fetchStatusManager.finishFetchResource({
-        resource: path,
+        ...finishFetchResourceEvent,
         success: false,
-        token: startFetchResult.token,
         error: {
           statusCode: error?.statusCode,
           message: error?.message || 'An unknown error occurred'

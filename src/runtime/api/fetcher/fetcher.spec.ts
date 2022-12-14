@@ -1,4 +1,5 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
+import { FetchError } from 'ohmyfetch'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -9,7 +10,6 @@ import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
-import { FetchError } from 'ohmyfetch'
 
 vi.mock('./cwa-fetch', () => {
   return {
@@ -180,7 +180,10 @@ describe('Fetcher -> fetchResource', () => {
     expect(result).toBeUndefined()
   })
 
-  test('Fetch error is caught and set', async () => {
+  test.each([
+    { errorMessage: 'fetch error message', expectedErrorMessage: 'fetch error message', statusCode: 101 },
+    { errorMessage: undefined, expectedErrorMessage: 'An unknown error occurred', statusCode: undefined }
+  ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, expectedErrorMessage, statusCode }) => {
     const fetchResourceEvent = {
       path: '/new-path',
       token: 'any'
@@ -188,8 +191,8 @@ describe('Fetcher -> fetchResource', () => {
 
     fetcher.fetch.mockImplementation(() => {
       const error = new FetchError('Some error message')
-      error.message = 'fetch error message'
-      error.statusCode = 101
+      error.message = errorMessage
+      error.statusCode = statusCode
       throw error
     })
 
@@ -202,8 +205,8 @@ describe('Fetcher -> fetchResource', () => {
       token: fetchResourceEvent.token,
       success: false,
       error: {
-        message: 'fetch error message',
-        statusCode: 101
+        message: expectedErrorMessage,
+        statusCode
       }
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
