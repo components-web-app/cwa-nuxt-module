@@ -1,7 +1,7 @@
 import { describe, beforeEach, vi, test, expect } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
-import { CwaFetcherStateInterface } from './state'
+import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters, { CwaFetcherGettersInterface } from './getters'
 
 function createState (): CwaFetcherStateInterface {
@@ -97,6 +97,33 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
     }
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
   })
+
+  test.each([
+    { manifest: false, manifestResources: undefined, manifestError: undefined, result: true },
+    { manifest: true, manifestResources: undefined, manifestError: undefined, result: false },
+    { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: true },
+    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: true }
+  ])(
+    "If manifest is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
+    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
+    ) => {
+      const currentFetch: TopLevelFetchPathInterface = {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/errored-resource']
+      }
+      if (manifest) {
+        currentFetch.manifest = {
+          path: 'any',
+          resources: manifestResources,
+          error: manifestError
+        }
+      }
+      state.fetches = {
+        'some-token': currentFetch
+      }
+      expect(getterFns.isFetchChainComplete.value('some-token')).toBe(result)
+    })
 })
 
 describe('FetcherStore getters -> isCurrentFetchingToken', () => {

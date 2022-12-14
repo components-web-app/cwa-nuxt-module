@@ -1,3 +1,4 @@
+import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
@@ -27,6 +28,17 @@ vi.mock('../../storage/stores/resources/resources-store', () => ({
 }))
 vi.mock('../mercure')
 vi.mock('../api-documentation')
+vi.mock('vue', async () => {
+  const actual = await vi.importActual<{ watch: typeof vue.watch, computed: typeof vue.computed }>('vue')
+  return {
+    ...actual,
+    watch: vi.fn((prop, fn, ops) => {
+      const stopWatch = actual.watch(prop, fn, ops)
+      return vi.fn(() => stopWatch)
+    }),
+    computed: vi.fn(fn => actual.computed(fn))
+  }
+})
 
 function createFetchStatusManager (): FetchStatusManager {
   const fetcherStore = new FetcherStore()
@@ -265,20 +277,28 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
     vi.clearAllMocks()
   })
 
-  test('Call the fetcher store action finishFetch with the event and return the result', () => {
+  test('Call the fetcher store action finishFetch with the event and return the result, while waiting for the isFetchChainComplete to be successful', async () => {
     const fetcherStore = FetcherStore.mock.results[0].value
-    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+    vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        finishFetch: vi.fn(() => 'anything')
+        finishFetch: vi.fn(() => Promise.resolve('anything')),
+        isFetchChainComplete: vi.fn(() => true)
       }
     })
 
-    const result = fetchStatusManager.finishFetch({
+    const result = await fetchStatusManager.finishFetch({
       token: 'a-token'
     })
 
+    expect(vue.computed).toHaveBeenCalledTimes(1)
+    expect(vue.computed.mock.calls[0][0]).toBeTypeOf('function')
+    expect(vue.watch.mock.calls[0][0]).toBe(vue.computed.mock.results[0].value)
+    expect(vue.watch.mock.calls[0][1]).toBeTypeOf('function')
+    expect(vue.watch.mock.calls[0][2]).toStrictEqual({ immediate: true })
     expect(fetcherStore.useStore.mock.results[0].value.finishFetch).toHaveBeenCalledWith({ token: 'a-token' })
-    expect(result).toStrictEqual(fetcherStore.useStore.mock.results[0].value.finishFetch.mock.results[0].value)
+    expect(fetcherStore.useStore.mock.results[1].value.isFetchChainComplete).toHaveBeenCalledWith('a-token')
+    expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
+    expect(result).toBeUndefined()
   })
 })
 

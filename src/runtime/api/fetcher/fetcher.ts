@@ -41,7 +41,7 @@ export default class Fetcher {
       return
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
-    this.fetchStatusManager.finishFetch({
+    await this.fetchStatusManager.finishFetch({
       token: startFetchResult.token
     })
     return resource
@@ -82,7 +82,7 @@ export default class Fetcher {
 
     // if an existing token was not provided, we can finish it
     if (!token) {
-      this.fetchStatusManager.finishFetch({
+      await this.fetchStatusManager.finishFetch({
         token: startFetchResult.token
       })
     }

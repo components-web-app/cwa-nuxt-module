@@ -19,6 +19,11 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
         if (!resources.length) {
           return
         }
+
+        if (fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined) {
+          return false
+        }
+
         const resourcesStore = resourcesStoreDefinition.useStore()
         for (const resource of resources) {
           const resourceData = resourcesStore.current.byId[resource]

@@ -50,11 +50,20 @@ describe('Fetcher -> fetchRoute', () => {
   })
 
   test('calls fetchResource with the correct iri. Token produced, should continue', async () => {
+    let finishResolved = false
     FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
       return {
         continue: true,
         token: 'some-token'
       }
+    })
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementationOnce(() => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          finishResolved = true
+          resolve()
+        }, 1)
+      })
     })
     fetcher.fetchResource.mockImplementation(() => {
       return {
@@ -66,11 +75,13 @@ describe('Fetcher -> fetchRoute', () => {
 
     expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
-    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchResource.mock.invocationCallOrder[0])
+
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({ token: 'some-token' })
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchResource.mock.invocationCallOrder[0])
     expect(result).toStrictEqual({
       '@id': 'something'
     })
+    expect(finishResolved).toBe(true)
   })
 })
 
@@ -161,6 +172,16 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finish fetch is called if no previous token is provided', async () => {
+    let finishResolved = false
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementationOnce(() => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          finishResolved = true
+          resolve()
+        }, 1)
+      })
+    })
+
     const fetchResourceEvent = {
       path: '/new-path'
     }
@@ -171,6 +192,7 @@ describe('Fetcher -> fetchResource', () => {
       token: 'new-token'
     })
     expect(result).toBeUndefined()
+    expect(finishResolved).toBe(true)
   })
 })
 

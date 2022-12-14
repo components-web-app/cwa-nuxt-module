@@ -1,3 +1,4 @@
+import { computed, watch } from 'vue'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
@@ -79,8 +80,28 @@ export default class FetchStatusManager {
     // check for link headers to set mercure hub and api docs endpoints
   }
 
-  public finishFetch (event: FinishFetchEvent) {
-    return this.fetcherStore.finishFetch(event)
+  public async finishFetch (event: FinishFetchEvent) {
+    this.fetcherStore.finishFetch(event)
+    await this.waitForFetchChainToComplete(event.token)
+  }
+
+  private async waitForFetchChainToComplete (token: string) {
+    let fetchChainCompletePromiseResolver: () => void
+    const fetchChainCompletePromise = new Promise<void>((resolve) => {
+      fetchChainCompletePromiseResolver = resolve
+    })
+
+    const computedFetchChainComplete = computed(() => this.fetcherStore.isFetchChainComplete(token))
+    const callback = (isFetchChainComplete: boolean|undefined) => {
+      if (isFetchChainComplete === true) {
+        fetchChainCompletePromiseResolver()
+      }
+    }
+    const stopWatch = watch(computedFetchChainComplete, callback, {
+      immediate: true
+    })
+    await fetchChainCompletePromise
+    stopWatch()
   }
 
   public finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
