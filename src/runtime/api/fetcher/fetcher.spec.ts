@@ -1,10 +1,17 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
+import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 
 vi.mock('./cwa-fetch')
 vi.mock('./fetch-status-manager')
+
+function delay (time: number, returnValue: any = undefined) {
+  return new Promise((resolve) => {
+    setTimeout(() => { resolve(returnValue) }, time)
+  })
+}
 
 function createFetcher (): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
@@ -196,4 +203,40 @@ describe('Fetcher -> fetchResource', () => {
   })
 })
 
-describe.todo('fetchManifest functionality')
+describe('fetchManifest functionality', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation((startEvent) => {
+      return {
+        continue: true,
+        token: startEvent.token
+      }
+    })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('We finish the manifest status when completed', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    // we will not be awaiting the manifest
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).not.toHaveBeenCalled()
+    await delay(60)
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
+      resources: ['/some-resource'],
+      token: 'any',
+      type: FinishFetchManifestType.SUCCESS
+    })
+  })
+})

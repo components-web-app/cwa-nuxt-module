@@ -57,7 +57,7 @@ export default class Fetcher {
     }
 
     if (manifestPath) {
-      this.fetchManifest({ token: startFetchResult.token, manifestPath })
+      this.fetchManifest({ token: startFetchResult.token, manifestPath }).then(() => {})
     }
 
     this.fetchStatusManager.startFetchResource({
@@ -72,11 +72,12 @@ export default class Fetcher {
       }, (Math.random() * 10) + 10)
     })
 
-    // do fetching of nested resources here too
+    // do fetch of nested resources here too
+    const resourceFetchSuccess = true
 
     this.fetchStatusManager.finishFetchResource({
       resource: path,
-      success: true,
+      success: resourceFetchSuccess,
       token: startFetchResult.token
     })
 
@@ -94,7 +95,7 @@ export default class Fetcher {
     await new Promise((resolve) => {
       setTimeout(() => {
         resolve(true)
-      }, (Math.random() * 10) + 10)
+      }, (Math.random() * 10) + 50)
     })
 
     const resources: string[] = ['/some-resource']
