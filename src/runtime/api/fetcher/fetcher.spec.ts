@@ -1,8 +1,14 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
+import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import Mercure from '../mercure'
+import ApiDocumentation from '../api-documentation'
+import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
+import preloadHeaders from './preload-headers'
+import { CwaResourceTypes } from '../../resources/resource-utils'
 
 vi.mock('./cwa-fetch', () => {
   return {
@@ -13,7 +19,19 @@ vi.mock('./cwa-fetch', () => {
     }))
   }
 })
+vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
+  FetcherStore: vi.fn(() => ({
+    useStore: vi.fn(() => ({primaryFetchPath: '/mock-primary-fetch-path'}))
+  }))
+}))
+vi.mock('../../storage/stores/resources/resources-store', () => ({
+  ResourcesStore: vi.fn(() => ({
+    useStore: vi.fn(() => ({}))
+  }))
+}))
 vi.mock('./fetch-status-manager')
+vi.mock('../mercure')
+vi.mock('../api-documentation')
 
 function delay (time: number, returnValue: any = undefined) {
   return new Promise((resolve) => {
@@ -23,7 +41,7 @@ function delay (time: number, returnValue: any = undefined) {
 
 function createFetcher (query?: { [key: string]: string }): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
-  const statusManager = new FetchStatusManager()
+  const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), new ResourcesStore())
   const currentRoute = { path: '/current-path', query }
   return new Fetcher(cwaFetch, statusManager, currentRoute)
 }
@@ -283,6 +301,7 @@ describe('Fetcher -> fetch', () => {
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+    vi.spyOn(fetcher, 'createRequestHeaders').mockImplementation(() => ({ someHeader: 'someValue' }))
   })
 
   afterEach(() => {
@@ -299,6 +318,7 @@ describe('Fetcher -> fetch', () => {
     }
     await fetcher.fetchResource(fetchResourceEvent)
     expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/mock-path?query=value')
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1].headers).toStrictEqual({ someHeader: 'someValue' })
     expect(CwaFetch.mock.results[0].value.fetch.raw.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.appendQueryToPath.mock.invocationCallOrder[0])
   })
 })
@@ -306,7 +326,8 @@ describe('Fetcher -> fetch', () => {
 describe('Fetcher -> appendQueryToPath', () => {
   let fetcher: Fetcher
 
-  function setupMocks () {
+  function setupMocks (fetcher: Fetcher) {
+    vi.spyOn(fetcher, 'createRequestHeaders').mockImplementation(() => ({}))
     FetchStatusManager.mock.instances[0].startFetch.mockImplementation(() => {
       return {
         continue: true
@@ -316,6 +337,7 @@ describe('Fetcher -> appendQueryToPath', () => {
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {})
+    vi.spyOn(fetcher, 'appendQueryToPath')
   }
 
   afterEach(() => {
@@ -334,13 +356,54 @@ describe('Fetcher -> appendQueryToPath', () => {
       result
     }) => {
       fetcher = createFetcher(query)
-      setupMocks()
+      setupMocks(fetcher)
       const fetchResourceEvent = {
         path,
         token: 'any'
       }
       await fetcher.fetchResource(fetchResourceEvent)
+      expect(fetcher.appendQueryToPath).toReturnWith(result)
+    })
+})
 
-      expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe(result)
+describe('Fetcher -> createRequestHeaders', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'appendQueryToPath').mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation(() => {
+      return {
+        continue: true
+      }
+    })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
+    vi.spyOn(fetcher, 'createRequestHeaders')
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test
+    .each([
+      { preload: undefined, path: '/some-path', headers: { path: '/primary-fetch-path', preload: undefined } },
+      { preload: ['/preload'], path: '/some-path', headers: { path: '/primary-fetch-path', preload: '/preload' } },
+      { preload: undefined, path: '/_/routes//', headers: { path: '/primary-fetch-path', preload: preloadHeaders[CwaResourceTypes.ROUTE].join(',') } }
+    ])("If I create headers passing preload as '$preload' and path as $path the headers should be $headers", async ({
+      preload,
+      path,
+      headers
+    }) => {
+      // FetchStatusManager.mock.results[0].value.primaryFetchPath.mockImplementation(() => 'anything')
+      const fetchResourceEvent = {
+        path,
+        preload
+      }
+      await fetcher.fetchResource(fetchResourceEvent)
+      expect(fetcher.createRequestHeaders).toReturnWith(headers)
     })
 })

@@ -109,7 +109,7 @@ export default class FetchStatusManager {
   }
 
   public get primaryFetchPath (): string|undefined {
-    return this.fetcherStore.primaryFetchPath
+    return this.fetcherStoreDefinition.useStore().primaryFetchPath
   }
 
   private get fetcherStore () {

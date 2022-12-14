@@ -125,9 +125,9 @@ export default class Fetcher {
 
   private fetch (event: FetchEvent) {
     const url = this.appendQueryToPath(event.path)
-    // const headers = this.createRequestHeaders(event)
+    const headers = this.createRequestHeaders(event)
     return this.cwaFetch.fetch.raw<any>(url, {
-      // headers,
+      headers
       // onResponse: context => (this.handleFetchResponse(context)),
       // onRequestError: this.handleFetchError
     })
@@ -150,11 +150,7 @@ export default class Fetcher {
     return `${path}${delimiter}${queryString}`
   }
 
-  private createRequestHeaders (event: FetchEvent): { path: string; preload?: string } {
-    if (!this.fetchStatus.path) {
-      throw new Error('Cannot create a new request to the API before setting the fetch status path.')
-    }
-
+  private createRequestHeaders (event: FetchEvent): { path?: string; preload?: string } {
     let preload = event.preload
     if (!preload) {
       const resourceType = getResourceTypeFromIri(event.path)
@@ -162,9 +158,8 @@ export default class Fetcher {
         preload = preloadHeaders[resourceType]
       }
     }
-
     return {
-      path: this.fetchStatus.path,
+      path: this.fetchStatusManager.primaryFetchPath,
       preload: preload ? preload.join(',') : undefined
     }
   }
