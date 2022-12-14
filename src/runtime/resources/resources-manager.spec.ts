@@ -8,7 +8,16 @@ vi.mock('../storage/stores/resources/resources-store', () => {
       useStore: vi.fn(() => {
         return {
           current: {
-            currentIds: ['/id1']
+            allIds: ['/id1', '/id2'],
+            currentIds: ['/id1'],
+            byId: {
+              '/id1': {
+                '@id': '/id1'
+              },
+              '/id2': {
+                '@id': '/id2'
+              }
+            }
           }
         }
       })
@@ -26,6 +35,14 @@ describe('ResourceManager class tests', () => {
   })
 
   test('currentIds getter', () => {
-    expect(resourcesManager.currentIds).toBe(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.current.currentIds)
+    expect(resourcesManager.currentIds).toStrictEqual(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.current.currentIds)
+  })
+
+  test('currentResources getter', () => {
+    expect(resourcesManager.currentResources).toStrictEqual({
+      '/id1': {
+        '@id': '/id1'
+      }
+    })
   })
 })
