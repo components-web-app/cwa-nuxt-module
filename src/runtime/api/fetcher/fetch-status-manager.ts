@@ -59,7 +59,8 @@ export default class FetchStatusManager {
   }
 
   public finishFetchResource (event: FinishFetchResourceEvent) {
-    if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
+    // todo: added event.success condition, test!
+    if (event.success && !this.fetcherStore.isCurrentFetchingToken(event.token)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: {
@@ -76,8 +77,9 @@ export default class FetchStatusManager {
     }
 
     this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true })
-    // save the resource as well
-    // check for link headers to set mercure hub and api docs endpoints
+
+    // todo: we will need the cwa resource data and headers in the event, but we will save these
+    // todo: we will init the mercure and api docs from link header, this will be provided in the event as well
   }
 
   public async finishFetch (event: FinishFetchEvent) {

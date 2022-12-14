@@ -88,6 +88,7 @@ export default class Fetcher {
         success: true
       })
     } catch (error: any) {
+      // todo: refactor generating the CwaError from caught error so they are uniform
       this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
         success: false,
@@ -97,6 +98,10 @@ export default class Fetcher {
         }
       })
     }
+
+    // todo: IF WE HAVE A RESPONSE FROM FETCH - move finishFetchResource to here too
+    // todo: validate response is a resource - adjust success status accordingly
+    // todo: if still OK, pass to save the resource with data and headers
 
     // if an existing token was not provided, we can finish it
     if (!token) {
@@ -113,12 +118,16 @@ export default class Fetcher {
         path: event.manifestPath
       })
       resources = response._data.resource_iris || []
+      if (resources.length) {
+        // todo: fetch batch here but do not await the response, we do not care, but the resources need to be populated in the store before we finish the manifest status to prevent any possible flickering of success status on the fetch chain status
+      }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
         token: event.token,
         resources
       })
     } catch (error: any) {
+      // todo: refactor generating the CwaError from caught error so they are uniform
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.ERROR,
         token: event.token,
@@ -128,11 +137,10 @@ export default class Fetcher {
         }
       })
     }
-
-    if (resources.length) {
-      // todo: fetch batch here
-    }
   }
+
+  // todo: fetch nested resources
+  // todo: fetch batch
 
   private fetch (event: FetchEvent) {
     const url = this.appendQueryToPath(event.path)
