@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
+import { CwaResourceError } from '../resources/state'
 import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import { CwaFetcherGettersInterface } from './getters'
 
@@ -25,7 +26,25 @@ export interface StartFetchResponse {
   token: string
 }
 
+export enum FinishFetchManifestType {
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR'
+}
+
+export interface ManifestSuccessFetchEvent {
+  type: FinishFetchManifestType.SUCCESS
+  token: string
+  resources: string[]
+}
+
+export interface ManifestErrorFetchEvent {
+  type: FinishFetchManifestType.ERROR
+  token: string
+  error: CwaResourceError
+}
+
 export interface CwaFetcherActionsInterface {
+  finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
   addFetchResource (event: AddFetchResourceEvent): boolean
@@ -41,6 +60,18 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
   }
 
   return {
+    finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
+      if (!fetchStatus.manifest) {
+        throw new Error(`Cannot set manifest status for '${event.token}'. The manifest was never started.`)
+      }
+      if (event.type === FinishFetchManifestType.SUCCESS) {
+        fetchStatus.manifest.resources = event.resources
+      }
+      if (event.type === FinishFetchManifestType.ERROR) {
+        fetchStatus.manifest.error = event.error
+      }
+    },
     startFetch (event: StartFetchEvent): StartFetchResponse {
       if (event.token) {
         const existingFetchStatus = getFetchStatusFromToken(event.token)

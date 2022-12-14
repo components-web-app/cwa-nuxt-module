@@ -3,7 +3,12 @@ import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { StartFetchEvent } from '../../storage/stores/fetcher/actions'
+import {
+  FinishFetchManifestType,
+  ManifestErrorFetchEvent,
+  ManifestSuccessFetchEvent,
+  StartFetchEvent
+} from '../../storage/stores/fetcher/actions'
 import FetchStatusManager from './fetch-status-manager'
 
 vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
@@ -248,6 +253,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     })
   })
 })
+
 describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
   let fetchStatusManager: FetchStatusManager
 
@@ -273,5 +279,51 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
 
     expect(fetcherStore.useStore.mock.results[0].value.finishFetch).toHaveBeenCalledWith({ token: 'a-token' })
     expect(result).toStrictEqual(fetcherStore.useStore.mock.results[0].value.finishFetch.mock.results[0].value)
+  })
+})
+
+describe('FetchStatusManager -> finishManifestFetch', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Can handle a manifest success event', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        finishManifestFetch: vi.fn(() => 'anything')
+      }
+    })
+    const successEvent: ManifestSuccessFetchEvent = {
+      type: FinishFetchManifestType.SUCCESS,
+      token: 'a-token',
+      resources: ['/manifest-resource']
+    }
+    fetchStatusManager.finishManifestFetch(successEvent)
+    expect(fetcherStore.useStore.mock.results[0].value.finishManifestFetch).toHaveBeenCalledWith(successEvent)
+  })
+
+  test('Can handle a manifest error event', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        finishManifestFetch: vi.fn(() => 'anything')
+      }
+    })
+    const errorEvent: ManifestErrorFetchEvent = {
+      type: FinishFetchManifestType.ERROR,
+      token: 'a-token',
+      error: {
+        message: 'My manifest error'
+      }
+    }
+    fetchStatusManager.finishManifestFetch(errorEvent)
+    expect(fetcherStore.useStore.mock.results[0].value.finishManifestFetch).toHaveBeenCalledWith(errorEvent)
   })
 })

@@ -1,9 +1,14 @@
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import { AddFetchResourceEvent, FinishFetchEvent, StartFetchEvent } from '../../storage/stores/fetcher/actions'
-import { ResourcesStore } from '@cwa/nuxt-module/runtime/storage/stores/resources/resources-store'
-import { CwaResourceError } from '@cwa/nuxt-module/runtime/storage/stores/resources/state'
+import {
+  AddFetchResourceEvent,
+  FinishFetchEvent, ManifestErrorFetchEvent,
+  ManifestSuccessFetchEvent,
+  StartFetchEvent
+} from '../../storage/stores/fetcher/actions'
+import { ResourcesStore } from '../../storage/stores/resources/resources-store'
+import { CwaResourceError } from '../../storage/stores/resources/state'
 
 export interface FinishFetchResourceEvent {
   resource: string,
@@ -76,6 +81,10 @@ export default class FetchStatusManager {
 
   public finishFetch (event: FinishFetchEvent) {
     return this.fetcherStore.finishFetch(event)
+  }
+
+  public finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
+    this.fetcherStore.finishManifestFetch(event)
   }
 
   private get fetcherStore () {

@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
-import actions, { CwaFetcherActionsInterface } from './actions'
+import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters from './getters'
 
@@ -383,5 +383,78 @@ describe('Fetcher store action -> addFetchResource', () => {
       '/existing-primary-path',
       '/existing-path'
     ])
+  })
+})
+
+describe('Fetcher store action -> finishManifestFetch', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+
+  beforeEach(() => {
+    const existingFetchState: TopLevelFetchPathInterface = {
+      path: '/existing-path',
+      resources: ['/existing-path', '/errored-resource'],
+      isPrimary: false
+    }
+    const existingManifestFetchState: TopLevelFetchPathInterface = {
+      path: '/existing-path',
+      resources: ['/existing-path', '/errored-resource'],
+      isPrimary: false,
+      manifest: {
+        path: '/some-manifest-path'
+      }
+    }
+    fetcherState = state()
+    fetcherState.fetches['existing-token-no-manifest'] = reactive(existingFetchState)
+    fetcherState.fetches['existing-token-with-manifest'] = reactive(existingManifestFetchState)
+    const resourcesStore = new ResourcesStore()
+    fetcherActions = actions(fetcherState, getters(fetcherState, resourcesStore))
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('If the token does not exist, an error is thrown', () => {
+    expect(() => {
+      fetcherActions.finishManifestFetch({
+        type: FinishFetchManifestType.SUCCESS,
+        token: 'non-existent',
+        resources: ['/any']
+      })
+    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+  })
+
+  test('If a manifest has not been defined for the fetch chain an error is thrown', () => {
+    expect(() => {
+      fetcherActions.finishManifestFetch({
+        type: FinishFetchManifestType.SUCCESS,
+        token: 'existing-token-no-manifest',
+        resources: ['/any']
+      })
+    }).toThrowError("Cannot set manifest status for 'existing-token-no-manifest'. The manifest was never started.")
+  })
+
+  test('Can set the success status on a manifest', () => {
+    fetcherActions.finishManifestFetch({
+      type: FinishFetchManifestType.SUCCESS,
+      token: 'existing-token-with-manifest',
+      resources: ['/any']
+    })
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toStrictEqual(['/any'])
+  })
+
+  test('Can set the error state on a manifest', () => {
+    const newError = {
+      message: 'My error message'
+    }
+    fetcherActions.finishManifestFetch({
+      type: FinishFetchManifestType.ERROR,
+      token: 'existing-token-with-manifest',
+      error: newError
+    })
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.error).toStrictEqual(newError)
   })
 })

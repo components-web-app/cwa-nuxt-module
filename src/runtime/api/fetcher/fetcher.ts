@@ -1,11 +1,18 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { CwaResource } from '../../resources/resource-utils'
+import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
-import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 
 interface FetchResourceEvent {
   path: string
   token?: string
+  manifestPath?: string
+}
+
+export interface FetchManifestEvent {
+  manifestPath: string
+  token: string
 }
 
 export default class Fetcher {
@@ -24,28 +31,33 @@ export default class Fetcher {
 
   public async fetchRoute (path: string): Promise<CwaResource|undefined> {
     const iri = `/_/routes/${path}`
+    const manifestPath = `/_/routes_manifest/${path}`
     const startFetchResult = this.fetchStatusManager.startFetch({
       path: iri,
       isPrimary: true,
-      manifestPath: `/_/routes_manifest/${path}`
+      manifestPath
     })
     if (!startFetchResult.continue) {
       return
     }
-    const resource = await this.fetchResource({ path: iri, token: startFetchResult.token })
+    const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
     this.fetchStatusManager.finishFetch({
       token: startFetchResult.token
     })
     return resource
   }
 
-  public async fetchResource ({ path, token }: FetchResourceEvent): Promise<CwaResource|undefined> {
+  public async fetchResource ({ path, token, manifestPath }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token
     })
     if (!startFetchResult.continue) {
       return
+    }
+
+    if (manifestPath) {
+      this.fetchManifest({ token: startFetchResult.token, manifestPath })
     }
 
     this.fetchStatusManager.startFetchResource({
@@ -76,7 +88,30 @@ export default class Fetcher {
     }
   }
 
-  private fetchManifest () {
+  private async fetchManifest (event: FetchManifestEvent): Promise<void> {
     // update fetcher store when the manifest resources have been fetched once we have called to fetch resources, because then they will be populated as being fetched
+    // do the fetching here
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true)
+      }, (Math.random() * 10) + 10)
+    })
+
+    const resources: string[] = ['/some-resource']
+    // fetch batch here...
+
+    this.fetchStatusManager.finishManifestFetch({
+      type: FinishFetchManifestType.SUCCESS,
+      token: event.token,
+      resources
+    })
+
+    // this.fetchStatusManager.finishManifestFetch({
+    //   type: FinishFetchManifestType.ERROR,
+    //   token: event.token,
+    //   error: {
+    //     message: 'manifest error message'
+    //   }
+    // })
   }
 }
