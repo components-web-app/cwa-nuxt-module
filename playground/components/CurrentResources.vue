@@ -4,7 +4,10 @@
       <div class="resource-title">
         {{ index }}
       </div>
-      <pre class="resource-code">{{ resource }}</pre>
+      <pre class="resource-code">{{ resource.data }}</pre>
+      <div v-if="resource.apiState.error?.message" class="resource-error">
+        Status code '{{ resource.apiState.error.statusCode || 'Unknown' }}': {{ resource.apiState.error.message }}
+      </div>
     </div>
   </div>
 </template>
@@ -21,8 +24,10 @@ const { $cwa } = useNuxtApp()
   font-family: sans-serif
   .resource-grid-item
     width: 33.33%
+    min-width: 350px
     padding: 1rem
     box-sizing: border-box
+    position: relative
     .resource-title
       padding: .5rem
       background: #e9e9e9
@@ -32,11 +37,23 @@ const { $cwa } = useNuxtApp()
       white-space: nowrap
       text-overflow: ellipsis
       overflow: hidden
+    .resource-error
+      position: absolute
+      top: 4rem
+      right: 2rem
+      left: 2rem
+      bottom: 2rem
+      z-index: 2
+      background: rgba(mistyrose, .4)
+      box-sizing: border-box
+      padding: .5rem
+      font-size: .8rem
+      overflow: auto
     .resource-code
       background: #f2f2f2
       box-sizing: border-box
       padding: 1rem
-      max-height: 7rem
+      height: 8rem
       overflow: auto
       margin: 0
     &.is-error
