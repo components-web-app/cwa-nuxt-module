@@ -164,7 +164,7 @@ describe('FetchStatusManager -> startFetchResource', () => {
     expect(result).toBe(false)
   })
 
-  test('If fetcherStore.addFetchResource returns true, we set the resource fetch status', () => {
+  test('If fetcherStore.addFetchResource returns, we set the resource fetch status', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
@@ -205,7 +205,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       }
     })
 
-    fetchStatusManager.finishFetchResource({
+    const response = fetchStatusManager.finishFetchResource({
       resource: '/some-resource',
       success: true,
       token: 'my-token',
@@ -220,9 +220,10 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/some-resource',
       isCurrent: false,
-      error: createCwaResourceError(new Error("Not Saved. Fetching token 'my-token' is no longer current"))
+      error: createCwaResourceError(new Error("Not Saved. Fetching token 'my-token' is no longer current."))
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
+    expect(response).toBeUndefined()
   })
 
   test('If the event passed determines the fetch was not successful, update resource with setResourceFetchError and do not call setResourceFetchStatus', () => {
@@ -233,7 +234,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       }
     })
 
-    fetchStatusManager.finishFetchResource({
+    const response = fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
       success: false,
       token: 'a-token',
@@ -252,6 +253,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       }
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
+
+    expect(response).toBeUndefined()
   })
 
   test('If the event is successful and fetch store has finished the fetch, save the resource and set the resource status', () => {
@@ -262,7 +265,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       }
     })
 
-    fetchStatusManager.finishFetchResource({
+    const response = fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
       success: true,
       token: 'a-token',
@@ -280,13 +283,66 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       iri: '/another-resource',
       isComplete: true
     })
+
+    expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).not.toHaveBeenCalled()
+    expect(ApiDocumentation.mock.instances[0].setDocsPathFromLinkHeader).not.toHaveBeenCalled()
+
+    expect(response).toStrictEqual(mockCwaResource)
   })
 
-  test.todo('If the response is not a valid resource, set an error message')
+  test('If the response is not a valid resource, set an error message', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        isCurrentFetchingToken: vi.fn(() => true)
+      }
+    })
 
-  test.todo('we return a cwa resource if valid and saved')
+    const response = fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: {
+        _data: { not: 'a valid resource' },
+        headers: new Headers()
+      }
+    })
 
-  test.todo('If a link header is provided, we call the mercure and api documentation initialise functions')
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
+      iri: '/another-resource',
+      error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
+      isCurrent: false
+    })
+
+    expect(response).toBeUndefined()
+  })
+
+  test('If a link header is provided, we call the mercure and api documentation initialise functions', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        isCurrentFetchingToken: vi.fn(() => true)
+      }
+    })
+
+    const headers = new Headers()
+    headers.set('link', 'my-link-header')
+
+    const response = fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: {
+        _data: mockCwaResource,
+        headers
+      }
+    })
+
+    expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).toHaveBeenCalledWith('my-link-header')
+    expect(ApiDocumentation.mock.instances[0].setDocsPathFromLinkHeader).toHaveBeenCalledWith('my-link-header')
+
+    expect(response).toStrictEqual(mockCwaResource)
+  })
 })
 
 describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {

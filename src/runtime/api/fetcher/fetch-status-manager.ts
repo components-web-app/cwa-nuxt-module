@@ -21,7 +21,7 @@ export interface FinishFetchResourceEvent {
 
 export interface FinishFetchResourceSuccessEvent extends FinishFetchResourceEvent {
   success: true
-  fetchResponse: CwaFetchResponse
+  fetchResponse: CwaFetchResponse|any
 }
 
 export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent {
@@ -77,7 +77,7 @@ export default class FetchStatusManager {
     if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
-        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current`)),
+        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current.`)),
         isCurrent: false
       })
       return
@@ -88,7 +88,7 @@ export default class FetchStatusManager {
     if (!isCwaResource(cwaResource)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
-        error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource')),
+        error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
         isCurrent: false
       })
       return

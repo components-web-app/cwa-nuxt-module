@@ -6,8 +6,9 @@
       </div>
       <pre class="resource-code">{{ resource.data }}</pre>
       <div v-if="resource.apiState.error?.message" class="resource-error">
-        <b>Status code:</b><br>{{ resource.apiState.error.statusCode || 'Unknown' }}<br>
-        <b>Message:</b><br>{{ resource.apiState.error.primaryMessage }}
+        <b>Status code:</b> {{ resource.apiState.error.statusCode || 'Unknown' }}<br>
+        <b>Message:</b><br>{{ resource.apiState.error.primaryMessage }}<br>
+        <b>Request:</b><br>{{ resource.apiState.error.request }}
       </div>
     </div>
   </div>
