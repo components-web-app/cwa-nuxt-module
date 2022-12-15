@@ -159,7 +159,6 @@ export default class Fetcher {
     }
   }
 
-  // todo: test this function
   private fetchNestedResources (resource: CwaResource, token: string): undefined|bluebird<(CwaResource|undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
@@ -182,7 +181,6 @@ export default class Fetcher {
     return this.fetchBatch(nestedIris, token)
   }
 
-  // todo: test this function
   private fetchBatch (paths: string[], token?: string): bluebird<(CwaResource|undefined)[]> {
     return bluebird
       .map(

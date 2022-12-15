@@ -1,3 +1,4 @@
+import bluebird from 'bluebird'
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ohmyfetch'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
@@ -26,6 +27,14 @@ vi.mock('../../storage/stores/resources/resources-store')
 vi.mock('./fetch-status-manager')
 vi.mock('../mercure')
 vi.mock('../api-documentation')
+vi.mock('bluebird', async () => {
+  const actual = await vi.importActual('bluebird')
+  return {
+    default: {
+      map: vi.fn((arg1, arg2, arg3) => actual.map(arg1, arg2, arg3))
+    }
+  }
+})
 
 function delay (time: number, returnValue: any = undefined) {
   return new Promise((resolve) => {
@@ -649,4 +658,79 @@ describe('Fetcher -> fetchNestedResources', () => {
   })
 })
 
-describe.todo('Fetcher -> fetchBatch')
+describe('Fetcher -> fetchBatch', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
+      return Promise.resolve()
+    })
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation((startEvent) => {
+      return {
+        continue: true,
+        token: startEvent.token
+      }
+    })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            _data: {
+              resource_iris: ['/resolve-resource', '/resolve-another-resource']
+            }
+          })
+        }, 1)
+      })
+    })
+    vi.spyOn(fetcher, 'fetchBatch')
+    vi.spyOn(bluebird, 'map')
+    vi.spyOn(fetcher, 'fetchResource')
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('fetchBatch should return the bluebird map promise result', async () => {
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    fetcher.fetchResource.mockClear()
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    await delay(5)
+    expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource', '/resolve-another-resource'], 'any')
+
+    expect(bluebird.map).toHaveBeenCalledTimes(1)
+
+    expect(bluebird.map.calls[0][0]).toStrictEqual(['/resolve-resource', '/resolve-another-resource'])
+    expect(bluebird.map.calls[0][2]).toStrictEqual({
+      concurrency: 10000
+    })
+
+    const bluebirdMapPromise = bluebird.map.mock.instances[0].map.results[0][1]
+    await bluebirdMapPromise
+
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/resolve-resource',
+      token: 'any'
+    })
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/resolve-another-resource',
+      token: 'any'
+    })
+    expect(fetcher.fetchResource).toHaveBeenCalledTimes(2)
+
+    expect(fetcher.fetchBatch.mock.results[0].value).toBe(bluebirdMapPromise)
+  })
+})
