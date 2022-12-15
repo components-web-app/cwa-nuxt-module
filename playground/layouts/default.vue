@@ -9,9 +9,9 @@
     <nuxt-link to="/new">
       New
     </nuxt-link>
-    <hr />
+    <hr>
     <nuxt-page />
-    <hr />
+    <hr>
     <button :disabled="fetchingApiDocs" @click="getApiDocumentation">
       Refresh Api Documentation
     </button>

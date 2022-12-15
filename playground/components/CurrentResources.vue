@@ -1,6 +1,6 @@
 <template>
   <div class="resource-grid">
-    <div v-for="(resource, index) of $cwa.resourcesManager.currentResources" :key="`resource-grid-${index}`" class="resource-grid-item">
+    <div v-for="(resource, index) of $cwa.resourcesManager.currentResources" :key="`resource-grid-${index}`" :class="['resource-grid-item', { 'is-success': resource.apiState.status === 1 }, { 'is-error': resource.apiState.status === -1 }]">
       <div class="resource-title">
         {{ index }}
       </div>
@@ -36,7 +36,13 @@ const { $cwa } = useNuxtApp()
       background: #f2f2f2
       box-sizing: border-box
       padding: 1rem
-      max-height: 10rem
+      max-height: 7rem
       overflow: auto
       margin: 0
+    &.is-error
+      .resource-title
+        background: mistyrose
+    &.is-success
+      .resource-title
+        background: #e4ffe8
 </style>
