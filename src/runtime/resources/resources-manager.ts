@@ -28,11 +28,17 @@ export class ResourcesManager {
     const pending = this.resourcesStore.totalResourcesPending
     const total = this.resourcesStore.current.currentIds.length
     const complete = total - pending
+    let percent
+    if (complete === 0) {
+      percent = total === 0 ? 100 : 0
+    } else {
+      percent = Math.round((complete / total) * 100)
+    }
     return {
       pending,
       complete,
       total,
-      percent: Math.round((total / complete) * 100)
+      percent
     }
   }
   /**
