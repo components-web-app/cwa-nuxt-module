@@ -5,7 +5,7 @@ import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { CwaResourceTypes } from '../../resources/resource-utils'
+import { CwaResource, CwaResourceTypes } from '../../resources/resource-utils'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
@@ -557,5 +557,96 @@ describe('Fetcher -> createRequestHeaders', () => {
     })
 })
 
-describe.todo('Fetcher -> fetchNestedResources')
+describe('Fetcher -> fetchNestedResources', () => {
+  let fetcher: Fetcher
+
+  beforeEach(() => {
+    fetcher = createFetcher()
+    FetchStatusManager.mock.instances[0].startFetch.mockImplementation((obj) => {
+      return {
+        continue: true,
+        token: obj.token || 'new-token'
+      }
+    })
+    vi.spyOn(fetcher, 'fetchManifest').mockImplementation(() => {
+      return Promise.resolve()
+    })
+    vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
+      return Promise.resolve()
+    })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
+    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('If we cannot get a resources type, do not fetch any nested resources', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/unknown-resource',
+      '@type': 'Resource',
+      _metadata: {
+        persisted: true
+      },
+      layout: '/_/layouts/layout-resource',
+      componentGroups: ['/_/component_groups/component-group-1', '/_/component_groups/component-group-2']
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => (mockResource))
+
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      preload: ['/something']
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+  })
+
+  test('We can call and return the fetch batch function results, also with the token, if the returned resource has properties either as an array or a string of nested resources', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      _metadata: {
+        persisted: true
+      },
+      layout: '/_/layouts/layout-resource',
+      componentGroups: ['/_/component_groups/component-group-1', '/_/component_groups/component-group-2']
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => (mockResource))
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      preload: ['/something']
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/_/layouts/layout-resource', '/_/component_groups/component-group-1', '/_/component_groups/component-group-2'], 'any')
+  })
+
+  test('If the resource property does not exist, we do continue and do not add anything to the nested resources', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      _metadata: {
+        persisted: true
+      },
+      layout: '/_/layouts/layout-resource'
+      // componentGroups has been removed here for the test
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => (mockResource))
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      preload: ['/something']
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/_/layouts/layout-resource'], 'any')
+  })
+})
+
 describe.todo('Fetcher -> fetchBatch')
