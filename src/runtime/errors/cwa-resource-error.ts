@@ -21,10 +21,26 @@ export function createCwaResourceError (error: any) {
     message = 'An unknown error occurred'
   }
   const cwaResourceError = new CwaResourceError(message)
-  Object.defineProperty(cwaResourceError, 'statusCode', { get () { return error?.statusCode } })
-  Object.defineProperty(cwaResourceError, 'statusMessage', { get () { return error?.statusMessage } })
-  Object.defineProperty(cwaResourceError, 'statusText', { get () { return error?.statusText } })
-  Object.defineProperty(cwaResourceError, 'primaryMessage', { get () { return error?.statusText || error?.statusMessage || message } })
+  Object.defineProperty(cwaResourceError, 'statusCode', {
+    get () {
+      return error?.statusCode
+    }
+  })
+  Object.defineProperty(cwaResourceError, 'statusMessage', {
+    get () {
+      return error?.statusMessage
+    }
+  })
+  Object.defineProperty(cwaResourceError, 'statusText', {
+    get () {
+      return error?.statusText
+    }
+  })
+  Object.defineProperty(cwaResourceError, 'primaryMessage', {
+    get () {
+      return error?.statusText || error?.statusMessage || message
+    }
+  })
   Object.defineProperty(cwaResourceError, 'asObject', {
     get (): CwaResourceErrorObject {
       return {
