@@ -6,11 +6,11 @@ import {
   AddFetchResourceEvent,
   FinishFetchEvent, ManifestErrorFetchEvent,
   ManifestSuccessFetchEvent,
-  StartFetchEvent
+  StartFetchEvent, StartFetchResponse
 } from '../../storage/stores/fetcher/actions'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { createCwaResourceError, CwaResourceError } from '../../errors/cwa-resource-error'
-import { isCwaResource } from '../../resources/resource-utils'
+import { CwaResource, isCwaResource } from '../../resources/resource-utils'
 import { CwaFetchResponse } from './fetcher'
 
 export interface FinishFetchResourceEvent {
@@ -50,7 +50,7 @@ export default class FetchStatusManager {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  public startFetch (event: StartFetchEvent) {
+  public startFetch (event: StartFetchEvent): StartFetchResponse {
     const startFetchStatus = this.fetcherStore.startFetch(event)
     if (event.isPrimary) {
       this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
@@ -61,7 +61,7 @@ export default class FetchStatusManager {
     return startFetchStatus
   }
 
-  public startFetchResource (event: AddFetchResourceEvent) {
+  public startFetchResource (event: AddFetchResourceEvent): boolean {
     const addedToFetcherResources = this.fetcherStore.addFetchResource(event)
     if (addedToFetcherResources) {
       this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false })
@@ -69,25 +69,20 @@ export default class FetchStatusManager {
     return addedToFetcherResources
   }
 
-  public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent) {
+  public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent): CwaResource|undefined {
     if (!event.success) {
       this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: true })
       return
     }
-
     if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
-        // TODO: TEST
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current`)),
         isCurrent: false
       })
       return
     }
 
-    /**
-     * TODO: TO TEST
-     */
     const cwaResource = event.fetchResponse._data
 
     if (!isCwaResource(cwaResource)) {
@@ -104,23 +99,22 @@ export default class FetchStatusManager {
       this.mercure.setMercureHubFromLinkHeader(linkHeader)
       this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
     }
-    /**
-     * END TODO: TEST
-     */
 
     this.resourcesStore.saveResource({
       resource: cwaResource
     })
 
     this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true })
+
+    return cwaResource
   }
 
-  public async finishFetch (event: FinishFetchEvent) {
-    this.fetcherStore.finishFetch(event)
+  public async finishFetch (event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
+    this.fetcherStore.finishFetch(event)
   }
 
-  private async waitForFetchChainToComplete (token: string) {
+  private async waitForFetchChainToComplete (token: string): Promise<void> {
     let fetchChainCompletePromiseResolver: () => void
     const fetchChainCompletePromise = new Promise<void>((resolve) => {
       fetchChainCompletePromiseResolver = resolve
@@ -139,7 +133,7 @@ export default class FetchStatusManager {
     stopWatch()
   }
 
-  public finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
+  public finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void {
     this.fetcherStore.finishManifestFetch(event)
   }
 

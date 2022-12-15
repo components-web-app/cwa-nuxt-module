@@ -1,12 +1,14 @@
 import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
+import consola from 'consola'
 import { ResourcesStore } from '../resources/resources-store'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters from './getters'
 
+vi.mock('consola')
 vi.mock('uuid', () => {
   return {
     v4: vi.fn(() => ('mock-uuid-token'))
@@ -416,14 +418,15 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     vi.clearAllMocks()
   })
 
-  test('If the token does not exist, an error is thrown', () => {
-    expect(() => {
-      fetcherActions.finishManifestFetch({
-        type: FinishFetchManifestType.SUCCESS,
-        token: 'non-existent',
-        resources: ['/any']
-      })
-    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+  test('If the token does not exist, a warning is added to the console. No Error as the manifest will always be out of sync with main fetch chain and could lag behind.', () => {
+    fetcherActions.finishManifestFetch({
+      type: FinishFetchManifestType.SUCCESS,
+      token: 'non-existent',
+      resources: ['/any']
+    })
+    expect(consola.warn).toHaveBeenCalledTimes(1)
+    expect(consola.warn).toHaveBeenCalledWith("The fetch chain token 'non-existent' does not exist")
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toBeUndefined()
   })
 
   test('If a manifest has not been defined for the fetch chain an error is thrown', () => {

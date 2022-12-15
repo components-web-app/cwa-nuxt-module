@@ -1,10 +1,3 @@
 <template>
-  <div>
-    <pre>{{ $cwa.resourcesManager.currentResources }}</pre>
-  </div>
+  <CurrentResources />
 </template>
-
-<script setup>
-import { useNuxtApp } from '#app'
-const { $cwa } = useNuxtApp()
-</script>

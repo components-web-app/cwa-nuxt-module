@@ -24,8 +24,16 @@ describe('We can reset current resources', () => {
       id: {}
     }
     resourcesState.current.byId = {
-      id: {},
-      current: {}
+      id: {
+        apiState: {
+          status: null
+        }
+      },
+      current: {
+        apiState: {
+          status: null
+        }
+      }
     }
     resourcesState.new.allIds = ['id', 'current']
     resourcesState.current.currentIds = ['current']
@@ -40,8 +48,16 @@ describe('We can reset current resources', () => {
       id: {}
     }
     resourcesState.current.byId = {
-      id: {},
-      current: {}
+      id: {
+        apiState: {
+          status: null
+        }
+      },
+      current: {
+        apiState: {
+          status: null
+        }
+      }
     }
     resourcesState.new.allIds = ['id', 'current']
     resourcesState.current.currentIds = ['current']
@@ -127,11 +143,14 @@ describe('resources action saveResource', () => {
   const resourcesState = state()
   const resourcesActions = actions(resourcesState)
 
-  test('We can save a new resource', () => {
+  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $type a new resource', ({ action }) => {
     const resource = {
       '@id': 'id',
       '@type': 'type',
-      something: 'value'
+      _metadata: {
+        persisted: false
+      },
+      action
     }
     resourcesActions.saveResource({
       resource,
@@ -143,41 +162,14 @@ describe('resources action saveResource', () => {
     expect(resourcesState.new.allIds).toStrictEqual(['id'])
   })
 
-  test('We can overwrite a new resource', () => {
+  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $type a current resource', ({ action }) => {
     const resource = {
       '@id': 'id',
       '@type': 'type',
-      something: 'else'
-    }
-    resourcesActions.saveResource({
-      resource,
-      isNew: true
-    })
-    expect(resourcesState.new.byId).toStrictEqual({
-      id: resource
-    })
-    expect(resourcesState.new.allIds).toStrictEqual(['id'])
-  })
-
-  test('We can save a current resource', () => {
-    const resource = {
-      '@id': 'id',
-      '@type': 'type',
-      something: 'value'
-    }
-    resourcesActions.saveResource({
-      resource
-    })
-    expect(resourcesState.current.byId.id.data).toStrictEqual(resource)
-    expect(resourcesState.current.allIds).toStrictEqual(['id'])
-    expect(resourcesState.current.currentIds).toStrictEqual(['id'])
-  })
-
-  test('We can overwrite a new resource', () => {
-    const resource = {
-      '@id': 'id',
-      '@type': 'type',
-      something: 'else'
+      _metadata: {
+        persisted: false
+      },
+      action
     }
     resourcesActions.saveResource({
       resource

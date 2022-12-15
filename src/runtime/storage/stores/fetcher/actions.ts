@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
+import consola from 'consola'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
 import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import { CwaFetcherGettersInterface } from './getters'
@@ -61,7 +62,13 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
   return {
     finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
-      const fetchStatus = getFetchStatusFromToken(event.token)
+      let fetchStatus
+      try {
+        fetchStatus = getFetchStatusFromToken(event.token)
+      } catch (error: any) {
+        consola.warn(error.message)
+        return
+      }
       if (!fetchStatus.manifest) {
         throw new Error(`Cannot set manifest status for '${event.token}'. The manifest was never started.`)
       }

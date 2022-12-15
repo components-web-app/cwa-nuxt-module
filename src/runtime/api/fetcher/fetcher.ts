@@ -1,6 +1,7 @@
+import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ohmyfetch'
-import { CwaResource, getResourceTypeFromIri } from '../../resources/resource-utils'
+import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import CwaFetch from './cwa-fetch'
@@ -25,6 +26,20 @@ interface FetchEvent {
 }
 
 export interface CwaFetchResponse extends FetchResponse<CwaResource|undefined> {}
+
+type TypeToNestedPropertiesMap = {
+  [T in CwaResourceTypes]: Array<string>;
+}
+
+const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
+  [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
+  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
+  [CwaResourceTypes.PAGE_DATA]: ['page'],
+  [CwaResourceTypes.LAYOUT]: ['componentGroups'],
+  [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
+  [CwaResourceTypes.COMPONENT_POSITION]: ['component'],
+  [CwaResourceTypes.COMPONENT]: ['componentGroups']
+}
 
 export default class Fetcher {
   private readonly cwaFetch: CwaFetch
@@ -54,6 +69,7 @@ export default class Fetcher {
       return
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
+
     await this.fetchStatusManager.finishFetch({
       token: startFetchResult.token
     })
@@ -74,22 +90,26 @@ export default class Fetcher {
       this.fetchManifest({ token: startFetchResult.token, manifestPath }).then(() => {})
     }
 
-    this.fetchStatusManager.startFetchResource({
+    const continueToFetchResource = this.fetchStatusManager.startFetchResource({
       resource: path,
       token: startFetchResult.token
     })
+    if (!continueToFetchResource) {
+      return
+    }
 
     const finishFetchResourceEvent = {
       resource: path,
       token: startFetchResult.token
     }
     let fetchResponse: CwaFetchResponse
+    let resource: CwaResource|undefined
     try {
       fetchResponse = await this.fetch({
         path,
         preload
       })
-      this.fetchStatusManager.finishFetchResource({
+      resource = this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
         success: true,
         fetchResponse
@@ -102,8 +122,9 @@ export default class Fetcher {
       })
     }
 
-    // should we return the resource from finishFetchResources or look for the store data
-    // todo: fetch nested resources if valid
+    if (resource) {
+      await this.fetchNestedResources(resource, startFetchResult.token)
+    }
 
     if (!token) {
       await this.fetchStatusManager.finishFetch({
@@ -111,7 +132,7 @@ export default class Fetcher {
       })
     }
 
-    // todo: return the resource if valid
+    return resource
   }
 
   private async fetchManifest (event: FetchManifestEvent): Promise<void> {
@@ -122,7 +143,9 @@ export default class Fetcher {
       })
       resources = response._data?.resource_iris || []
       if (resources.length) {
-        // todo: fetch batch here but do not await the response, we do not care, but the resources need to be populated in the store before we finish the manifest status to prevent any possible flickering of success status on the fetch chain status
+        // todo: test
+        // we are fetching this batch and can await it so that we do not set the finish fetch manifest to successful early
+        await this.fetchBatch(resources, event.token)
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
@@ -138,8 +161,42 @@ export default class Fetcher {
     }
   }
 
-  // todo: fetch nested resources
-  // todo: fetch batch
+  // todo: test this function
+  private fetchNestedResources (resource: CwaResource, token: string): undefined|bluebird<(CwaResource|undefined)[]> {
+    const iri = resource['@id']
+    const type = getResourceTypeFromIri(iri)
+    if (!type) {
+      return
+    }
+    const nestedIris = []
+    const nestedPropertiesToFetch = resourceTypeToNestedResourceProperties[type]
+    for (const prop of nestedPropertiesToFetch) {
+      const propIris = resource[prop]
+      if (!propIris) {
+        continue
+      }
+      if (Array.isArray(propIris)) {
+        nestedIris.push(...propIris)
+      } else {
+        nestedIris.push(propIris)
+      }
+    }
+    return this.fetchBatch(nestedIris, token)
+  }
+
+  // todo: test this function
+  private fetchBatch (paths: string[], token?: string): bluebird<(CwaResource|undefined)[]> {
+    return bluebird
+      .map(
+        paths,
+        (path: string) => {
+          return this.fetchResource({ path, token })
+        },
+        {
+          concurrency: 10000
+        }
+      )
+  }
 
   private fetch (event: FetchEvent): Promise<CwaFetchResponse> {
     const url = this.appendQueryToPath(event.path)

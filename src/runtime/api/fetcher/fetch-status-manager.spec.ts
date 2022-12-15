@@ -281,6 +281,12 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       isComplete: true
     })
   })
+
+  test.todo('If the response is not a valid resource, set an error message')
+
+  test.todo('we return a cwa resource if valid and saved')
+
+  test.todo('If a link header is provided, we call the mercure and api documentation initialise functions')
 })
 
 describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
@@ -312,9 +318,11 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
     expect(vue.watch.mock.calls[0][0]).toBe(vue.computed.mock.results[0].value)
     expect(vue.watch.mock.calls[0][1]).toBeTypeOf('function')
     expect(vue.watch.mock.calls[0][2]).toStrictEqual({ immediate: true })
-    expect(fetcherStore.useStore.mock.results[0].value.finishFetch).toHaveBeenCalledWith({ token: 'a-token' })
-    expect(fetcherStore.useStore.mock.results[1].value.isFetchChainComplete).toHaveBeenCalledWith('a-token')
+    expect(fetcherStore.useStore.mock.results[0].value.isFetchChainComplete).toHaveBeenCalledWith('a-token')
     expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
+
+    expect(fetcherStore.useStore.mock.results[1].value.finishFetch).toHaveBeenCalledWith({ token: 'a-token' })
+    expect(fetcherStore.useStore.mock.results[1].value.finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(vue.watch.mock.results[0].value.mock.invocationCallOrder[0])
     expect(result).toBeUndefined()
   })
 })

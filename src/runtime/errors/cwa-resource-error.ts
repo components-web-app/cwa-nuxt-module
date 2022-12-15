@@ -1,6 +1,6 @@
 export interface CwaResourceErrorObject {
   message?: string
-  statusCode?: string
+  statusCode?: number
 }
 
 export class CwaResourceError extends Error {

@@ -129,6 +129,7 @@ describe('Fetcher -> fetchResource', () => {
     vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
       return Promise.resolve()
     })
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
   })
 
   afterEach(() => {
@@ -181,6 +182,19 @@ describe('Fetcher -> fetchResource', () => {
     expect(result).toBeUndefined()
   })
 
+  test('If startFetchResource returns false, do not call the fetch function', async () => {
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementationOnce(() => false)
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest'
+    }
+    const result = await fetcher.fetchResource(fetchResourceEvent)
+
+    expect(fetcher.fetch).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
+  })
+
   test.each([
     { errorMessage: 'fetch error message', statusCode: 101 },
     { errorMessage: undefined, statusCode: undefined }
@@ -213,6 +227,8 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finishFetchResource after fetch (with preload) is called if startFetch returns continue as true', async () => {
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
       token: 'any',
@@ -221,20 +237,21 @@ describe('Fetcher -> fetchResource', () => {
     const result = await fetcher.fetchResource(fetchResourceEvent)
 
     expect(fetcher.fetchManifest).not.toHaveBeenCalled()
-
     expect(fetcher.fetch).toHaveBeenCalledWith({
       path: '/new-path',
       preload: ['/something']
     })
     expect(fetcher.fetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetchResource.mock.invocationCallOrder[0])
-
     expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
       success: true
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
-    expect(result).toBeUndefined()
+
+    expect(fetcher.fetchNestedResources).toBeCalledWith({ some: 'resource' }, 'any')
+    expect(fetcher.fetchNestedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
+    expect(result).toStrictEqual({ some: 'resource' })
   })
 
   test('finish fetch is not called if a previous token is provided', async () => {
@@ -248,6 +265,9 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finish fetch is called if no previous token is provided', async () => {
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
+
     let finishResolved = false
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementationOnce(() => {
       return new Promise<void>((resolve) => {
@@ -263,11 +283,12 @@ describe('Fetcher -> fetchResource', () => {
     }
     const result = await fetcher.fetchResource(fetchResourceEvent)
 
-    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({
       token: 'new-token'
     })
-    expect(result).toBeUndefined()
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchNestedResources.mock.invocationCallOrder[0])
+
+    expect(result).toStrictEqual({ some: 'resource' })
     expect(finishResolved).toBe(true)
   })
 })
@@ -319,7 +340,7 @@ describe('Fetcher -> fetchManifest', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     // we will not be awaiting the manifest
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).not.toHaveBeenCalled()
-    await delay(2)
+    await delay(5)
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
       resources: ['/manifest-resource-iri'],
       token: 'any',
@@ -366,7 +387,7 @@ describe('Fetcher -> fetch', () => {
         continue: true
       }
     })
-    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     vi.spyOn(fetcher, 'createRequestHeaders').mockImplementation(() => ({ someHeader: 'someValue' }))
@@ -401,7 +422,7 @@ describe('Fetcher -> appendQueryToPath', () => {
         continue: true
       }
     })
-    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {})
@@ -445,7 +466,7 @@ describe('Fetcher -> createRequestHeaders', () => {
         continue: true
       }
     })
-    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
@@ -475,3 +496,6 @@ describe('Fetcher -> createRequestHeaders', () => {
       expect(fetcher.createRequestHeaders).toReturnWith(headers)
     })
 })
+
+describe.todo('Fetcher -> fetchNestedResources')
+describe.todo('Fetcher -> fetchBatch')
