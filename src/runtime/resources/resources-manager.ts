@@ -23,6 +23,18 @@ export class ResourcesManager {
       [key: string]: CwaCurrentResourceInterface
     })
   }
+
+  public get resourceLoadStatus () {
+    const pending = this.resourcesStore.totalResourcesPending
+    const total = this.resourcesStore.current.currentIds.length
+    const complete = total - pending
+    return {
+      pending,
+      complete,
+      total,
+      percent: Math.round((total / complete) * 100)
+    }
+  }
   /**
    * END OF TEMPORARY FUNCTIONS FOR DEVELOPMENT
    */

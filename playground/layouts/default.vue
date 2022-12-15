@@ -1,5 +1,6 @@
 <template>
   <div>
+    <progress class="page-load-progress" :value="$cwa.resourcesManager.resourceLoadStatus.complete" :max="$cwa.resourcesManager.resourceLoadStatus.total">{{ $cwa.resourcesManager.resourceLoadStatus.percent }}%</progress><br>
     <nuxt-link to="/">
       Home
     </nuxt-link> |
@@ -10,7 +11,9 @@
       New
     </nuxt-link>
     <hr>
-    <nuxt-page />
+    <div>
+      <nuxt-page />
+    </div>
     <hr>
     <button :disabled="fetchingApiDocs" @click="getApiDocumentation">
       Refresh Api Documentation
@@ -32,3 +35,8 @@ async function getApiDocumentation () {
   fetchingApiDocs.value = false
 }
 </script>
+
+<style lang="sass">
+.page-load-progress
+  width: 100%
+</style>

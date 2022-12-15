@@ -6,7 +6,8 @@
       </div>
       <pre class="resource-code">{{ resource.data }}</pre>
       <div v-if="resource.apiState.error?.message" class="resource-error">
-        Status code '{{ resource.apiState.error.statusCode || 'Unknown' }}': {{ resource.apiState.error.message }}
+        <b>Status code:</b><br>{{ resource.apiState.error.statusCode || 'Unknown' }}<br>
+        <b>Message:</b><br>{{ resource.apiState.error.message }}
       </div>
     </div>
   </div>
@@ -49,6 +50,8 @@ const { $cwa } = useNuxtApp()
       padding: .5rem
       font-size: .8rem
       overflow: auto
+      b
+        color: #666
     .resource-code
       background: #f2f2f2
       box-sizing: border-box
