@@ -22,22 +22,22 @@ export function createCwaResourceError (error: any) {
   }
   const cwaResourceError = new CwaResourceError(message)
   Object.defineProperty(cwaResourceError, 'statusCode', {
-    get () {
+    get (): number|undefined {
       return error?.statusCode
     }
   })
   Object.defineProperty(cwaResourceError, 'statusMessage', {
-    get () {
+    get (): string|undefined {
       return error?.statusMessage
     }
   })
   Object.defineProperty(cwaResourceError, 'statusText', {
-    get () {
+    get (): string|undefined {
       return error?.statusText
     }
   })
   Object.defineProperty(cwaResourceError, 'primaryMessage', {
-    get () {
+    get (): string {
       return error?.statusText || error?.statusMessage || message
     }
   })
