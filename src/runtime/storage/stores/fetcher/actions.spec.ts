@@ -2,10 +2,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
+import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters from './getters'
-import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 
 vi.mock('uuid', () => {
   return {

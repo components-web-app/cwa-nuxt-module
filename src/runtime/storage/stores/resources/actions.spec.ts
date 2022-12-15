@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { FetchError } from 'ohmyfetch'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaResourcesActionsInterface } from './actions'
 import state, { CwaResourcesStateInterface } from './state'

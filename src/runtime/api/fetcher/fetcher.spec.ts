@@ -6,11 +6,11 @@ import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { CwaResourceTypes } from '../../resources/resource-utils'
+import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
-import { createCwaResourceError } from '../../errors/cwa-resource-error'
 
 vi.mock('./cwa-fetch', () => {
   return {
@@ -182,9 +182,9 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test.each([
-    { errorMessage: 'fetch error message', expectedErrorMessage: 'fetch error message', statusCode: 101 },
-    { errorMessage: undefined, expectedErrorMessage: 'An unknown error occurred', statusCode: undefined }
-  ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, expectedErrorMessage, statusCode }) => {
+    { errorMessage: 'fetch error message', statusCode: 101 },
+    { errorMessage: undefined, statusCode: undefined }
+  ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, statusCode }) => {
     const fetchResourceEvent = {
       path: '/new-path',
       token: 'any'
@@ -328,10 +328,9 @@ describe('Fetcher -> fetchManifest', () => {
   })
 
   test.each([
-    { errorMessage: 'fetch error message', expectedErrorMessage: 'fetch error message', statusCode: 101 },
-    { errorMessage: undefined, expectedErrorMessage: 'An unknown error occurred', statusCode: undefined }
-  ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, expectedErrorMessage, statusCode }) => {
-
+    { errorMessage: 'fetch error message', statusCode: 101 },
+    { errorMessage: undefined, statusCode: undefined }
+  ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, statusCode }) => {
     let error: FetchError
     vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
       if (event.path !== '/my-manifest') {

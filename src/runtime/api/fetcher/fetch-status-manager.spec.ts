@@ -1,5 +1,6 @@
 import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
+import { Headers } from 'ohmyfetch'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
@@ -10,9 +11,8 @@ import {
   ManifestSuccessFetchEvent,
   StartFetchEvent
 } from '../../storage/stores/fetcher/actions'
-import FetchStatusManager from './fetch-status-manager'
-import { Headers } from 'ohmyfetch'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
+import FetchStatusManager from './fetch-status-manager'
 
 vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
   FetcherStore: vi.fn(() => ({
