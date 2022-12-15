@@ -8,7 +8,7 @@ import CwaFetch from './fetcher/cwa-fetch'
 
 vi.mock('consola')
 
-const mockedFetchResponseTime = 20
+const mockedFetchResponseTime = 2
 
 vi.mock('../storage/stores/api-documentation/state')
 vi.mock('./fetcher/cwa-fetch', () => {
@@ -16,7 +16,7 @@ vi.mock('./fetcher/cwa-fetch', () => {
     default: vi.fn(() => ({
       fetch: vi.fn(async (path) => {
         await new Promise((resolve) => {
-          setTimeout(resolve, 20)
+          setTimeout(resolve, 2)
         })
         return 'response from ' + path
       })
@@ -116,7 +116,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
     // will proceed with fetching when set
     apiDocumentation.setDocsPathFromLinkHeader(validLinkHeader)
     vi.clearAllMocks()
-    await delay(5)
+    await delay(2)
     expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('/')
     expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('https://some-domain/docs.jsonld')
     await delay(mockedFetchResponseTime)
