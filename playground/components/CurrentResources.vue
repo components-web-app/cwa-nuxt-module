@@ -22,7 +22,6 @@ const { $cwa } = useNuxtApp()
 .resource-grid
   display: flex
   flex-wrap: wrap
-  font-family: sans-serif
   .resource-grid-item
     width: 33.33%
     min-width: 350px
@@ -38,6 +37,7 @@ const { $cwa } = useNuxtApp()
       white-space: nowrap
       text-overflow: ellipsis
       overflow: hidden
+      transition: .3s background-color ease
     .resource-error
       position: absolute
       top: 4rem

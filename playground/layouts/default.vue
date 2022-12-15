@@ -1,6 +1,8 @@
 <template>
   <div>
-    <progress class="page-load-progress" :value="$cwa.resourcesManager.resourceLoadStatus.complete" :max="$cwa.resourcesManager.resourceLoadStatus.total">{{ $cwa.resourcesManager.resourceLoadStatus.percent }}%</progress><br>
+    <progress :class="['page-load-progress', { 'is-complete': $cwa.resourcesManager.resourceLoadStatus.percent === 100 }]" :value="$cwa.resourcesManager.resourceLoadStatus.complete" :max="$cwa.resourcesManager.resourceLoadStatus.total">
+      {{ $cwa.resourcesManager.resourceLoadStatus.percent }}%
+    </progress><br>
     <nuxt-link to="/">
       Home
     </nuxt-link> |
@@ -37,6 +39,29 @@ async function getApiDocumentation () {
 </script>
 
 <style lang="sass">
-.page-load-progress
+body
+  font-family: sans-serif
+  color: black
+  a
+    color: #444
+    text-decoration: none
+    transition: .2s color ease
+    &.router-link-exact-active
+      font-weight: bold
+    &:hover
+      color: black
+progress.page-load-progress
   width: 100%
+  -webkit-appearance: none
+  height: .5rem
+  display: block
+  &::-webkit-progress-bar
+    background: lightgray
+    border-radius: 1rem
+    overflow: hidden
+  &::-webkit-progress-value
+    background: orange
+    transition: .1s width ease, .2s background-color ease
+  &.is-complete::-webkit-progress-value
+    background: green
 </style>
