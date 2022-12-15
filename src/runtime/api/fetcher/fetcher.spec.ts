@@ -301,6 +301,7 @@ describe('Fetcher -> fetchManifest', () => {
     vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
       return Promise.resolve()
     })
+    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => Promise.resolve())
     FetchStatusManager.mock.instances[0].startFetch.mockImplementation((startEvent) => {
       return {
         continue: true,
@@ -314,6 +315,64 @@ describe('Fetcher -> fetchManifest', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test
+    .each([
+      { resourceIris: undefined },
+      { resourceIris: [] }
+    ])('fetchBatch should not be called if we have not received any IRIs', async ({ resourceIris }) => {
+      vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+        if (event.path !== '/my-manifest') {
+          return Promise.resolve()
+        }
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              _data: {
+                resource_iris: resourceIris
+              }
+            })
+          }, 1)
+        })
+      })
+      const fetchResourceEvent = {
+        path: '/new-path',
+        token: 'any',
+        manifestPath: '/my-manifest'
+      }
+      await fetcher.fetchResource(fetchResourceEvent)
+      expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+      await delay(5)
+      expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    })
+
+  test('fetchBatch should be called before finishing the manifest state', async () => {
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            _data: {
+              resource_iris: ['/resolve-resource']
+            }
+          })
+        }, 1)
+      })
+    })
+    const fetchResourceEvent = {
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    await delay(5)
+    expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource'], 'any')
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
   })
 
   test('We finish the manifest status when completed', async () => {
@@ -369,6 +428,7 @@ describe('Fetcher -> fetchManifest', () => {
       manifestPath: '/my-manifest'
     }
     await fetcher.fetchResource(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledTimes(1)
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
       token: 'any',
       type: FinishFetchManifestType.ERROR,

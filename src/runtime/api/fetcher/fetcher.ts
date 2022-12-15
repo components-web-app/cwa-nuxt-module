@@ -143,9 +143,7 @@ export default class Fetcher {
       })
       resources = response._data?.resource_iris || []
       if (resources.length) {
-        // todo: test
-        // we are fetching this batch and can await it so that we do not set the finish fetch manifest to successful early
-        await this.fetchBatch(resources, event.token)
+        this.fetchBatch(resources, event.token)
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
