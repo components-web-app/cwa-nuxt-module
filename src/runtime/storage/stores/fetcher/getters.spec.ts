@@ -1,74 +1,212 @@
-import { describe, test, expect } from 'vitest'
+import { describe, beforeEach, vi, test, expect } from 'vitest'
 import { reactive } from 'vue'
-import getters from './getters'
-import { CwaFetcherStateInterface } from './state'
+import { ResourcesStore } from '../resources/resources-store'
+import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
+import getters, { CwaFetcherGettersInterface } from './getters'
 
 function createState (): CwaFetcherStateInterface {
   return {
-    status: reactive({}),
-    manifests: reactive({})
+    primaryFetch: reactive({}),
+    fetches: reactive({})
   }
 }
 
-describe('Fetcher getter inProgress', () => {
-  const state = createState()
-  const getterFns = getters(state)
+vi.mock('../resources/resources-store', () => ({
+  ResourcesStore: vi.fn(() => ({
+    useStore: vi.fn(() => ({
+      current: {
+        byId: {
+          '/success-resource': {
+            apiState: {
+              status: 1
+            }
+          },
+          '/errored-resource': {
+            apiState: {
+              status: -1
+            }
+          },
+          '/in-progress-resource': {
+            apiState: {
+              status: 0
+            }
+          }
+        }
+      }
+    }))
+  }))
+}))
 
-  test('returns false if fetch not set', () => {
-    expect(getterFns.inProgress.value).toBeFalsy()
+describe('FetcherStore getters -> primaryFetchPath', () => {
+  let state: CwaFetcherStateInterface
+  let getterFns: CwaFetcherGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state, new ResourcesStore())
+    state.fetches = {
+      'token-a': {
+        path: 'path-a',
+        isPrimary: true,
+        resources: []
+      },
+      'token-b': {
+        path: 'path-b',
+        isPrimary: true,
+        resources: []
+      }
+    }
   })
 
-  test('returns true if there is a fetch path but no result', () => {
-    state.status.fetch = { path: 'my-path', token: 'my-token' }
-    expect(getterFns.inProgress.value).toBeTruthy()
-  })
-
-  test('returns false is we have a success result as true', () => {
-    state.status.fetch = { path: 'my-path', token: 'my-token', success: true }
-    expect(getterFns.inProgress.value).toBeFalsy()
-  })
-
-  test('returns false is we have a success result as false', () => {
-    state.status.fetch = { path: 'my-path', token: 'my-token', success: false }
-    expect(getterFns.inProgress.value).toBeFalsy()
-  })
+  test
+    .each([
+      { fetchingToken: undefined, successToken: undefined, result: undefined },
+      { fetchingToken: 'token-a', successToken: 'token-b', result: 'path-a' },
+      { fetchingToken: undefined, successToken: 'token-b', result: 'path-b' },
+      { fetchingToken: 'token-a', successToken: undefined, result: 'path-a' }
+    ])('If the fetching token is $fetchingToken and the success token is $successToken then the path should be $result', ({ fetchingToken, successToken, result }) => {
+      state.primaryFetch.successToken = successToken
+      state.primaryFetch.fetchingToken = fetchingToken
+      expect(getterFns.primaryFetchPath.value).toBe(result)
+    })
 })
 
-describe('Fetcher getter manifestInProgress', () => {
-  const state = createState()
-  const getterFns = getters(state)
+describe('FetcherStore getters -> isFetchChainComplete', () => {
+  let state: CwaFetcherStateInterface
+  let getterFns: CwaFetcherGettersInterface
+  let resourcesStore: ResourcesStore
 
-  test('returns false if manifest does not exist', () => {
-    expect(getterFns.manifestInProgress.value('manifest-path')).toBeFalsy()
+  beforeEach(() => {
+    resourcesStore = new ResourcesStore()
+    state = createState()
+    getterFns = getters(state, resourcesStore)
   })
-  test('returns false if manifest is not in progress', () => {
-    state.manifests['manifest-path'] = {
-      inProgress: false
+
+  test('Return undefined if the token does not exist', () => {
+    expect(getterFns.isFetchChainComplete.value('no-token')).toBeUndefined()
+  })
+
+  test('Return undefined if no resources in the fetch chain', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: []
+      }
     }
-    expect(getterFns.manifestInProgress.value('manifest-path')).toBeFalsy()
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBeUndefined()
   })
-  test('returns true if manifest is not in progress', () => {
-    state.manifests['manifest-path'] = {
-      inProgress: true
+
+  test('Throws an error if the resource does not exist in the resources store', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['does-not-exist']
+      }
     }
-    expect(getterFns.manifestInProgress.value('manifest-path')).toBeTruthy()
+    expect(() => {
+      getterFns.isFetchChainComplete.value('some-token')
+    }).toThrowError('The resource \'does-not-exist\' does not exist but is defined in the fetch chain with token \'some-token\'')
   })
+
+  test('Returns false if a resource in the fetch chain is still in progress', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/errored-resource', '/in-progress-resource']
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
+  })
+
+  test('Returns true if all resources in a completed state', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/errored-resource']
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
+  })
+
+  test.each([
+    { manifest: false, manifestResources: undefined, manifestError: undefined, result: true },
+    { manifest: true, manifestResources: undefined, manifestError: undefined, result: false },
+    { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: true },
+    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: true }
+  ])(
+    "If manifest is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
+    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
+    ) => {
+      const currentFetch: TopLevelFetchPathInterface = {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/errored-resource']
+      }
+      if (manifest) {
+        currentFetch.manifest = {
+          path: 'any',
+          resources: manifestResources,
+          error: manifestError
+        }
+      }
+      state.fetches = {
+        'some-token': currentFetch
+      }
+      expect(getterFns.isFetchChainComplete.value('some-token')).toBe(result)
+    })
 })
 
-describe('Fetcher getter manifestsInProgress', () => {
-  const state = createState()
-  const getterFns = getters(state)
+describe('FetcherStore getters -> isCurrentFetchingToken', () => {
+  let state: CwaFetcherStateInterface
+  let getterFns: CwaFetcherGettersInterface
 
-  test('returns false if manifest is not in progress', () => {
-    state.manifests['manifest-path'] = {
-      inProgress: false
-    }
-    expect(getterFns.manifestsInProgress.value).toBeFalsy()
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state, new ResourcesStore())
   })
-  test('returns true if manifest is not in progress', () => {
-    state.manifests['manifest-path'] = {
-      inProgress: true
+
+  test('Throws an error if the token does not exist', () => {
+    expect(() => {
+      getterFns.isCurrentFetchingToken.value('some-token')
+    }).toThrowError("Failed to check if the token 'some-token' is current. It does not exist.")
+  })
+
+  test('Non-primary fetch tokens return true', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/errored-resource']
+      }
     }
-    expect(getterFns.manifestsInProgress.value).toBeTruthy()
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
+  })
+
+  test('Tokens matching an in progress primary fetching token return true', () => {
+    state.primaryFetch.fetchingToken = 'some-token'
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: true,
+        resources: ['/success-resource', '/errored-resource']
+      }
+    }
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
+  })
+
+  test('Tokens not matching the current primary fetching token return false', () => {
+    state.primaryFetch.fetchingToken = 'different-token'
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: true,
+        resources: ['/success-resource', '/errored-resource']
+      }
+    }
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)
   })
 })

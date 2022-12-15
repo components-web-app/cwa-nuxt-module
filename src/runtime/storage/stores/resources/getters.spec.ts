@@ -1,6 +1,6 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { reactive } from 'vue'
-import getters from './getters'
+import getters, { CwaResourcesGettersInterface } from './getters'
 import { CwaResourcesStateInterface } from './state'
 
 function createState (): CwaResourcesStateInterface {
@@ -17,11 +17,16 @@ function createState (): CwaResourcesStateInterface {
   }
 }
 
-describe('Fetcher::resourcesApiStateIsPending', () => {
-  const state = createState()
-  const getterFns = getters(state)
+describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
 
-  test('returns false if not resources are pending', () => {
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  test('returns false if no resources are pending', () => {
     expect(getterFns.resourcesApiStateIsPending.value).toBe(false)
   })
 
@@ -34,5 +39,31 @@ describe('Fetcher::resourcesApiStateIsPending', () => {
       }
     }
     expect(getterFns.resourcesApiStateIsPending.value).toBe(true)
+  })
+})
+
+describe('ResourcesStore Getters -> totalResourcesPending', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  test('returns 0 if no resources are pending', () => {
+    expect(getterFns.totalResourcesPending.value).toBe(0)
+  })
+
+  test('returns true if there is a resource that is pending', () => {
+    state.current.currentIds = ['id']
+    state.current.byId = {
+      id: {
+        apiState: {
+          status: 0
+        }
+      }
+    }
+    expect(getterFns.totalResourcesPending.value).toBe(1)
   })
 })

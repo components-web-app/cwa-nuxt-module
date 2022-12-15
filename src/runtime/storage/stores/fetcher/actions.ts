@@ -1,117 +1,161 @@
-import { reactive, watch } from 'vue'
-import { FetchError } from 'ohmyfetch'
+import { v4 as uuidv4 } from 'uuid'
+import { reactive } from 'vue'
 import consola from 'consola'
-import { ResourcesStore } from '../resources/resources-store'
-import { FinishFetchEvent, StartFetchEvent } from '../../../api/fetcher/fetch-status'
-import { CwaFetcherStateInterface } from './state'
-import { CwaFetcherGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/getters'
+import { CwaResourceError } from '../../../errors/cwa-resource-error'
+import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
+import { CwaFetcherGettersInterface } from './getters'
 
-interface _StartFetchEvent extends StartFetchEvent {
+export interface StartFetchEvent {
+  token?: string
+  path: string,
+  manifestPath?: string
+  isPrimary?: boolean
+}
+
+export interface FinishFetchEvent {
   token: string
 }
 
-export interface SetFetchManifestEvent {
-  path: string
-  inProgress: boolean
-  fetchError?: FetchError
+export interface AddFetchResourceEvent {
+  token: string,
+  resource: string
+}
+
+export interface StartFetchResponse {
+  continue: boolean
+  resources: string[]
+  token: string
+}
+
+export enum FinishFetchManifestType {
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR'
+}
+
+export interface ManifestSuccessFetchEvent {
+  type: FinishFetchManifestType.SUCCESS
+  token: string
+  resources: string[]
+}
+
+export interface ManifestErrorFetchEvent {
+  type: FinishFetchManifestType.ERROR
+  token: string
+  error: CwaResourceError
 }
 
 export interface CwaFetcherActionsInterface {
-  setFetchManifestStatus (event: SetFetchManifestEvent): boolean
-  startFetchStatus (event: _StartFetchEvent): boolean
-  finishFetchStatus (event: FinishFetchEvent): Promise<boolean>
+  finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
+  startFetch(event: StartFetchEvent): StartFetchResponse
+  finishFetch (event: FinishFetchEvent): void
+  addFetchResource (event: AddFetchResourceEvent): boolean
 }
 
-export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface, resourcesStore: ResourcesStore): CwaFetcherActionsInterface {
-  // This function is internal and should not be accessible as a store action
-  async function waitForManifestResolve (eventToken: string) {
-    // Create a resolver what we can call elsewhere
-    let watchManifestResolve: (value: void | PromiseLike<void>) => void
-    const watchManifestPromise = new Promise((resolve) => {
-      watchManifestResolve = resolve
-    })
-
-    // start watching immediately for the manifest fetch to complete
-    const stopWatchingFn = watch(fetcherGetters.manifestsInProgress, (newInProgressValue) => {
-      if (!newInProgressValue) {
-        consola.trace('Manifests status OK', eventToken)
-        watchManifestResolve()
-      }
-    }, {
-      immediate: true
-    })
-
-    // wait for the custom resolver to be called inside the watch function
-    await watchManifestPromise
-
-    // has to be called outside the watch method itself, or it is called sometimes before initialised
-    stopWatchingFn()
+export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface): CwaFetcherActionsInterface {
+  function getFetchStatusFromToken (token: string) {
+    const fetchStatus = fetcherState.fetches[token]
+    if (!fetchStatus) {
+      throw new Error(`The fetch chain token '${token}' does not exist`)
+    }
+    return fetchStatus
   }
 
   return {
-    setFetchManifestStatus (event: SetFetchManifestEvent): boolean {
-      if (event.inProgress && fetcherGetters.manifestInProgress.value(event.path)) {
-        return false
+    finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
+      let fetchStatus
+      try {
+        fetchStatus = getFetchStatusFromToken(event.token)
+      } catch (error: any) {
+        consola.warn(error.message)
+        return
       }
-      fetcherState.manifests[event.path] = reactive({
-        inProgress: event.inProgress,
-        fetchError: event.fetchError
-      })
-      return true
+      if (!fetchStatus.manifest) {
+        throw new Error(`Cannot set manifest status for '${event.token}'. The manifest was never started.`)
+      }
+      if (event.type === FinishFetchManifestType.SUCCESS) {
+        fetchStatus.manifest.resources = event.resources
+      }
+      if (event.type === FinishFetchManifestType.ERROR) {
+        fetchStatus.manifest.error = event.error.asObject
+      }
     },
-    startFetchStatus (event: _StartFetchEvent): boolean {
-      // there are other fetches ongoing, so we have not re-initialised the primary state
-      // even if it is the same fetch path, it is not this status responsibility to return an existing promise
-      // it may not exist yet so we can continue to create it
-      if (fetcherGetters.inProgress.value) {
-        return true
+    startFetch (event: StartFetchEvent): StartFetchResponse {
+      if (event.token) {
+        const existingFetchStatus = getFetchStatusFromToken(event.token)
+        return {
+          continue: true,
+          resources: existingFetchStatus.resources,
+          token: event.token
+        }
       }
 
-      const previousSuccessfulFetchSame = event.path === fetcherState.status.fetched?.path
-      // we should not re-initialise if the previous fetch is the same or there is any other fetch ongoing
-      if (previousSuccessfulFetchSame) {
-        // we should not initialise, it is the same as previous
-        return false
+      // if we are doing a primary fetch and there is a success token already, let's check if that one is valid
+      if (event.isPrimary && fetcherState.primaryFetch.successToken) {
+        const lastSuccessState = fetcherState.fetches[fetcherState.primaryFetch.successToken]
+        // check if this new path is the same as the last successful primary fetch and that the chain of fetch is complete
+        if (lastSuccessState.path === event.path && fetcherGetters.isFetchChainComplete.value(fetcherState.primaryFetch.successToken) === true) {
+          // we may have been in progress with a new primary fetch, but we do not need that anymore
+          fetcherState.primaryFetch.fetchingToken = undefined
+
+          // we do not need to continue fetching, the previous result can be returned
+          // e.g. client-side load after server-side or we return to the original page before the new one has finished loading
+          return {
+            continue: false,
+            resources: lastSuccessState.resources,
+            token: fetcherState.primaryFetch.successToken
+          }
+        }
       }
 
-      if (event.resetCurrentResources) {
-        resourcesStore.useStore().resetCurrentResources()
-      }
-      fetcherState.status.fetch = reactive({
+      const token = uuidv4()
+      const initialState: TopLevelFetchPathInterface = reactive({
         path: event.path,
-        token: event.token
+        resources: [],
+        isPrimary: !!event.isPrimary
       })
-      consola.debug('Primary fetch status initialised', event)
+      if (event.manifestPath) {
+        initialState.manifest = {
+          path: event.manifestPath
+        }
+      }
 
-      return true
+      if (event.isPrimary) {
+        fetcherState.primaryFetch.fetchingToken = token
+      }
+
+      fetcherState.fetches[token] = initialState
+      return { token, continue: true, resources: [] }
     },
-    async finishFetchStatus (event: FinishFetchEvent): Promise<boolean> {
-      const fetchObj = fetcherState.status.fetch
-      const isExistingFetchSame = event.token === fetchObj?.token
+    finishFetch (event: FinishFetchEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
 
-      if (!isExistingFetchSame) {
+      if (!fetchStatus.isPrimary || fetcherState.primaryFetch.fetchingToken !== event.token) {
+        // chain not needed anymore, will not be referenced anywhere
+        delete fetcherState.fetches[event.token]
+        return
+      }
+
+      // delete existing primary fetch chain
+      if (fetcherState.primaryFetch.successToken) {
+        // as we are in a primary fetch, should we also return all these resources that are OK to delete?
+        // or do we return a status boolean and let the fetch status manager see that it was primary so that
+        // it can delete all resources that are not currentIds
+        delete fetcherState.fetches[fetcherState.primaryFetch.successToken]
+      }
+
+      // set the new success token
+      fetcherState.primaryFetch.fetchingToken = undefined
+      fetcherState.primaryFetch.successToken = event.token
+    },
+    addFetchResource (event: AddFetchResourceEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
+
+      // isFetchStatusCurrent return true if not primary or if primary and current
+      if (fetchStatus.resources.includes(event.resource) || !fetcherGetters.isCurrentFetchingToken.value(event.token)) {
         return false
       }
 
-      await waitForManifestResolve(event.token)
-
-      consola.debug('Primary fetch status finished', event)
-
-      fetchObj.success = event.fetchSuccess
-      if (!event.fetchSuccess) {
-        return true
-      }
-
-      fetcherState.status.fetched = reactive({ path: fetchObj.path })
-
-      // if we specify the page then we want to know what endpoint was used to load this page in
-      // otherwise the last endpoint can be whatever fetch was made, i.e. a component/position etc.
-      if (event.pageIri) {
-        fetcherState.fetchedPage = reactive({
-          path: fetchObj.path,
-          iri: event.pageIri
-        })
-      }
+      fetchStatus.resources.push(event.resource)
       return true
     }
   }

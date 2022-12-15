@@ -7,7 +7,6 @@ export default defineConfig({
     deps: {
       inline: ['@nuxt/test-utils']
     },
-    typecheck: { checker: 'vue-tsc' },
     coverage: {
       provider: 'c8',
       include: ['src/**'],

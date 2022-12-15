@@ -6,6 +6,8 @@ import ApiDocumentation from './api/api-documentation'
 import Mercure from './api/mercure'
 import Fetcher from './api/fetcher/fetcher'
 import CwaFetch from './api/fetcher/cwa-fetch'
+import FetchStatusManager from './api/fetcher/fetch-status-manager'
+import { ResourcesManager } from './resources/resources-manager'
 
 vi.mock('./storage/storage', () => {
   return {
@@ -43,8 +45,9 @@ vi.mock('./api/api-documentation', () => {
     }))
   }
 })
-
 vi.mock('./api/fetcher/cwa-fetch')
+vi.mock('./api/fetcher/fetch-status-manager')
+vi.mock('./resources/resources-manager')
 
 const path = 'something'
 const storeName = 'dummystore'
@@ -93,24 +96,21 @@ describe('$cwa.apiUrl tests', () => {
 
 describe('Cwa class test', () => {
   let $cwa: Cwa
+
   beforeEach(() => {
     $cwa = createCwa({ storeName })
   })
-
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('Storage class is setup', () => {
     expect(Storage).toBeCalledWith(storeName)
-    expect($cwa.stores).toHaveProperty('apiDocumentation')
-    expect($cwa.stores).toHaveProperty('resources')
-    expect($cwa.stores).toHaveProperty('fetcher')
-    expect($cwa.stores).toHaveProperty('mercure')
   })
 
   test('ApiDocumentation is setup and proxy method works', async () => {
-    expect(ApiDocumentation).toBeCalledWith(CwaFetch.mock.instances[0], $cwa.stores.apiDocumentation)
+    const stores = Storage.mock.results[0].value.stores
+    expect(ApiDocumentation).toBeCalledWith(CwaFetch.mock.instances[0], stores.apiDocumentation)
 
     expect(await $cwa.getApiDocumentation(true)).toBe('refresh:true')
     expect(await $cwa.getApiDocumentation(false)).toBe('refresh:false')
@@ -118,10 +118,27 @@ describe('Cwa class test', () => {
     expect(ApiDocumentation.mock.results[0].value.getApiDocumentation).toBeCalledTimes(3)
   })
 
-  test('Mercure and Fetcher are setup and accessible', () => {
-    expect(Mercure).toBeCalledWith($cwa.stores.mercure, $cwa.stores.resources, $cwa.stores.fetcher)
-    expect($cwa.mercure).toBe(Mercure.mock.instances[0])
+  test('Mercure instance created and accessible', () => {
+    const stores = Storage.mock.results[0].value.stores
+    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
+  })
+
+  test('CwaFetch created to provide a fetch instance with defaults', () => {
     expect(CwaFetch).toBeCalledWith('https://api-url-not-set.com')
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], $cwa.stores.fetcher, $cwa.stores.resources, { path }, $cwa.mercure, ApiDocumentation.mock.results[0].value)
+  })
+
+  test('FetchStatusManager is initialised', () => {
+    const stores = Storage.mock.results[0].value.stores
+    expect(FetchStatusManager).toBeCalledWith(stores.fetcher, Mercure.mock.results[0].value, ApiDocumentation.mock.results[0].value, stores.resources)
+  })
+
+  test('Fetcher is initialised', () => {
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], FetchStatusManager.mock.instances[0], { path })
+  })
+
+  test('ResourcesManager is initialised and accessible', () => {
+    const stores = Storage.mock.results[0].value.stores
+    expect(ResourcesManager).toBeCalledWith(stores.resources)
+    expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
   })
 })
