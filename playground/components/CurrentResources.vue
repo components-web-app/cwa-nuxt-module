@@ -7,7 +7,7 @@
       <pre class="resource-code">{{ resource.data }}</pre>
       <div v-if="resource.apiState.error?.message" class="resource-error">
         <b>Status code:</b><br>{{ resource.apiState.error.statusCode || 'Unknown' }}<br>
-        <b>Message:</b><br>{{ resource.apiState.error.message }}
+        <b>Message:</b><br>{{ resource.apiState.error.primaryMessage }}
       </div>
     </div>
   </div>
