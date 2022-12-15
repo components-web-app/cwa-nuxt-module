@@ -1,10 +1,10 @@
 import { reactive } from 'vue'
-import { CwaResourceError } from '../resources/state'
+import { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
 
 interface FetchManifestInterface {
   path: string
   resources?: string[]
-  error?: CwaResourceError
+  error?: CwaResourceErrorObject
 }
 
 export interface TopLevelFetchPathInterface {

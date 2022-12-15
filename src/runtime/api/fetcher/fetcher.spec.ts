@@ -10,6 +10,7 @@ import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
+import { createCwaResourceError } from '../../errors/cwa-resource-error'
 
 vi.mock('./cwa-fetch', () => {
   return {
@@ -189,8 +190,9 @@ describe('Fetcher -> fetchResource', () => {
       token: 'any'
     }
 
+    let error: FetchError
     fetcher.fetch.mockImplementation(() => {
-      const error = new FetchError('Some error message')
+      error = new FetchError('Some error message')
       error.message = errorMessage
       error.statusCode = statusCode
       throw error
@@ -204,10 +206,7 @@ describe('Fetcher -> fetchResource', () => {
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
       success: false,
-      error: {
-        message: expectedErrorMessage,
-        statusCode
-      }
+      error: createCwaResourceError(error)
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
     expect(result).toBeUndefined()
@@ -332,11 +331,13 @@ describe('Fetcher -> fetchManifest', () => {
     { errorMessage: 'fetch error message', expectedErrorMessage: 'fetch error message', statusCode: 101 },
     { errorMessage: undefined, expectedErrorMessage: 'An unknown error occurred', statusCode: undefined }
   ])('If an error is generated with the message $errorMessage and status $statusCode then the resulting message should contain the message $expectedErrorMessage and the same status code', async ({ errorMessage, expectedErrorMessage, statusCode }) => {
+
+    let error: FetchError
     vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
       if (event.path !== '/my-manifest') {
         return Promise.resolve()
       }
-      const error = new FetchError('Some error message')
+      error = new FetchError('Some error message')
       error.message = errorMessage
       error.statusCode = statusCode
       throw error
@@ -351,10 +352,7 @@ describe('Fetcher -> fetchManifest', () => {
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
       token: 'any',
       type: FinishFetchManifestType.ERROR,
-      error: {
-        message: expectedErrorMessage,
-        statusCode
-      }
+      error: createCwaResourceError(error)
     })
   })
 })

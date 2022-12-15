@@ -9,12 +9,23 @@ import {
   StartFetchEvent
 } from '../../storage/stores/fetcher/actions'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { CwaResourceError } from '../../storage/stores/resources/state'
+import { createCwaResourceError, CwaResourceError } from '../../errors/cwa-resource-error'
+import { isCwaResource } from '../../resources/resource-utils'
+import { CwaFetchResponse } from './fetcher'
 
 export interface FinishFetchResourceEvent {
   resource: string,
   success: boolean,
   token: string
+}
+
+export interface FinishFetchResourceSuccessEvent extends FinishFetchResourceEvent {
+  success: true
+  fetchResponse: CwaFetchResponse
+}
+
+export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent {
+  success: false
   error?: CwaResourceError
 }
 
@@ -58,7 +69,7 @@ export default class FetchStatusManager {
     return addedToFetcherResources
   }
 
-  public finishFetchResource (event: FinishFetchResourceEvent) {
+  public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent) {
     if (!event.success) {
       this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: true })
       return
@@ -67,18 +78,41 @@ export default class FetchStatusManager {
     if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
-        error: {
-          message: `Not Saved. Fetching token '${event.token}' is no longer current`
-        },
+        // TODO: TEST
+        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current`)),
         isCurrent: false
       })
       return
     }
 
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true })
+    /**
+     * TODO: TO TEST
+     */
+    const cwaResource = event.fetchResponse._data
 
-    // todo: we will need the cwa resource data and headers in the event, but we will save these
-    // todo: we will init the mercure and api docs from link header, this will be provided in the event as well
+    if (!isCwaResource(cwaResource)) {
+      this.resourcesStore.setResourceFetchError({
+        iri: event.resource,
+        error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource')),
+        isCurrent: false
+      })
+      return
+    }
+
+    const linkHeader = event.fetchResponse.headers.get('link')
+    if (linkHeader) {
+      this.mercure.setMercureHubFromLinkHeader(linkHeader)
+      this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
+    }
+    /**
+     * END TODO: TEST
+     */
+
+    this.resourcesStore.saveResource({
+      resource: cwaResource
+    })
+
+    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true })
   }
 
   public async finishFetch (event: FinishFetchEvent) {

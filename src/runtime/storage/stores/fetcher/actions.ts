@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
-import { CwaResourceError } from '../resources/state'
+import { CwaResourceError } from '../../../errors/cwa-resource-error'
 import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import { CwaFetcherGettersInterface } from './getters'
 
@@ -69,7 +69,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         fetchStatus.manifest.resources = event.resources
       }
       if (event.type === FinishFetchManifestType.ERROR) {
-        fetchStatus.manifest.error = event.error
+        fetchStatus.manifest.error = event.error.asObject
       }
     },
     startFetch (event: StartFetchEvent): StartFetchResponse {

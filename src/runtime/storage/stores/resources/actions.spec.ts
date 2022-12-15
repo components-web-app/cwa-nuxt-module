@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { FetchError } from 'ohmyfetch'
+import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaResourcesActionsInterface } from './actions'
-import state, { CwaResourceError, CwaResourcesStateInterface } from './state'
+import state, { CwaResourcesStateInterface } from './state'
 
 describe('We can reset current resources', () => {
   const resourcesState = state()
@@ -109,17 +110,17 @@ describe('resources action setResourceFetchError', () => {
   })
 
   test('We can set an error on a new resource with a fetch error', () => {
-    const error: CwaResourceError = { message: 'my error', statusCode: 404 }
+    const error: CwaResourceError = createCwaResourceError(new Error('Any error'))
     resourcesActions.setResourceFetchError({ iri: 'id', error })
     expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
-    expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error)
+    expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error.asObject)
   })
 
   test('We can set the status on an existing resource', () => {
-    const error: FetchError = { name: 'FetchError', message: 'my error' }
+    const error: CwaResourceError = createCwaResourceError(new Error('Any error'))
     resourcesActions.setResourceFetchError({ iri: 'id', error })
     expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
-    expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error)
+    expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error.asObject)
   })
 })
 

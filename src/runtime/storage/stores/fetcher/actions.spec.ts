@@ -5,6 +5,7 @@ import { ResourcesStore } from '../resources/resources-store'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters from './getters'
+import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 
 vi.mock('uuid', () => {
   return {
@@ -446,15 +447,13 @@ describe('Fetcher store action -> finishManifestFetch', () => {
   })
 
   test('Can set the error state on a manifest', () => {
-    const newError = {
-      message: 'My error message'
-    }
+    const newError = createCwaResourceError(new Error('My error message'))
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.ERROR,
       token: 'existing-token-with-manifest',
       error: newError
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.error).toStrictEqual(newError)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.error).toStrictEqual(newError.asObject)
   })
 })

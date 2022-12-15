@@ -1,6 +1,8 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { FetchResponse } from 'ohmyfetch'
 import { CwaResource, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
+import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
@@ -21,6 +23,8 @@ interface FetchEvent {
   path: string
   preload?: string[]
 }
+
+export interface CwaFetchResponse extends FetchResponse<CwaResource|undefined> {}
 
 export default class Fetcher {
   private readonly cwaFetch: CwaFetch
@@ -79,32 +83,28 @@ export default class Fetcher {
       resource: path,
       token: startFetchResult.token
     }
+    let fetchResponse: CwaFetchResponse
     try {
-      await this.fetch({
+      fetchResponse = await this.fetch({
         path,
         preload
       })
       this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
-        success: true
+        success: true,
+        fetchResponse
       })
     } catch (error: any) {
-      // todo: refactor generating the CwaError from caught error so they are uniform
       this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
         success: false,
-        error: {
-          statusCode: error?.statusCode,
-          message: error?.message || 'An unknown error occurred'
-        }
+        error: createCwaResourceError(error)
       })
     }
 
-    // todo: IF WE HAVE A RESPONSE FROM FETCH - move finishFetchResource to here too
-    // todo: validate response is a resource - adjust success status accordingly
-    // todo: if still OK, pass to save the resource with data and headers
+    // should we return the resource from finishFetchResources or look for the store data
+    // todo: fetch nested resources if valid
 
-    // if an existing token was not provided, we can finish it
     if (!token) {
       await this.fetchStatusManager.finishFetch({
         token: startFetchResult.token
@@ -120,7 +120,7 @@ export default class Fetcher {
       const response = await this.fetch({
         path: event.manifestPath
       })
-      resources = response._data.resource_iris || []
+      resources = response._data?.resource_iris || []
       if (resources.length) {
         // todo: fetch batch here but do not await the response, we do not care, but the resources need to be populated in the store before we finish the manifest status to prevent any possible flickering of success status on the fetch chain status
       }
@@ -130,14 +130,10 @@ export default class Fetcher {
         resources
       })
     } catch (error: any) {
-      // todo: refactor generating the CwaError from caught error so they are uniform
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.ERROR,
         token: event.token,
-        error: {
-          statusCode: error?.statusCode,
-          message: error?.message || 'An unknown error occurred'
-        }
+        error: createCwaResourceError(error)
       })
     }
   }
@@ -145,7 +141,7 @@ export default class Fetcher {
   // todo: fetch nested resources
   // todo: fetch batch
 
-  private fetch (event: FetchEvent) {
+  private fetch (event: FetchEvent): Promise<CwaFetchResponse> {
     const url = this.appendQueryToPath(event.path)
     const headers = this.createRequestHeaders(event)
     return this.cwaFetch.fetch.raw<any>(url, {

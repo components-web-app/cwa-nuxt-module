@@ -11,6 +11,8 @@ import {
   StartFetchEvent
 } from '../../storage/stores/fetcher/actions'
 import FetchStatusManager from './fetch-status-manager'
+import { Headers } from 'ohmyfetch'
+import { createCwaResourceError } from '../../errors/cwa-resource-error'
 
 vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
   FetcherStore: vi.fn(() => ({
@@ -20,6 +22,7 @@ vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
 vi.mock('../../storage/stores/resources/resources-store', () => ({
   ResourcesStore: vi.fn(() => ({
     useStore: vi.fn(() => ({
+      saveResource: vi.fn(),
       setResourceFetchStatus: vi.fn(),
       setResourceFetchError: vi.fn(),
       resetCurrentResources: vi.fn()
@@ -46,6 +49,14 @@ function createFetchStatusManager (): FetchStatusManager {
   const mercure = new Mercure()
   const apiDocumentation = new ApiDocumentation()
   return new FetchStatusManager(fetcherStore, mercure, apiDocumentation, resourcesStore)
+}
+
+const mockCwaResource = {
+  '@id': '/another-resource',
+  '@type': 'AnotherResourceType',
+  _metadata: {
+    persisted: true
+  }
 }
 
 describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
@@ -198,9 +209,9 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       resource: '/some-resource',
       success: true,
       token: 'my-token',
-      error: {
-        statusCode: 100,
-        message: 'something'
+      fetchResponse: {
+        _data: mockCwaResource,
+        headers: new Headers()
       }
     })
 
@@ -209,9 +220,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/some-resource',
       isCurrent: false,
-      error: {
-        message: "Not Saved. Fetching token 'my-token' is no longer current"
-      }
+      error: createCwaResourceError(new Error("Not Saved. Fetching token 'my-token' is no longer current"))
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
   })
@@ -244,7 +253,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
   })
-  test('If the event is successful and fetch store has finished the fetch, call setResourceFetchStatus', () => {
+
+  test('If the event is successful and fetch store has finished the fetch, save the resource and set the resource status', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
@@ -255,11 +265,18 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
       success: true,
-      token: 'a-token'
+      token: 'a-token',
+      fetchResponse: {
+        _data: mockCwaResource,
+        headers: new Headers()
+      }
     })
 
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
-    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).toHaveBeenCalledWith({
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.saveResource).toHaveBeenCalledWith({
+      resource: mockCwaResource
+    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[1].value.setResourceFetchStatus).toHaveBeenCalledWith({
       iri: '/another-resource',
       isComplete: true
     })

@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import { CwaResource } from '../../../resources/resource-utils'
-import { CwaCurrentResourceInterface, CwaResourceError, CwaResourcesStateInterface } from './state'
+import { CwaResourceError } from '../../../errors/cwa-resource-error'
+import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
 export interface SetResourceStatusEvent { iri: string, isComplete: boolean }
@@ -69,7 +70,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       })
       data.apiState.status = -1
       if (error) {
-        data.apiState.error = error
+        data.apiState.error = error.asObject
       }
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {
