@@ -196,7 +196,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
 
     fetchStatusManager.finishFetchResource({
       resource: '/some-resource',
-      success: false,
+      success: true,
       token: 'my-token',
       error: {
         statusCode: 100,

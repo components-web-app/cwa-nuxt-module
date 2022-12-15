@@ -62,6 +62,7 @@ export default class Fetcher {
       token
     })
     if (!startFetchResult.continue) {
+      // todo: perhaps wait for the resource status to be ok and then return the resource? hmmm..
       return
     }
 
@@ -109,6 +110,8 @@ export default class Fetcher {
         token: startFetchResult.token
       })
     }
+
+    // todo: return the resource if valid
   }
 
   private async fetchManifest (event: FetchManifestEvent): Promise<void> {

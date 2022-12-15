@@ -59,8 +59,12 @@ export default class FetchStatusManager {
   }
 
   public finishFetchResource (event: FinishFetchResourceEvent) {
-    // todo: added event.success condition, test!
-    if (event.success && !this.fetcherStore.isCurrentFetchingToken(event.token)) {
+    if (!event.success) {
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: true })
+      return
+    }
+
+    if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: {
@@ -68,11 +72,6 @@ export default class FetchStatusManager {
         },
         isCurrent: false
       })
-      return
-    }
-
-    if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: true })
       return
     }
 
