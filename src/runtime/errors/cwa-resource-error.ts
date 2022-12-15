@@ -3,6 +3,7 @@ export interface CwaResourceErrorObject {
   statusCode?: number
   statusMessage?: string
   statusText?: string
+  request?: string
   primaryMessage: string
 }
 
@@ -11,8 +12,9 @@ export class CwaResourceError extends Error {
   statusCode?: number
   statusMessage?: string
   statusText?: string
-  asObject?: CwaResourceErrorObject
+  request?: string
   primaryMessage?: string
+  asObject?: CwaResourceErrorObject
 }
 
 export function createCwaResourceError (error: any) {
@@ -36,6 +38,11 @@ export function createCwaResourceError (error: any) {
       return error?.statusText
     }
   })
+  Object.defineProperty(cwaResourceError, 'request', {
+    get (): string|undefined {
+      return error?.request ? error.request.toString() : undefined
+    }
+  })
   Object.defineProperty(cwaResourceError, 'primaryMessage', {
     get (): string {
       return error?.statusText || error?.statusMessage || message
@@ -48,7 +55,8 @@ export function createCwaResourceError (error: any) {
         statusCode: this.statusCode,
         statusMessage: this.statusMessage,
         statusText: this.statusText,
-        primaryMessage: this.primaryMessage
+        primaryMessage: this.primaryMessage,
+        request: this.request
       }
     }
   })
