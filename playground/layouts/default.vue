@@ -1,6 +1,7 @@
 <template>
   <div>
-    <progress :class="['page-load-progress', { 'is-complete': $cwa.resourcesManager.resourceLoadStatus.percent === 100 }]" :value="$cwa.resourcesManager.resourceLoadStatus.complete" :max="$cwa.resourcesManager.resourceLoadStatus.total">
+    <label for="page-load">{{ $cwa.resourcesManager.resourceLoadStatus.percent }}%</label>
+    <progress id="page-load" :class="['page-load-progress', { 'is-complete': $cwa.resourcesManager.resourceLoadStatus.percent === 100 }]" :value="$cwa.resourcesManager.resourceLoadStatus.complete" :max="$cwa.resourcesManager.resourceLoadStatus.total">
       {{ $cwa.resourcesManager.resourceLoadStatus.percent }}%
     </progress><br>
     <nuxt-link to="/">
