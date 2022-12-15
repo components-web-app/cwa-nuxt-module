@@ -352,7 +352,7 @@ describe('Fetcher -> fetchManifest', () => {
       }
       await fetcher.fetchResource(fetchResourceEvent)
       expect(fetcher.fetchBatch).not.toHaveBeenCalled()
-      await delay(5)
+      await delay(2)
       expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     })
 
@@ -378,7 +378,7 @@ describe('Fetcher -> fetchManifest', () => {
     }
     await fetcher.fetchResource(fetchResourceEvent)
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
-    await delay(5)
+    await delay(2)
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource'], 'any')
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
@@ -408,7 +408,7 @@ describe('Fetcher -> fetchManifest', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     // we will not be awaiting the manifest
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).not.toHaveBeenCalled()
-    await delay(5)
+    await delay(2)
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
       resources: ['/manifest-resource-iri'],
       token: 'any',
@@ -707,7 +707,7 @@ describe('Fetcher -> fetchBatch', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     fetcher.fetchResource.mockClear()
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
-    await delay(5)
+    await delay(2)
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource', '/resolve-another-resource'], 'any')
 
