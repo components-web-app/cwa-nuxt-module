@@ -341,15 +341,19 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       success: false,
       token: 'a-token',
       error: {
+        name: 'CwaResourceError',
         statusCode: 100,
         message: 'something'
       }
     })
 
+    expect(fetcherStore.useStore).toHaveBeenCalledTimes(1)
+    expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('a-token')
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/another-resource',
-      isCurrent: true,
+      isCurrent: fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken.mock.results[0].value,
       error: {
+        name: 'CwaResourceError',
         statusCode: 100,
         message: 'something'
       }
@@ -523,11 +527,36 @@ describe('FetchStatusManager -> finishManifestFetch', () => {
       type: FinishFetchManifestType.ERROR,
       token: 'a-token',
       error: {
+        name: 'CwaResourceError',
         message: 'My manifest error'
       }
     }
     fetchStatusManager.finishManifestFetch(errorEvent)
     expect(fetcherStore.useStore.mock.results[0].value.finishManifestFetch).toHaveBeenCalledWith(errorEvent)
+  })
+})
+
+describe('FetchStatusManager -> isCurrentFetchingToken', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Passed arguments to store and returns stroe value', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        isCurrentFetchingToken: vi.fn(() => 'anything')
+      }
+    })
+    const result = fetchStatusManager.isCurrentFetchingToken('my-token')
+    expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
+    expect(result).toBe('anything')
   })
 })
 

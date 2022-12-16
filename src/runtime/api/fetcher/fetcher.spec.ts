@@ -322,6 +322,7 @@ describe('Fetcher -> fetchManifest', () => {
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => true)
   })
 
   afterEach(() => {
@@ -378,9 +379,12 @@ describe('Fetcher -> fetchManifest', () => {
       token: 'any',
       manifestPath: '/my-manifest'
     }
+
     await fetcher.fetchResource(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).not.toHaveBeenCalled()
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     await delay(2)
+    expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource'], 'any')
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])

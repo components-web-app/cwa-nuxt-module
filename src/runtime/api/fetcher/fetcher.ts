@@ -148,7 +148,7 @@ export default class Fetcher {
         path: event.manifestPath
       })
       resources = response._data?.resource_iris || []
-      if (resources.length) {
+      if (resources.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
         this.fetchBatch(resources, event.token)
       }
       this.fetchStatusManager.finishManifestFetch({

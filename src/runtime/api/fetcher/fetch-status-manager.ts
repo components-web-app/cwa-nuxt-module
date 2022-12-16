@@ -54,7 +54,6 @@ export default class FetchStatusManager {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  // todo: TEST
   public async getFetchedCurrentResource (iri:string, timeout?: number): Promise<CwaResource|undefined> {
     const { current: { value: { byId: currentById } } } = storeToRefs(this.resourcesStore)
     const currentResource = currentById[iri]
@@ -107,7 +106,7 @@ export default class FetchStatusManager {
 
   public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent): CwaResource|undefined {
     if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: true })
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token) })
       return
     }
     if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
@@ -171,6 +170,10 @@ export default class FetchStatusManager {
 
   public finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void {
     this.fetcherStore.finishManifestFetch(event)
+  }
+
+  public isCurrentFetchingToken (token: string) {
+    return this.fetcherStore.isCurrentFetchingToken(token)
   }
 
   public get primaryFetchPath (): string|undefined {
