@@ -149,15 +149,15 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
   })
 
   test('If API state does not resolve within specified timeout, return the current resource data and log to console', async () => {
-    const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource', 500)
+    const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource', 5)
     const result = await promise
     const bluebirdInstance = Bluebird.mock.results[0].value
-    expect(bluebirdInstance.timeout).toHaveBeenCalledWith(500, 'Timed out 500ms waiting to fetch current resource \'/some-resource\' in pending API state.')
+    expect(bluebirdInstance.timeout).toHaveBeenCalledWith(5, 'Timed out 5ms waiting to fetch current resource \'/some-resource\' in pending API state.')
     expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
     expect(result).toStrictEqual({
       '@id': '/original-resource'
     })
-    expect(consola.warn).toHaveBeenCalledWith('Timed out 500ms waiting to fetch current resource \'/some-resource\' in pending API state.')
+    expect(consola.warn).toHaveBeenCalledWith('Timed out 5ms waiting to fetch current resource \'/some-resource\' in pending API state.')
   })
 })
 
