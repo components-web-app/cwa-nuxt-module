@@ -1,6 +1,10 @@
 import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
 import { Headers } from 'ohmyfetch'
+import { storeToRefs } from 'pinia'
+import Bluebird from 'bluebird'
+import { reactive } from 'vue'
+import consola from 'consola'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
@@ -12,6 +16,7 @@ import {
   StartFetchEvent
 } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import FetchStatusManager from './fetch-status-manager'
 
 vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
@@ -42,6 +47,26 @@ vi.mock('vue', async () => {
     computed: vi.fn(fn => actual.computed(fn))
   }
 })
+vi.mock('pinia', () => {
+  return {
+    storeToRefs: vi.fn()
+  }
+})
+
+vi.mock('bluebird', async () => {
+  const actual = await vi.importActual<Bluebird<any>>('bluebird')
+  actual.config({ cancellation: true })
+  return {
+    TimeoutError: actual.TimeoutError,
+    default: vi.fn((cb) => {
+      // eslint-disable-next-line new-cap
+      const actualPromise = new actual.default(cb)
+      vi.spyOn(actualPromise, 'timeout')
+      return actualPromise
+    })
+  }
+})
+vi.mock('consola')
 
 function createFetchStatusManager (): FetchStatusManager {
   const fetcherStore = new FetcherStore()
@@ -58,6 +83,83 @@ const mockCwaResource = {
     persisted: true
   }
 }
+
+describe('FetchStatusManager -> getFetchedCurrentResource', () => {
+  let fetchStatusManager: FetchStatusManager
+  let currentResource: CwaCurrentResourceInterface
+
+  beforeEach(() => {
+    currentResource = reactive({
+      apiState: {
+        status: CwaResourceApiStatuses.IN_PROGRESS
+      },
+      data: {
+        '@id': '/original-resource'
+      }
+    })
+    fetchStatusManager = createFetchStatusManager()
+    storeToRefs.mockImplementation(() => {
+      return {
+        current: {
+          value: {
+            byId: reactive({
+              '/some-resource': currentResource
+            })
+          }
+        }
+      }
+    })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('If the resource does not exist, return undefined', async () => {
+    const result = await fetchStatusManager.getFetchedCurrentResource('anything')
+
+    expect(Bluebird).not.toHaveBeenCalled()
+    expect(result).toBeUndefined()
+  })
+
+  test('If the resource exists we return the updated resource when API state is OK', async () => {
+    const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource')
+    expect(Bluebird).toHaveBeenCalledTimes(1)
+    const bluebirdInstance = Bluebird.mock.results[0].value
+    expect(bluebirdInstance.timeout).toHaveBeenCalledWith(10000, 'Timed out 10000ms waiting to fetch current resource \'/some-resource\' in pending API state.')
+
+    expect(vue.watch.mock.calls[0][0]).toBe(currentResource)
+    expect(vue.watch.mock.calls[0][1]).toBeTypeOf('function')
+    expect(vue.watch.mock.calls[0][2]).toStrictEqual({ immediate: true })
+    expect(vue.watch.mock.results[0].value).not.toHaveBeenCalled()
+
+    currentResource.data = {
+      '@id': '/resolved-id'
+    }
+    currentResource.apiState = {
+      status: CwaResourceApiStatuses.SUCCESS
+    }
+
+    const result = await promise
+
+    expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
+    expect(result).toStrictEqual({
+      '@id': '/resolved-id'
+    })
+  })
+
+  test('If API state does not resolve within specified timeout, return the current resource data and log to console', async () => {
+    const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource', 500)
+    const result = await promise
+    const bluebirdInstance = Bluebird.mock.results[0].value
+    expect(bluebirdInstance.timeout).toHaveBeenCalledWith(500, 'Timed out 500ms waiting to fetch current resource \'/some-resource\' in pending API state.')
+    expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
+    expect(result).toStrictEqual({
+      '@id': '/original-resource'
+    })
+    expect(consola.warn).toHaveBeenCalledWith('Timed out 500ms waiting to fetch current resource \'/some-resource\' in pending API state.')
+  })
+})
 
 describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
   let fetchStatusManager: FetchStatusManager

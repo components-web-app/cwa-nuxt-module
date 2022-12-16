@@ -1,5 +1,5 @@
 import { computed, watch, WatchStopHandle } from 'vue'
-import Bluebird from 'bluebird'
+import Bluebird, { TimeoutError } from 'bluebird'
 import consola from 'consola'
 import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
@@ -55,16 +55,16 @@ export default class FetchStatusManager {
   }
 
   // todo: TEST
-  public async getFetchedCurrentResource (iri:string): Promise<CwaResource|undefined> {
+  public async getFetchedCurrentResource (iri:string, timeout?: number): Promise<CwaResource|undefined> {
     const { current: { value: { byId: currentById } } } = storeToRefs(this.resourcesStore)
     const currentResource = currentById[iri]
     if (!currentResource) {
       return
     }
 
-    const timeout = 10000
+    timeout = timeout || 10000
     let stopWatch: WatchStopHandle
-    const resolvedResource = await new Bluebird<CwaResource|undefined>((resolve) => {
+    const bluebirdPromise = new Bluebird<CwaResource|undefined>((resolve) => {
       stopWatch = watch(currentResource, (resolvedResource) => {
         if (resolvedResource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
           resolve(resolvedResource?.data)
@@ -73,13 +73,16 @@ export default class FetchStatusManager {
         immediate: true
       })
     })
-      .timeout(timeout)
-      .catch(() => {
-        consola.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
+      .timeout(timeout, `Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
+      .catch((error) => {
+        if (error instanceof TimeoutError) {
+          consola.warn(error.message)
+        }
       })
-
-    // @ts-ignore the promise won't be resolved until the callback is called and watch invoked with the right result, so it will be defined
-    stopWatch()
+      .finally(() => {
+        stopWatch()
+      })
+    const resolvedResource = await bluebirdPromise
     return resolvedResource || currentResource.data
   }
 
