@@ -1,6 +1,7 @@
 import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ohmyfetch'
+import { navigateTo } from '#app'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -57,7 +58,6 @@ export default class Fetcher {
   }
 
   public async fetchRoute (path: string): Promise<CwaResource|undefined> {
-    // todo: handle if the returned route is a redirect and we should change the path loaded for the user or a redirect etc.
     const iri = `/_/routes/${path}`
     const manifestPath = `/_/routes_manifest/${path}`
     const startFetchResult = this.fetchStatusManager.startFetch({
@@ -69,6 +69,13 @@ export default class Fetcher {
       return
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
+
+    // todo: can only work client-side right now due to Nuxt errors https://github.com/nuxt/framework/issues/9748
+    if (process.client && resource?.redirectPath) {
+      navigateTo(resource.redirectPath, {
+        redirectCode: 308
+      })
+    }
 
     await this.fetchStatusManager.finishFetch({
       token: startFetchResult.token
@@ -82,6 +89,8 @@ export default class Fetcher {
       token
     })
     if (!startFetchResult.continue) {
+      // if token provided, it will exist or throw an error already. If not, we will have a new fetch token and continue.
+      // this is not a primary fetch so no other options are available.
       // todo: perhaps wait for the resource status to be ok and then return the resource? hmmm..
       return
     }
@@ -95,6 +104,8 @@ export default class Fetcher {
       token: startFetchResult.token
     })
     if (!continueToFetchResource) {
+      // todo: fetching token may not be valid, or the resource already being fetched. we should get the resource from the store and if in pending state, wait until it is finished or errored to return the resource data.
+      // todo: the issue, the resource may never exist... so if it doesn't already then it wont, and if it does, the status will be resolved soooo... should be ok with a resources store getter
       return
     }
 

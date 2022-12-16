@@ -93,7 +93,8 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (event.isPrimary && fetcherState.primaryFetch.successToken) {
         const lastSuccessState = fetcherState.fetches[fetcherState.primaryFetch.successToken]
         // check if this new path is the same as the last successful primary fetch and that the chain of fetch is complete
-        if (lastSuccessState.path === event.path && fetcherGetters.isFetchChainComplete.value(fetcherState.primaryFetch.successToken) === true) {
+        // todo: when working on the redirect after finalising, we could check here if the fetched path is a route resource, and if the redirect path matches the new event path, then it is also the same fetch
+        if (lastSuccessState.path === event.path && fetcherGetters.isFetchChainComplete.value(fetcherState.primaryFetch.successToken, true) === true) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
 

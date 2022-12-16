@@ -1,12 +1,12 @@
 import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import consola from 'consola'
 import { ResourcesStore } from '../resources/resources-store'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
-import getters from './getters'
+import getters, { CwaFetcherGettersInterface } from './getters'
 
 vi.mock('consola')
 vi.mock('uuid', () => {
@@ -52,6 +52,7 @@ describe('Fetcher store action -> startFetch', () => {
   let existingIncompletePrimaryFetchState: TopLevelFetchPathInterface
   let existingCompletedPrimaryFetchState: TopLevelFetchPathInterface
   let existingFetchState: TopLevelFetchPathInterface
+  let currentGetters: CwaFetcherGettersInterface
 
   beforeEach(() => {
     existingIncompletePrimaryFetchState = {
@@ -75,7 +76,8 @@ describe('Fetcher store action -> startFetch', () => {
     fetcherState.fetches['existing-complete-primary-token'] = reactive(existingCompletedPrimaryFetchState)
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
     const resourcesStore = new ResourcesStore()
-    fetcherActions = actions(fetcherState, getters(fetcherState, resourcesStore))
+    currentGetters = getters(fetcherState, resourcesStore)
+    fetcherActions = actions(fetcherState, currentGetters)
   })
 
   afterEach(() => {
@@ -169,6 +171,13 @@ describe('Fetcher store action -> startFetch', () => {
   })
 
   test('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
+    // mock is fetch chain complete as true so that we can spy on the method being called. Functionality is tested in getters anyway
+    currentGetters.isFetchChainComplete = computed(() => {
+      return vi.fn(() => {
+        return true
+      })
+    })
+
     const startFetchEvent = {
       path: '/existing-complete-primary-path',
       isPrimary: true
@@ -178,6 +187,9 @@ describe('Fetcher store action -> startFetch', () => {
 
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+
+    expect(currentGetters.isFetchChainComplete.value).toHaveBeenCalledWith('existing-complete-primary-token', true)
+
     expect(response).toStrictEqual({
       continue: false,
       resources: existingCompletedPrimaryFetchState.resources,
@@ -286,6 +298,7 @@ describe('Fetcher store action -> finishFetch', () => {
 describe('Fetcher store action -> addFetchResource', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface
+  let currentGetters: CwaFetcherGettersInterface
 
   let existingIncompletePrimaryFetchState: TopLevelFetchPathInterface
   let existingCompletedPrimaryFetchState: TopLevelFetchPathInterface
@@ -312,7 +325,8 @@ describe('Fetcher store action -> addFetchResource', () => {
     fetcherState.fetches['existing-complete-primary-token'] = reactive(existingCompletedPrimaryFetchState)
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
     const resourcesStore = new ResourcesStore()
-    fetcherActions = actions(fetcherState, getters(fetcherState, resourcesStore))
+    currentGetters = getters(fetcherState, resourcesStore)
+    fetcherActions = actions(fetcherState, currentGetters)
   })
 
   afterEach(() => {
@@ -348,11 +362,19 @@ describe('Fetcher store action -> addFetchResource', () => {
   })
 
   test('If the token is for a fetch chain that is not primary, even if there is a primary fetch in progress, continue and add', () => {
+    // mock is fetch chain complete as true so that we can spy on the method being called. Functionality is tested in getters anyway
+    currentGetters.isCurrentFetchingToken = computed(() => {
+      return vi.fn(() => {
+        return true
+      })
+    })
+
     fetcherState.primaryFetch.fetchingToken = 'existing-incomplete-primary-token'
     const result = fetcherActions.addFetchResource({
       token: 'existing-token',
       resource: '/another-path-2'
     })
+    expect(currentGetters.isCurrentFetchingToken.value).toHaveBeenCalledWith('existing-token')
     expect(result).toBe(true)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual([
       '/existing-path',

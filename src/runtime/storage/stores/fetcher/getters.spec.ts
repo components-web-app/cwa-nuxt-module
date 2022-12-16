@@ -133,6 +133,26 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
   })
 
   test.each([
+    { path: '/errored-resource', resources: ['/success-resource', '/errored-resource'], result: false },
+    { path: '/does-not-exist', resources: ['/success-resource', '/errored-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/errored-resource'], result: true },
+    { path: '/success-resource', resources: ['/success-resource', '/errored-resource', '/in-progress-resource'], result: false }
+  ])('If we only want successful fetch chains, we check the main path. If the main path is $path with the resources $resources the result should be $result', ({
+    path,
+    resources,
+    result
+  }) => {
+    state.fetches = {
+      'some-token': {
+        path,
+        isPrimary: false,
+        resources
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token', true)).toBe(result)
+  })
+
+  test.each([
     { manifest: false, manifestResources: undefined, manifestError: undefined, result: true },
     { manifest: true, manifestResources: undefined, manifestError: undefined, result: false },
     { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: true },

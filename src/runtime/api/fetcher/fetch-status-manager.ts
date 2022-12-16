@@ -50,6 +50,31 @@ export default class FetchStatusManager {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
+  // this will only return the resource once it is in ready state
+  public async getFetchedCurrentResource (iri:string): Promise<CwaResource|undefined> {
+    const resource = this.resourcesStore.current.byId[iri]
+    if (!resource) {
+      return
+    }
+
+    await Promise.resolve()
+    // if (resource.apiState.status === 0) {
+    //   // wait for ready state
+    //   // or computed(() => this.resourcesStore.getCurrentResourceById())
+    //   const { current } = storeToRefs(this.resourcesStore)
+    //   watch(current, (currentResources) => {
+    //     if (!currentResources.byId[iri]) {
+    //       // resource is deleted
+    //     }
+    //     if (currentResources.byId[iri].apiState.status !== 0) {
+    //       // the resource is OK
+    //     }
+    //   })
+    // }
+
+    return resource.data
+  }
+
   public startFetch (event: StartFetchEvent): StartFetchResponse {
     const startFetchStatus = this.fetcherStore.startFetch(event)
     if (event.isPrimary) {

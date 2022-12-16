@@ -41,12 +41,12 @@ const { $cwa } = useNuxtApp()
       transition: .3s background-color ease
     .resource-error
       position: absolute
-      top: 4rem
-      right: 2rem
-      left: 2rem
-      bottom: 2rem
+      top: 3.5rem
+      right: 1.5rem
+      left: 1.5rem
+      bottom: 1.5rem
       z-index: 2
-      background: rgba(mistyrose, .4)
+      background: rgba(mistyrose, .95)
       box-sizing: border-box
       padding: .5rem
       font-size: .8rem

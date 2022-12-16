@@ -4,7 +4,7 @@ import { CwaFetcherStateInterface } from './state'
 
 export interface CwaFetcherGettersInterface {
   primaryFetchPath: ComputedRef<string|undefined>
-  isFetchChainComplete: ComputedRef<(token: string) => boolean|undefined>
+  isFetchChainComplete: ComputedRef<(token: string, onlySuccessful?: boolean) => boolean|undefined>
   isCurrentFetchingToken: ComputedRef<(token: string) => boolean|undefined>
 }
 
@@ -19,7 +19,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
       return fetchStatus.path
     }),
     isFetchChainComplete: computed(() => {
-      return (token: string) => {
+      return (token: string, onlySuccessful = false) => {
         const fetchStatus = fetcherState.fetches[token]
         if (!fetchStatus) {
           return
@@ -34,6 +34,17 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
         }
 
         const resourcesStore = resourcesStoreDefinition.useStore()
+
+        if (onlySuccessful) {
+          const resourceData = resourcesStore.current.byId[fetchStatus.path]
+          if (!resourceData) {
+            return false
+          }
+          if (resourceData.apiState.status !== 1) {
+            return false
+          }
+        }
+
         for (const resource of resources) {
           const resourceData = resourcesStore.current.byId[resource]
           if (!resourceData) {
