@@ -139,6 +139,7 @@ describe('Fetcher -> fetchResource', () => {
       return Promise.resolve()
     })
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
+    FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mockImplementation(() => 'Mocked getFetchedCurrentResource Result')
   })
 
   afterEach(() => {
@@ -157,9 +158,10 @@ describe('Fetcher -> fetchResource', () => {
     }
     const result = await fetcher.fetchResource(fetchResourceEvent)
     expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledWith(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].getFetchedCurrentResource).toHaveBeenCalledWith('/new-path')
     expect(fetcher.fetchManifest).not.toHaveBeenCalled()
     expect(FetchStatusManager.mock.instances[0].startFetchResource).not.toHaveBeenCalled()
-    expect(result).toBeUndefined()
+    expect(result).toBe(FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mock.results[0].value)
   })
 
   test('startFetchResource (without preload) and fetchManifest are called if startFetch returns continue as true', async () => {
@@ -199,9 +201,9 @@ describe('Fetcher -> fetchResource', () => {
       manifestPath: '/my-manifest'
     }
     const result = await fetcher.fetchResource(fetchResourceEvent)
-
+    expect(FetchStatusManager.mock.instances[0].getFetchedCurrentResource).toHaveBeenCalledWith('/new-path')
     expect(fetcher.fetch).not.toHaveBeenCalled()
-    expect(result).toBeUndefined()
+    expect(result).toBe(FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mock.results[0].value)
   })
 
   test.each([

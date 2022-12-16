@@ -89,8 +89,7 @@ export default class Fetcher {
       token
     })
     if (!startFetchResult.continue) {
-      // todo: TEST CALL
-      return await this.fetchStatusManager.getFetchedCurrentResource(path)
+      return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
     if (manifestPath) {
@@ -102,8 +101,7 @@ export default class Fetcher {
       token: startFetchResult.token
     })
     if (!continueToFetchResource) {
-      // todo: TEST CALL
-      return await this.fetchStatusManager.getFetchedCurrentResource(path)
+      return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
     const finishFetchResourceEvent = {

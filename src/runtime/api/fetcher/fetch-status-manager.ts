@@ -78,7 +78,7 @@ export default class FetchStatusManager {
         consola.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
       })
 
-    // @ts-ignore
+    // @ts-ignore the promise won't be resolved until the callback is called and watch invoked with the right result, so it will be defined
     stopWatch()
     return resolvedResource || currentResource.data
   }
