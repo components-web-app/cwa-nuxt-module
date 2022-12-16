@@ -149,7 +149,7 @@ export default class Fetcher {
       })
       resources = response._data?.resource_iris || []
       if (resources.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
-        this.fetchBatch(resources, event.token)
+        await this.fetchBatch(resources, event.token)
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
