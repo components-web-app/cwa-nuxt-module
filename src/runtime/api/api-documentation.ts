@@ -4,7 +4,7 @@ import {
   ApiDocumentationStore, CwaApiDocumentationStoreInterface
 } from '../storage/stores/api-documentation/api-documentation-store'
 import { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
-import CwaFetch from '@cwa/nuxt-module/runtime/api/fetcher/cwa-fetch'
+import CwaFetch from './fetcher/cwa-fetch'
 
 export default class ApiDocumentation {
   private readonly cwaFetch: CwaFetch

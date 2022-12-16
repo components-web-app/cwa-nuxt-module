@@ -1,6 +1,7 @@
 import { describe, beforeEach, vi, test, expect } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
+import { CwaResourceApiStatuses } from '../resources/state'
 import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters, { CwaFetcherGettersInterface } from './getters'
 
@@ -18,17 +19,17 @@ vi.mock('../resources/resources-store', () => ({
         byId: {
           '/success-resource': {
             apiState: {
-              status: 1
+              status: CwaResourceApiStatuses.SUCCESS
             }
           },
           '/errored-resource': {
             apiState: {
-              status: -1
+              status: CwaResourceApiStatuses.ERROR
             }
           },
           '/in-progress-resource': {
             apiState: {
-              status: 0
+              status: CwaResourceApiStatuses.IN_PROGRESS
             }
           }
         }

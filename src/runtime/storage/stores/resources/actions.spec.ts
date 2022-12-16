@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaResourcesActionsInterface } from './actions'
-import state, { CwaResourcesStateInterface } from './state'
+import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
 describe('We can reset current resources', () => {
   const resourcesState = state()
@@ -26,12 +26,12 @@ describe('We can reset current resources', () => {
     resourcesState.current.byId = {
       id: {
         apiState: {
-          status: null
+          status: undefined
         }
       },
       current: {
         apiState: {
-          status: null
+          status: undefined
         }
       }
     }
@@ -50,12 +50,12 @@ describe('We can reset current resources', () => {
     resourcesState.current.byId = {
       id: {
         apiState: {
-          status: null
+          status: undefined
         }
       },
       current: {
         apiState: {
-          status: null
+          status: undefined
         }
       }
     }
@@ -87,7 +87,7 @@ describe('resources action setResourceFetchStatus', () => {
   })
   test('We clear existing fetch errors when setting a new status', () => {
     resourcesState.current.byId.id.apiState = {
-      status: -1,
+      status: CwaResourceApiStatuses.ERROR,
       error: {
         statusCode: 101,
         message: 'any'

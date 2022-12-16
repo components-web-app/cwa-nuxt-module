@@ -4,7 +4,7 @@ import { Ref, watch, computed, ref } from 'vue'
 import { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { getPublishedResourceIri, CwaResource } from '../resources/resource-utils'
-import { FetcherStore } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/fetcher-store'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 
 interface MercureMessageInterface {
   event: MessageEvent,

@@ -1,7 +1,6 @@
-import { reactive } from 'vue'
 import { CwaResource } from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
-import { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
 export interface SetResourceStatusEvent { iri: string, isComplete: boolean }
@@ -23,11 +22,11 @@ interface InitResourceEvent {
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
   function initResource ({ iri, resourcesState, isCurrent }: InitResourceEvent): CwaCurrentResourceInterface {
     if (!resourcesState.current.byId[iri]) {
-      resourcesState.current.byId[iri] = reactive({
-        apiState: reactive({
-          status: null
-        })
-      })
+      resourcesState.current.byId[iri] = {
+        apiState: {
+          status: undefined
+        }
+      }
     }
     if (!resourcesState.current.allIds.includes(iri)) {
       resourcesState.current.allIds.push(iri)
@@ -47,10 +46,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
           }
         }
       }
-      resourcesState.new = reactive({
+      resourcesState.new = {
         byId: {},
         allIds: []
-      })
+      }
       resourcesState.current.currentIds = currentIds || []
     },
     setResourceFetchStatus ({ iri, isComplete }: SetResourceStatusEvent): void {
@@ -59,8 +58,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         iri,
         isCurrent: true
       })
-      data.apiState.status = isComplete ? 1 : 0
-      data.apiState.error = undefined
+      data.apiState = {
+        status: isComplete ? CwaResourceApiStatuses.SUCCESS : CwaResourceApiStatuses.IN_PROGRESS
+      }
     },
     setResourceFetchError ({ iri, error, isCurrent }: SetResourceFetchErrorEvent): void {
       const data = initResource({
@@ -68,9 +68,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         iri,
         isCurrent: isCurrent === undefined ? true : isCurrent
       })
-      data.apiState.status = -1
-      if (error) {
-        data.apiState.error = error.asObject
+      data.apiState = {
+        status: CwaResourceApiStatuses.ERROR,
+        error: error?.asObject
       }
     },
     saveResource ({ resource, isNew }: SaveResourceEvent): void {

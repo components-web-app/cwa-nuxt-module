@@ -1,4 +1,7 @@
-import { computed, watch } from 'vue'
+import { computed, watch, WatchStopHandle } from 'vue'
+import Bluebird from 'bluebird'
+import consola from 'consola'
+import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
@@ -11,6 +14,7 @@ import {
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { createCwaResourceError, CwaResourceError } from '../../errors/cwa-resource-error'
 import { CwaResource, isCwaResource } from '../../resources/resource-utils'
+import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import { CwaFetchResponse } from './fetcher'
 
 export interface FinishFetchResourceEvent {
@@ -50,29 +54,33 @@ export default class FetchStatusManager {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  // this will only return the resource once it is in ready state
+  // todo: TEST
   public async getFetchedCurrentResource (iri:string): Promise<CwaResource|undefined> {
-    const resource = this.resourcesStore.current.byId[iri]
-    if (!resource) {
+    const { current: { value: { byId: currentById } } } = storeToRefs(this.resourcesStore)
+    const currentResource = currentById[iri]
+    if (!currentResource) {
       return
     }
 
-    await Promise.resolve()
-    // if (resource.apiState.status === 0) {
-    //   // wait for ready state
-    //   // or computed(() => this.resourcesStore.getCurrentResourceById())
-    //   const { current } = storeToRefs(this.resourcesStore)
-    //   watch(current, (currentResources) => {
-    //     if (!currentResources.byId[iri]) {
-    //       // resource is deleted
-    //     }
-    //     if (currentResources.byId[iri].apiState.status !== 0) {
-    //       // the resource is OK
-    //     }
-    //   })
-    // }
+    const timeout = 10000
+    let stopWatch: WatchStopHandle
+    const resolvedResource = await new Bluebird<CwaResource|undefined>((resolve) => {
+      stopWatch = watch(currentResource, (resolvedResource) => {
+        if (resolvedResource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
+          resolve(resolvedResource?.data)
+        }
+      }, {
+        immediate: true
+      })
+    })
+      .timeout(timeout)
+      .catch(() => {
+        consola.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
+      })
 
-    return resource.data
+    // @ts-ignore
+    stopWatch()
+    return resolvedResource || currentResource.data
   }
 
   public startFetch (event: StartFetchEvent): StartFetchResponse {

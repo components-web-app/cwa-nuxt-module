@@ -1,17 +1,17 @@
 import { describe, test, expect, beforeEach } from 'vitest'
 import { reactive } from 'vue'
 import getters, { CwaResourcesGettersInterface } from './getters'
-import { CwaResourcesStateInterface } from './state'
+import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
 function createState (): CwaResourcesStateInterface {
   return {
     current: reactive({
-      byId: reactive({}),
+      byId: {},
       allIds: [],
       currentIds: []
     }),
     new: reactive({
-      byId: reactive({}),
+      byId: {},
       allIds: []
     })
   }
@@ -34,7 +34,7 @@ describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
     state.current.byId = {
       id: {
         apiState: {
-          status: 0
+          status: CwaResourceApiStatuses.IN_PROGRESS
         }
       }
     }
@@ -60,7 +60,7 @@ describe('ResourcesStore Getters -> totalResourcesPending', () => {
     state.current.byId = {
       id: {
         apiState: {
-          status: 0
+          status: CwaResourceApiStatuses.IN_PROGRESS
         }
       }
     }

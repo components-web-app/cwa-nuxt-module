@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import { ResourcesManager } from './resources-manager'
 
 vi.mock('../storage/stores/resources/resources-store', () => {
@@ -14,7 +15,7 @@ vi.mock('../storage/stores/resources/resources-store', () => {
             byId: {
               '/id1': {
                 apiState: {
-                  status: 0
+                  status: CwaResourceApiStatuses.IN_PROGRESS
                 },
                 data: {
                   '@id': '/id1'
@@ -22,7 +23,7 @@ vi.mock('../storage/stores/resources/resources-store', () => {
               },
               '/id2': {
                 apiState: {
-                  status: 1
+                  status: CwaResourceApiStatuses.SUCCESS
                 },
                 data: {
                   '@id': '/id2'
@@ -53,7 +54,7 @@ describe('ResourceManager class tests', () => {
     expect(resourcesManager.currentResources).toStrictEqual({
       '/id1': {
         apiState: {
-          status: 0
+          status: CwaResourceApiStatuses.IN_PROGRESS
         },
         data: {
           '@id': '/id1'

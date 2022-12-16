@@ -89,10 +89,8 @@ export default class Fetcher {
       token
     })
     if (!startFetchResult.continue) {
-      // if token provided, it will exist or throw an error already. If not, we will have a new fetch token and continue.
-      // this is not a primary fetch so no other options are available.
-      // todo: perhaps wait for the resource status to be ok and then return the resource? hmmm..
-      return
+      // todo: TEST CALL
+      return await this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
     if (manifestPath) {
@@ -104,9 +102,8 @@ export default class Fetcher {
       token: startFetchResult.token
     })
     if (!continueToFetchResource) {
-      // todo: fetching token may not be valid, or the resource already being fetched. we should get the resource from the store and if in pending state, wait until it is finished or errored to return the resource data.
-      // todo: the issue, the resource may never exist... so if it doesn't already then it wont, and if it does, the status will be resolved soooo... should be ok with a resources store getter
-      return
+      // todo: TEST CALL
+      return await this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
     const finishFetchResourceEvent = {

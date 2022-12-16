@@ -4,6 +4,7 @@ import { computed, reactive } from 'vue'
 import consola from 'consola'
 import { ResourcesStore } from '../resources/resources-store'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
+import { CwaResourceApiStatuses } from '../resources/state'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters, { CwaFetcherGettersInterface } from './getters'
@@ -21,22 +22,22 @@ vi.mock('../resources/resources-store', () => ({
         byId: {
           '/existing-path': {
             apiState: {
-              status: 1
+              status: CwaResourceApiStatuses.SUCCESS
             }
           },
           '/errored-resource': {
             apiState: {
-              status: -1
+              status: CwaResourceApiStatuses.ERROR
             }
           },
           '/existing-primary-path': {
             apiState: {
-              status: 1
+              status: CwaResourceApiStatuses.SUCCESS
             }
           },
           '/in-progress-resource': {
             apiState: {
-              status: 0
+              status: CwaResourceApiStatuses.IN_PROGRESS
             }
           }
         }

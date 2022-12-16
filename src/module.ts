@@ -2,6 +2,7 @@ import { fileURLToPath } from 'url'
 import { join } from 'path'
 import { defineNuxtModule, createResolver, addPluginTemplate, installModule } from '@nuxt/kit'
 import { ModuleOptions } from '@nuxt/schema'
+import Bluebird from 'bluebird'
 
 export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
@@ -21,6 +22,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     storeName: 'cwa'
   },
   async setup (options: CwaModuleOptions, nuxt) {
+    Bluebird.config({ cancellation: true })
+
     const { resolve } = createResolver(import.meta.url)
 
     await installModule('@pinia/nuxt')

@@ -1,5 +1,6 @@
 import { computed, ComputedRef } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
+import { CwaResourceApiStatuses } from '../resources/state'
 import { CwaFetcherStateInterface } from './state'
 
 export interface CwaFetcherGettersInterface {
@@ -40,7 +41,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
           if (!resourceData) {
             return false
           }
-          if (resourceData.apiState.status !== 1) {
+          if (resourceData.apiState.status !== CwaResourceApiStatuses.SUCCESS) {
             return false
           }
         }
@@ -50,7 +51,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
           if (!resourceData) {
             throw new Error(`The resource '${resource}' does not exist but is defined in the fetch chain with token '${token}'`)
           }
-          if (resourceData.apiState.status === 0) {
+          if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
             return false
           }
         }

@@ -1,5 +1,5 @@
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { CwaCurrentResourceInterface } from '@cwa/nuxt-module/runtime/storage/stores/resources/state'
+import { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 
 export class ResourcesManager {
   private resourcesStoreDefinition: ResourcesStore

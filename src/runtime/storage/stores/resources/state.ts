@@ -1,8 +1,14 @@
 import { reactive } from 'vue'
 import { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
 
+export enum CwaResourceApiStatuses {
+  ERROR = -1,
+  IN_PROGRESS = 0,
+  SUCCESS = 1
+}
+
 export interface CwaResourceApiState {
-  status: -1|0|1|null
+  status: CwaResourceApiStatuses|undefined
   error?: CwaResourceErrorObject
 }
 
@@ -30,12 +36,12 @@ export interface CwaResourcesStateInterface {
 export default function (): CwaResourcesStateInterface {
   return {
     current: reactive({
-      byId: reactive({}),
+      byId: {},
       allIds: [],
       currentIds: []
     }),
     new: reactive({
-      byId: reactive({}),
+      byId: {},
       allIds: []
     })
   }
