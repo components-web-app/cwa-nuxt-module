@@ -136,7 +136,16 @@ describe('Fetcher -> fetchResource', () => {
       return Promise.resolve()
     })
     vi.spyOn(fetcher, 'fetch').mockImplementation(() => {
-      return Promise.resolve()
+      const response = Promise.resolve({
+        '@id': '/some-resource'
+      })
+      return {
+        response,
+        headers: {
+          path: 'my-path'
+        },
+        finalUrl: '/fetched-final-url'
+      }
     })
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
     FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mockImplementation(() => 'Mocked getFetchedCurrentResource Result')
@@ -256,11 +265,18 @@ describe('Fetcher -> fetchResource', () => {
     expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
-      success: true
+      success: true,
+      headers: {
+        path: 'my-path'
+      },
+      finalUrl: '/fetched-final-url',
+      fetchResponse: {
+        '@id': '/some-resource'
+      }
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
 
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ some: 'resource' }, 'any')
+    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any' })
     expect(fetcher.fetchNestedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
     expect(result).toStrictEqual({ some: 'resource' })
   })
@@ -364,7 +380,7 @@ describe('Fetcher -> fetchManifest', () => {
       if (event.path !== '/my-manifest') {
         return Promise.resolve()
       }
-      return new Promise((resolve) => {
+      const responsePromise = new Promise((resolve) => {
         setTimeout(() => {
           resolve({
             _data: {
@@ -373,6 +389,9 @@ describe('Fetcher -> fetchManifest', () => {
           })
         }, 1)
       })
+      return {
+        response: responsePromise
+      }
     })
     const fetchResourceEvent = {
       path: '/new-path',
@@ -386,7 +405,7 @@ describe('Fetcher -> fetchManifest', () => {
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
-    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource'], 'any')
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource'], token: 'any' })
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
   })
 
@@ -395,7 +414,7 @@ describe('Fetcher -> fetchManifest', () => {
       if (event.path !== '/my-manifest') {
         return Promise.resolve()
       }
-      return new Promise((resolve) => {
+      const response = new Promise((resolve) => {
         setTimeout(() => {
           resolve({
             _data: {
@@ -404,6 +423,9 @@ describe('Fetcher -> fetchManifest', () => {
           })
         }, 1)
       })
+      return {
+        response
+      }
     })
 
     const fetchResourceEvent = {
@@ -412,8 +434,6 @@ describe('Fetcher -> fetchManifest', () => {
       manifestPath: '/my-manifest'
     }
     await fetcher.fetchResource(fetchResourceEvent)
-    // we will not be awaiting the manifest
-    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).not.toHaveBeenCalled()
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
       resources: ['/manifest-resource-iri'],
@@ -638,7 +658,13 @@ describe('Fetcher -> fetchNestedResources', () => {
     await fetcher.fetchResource(fetchResourceEvent)
 
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
-    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/_/layouts/layout-resource', '/_/component_groups/component-group-1', '/_/component_groups/component-group-2'], 'any')
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      paths: ['/_/layouts/layout-resource',
+        '/_/component_groups/component-group-1',
+        '/_/component_groups/component-group-2'
+      ],
+      token: 'any'
+    })
   })
 
   test('If the resource property does not exist, we do continue and do not add anything to the nested resources', async () => {
@@ -660,7 +686,10 @@ describe('Fetcher -> fetchNestedResources', () => {
     await fetcher.fetchResource(fetchResourceEvent)
 
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
-    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/_/layouts/layout-resource'], 'any')
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      paths: ['/_/layouts/layout-resource'],
+      token: 'any'
+    })
   })
 })
 
@@ -681,11 +710,12 @@ describe('Fetcher -> fetchBatch', () => {
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => true)
     vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
       if (event.path !== '/my-manifest') {
         return Promise.resolve()
       }
-      return new Promise((resolve) => {
+      const response = new Promise((resolve) => {
         setTimeout(() => {
           resolve({
             _data: {
@@ -694,6 +724,9 @@ describe('Fetcher -> fetchBatch', () => {
           })
         }, 1)
       })
+      return {
+        response
+      }
     })
     vi.spyOn(fetcher, 'fetchBatch')
     vi.spyOn(bluebird, 'map')
@@ -715,7 +748,7 @@ describe('Fetcher -> fetchBatch', () => {
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     await delay(2)
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
-    expect(fetcher.fetchBatch).toHaveBeenCalledWith(['/resolve-resource', '/resolve-another-resource'], 'any')
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource', '/resolve-another-resource'], token: 'any' })
 
     expect(bluebird.map).toHaveBeenCalledTimes(1)
 

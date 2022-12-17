@@ -22,14 +22,28 @@ vi.mock('../resources/resources-store', () => ({
               status: CwaResourceApiStatuses.SUCCESS
             }
           },
+          '/not-found-resource': {
+            apiState: {
+              status: CwaResourceApiStatuses.ERROR,
+              error: {
+                statusCode: 404
+              }
+            }
+          },
           '/errored-resource': {
             apiState: {
-              status: CwaResourceApiStatuses.ERROR
+              status: CwaResourceApiStatuses.ERROR,
+              error: {
+                statusCode: 500
+              }
             }
           },
           '/in-progress-resource': {
             apiState: {
-              status: CwaResourceApiStatuses.IN_PROGRESS
+              status: CwaResourceApiStatuses.IN_PROGRESS,
+              headers: {
+                path: '/success-resource'
+              }
             }
           }
         }
@@ -80,6 +94,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
   beforeEach(() => {
     resourcesStore = new ResourcesStore()
     state = createState()
+    state.primaryFetch.successToken = 'success-token'
     getterFns = getters(state, resourcesStore)
   })
 
@@ -116,13 +131,24 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
       'some-token': {
         path: 'any',
         isPrimary: false,
-        resources: ['/success-resource', '/errored-resource', '/in-progress-resource']
+        resources: ['/success-resource', '/not-found-resource', '/in-progress-resource']
       }
     }
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
   })
 
-  test('Returns true if all resources in a completed state', () => {
+  test('Returns true if the in-progress resource path matches that of the current successfully loaded path', () => {
+    state.fetches = {
+      'success-token': {
+        path: '/success-resource',
+        isPrimary: true,
+        resources: ['/in-progress-resource']
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('success-token', true)).toBe(true)
+  })
+
+  test('Returns false if a resource in the fetch chain is-errored', () => {
     state.fetches = {
       'some-token': {
         path: 'any',
@@ -130,14 +156,26 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
         resources: ['/success-resource', '/errored-resource']
       }
     }
+    expect(getterFns.isFetchChainComplete.value('some-token', true)).toBe(false)
+  })
+
+  test('Returns true if all resources in a completed state', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/not-found-resource']
+      }
+    }
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
   })
 
   test.each([
-    { path: '/errored-resource', resources: ['/success-resource', '/errored-resource'], result: false },
-    { path: '/does-not-exist', resources: ['/success-resource', '/errored-resource'], result: false },
-    { path: '/success-resource', resources: ['/success-resource', '/errored-resource'], result: true },
-    { path: '/success-resource', resources: ['/success-resource', '/errored-resource', '/in-progress-resource'], result: false }
+    { path: '/not-found-resource', resources: ['/success-resource', '/not-found-resource'], result: false },
+    { path: '/does-not-exist', resources: ['/success-resource', '/not-found-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource'], result: true },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/errored-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource'], result: false }
   ])('If we only want successful fetch chains, we check the main path. If the main path is $path with the resources $resources the result should be $result', ({
     path,
     resources,
@@ -165,7 +203,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
       const currentFetch: TopLevelFetchPathInterface = {
         path: 'any',
         isPrimary: false,
-        resources: ['/success-resource', '/errored-resource']
+        resources: ['/success-resource', '/not-found-resource']
       }
       if (manifest) {
         currentFetch.manifest = {
@@ -201,7 +239,7 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
       'some-token': {
         path: 'any',
         isPrimary: false,
-        resources: ['/success-resource', '/errored-resource']
+        resources: ['/success-resource', '/not-found-resource']
       }
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
@@ -213,7 +251,7 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
       'some-token': {
         path: 'any',
         isPrimary: true,
-        resources: ['/success-resource', '/errored-resource']
+        resources: ['/success-resource', '/not-found-resource']
       }
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
@@ -225,7 +263,7 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
       'some-token': {
         path: 'any',
         isPrimary: true,
-        resources: ['/success-resource', '/errored-resource']
+        resources: ['/success-resource', '/not-found-resource']
       }
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)

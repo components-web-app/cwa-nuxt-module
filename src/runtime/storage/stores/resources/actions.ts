@@ -1,9 +1,26 @@
 import { CwaResource } from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import {
+  CwaCurrentResourceInterface,
+  CwaResourceApiStateGeneral,
+  CwaResourceApiStatuses,
+  CwaResourcesStateInterface
+} from './state'
+import { CwaFetchRequestHeaders } from '@cwa/nuxt-module/runtime/api/fetcher/fetcher'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
-export interface SetResourceStatusEvent { iri: string, isComplete: boolean }
+
+export interface SetResourceInProgressStatusEvent {
+  iri: string, isComplete: false
+}
+export interface SetResourceCompletedStatusEvent {
+  iri: string, isComplete: true, headers: CwaFetchRequestHeaders, finalUrl: string
+}
+export interface SetResourceResetStatusEvent {
+  iri: string, isComplete: null
+}
+declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent|SetResourceCompletedStatusEvent|SetResourceResetStatusEvent
+
 export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean }
 
 export interface CwaResourcesActionsInterface {
@@ -44,6 +61,16 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
           if (!resourcesState.current.byId[currentId]) {
             throw new Error(`Cannot set current resource ID '${currentId}'. It does not exist.`)
           }
+          // todo: test we set status back to success to prevent further saving of ongoing fetches
+          const currentState = resourcesState.current.byId[currentId].apiState
+          // not an error and has been successful in the past
+          if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers && currentState.finalUrl) {
+            resourcesState.current.byId[currentId].apiState = {
+              status: CwaResourceApiStatuses.SUCCESS,
+              headers: currentState.headers,
+              finalUrl: currentState.finalUrl
+            }
+          }
         }
       }
       resourcesState.new = {
@@ -52,15 +79,36 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
       resourcesState.current.currentIds = currentIds || []
     },
-    setResourceFetchStatus ({ iri, isComplete }: SetResourceStatusEvent): void {
+    setResourceFetchStatus (event: SetResourceStatusEvent): void {
       const data = initResource({
         resourcesState,
-        iri,
+        iri: event.iri,
         isCurrent: true
       })
-      data.apiState = {
-        status: isComplete ? CwaResourceApiStatuses.SUCCESS : CwaResourceApiStatuses.IN_PROGRESS
+
+      if (event.isComplete === null) {
+        data.apiState.status = CwaResourceApiStatuses.SUCCESS
+        return
       }
+
+      if (event.isComplete) {
+        data.apiState = {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: event.headers,
+          finalUrl: event.finalUrl
+        }
+        return
+      }
+
+      const newApiState: CwaResourceApiStateGeneral = {
+        status: CwaResourceApiStatuses.IN_PROGRESS
+      }
+      // retain headers and final url from last success state
+      if (data.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+        newApiState.headers = data.apiState.headers
+        newApiState.finalUrl = data.apiState.finalUrl
+      }
+      data.apiState = newApiState
     },
     setResourceFetchError ({ iri, error, isCurrent }: SetResourceFetchErrorEvent): void {
       const data = initResource({

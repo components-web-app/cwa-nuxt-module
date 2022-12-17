@@ -15,7 +15,7 @@ import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { createCwaResourceError, CwaResourceError } from '../../errors/cwa-resource-error'
 import { CwaResource, isCwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
-import { CwaFetchResponse } from './fetcher'
+import { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 
 export interface FinishFetchResourceEvent {
   resource: string,
@@ -26,6 +26,8 @@ export interface FinishFetchResourceEvent {
 export interface FinishFetchResourceSuccessEvent extends FinishFetchResourceEvent {
   success: true
   fetchResponse: CwaFetchResponse|any
+  headers: CwaFetchRequestHeaders
+  finalUrl: string
 }
 
 export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent {
@@ -105,10 +107,23 @@ export default class FetchStatusManager {
   }
 
   public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent): CwaResource|undefined {
+    // todo:  if resource is already in success state, leave it alone, we may have already been fetching and we can set it as an error if token old and new one will save it... but what if order of api responses is different.. well then it'd be a success already and skipped for error...
+    // todo: on primary fetches we should be aborting fetch chains no longer current, or perhaps ... I dunno it's late.
+    if (this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+      return
+    }
+
+    // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
+    if (this.fetcherStore.fetches[event.token].abort) {
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)), isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token) })
+      return
+    }
+
     if (!event.success) {
       this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token) })
       return
     }
+
     if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
@@ -138,8 +153,7 @@ export default class FetchStatusManager {
     this.resourcesStore.saveResource({
       resource: cwaResource
     })
-
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true })
+    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers, finalUrl: event.finalUrl })
 
     return cwaResource
   }

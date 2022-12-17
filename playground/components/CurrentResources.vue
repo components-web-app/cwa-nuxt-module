@@ -4,6 +4,9 @@
       <div class="resource-title">
         {{ index }}
       </div>
+      <div class="path-header">
+        {{ resource.apiState?.headers?.path || '--' }}
+      </div>
       <pre class="resource-code">{{ resource.data }}</pre>
       <div v-if="resource.apiState.error?.message" class="resource-error">
         <b>Status code:</b> {{ resource.apiState.error.statusCode || 'Unknown' }}<br>
@@ -29,6 +32,10 @@ const { $cwa } = useNuxtApp()
     padding: 1rem
     box-sizing: border-box
     position: relative
+    .path-header
+      background: #e9e9e9
+      padding: .2rem .5rem
+      font-size: .8rem
     .resource-title
       padding: .5rem
       background: #e9e9e9
@@ -41,7 +48,7 @@ const { $cwa } = useNuxtApp()
       transition: .3s background-color ease
     .resource-error
       position: absolute
-      top: 3.5rem
+      top: 5rem
       right: 1.5rem
       left: 1.5rem
       bottom: 1.5rem

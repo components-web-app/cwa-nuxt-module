@@ -12,6 +12,7 @@ export interface TopLevelFetchPathInterface {
   isPrimary: boolean,
   resources: string[],
   manifest?: FetchManifestInterface
+  abort?: true
 }
 
 export interface FetcherChainInterface {

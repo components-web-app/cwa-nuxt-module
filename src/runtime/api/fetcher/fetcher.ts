@@ -26,7 +26,28 @@ interface FetchEvent {
   preload?: string[]
 }
 
+export interface CwaFetchRequestHeaders {
+  path?: string
+  preload?: string
+}
+
 export interface CwaFetchResponse extends FetchResponse<CwaResource|undefined> {}
+
+interface CwaFetchResponseRaw {
+  response: Promise<CwaFetchResponse>
+  finalUrl: string,
+  headers: CwaFetchRequestHeaders
+}
+
+interface FetchBatchEvent {
+  paths: string[]
+  token?: string
+}
+
+interface FetchNestedResourcesEvent {
+  resource: CwaResource
+  token: string
+}
 
 type TypeToNestedPropertiesMap = {
   [T in CwaResourceTypes]: Array<string>;
@@ -108,17 +129,20 @@ export default class Fetcher {
       resource: path,
       token: startFetchResult.token
     }
-    let fetchResponse: CwaFetchResponse
+    let cwaFetchRaw: CwaFetchResponseRaw
     let resource: CwaResource|undefined
     try {
-      fetchResponse = await this.fetch({
+      cwaFetchRaw = this.fetch({
         path,
         preload
       })
+      const fetchResponse = await cwaFetchRaw.response
       resource = this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
         success: true,
-        fetchResponse
+        fetchResponse,
+        headers: cwaFetchRaw.headers,
+        finalUrl: cwaFetchRaw.finalUrl
       })
     } catch (error: any) {
       this.fetchStatusManager.finishFetchResource({
@@ -129,7 +153,7 @@ export default class Fetcher {
     }
 
     if (resource) {
-      await this.fetchNestedResources(resource, startFetchResult.token)
+      await this.fetchNestedResources({ resource, token: startFetchResult.token })
     }
 
     if (!token) {
@@ -144,12 +168,14 @@ export default class Fetcher {
   private async fetchManifest (event: FetchManifestEvent): Promise<void> {
     let resources: string[] = []
     try {
-      const response = await this.fetch({
+      const result = this.fetch({
         path: event.manifestPath
       })
+      const response = await result.response
       resources = response._data?.resource_iris || []
       if (resources.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
-        await this.fetchBatch(resources, event.token)
+        // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
+        await this.fetchBatch({ paths: resources, token: event.token })
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
@@ -165,7 +191,7 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources (resource: CwaResource, token: string): undefined|bluebird<(CwaResource|undefined)[]> {
+  private fetchNestedResources ({ resource, token }: FetchNestedResourcesEvent): undefined|bluebird<(CwaResource|undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
@@ -184,10 +210,10 @@ export default class Fetcher {
         nestedIris.push(propIris)
       }
     }
-    return this.fetchBatch(nestedIris, token)
+    return this.fetchBatch({ paths: nestedIris, token })
   }
 
-  private fetchBatch (paths: string[], token?: string): bluebird<(CwaResource|undefined)[]> {
+  private fetchBatch ({ paths, token }: FetchBatchEvent): bluebird<(CwaResource|undefined)[]> {
     return bluebird
       .map(
         paths,
@@ -200,12 +226,17 @@ export default class Fetcher {
       )
   }
 
-  private fetch (event: FetchEvent): Promise<CwaFetchResponse> {
+  private fetch (event: FetchEvent): CwaFetchResponseRaw {
     const url = this.appendQueryToPath(event.path)
     const headers = this.createRequestHeaders(event)
-    return this.cwaFetch.fetch.raw<any>(url, {
+    const response = this.cwaFetch.fetch.raw<any>(url, {
       headers
     })
+    return {
+      response,
+      headers,
+      finalUrl: url
+    }
   }
 
   private appendQueryToPath (path: string): string {
@@ -225,7 +256,7 @@ export default class Fetcher {
     return `${path}${delimiter}${queryString}`
   }
 
-  private createRequestHeaders (event: FetchEvent): { path?: string; preload?: string } {
+  private createRequestHeaders (event: FetchEvent): Record<string, string> {
     let preload = event.preload
     if (!preload) {
       const resourceType = getResourceTypeFromIri(event.path)
@@ -233,9 +264,13 @@ export default class Fetcher {
         preload = preloadHeaders[resourceType]
       }
     }
-    return {
-      path: this.fetchStatusManager.primaryFetchPath,
-      preload: preload ? preload.join(',') : undefined
+    const requestHeaders: Record<string, string> = {}
+    if (this.fetchStatusManager.primaryFetchPath) {
+      requestHeaders.path = this.fetchStatusManager.primaryFetchPath
     }
+    if (preload) {
+      requestHeaders.preload = preload.join(',')
+    }
+    return requestHeaders
   }
 }

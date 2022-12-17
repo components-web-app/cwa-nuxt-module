@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
+import { CwaFetchRequestHeaders } from '@cwa/nuxt-module/runtime/api/fetcher/fetcher'
 
 export enum CwaResourceApiStatuses {
   ERROR = -1,
@@ -7,10 +8,24 @@ export enum CwaResourceApiStatuses {
   SUCCESS = 1
 }
 
-export interface CwaResourceApiState {
-  status: CwaResourceApiStatuses|undefined
+export interface CwaResourceApiStateGeneral {
+  status: CwaResourceApiStatuses.IN_PROGRESS|undefined,
+  headers?: CwaFetchRequestHeaders
+  finalUrl?: string
+}
+
+export interface CwaResourceApiStateError {
+  status: CwaResourceApiStatuses.ERROR,
   error?: CwaResourceErrorObject
 }
+
+export interface CwaResourceApiStateSuccess {
+  status: CwaResourceApiStatuses.SUCCESS,
+  headers: CwaFetchRequestHeaders
+  finalUrl: string
+}
+
+declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess
 
 export interface CwaCurrentResourceInterface {
   data?: any
