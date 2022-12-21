@@ -367,3 +367,54 @@ describe('Mercure -> isMessageForCurrentResource', () => {
     expect(result).toBe(false)
   })
 })
+
+describe('Mercure -> addMercureMessageToQueue', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('When adding a message to the queue, existing messages with the same ID are replaced', () => {
+    mercure.mercureMessageQueue = [
+      {
+        event: undefined,
+        data: {
+          '@id': 'id1',
+          key: 'value'
+        }
+      },
+      {
+        event: undefined,
+        data: {
+          '@id': 'id2',
+          key: 'value'
+        }
+      }
+    ]
+    mercure.addMercureMessageToQueue({
+      event: undefined,
+      data: {
+        '@id': 'id1',
+        somethingNew: 'my-value'
+      }
+    })
+    expect(mercure.mercureMessageQueue).toStrictEqual([
+      {
+        event: undefined,
+        data: {
+          '@id': 'id2',
+          key: 'value'
+        }
+      },
+      {
+        event: undefined,
+        data: {
+          '@id': 'id1',
+          somethingNew: 'my-value'
+        }
+      }
+    ])
+  })
+})

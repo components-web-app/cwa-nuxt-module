@@ -98,9 +98,6 @@ export default class Mercure {
     }
   }
 
-  /**
-   * TODO: TEST START
-   */
   private isMessageForCurrentResource (mercureMessage: MercureMessageInterface): boolean {
     const currentResources = this.resourcesStore.current.currentIds
     const mercureMessageResource = mercureMessage.data
@@ -113,6 +110,9 @@ export default class Mercure {
     return true
   }
 
+  /**
+   * TODO: TEST START
+   */
   private addMercureMessageToQueue (mercureMessage: MercureMessageInterface) {
     this.mercureMessageQueue = [
       ...this.mercureMessageQueue.filter((existingMessage: MercureMessageInterface) => {
