@@ -1,8 +1,8 @@
 import { computed, ComputedRef } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
 import { CwaResourceApiStatuses } from '../resources/state'
+import { CwaResourceTypes } from '../../../resources/resource-utils'
 import { CwaFetcherStateInterface } from './state'
-import { CwaResourceTypes } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 
 export interface CwaFetcherGettersInterface {
   isSuccessfulPrimaryFetchValid: ComputedRef<boolean>
@@ -65,6 +65,10 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
         const resourceData = resourcesStore.current.byId[resource]
         if (!resourceData) {
           throw new Error(`The resource '${resource}' does not exist but is defined in the fetch chain with token '${fetcherState.primaryFetch.successToken}'`)
+        }
+
+        if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
+          return false
         }
 
         // Some errored results still class as successful. In fact, only server errors are really unsuccessful and would warrant a re-fetch

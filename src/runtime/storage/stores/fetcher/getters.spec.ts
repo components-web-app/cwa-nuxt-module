@@ -2,6 +2,7 @@ import { describe, beforeEach, vi, test, expect } from 'vitest'
 import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
 import { CwaResourceApiStatuses } from '../resources/state'
+import { CwaResourceTypes } from '../../../resources/resource-utils'
 import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 import getters, { CwaFetcherGettersInterface } from './getters'
 
@@ -19,7 +20,13 @@ vi.mock('../resources/resources-store', () => ({
         byId: {
           '/success-resource': {
             apiState: {
-              status: CwaResourceApiStatuses.SUCCESS
+              status: CwaResourceApiStatuses.SUCCESS,
+              headers: {
+                path: '/success-resource'
+              }
+            },
+            data: {
+              '@type': CwaResourceTypes.COMPONENT
             }
           },
           '/not-found-resource': {
@@ -27,7 +34,13 @@ vi.mock('../resources/resources-store', () => ({
               status: CwaResourceApiStatuses.ERROR,
               error: {
                 statusCode: 404
+              },
+              headers: {
+                path: '/success-resource'
               }
+            },
+            data: {
+              '@type': CwaResourceTypes.COMPONENT
             }
           },
           '/errored-resource': {
@@ -35,7 +48,13 @@ vi.mock('../resources/resources-store', () => ({
               status: CwaResourceApiStatuses.ERROR,
               error: {
                 statusCode: 500
+              },
+              headers: {
+                path: '/success-resource'
               }
+            },
+            data: {
+              '@type': CwaResourceTypes.COMPONENT
             }
           },
           '/in-progress-resource': {
@@ -44,6 +63,31 @@ vi.mock('../resources/resources-store', () => ({
               headers: {
                 path: '/success-resource'
               }
+            },
+            data: {
+              '@type': CwaResourceTypes.COMPONENT
+            }
+          },
+          '/component-position-different-path': {
+            apiState: {
+              status: CwaResourceApiStatuses.SUCCESS,
+              headers: {
+                path: '/another-path'
+              }
+            },
+            data: {
+              '@type': CwaResourceTypes.COMPONENT_POSITION
+            }
+          },
+          '/component-different-path': {
+            apiState: {
+              status: CwaResourceApiStatuses.SUCCESS,
+              headers: {
+                path: '/another-path'
+              }
+            },
+            data: {
+              '@type': CwaResourceTypes.COMPONENT
             }
           }
         }
@@ -86,6 +130,156 @@ describe('FetcherStore getters -> primaryFetchPath', () => {
     })
 })
 
+describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
+  let state: CwaFetcherStateInterface
+  let getterFns: CwaFetcherGettersInterface
+  let resourcesStore: ResourcesStore
+
+  beforeEach(() => {
+    resourcesStore = new ResourcesStore()
+    state = createState()
+    state.primaryFetch.successToken = 'success-token'
+    getterFns = getters(state, resourcesStore)
+  })
+
+  test('Return false if there is no primary success token', () => {
+    state.primaryFetch.successToken = undefined
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test('Return false if the token does not exist', () => {
+    state.primaryFetch.successToken = 'does-not-exist'
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test('Return false if no resources in the fetch chain', () => {
+    state.fetches = {
+      'success-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: []
+      }
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test.each([
+    { manifest: false, manifestResources: undefined, manifestError: undefined, result: true },
+    { manifest: true, manifestResources: undefined, manifestError: undefined, result: false },
+    { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: true },
+    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: true }
+  ])(
+    "If manifest exist status is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
+    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
+    ) => {
+      const currentFetch: TopLevelFetchPathInterface = {
+        path: '/success-resource',
+        isPrimary: false,
+        resources: ['/success-resource', '/not-found-resource']
+      }
+      if (manifest) {
+        currentFetch.manifest = {
+          path: 'any',
+          resources: manifestResources,
+          error: manifestError
+        }
+      }
+      state.fetches = {
+        'success-token': currentFetch
+      }
+      expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(result)
+    })
+
+  test('If the primary fetch path resource does not exist, return false', () => {
+    const currentFetch: TopLevelFetchPathInterface = {
+      path: '/does-not-exist',
+      isPrimary: false,
+      resources: ['/success-resource', '/not-found-resource']
+    }
+    state.fetches = {
+      'success-token': currentFetch
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test('If the primary fetch path resource is in an error state, return false', () => {
+    const currentFetch: TopLevelFetchPathInterface = {
+      path: '/errored-resource',
+      isPrimary: false,
+      resources: ['/success-resource', '/not-found-resource']
+    }
+    state.fetches = {
+      'success-token': currentFetch
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test('Returns false if a resource in the fetch chain is-errored', () => {
+    state.fetches = {
+      'success-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/errored-resource']
+      }
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test('Returns true if a resource in the fetch chain is-errored with non-critical', () => {
+    state.fetches = {
+      'success-token': {
+        path: '/success-resource',
+        isPrimary: false,
+        resources: ['/success-resource', '/not-found-resource']
+      }
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(true)
+  })
+
+  test('Returns true if a resource in the fetch chain has a different path but is not a component position', () => {
+    state.fetches = {
+      'success-token': {
+        path: '/success-resource',
+        isPrimary: false,
+        resources: ['/success-resource', '/component-different-path']
+      }
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(true)
+  })
+
+  test('Returns false if a resource in the fetch chain has a different path and is a component position', () => {
+    state.fetches = {
+      'success-token': {
+        path: '/success-resource',
+        isPrimary: false,
+        resources: ['/success-resource', '/component-position-different-path']
+      }
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+  })
+
+  test.each([
+    { path: '/not-found-resource', resources: ['/success-resource', '/not-found-resource'], result: false },
+    { path: '/does-not-exist', resources: ['/success-resource', '/not-found-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource'], result: true },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/errored-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource'], result: false }
+  ])('If we only want successful fetch chains, we check the main path. If the main path is $path with the resources $resources the result should be $result', ({
+    path,
+    resources,
+    result
+  }) => {
+    state.fetches = {
+      'success-token': {
+        path,
+        isPrimary: true,
+        resources
+      }
+    }
+    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(result)
+  })
+})
+
 describe('FetcherStore getters -> isFetchChainComplete', () => {
   let state: CwaFetcherStateInterface
   let getterFns: CwaFetcherGettersInterface
@@ -98,11 +292,11 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
     getterFns = getters(state, resourcesStore)
   })
 
-  test('Return undefined if the token does not exist', () => {
-    expect(getterFns.isFetchChainComplete.value('no-token')).toBeUndefined()
+  test('Return false if the token does not exist', () => {
+    expect(getterFns.isFetchChainComplete.value('no-token')).toBe(false)
   })
 
-  test('Return undefined if no resources in the fetch chain', () => {
+  test('Return false if no resources in the fetch chain', () => {
     state.fetches = {
       'some-token': {
         path: 'any',
@@ -110,7 +304,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
         resources: []
       }
     }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBeUndefined()
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
   })
 
   test('Throws an error if the resource does not exist in the resources store', () => {
@@ -137,28 +331,6 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
   })
 
-  test('Returns true if the in-progress resource path matches that of the current successfully loaded path', () => {
-    state.fetches = {
-      'success-token': {
-        path: '/success-resource',
-        isPrimary: true,
-        resources: ['/in-progress-resource']
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('success-token', true)).toBe(true)
-  })
-
-  test('Returns false if a resource in the fetch chain is-errored', () => {
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: false,
-        resources: ['/success-resource', '/errored-resource']
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token', true)).toBe(false)
-  })
-
   test('Returns true if all resources in a completed state', () => {
     state.fetches = {
       'some-token': {
@@ -168,27 +340,6 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
       }
     }
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
-  })
-
-  test.each([
-    { path: '/not-found-resource', resources: ['/success-resource', '/not-found-resource'], result: false },
-    { path: '/does-not-exist', resources: ['/success-resource', '/not-found-resource'], result: false },
-    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource'], result: true },
-    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/errored-resource'], result: false },
-    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource'], result: false }
-  ])('If we only want successful fetch chains, we check the main path. If the main path is $path with the resources $resources the result should be $result', ({
-    path,
-    resources,
-    result
-  }) => {
-    state.fetches = {
-      'some-token': {
-        path,
-        isPrimary: false,
-        resources
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token', true)).toBe(result)
   })
 
   test.each([

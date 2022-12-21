@@ -107,15 +107,19 @@ export default class FetchStatusManager {
   }
 
   public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent): CwaResource|undefined {
-    // todo:  if resource is already in success state, leave it alone, we may have already been fetching and we can set it as an error if token old and new one will save it... but what if order of api responses is different.. well then it'd be a success already and skipped for error...
-    // todo: on primary fetches we should be aborting fetch chains no longer current, or perhaps ... I dunno it's late.
+    // if resource is already in success state, leave it alone, we may have already been fetching and we can set it as an error if token old and new one will save it.
+    // What if order of api responses is different? Then it'd be a success already and skipped for error.
     if (this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
       return
     }
 
     // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
-    if (this.fetcherStore.fetches[event.token].abort) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)), isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token) })
+    if (this.fetcherStore.fetches[event.token]?.abort) {
+      this.resourcesStore.setResourceFetchError({
+        iri: event.resource,
+        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)),
+        isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token)
+      })
       return
     }
 

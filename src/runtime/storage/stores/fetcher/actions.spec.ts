@@ -173,10 +173,8 @@ describe('Fetcher store action -> startFetch', () => {
 
   test('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
     // mock is fetch chain complete as true so that we can spy on the method being called. Functionality is tested in getters anyway
-    currentGetters.isFetchChainComplete = computed(() => {
-      return vi.fn(() => {
-        return true
-      })
+    currentGetters.isSuccessfulPrimaryFetchValid = computed(() => {
+      return true
     })
 
     const startFetchEvent = {
@@ -189,13 +187,19 @@ describe('Fetcher store action -> startFetch', () => {
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
 
-    expect(currentGetters.isFetchChainComplete.value).toHaveBeenCalledWith('existing-complete-primary-token', true)
+    for (const fetcherStateKey of Object.keys(fetcherState.fetches)) {
+      if (fetcherStateKey !== 'existing-complete-primary-token') {
+        expect(fetcherState.fetches[fetcherStateKey].abort).toBe(true)
+      }
+    }
 
     expect(response).toStrictEqual({
       continue: false,
       resources: existingCompletedPrimaryFetchState.resources,
       token: 'existing-complete-primary-token'
     })
+
+    expect.assertions(4)
   })
 
   test('If there is already a successful and but not completed primary fetch with the same path as a new primary fetch we create a new fetch chain token', () => {
