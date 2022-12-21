@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import consola from 'consola'
+import { reactive } from 'vue'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import Mercure from './mercure'
 
 vi.mock('consola')
@@ -15,8 +17,18 @@ const EventSource = vi.fn(() => ({
   onmessage: undefined,
   close: vi.fn()
 }))
-
 vi.stubGlobal('EventSource', EventSource)
+
+const MessageEvent = vi.fn(() => ({
+  data: null
+}))
+vi.stubGlobal('MessageEvent', MessageEvent)
+
+function delay (time: number, returnValue: any = undefined) {
+  return new Promise((resolve) => {
+    setTimeout(() => { resolve(returnValue) }, time)
+  })
+}
 
 let mercureStoreDef: MercureStore
 let resourcesStoreDef: ResourcesStore
@@ -194,5 +206,94 @@ describe('Mercure -> hubUrl', () => {
   test('lastEventId is appended if it exists', () => {
     mercure.lastEventId = 'abcdefg'
     expect(mercure.hubUrl).toBe('http://hub-url/?topic=*&Last-Event-ID=abcdefg')
+  })
+})
+
+describe('Mercure -> handleMercureMessage', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url'
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(() => {
+      return true
+    })
+    vi.spyOn(mercure, 'addMercureMessageToQueue').mockImplementation(() => {})
+    vi.spyOn(mercure, 'processMessageQueue').mockImplementation(() => {})
+  })
+
+  test('Do not add to message queue if isMessageForCurrentResource returns false', () => {
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementationOnce(() => {
+      return false
+    })
+    const event = new MessageEvent()
+    event.data = JSON.stringify({})
+    mercure.handleMercureMessage(event)
+    expect(mercure.isMessageForCurrentResource).toHaveBeenCalledWith({
+      event,
+      data: {}
+    })
+    expect(mercure.addMercureMessageToQueue).not.toHaveBeenCalled()
+  })
+
+  test('We will call to add the message to the queue and process immediately if resources API state is not pending', () => {
+    const event = new MessageEvent()
+    event.data = JSON.stringify({})
+    mercure.handleMercureMessage(event)
+    expect(mercure.addMercureMessageToQueue).toHaveBeenCalledWith({
+      event,
+      data: {}
+    })
+    expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
+  })
+
+  test('We only call to process the message queue once no api resources are pending', async () => {
+    const current = {
+      byId: {
+        id: {
+          apiState: reactive({
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          })
+        }
+      },
+      currentIds: ['id']
+    }
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url'
+        },
+        'storeName.resources': {
+          current
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    const event = new MessageEvent()
+    event.data = JSON.stringify({})
+    mercure.handleMercureMessage(event)
+    expect(mercure.addMercureMessageToQueue).toHaveBeenCalledWith({
+      event,
+      data: {}
+    })
+
+    expect(mercure.processMessageQueue).not.toHaveBeenCalled()
+
+    // update resource so not pending
+    current.byId.id.apiState.status = CwaResourceApiStatuses.SUCCESS
+    await delay(1)
+    expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
   })
 })
