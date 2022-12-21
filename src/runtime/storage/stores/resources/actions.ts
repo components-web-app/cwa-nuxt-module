@@ -61,7 +61,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
           if (!resourcesState.current.byId[currentId]) {
             throw new Error(`Cannot set current resource ID '${currentId}'. It does not exist.`)
           }
-          // todo: test we set status back to success to prevent further saving of ongoing fetches
           const currentState = resourcesState.current.byId[currentId].apiState
           // not an error and has been successful in the past
           if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers && currentState.finalUrl) {
@@ -85,11 +84,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         iri: event.iri,
         isCurrent: true
       })
-
-      if (event.isComplete === null) {
-        data.apiState.status = CwaResourceApiStatuses.SUCCESS
-        return
-      }
 
       if (event.isComplete) {
         data.apiState = {

@@ -396,6 +396,18 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
   })
 
+  test('Aborted fetch tokens return false', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/not-found-resource'],
+        abort: true
+      }
+    }
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)
+  })
+
   test('Tokens matching an in progress primary fetching token return true', () => {
     state.primaryFetch.fetchingToken = 'some-token'
     state.fetches = {

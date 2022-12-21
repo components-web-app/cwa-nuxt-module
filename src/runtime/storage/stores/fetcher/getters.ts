@@ -116,7 +116,6 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
         if (!fetchStatus) {
           throw new Error(`Failed to check if the token '${token}' is current. It does not exist.`)
         }
-        // todo: test
         if (fetchStatus.abort) {
           return false
         }

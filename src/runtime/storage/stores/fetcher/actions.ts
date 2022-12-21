@@ -105,8 +105,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
             }
           }
 
-          // todo: set status on any other non-primary fetches to aborted to prevent saving to current resources. Or we could delete them and soft fail finishing a fetch chain..
-
           // we do not need to continue fetching, the previous result can be returned
           // e.g. client-side load after server-side or we return to the original page before the new one has finished loading
           return {

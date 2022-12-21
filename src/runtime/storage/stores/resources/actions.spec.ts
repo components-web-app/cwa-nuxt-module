@@ -43,6 +43,45 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.currentIds).toStrictEqual(['id'])
   })
 
+  test('When we reset resources with new current IDs, non-errored resources with path and finalUrl properties are reset', () => {
+    resourcesState.new.byId = {
+      id: {}
+    }
+    resourcesState.current.byId = {
+      errored: {
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR
+        }
+      },
+      inProgress: {
+        apiState: {
+          status: CwaResourceApiStatuses.IN_PROGRESS,
+          headers: { path: '1' },
+          finalUrl: '/my-url'
+        }
+      },
+      current: {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {},
+          finalUrl: '/my-url'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['errored', 'inProgress']
+    resourcesState.current.currentIds = ['current']
+    resourcesActions.resetCurrentResources(['errored', 'inProgress'])
+    expect(resourcesState.new.byId).toStrictEqual({})
+    expect(resourcesState.new.allIds).toStrictEqual([])
+    expect(resourcesState.current.currentIds).toStrictEqual(['errored', 'inProgress'])
+    expect(resourcesState.current.byId.errored.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
+    expect(resourcesState.current.byId.inProgress.apiState).toStrictEqual({
+      status: CwaResourceApiStatuses.SUCCESS,
+      headers: { path: '1' },
+      finalUrl: '/my-url'
+    })
+  })
+
   test('If we try and reset current ids with a resource id that does not exist, we get an error and resources are not reset', () => {
     resourcesState.new.byId = {
       id: {}
