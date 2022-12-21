@@ -376,7 +376,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(response).toBeUndefined()
   })
 
-  test.only('If fetching token is not aborted, but not current update the resources store with an error message once. Do not call setResourceFetchStatus', () => {
+  test('If fetching token is not aborted, but not current update the resources store with an error message once. Do not call setResourceFetchStatus', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     const useStoreImplementation = {
       isCurrentFetchingToken: vi.fn(() => false),
