@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { reactive } from 'vue'
 import getters, { CwaResourcesGettersInterface } from './getters'
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
@@ -65,5 +65,48 @@ describe('ResourcesStore Getters -> totalResourcesPending', () => {
       }
     }
     expect(getterFns.totalResourcesPending.value).toBe(1)
+  })
+})
+
+describe('ResourcesStore Getters -> resourceLoadStatus', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test.each([
+    { total: 0, complete: 0, expectedPercent: 100 },
+    { total: 1, complete: 0, expectedPercent: 0 },
+    { total: 2, complete: 1, expectedPercent: 50 },
+    { total: 3, complete: 1, expectedPercent: 33 },
+    { total: 3, complete: 3, expectedPercent: 100 }
+  ])('If the total to fetch is $total and we have loaded $complete the percentage should be $expectedPercent', ({ total, complete, expectedPercent }) => {
+    const pending = total - complete
+    const currentIds = Array.from(Array(total).keys())
+    state.current = reactive({
+      allIds: currentIds,
+      currentIds,
+      byId: {}
+    })
+    for (const id of currentIds) {
+      state.current.byId[id] = {
+        apiState: {
+          status: id < complete ? CwaResourceApiStatuses.SUCCESS : CwaResourceApiStatuses.IN_PROGRESS
+        }
+      }
+    }
+    expect(getterFns.resourceLoadStatus.value).toStrictEqual({
+      complete,
+      pending,
+      percent: expectedPercent,
+      total
+    })
   })
 })

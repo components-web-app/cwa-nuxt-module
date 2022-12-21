@@ -8,7 +8,7 @@ vi.mock('../storage/stores/resources/resources-store', () => {
     ResourcesStore: vi.fn(() => ({
       useStore: vi.fn(() => {
         return {
-          totalResourcesPending: vi.fn(() => 1),
+          resourceLoadStatus: 'any-load-status-result',
           current: {
             allIds: ['/id1', '/id2'],
             currentIds: ['/id1'],
@@ -62,39 +62,9 @@ describe('ResourceManager class tests', () => {
       }
     })
   })
-})
 
-describe('ResourceManager -> resourceLoadStatus', () => {
-  let resourcesManager: ResourcesManager
-  beforeEach(() => {
-    resourcesManager = new ResourcesManager(new ResourcesStore('storeName'))
-  })
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test.each([
-    { total: 0, complete: 0, expectedPercent: 100 },
-    { total: 1, complete: 0, expectedPercent: 0 },
-    { total: 2, complete: 1, expectedPercent: 50 },
-    { total: 3, complete: 1, expectedPercent: 33 },
-    { total: 3, complete: 3, expectedPercent: 100 }
-  ])('If the total to fetch is $total and we have loaded $complete the percentage should be $expectedPercent', ({ total, complete, expectedPercent }) => {
-    const pending = total - complete
-    const currentIds = Array.from(Array(total).keys())
-    ResourcesStore.mock.results[0].value.useStore.mockImplementation(() => {
-      return {
-        totalResourcesPending: pending,
-        current: {
-          currentIds
-        }
-      }
-    })
-    expect(resourcesManager.resourceLoadStatus).toStrictEqual({
-      complete,
-      pending,
-      percent: expectedPercent,
-      total
-    })
+  test('resourceLoadStatus getter', () => {
+    const status = resourcesManager.resourceLoadStatus
+    expect(status).toStrictEqual('any-load-status-result')
   })
 })

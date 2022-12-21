@@ -22,23 +22,8 @@ export class ResourcesManager {
     })
   }
 
-  // todo: move to resources getters and make this a proxy
   public get resourceLoadStatus () {
-    const pending = this.resourcesStore.totalResourcesPending
-    const total = this.resourcesStore.current.currentIds.length
-    const complete = total - pending
-    let percent
-    if (complete === 0) {
-      percent = total === 0 ? 100 : 0
-    } else {
-      percent = Math.round((complete / total) * 100)
-    }
-    return {
-      pending,
-      complete,
-      total,
-      percent
-    }
+    return this.resourcesStore.resourceLoadStatus
   }
 
   private get resourcesStore () {
