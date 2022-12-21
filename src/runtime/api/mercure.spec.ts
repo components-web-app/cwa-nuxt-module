@@ -458,12 +458,6 @@ describe('Mercure -> processMessageQueue', () => {
         }
       },
       {
-        event: new MessageEvent(),
-        data: {
-          '@id': 'id-delete'
-        }
-      },
-      {
         event: new MessageEvent('final-event-id'),
         data: {
           '@id': 'id2',
@@ -472,12 +466,8 @@ describe('Mercure -> processMessageQueue', () => {
       }
     ]
     mercure.processMessageQueue()
-    expect(mercure.isMessageForCurrentResource).toBeCalledTimes(4)
+    expect(mercure.isMessageForCurrentResource).toBeCalledTimes(3)
     expect(mercure.lastEventId).toBe('final-event-id')
-    expect(resourcesStore.deleteResource).toBeCalledTimes(1)
-    expect(resourcesStore.deleteResource).toBeCalledWith({
-      resource: 'id-delete'
-    })
 
     expect(resourcesStore.saveResource).toBeCalledTimes(2)
     expect(resourcesStore.saveResource).toBeCalledWith({

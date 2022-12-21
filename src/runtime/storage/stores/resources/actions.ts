@@ -37,6 +37,7 @@ export interface CwaResourcesActionsInterface {
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent): void
   deleteResource(event: DeleteResourceEvent): void
+  mergeNewResources(): void
 }
 
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
@@ -60,6 +61,11 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   return {
     deleteResource (event: DeleteResourceEvent) {
       consola.warn('TODO: DELETE RESOURCE', event)
+      // todo: if it a component position, we should remove from all component groups as well
+      // todo: if it is a component, the position will also be deleted in an auto-cascade on the server if it is not dynamic, we should replicate locally
+    },
+    mergeNewResources () {
+      // todo: new resource may be a delete and empty resource
     },
     resetCurrentResources (currentIds?: string[]): void {
       if (currentIds) {

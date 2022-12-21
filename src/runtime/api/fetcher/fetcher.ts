@@ -15,6 +15,7 @@ interface FetchResourceEvent {
   manifestPath?: string
   preload?: string[]
   shallowFetch?: boolean
+  noSave?: boolean
 }
 
 export interface FetchManifestEvent {
@@ -105,7 +106,8 @@ export default class Fetcher {
     return resource
   }
 
-  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch }: FetchResourceEvent): Promise<CwaResource|undefined> {
+  // todo: test noSave
+  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token
@@ -143,7 +145,8 @@ export default class Fetcher {
         success: true,
         fetchResponse,
         headers: cwaFetchRaw.headers,
-        finalUrl: cwaFetchRaw.finalUrl
+        finalUrl: cwaFetchRaw.finalUrl,
+        noSave
       })
     } catch (error: any) {
       this.fetchStatusManager.finishFetchResource({
@@ -155,6 +158,7 @@ export default class Fetcher {
 
     // todo: test shallowFetch
     if (!shallowFetch && resource) {
+      // todo: cascade noSave to fetchNestedResources
       await this.fetchNestedResources({ resource, token: startFetchResult.token })
     }
 
