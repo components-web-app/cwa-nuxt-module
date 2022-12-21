@@ -12,7 +12,8 @@ vi.mock('../resources/resource-utils')
 const EventSource = vi.fn(() => ({
   readyState: 0,
   url: null,
-  onmessage: undefined
+  onmessage: undefined,
+  close: vi.fn()
 }))
 
 vi.stubGlobal('EventSource', EventSource)
@@ -132,5 +133,26 @@ describe('Mercure -> init', () => {
     expect(EventSource).toHaveBeenCalledTimes(1)
     expect(EventSource).toHaveBeenCalledWith('http://hub-url', { withCredentials: true })
     expect(EventSource.mock.results[0].value.onmessage).toBe(mercure.handleMercureMessage)
+  })
+})
+
+describe('Mercure -> closeMercure', () => {
+  let mercure: Mercure
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mercure = createMercure()
+  })
+
+  test('We do not attempt to close an event source if it does not exist', () => {
+    mercure.closeMercure()
+    expect(consola.warn).toHaveBeenLastCalledWith('No Mercure Event Source exists to close')
+  })
+
+  test('We can close an event source and will output to the log', () => {
+    mercure.eventSource = new EventSource()
+    mercure.closeMercure()
+    expect(consola.info).toHaveBeenLastCalledWith('Mercure Event Source Closed')
+    expect(mercure.eventSource.close).toHaveBeenCalledTimes(1)
   })
 })
