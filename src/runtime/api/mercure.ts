@@ -29,7 +29,7 @@ export default class Mercure {
 
     const matches = linkHeader.match(/<([^>]+)>;\s+rel="mercure".*/)
     if (!matches || !matches[1]) {
-      consola.debug('No Mercure rel in link header.')
+      consola.error('No Mercure rel in link header.')
       return
     }
 
