@@ -97,7 +97,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       const newApiState: CwaResourceApiStateGeneral = {
         status: CwaResourceApiStatuses.IN_PROGRESS
       }
-      // retain headers and final url from last success state
+      // if in progress, retain headers and final url from last success state
       if (data.apiState.status === CwaResourceApiStatuses.SUCCESS) {
         newApiState.headers = data.apiState.headers
         newApiState.finalUrl = data.apiState.finalUrl

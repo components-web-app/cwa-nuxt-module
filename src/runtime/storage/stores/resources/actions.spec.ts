@@ -111,29 +111,41 @@ describe('We can reset current resources', () => {
   })
 })
 
-describe('resources action setResourceFetchStatus', () => {
+describe('resources action -> setResourceFetchStatus', () => {
   const resourcesState = state()
   const resourcesActions = actions(resourcesState)
+
   test('We can set the status on a new resource', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(0)
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.IN_PROGRESS)
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
     expect(resourcesState.current.currentIds).toStrictEqual(['id'])
   })
+
   test('We can set the status on an existing resource', () => {
-    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(1)
+    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true, headers: { path: 'my-path' }, finalUrl: '/some-url' })
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.SUCCESS)
   })
+
+  test('If we set a successful status to in progress, we retain the headers and path data', () => {
+    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
+    expect(resourcesState.current.byId.id.apiState).toStrictEqual({
+      status: CwaResourceApiStatuses.IN_PROGRESS,
+      headers: { path: 'my-path' },
+      finalUrl: '/some-url'
+    })
+  })
+
   test('We clear existing fetch errors when setting a new status', () => {
     resourcesState.current.byId.id.apiState = {
       status: CwaResourceApiStatuses.ERROR,
       error: {
         statusCode: 101,
-        message: 'any'
+        primaryMessage: 'any'
       }
     }
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(1)
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.SUCCESS)
     expect(resourcesState.current.byId.id.apiState.error).toBeUndefined()
   })
 })
@@ -149,7 +161,7 @@ describe('resources action setResourceFetchError', () => {
 
   test('We can set an error on a new resource', () => {
     resourcesActions.setResourceFetchError({ iri: 'id' })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.id.apiState.error).toBeUndefined()
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
     expect(resourcesState.current.currentIds).toStrictEqual(['id'])
@@ -157,7 +169,7 @@ describe('resources action setResourceFetchError', () => {
 
   test('We can set an error on a new resource that is no longer current', () => {
     resourcesActions.setResourceFetchError({ iri: 'id', isCurrent: false })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.id.apiState.error).toBeUndefined()
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
     expect(resourcesState.current.currentIds).toStrictEqual([])
@@ -166,14 +178,14 @@ describe('resources action setResourceFetchError', () => {
   test('We can set an error on a new resource with a fetch error', () => {
     const error: CwaResourceError = createCwaResourceError(new Error('Any error'))
     resourcesActions.setResourceFetchError({ iri: 'id', error })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error.asObject)
   })
 
   test('We can set the status on an existing resource', () => {
     const error: CwaResourceError = createCwaResourceError(new Error('Any error'))
     resourcesActions.setResourceFetchError({ iri: 'id', error })
-    expect(resourcesState.current.byId.id.apiState.status).toBe(-1)
+    expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error.asObject)
   })
 })
