@@ -284,6 +284,19 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
     }
     expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(result)
   })
+
+  test('Throws an error if the resource does not exist in the resources store', () => {
+    state.fetches = {
+      'success-token': {
+        path: '/success-resource',
+        isPrimary: true,
+        resources: ['does-not-exist']
+      }
+    }
+    expect(() => {
+      return getterFns.isSuccessfulPrimaryFetchValid.value
+    }).toThrowError('The resource \'does-not-exist\' does not exist but is defined in the fetch chain with token \'success-token\'')
+  })
 })
 
 describe('FetcherStore getters -> isFetchChainComplete', () => {
