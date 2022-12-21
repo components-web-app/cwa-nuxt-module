@@ -156,3 +156,43 @@ describe('Mercure -> closeMercure', () => {
     expect(mercure.eventSource.close).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('Mercure -> hubUrl', () => {
+  let mercure: Mercure
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url'
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('Return undefined if there is no hub set', () => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: undefined
+        }
+      }
+    })
+    setActivePinia(pinia)
+    expect(mercure.hubUrl).toBeUndefined()
+  })
+
+  test('A hub url is created with a wildcard topic', () => {
+    expect(mercure.hubUrl).toBe('http://hub-url/?topic=*')
+  })
+
+  test('lastEventId is appended if it exists', () => {
+    mercure.lastEventId = 'abcdefg'
+    expect(mercure.hubUrl).toBe('http://hub-url/?topic=*&Last-Event-ID=abcdefg')
+  })
+})
