@@ -20,8 +20,9 @@ const EventSource = vi.fn(() => ({
 }))
 vi.stubGlobal('EventSource', EventSource)
 
-const MessageEvent = vi.fn(() => ({
-  data: null
+const MessageEvent = vi.fn((eventId = 'abc') => ({
+  data: null,
+  lastEventId: eventId
 }))
 vi.stubGlobal('MessageEvent', MessageEvent)
 
@@ -435,20 +436,35 @@ describe('Mercure -> processMessageQueue', () => {
 
     vi.clearAllMocks()
     mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(event => event.data['@id'] !== 'id-not-current')
   })
 
   test('When adding a message to the queue, existing messages with the same ID are replaced', () => {
     const resourcesStore = resourcesStoreDef.useStore()
+
     mercure.mercureMessageQueue = [
       {
-        event: undefined,
+        event: new MessageEvent(),
         data: {
           '@id': 'id1',
           key: 'value'
         }
       },
       {
-        event: undefined,
+        event: new MessageEvent(),
+        data: {
+          '@id': 'id-not-current',
+          key: 'value'
+        }
+      },
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'id-delete'
+        }
+      },
+      {
+        event: new MessageEvent('final-event-id'),
         data: {
           '@id': 'id2',
           key: 'value'
@@ -456,6 +472,13 @@ describe('Mercure -> processMessageQueue', () => {
       }
     ]
     mercure.processMessageQueue()
+    expect(mercure.isMessageForCurrentResource).toBeCalledTimes(4)
+    expect(mercure.lastEventId).toBe('final-event-id')
+    expect(resourcesStore.deleteResource).toBeCalledTimes(1)
+    expect(resourcesStore.deleteResource).toBeCalledWith({
+      resource: 'id-delete'
+    })
+
     expect(resourcesStore.saveResource).toBeCalledTimes(2)
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {

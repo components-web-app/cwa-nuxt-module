@@ -10,6 +10,8 @@ import { CwaFetchRequestHeaders } from '@cwa/nuxt-module/runtime/api/fetcher/fet
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
 
+export interface DeleteResourceEvent { resource: string }
+
 export interface SetResourceInProgressStatusEvent {
   iri: string, isComplete: false
 }
@@ -23,17 +25,18 @@ declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent|SetResour
 
 export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean }
 
+interface InitResourceEvent {
+  iri: string
+  resourcesState: CwaResourcesStateInterface
+  isCurrent: boolean
+}
+
 export interface CwaResourcesActionsInterface {
   resetCurrentResources (currentIds?: string[]): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent): void
-}
-
-interface InitResourceEvent {
-  iri: string
-  resourcesState: CwaResourcesStateInterface
-  isCurrent: boolean
+  deleteResource(event: DeleteResourceEvent): void
 }
 
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
@@ -55,6 +58,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   }
 
   return {
+    deleteResource (event: DeleteResourceEvent) {
+      consola.warn('TODO: DELETE RESOURCE', event)
+    },
     resetCurrentResources (currentIds?: string[]): void {
       if (currentIds) {
         for (const currentId of currentIds) {

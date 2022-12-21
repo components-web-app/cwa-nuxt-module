@@ -121,6 +121,20 @@ export default class Mercure {
 
   private processMessageQueue () {
     for (const message of this.mercureMessageQueue) {
+      this.lastEventId = message.event.lastEventId
+
+      // re-check to make sure message is still current
+      if (!this.isMessageForCurrentResource(message)) {
+        continue
+      }
+
+      if (Object.keys(message.data).length === 1 && message.data['@id']) {
+        this.resourcesStore.deleteResource({ resource: message.data['@id'] })
+        continue
+      }
+
+      // todo: if it is a component position it may be dynamic and so cannot be trusted to be the correct data
+
       this.resourcesStore.saveResource({
         resource: message.data,
         isNew: true

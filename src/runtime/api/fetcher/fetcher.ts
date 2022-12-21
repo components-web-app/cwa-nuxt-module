@@ -14,6 +14,7 @@ interface FetchResourceEvent {
   token?: string
   manifestPath?: string
   preload?: string[]
+  shallowFetch?: boolean
 }
 
 export interface FetchManifestEvent {
@@ -104,7 +105,7 @@ export default class Fetcher {
     return resource
   }
 
-  public async fetchResource ({ path, token, manifestPath, preload }: FetchResourceEvent): Promise<CwaResource|undefined> {
+  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token
@@ -152,7 +153,8 @@ export default class Fetcher {
       })
     }
 
-    if (resource) {
+    // todo: test shallowFetch
+    if (!shallowFetch && resource) {
       await this.fetchNestedResources({ resource, token: startFetchResult.token })
     }
 
