@@ -84,7 +84,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         iri: event.iri,
         isCurrent: true
       })
-      console.log(data)
 
       if (event.isComplete) {
         data.apiState = {

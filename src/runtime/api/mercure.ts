@@ -73,9 +73,6 @@ export default class Mercure {
     }
   }
 
-  /**
-   * TODO: TEST START
-   */
   private handleMercureMessage (event: MessageEvent) {
     const mercureMessage: MercureMessageInterface = {
       event,
@@ -101,6 +98,9 @@ export default class Mercure {
     }
   }
 
+  /**
+   * TODO: TEST START
+   */
   private isMessageForCurrentResource (mercureMessage: MercureMessageInterface): boolean {
     const currentResources = this.resourcesStore.current.currentIds
     const mercureMessageResource = mercureMessage.data

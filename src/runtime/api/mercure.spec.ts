@@ -6,6 +6,7 @@ import { reactive } from 'vue'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import * as ResourceUtils from '../resources/resource-utils'
 import Mercure from './mercure'
 
 vi.mock('consola')
@@ -295,5 +296,74 @@ describe('Mercure -> handleMercureMessage', () => {
     current.byId.id.apiState.status = CwaResourceApiStatuses.SUCCESS
     await delay(1)
     expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Mercure -> isMessageForCurrentResource', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const current = {
+      byId: {
+        id: {
+          apiState: reactive({
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          })
+        }
+      },
+      currentIds: ['id']
+    }
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('If the resource exists in current IDs return true', () => {
+    const result = mercure.isMessageForCurrentResource({
+      event: undefined,
+      data: {
+        '@id': 'id'
+      }
+    })
+    expect(result).toBe(true)
+  })
+
+  test.each([
+    { publishedResourceIriResult: 'id', result: true },
+    { publishedResourceIriResult: undefined, result: false },
+    { publishedResourceIriResult: 'does-not-exist', result: false }
+  ])('If the resource does not exist in current IDs, but the result of getPublishedResourceIri is $publishedResourceIriResult, then return $result', ({
+    publishedResourceIriResult,
+    result
+  }) => {
+    vi.spyOn(ResourceUtils, 'getPublishedResourceIri').mockImplementationOnce(() => {
+      return publishedResourceIriResult
+    })
+    const response = mercure.isMessageForCurrentResource({
+      event: undefined,
+      data: {
+        '@id': 'random'
+      }
+    })
+    expect(response).toBe(result)
+  })
+
+  test('If the resource does not exist return false', () => {
+    const result = mercure.isMessageForCurrentResource({
+      event: undefined,
+      data: {
+        '@id': 'random'
+      }
+    })
+    expect(result).toBe(false)
   })
 })
