@@ -39,7 +39,7 @@ export default class Mercure {
   }
 
   public init (): void {
-    if (!process.client) {
+    if (process.server) {
       consola.debug('Mercure can only initialise on the client side')
       return
     }

@@ -9,6 +9,14 @@ import Mercure from './mercure'
 vi.mock('consola')
 vi.mock('../resources/resource-utils')
 
+const EventSource = vi.fn(() => ({
+  readyState: 0,
+  url: null,
+  onmessage: undefined
+}))
+
+vi.stubGlobal('EventSource', EventSource)
+
 let mercureStoreDef: MercureStore
 let resourcesStoreDef: ResourcesStore
 function createMercure (): Mercure {
@@ -61,5 +69,68 @@ describe('Mercure -> setMercureHubFromLinkHeader', () => {
     const mercureStore = mercureStoreDef.useStore()
     mercure.setMercureHubFromLinkHeader(validLinkHeader)
     expect(mercureStore.hub).toBe('https://someurl')
+  })
+})
+
+describe('Mercure -> init', () => {
+  let mercure: Mercure
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url'
+        }
+      }
+    })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+
+    mercure = createMercure()
+    vi.spyOn(mercure, 'hubUrl', 'get').mockImplementation(() => {
+      return vi.fn(() => {})
+    })
+    vi.spyOn(mercure, 'closeMercure').mockImplementation(() => {})
+  })
+
+  test('We do not initialise and log to the console if server-side request', () => {
+    process.server = true
+    mercure.init()
+    expect(consola.debug).toHaveBeenCalledWith('Mercure can only initialise on the client side')
+    expect(mercure.hubUrl).not.toHaveBeenCalled()
+  })
+
+  test('A warning is logged and request aborted if the hub url has not been set', () => {
+    process.server = false
+    vi.spyOn(mercure, 'hubUrl', 'get').mockImplementationOnce(() => {
+      return false
+    })
+    mercure.init()
+    expect(consola.warn).toHaveBeenCalledWith('Cannot initialize Mercure. Hub URL is not set.')
+    expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
+  })
+
+  test('A debug console statement is logged and we will not re-initialise a ready event source with the same hub url', () => {
+    vi.spyOn(mercure, 'hubUrl', 'get').mockReturnValue('http://hub-url')
+    const eventSource = new EventSource()
+    eventSource.readyState = 2
+    eventSource.url = 'http://hub-url'
+    mercure.eventSource = eventSource
+    mercure.init()
+    expect(consola.debug).toHaveBeenCalledWith("Mercure already initialized 'http://hub-url'")
+    expect(mercure.closeMercure).not.toHaveBeenCalled()
+  })
+
+  test('A new event source is created', () => {
+    vi.spyOn(mercure, 'hubUrl', 'get').mockReturnValue('http://hub-url')
+    vi.spyOn(mercure, 'handleMercureMessage').mockReturnValue(() => {
+      return 'handleMercureMessageMock'
+    })
+    mercure.init()
+    expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
+    expect(consola.info).toHaveBeenCalledWith("Initializing Mercure 'http://hub-url'")
+    expect(EventSource).toHaveBeenCalledTimes(1)
+    expect(EventSource).toHaveBeenCalledWith('http://hub-url', { withCredentials: true })
+    expect(EventSource.mock.results[0].value.onmessage).toBe(mercure.handleMercureMessage)
   })
 })
