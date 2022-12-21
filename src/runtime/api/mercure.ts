@@ -1,10 +1,9 @@
 import consola from 'consola'
 import { storeToRefs } from 'pinia'
-import { Ref, watch, computed, ref } from 'vue'
+import { watch } from 'vue'
 import { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import { getPublishedResourceIri, CwaResource } from '../resources/resource-utils'
-import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 
 interface MercureMessageInterface {
   event: MessageEvent,
@@ -14,79 +13,40 @@ interface MercureMessageInterface {
 export default class Mercure {
   private eventSource?: EventSource
   private lastEventId?: string
-  private storeDefinition: MercureStore
-  private resourcesStore: ResourcesStore
+  private mercureStoreDefinition: MercureStore
+  private resourcesStoreDefinition: ResourcesStore
   private mercureMessageQueue: MercureMessageInterface[] = []
-  private fetcherInProgress: Ref<boolean> = ref(false)
-  private readonly resourcesApiStateIsPending: Ref<boolean>
 
-  constructor (mercureStore: MercureStore, resourcesStore: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
-    this.storeDefinition = mercureStore
-    this.resourcesStore = resourcesStore
-
-    this.mercureStore.$subscribe((mutation) => {
-      if (mutation.type === 'patch object' && mutation.payload.hub) {
-        this.init()
-      }
-    })
-
-    const { resourcesApiStateIsPending } = storeToRefs(this.resourcesStore.useStore())
-    this.resourcesApiStateIsPending = resourcesApiStateIsPending
-
-    const fetcherStore = storeToRefs(fetcherStoreDefinition.useStore())
-    this.fetcherInProgress = fetcherStore.inProgress
-  }
-
-  private get mercureMessageQueueActive () {
-    return computed(() => {
-      return !this.fetcherInProgress.value && !this.resourcesApiStateIsPending
-    })
-  }
-
-  private get hub () {
-    return this.mercureStore.$state.hub
-  }
-
-  private get mercureStore (): CwaMercureStoreInterface {
-    return this.storeDefinition.useStore()
-  }
-
-  private get hubUrl (): string|undefined {
-    if (!this.hub) {
-      return
-    }
-    const hub = new URL(this.hub)
-    hub.searchParams.append('topic', '*')
-    if (this.lastEventId) {
-      hub.searchParams.append('Last-Event-ID', this.lastEventId)
-    }
-    return hub.toString()
+  constructor (mercureStoreDefinition: MercureStore, resourcesStoreDefinition: ResourcesStore) {
+    this.mercureStoreDefinition = mercureStoreDefinition
+    this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
   public setMercureHubFromLinkHeader (linkHeader: string) {
     if (this.hub) {
       return
     }
+
     const matches = linkHeader.match(/<([^>]+)>;\s+rel="mercure".*/)
     if (!matches || !matches[1]) {
       consola.debug('No Mercure rel in link header.')
       return
     }
 
-    this.mercureStore.$patch({
-      hub: matches[1]
-    })
+    const { hub } = storeToRefs(this.mercureStore)
+    hub.value = matches[1]
     consola.debug('Mercure hub set', this.hub)
   }
 
   public init (): void {
     if (!process.client) {
-      consola.trace('Mercure can only initialise on the client side')
+      consola.debug('Mercure can only initialise on the client side')
       return
     }
 
     if (!this.hubUrl) {
       consola.warn('Cannot initialize Mercure. Hub URL is not set.')
+      this.closeMercure()
       return
     }
 
@@ -97,21 +57,19 @@ export default class Mercure {
     }
 
     // It may be setup but not in the correct state or with the correct URL
-    if (this.eventSource) {
-      this.closeMercure()
-    }
+    this.closeMercure()
 
     consola.info(`Initializing Mercure '${this.hubUrl}'`)
     this.eventSource = new EventSource(this.hubUrl, { withCredentials: true })
-    this.eventSource.onmessage = async (messageEvent: MessageEvent) => {
-      await this.handleMercureMessage(messageEvent)
-    }
+    this.eventSource.onmessage = this.handleMercureMessage
   }
 
   public closeMercure () {
     if (this.eventSource) {
       this.eventSource.close()
-      consola.info('Mercure eventSource closed')
+      consola.info('Mercure Event Source Closed')
+    } else {
+      consola.warn('No Mercure Event Source exists to close')
     }
   }
 
@@ -127,18 +85,21 @@ export default class Mercure {
 
     this.addMercureMessageToQueue(mercureMessage)
 
-    if (this.mercureMessageQueueActive) {
+    const { resourcesApiStateIsPending } = storeToRefs(this.resourcesStore)
+    if (resourcesApiStateIsPending.value) {
       this.processMessageQueue()
     } else {
-      const unwatch = watch(this.mercureMessageQueueActive, () => {
-        this.processMessageQueue()
-        unwatch()
+      const unwatch = watch(resourcesApiStateIsPending, (isPending) => {
+        if (!isPending) {
+          this.processMessageQueue()
+          unwatch()
+        }
       })
     }
   }
 
   private isMessageForCurrentResource (mercureMessage: MercureMessageInterface): boolean {
-    const currentResources = this.resourcesStore.useStore().current.currentIds
+    const currentResources = this.resourcesStore.current.currentIds
     const mercureMessageResource = mercureMessage.data
     if (!currentResources.includes(mercureMessageResource['@id'])) {
       const publishedIri = getPublishedResourceIri(mercureMessageResource)
@@ -160,5 +121,29 @@ export default class Mercure {
 
   private processMessageQueue () {
     consola.log('PROCESS MERCURE MESSAGE QUEUE NOW', this.mercureMessageQueue)
+  }
+
+  private get hubUrl (): string|undefined {
+    if (!this.hub) {
+      return
+    }
+    const hub = new URL(this.hub)
+    hub.searchParams.append('topic', '*')
+    if (this.lastEventId) {
+      hub.searchParams.append('Last-Event-ID', this.lastEventId)
+    }
+    return hub.toString()
+  }
+
+  private get hub () {
+    return this.mercureStore.hub
+  }
+
+  private get mercureStore (): CwaMercureStoreInterface {
+    return this.mercureStoreDefinition.useStore()
+  }
+
+  private get resourcesStore (): CwaResourcesStoreInterface {
+    return this.resourcesStoreDefinition.useStore()
   }
 }

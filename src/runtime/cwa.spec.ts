@@ -120,7 +120,7 @@ describe('Cwa class test', () => {
 
   test('Mercure instance created and accessible', () => {
     const stores = Storage.mock.results[0].value.stores
-    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
+    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources)
   })
 
   test('CwaFetch created to provide a fetch instance with defaults', () => {
