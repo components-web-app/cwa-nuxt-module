@@ -68,6 +68,11 @@ vi.mock('../resources/resources-store', () => ({
               '@type': CwaResourceTypes.COMPONENT
             }
           },
+          '/in-progress-resource-no-data': {
+            apiState: {
+              status: CwaResourceApiStatuses.IN_PROGRESS
+            }
+          },
           '/component-position-different-path': {
             apiState: {
               status: CwaResourceApiStatuses.SUCCESS,
@@ -263,7 +268,8 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
     { path: '/does-not-exist', resources: ['/success-resource', '/not-found-resource'], result: false },
     { path: '/success-resource', resources: ['/success-resource', '/not-found-resource'], result: true },
     { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/errored-resource'], result: false },
-    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource'], result: false }
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource'], result: true },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource-no-data'], result: false }
   ])('If we only want successful fetch chains, we check the main path. If the main path is $path with the resources $resources the result should be $result', ({
     path,
     resources,

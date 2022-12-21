@@ -67,10 +67,6 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
           throw new Error(`The resource '${resource}' does not exist but is defined in the fetch chain with token '${fetcherState.primaryFetch.successToken}'`)
         }
 
-        if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-          return false
-        }
-
         // Some errored results still class as successful. In fact, only server errors are really unsuccessful and would warrant a re-fetch
         if (resourceData.apiState.status === CwaResourceApiStatuses.ERROR) {
           const lastStatusCode = resourceData.apiState.error?.statusCode
@@ -78,6 +74,11 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
             return false
           }
           continue
+        }
+
+        // in progress and never been successful
+        if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS && !resourceData.data) {
+          return false
         }
 
         // component positions can be dynamic and different depending on the path
