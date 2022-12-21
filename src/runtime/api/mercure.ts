@@ -110,9 +110,6 @@ export default class Mercure {
     return true
   }
 
-  /**
-   * TODO: TEST START
-   */
   private addMercureMessageToQueue (mercureMessage: MercureMessageInterface) {
     this.mercureMessageQueue = [
       ...this.mercureMessageQueue.filter((existingMessage: MercureMessageInterface) => {
@@ -123,11 +120,13 @@ export default class Mercure {
   }
 
   private processMessageQueue () {
-    consola.log('PROCESS MERCURE MESSAGE QUEUE NOW', this.mercureMessageQueue)
+    for (const message of this.mercureMessageQueue) {
+      this.resourcesStore.saveResource({
+        resource: message.data,
+        isNew: true
+      })
+    }
   }
-  /**
-   * TODO: TEST END
-   */
 
   private get hubUrl (): string|undefined {
     if (!this.hub) {

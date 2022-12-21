@@ -418,3 +418,58 @@ describe('Mercure -> addMercureMessageToQueue', () => {
     ])
   })
 })
+
+describe('Mercure -> processMessageQueue', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current: {}
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('When adding a message to the queue, existing messages with the same ID are replaced', () => {
+    const resourcesStore = resourcesStoreDef.useStore()
+    mercure.mercureMessageQueue = [
+      {
+        event: undefined,
+        data: {
+          '@id': 'id1',
+          key: 'value'
+        }
+      },
+      {
+        event: undefined,
+        data: {
+          '@id': 'id2',
+          key: 'value'
+        }
+      }
+    ]
+    mercure.processMessageQueue()
+    expect(resourcesStore.saveResource).toBeCalledTimes(2)
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': 'id1',
+        key: 'value'
+      },
+      isNew: true
+    })
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': 'id2',
+        key: 'value'
+      },
+      isNew: true
+    })
+  })
+})
