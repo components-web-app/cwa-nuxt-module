@@ -137,17 +137,11 @@ export default class Mercure {
         isNew: true
       })
     }
-    for (const resource of resourceActions.toDelete) {
-      this.resourcesStore.deleteResource({
-        resource
-      })
-    }
   }
 
   private collectResourceActions (messages: MercureMessageInterface[]) {
     const toSave = []
     const toFetch = []
-    const toDelete = []
     for (const message of messages) {
       this.lastEventId = message.event.lastEventId
 
@@ -157,11 +151,6 @@ export default class Mercure {
       }
 
       const isDelete = Object.keys(message.data).length === 1 && message.data['@id']
-      if (isDelete) {
-        toDelete.push(message.data['@id'])
-        continue
-      }
-
       if (!isDelete && message.data['@type'] === CwaResourceTypes.COMPONENT_POSITION) {
         toFetch.push(message.data['@id'])
         continue
@@ -171,12 +160,10 @@ export default class Mercure {
     }
     return {
       toSave,
-      toFetch,
-      toDelete
+      toFetch
     }
   }
 
-  // todo: test
   private async fetch (paths: string[]) {
     const resources: CwaResource[] = []
     // this is all so that we can set all the new resources in 1 batch and do not have a chance of the user getting further new resources for the same batch of new resources

@@ -450,9 +450,8 @@ describe('Mercure -> processMessageQueue', () => {
     mercure = createMercure()
     vi.spyOn(mercure, 'collectResourceActions').mockImplementation(() => {
       return {
-        toSave: [{ '@id': '/save-id' }],
-        toFetch: ['/to-fetch-id'],
-        toDelete: ['/to-delete-id']
+        toSave: [{ '@id': '/save-id' }, { '@id': '/to-delete-id' }],
+        toFetch: ['/to-fetch-id']
       }
     })
     vi.spyOn(mercure, 'fetch').mockImplementation(() => {
@@ -488,12 +487,13 @@ describe('Mercure -> processMessageQueue', () => {
       },
       isNew: true
     })
-    expect(resourcesStore.saveResource).toBeCalledTimes(2)
-
-    expect(resourcesStore.deleteResource).toBeCalledWith({
-      resource: '/to-delete-id'
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': '/to-delete-id'
+      },
+      isNew: true
     })
-    expect(resourcesStore.deleteResource).toBeCalledTimes(1)
+    expect(resourcesStore.saveResource).toBeCalledTimes(3)
   })
 })
 
@@ -551,11 +551,15 @@ describe('Mercure -> collectResourceActions', () => {
     ]
     const result = mercure.collectResourceActions(messages)
     expect(result).toStrictEqual({
-      toSave: [{
-        '@id': 'id1',
-        key: 'value'
-      }],
-      toDelete: ['id-delete'],
+      toSave: [
+        {
+          '@id': 'id-delete'
+        },
+        {
+          '@id': 'id1',
+          key: 'value'
+        }
+      ],
       toFetch: ['id-position']
     })
 
