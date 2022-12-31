@@ -607,8 +607,8 @@ describe('Mercure -> fetch', () => {
 
   test('Fetcher promises are awaited and resources returned', async () => {
     const fetcher = Fetcher.mock.instances[0]
-    vi.spyOn(fetcher, 'fetchResource').mockImplementation(async ({ path }) => {
-      return path === '/no-resource' ? undefined : { '@id': path }
+    vi.spyOn(fetcher, 'fetchResource').mockImplementation(({ path }) => {
+      return Promise.resolve(path === '/no-resource' ? undefined : { '@id': path })
     })
     const resources = await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
     expect(resources).toStrictEqual([
