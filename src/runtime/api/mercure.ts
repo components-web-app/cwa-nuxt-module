@@ -125,6 +125,25 @@ export default class Mercure {
     ]
   }
 
+  private async processMessageQueue () {
+    const messages = this.mercureMessageQueue
+    this.mercureMessageQueue = []
+    const resourceActions = this.collectResourceActions(messages)
+    const fetchedResources = await this.fetch(resourceActions.toFetch)
+    const toSave = [...resourceActions.toSave, ...fetchedResources]
+    for (const resource of toSave) {
+      this.resourcesStore.saveResource({
+        resource,
+        isNew: true
+      })
+    }
+    for (const resource of resourceActions.toDelete) {
+      this.resourcesStore.deleteResource({
+        resource
+      })
+    }
+  }
+
   private collectResourceActions (messages: MercureMessageInterface[]) {
     const toSave = []
     const toFetch = []
@@ -163,7 +182,7 @@ export default class Mercure {
     // this is all so that we can set all the new resources in 1 batch and do not have a chance of the user getting further new resources for the same batch of new resources
     if (paths.length) {
       if (!this.fetcher) {
-        throw new Error('Fetcher has not been set so mercure cannot trigger to manually re-fetch any items')
+        throw new Error('Mercure cannot fetch resources. Fetcher is not set.')
       }
 
       // create all promises
@@ -189,25 +208,6 @@ export default class Mercure {
     }
 
     return resources
-  }
-
-  private async processMessageQueue () {
-    const messages = this.mercureMessageQueue
-    this.mercureMessageQueue = []
-    const resourceActions = this.collectResourceActions(messages)
-    const fetchedResources = await this.fetch(resourceActions.toFetch)
-    const toSave = [...resourceActions.toSave, ...fetchedResources]
-    for (const resource of toSave) {
-      this.resourcesStore.saveResource({
-        resource,
-        isNew: true
-      })
-    }
-    for (const resource of resourceActions.toDelete) {
-      this.resourcesStore.deleteResource({
-        resource
-      })
-    }
   }
 
   private get hubUrl (): string|undefined {

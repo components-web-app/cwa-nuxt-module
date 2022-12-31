@@ -563,3 +563,66 @@ describe('Mercure -> collectResourceActions', () => {
     expect(mercure.lastEventId).toBe('final-event-id')
   })
 })
+
+describe('Mercure -> fetch', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current: {}
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+    const fetcher = new Fetcher()
+    mercure.setFetcher(fetcher)
+  })
+
+  test('Fetcher fetchResource is called the correct number of times with the correct arguments', async () => {
+    await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
+    const fetcher = Fetcher.mock.instances[0]
+    expect(fetcher.fetchResource).toHaveBeenCalledTimes(3)
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/to-fetch-1',
+      noSave: true,
+      shallowFetch: true
+    })
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/to-fetch-2',
+      noSave: true,
+      shallowFetch: true
+    })
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/no-resource',
+      noSave: true,
+      shallowFetch: true
+    })
+  })
+
+  test('Fetcher promises are awaited and resources returned', async () => {
+    const fetcher = Fetcher.mock.instances[0]
+    vi.spyOn(fetcher, 'fetchResource').mockImplementation(async ({ path }) => {
+      return path === '/no-resource' ? undefined : { '@id': path }
+    })
+    const resources = await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
+    expect(resources).toStrictEqual([
+      {
+        '@id': '/to-fetch-1'
+      },
+      {
+        '@id': '/to-fetch-2'
+      }
+    ])
+  })
+
+  test('An error is thrown if there is no fetcher set', async () => {
+    mercure.setFetcher(undefined)
+    await expect(mercure.fetch(['/to-fetch-1', '/to-fetch-2'])).rejects.toThrowError('Mercure cannot fetch resources. Fetcher is not set.')
+  })
+})
