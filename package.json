@@ -39,18 +39,29 @@
   "devDependencies": {
     "@nuxt/module-builder": "^0.2.1",
     "@nuxt/test-utils": "^3.0.0",
-    "@nuxtjs/eslint-config-typescript": "^6.0.1",
+    "@nuxtjs/eslint-config-typescript": "^12.0.0",
     "@pinia/testing": "^0.0.14",
     "@stryker-mutator/core": "^6.3.0",
     "@stryker-mutator/jest-runner": "^6.3.0",
     "@types/bluebird": "^3.5.38",
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.25.5",
-    "eslint": "^8.28.0",
+    "eslint": "^8.31.0",
     "nuxt": "^3.0.0",
     "sass": "^1.56.2",
     "sass-loader": "^13.2.0",
     "vite-plugin-nuxt-test": "^0.0.10",
     "vitest": "^0.25.4"
+  },
+  "overrides": {
+    "@nuxtjs/eslint-config-typescript": {
+      "@nuxtjs/eslint-config": {
+        "eslint-plugin-import": {
+          "tsconfig-paths": {
+            "json5": "^2.2.2"
+          }
+        }
+      }
+    }
   }
 }
