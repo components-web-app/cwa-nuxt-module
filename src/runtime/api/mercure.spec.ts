@@ -7,10 +7,13 @@ import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import * as ResourceUtils from '../resources/resource-utils'
+import { CwaResourceTypes } from '../resources/resource-utils'
 import Mercure from './mercure'
+import Fetcher from './fetcher/fetcher'
 
 vi.mock('consola')
 vi.mock('../resources/resource-utils')
+vi.mock('./fetcher/fetcher')
 
 const EventSource = vi.fn(() => ({
   readyState: 0,
@@ -39,6 +42,15 @@ function createMercure (): Mercure {
   resourcesStoreDef = new ResourcesStore('storeName')
   return new Mercure(mercureStoreDef, resourcesStoreDef)
 }
+
+describe('Mercure -> setFetcher', () => {
+  test('Set fetcher will set the fetcher property', () => {
+    const mercure = createMercure()
+    const fetcher = new Fetcher()
+    mercure.setFetcher(fetcher)
+    expect(mercure.fetcher).toBe(fetcher)
+  })
+})
 
 describe('Mercure -> setMercureHubFromLinkHeader', () => {
   const validLinkHeader = '<https://some-domain/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation",<https://localhost:8443/.well-known/mercure>; rel="mercure"'
@@ -436,13 +448,84 @@ describe('Mercure -> processMessageQueue', () => {
 
     vi.clearAllMocks()
     mercure = createMercure()
-    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(event => event.data['@id'] !== 'id-not-current')
+    vi.spyOn(mercure, 'collectResourceActions').mockImplementation(() => {
+      return {
+        toSave: [{ '@id': '/save-id' }],
+        toFetch: ['/to-fetch-id'],
+        toDelete: ['/to-delete-id']
+      }
+    })
+    vi.spyOn(mercure, 'fetch').mockImplementation(() => {
+      return [{ '@id': '/to-fetch-id' }]
+    })
   })
 
-  test('When adding a message to the queue, existing messages with the same ID are replaced', () => {
+  test('Process message queue and call storage to delete/save resources', async () => {
     const resourcesStore = resourcesStoreDef.useStore()
+    const currentQueue = [
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'anything'
+        }
+      }
+    ]
+    mercure.mercureMessageQueue = currentQueue
+    await mercure.processMessageQueue()
+    expect(mercure.collectResourceActions).toHaveBeenCalledWith(currentQueue)
+    expect(mercure.mercureMessageQueue).toStrictEqual([])
+    expect(mercure.fetch).toHaveBeenCalledWith(['/to-fetch-id'])
 
-    mercure.mercureMessageQueue = [
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': '/save-id'
+      },
+      isNew: true
+    })
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': '/to-fetch-id'
+      },
+      isNew: true
+    })
+    expect(resourcesStore.saveResource).toBeCalledTimes(2)
+
+    expect(resourcesStore.deleteResource).toBeCalledWith({
+      resource: '/to-delete-id'
+    })
+    expect(resourcesStore.deleteResource).toBeCalledTimes(1)
+  })
+})
+
+describe('Mercure -> collectResourceActions', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current: {}
+        }
+      }
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation((event) => {
+      return event.data['@id'] !== 'id-not-current'
+    })
+  })
+
+  test('collectResourceActions resolves the correct resources into categories', () => {
+    const messages = [
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'id-delete'
+        }
+      },
       {
         event: new MessageEvent(),
         data: {
@@ -460,29 +543,23 @@ describe('Mercure -> processMessageQueue', () => {
       {
         event: new MessageEvent('final-event-id'),
         data: {
-          '@id': 'id2',
+          '@id': 'id-position',
+          '@type': CwaResourceTypes.COMPONENT_POSITION,
           key: 'value'
         }
       }
     ]
-    mercure.processMessageQueue()
-    expect(mercure.isMessageForCurrentResource).toBeCalledTimes(3)
-    expect(mercure.lastEventId).toBe('final-event-id')
-
-    expect(resourcesStore.saveResource).toBeCalledTimes(2)
-    expect(resourcesStore.saveResource).toBeCalledWith({
-      resource: {
+    const result = mercure.collectResourceActions(messages)
+    expect(result).toStrictEqual({
+      toSave: [{
         '@id': 'id1',
         key: 'value'
-      },
-      isNew: true
+      }],
+      toDelete: ['id-delete'],
+      toFetch: ['id-position']
     })
-    expect(resourcesStore.saveResource).toBeCalledWith({
-      resource: {
-        '@id': 'id2',
-        key: 'value'
-      },
-      isNew: true
-    })
+
+    expect(mercure.isMessageForCurrentResource).toHaveBeenCalledTimes(4)
+    expect(mercure.lastEventId).toBe('final-event-id')
   })
 })

@@ -36,7 +36,6 @@ export default class Cwa {
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route)
     this.resourcesManager = new ResourcesManager(this.storage.stores.resources)
 
-    // todo: test
     this.mercure.setFetcher(this.fetcher)
   }
 

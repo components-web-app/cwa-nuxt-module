@@ -4,7 +4,7 @@ import { watch } from 'vue'
 import { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
 import { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import { getPublishedResourceIri, CwaResource, CwaResourceTypes } from '../resources/resource-utils'
-import Fetcher from '@cwa/nuxt-module/runtime/api/fetcher/fetcher'
+import Fetcher from './fetcher/fetcher'
 
 interface MercureMessageInterface {
   event: MessageEvent,
@@ -24,7 +24,6 @@ export default class Mercure {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  // todo: test setter
   public setFetcher (fetcher: Fetcher) {
     this.fetcher = fetcher
   }
@@ -126,10 +125,11 @@ export default class Mercure {
     ]
   }
 
-  private async processMessageQueue () {
-    const resourcesToSave = []
-    const refetchIds = []
-    for (const message of this.mercureMessageQueue) {
+  private collectResourceActions (messages: MercureMessageInterface[]) {
+    const toSave = []
+    const toFetch = []
+    const toDelete = []
+    for (const message of messages) {
       this.lastEventId = message.event.lastEventId
 
       // re-check to make sure message is still current
@@ -137,47 +137,75 @@ export default class Mercure {
         continue
       }
 
-      // todo: if it is a component position it may be dynamic and so cannot be trusted to be the correct data. we can fetch and add to the new resources to merge
-      // todo: we should do all the fetching and then update all the resources from all the messages in 1 go so that the user won't be clicking to update their resources twice
       const isDelete = Object.keys(message.data).length === 1 && message.data['@id']
-      if (!isDelete && message.data['@type'] === CwaResourceTypes.COMPONENT_POSITION) {
-        refetchIds.push(message.data['@id'])
+      if (isDelete) {
+        toDelete.push(message.data['@id'])
         continue
       }
 
-      resourcesToSave.push(message.data)
-    }
+      if (!isDelete && message.data['@type'] === CwaResourceTypes.COMPONENT_POSITION) {
+        toFetch.push(message.data['@id'])
+        continue
+      }
 
+      toSave.push(message.data)
+    }
+    return {
+      toSave,
+      toFetch,
+      toDelete
+    }
+  }
+
+  // todo: test
+  private async fetch (paths: string[]) {
+    const resources: CwaResource[] = []
     // this is all so that we can set all the new resources in 1 batch and do not have a chance of the user getting further new resources for the same batch of new resources
-    if (refetchIds.length) {
+    if (paths.length) {
       if (!this.fetcher) {
         throw new Error('Fetcher has not been set so mercure cannot trigger to manually re-fetch any items')
       }
-      const refetchPromises = []
-      for (const path of refetchIds) {
-        refetchPromises.push(this.fetcher.fetchResource({
+
+      // create all promises
+      const fetchPromises = []
+      for (const path of paths) {
+        const fetchPromise = this.fetcher.fetchResource({
           path,
           noSave: true,
           shallowFetch: true
-        }))
+        })
+        fetchPromises.push(fetchPromise)
       }
-      await Promise.all(refetchPromises).then((responses) => {
+
+      // wait for all promises
+      await Promise.all(fetchPromises).then((responses) => {
         for (const resource of responses) {
           if (!resource) {
             continue
           }
-          this.resourcesStore.saveResource({
-            resource,
-            isNew: true
-          })
+          resources.push(resource)
         }
       })
     }
 
-    for (const resource of resourcesToSave) {
+    return resources
+  }
+
+  private async processMessageQueue () {
+    const messages = this.mercureMessageQueue
+    this.mercureMessageQueue = []
+    const resourceActions = this.collectResourceActions(messages)
+    const fetchedResources = await this.fetch(resourceActions.toFetch)
+    const toSave = [...resourceActions.toSave, ...fetchedResources]
+    for (const resource of toSave) {
       this.resourcesStore.saveResource({
         resource,
         isNew: true
+      })
+    }
+    for (const resource of resourceActions.toDelete) {
+      this.resourcesStore.deleteResource({
+        resource
       })
     }
   }
