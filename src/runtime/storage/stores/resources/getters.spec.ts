@@ -37,6 +37,14 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
         data: {
           '@id': '/_/routes/id'
         }
+      },
+      '/random-to-exclude': {
+        apiState: {
+          status: CwaResourceApiStatuses.IN_PROGRESS
+        },
+        data: {
+          '@id': '/random-to-exclude'
+        }
       }
     }
     expect(getterFns.resourcesByType.value).toStrictEqual({
