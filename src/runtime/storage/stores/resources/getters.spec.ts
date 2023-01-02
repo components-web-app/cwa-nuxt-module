@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { reactive } from 'vue'
+import { CwaResourceTypes } from '../../../resources/resource-utils'
 import getters, { CwaResourcesGettersInterface } from './getters'
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
@@ -16,6 +17,41 @@ function createState (): CwaResourcesStateInterface {
     })
   }
 }
+
+describe('ResourcesStore Getters -> resourcesByType', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  test('returns current resources with their type as the object key', () => {
+    state.current.currentIds = ['/_/routes/id']
+    state.current.byId = {
+      '/_/routes/id': {
+        apiState: {
+          status: CwaResourceApiStatuses.IN_PROGRESS
+        },
+        data: {
+          '@id': '/_/routes/id'
+        }
+      }
+    }
+    expect(getterFns.resourcesByType.value).toStrictEqual({
+      [CwaResourceTypes.ROUTE]: [{
+        '@id': '/_/routes/id'
+      }],
+      [CwaResourceTypes.PAGE]: [],
+      [CwaResourceTypes.PAGE_DATA]: [],
+      [CwaResourceTypes.LAYOUT]: [],
+      [CwaResourceTypes.COMPONENT_GROUP]: [],
+      [CwaResourceTypes.COMPONENT_POSITION]: [],
+      [CwaResourceTypes.COMPONENT]: []
+    })
+  })
+})
 
 describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
   let state: CwaResourcesStateInterface

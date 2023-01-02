@@ -1,4 +1,4 @@
-import { CwaResource } from '../../../resources/resource-utils'
+import { CwaResource, CwaResourceTypes } from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
 import {
   CwaCurrentResourceInterface,
@@ -60,9 +60,22 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
 
   return {
     deleteResource (event: DeleteResourceEvent) {
-      consola.warn('TODO: DELETE RESOURCE', event)
-      // todo: if it a component position, we should remove from all component groups as well
-      // todo: if it is a component, the position will also be deleted in an auto-cascade on the server if it is not dynamic, we should replicate locally
+      const resource = resourcesState.current.byId[event.resource]
+      if (!resource) {
+        return
+      }
+      const type = resource.data['@type']
+      switch (type) {
+        case CwaResourceTypes.COMPONENT_POSITION:
+          // todo: if it a component position, we should remove from all component groups as well
+          break
+        case CwaResourceTypes.COMPONENT:
+          // todo: if it is a component, the position will also be deleted in an auto-cascade on the server if it position is not dynamic, we should replicate locally
+
+          break
+      }
+
+      // todo: delete resource
     },
     mergeNewResources () {
       // todo: new resource may be a delete and empty resource

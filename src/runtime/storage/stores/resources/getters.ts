@@ -1,4 +1,5 @@
 import { ComputedRef, computed } from 'vue'
+import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
 interface ResourcesLoadStatusInterface {
@@ -8,7 +9,12 @@ interface ResourcesLoadStatusInterface {
   percent: number
 }
 
+type ResourcesByTypeInterface = {
+  [T in CwaResourceTypes]: CwaResource[];
+}
+
 export interface CwaResourcesGettersInterface {
+  resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
   resourcesApiStateIsPending: ComputedRef<boolean>
   resourceLoadStatus: ComputedRef<ResourcesLoadStatusInterface>
@@ -23,7 +29,27 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return count
     }, 0)
   })
+
   return {
+    resourcesByType: computed(() => {
+      const resources: ResourcesByTypeInterface = {
+        [CwaResourceTypes.ROUTE]: [],
+        [CwaResourceTypes.PAGE]: [],
+        [CwaResourceTypes.PAGE_DATA]: [],
+        [CwaResourceTypes.LAYOUT]: [],
+        [CwaResourceTypes.COMPONENT_GROUP]: [],
+        [CwaResourceTypes.COMPONENT_POSITION]: [],
+        [CwaResourceTypes.COMPONENT]: []
+      }
+      for (const iri of resourcesState.current.currentIds) {
+        const type = getResourceTypeFromIri(iri)
+        if (!type) {
+          continue
+        }
+        resources[type].push(resourcesState.current.byId[iri].data)
+      }
+      return resources
+    }),
     totalResourcesPending,
     resourcesApiStateIsPending: computed<boolean>(() => {
       for (const resourceState of Object.values(resourcesState.current.byId)) {
