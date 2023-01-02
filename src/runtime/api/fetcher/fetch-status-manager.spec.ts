@@ -332,8 +332,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       fetchResponse: {
         _data: mockCwaResource
       },
-      headers: {},
-      finalUrl: 'any'
+      headers: {}
     })
 
     expect(fetcherStore.useStore).not.toHaveBeenCalled()
@@ -361,8 +360,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       fetchResponse: {
         _data: mockCwaResource
       },
-      headers: {},
-      finalUrl: 'any'
+      headers: {}
     })
 
     expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
@@ -395,8 +393,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       fetchResponse: {
         _data: mockCwaResource
       },
-      headers: {},
-      finalUrl: 'any'
+      headers: {}
     })
 
     expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
@@ -451,8 +448,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       },
       headers: {
         path: 'something'
-      },
-      finalUrl: '/anything'
+      }
     })
 
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
@@ -464,8 +460,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       isComplete: true,
       headers: {
         path: 'something'
-      },
-      finalUrl: '/anything'
+      }
     })
 
     expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).not.toHaveBeenCalled()
@@ -485,8 +480,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       },
       headers: {
         path: 'something'
-      },
-      finalUrl: '/anything'
+      }
     })
 
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
@@ -512,8 +506,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       },
       headers: {
         path: 'something'
-      },
-      finalUrl: '/anything'
+      }
     })
 
     expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).toHaveBeenCalledWith('my-link-header')

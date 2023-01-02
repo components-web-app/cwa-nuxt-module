@@ -26,10 +26,11 @@ export class ResourcesStore implements CwaStore {
   constructor (storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.resources`, (): CwaResourcesInterface => {
       const resourcesState = CwaResourcesState()
+      const getters = CwaResourcesGetters(resourcesState)
       return {
         ...resourcesState,
-        ...CwaResourcesGetters(resourcesState),
-        ...CwaResourcesActions(resourcesState)
+        ...getters,
+        ...CwaResourcesActions(resourcesState, getters)
       }
     })
   }

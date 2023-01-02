@@ -27,7 +27,7 @@ export interface FinishFetchResourceSuccessEvent extends FinishFetchResourceEven
   success: true
   fetchResponse: CwaFetchResponse|any
   headers: CwaFetchRequestHeaders
-  finalUrl: string
+  noSave?: boolean
 }
 
 export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent {
@@ -154,10 +154,14 @@ export default class FetchStatusManager {
       this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
     }
 
-    this.resourcesStore.saveResource({
-      resource: cwaResource
-    })
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers, finalUrl: event.finalUrl })
+    // todo: test noSave
+    if (!event.noSave) {
+      this.resourcesStore.saveResource({
+        resource: cwaResource
+      })
+    }
+
+    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers })
 
     return cwaResource
   }
@@ -195,7 +199,7 @@ export default class FetchStatusManager {
   }
 
   public get primaryFetchPath (): string|undefined {
-    return this.fetcherStoreDefinition.useStore().primaryFetchPath
+    return this.fetcherStore.primaryFetchPath
   }
 
   private get fetcherStore () {

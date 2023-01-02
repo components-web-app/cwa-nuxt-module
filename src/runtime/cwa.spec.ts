@@ -29,7 +29,7 @@ vi.mock('./api/fetcher/fetcher', () => {
 })
 
 vi.mock('./api/mercure', () => {
-  const MercureInstance = vi.fn(() => ({ name: 'MERCURE' })).mockReturnThis()
+  const MercureInstance = vi.fn(() => ({ name: 'MERCURE', setFetcher: vi.fn() }))
   return {
     default: MercureInstance
   }
@@ -121,6 +121,7 @@ describe('Cwa class test', () => {
   test('Mercure instance created and accessible', () => {
     const stores = Storage.mock.results[0].value.stores
     expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
+    expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.instances[0])
   })
 
   test('CwaFetch created to provide a fetch instance with defaults', () => {

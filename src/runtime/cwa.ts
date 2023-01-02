@@ -35,6 +35,8 @@ export default class Cwa {
     const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route)
     this.resourcesManager = new ResourcesManager(this.storage.stores.resources)
+
+    this.mercure.setFetcher(this.fetcher)
   }
 
   public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {

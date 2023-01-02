@@ -1,4 +1,4 @@
-import { CwaResource } from '../../../resources/resource-utils'
+import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
 import {
   CwaCurrentResourceInterface,
@@ -7,14 +7,18 @@ import {
   CwaResourcesStateInterface
 } from './state'
 import { CwaFetchRequestHeaders } from '@cwa/nuxt-module/runtime/api/fetcher/fetcher'
+import { CwaResourcesGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/resources/getters'
 
-export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
+export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
+export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }
+
+export interface DeleteResourceEvent { resource: string }
 
 export interface SetResourceInProgressStatusEvent {
   iri: string, isComplete: false
 }
 export interface SetResourceCompletedStatusEvent {
-  iri: string, isComplete: true, headers: CwaFetchRequestHeaders, finalUrl: string
+  iri: string, isComplete: true, headers: CwaFetchRequestHeaders
 }
 export interface SetResourceResetStatusEvent {
   iri: string, isComplete: null
@@ -23,20 +27,22 @@ declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent|SetResour
 
 export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean }
 
-export interface CwaResourcesActionsInterface {
-  resetCurrentResources (currentIds?: string[]): void
-  setResourceFetchStatus (event: SetResourceStatusEvent): void
-  setResourceFetchError (event: SetResourceFetchErrorEvent): void
-  saveResource(event: SaveResourceEvent): void
-}
-
 interface InitResourceEvent {
   iri: string
   resourcesState: CwaResourcesStateInterface
   isCurrent: boolean
 }
 
-export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesActionsInterface {
+export interface CwaResourcesActionsInterface {
+  resetCurrentResources (currentIds?: string[]): void
+  setResourceFetchStatus (event: SetResourceStatusEvent): void
+  setResourceFetchError (event: SetResourceFetchErrorEvent): void
+  saveResource(event: SaveResourceEvent|SaveNewResourceEvent): void
+  deleteResource(event: DeleteResourceEvent): void
+  mergeNewResources(): void
+}
+
+export default function (resourcesState: CwaResourcesStateInterface, resourcesGetters: CwaResourcesGettersInterface): CwaResourcesActionsInterface {
   function initResource ({ iri, resourcesState, isCurrent }: InitResourceEvent): CwaCurrentResourceInterface {
     if (!resourcesState.current.byId[iri]) {
       resourcesState.current.byId[iri] = {
@@ -54,7 +60,86 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     return resourcesState.current.byId[iri]
   }
 
+  function deleteResource (event: DeleteResourceEvent) {
+    const resource = resourcesState.current.byId[event.resource]
+    if (!resource) {
+      return
+    }
+    switch (getResourceTypeFromIri(event.resource)) {
+      case CwaResourceTypes.COMPONENT_POSITION: {
+        // remove a component position from all component groups
+        const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
+        for (const componentGroup of Object.values(componentGroups)) {
+          const componentPositions = componentGroup.componentPositions
+          const positionIndex = componentPositions.indexOf(event.resource)
+          if (positionIndex !== -1) {
+            componentPositions.splice(positionIndex, 1)
+          }
+        }
+        break
+      }
+      case CwaResourceTypes.COMPONENT: {
+        // if it is a component, the position will also be deleted in an auto-cascade on the server if the position is not dynamic, we should replicate locally and delete the position
+        const componentPositions = resource.data.componentPositions
+        for (const positionIri of componentPositions) {
+          const positionResource = resourcesState.current.byId[positionIri]
+          if (positionResource.data.pageDataProperty) {
+            positionResource.data.component = undefined
+          } else {
+            deleteResource({
+              resource: positionIri
+            })
+          }
+        }
+        break
+      }
+    }
+
+    const allIdsIndex = resourcesState.current.allIds.indexOf(event.resource)
+    allIdsIndex !== -1 && resourcesState.current.allIds.splice(allIdsIndex, 1)
+    const currentIdsIndex = resourcesState.current.currentIds.indexOf(event.resource)
+    currentIdsIndex !== -1 && resourcesState.current.currentIds.splice(currentIdsIndex, 1)
+    delete resourcesState.current.byId[event.resource]
+  }
+
   return {
+    deleteResource,
+    mergeNewResources () {
+      for (const newId of resourcesState.new.allIds) {
+        const newResource = resourcesState.new.byId[newId]
+
+        // if empty resource, it should be deleted
+        if (Object.keys(newResource.resource).length === 1 && newResource.resource['@id']) {
+          deleteResource({
+            resource: newId
+          })
+          continue
+        }
+
+        // save/replace new resource
+        resourcesState.current.byId[newId] = {
+          apiState: {
+            status: CwaResourceApiStatuses.SUCCESS,
+            headers: {
+              path: newResource.path
+            }
+          },
+          data: newResource.resource
+        }
+
+        // if a new resource, we should populate into allIds and currentIds
+        if (!resourcesState.current.allIds.includes(newId)) {
+          resourcesState.current.allIds.push(newId)
+        }
+        if (!resourcesState.current.currentIds.includes(newId)) {
+          resourcesState.current.currentIds.push(newId)
+        }
+      }
+      resourcesState.new = {
+        byId: {},
+        allIds: []
+      }
+    },
     resetCurrentResources (currentIds?: string[]): void {
       if (currentIds) {
         for (const currentId of currentIds) {
@@ -63,11 +148,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
           }
           const currentState = resourcesState.current.byId[currentId].apiState
           // not an error and has been successful in the past
-          if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers && currentState.finalUrl) {
+          if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers) {
             resourcesState.current.byId[currentId].apiState = {
               status: CwaResourceApiStatuses.SUCCESS,
-              headers: currentState.headers,
-              finalUrl: currentState.finalUrl
+              headers: currentState.headers
             }
           }
         }
@@ -88,8 +172,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       if (event.isComplete) {
         data.apiState = {
           status: CwaResourceApiStatuses.SUCCESS,
-          headers: event.headers,
-          finalUrl: event.finalUrl
+          headers: event.headers
         }
         return
       }
@@ -100,7 +183,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       // if in progress, retain headers and final url from last success state
       if (data.apiState.status === CwaResourceApiStatuses.SUCCESS) {
         newApiState.headers = data.apiState.headers
-        newApiState.finalUrl = data.apiState.finalUrl
       }
       data.apiState = newApiState
     },
@@ -115,10 +197,13 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         error: error?.asObject
       }
     },
-    saveResource ({ resource, isNew }: SaveResourceEvent): void {
-      const iri = resource['@id']
-      if (isNew === true) {
-        resourcesState.new.byId[iri] = resource
+    saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
+      const iri = event.resource['@id']
+      if (event.isNew) {
+        resourcesState.new.byId[iri] = {
+          path: event.path,
+          resource: event.resource
+        }
         if (!resourcesState.new.allIds.includes(iri)) {
           resourcesState.new.allIds.push(iri)
         }
@@ -130,7 +215,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         iri,
         isCurrent: true
       })
-      data.data = resource
+      data.data = event.resource
     }
   }
 }

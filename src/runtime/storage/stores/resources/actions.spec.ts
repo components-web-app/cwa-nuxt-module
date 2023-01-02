@@ -2,10 +2,275 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaResourcesActionsInterface } from './actions'
 import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import getters from './getters'
+
+describe('Resources -> deleteResource', () => {
+  const resourcesState = state()
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
+
+  test('Deleting a non-extent resource will silently fail', () => {
+    resourcesState.current.byId = {
+      '/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/to-delete',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/to-delete']
+    resourcesState.current.allIds = ['/to-delete']
+    resourcesActions.deleteResource({
+      resource: '/any-id'
+    })
+    expect(resourcesState.current.byId['/to-delete']).toStrictEqual({
+      apiState: {
+        status: undefined
+      },
+      data: {
+        '@id': '/to-delete',
+        '@type': 'MyType'
+      }
+    })
+    expect(resourcesState.current.allIds).toStrictEqual(['/to-delete'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/to-delete'])
+  })
+
+  test('A resource can be deleted', () => {
+    resourcesState.current.byId = {
+      '/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/to-delete',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/to-delete']
+    resourcesState.current.allIds = ['/to-delete']
+    resourcesActions.deleteResource({
+      resource: '/to-delete'
+    })
+    expect(resourcesState.current.byId).not.toHaveProperty('/to-delete')
+    expect(resourcesState.current.allIds).toStrictEqual([])
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('A component position resource will be cleared from all component groups when deleted', () => {
+    resourcesState.current.byId = {
+      '/_/component_positions/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_positions/to-delete',
+          '@type': 'ComponentPosition'
+        }
+      },
+      '/_/component_groups/group': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_groups/group',
+          componentPositions: [
+            '/_/component_positions/to-delete',
+            '/_/component_positions/to-keep'
+          ]
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
+    resourcesState.current.allIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
+    resourcesActions.deleteResource({
+      resource: '/_/component_positions/to-delete'
+    })
+    expect(resourcesState.current.byId).not.toHaveProperty('/_/component_positions/to-delete')
+    expect(resourcesState.current.allIds).toStrictEqual(['/_/component_groups/group'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/_/component_groups/group'])
+    expect(resourcesState.current.byId['/_/component_groups/group'].data.componentPositions).toStrictEqual(['/_/component_positions/to-keep'])
+  })
+
+  test('When deleting a component, the positions it is within should be deleted only when it is not a dynamic position', () => {
+    resourcesState.current.byId = {
+      '/component/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/component/to-delete',
+          '@type': 'Component',
+          componentPositions: [
+            '/_/component_positions/static',
+            '/_/component_positions/dynamic'
+          ]
+        }
+      },
+      '/_/component_positions/static': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_positions/static',
+          component: '/component/to-delete'
+        }
+      },
+      '/_/component_positions/dynamic': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_positions/dynamic',
+          component: '/component/to-delete',
+          pageDataProperty: 'anything'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/component/to-delete', '/_/component_positions/static', '/_/component_positions/dynamic']
+    resourcesState.current.allIds = ['/component/to-delete', '/_/component_positions/static', '/_/component_positions/dynamic']
+    resourcesActions.deleteResource({
+      resource: '/component/to-delete'
+    })
+    expect(resourcesState.current.byId).not.toHaveProperty('/component/to-delete')
+    expect(resourcesState.current.byId).not.toHaveProperty('/_/component_positions/static')
+    expect(resourcesState.current.allIds).toStrictEqual(['/_/component_positions/dynamic'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/_/component_positions/dynamic'])
+    expect(resourcesState.current.byId['/_/component_positions/dynamic'].data.component).toBeUndefined()
+  })
+})
+
+describe('Resources -> mergeNewResources', () => {
+  const resourcesState = state()
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
+
+  test('An empty resource will be deleted on merge', () => {
+    resourcesState.new.byId = {
+      '/to-delete': {
+        resource: {
+          '@id': '/to-delete'
+        },
+        path: 'any'
+      }
+    }
+    resourcesState.current.byId = {
+      '/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/to-delete',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['/to-delete']
+    resourcesState.current.allIds = ['/to-delete']
+    resourcesState.current.currentIds = ['/to-delete']
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId).not.toHaveProperty('/to-delete')
+    expect(resourcesState.current.allIds).toStrictEqual([])
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('Merging a new resource adds to current resources', () => {
+    resourcesState.new.byId = {
+      '/to-add': {
+        resource: {
+          '@id': '/to-add',
+          something: 'a value'
+        },
+        path: 'any'
+      }
+    }
+    resourcesState.current.byId = {
+      '/resource': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/resource',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['/to-add']
+    resourcesState.current.allIds = ['/resource']
+    resourcesState.current.currentIds = ['/resource']
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId).toHaveProperty('/resource')
+    expect(resourcesState.current.byId['/to-add']).toStrictEqual({
+      apiState: {
+        status: CwaResourceApiStatuses.SUCCESS,
+        headers: {
+          path: 'any'
+        }
+      },
+      data: {
+        '@id': '/to-add',
+        something: 'a value'
+      }
+    })
+    expect(resourcesState.current.allIds).toStrictEqual(['/resource', '/to-add'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/resource', '/to-add'])
+  })
+
+  test('Merging an existing resource replaces it', () => {
+    resourcesState.new.byId = {
+      '/resource': {
+        resource: {
+          '@id': '/resource',
+          something: 'a value'
+        },
+        path: 'any'
+      }
+    }
+    resourcesState.current.byId = {
+      '/resource': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/resource',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['/resource']
+    resourcesState.current.allIds = ['/resource']
+    resourcesState.current.currentIds = ['/resource']
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId['/resource']).toStrictEqual({
+      apiState: {
+        status: CwaResourceApiStatuses.SUCCESS,
+        headers: {
+          path: 'any'
+        }
+      },
+      data: {
+        '@id': '/resource',
+        something: 'a value'
+      }
+    })
+    expect(resourcesState.current.allIds).toStrictEqual(['/resource'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/resource'])
+
+    expect(resourcesState.new).toStrictEqual({
+      byId: {},
+      allIds: []
+    })
+  })
+})
 
 describe('We can reset current resources', () => {
   const resourcesState = state()
-  const resourcesActions = actions(resourcesState)
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
 
   test('We can reset current resources', () => {
     resourcesState.new.byId = {
@@ -43,7 +308,7 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.currentIds).toStrictEqual(['id'])
   })
 
-  test('When we reset resources with new current IDs, non-errored resources with path and finalUrl properties are reset', () => {
+  test('When we reset resources with new current IDs, non-errored resources and path reset', () => {
     resourcesState.new.byId = {
       id: {}
     }
@@ -56,15 +321,13 @@ describe('We can reset current resources', () => {
       inProgress: {
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS,
-          headers: { path: '1' },
-          finalUrl: '/my-url'
+          headers: { path: '1' }
         }
       },
       current: {
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
-          headers: {},
-          finalUrl: '/my-url'
+          headers: {}
         }
       }
     }
@@ -77,8 +340,7 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.byId.errored.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.inProgress.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.SUCCESS,
-      headers: { path: '1' },
-      finalUrl: '/my-url'
+      headers: { path: '1' }
     })
   })
 
@@ -113,7 +375,8 @@ describe('We can reset current resources', () => {
 
 describe('resources action -> setResourceFetchStatus', () => {
   const resourcesState = state()
-  const resourcesActions = actions(resourcesState)
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
 
   test('We can set the status on a new resource', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
@@ -123,7 +386,7 @@ describe('resources action -> setResourceFetchStatus', () => {
   })
 
   test('We can set the status on an existing resource', () => {
-    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true, headers: { path: 'my-path' }, finalUrl: '/some-url' })
+    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true, headers: { path: 'my-path' } })
     expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.SUCCESS)
   })
 
@@ -131,8 +394,7 @@ describe('resources action -> setResourceFetchStatus', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
     expect(resourcesState.current.byId.id.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.IN_PROGRESS,
-      headers: { path: 'my-path' },
-      finalUrl: '/some-url'
+      headers: { path: 'my-path' }
     })
   })
 
@@ -156,7 +418,8 @@ describe('resources action setResourceFetchError', () => {
 
   beforeEach(() => {
     resourcesState = state()
-    resourcesActions = actions(resourcesState)
+    const resourcesGetters = getters(resourcesState)
+    resourcesActions = actions(resourcesState, resourcesGetters)
   })
 
   test('We can set an error on a new resource', () => {
@@ -192,9 +455,10 @@ describe('resources action setResourceFetchError', () => {
 
 describe('resources action saveResource', () => {
   const resourcesState = state()
-  const resourcesActions = actions(resourcesState)
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
 
-  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $type a new resource', ({ action }) => {
+  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $action a new resource', ({ action }) => {
     const resource = {
       '@id': 'id',
       '@type': 'type',
@@ -205,15 +469,19 @@ describe('resources action saveResource', () => {
     }
     resourcesActions.saveResource({
       resource,
-      isNew: true
+      isNew: true,
+      path: '/my-path'
     })
     expect(resourcesState.new.byId).toStrictEqual({
-      id: resource
+      id: {
+        path: '/my-path',
+        resource
+      }
     })
     expect(resourcesState.new.allIds).toStrictEqual(['id'])
   })
 
-  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $type a current resource', ({ action }) => {
+  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $action a current resource', ({ action }) => {
     const resource = {
       '@id': 'id',
       '@type': 'type',

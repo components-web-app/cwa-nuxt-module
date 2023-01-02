@@ -46,11 +46,22 @@
     "@types/bluebird": "^3.5.38",
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.25.5",
-    "eslint": "^8.28.0",
+    "eslint": "^8.31.0",
     "nuxt": "^3.0.0",
     "sass": "^1.56.2",
     "sass-loader": "^13.2.0",
     "vite-plugin-nuxt-test": "^0.0.10",
     "vitest": "^0.25.4"
+  },
+  "overrides": {
+    "@nuxtjs/eslint-config-typescript": {
+      "@nuxtjs/eslint-config": {
+        "eslint-plugin-import": {
+          "tsconfig-paths": {
+            "json5": "^2.2.2"
+          }
+        }
+      }
+    }
   }
 }

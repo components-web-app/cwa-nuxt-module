@@ -11,7 +11,6 @@ export enum CwaResourceApiStatuses {
 export interface CwaResourceApiStateGeneral {
   status: CwaResourceApiStatuses.IN_PROGRESS|undefined,
   headers?: CwaFetchRequestHeaders
-  finalUrl?: string
 }
 
 export interface CwaResourceApiStateError {
@@ -22,7 +21,6 @@ export interface CwaResourceApiStateError {
 export interface CwaResourceApiStateSuccess {
   status: CwaResourceApiStatuses.SUCCESS,
   headers: CwaFetchRequestHeaders
-  finalUrl: string
 }
 
 declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess
@@ -42,7 +40,10 @@ export interface CwaResourcesStateInterface {
   }
   new: {
     byId: {
-      [key: string]: any
+      [key: string]: {
+        resource: any,
+        path?: string
+      }
     },
     allIds: Array<string>
   }

@@ -22,9 +22,10 @@ export class Storage {
     this.storeName = storeName
 
     const resources = new ResourcesStore(storeName)
+    const fetcher = new FetcherStore(storeName, resources)
     this.stores = {
       resources,
-      fetcher: new FetcherStore(storeName, resources),
+      fetcher,
       mercure: new MercureStore(storeName),
       apiDocumentation: new ApiDocumentationStore(storeName)
     }
