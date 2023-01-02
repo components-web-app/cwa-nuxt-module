@@ -98,7 +98,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const allIdsIndex = resourcesState.current.allIds.indexOf(event.resource)
     allIdsIndex !== -1 && resourcesState.current.allIds.splice(allIdsIndex, 1)
     const currentIdsIndex = resourcesState.current.currentIds.indexOf(event.resource)
-    currentIdsIndex !== -1 && resourcesState.current.allIds.splice(currentIdsIndex, 1)
+    currentIdsIndex !== -1 && resourcesState.current.currentIds.splice(currentIdsIndex, 1)
     delete resourcesState.current.byId[event.resource]
   }
 
@@ -110,7 +110,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         const newResource = resourcesState.new.byId[newId]
 
         // if empty resource, it should be deleted
-        if (Object.keys(newResource).length === 1 && newResource.resource['@id']) {
+        if (Object.keys(newResource.resource).length === 1 && newResource.resource['@id']) {
           deleteResource({
             resource: newId
           })
@@ -125,7 +125,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
               path: newResource.path
             }
           },
-          data: newResource
+          data: newResource.resource
         }
 
         // if a new resource, we should populate into allIds and currentIds

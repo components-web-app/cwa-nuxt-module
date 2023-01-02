@@ -2,10 +2,135 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaResourcesActionsInterface } from './actions'
 import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import getters from './getters'
+
+describe('Resources -> mergeNewResources', () => {
+  const resourcesState = state()
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
+
+  test('An empty resource will be deleted on merge', () => {
+    resourcesState.new.byId = {
+      '/to-delete': {
+        resource: {
+          '@id': '/to-delete'
+        },
+        path: 'any'
+      }
+    }
+    resourcesState.current.byId = {
+      '/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/to-delete',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['/to-delete']
+    resourcesState.current.allIds = ['/to-delete']
+    resourcesState.current.currentIds = ['/to-delete']
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId).not.toHaveProperty('/to-delete')
+    expect(resourcesState.current.allIds).toStrictEqual([])
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('Merging a new resource adds to current resources', () => {
+    resourcesState.new.byId = {
+      '/to-add': {
+        resource: {
+          '@id': '/to-add',
+          something: 'a value'
+        },
+        path: 'any'
+      }
+    }
+    resourcesState.current.byId = {
+      '/resource': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/resource',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['/to-add']
+    resourcesState.current.allIds = ['/resource']
+    resourcesState.current.currentIds = ['/resource']
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId).toHaveProperty('/resource')
+    expect(resourcesState.current.byId['/to-add']).toStrictEqual({
+      apiState: {
+        status: CwaResourceApiStatuses.SUCCESS,
+        headers: {
+          path: 'any'
+        }
+      },
+      data: {
+        '@id': '/to-add',
+        something: 'a value'
+      }
+    })
+    expect(resourcesState.current.allIds).toStrictEqual(['/resource', '/to-add'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/resource', '/to-add'])
+  })
+
+  test('Merging an existing resource replaces it', () => {
+    resourcesState.new.byId = {
+      '/resource': {
+        resource: {
+          '@id': '/resource',
+          something: 'a value'
+        },
+        path: 'any'
+      }
+    }
+    resourcesState.current.byId = {
+      '/resource': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/resource',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.new.allIds = ['/resource']
+    resourcesState.current.allIds = ['/resource']
+    resourcesState.current.currentIds = ['/resource']
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId['/resource']).toStrictEqual({
+      apiState: {
+        status: CwaResourceApiStatuses.SUCCESS,
+        headers: {
+          path: 'any'
+        }
+      },
+      data: {
+        '@id': '/resource',
+        something: 'a value'
+      }
+    })
+    expect(resourcesState.current.allIds).toStrictEqual(['/resource'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/resource'])
+
+    expect(resourcesState.new).toStrictEqual({
+      byId: {},
+      allIds: []
+    })
+  })
+})
 
 describe('We can reset current resources', () => {
   const resourcesState = state()
-  const resourcesActions = actions(resourcesState)
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
 
   test('We can reset current resources', () => {
     resourcesState.new.byId = {
@@ -110,7 +235,8 @@ describe('We can reset current resources', () => {
 
 describe('resources action -> setResourceFetchStatus', () => {
   const resourcesState = state()
-  const resourcesActions = actions(resourcesState)
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
 
   test('We can set the status on a new resource', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
@@ -152,7 +278,8 @@ describe('resources action setResourceFetchError', () => {
 
   beforeEach(() => {
     resourcesState = state()
-    resourcesActions = actions(resourcesState)
+    const resourcesGetters = getters(resourcesState)
+    resourcesActions = actions(resourcesState, resourcesGetters)
   })
 
   test('We can set an error on a new resource', () => {
@@ -188,7 +315,8 @@ describe('resources action setResourceFetchError', () => {
 
 describe('resources action saveResource', () => {
   const resourcesState = state()
-  const resourcesActions = actions(resourcesState)
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
 
   test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $action a new resource', ({ action }) => {
     const resource = {
