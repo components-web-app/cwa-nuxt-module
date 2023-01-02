@@ -1,8 +1,17 @@
-import { beforeEach, describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
+import * as ResourceUtils from '../../../resources/resource-utils'
 import actions, { CwaResourcesActionsInterface } from './actions'
 import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import getters from './getters'
+
+vi.mock('../../../resources/resource-utils', async () => {
+  const actual = await vi.importActual<any>('../../../resources/resource-utils')
+  return {
+    ...actual,
+    isCwaResourceSame: vi.fn(() => false)
+  }
+})
 
 describe('Resources -> deleteResource', () => {
   const resourcesState = state()
@@ -453,7 +462,7 @@ describe('resources action setResourceFetchError', () => {
   })
 })
 
-describe('resources action saveResource', () => {
+describe('resources action -> saveResource', () => {
   const resourcesState = state()
   const resourcesGetters = getters(resourcesState)
   const resourcesActions = actions(resourcesState, resourcesGetters)
@@ -496,5 +505,45 @@ describe('resources action saveResource', () => {
     expect(resourcesState.current.byId.id.data).toStrictEqual(resource)
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
     expect(resourcesState.current.currentIds).toStrictEqual(['id'])
+  })
+
+  test('A new resource will not be saved if it is the same as an existing resource', () => {
+    vi.spyOn(ResourceUtils, 'isCwaResourceSame').mockImplementationOnce(() => {
+      return true
+    })
+
+    resourcesState.new = {
+      byId: {},
+      allIds: []
+    }
+    resourcesState.current.byId = {
+      id: {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': 'id',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['id']
+    const resource = {
+      '@id': 'id',
+      '@type': 'type',
+      _metadata: {
+        persisted: false
+      },
+      action: 'something new'
+    }
+    resourcesActions.saveResource({
+      resource,
+      isNew: true,
+      path: '/my-path'
+    })
+    expect(resourcesState.new).toStrictEqual({
+      byId: {},
+      allIds: []
+    })
   })
 })

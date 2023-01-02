@@ -65,3 +65,18 @@ export function isCwaResource (obj: any): obj is CwaResource {
   }
   return obj['@id'] !== undefined && obj['@type'] !== undefined && obj._metadata !== undefined && typeof obj._metadata === 'object'
 }
+
+export function isCwaResourceSame (resource1: CwaResource, resource2: CwaResource): boolean {
+  const clearAndStringify = (obj: CwaResource): string => {
+    const newObj: any = Object.assign({}, obj)
+    delete newObj.publishedResource
+    delete newObj.draftResource
+    delete newObj.modifiedAt
+    // remove metadata, can include things specific to the resource such as published timestamps
+    delete newObj._metadata
+    // remove null values
+    Object.keys(newObj).forEach(k => newObj[k] === null && delete newObj[k])
+    return JSON.stringify(newObj)
+  }
+  return clearAndStringify(resource1) === clearAndStringify(resource2)
+}

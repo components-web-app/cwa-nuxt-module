@@ -1,13 +1,18 @@
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import {
+  CwaResource,
+  CwaResourceTypes,
+  getResourceTypeFromIri,
+  isCwaResourceSame
+} from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
+import { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
 import {
   CwaCurrentResourceInterface,
   CwaResourceApiStateGeneral,
   CwaResourceApiStatuses,
   CwaResourcesStateInterface
 } from './state'
-import { CwaFetchRequestHeaders } from '@cwa/nuxt-module/runtime/api/fetcher/fetcher'
-import { CwaResourcesGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/resources/getters'
+import { CwaResourcesGettersInterface } from './getters'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }
@@ -60,7 +65,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     return resourcesState.current.byId[iri]
   }
 
-  function deleteResource (event: DeleteResourceEvent) {
+  function deleteResource (event: DeleteResourceEvent): void {
     const resource = resourcesState.current.byId[event.resource]
     if (!resource) {
       return
@@ -104,7 +109,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
   return {
     deleteResource,
-    mergeNewResources () {
+    mergeNewResources (): void {
       for (const newId of resourcesState.new.allIds) {
         const newResource = resourcesState.new.byId[newId]
 
@@ -200,6 +205,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
       const iri = event.resource['@id']
       if (event.isNew) {
+        const existingResource = resourcesState.current.byId[iri]
+        if (existingResource && isCwaResourceSame(existingResource.data, event.resource)) {
+          return
+        }
         resourcesState.new.byId[iri] = {
           path: event.path,
           resource: event.resource
