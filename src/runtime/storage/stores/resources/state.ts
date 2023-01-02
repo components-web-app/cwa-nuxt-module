@@ -20,8 +20,7 @@ export interface CwaResourceApiStateError {
 
 export interface CwaResourceApiStateSuccess {
   status: CwaResourceApiStatuses.SUCCESS,
-  // optional as may be success from a mercure notification
-  headers?: CwaFetchRequestHeaders
+  headers: CwaFetchRequestHeaders
 }
 
 declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess
@@ -41,7 +40,10 @@ export interface CwaResourcesStateInterface {
   }
   new: {
     byId: {
-      [key: string]: any
+      [key: string]: {
+        resource: any,
+        path: string
+      }
     },
     allIds: Array<string>
   }

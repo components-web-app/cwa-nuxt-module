@@ -120,7 +120,7 @@ describe('Cwa class test', () => {
 
   test('Mercure instance created and accessible', () => {
     const stores = Storage.mock.results[0].value.stores
-    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources)
+    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
     expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.instances[0])
   })
 

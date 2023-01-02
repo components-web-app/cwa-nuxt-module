@@ -9,7 +9,8 @@ import {
 import { CwaFetchRequestHeaders } from '@cwa/nuxt-module/runtime/api/fetcher/fetcher'
 import { CwaResourcesGettersInterface } from '@cwa/nuxt-module/runtime/storage/stores/resources/getters'
 
-export interface SaveResourceEvent { resource: CwaResource, isNew?: boolean }
+export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
+export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }
 
 export interface DeleteResourceEvent { resource: string }
 
@@ -36,7 +37,7 @@ export interface CwaResourcesActionsInterface {
   resetCurrentResources (currentIds?: string[]): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
-  saveResource(event: SaveResourceEvent): void
+  saveResource(event: SaveResourceEvent|SaveNewResourceEvent): void
   deleteResource(event: DeleteResourceEvent): void
   mergeNewResources(): void
 }
@@ -59,6 +60,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     return resourcesState.current.byId[iri]
   }
 
+  // todo: test
   function deleteResource (event: DeleteResourceEvent) {
     const resource = resourcesState.current.byId[event.resource]
     if (!resource) {
@@ -102,12 +104,13 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
   return {
     deleteResource,
+    // todo: test
     mergeNewResources () {
       for (const newId of resourcesState.new.allIds) {
         const newResource = resourcesState.new.byId[newId]
 
         // if empty resource, it should be deleted
-        if (Object.keys(newResource).length === 1 && newResource['@id']) {
+        if (Object.keys(newResource).length === 1 && newResource.resource['@id']) {
           deleteResource({
             resource: newId
           })
@@ -117,7 +120,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // save/replace new resource
         resourcesState.current.byId[newId] = {
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
+            status: CwaResourceApiStatuses.SUCCESS,
+            headers: {
+              path: newResource.path
+            }
           },
           data: newResource
         }
@@ -130,8 +136,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           resourcesState.current.currentIds.push(newId)
         }
       }
-      resourcesState.new.allIds = []
-      resourcesState.new.byId = {}
+      resourcesState.new = {
+        byId: {},
+        allIds: []
+      }
     },
     resetCurrentResources (currentIds?: string[]): void {
       if (currentIds) {
@@ -190,10 +198,13 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         error: error?.asObject
       }
     },
-    saveResource ({ resource, isNew }: SaveResourceEvent): void {
-      const iri = resource['@id']
-      if (isNew === true) {
-        resourcesState.new.byId[iri] = resource
+    saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
+      const iri = event.resource['@id']
+      if (event.isNew) {
+        resourcesState.new.byId[iri] = {
+          path: event.path,
+          resource: event.resource
+        }
         if (!resourcesState.new.allIds.includes(iri)) {
           resourcesState.new.allIds.push(iri)
         }
@@ -205,7 +216,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         iri,
         isCurrent: true
       })
-      data.data = resource
+      data.data = event.resource
     }
   }
 }

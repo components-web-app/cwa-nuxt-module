@@ -105,7 +105,7 @@ export default class Fetcher {
     return resource
   }
 
-  // todo: test noSave
+  // todo: test noSave and shallowFetch
   public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
@@ -154,7 +154,6 @@ export default class Fetcher {
       })
     }
 
-    // todo: test shallowFetch
     if (!shallowFetch && resource) {
       // todo: cascade noSave to fetchNestedResources
       await this.fetchNestedResources({ resource, token: startFetchResult.token })

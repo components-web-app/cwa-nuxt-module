@@ -190,7 +190,7 @@ describe('resources action saveResource', () => {
   const resourcesState = state()
   const resourcesActions = actions(resourcesState)
 
-  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $type a new resource', ({ action }) => {
+  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $action a new resource', ({ action }) => {
     const resource = {
       '@id': 'id',
       '@type': 'type',
@@ -201,15 +201,19 @@ describe('resources action saveResource', () => {
     }
     resourcesActions.saveResource({
       resource,
-      isNew: true
+      isNew: true,
+      path: '/my-path'
     })
     expect(resourcesState.new.byId).toStrictEqual({
-      id: resource
+      id: {
+        path: '/my-path',
+        resource
+      }
     })
     expect(resourcesState.new.allIds).toStrictEqual(['id'])
   })
 
-  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $type a current resource', ({ action }) => {
+  test.each([{ action: 'save' }, { action: 'overwrite' }])('We can $action a current resource', ({ action }) => {
     const resource = {
       '@id': 'id',
       '@type': 'type',

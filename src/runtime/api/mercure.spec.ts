@@ -8,6 +8,7 @@ import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import * as ResourceUtils from '../resources/resource-utils'
 import { CwaResourceTypes } from '../resources/resource-utils'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
 
@@ -37,10 +38,12 @@ function delay (time: number, returnValue: any = undefined) {
 
 let mercureStoreDef: MercureStore
 let resourcesStoreDef: ResourcesStore
+let fetcherStoreDef: FetcherStore
 function createMercure (): Mercure {
   mercureStoreDef = new MercureStore('storeName')
   resourcesStoreDef = new ResourcesStore('storeName')
-  return new Mercure(mercureStoreDef, resourcesStoreDef)
+  fetcherStoreDef = new FetcherStore('storeName', resourcesStoreDef)
+  return new Mercure(mercureStoreDef, resourcesStoreDef, fetcherStoreDef)
 }
 
 describe('Mercure -> setFetcher', () => {
@@ -441,6 +444,16 @@ describe('Mercure -> processMessageQueue', () => {
       initialState: {
         'storeName.resources': {
           current: {}
+        },
+        'storeName.fetcher': {
+          primaryFetch: {
+            fetchingToken: 'token'
+          },
+          fetches: {
+            token: {
+              path: 'my-path'
+            }
+          }
         }
       }
     })
@@ -461,6 +474,7 @@ describe('Mercure -> processMessageQueue', () => {
 
   test('Process message queue and call storage to delete/save resources', async () => {
     const resourcesStore = resourcesStoreDef.useStore()
+    const fetcherStore = fetcherStoreDef.useStore()
     const currentQueue = [
       {
         event: new MessageEvent(),
@@ -475,22 +489,26 @@ describe('Mercure -> processMessageQueue', () => {
     expect(mercure.mercureMessageQueue).toStrictEqual([])
     expect(mercure.fetch).toHaveBeenCalledWith(['/to-fetch-id'])
 
+    expect(fetcherStore.primaryFetchPath).toBe('my-path')
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {
         '@id': '/save-id'
       },
+      path: fetcherStore.primaryFetchPath,
       isNew: true
     })
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {
         '@id': '/to-fetch-id'
       },
+      path: fetcherStore.primaryFetchPath,
       isNew: true
     })
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {
         '@id': '/to-delete-id'
       },
+      path: fetcherStore.primaryFetchPath,
       isNew: true
     })
     expect(resourcesStore.saveResource).toBeCalledTimes(3)

@@ -4,6 +4,7 @@ import { watch } from 'vue'
 import { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
 import { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import { getPublishedResourceIri, CwaResource, CwaResourceTypes } from '../resources/resource-utils'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import Fetcher from './fetcher/fetcher'
 
 interface MercureMessageInterface {
@@ -16,12 +17,14 @@ export default class Mercure {
   private lastEventId?: string
   private mercureStoreDefinition: MercureStore
   private resourcesStoreDefinition: ResourcesStore
+  private fetcherStoreDefinition: FetcherStore
   private mercureMessageQueue: MercureMessageInterface[] = []
   private fetcher?: Fetcher
 
-  constructor (mercureStoreDefinition: MercureStore, resourcesStoreDefinition: ResourcesStore) {
+  constructor (mercureStoreDefinition: MercureStore, resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
     this.mercureStoreDefinition = mercureStoreDefinition
     this.resourcesStoreDefinition = resourcesStoreDefinition
+    this.fetcherStoreDefinition = fetcherStoreDefinition
   }
 
   public setFetcher (fetcher: Fetcher) {
@@ -128,12 +131,14 @@ export default class Mercure {
   private async processMessageQueue () {
     const messages = this.mercureMessageQueue
     this.mercureMessageQueue = []
+    const path = this.fetcherStoreDefinition.useStore().primaryFetchPath
     const resourceActions = this.collectResourceActions(messages)
     const fetchedResources = await this.fetch(resourceActions.toFetch)
     const toSave = [...resourceActions.toSave, ...fetchedResources]
     for (const resource of toSave) {
       this.resourcesStore.saveResource({
         resource,
+        path,
         isNew: true
       })
     }
