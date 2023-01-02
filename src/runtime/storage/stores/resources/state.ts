@@ -42,7 +42,7 @@ export interface CwaResourcesStateInterface {
     byId: {
       [key: string]: {
         resource: any,
-        path: string
+        path?: string
       }
     },
     allIds: Array<string>

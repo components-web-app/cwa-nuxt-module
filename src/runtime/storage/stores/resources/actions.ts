@@ -1,4 +1,4 @@
-import { CwaResource, CwaResourceTypes } from '../../../resources/resource-utils'
+import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
 import {
   CwaCurrentResourceInterface,
@@ -60,14 +60,12 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     return resourcesState.current.byId[iri]
   }
 
-  // todo: test
   function deleteResource (event: DeleteResourceEvent) {
     const resource = resourcesState.current.byId[event.resource]
     if (!resource) {
       return
     }
-    const type = resource.data['@type']
-    switch (type) {
+    switch (getResourceTypeFromIri(event.resource)) {
       case CwaResourceTypes.COMPONENT_POSITION: {
         // remove a component position from all component groups
         const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
@@ -85,7 +83,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         const componentPositions = resource.data.componentPositions
         for (const positionIri of componentPositions) {
           const positionResource = resourcesState.current.byId[positionIri]
-          if (!positionResource.data.pageDataProperty) {
+          if (positionResource.data.pageDataProperty) {
+            positionResource.data.component = undefined
+          } else {
             deleteResource({
               resource: positionIri
             })
@@ -104,7 +104,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
   return {
     deleteResource,
-    // todo: test
     mergeNewResources () {
       for (const newId of resourcesState.new.allIds) {
         const newResource = resourcesState.new.byId[newId]

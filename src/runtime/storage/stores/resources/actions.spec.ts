@@ -4,6 +4,116 @@ import actions, { CwaResourcesActionsInterface } from './actions'
 import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import getters from './getters'
 
+describe('Resources -> deleteResource', () => {
+  const resourcesState = state()
+  const resourcesGetters = getters(resourcesState)
+  const resourcesActions = actions(resourcesState, resourcesGetters)
+
+  test('A resource can be deleted', () => {
+    resourcesState.current.byId = {
+      '/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/to-delete',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/to-delete']
+    resourcesState.current.allIds = ['/to-delete']
+    resourcesActions.deleteResource({
+      resource: '/to-delete'
+    })
+    expect(resourcesState.current.byId).not.toHaveProperty('/to-delete')
+    expect(resourcesState.current.allIds).toStrictEqual([])
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('A component position resource will be cleared from all component groups when deleted', () => {
+    resourcesState.current.byId = {
+      '/_/component_positions/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_positions/to-delete',
+          '@type': 'ComponentPosition'
+        }
+      },
+      '/_/component_groups/group': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_groups/group',
+          componentPositions: [
+            '/_/component_positions/to-delete',
+            '/_/component_positions/to-keep'
+          ]
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
+    resourcesState.current.allIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
+    resourcesActions.deleteResource({
+      resource: '/_/component_positions/to-delete'
+    })
+    expect(resourcesState.current.byId).not.toHaveProperty('/_/component_positions/to-delete')
+    expect(resourcesState.current.allIds).toStrictEqual(['/_/component_groups/group'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/_/component_groups/group'])
+    expect(resourcesState.current.byId['/_/component_groups/group'].data.componentPositions).toStrictEqual(['/_/component_positions/to-keep'])
+  })
+
+  test('When deleting a component, the positions it is within should be deleted only when it is not a dynamic position', () => {
+    resourcesState.current.byId = {
+      '/component/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/component/to-delete',
+          '@type': 'Component',
+          componentPositions: [
+            '/_/component_positions/static',
+            '/_/component_positions/dynamic'
+          ]
+        }
+      },
+      '/_/component_positions/static': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_positions/static',
+          component: '/component/to-delete'
+        }
+      },
+      '/_/component_positions/dynamic': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/_/component_positions/dynamic',
+          component: '/component/to-delete',
+          pageDataProperty: 'anything'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/component/to-delete', '/_/component_positions/static', '/_/component_positions/dynamic']
+    resourcesState.current.allIds = ['/component/to-delete', '/_/component_positions/static', '/_/component_positions/dynamic']
+    resourcesActions.deleteResource({
+      resource: '/component/to-delete'
+    })
+    expect(resourcesState.current.byId).not.toHaveProperty('/component/to-delete')
+    expect(resourcesState.current.byId).not.toHaveProperty('/_/component_positions/static')
+    expect(resourcesState.current.allIds).toStrictEqual(['/_/component_positions/dynamic'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/_/component_positions/dynamic'])
+    expect(resourcesState.current.byId['/_/component_positions/dynamic'].data.component).toBeUndefined()
+  })
+})
+
 describe('Resources -> mergeNewResources', () => {
   const resourcesState = state()
   const resourcesGetters = getters(resourcesState)
