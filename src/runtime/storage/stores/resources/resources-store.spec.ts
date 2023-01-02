@@ -41,7 +41,7 @@ describe('ResourcesStore tests', () => {
     expect(storeDefinition.stateKey).toBe('value')
 
     expect(actions).toBeCalledTimes(1)
-    expect(actions).toBeCalledWith({ stateKey: 'value' })
+    expect(actions).toBeCalledWith({ stateKey: 'value' }, getters.mock.results[0].value)
     expect(storeDefinition).toHaveProperty('someFunction')
 
     expect(getters).toBeCalledTimes(1)

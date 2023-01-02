@@ -11,7 +11,6 @@ export enum CwaResourceApiStatuses {
 export interface CwaResourceApiStateGeneral {
   status: CwaResourceApiStatuses.IN_PROGRESS|undefined,
   headers?: CwaFetchRequestHeaders
-  finalUrl?: string
 }
 
 export interface CwaResourceApiStateError {
@@ -21,8 +20,8 @@ export interface CwaResourceApiStateError {
 
 export interface CwaResourceApiStateSuccess {
   status: CwaResourceApiStatuses.SUCCESS,
-  headers: CwaFetchRequestHeaders
-  finalUrl: string
+  // optional as may be success from a mercure notification
+  headers?: CwaFetchRequestHeaders
 }
 
 declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess

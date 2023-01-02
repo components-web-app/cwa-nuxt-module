@@ -27,7 +27,6 @@ export interface FinishFetchResourceSuccessEvent extends FinishFetchResourceEven
   success: true
   fetchResponse: CwaFetchResponse|any
   headers: CwaFetchRequestHeaders
-  finalUrl: string
   noSave?: boolean
 }
 
@@ -162,7 +161,7 @@ export default class FetchStatusManager {
       })
     }
 
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers, finalUrl: event.finalUrl })
+    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers })
 
     return cwaResource
   }

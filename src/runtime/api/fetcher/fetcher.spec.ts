@@ -143,8 +143,7 @@ describe('Fetcher -> fetchResource', () => {
         response,
         headers: {
           path: 'my-path'
-        },
-        finalUrl: '/fetched-final-url'
+        }
       }
     })
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
@@ -269,7 +268,6 @@ describe('Fetcher -> fetchResource', () => {
       headers: {
         path: 'my-path'
       },
-      finalUrl: '/fetched-final-url',
       fetchResponse: {
         '@id': '/some-resource'
       }

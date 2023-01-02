@@ -43,7 +43,7 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.currentIds).toStrictEqual(['id'])
   })
 
-  test('When we reset resources with new current IDs, non-errored resources with path and finalUrl properties are reset', () => {
+  test('When we reset resources with new current IDs, non-errored resources and path reset', () => {
     resourcesState.new.byId = {
       id: {}
     }
@@ -56,15 +56,13 @@ describe('We can reset current resources', () => {
       inProgress: {
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS,
-          headers: { path: '1' },
-          finalUrl: '/my-url'
+          headers: { path: '1' }
         }
       },
       current: {
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
-          headers: {},
-          finalUrl: '/my-url'
+          headers: {}
         }
       }
     }
@@ -77,8 +75,7 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.byId.errored.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.inProgress.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.SUCCESS,
-      headers: { path: '1' },
-      finalUrl: '/my-url'
+      headers: { path: '1' }
     })
   })
 
@@ -123,7 +120,7 @@ describe('resources action -> setResourceFetchStatus', () => {
   })
 
   test('We can set the status on an existing resource', () => {
-    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true, headers: { path: 'my-path' }, finalUrl: '/some-url' })
+    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true, headers: { path: 'my-path' } })
     expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.SUCCESS)
   })
 
@@ -131,8 +128,7 @@ describe('resources action -> setResourceFetchStatus', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
     expect(resourcesState.current.byId.id.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.IN_PROGRESS,
-      headers: { path: 'my-path' },
-      finalUrl: '/some-url'
+      headers: { path: 'my-path' }
     })
   })
 

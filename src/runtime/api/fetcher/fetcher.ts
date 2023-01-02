@@ -37,7 +37,6 @@ export interface CwaFetchResponse extends FetchResponse<CwaResource|undefined> {
 
 interface CwaFetchResponseRaw {
   response: Promise<CwaFetchResponse>
-  finalUrl: string,
   headers: CwaFetchRequestHeaders
 }
 
@@ -145,7 +144,6 @@ export default class Fetcher {
         success: true,
         fetchResponse,
         headers: cwaFetchRaw.headers,
-        finalUrl: cwaFetchRaw.finalUrl,
         noSave
       })
     } catch (error: any) {
@@ -240,8 +238,7 @@ export default class Fetcher {
     })
     return {
       response,
-      headers,
-      finalUrl: url
+      headers
     }
   }
 
