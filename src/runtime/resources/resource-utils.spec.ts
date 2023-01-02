@@ -4,8 +4,35 @@ import {
   getResourceTypeFromIri,
   CwaResource,
   CwaResourceTypes,
-  isCwaResource
+  isCwaResource, isCwaResourceSame
 } from './resource-utils'
+
+describe('Resource isCwaResourceSame function', () => {
+  test.each([
+    {
+      resource1: { '@id': 'id', '@type': 'type', _metadata: { persisted: true } },
+      resource2: { '@id': 'id', '@type': 'type', _metadata: { persisted: true } },
+      result: true
+    },
+    {
+      resource1: { '@id': 'id', '@type': 'type', _metadata: { persisted: true } },
+      resource2: { '@id': 'id', '@type': 'type', publishedResource: 'aha', draftResource: 'aha', modifiedAt: 'aha', something: null, _metadata: { persisted: false } },
+      result: true
+    },
+    {
+      resource1: { '@id': 'id', '@type': 'type', something: 'was-something', _metadata: { persisted: true } },
+      resource2: { '@id': 'id', '@type': 'type', publishedResource: 'aha', draftResource: 'aha', modifiedAt: 'aha', something: null, _metadata: { persisted: false } },
+      result: false
+    },
+    {
+      resource1: { '@id': 'id1', '@type': 'type', _metadata: { persisted: true } },
+      resource2: { '@id': 'id2', '@type': 'type', _metadata: { persisted: true } },
+      result: false
+    }
+  ])('If resource 1 is $resource1 and resource 2 is $resource2 then the result should be $result', ({ resource1, resource2, result }) => {
+    expect(isCwaResourceSame(resource1, resource2)).toBe(result)
+  })
+})
 
 describe('Resource isCwaResource function', () => {
   test('variable provided is not an object', () => {
