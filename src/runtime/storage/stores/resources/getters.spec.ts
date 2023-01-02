@@ -28,7 +28,7 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
   })
 
   test('returns current resources with their type as the object key', () => {
-    state.current.currentIds = ['/_/routes/id']
+    state.current.currentIds = ['/_/routes/id', '/random-to-exclude']
     state.current.byId = {
       '/_/routes/id': {
         apiState: {
