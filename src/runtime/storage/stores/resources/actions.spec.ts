@@ -9,6 +9,36 @@ describe('Resources -> deleteResource', () => {
   const resourcesGetters = getters(resourcesState)
   const resourcesActions = actions(resourcesState, resourcesGetters)
 
+  test('Deleting a non-extent resource will silently fail', () => {
+    resourcesState.current.byId = {
+      '/to-delete': {
+        apiState: {
+          status: undefined
+        },
+        data: {
+          '@id': '/to-delete',
+          '@type': 'MyType'
+        }
+      }
+    }
+    resourcesState.current.currentIds = ['/to-delete']
+    resourcesState.current.allIds = ['/to-delete']
+    resourcesActions.deleteResource({
+      resource: '/any-id'
+    })
+    expect(resourcesState.current.byId['/to-delete']).toStrictEqual({
+      apiState: {
+        status: undefined
+      },
+      data: {
+        '@id': '/to-delete',
+        '@type': 'MyType'
+      }
+    })
+    expect(resourcesState.current.allIds).toStrictEqual(['/to-delete'])
+    expect(resourcesState.current.currentIds).toStrictEqual(['/to-delete'])
+  })
+
   test('A resource can be deleted', () => {
     resourcesState.current.byId = {
       '/to-delete': {
