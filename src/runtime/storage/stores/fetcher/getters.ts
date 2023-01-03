@@ -12,7 +12,7 @@ export interface CwaFetcherGettersInterface {
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreDefinition: ResourcesStore): CwaFetcherGettersInterface {
-  function validFetchStatus (token: string) {
+  function getValidFetchStatusByToken (token: string) {
     const fetchStatus = fetcherState.fetches[token]
     if (!fetchStatus) {
       return
@@ -26,6 +26,10 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
 
     // validate the manifest status has resources (empty array is ok) and no errors on the manifest fetch - not in progress I guess...
     if (fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined) {
+      return
+    }
+
+    if (fetchStatus.abort || (fetchStatus.isPrimary && token !== fetcherState.primaryFetch.fetchingToken && token !== fetcherState.primaryFetch.successToken)) {
       return
     }
 
@@ -47,7 +51,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
         return false
       }
 
-      const fetchStatus = validFetchStatus(fetcherState.primaryFetch.successToken)
+      const fetchStatus = getValidFetchStatusByToken(fetcherState.primaryFetch.successToken)
       if (!fetchStatus) {
         return false
       }
@@ -91,7 +95,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
     }),
     isFetchChainComplete: computed(() => {
       return (token: string) => {
-        const fetchStatus = validFetchStatus(token)
+        const fetchStatus = getValidFetchStatusByToken(token)
         if (!fetchStatus) {
           return false
         }

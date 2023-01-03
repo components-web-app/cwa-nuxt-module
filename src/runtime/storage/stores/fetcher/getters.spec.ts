@@ -350,11 +350,58 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
   })
 
+  test('Returns false is the fetch chain is aborted', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: false,
+        resources: ['/success-resource', '/not-found-resource'],
+        abort: true
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
+  })
+
+  test('Returns false is the fetch is primary but not a current or successful primary fetch', () => {
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: true,
+        resources: ['/success-resource', '/not-found-resource']
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
+  })
+
   test('Returns true if all resources in a completed state', () => {
     state.fetches = {
       'some-token': {
         path: 'any',
         isPrimary: false,
+        resources: ['/success-resource', '/not-found-resource']
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
+  })
+
+  test('Returns true if all resources in a completed state and primary successful token test', () => {
+    state.primaryFetch.successToken = 'some-token'
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: true,
+        resources: ['/success-resource', '/not-found-resource']
+      }
+    }
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
+  })
+
+  test('Returns true if all resources in a completed state and primary fetching token test', () => {
+    state.primaryFetch.fetchingToken = 'some-token'
+    state.fetches = {
+      'some-token': {
+        path: 'any',
+        isPrimary: true,
         resources: ['/success-resource', '/not-found-resource']
       }
     }

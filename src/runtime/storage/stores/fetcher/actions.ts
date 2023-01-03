@@ -137,7 +137,10 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     finishFetch (event: FinishFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
 
-      if (!fetchStatus.isPrimary || fetcherState.primaryFetch.fetchingToken !== event.token) {
+      if (
+        !fetchStatus.isPrimary ||
+        !fetcherGetters.isCurrentFetchingToken.value(event.token)
+      ) {
         // chain not needed anymore, will not be referenced anywhere
         delete fetcherState.fetches[event.token]
         return

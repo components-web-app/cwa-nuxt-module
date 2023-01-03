@@ -107,32 +107,33 @@ export default class FetchStatusManager {
   }
 
   public finishFetchResource (event: FinishFetchResourceSuccessEvent|FinishFetchResourceErrorEvent): CwaResource|undefined {
-    // if resource is already in success state, leave it alone, we may have already been fetching and we can set it as an error if token old and new one will save it.
+    // if resource is already in success state, leave it alone, we may have already been fetching, we can set it as an error if token old and new one will save it.
     // What if order of api responses is different? Then it'd be a success already and skipped for error.
     if (this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
       return
     }
+    const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
 
     // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
     if (this.fetcherStore.fetches[event.token]?.abort) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)),
-        isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token)
+        isCurrent
       })
       return
     }
 
     if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent: this.fetcherStore.isCurrentFetchingToken(event.token) })
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent })
       return
     }
 
-    if (!this.fetcherStore.isCurrentFetchingToken(event.token)) {
+    if (!isCurrent) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current.`)),
-        isCurrent: false
+        isCurrent
       })
       return
     }
@@ -143,7 +144,7 @@ export default class FetchStatusManager {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
-        isCurrent: false
+        isCurrent
       })
       return
     }
