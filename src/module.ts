@@ -62,6 +62,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
     nuxt.options.build.transpile.push(runtimeDir)
 
+    nuxt.options.css.push(resolve('./runtime/templates/assets/main.css'))
+
     // layouts and pages
     const vueTemplatesDir = fileURLToPath(new URL('./runtime/templates', import.meta.url))
     addLayout({

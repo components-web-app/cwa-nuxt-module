@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="cwa-p-4">
     <CwaCurrentResources />
   </div>
 </template>

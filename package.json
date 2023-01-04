@@ -27,7 +27,9 @@
     "test:watch:coverage": "vitest --watch --coverage --reporter verbose",
     "test:coverage": "vitest --run --coverage",
     "stryker:init": "stryker init",
-    "stryker:run": "stryker run"
+    "stryker:run": "stryker run",
+    "postcss": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css",
+    "postcss:watch": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css --watch"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.4.6",
@@ -46,10 +48,14 @@
     "@types/bluebird": "^3.5.38",
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.25.5",
+    "autoprefixer": "^10.4.13",
     "eslint": "^8.31.0",
     "nuxt": "^3.0.0",
+    "postcss": "^8.4.20",
+    "postcss-cli": "^10.1.0",
     "sass": "^1.56.2",
     "sass-loader": "^13.2.0",
+    "tailwindcss": "^3.2.4",
     "vite-plugin-nuxt-test": "^0.0.10",
     "vitest": "^0.25.4"
   },
