@@ -40,7 +40,7 @@ export class ApiDocumentation {
       return await this.apiDocPromise
     }
 
-    // fetch.. but if we have already asked for it to be fetched, let us prevent many requests.
+    // fetch... but if we have already asked for it to be fetched, let us prevent many requests.
     if (!refresh && this.$state[apiDocumentationStorageKey]) {
       return this.$state[apiDocumentationStorageKey]
     }
