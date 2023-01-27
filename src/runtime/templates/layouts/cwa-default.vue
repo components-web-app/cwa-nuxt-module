@@ -40,7 +40,7 @@
 
 <script setup>
 import { useNuxtApp } from '#app'
-import { Popover, PopoverButton, PopoverGroup } from '@headlessui/vue'
-import { Bars3Icon } from '@heroicons/vue/24/outline'
+import { Popover, PopoverGroup } from '@headlessui/vue'
+
 const { $cwa } = useNuxtApp()
 </script>
