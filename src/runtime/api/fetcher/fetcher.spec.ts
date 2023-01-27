@@ -148,6 +148,7 @@ describe('Fetcher -> fetchResource', () => {
     })
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
     FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mockImplementation(() => 'Mocked getFetchedCurrentResource Result')
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
   })
 
   afterEach(() => {
@@ -484,6 +485,7 @@ describe('Fetcher -> fetch', () => {
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     vi.spyOn(fetcher, 'createRequestHeaders').mockImplementation(() => ({ someHeader: 'someValue' }))
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
   })
 
   afterEach(() => {
@@ -520,6 +522,7 @@ describe('Fetcher -> appendQueryToPath', () => {
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     CwaFetch.mock.results[0].value.fetch.raw.mockImplementation(() => {})
     vi.spyOn(fetcher, 'appendQueryToPath')
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
   }
 
   afterEach(() => {
@@ -609,6 +612,7 @@ describe('Fetcher -> fetchNestedResources', () => {
     })
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
     vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => {})
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
   })
 
   afterEach(() => {
