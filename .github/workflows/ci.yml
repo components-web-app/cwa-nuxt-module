@@ -64,7 +64,7 @@ jobs:
           flags: vitest
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/clover.xml
+          files: ./coverage/coverage-final.json
       - name: Audit
         run: npm audit
 
