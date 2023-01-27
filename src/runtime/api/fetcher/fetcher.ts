@@ -1,6 +1,6 @@
 import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { FetchResponse } from 'ohmyfetch'
+import { FetchResponse } from 'ofetch'
 import { callWithNuxt, navigateTo, useNuxtApp } from '#app'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'

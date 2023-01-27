@@ -1,6 +1,6 @@
 import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
-import { Headers } from 'ohmyfetch'
+import { Headers } from 'ofetch'
 import { storeToRefs } from 'pinia'
 import Bluebird from 'bluebird'
 import { reactive } from 'vue'

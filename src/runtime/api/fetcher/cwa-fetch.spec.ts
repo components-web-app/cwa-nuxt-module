@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
-import { $fetch } from 'ohmyfetch'
+import { $fetch } from 'ofetch'
 import CwaFetch from './cwa-fetch'
 
-vi.mock('ohmyfetch')
+vi.mock('ofetch')
 
 describe('Create a fetch instances with defaults', () => {
   test('Correct defaults are set on fetch', () => {

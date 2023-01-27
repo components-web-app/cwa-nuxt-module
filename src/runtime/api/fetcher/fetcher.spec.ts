@@ -1,6 +1,6 @@
 import bluebird from 'bluebird'
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
-import { FetchError } from 'ohmyfetch'
+import { FetchError } from 'ofetch'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
