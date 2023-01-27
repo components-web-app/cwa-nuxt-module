@@ -92,19 +92,13 @@ export default class Fetcher {
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
 
-    // todo: move this into fetchResource, check if resource is the primary route path and resource returned is a route and then redirect. Currently this waits until all requests are made and then redirects.
-    if (resource?.redirectPath) {
-      const nuxtApp = useNuxtApp()
-      callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
-    }
-
     await this.fetchStatusManager.finishFetch({
       token: startFetchResult.token
     })
     return resource
   }
 
-  // todo: test noSave and shallowFetch
+  // todo: test redirects, noSave and shallowFetch
   public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
@@ -153,7 +147,11 @@ export default class Fetcher {
       })
     }
 
-    if (!shallowFetch && resource) {
+    const doRedirect = this.fetchStatusManager.primaryFetchPath === path &&
+      getResourceTypeFromIri(path) === CwaResourceTypes.ROUTE &&
+      resource?.redirectPath
+
+    if (!doRedirect && !shallowFetch && resource) {
       // todo: cascade noSave to fetchNestedResources
       await this.fetchNestedResources({ resource, token: startFetchResult.token })
     }
@@ -162,6 +160,11 @@ export default class Fetcher {
       await this.fetchStatusManager.finishFetch({
         token: startFetchResult.token
       })
+    }
+
+    if (doRedirect) {
+      const nuxtApp = useNuxtApp()
+      callWithNuxt(nuxtApp, navigateTo, [resource?.redirectPath, { redirectCode: 308 }])
     }
 
     return resource
