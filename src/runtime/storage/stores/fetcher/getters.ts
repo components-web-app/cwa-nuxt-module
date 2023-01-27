@@ -93,6 +93,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
 
       return true
     }),
+    // todo: re-think this, do we really need the resources store in here. aren't fetch resources current resources already now? Could we have a getter for if the fetch token is valid, then one in resources to check if current resources are loaded... then we could use fetch tokens in the resources store to determine the fetched resource and calculate the layout page and page data that is loaded... hmmm...
     isFetchChainComplete: computed(() => {
       return (token: string) => {
         const fetchStatus = getValidFetchStatusByToken(token)

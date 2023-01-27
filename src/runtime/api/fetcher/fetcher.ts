@@ -1,7 +1,7 @@
 import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ohmyfetch'
-import { navigateTo } from '#app'
+import { callWithNuxt, navigateTo, useNuxtApp } from '#app'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -92,11 +92,10 @@ export default class Fetcher {
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
 
-    // todo: can only work client-side right now due to Nuxt errors https://github.com/nuxt/framework/issues/9748
-    if (process.client && resource?.redirectPath) {
-      navigateTo(resource.redirectPath, {
-        redirectCode: 308
-      })
+    // todo: move this into fetchResource, check if resource is the primary route path and resource returned is a route and then redirect. Currently this waits until all requests are made and then redirects.
+    if (resource?.redirectPath) {
+      const nuxtApp = useNuxtApp()
+      callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
     }
 
     await this.fetchStatusManager.finishFetch({

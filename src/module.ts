@@ -22,7 +22,7 @@ function createDefaultCwaPages (
       path: `:cwaPage${currentDepth}*`,
       file: pageComponentFilePath,
       meta: {
-        layout: 'cwa-default'
+        layout: false
       }
     }
     if (currentDepth === 0) {
