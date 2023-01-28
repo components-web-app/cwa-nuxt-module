@@ -27,6 +27,11 @@ export default Vue.extend({
     ): Promise<NewComponentEvent> {
       if (!this.availableComponents) {
         consola.warn('availableComponents not loaded')
+        return
+      }
+      if (!this.availableComponents[newComponent]) {
+        consola.warn(`'${newComponent}' is not an available component`)
+        return
       }
       // get the component for the dialog from the ui component
       const component = await components[`CwaComponents${newComponent}`]
