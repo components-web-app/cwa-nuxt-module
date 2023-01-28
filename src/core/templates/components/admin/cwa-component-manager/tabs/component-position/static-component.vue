@@ -104,7 +104,7 @@ export default Vue.extend({
     },
     staticComponentIri() {
       return this.$cwa.getPublishableIri(
-        this.resource._metadata.static_component
+        this.resource._metadata.staticComponent
       )
     },
     dynamicComponentIri() {

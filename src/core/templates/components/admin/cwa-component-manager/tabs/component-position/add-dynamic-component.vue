@@ -21,7 +21,7 @@
           </button>
         </div>
         <div class="column is-narrow fallback">
-          {{ resource._metadata.static_component ? 'Edit' : 'Add' }} fallback
+          {{ resource._metadata.staticComponent ? 'Edit' : 'Add' }} fallback
           component?
           <a href="#" @click.prevent="goToTemplate">Go to page template</a>
         </div>

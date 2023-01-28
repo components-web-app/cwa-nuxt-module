@@ -19,7 +19,7 @@
       :highlight-is-position="highlightIsPosition"
       :is-dynamic="
         isDynamicPage &&
-        resource._metadata.static_component !== resource.component
+        resource._metadata.staticComponent !== resource.component
       "
       @deleted="$emit('deleted')"
     />
