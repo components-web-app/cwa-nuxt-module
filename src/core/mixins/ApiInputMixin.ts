@@ -1,6 +1,8 @@
 import Vue from 'vue'
 import debounce from 'lodash.debounce'
 import _get from 'lodash.get'
+import _set from 'lodash.set'
+import _isObject from 'lodash.isobject'
 import { STATUS_EVENTS, StatusEvent } from '../events'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
@@ -39,6 +41,15 @@ export default Vue.extend({
   computed: {
     resourceValue() {
       return _get(this.resource, this.field)
+    },
+    topLevelField() {
+      if (Array.isArray(this.field)) {
+        return this.field[0]
+      }
+      return this.field.split('.')[0].split('[')[0]
+    },
+    topLevelValue() {
+      return this.resource[this.topLevelField]
     }
   },
   watch: {
@@ -112,11 +123,18 @@ export default Vue.extend({
     async update() {
       this.pendingDebounce = false
       this.updatingResourceValue = this.inputValue
+      const newValue = _isObject(this.topLevelValue)
+        ? _set(
+            Object.assign({}, this.topLevelValue),
+            this.field,
+            this.inputValue
+          )
+        : this.inputValue
       try {
         await this.updateResource(
           this.iri,
-          this.field,
-          this.inputValue,
+          this.topLevelField,
+          newValue,
           this.category,
           this.refreshEndpoints,
           this.notificationCategory
