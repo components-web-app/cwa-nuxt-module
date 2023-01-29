@@ -22,8 +22,7 @@ export default Vue.extend({
       // const notificationCode = 'input-error-' + field
       // this.clearViolationNotification(notificationCode, notificationCategory)
       try {
-        const data = {}
-        _set(data, field, value)
+        const data = _set({}, field, value)
         return await this.$cwa.updateResource(
           iri,
           data,

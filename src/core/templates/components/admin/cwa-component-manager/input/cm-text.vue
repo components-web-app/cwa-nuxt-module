@@ -21,6 +21,11 @@ export default Vue.extend({
       required: false,
       default: 'components-manager',
       type: String
+    },
+    emptyStringIsNull: {
+      required: false,
+      default: false,
+      type: Boolean
     }
   },
   data() {
@@ -41,18 +46,20 @@ export default Vue.extend({
   },
   watch: {
     inputValue() {
-      if (!this.isNumberType) {
+      if (this.isNumberType) {
+        this.enforceNumber()
         return
       }
-      this.$nextTick(() => {
-        this.enforceNumber()
-      })
+      if (this.emptyStringIsNull && this.inputValue === '') {
+        this.inputValue = null
+      }
     }
   },
   methods: {
     enforceNumber() {
-      if (this.inputValue === null) {
-        return ''
+      if (this.inputValue === null && !this.emptyStringIsNull) {
+        this.inputValue = ''
+        return
       }
       const normalizedNumber = this.inputValue / 1 || 0
       if (normalizedNumber !== this.inputValue) {
