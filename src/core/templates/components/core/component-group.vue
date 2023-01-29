@@ -121,9 +121,6 @@ export default Vue.extend({
   },
   data() {
     return {
-      apiRequestCategory: {
-        collection: 'collection'
-      },
       reloading: false,
       previousSortedComponentPositions: null,
       isDraggable: false,
@@ -147,7 +144,7 @@ export default Vue.extend({
     },
     componentManager(): ComponentManagerComponent {
       return {
-        name: 'Collection',
+        name: 'Component Group',
         tabs: [
           {
             label: 'Add Component',

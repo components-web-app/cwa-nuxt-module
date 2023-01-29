@@ -80,7 +80,7 @@ export default {
           if (!componentGroup) {
             if (this.fetchedResources) {
               consola.error(
-                `Could not find component collection for resource`,
+                `Could not find component group for resource`,
                 resource
               )
             }
