@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import debounce from 'lodash.debounce'
+import _get from 'lodash.get'
 import { STATUS_EVENTS, StatusEvent } from '../events'
 import ResourceMixin from './ResourceMixin'
 import ApiRequestMixin from './ApiRequestMixin'
@@ -37,7 +38,7 @@ export default Vue.extend({
   },
   computed: {
     resourceValue() {
-      return this.resource?.[this.field]
+      return _get(this.resource, this.field)
     }
   },
   watch: {

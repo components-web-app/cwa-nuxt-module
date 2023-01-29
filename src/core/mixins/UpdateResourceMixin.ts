@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import consola from 'consola'
+import _set from 'lodash.set'
 import ApiError from '../../inc/api-error'
 import UpdateResourceError from '../../inc/update-resource-error'
 import ApiErrorNotificationsMixin from './ApiErrorNotificationsMixin'
@@ -21,9 +22,11 @@ export default Vue.extend({
       // const notificationCode = 'input-error-' + field
       // this.clearViolationNotification(notificationCode, notificationCategory)
       try {
+        const data = {}
+        _set(data, field, value)
         return await this.$cwa.updateResource(
           iri,
-          { [field]: value },
+          data,
           category || null,
           refreshEndpoints
         )
