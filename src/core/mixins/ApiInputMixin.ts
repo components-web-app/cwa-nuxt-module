@@ -125,7 +125,7 @@ export default Vue.extend({
       this.updatingResourceValue = this.inputValue
       const newValue = _isObject(this.topLevelValue)
         ? _set(
-            Object.assign({}, this.topLevelValue),
+            Object.assign({}, { [this.topLevelField]: this.topLevelValue }),
             this.field,
             this.inputValue
           )
