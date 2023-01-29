@@ -123,13 +123,17 @@ export default Vue.extend({
     async update() {
       this.pendingDebounce = false
       this.updatingResourceValue = this.inputValue
-      const newValue = _isObject(this.topLevelValue)
-        ? _set(
-            Object.assign({}, { [this.topLevelField]: this.topLevelValue }),
-            this.field,
-            this.inputValue
-          )
-        : this.inputValue
+      let newValue
+      if (!_isObject(this.topLevelValue)) {
+        newValue = this.inputValue
+      } else {
+        const newObject = _set(
+          { [this.topLevelField]: Object.assign({}, this.topLevelValue) },
+          this.field,
+          this.inputValue
+        )
+        newValue = newObject[this.topLevelField]
+      }
       try {
         await this.updateResource(
           this.iri,
