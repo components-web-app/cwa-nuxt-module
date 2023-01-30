@@ -350,7 +350,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
     expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
   })
 
-  test('Returns false is the fetch chain is aborted', () => {
+  test('Returns true if the fetch chain is aborted', () => {
     state.fetches = {
       'some-token': {
         path: 'any',
@@ -359,7 +359,7 @@ describe('FetcherStore getters -> isFetchChainComplete', () => {
         abort: true
       }
     }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
+    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
   })
 
   test('Returns false is the fetch is primary but not a current or successful primary fetch', () => {
