@@ -1,7 +1,7 @@
 import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ofetch'
-import { callWithNuxt, navigateTo, useNuxtApp } from '#app'
+import { navigateTo } from '#app'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -162,9 +162,11 @@ export default class Fetcher {
       })
     }
 
-    if (doRedirect) {
-      const nuxtApp = useNuxtApp()
-      callWithNuxt(nuxtApp, navigateTo, [resource?.redirectPath, { redirectCode: 308 }])
+    if (doRedirect && process.client) {
+      if (process.client) {
+        navigateTo(resource?.redirectPath, { redirectCode: 308 })
+      }
+      // server-side must be called within middleware. So we want to stop waiting for resource API requests to fast redirect.
     }
 
     return resource

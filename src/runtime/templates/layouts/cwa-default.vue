@@ -28,6 +28,9 @@
             <nuxt-link to="/form" exact-active-class="!cwa-text-gray-900" class="cwa-text-base cwa-font-medium cwa-text-gray-500 hover:cwa-text-gray-900">
               Form
             </nuxt-link>
+            <nuxt-link to="/home" exact-active-class="!cwa-text-gray-900" class="cwa-text-base cwa-font-medium cwa-text-gray-500 hover:cwa-text-gray-900">
+              Home Redirect
+            </nuxt-link>
           </PopoverGroup>
         </div>
       </Popover>
