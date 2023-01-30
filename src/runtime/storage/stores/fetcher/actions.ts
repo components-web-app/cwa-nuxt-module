@@ -44,7 +44,12 @@ export interface ManifestErrorFetchEvent {
   error: CwaResourceError
 }
 
+interface AbortFetchEvent {
+  token: string
+}
+
 export interface CwaFetcherActionsInterface {
+  abortFetch(event: AbortFetchEvent): void
   finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
@@ -61,6 +66,10 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
   }
 
   return {
+    abortFetch (event: AbortFetchEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
+      fetchStatus.abort = true
+    },
     finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus
       try {

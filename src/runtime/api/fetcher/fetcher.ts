@@ -167,6 +167,7 @@ export default class Fetcher {
         navigateTo(resource?.redirectPath, { redirectCode: 308 })
       }
       // server-side must be called within middleware. So we want to stop waiting for resource API requests to fast redirect.
+      this.fetchStatusManager.abortFetch(startFetchResult.token)
     }
 
     return resource

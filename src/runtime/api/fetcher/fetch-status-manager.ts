@@ -167,6 +167,10 @@ export default class FetchStatusManager {
     return cwaResource
   }
 
+  public abortFetch (token: string) {
+    this.fetcherStore.abortFetch({ token })
+  }
+
   public async finishFetch (event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
     this.fetcherStore.finishFetch(event)
