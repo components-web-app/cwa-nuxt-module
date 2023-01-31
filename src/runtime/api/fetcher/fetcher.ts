@@ -42,11 +42,13 @@ interface CwaFetchResponseRaw {
 interface FetchBatchEvent {
   paths: string[]
   token?: string
+  noSave: boolean
 }
 
 interface FetchNestedResourcesEvent {
   resource: CwaResource
   token: string
+  noSave: boolean
 }
 
 type TypeToNestedPropertiesMap = {
@@ -97,7 +99,6 @@ export default class Fetcher {
     return resource
   }
 
-  // todo: test redirects, noSave and shallowFetch
   public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
@@ -153,8 +154,7 @@ export default class Fetcher {
     if (doRedirect) {
       this.fetchStatusManager.abortFetch(startFetchResult.token)
     } else if (!shallowFetch && resource) {
-      // todo: cascade noSave to fetchNestedResources
-      await this.fetchNestedResources({ resource, token: startFetchResult.token })
+      await this.fetchNestedResources({ resource, token: startFetchResult.token, noSave: !!noSave })
     }
 
     if (!token) {
@@ -192,7 +192,7 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources ({ resource, token }: FetchNestedResourcesEvent): undefined|bluebird<(CwaResource|undefined)[]> {
+  private fetchNestedResources ({ resource, token, noSave }: FetchNestedResourcesEvent): undefined|bluebird<(CwaResource|undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
@@ -211,15 +211,15 @@ export default class Fetcher {
         nestedIris.push(propIris)
       }
     }
-    return this.fetchBatch({ paths: nestedIris, token })
+    return this.fetchBatch({ paths: nestedIris, token, noSave })
   }
 
-  private fetchBatch ({ paths, token }: FetchBatchEvent): bluebird<(CwaResource|undefined)[]> {
+  private fetchBatch ({ paths, token, noSave }: FetchBatchEvent): bluebird<(CwaResource|undefined)[]> {
     return bluebird
       .map(
         paths,
         (path: string) => {
-          return this.fetchResource({ path, token })
+          return this.fetchResource({ path, token, noSave })
         },
         {
           concurrency: 10000

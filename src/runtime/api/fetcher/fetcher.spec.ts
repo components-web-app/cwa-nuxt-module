@@ -147,6 +147,7 @@ describe('Fetcher -> fetchResource', () => {
       }
     })
     FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => true)
+    FetchStatusManager.mock.instances[0].abortFetch.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mockImplementation(() => 'Mocked getFetchedCurrentResource Result')
     vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
   })
@@ -275,7 +276,7 @@ describe('Fetcher -> fetchResource', () => {
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
 
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any' })
+    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false })
     expect(fetcher.fetchNestedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
     expect(result).toStrictEqual({ some: 'resource' })
   })
@@ -316,6 +317,56 @@ describe('Fetcher -> fetchResource', () => {
 
     expect(result).toStrictEqual({ some: 'resource' })
     expect(finishResolved).toBe(true)
+  })
+
+  test('fetch status manager finishFetchResource is called with noSave', async () => {
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
+    const fetchResourceEvent = {
+      path: '/new-path',
+      noSave: true,
+      token: 'token'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
+      resource: fetchResourceEvent.path,
+      token: fetchResourceEvent.token,
+      noSave: fetchResourceEvent.noSave,
+      success: true,
+      headers: {
+        path: 'my-path'
+      },
+      fetchResponse: {
+        '@id': '/some-resource'
+      }
+    })
+    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true })
+  })
+
+  test('if shallowFetch is passed, nested resources should not be fetched', async () => {
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
+    const fetchResourceEvent = {
+      path: '/new-path',
+      shallowFetch: true,
+      token: 'token'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+  })
+
+  test('if the primary response is a redirect, nested fetches should not occur and the fetch should be aborted', async () => {
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_/routes//path')
+    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ '@id': '/_/routes//path', redirectPath: '/my-redirect' }))
+    const fetchResourceEvent = {
+      path: '/_/routes//path',
+      token: 'token'
+    }
+    await fetcher.fetchResource(fetchResourceEvent)
+    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+    expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledTimes(1)
+    expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token')
   })
 })
 
@@ -661,6 +712,7 @@ describe('Fetcher -> fetchNestedResources', () => {
 
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
       paths: ['/_/layouts/layout-resource',
         '/_/component_groups/component-group-1',
         '/_/component_groups/component-group-2'
@@ -689,6 +741,7 @@ describe('Fetcher -> fetchNestedResources', () => {
 
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
       paths: ['/_/layouts/layout-resource'],
       token: 'any'
     })
