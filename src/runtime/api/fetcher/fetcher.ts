@@ -1,7 +1,6 @@
 import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { FetchResponse } from 'ohmyfetch'
-import { navigateTo } from '#app'
+import { FetchResponse } from 'ofetch'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -43,11 +42,13 @@ interface CwaFetchResponseRaw {
 interface FetchBatchEvent {
   paths: string[]
   token?: string
+  noSave: boolean
 }
 
 interface FetchNestedResourcesEvent {
   resource: CwaResource
   token: string
+  noSave: boolean
 }
 
 type TypeToNestedPropertiesMap = {
@@ -92,20 +93,12 @@ export default class Fetcher {
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
 
-    // todo: can only work client-side right now due to Nuxt errors https://github.com/nuxt/framework/issues/9748
-    if (process.client && resource?.redirectPath) {
-      navigateTo(resource.redirectPath, {
-        redirectCode: 308
-      })
-    }
-
     await this.fetchStatusManager.finishFetch({
       token: startFetchResult.token
     })
     return resource
   }
 
-  // todo: test noSave and shallowFetch
   public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
@@ -154,9 +147,14 @@ export default class Fetcher {
       })
     }
 
-    if (!shallowFetch && resource) {
-      // todo: cascade noSave to fetchNestedResources
-      await this.fetchNestedResources({ resource, token: startFetchResult.token })
+    const doRedirect = this.fetchStatusManager.primaryFetchPath === path &&
+      getResourceTypeFromIri(path) === CwaResourceTypes.ROUTE &&
+      resource?.redirectPath
+
+    if (doRedirect) {
+      this.fetchStatusManager.abortFetch(startFetchResult.token)
+    } else if (!shallowFetch && resource) {
+      await this.fetchNestedResources({ resource, token: startFetchResult.token, noSave: !!noSave })
     }
 
     if (!token) {
@@ -194,7 +192,7 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources ({ resource, token }: FetchNestedResourcesEvent): undefined|bluebird<(CwaResource|undefined)[]> {
+  private fetchNestedResources ({ resource, token, noSave }: FetchNestedResourcesEvent): undefined|bluebird<(CwaResource|undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
@@ -213,15 +211,15 @@ export default class Fetcher {
         nestedIris.push(propIris)
       }
     }
-    return this.fetchBatch({ paths: nestedIris, token })
+    return this.fetchBatch({ paths: nestedIris, token, noSave })
   }
 
-  private fetchBatch ({ paths, token }: FetchBatchEvent): bluebird<(CwaResource|undefined)[]> {
+  private fetchBatch ({ paths, token, noSave }: FetchBatchEvent): bluebird<(CwaResource|undefined)[]> {
     return bluebird
       .map(
         paths,
         (path: string) => {
-          return this.fetchResource({ path, token })
+          return this.fetchResource({ path, token, noSave })
         },
         {
           concurrency: 10000

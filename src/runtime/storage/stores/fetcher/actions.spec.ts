@@ -46,6 +46,46 @@ vi.mock('../resources/resources-store', () => ({
   }))
 }))
 
+describe('Fetcher store action -> abortFetch', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+
+  let existingFetchState: TopLevelFetchPathInterface
+  let currentGetters: CwaFetcherGettersInterface
+
+  beforeEach(() => {
+    existingFetchState = {
+      path: '/existing-path',
+      resources: ['/existing-path', '/errored-resource'],
+      isPrimary: false
+    }
+    fetcherState = state()
+    fetcherState.fetches['existing-token'] = reactive(existingFetchState)
+    const resourcesStore = new ResourcesStore()
+    currentGetters = getters(fetcherState, resourcesStore)
+    fetcherActions = actions(fetcherState, currentGetters)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('An error is thrown if the token does not exist', () => {
+    expect(() => {
+      fetcherActions.abortFetch({
+        token: 'non-existent'
+      })
+    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+  })
+
+  test('A fetch token can be marked as aborted', () => {
+    fetcherActions.abortFetch({
+      token: 'existing-token'
+    })
+    expect(fetcherState.fetches['existing-token'].abort).toBe(true)
+  })
+})
+
 describe('Fetcher store action -> startFetch', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface
@@ -99,13 +139,16 @@ describe('Fetcher store action -> startFetch', () => {
     })
   })
 
-  test('If a token is provided that does not exist, we should throw an error', () => {
-    expect(() => {
-      fetcherActions.startFetch({
-        path: 'my-path',
-        token: 'non-existent'
-      })
-    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+  test('If a token is provided that does not exist, we should not continue with the request', () => {
+    const response = fetcherActions.startFetch({
+      path: 'my-path',
+      token: 'non-existent'
+    })
+    expect(response).toStrictEqual({
+      continue: false,
+      resources: [],
+      token: 'non-existent'
+    })
     expect(uuidv4).not.toHaveBeenCalled()
   })
 
@@ -451,8 +494,8 @@ describe('Fetcher store action -> finishManifestFetch', () => {
       token: 'non-existent',
       resources: ['/any']
     })
-    expect(consola.warn).toHaveBeenCalledTimes(1)
-    expect(consola.warn).toHaveBeenCalledWith("The fetch chain token 'non-existent' does not exist")
+    expect(consola.trace).toHaveBeenCalledTimes(1)
+    expect(consola.trace).toHaveBeenCalledWith("The fetch chain token 'non-existent' does not exist")
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toBeUndefined()
   })
 

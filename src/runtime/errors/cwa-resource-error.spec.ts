@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { FetchError } from 'ohmyfetch'
+import { FetchError } from 'ofetch'
 import { createCwaResourceError } from './cwa-resource-error'
 
 describe('Test creating cwa resource errors', () => {

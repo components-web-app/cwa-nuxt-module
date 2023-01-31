@@ -1,6 +1,6 @@
 import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
-import { Headers } from 'ohmyfetch'
+import { Headers } from 'ofetch'
 import { storeToRefs } from 'pinia'
 import Bluebird from 'bluebird'
 import { reactive } from 'vue'
@@ -469,6 +469,24 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(response).toStrictEqual(mockCwaResource)
   })
 
+  test('If the event is successful and fetch store has finished the fetch, but noSave is true, do not save the resource', () => {
+    const response = fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: {
+        _data: mockCwaResource,
+        headers: new Headers()
+      },
+      headers: {
+        path: 'something'
+      },
+      noSave: true
+    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.saveResource).not.toHaveBeenCalled()
+    expect(response).toStrictEqual(mockCwaResource)
+  })
+
   test('If the response is not a valid resource, set an error message', () => {
     const response = fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
@@ -612,7 +630,7 @@ describe('FetchStatusManager -> isCurrentFetchingToken', () => {
     vi.clearAllMocks()
   })
 
-  test('Passed arguments to store and returns stroe value', () => {
+  test('Passed arguments to store and returns store value', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
@@ -621,6 +639,30 @@ describe('FetchStatusManager -> isCurrentFetchingToken', () => {
     })
     const result = fetchStatusManager.isCurrentFetchingToken('my-token')
     expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
+    expect(result).toBe('anything')
+  })
+})
+
+describe('FetchStatusManager -> abortFetch', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Passed arguments to store action and returns value', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        abortFetch: vi.fn(() => 'anything')
+      }
+    })
+    const result = fetchStatusManager.abortFetch('my-token')
+    expect(fetcherStore.useStore.mock.results[0].value.abortFetch).toHaveBeenCalledWith({ token: 'my-token' })
     expect(result).toBe('anything')
   })
 })

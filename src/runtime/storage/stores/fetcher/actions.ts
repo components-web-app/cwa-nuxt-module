@@ -44,7 +44,12 @@ export interface ManifestErrorFetchEvent {
   error: CwaResourceError
 }
 
+interface AbortFetchEvent {
+  token: string
+}
+
 export interface CwaFetcherActionsInterface {
+  abortFetch(event: AbortFetchEvent): void
   finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
@@ -61,12 +66,16 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
   }
 
   return {
+    abortFetch (event: AbortFetchEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
+      fetchStatus.abort = true
+    },
     finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus
       try {
         fetchStatus = getFetchStatusFromToken(event.token)
       } catch (error: any) {
-        consola.warn(error.message)
+        consola.trace(error.message)
         return
       }
       if (!fetchStatus.manifest) {
@@ -81,11 +90,20 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     },
     startFetch (event: StartFetchEvent): StartFetchResponse {
       if (event.token) {
-        const existingFetchStatus = getFetchStatusFromToken(event.token)
-        return {
-          continue: true,
-          resources: existingFetchStatus.resources,
-          token: event.token
+        try {
+          const existingFetchStatus = getFetchStatusFromToken(event.token)
+          return {
+            continue: !existingFetchStatus.abort,
+            resources: existingFetchStatus.resources,
+            token: event.token
+          }
+        } catch (error) {
+          // if the request has been aborted finished and cleared already, but then manifest was returned and tries to continue
+          return {
+            continue: false,
+            resources: [],
+            token: event.token
+          }
         }
       }
 

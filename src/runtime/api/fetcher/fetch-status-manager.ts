@@ -155,7 +155,6 @@ export default class FetchStatusManager {
       this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
     }
 
-    // todo: test noSave
     if (!event.noSave) {
       this.resourcesStore.saveResource({
         resource: cwaResource
@@ -197,6 +196,10 @@ export default class FetchStatusManager {
 
   public isCurrentFetchingToken (token: string) {
     return this.fetcherStore.isCurrentFetchingToken(token)
+  }
+
+  public abortFetch (token: string) {
+    return this.fetcherStore.abortFetch({ token })
   }
 
   public get primaryFetchPath (): string|undefined {

@@ -42,7 +42,7 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
       return
     }
     const fetchStatus = fetcherState.fetches[primaryFetchToken]
-    return fetchStatus.path
+    return fetchStatus?.path
   })
   return {
     primaryFetchPath,
@@ -93,11 +93,19 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
 
       return true
     }),
+    // todo: re-think this, do we really need the resources store in here. aren't fetch resources current resources already now?
+    //  Could we have a getter for if the fetch token is valid, then one in resources to check if current resources are loaded...
+    //  then we could use fetch tokens in the resources store to determine the fetched resource and calculate the layout page and
+    //  page data that is loaded... hmmm...
     isFetchChainComplete: computed(() => {
       return (token: string) => {
         const fetchStatus = getValidFetchStatusByToken(token)
         if (!fetchStatus) {
-          return false
+          // aborted status should return true to avoid any hanging waiting for the fetches to finish
+          // nb. this will result in inconsistent server-client side renders if outputting current resources
+          //   but requests are aborted for redirects.
+          //   there may be a better way, we would need to clear current resources and stuff... works OK for now.
+          return !!fetcherState.fetches?.[token]?.abort
         }
 
         const resourcesStore = resourcesStoreDefinition.useStore()
