@@ -64,17 +64,20 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     nuxt.options.css.push(resolve('./runtime/templates/assets/main.css'))
 
-    // layouts and pages
+    // layouts and pages do not test yet
     const vueTemplatesDir = fileURLToPath(new URL('./runtime/templates', import.meta.url))
     addLayout({
       src: resolve(vueTemplatesDir, 'layouts', 'cwa-default.vue'),
       filename: join('cwa', 'layouts', 'cwa-default.vue')
     }, 'cwa-default')
+    // end do not test yet
 
-    extendPages((pages) => {
+    // todo: test
+    const extendPagesCallback = (pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
-    })
+    }
+    extendPages(extendPagesCallback)
 
     // clear options no longer needed and add plugin
     delete options.pagesDepth

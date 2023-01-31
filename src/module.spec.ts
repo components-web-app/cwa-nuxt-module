@@ -81,6 +81,14 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
     })
   })
 
+  test('css option is set', () => {
+    expect(context.nuxt?.options.css).toStrictEqual([fileURLToPath(new URL('./runtime/templates/assets/main.css', import.meta.url))])
+  })
+
+  test.todo('Dynamic pages are added with the depth provided', () => {
+
+  })
+
   // Todo: need a dummy API for this ands some pages to try rendering and testing - perhaps will do this with Cypress though
   // test('Load page', async () => {
   //   const html = await $fetch('/')
