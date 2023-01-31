@@ -155,7 +155,6 @@ export default class FetchStatusManager {
       this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
     }
 
-    // todo: test noSave
     if (!event.noSave) {
       this.resourcesStore.saveResource({
         resource: cwaResource

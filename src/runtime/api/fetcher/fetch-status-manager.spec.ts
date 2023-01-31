@@ -469,6 +469,24 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(response).toStrictEqual(mockCwaResource)
   })
 
+  test('If the event is successful and fetch store has finished the fetch, but noSave is true, do not save the resource', () => {
+    const response = fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: {
+        _data: mockCwaResource,
+        headers: new Headers()
+      },
+      headers: {
+        path: 'something'
+      },
+      noSave: true
+    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.saveResource).not.toHaveBeenCalled()
+    expect(response).toStrictEqual(mockCwaResource)
+  })
+
   test('If the response is not a valid resource, set an error message', () => {
     const response = fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
