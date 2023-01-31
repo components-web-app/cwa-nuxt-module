@@ -162,7 +162,7 @@ export default class Fetcher {
       })
     }
 
-    if (doRedirect && process.client) {
+    if (doRedirect) {
       if (process.client) {
         navigateTo(resource?.redirectPath, { redirectCode: 308 })
       }

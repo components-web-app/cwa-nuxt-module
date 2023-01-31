@@ -90,11 +90,20 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     },
     startFetch (event: StartFetchEvent): StartFetchResponse {
       if (event.token) {
-        const existingFetchStatus = getFetchStatusFromToken(event.token)
-        return {
-          continue: true,
-          resources: existingFetchStatus.resources,
-          token: event.token
+        try {
+          const existingFetchStatus = getFetchStatusFromToken(event.token)
+          return {
+            continue: !existingFetchStatus.abort,
+            resources: existingFetchStatus.resources,
+            token: event.token
+          }
+        } catch (error) {
+          // if the request has been aborted finished and cleared already, but then manifest was returned and tries to continue
+          return {
+            continue: false,
+            resources: [],
+            token: event.token
+          }
         }
       }
 
