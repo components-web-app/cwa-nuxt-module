@@ -1,7 +1,6 @@
 import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ofetch'
-import { navigateTo } from '#app'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -151,7 +150,9 @@ export default class Fetcher {
       getResourceTypeFromIri(path) === CwaResourceTypes.ROUTE &&
       resource?.redirectPath
 
-    if (!doRedirect && !shallowFetch && resource) {
+    if (doRedirect) {
+      this.fetchStatusManager.abortFetch(startFetchResult.token)
+    } else if (!shallowFetch && resource) {
       // todo: cascade noSave to fetchNestedResources
       await this.fetchNestedResources({ resource, token: startFetchResult.token })
     }
@@ -160,14 +161,6 @@ export default class Fetcher {
       await this.fetchStatusManager.finishFetch({
         token: startFetchResult.token
       })
-    }
-
-    if (doRedirect) {
-      if (process.client) {
-        navigateTo(resource?.redirectPath, { redirectCode: 308 })
-      }
-      // server-side must be called within middleware. So we want to stop waiting for resource API requests to fast redirect.
-      this.fetchStatusManager.abortFetch(startFetchResult.token)
     }
 
     return resource

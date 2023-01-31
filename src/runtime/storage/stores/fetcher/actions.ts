@@ -75,7 +75,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       try {
         fetchStatus = getFetchStatusFromToken(event.token)
       } catch (error: any) {
-        consola.warn(error.message)
+        consola.trace(error.message)
         return
       }
       if (!fetchStatus.manifest) {
