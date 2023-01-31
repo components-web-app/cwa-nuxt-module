@@ -46,6 +46,46 @@ vi.mock('../resources/resources-store', () => ({
   }))
 }))
 
+describe('Fetcher store action -> abortFetch', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+
+  let existingFetchState: TopLevelFetchPathInterface
+  let currentGetters: CwaFetcherGettersInterface
+
+  beforeEach(() => {
+    existingFetchState = {
+      path: '/existing-path',
+      resources: ['/existing-path', '/errored-resource'],
+      isPrimary: false
+    }
+    fetcherState = state()
+    fetcherState.fetches['existing-token'] = reactive(existingFetchState)
+    const resourcesStore = new ResourcesStore()
+    currentGetters = getters(fetcherState, resourcesStore)
+    fetcherActions = actions(fetcherState, currentGetters)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('An error is thrown if the token does not exist', () => {
+    expect(() => {
+      fetcherActions.abortFetch({
+        token: 'non-existent'
+      })
+    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+  })
+
+  test('A fetch token can be marked as aborted', () => {
+    fetcherActions.abortFetch({
+      token: 'existing-token'
+    })
+    expect(fetcherState.fetches['existing-token'].abort).toBe(true)
+  })
+})
+
 describe('Fetcher store action -> startFetch', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface

@@ -167,10 +167,6 @@ export default class FetchStatusManager {
     return cwaResource
   }
 
-  public abortFetch (token: string) {
-    this.fetcherStore.abortFetch({ token })
-  }
-
   public async finishFetch (event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
     this.fetcherStore.finishFetch(event)
@@ -201,6 +197,10 @@ export default class FetchStatusManager {
 
   public isCurrentFetchingToken (token: string) {
     return this.fetcherStore.isCurrentFetchingToken(token)
+  }
+
+  public abortFetch (token: string) {
+    return this.fetcherStore.abortFetch({ token })
   }
 
   public get primaryFetchPath (): string|undefined {

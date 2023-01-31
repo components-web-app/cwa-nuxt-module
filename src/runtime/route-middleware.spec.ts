@@ -110,6 +110,7 @@ describe('Test route middleware', () => {
   })
 
   test('Server-side redirects', async () => {
+    // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         $cwa: { fetcher: { fetchRoute: fetchRouteRedirectFn } }
@@ -124,6 +125,7 @@ describe('Test route middleware', () => {
   })
 
   test('Client-side redirects', async () => {
+    // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         $cwa: { fetcher: { fetchRoute: fetchRouteRedirectFn } }

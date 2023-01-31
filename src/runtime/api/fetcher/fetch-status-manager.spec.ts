@@ -612,7 +612,7 @@ describe('FetchStatusManager -> isCurrentFetchingToken', () => {
     vi.clearAllMocks()
   })
 
-  test('Passed arguments to store and returns stroe value', () => {
+  test('Passed arguments to store and returns store value', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
@@ -621,6 +621,30 @@ describe('FetchStatusManager -> isCurrentFetchingToken', () => {
     })
     const result = fetchStatusManager.isCurrentFetchingToken('my-token')
     expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
+    expect(result).toBe('anything')
+  })
+})
+
+describe('FetchStatusManager -> abortFetch', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Passed arguments to store action and returns value', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        abortFetch: vi.fn(() => 'anything')
+      }
+    })
+    const result = fetchStatusManager.abortFetch('my-token')
+    expect(fetcherStore.useStore.mock.results[0].value.abortFetch).toHaveBeenCalledWith({ token: 'my-token' })
     expect(result).toBe('anything')
   })
 })
