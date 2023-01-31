@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import * as nuxt from '#app'
 import routeMiddleware from './route-middleware'
@@ -31,11 +31,13 @@ describe('Test route middleware', () => {
     })
   })
 
-  // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
-    return {
-      $cwa: { fetcher: { fetchRoute: fetchRouteFn } }
-    }
+  beforeAll(() => {
+    // @ts-ignore
+    vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
+      return {
+        $cwa: { fetcher: { fetchRoute: fetchRouteFn } }
+      }
+    })
   })
 
   beforeEach(() => {
@@ -43,7 +45,7 @@ describe('Test route middleware', () => {
   })
 
   afterEach(() => {
-    fetchRouteFn.mockReset()
+    fetchRouteFn.mockClear()
   })
 
   test('Test route middleware is enabled by default', async () => {
@@ -54,20 +56,29 @@ describe('Test route middleware', () => {
     expect(resolved).toBe(true)
   })
 
-  test('Test route middleware can be set to true', () => {
+  test('Test route middleware can be set to true', async () => {
     const toRoute = createToRoute(true)
-    routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute.path)
   })
 
-  test('Test route middleware can be disabled', () => {
+  test('Test route middleware can be disabled', async () => {
     const toRoute = createToRoute(false)
-    routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).not.toHaveBeenCalled()
   })
 
-  test('Test we do not await promise for client-side requests. See notes on middleware file. Returning to original page if new page fetch not complete.', async () => {
+  test('Test we await promise for server-side requests.', async () => {
+    process.client = false
+    const toRoute = createToRoute()
+    await routeMiddleware(toRoute, toRoute)
+    expect(fetchRouteFn).toHaveBeenCalledTimes(1)
+    expect(fetchRouteFn).toHaveBeenCalledWith(toRoute.path)
+    expect(resolved).toBe(true)
+  })
+
+  test('Test we do not await promise for client-side requests. See notes on middleware file re returning to original page if new page fetch not complete.', async () => {
     process.client = true
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
