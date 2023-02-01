@@ -57,7 +57,8 @@ export default Vue.extend({
       return {
         locationResourceId: this.iri,
         locationResourceReference: this.iri,
-        locationResourceType: 'components'
+        locationResourceType: 'components',
+        isDynamic: this.isDynamic
       }
     },
     mediaObjects() {
