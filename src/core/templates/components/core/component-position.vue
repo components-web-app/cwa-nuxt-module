@@ -84,8 +84,7 @@ export default Vue.extend({
   },
   data() {
     return {
-      componentLoadFailed: false,
-      componentManagerDisabled: true
+      componentLoadFailed: false
     }
   },
   computed: {
@@ -187,10 +186,6 @@ export default Vue.extend({
     }
   },
   async mounted() {
-    if (!this.isDynamicPage || this.isDynamic) {
-      this.componentManagerDisabled = false
-      this.initCMMixin()
-    }
     // load the component if not loaded server-side (client-side has auth)
     // this will be called only if there is no component, otherwise resource mixin will deal with this stuff
 
