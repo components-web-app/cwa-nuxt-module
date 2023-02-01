@@ -41,6 +41,7 @@
         <component
           :is="newComponentName"
           :iri="newComponentIri"
+          :is-dynamic="isDynamic"
           @initialData="handleInitialData"
         />
       </div>
