@@ -117,6 +117,11 @@ export default Vue.extend({
       type: Array,
       default: null,
       required: false
+    },
+    isDynamic: {
+      type: Boolean,
+      default: false,
+      required: false
     }
   },
   data() {
@@ -232,7 +237,7 @@ export default Vue.extend({
     }
   },
   async mounted() {
-    if (!this.isDynamicPage) {
+    if (!this.isDynamicPage || this.isDynamic) {
       this.componentManagerDisabled = false
       this.initCMMixin()
     }
