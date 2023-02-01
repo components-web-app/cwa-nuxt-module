@@ -19,7 +19,7 @@
       :highlight-is-position="highlightIsPosition"
       :is-dynamic="
         isDynamicPage &&
-        resource._metadata.staticComponent !== resource.component
+        (isDynamic || resource._metadata.staticComponent !== resource.component)
       "
       @deleted="$emit('deleted')"
     />
@@ -75,11 +75,17 @@ export default Vue.extend({
       type: Boolean,
       default: false,
       required: false
+    },
+    isDynamic: {
+      type: Boolean,
+      default: false,
+      required: false
     }
   },
   data() {
     return {
-      componentLoadFailed: false
+      componentLoadFailed: false,
+      componentManagerDisabled: true
     }
   },
   computed: {
@@ -181,6 +187,10 @@ export default Vue.extend({
     }
   },
   async mounted() {
+    if (!this.isDynamicPage || this.isDynamic) {
+      this.componentManagerDisabled = false
+      this.initCMMixin()
+    }
     // load the component if not loaded server-side (client-side has auth)
     // this will be called only if there is no component, otherwise resource mixin will deal with this stuff
 

@@ -35,6 +35,7 @@
         :class="positionClassNames"
         :show-sort="showOrderValues"
         :iri="positionIri"
+        :is-dynamic="isDynamic"
       />
       <div v-if="newComponentResource" :class="positionClassNames">
         <component
