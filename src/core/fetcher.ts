@@ -96,6 +96,10 @@ export class Fetcher {
   }) {
     this.fetchingCounter++
     let url = path
+    if (!url) {
+      consola.error(`No URL provided to fetch`)
+      return
+    }
     const queryObj = this.ctx.router.currentRoute.query
     let queryKeys
     if (queryObj && (queryKeys = Object.keys(queryObj)).length > 0) {
@@ -417,6 +421,9 @@ export class Fetcher {
         return this.fetchCollection(
           { paths: componentGroup.componentPositions },
           (componentPosition) => {
+            if (!componentPosition.component) {
+              return
+            }
             return this.fetchComponent(componentPosition.component)
           }
         )

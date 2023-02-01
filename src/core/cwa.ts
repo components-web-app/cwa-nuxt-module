@@ -385,7 +385,7 @@ export default class Cwa {
   }
 
   userHasRole(role) {
-    return this.user ? this.user.roles.includes(role) : false
+    return this.user?.roles ? this.user.roles.includes(role) : false
   }
 
   /**
