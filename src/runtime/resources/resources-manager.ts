@@ -1,11 +1,15 @@
+import { computed, ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 
 export class ResourcesManager {
   private resourcesStoreDefinition: ResourcesStore
+  private fetcherStoreDefinition: FetcherStore
 
-  constructor (resourcesStoreDefinition: ResourcesStore) {
+  constructor (resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
     this.resourcesStoreDefinition = resourcesStoreDefinition
+    this.fetcherStoreDefinition = fetcherStoreDefinition
   }
 
   public get currentIds () {
@@ -22,8 +26,19 @@ export class ResourcesManager {
     })
   }
 
+  // todo: test
+  public get isLoading (): ComputedRef<boolean> {
+    return computed(() => {
+      return !this.fetcherStore.fetchesResolved || !!this.resourceLoadStatus.pending
+    })
+  }
+
   public get resourceLoadStatus () {
     return this.resourcesStore.resourceLoadStatus
+  }
+
+  private get fetcherStore () {
+    return this.fetcherStoreDefinition.useStore()
   }
 
   private get resourcesStore () {

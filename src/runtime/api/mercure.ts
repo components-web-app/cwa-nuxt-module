@@ -94,11 +94,11 @@ export default class Mercure {
 
     this.addMercureMessageToQueue(mercureMessage)
 
-    const { resourcesApiStateIsPending } = storeToRefs(this.resourcesStore)
-    if (!resourcesApiStateIsPending.value) {
+    const { currentResourcesApiStateIsPending } = storeToRefs(this.resourcesStore)
+    if (!currentResourcesApiStateIsPending.value) {
       this.processMessageQueue()
     } else {
-      const unwatch = watch(resourcesApiStateIsPending, (isPending) => {
+      const unwatch = watch(currentResourcesApiStateIsPending, (isPending) => {
         if (!isPending) {
           this.processMessageQueue()
           unwatch()

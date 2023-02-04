@@ -71,7 +71,7 @@ describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
   })
 
   test('returns false if no resources are pending', () => {
-    expect(getterFns.resourcesApiStateIsPending.value).toBe(false)
+    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(false)
   })
 
   test('returns true if there is a resource that is pending', () => {
@@ -82,7 +82,7 @@ describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
         }
       }
     }
-    expect(getterFns.resourcesApiStateIsPending.value).toBe(true)
+    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(true)
   })
 })
 

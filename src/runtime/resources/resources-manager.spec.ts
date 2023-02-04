@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import { ResourcesManager } from './resources-manager'
 
 vi.mock('../storage/stores/resources/resources-store', () => {
@@ -40,7 +41,8 @@ vi.mock('../storage/stores/resources/resources-store', () => {
 describe('ResourceManager class tests', () => {
   let resourcesManager: ResourcesManager
   beforeEach(() => {
-    resourcesManager = new ResourcesManager(new ResourcesStore('storeName'))
+    const resourcesStore = new ResourcesStore('storeName')
+    resourcesManager = new ResourcesManager(resourcesStore, new FetcherStore('storeName', resourcesStore))
   })
   afterEach(() => {
     vi.clearAllMocks()

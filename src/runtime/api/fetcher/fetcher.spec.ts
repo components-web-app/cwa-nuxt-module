@@ -23,7 +23,13 @@ vi.mock('./cwa-fetch', () => {
   }
 })
 vi.mock('../../storage/stores/fetcher/fetcher-store')
-vi.mock('../../storage/stores/resources/resources-store')
+vi.mock('../../storage/stores/resources/resources-store', () => {
+  return {
+    ResourcesStore: vi.fn(() => ({
+      useStore: vi.fn(() => {})
+    }))
+  }
+})
 vi.mock('./fetch-status-manager')
 vi.mock('../mercure')
 vi.mock('../api-documentation')
@@ -44,9 +50,10 @@ function delay (time: number, returnValue: any = undefined) {
 
 function createFetcher (query?: { [key: string]: string }): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
-  const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), new ResourcesStore())
+  const resourcesStore = new ResourcesStore()
+  const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
   const currentRoute = { path: '/current-path', query }
-  return new Fetcher(cwaFetch, statusManager, currentRoute)
+  return new Fetcher(cwaFetch, statusManager, currentRoute, resourcesStore)
 }
 
 const validCwaResource = {
@@ -59,22 +66,37 @@ const validCwaResource = {
 
 describe('Fetcher -> fetchRoute', () => {
   let fetcher: Fetcher
-
+  let resourcesStore: ResourcesStore
   beforeEach(() => {
     fetcher = createFetcher()
     vi.spyOn(fetcher, 'fetchResource').mockImplementation(() => (Promise.resolve(validCwaResource)))
+    resourcesStore = ResourcesStore.mock.results[0].value
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('Initialises a fetch status. If continue if false, we should abort the fetch.', async () => {
+  test('Initialises a fetch status. If continue if false, we should abort and return any existing resource if it exists.', async () => {
     FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
       return {
         continue: false
       }
     })
+    vi.spyOn(resourcesStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        current: {
+          byId: {
+            '/_/routes//some-route': {
+              data: {
+                myKey: 'myValue'
+              }
+            }
+          }
+        }
+      }
+    })
+
     const result = await fetcher.fetchRoute('/some-route')
     expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledWith({
       path: '/_/routes//some-route',
@@ -82,7 +104,9 @@ describe('Fetcher -> fetchRoute', () => {
       manifestPath: '/_/routes_manifest//some-route'
     })
     expect(fetcher.fetchResource).not.toHaveBeenCalled()
-    expect(result).toBeUndefined()
+    expect(result).toStrictEqual({
+      myKey: 'myValue'
+    })
   })
 
   test('calls fetchResource with the correct iri. Token produced, should continue', async () => {

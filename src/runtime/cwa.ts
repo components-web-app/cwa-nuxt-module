@@ -33,8 +33,8 @@ export default class Cwa {
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
-    this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route)
-    this.resourcesManager = new ResourcesManager(this.storage.stores.resources)
+    this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
+    this.resourcesManager = new ResourcesManager(this.storage.stores.resources, this.storage.stores.fetcher)
 
     this.mercure.setFetcher(this.fetcher)
   }

@@ -16,7 +16,8 @@ type ResourcesByTypeInterface = {
 export interface CwaResourcesGettersInterface {
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
-  resourcesApiStateIsPending: ComputedRef<boolean>
+  currentResourcesApiStateIsPending: ComputedRef<boolean>
+  resourcesApiStateIsPending: ComputedRef<(resources: string[]) => boolean>
   resourceLoadStatus: ComputedRef<ResourcesLoadStatusInterface>
 }
 
@@ -51,13 +52,30 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return resources
     }),
     totalResourcesPending,
-    resourcesApiStateIsPending: computed<boolean>(() => {
+    currentResourcesApiStateIsPending: computed<boolean>(() => {
       for (const resourceState of Object.values(resourcesState.current.byId)) {
         if (resourceState.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
           return true
         }
       }
       return false
+    }),
+    // todo: test
+    resourcesApiStateIsPending: computed(() => {
+      return (resources: string[]) => {
+        for (const resource of resources) {
+          const resourceData = resourcesState.current.byId[resource]
+          if (!resourceData) {
+            // resources should all be initialised with an api state even if no data
+            throw new Error(`The resource '${resource}' does not exist.`)
+          }
+
+          if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
+            return true
+          }
+        }
+        return false
+      }
     }),
     resourceLoadStatus: computed(() => {
       const pending = totalResourcesPending.value

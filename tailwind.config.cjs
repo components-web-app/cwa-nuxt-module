@@ -2,7 +2,11 @@
 module.exports = {
   content: ['./src/**/*.vue'],
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+        'spin-fast': 'spin .5s linear infinite',
+      }
+    },
   },
   plugins: [],
   prefix: 'cwa-',

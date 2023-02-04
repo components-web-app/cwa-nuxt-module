@@ -1,17 +1,39 @@
 import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
+import { v4 as uuidv4 } from 'uuid'
+import consola from 'consola'
 import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 
+let middlewareToken = ''
+
 export default defineNuxtRouteMiddleware(async (to) => {
+  middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()
 
   if (to.meta.cwa === false) {
     return
   }
 
-  const handleRouteRedirect = (resource: CwaResource|undefined) => {
+  const waitForMiddleware = () => {
+    return new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (nuxtApp._processingMiddleware === undefined) {
+          resolve(true)
+          clearInterval(checkInterval)
+        }
+      }, 10)
+    })
+  }
+
+  // todo: redirects do not work if clicking on route that should redirect quickly multiple times
+  const handleRouteRedirect = async (resource: CwaResource|undefined) => {
     // only check for the redirect path, we know the resource returned is the primary resource
     // and we have requested to fetch a route, so will be a route resource.
     if (resource?.redirectPath) {
+      // we are not just returning the route to redirect to for client side, and that's all navigateTo does if processing middleware it true
+      if (process.client && nuxtApp._processingMiddleware) {
+        await waitForMiddleware()
+      }
+
       return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
     }
   }
@@ -19,9 +41,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (process.client) {
-    nuxtApp.$cwa.fetcher.fetchRoute(to.path).then((resource: CwaResource|undefined) => {
-      handleRouteRedirect(resource)
-    })
+    const startedMiddlewareToken = middlewareToken
+    nuxtApp.$cwa.fetcher.fetchRoute(to.path)
+      .then(async (resource: CwaResource|undefined) => {
+        // check if the request finishing is still current to perform redirect
+        if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
+          return
+        }
+        const response = await handleRouteRedirect(resource)
+        if (response) {
+          consola.info('Redirect handler failed', response)
+        }
+      })
     return
   }
 

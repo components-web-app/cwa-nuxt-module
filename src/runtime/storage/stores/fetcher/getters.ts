@@ -2,38 +2,40 @@ import { computed, ComputedRef } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
 import { CwaResourceApiStatuses } from '../resources/state'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
-import { CwaFetcherStateInterface } from './state'
+import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
 
 export interface CwaFetcherGettersInterface {
   isSuccessfulPrimaryFetchValid: ComputedRef<boolean>
   primaryFetchPath: ComputedRef<string|undefined>
-  isFetchChainComplete: ComputedRef<(token: string, onlySuccessful?: boolean) => boolean|undefined>
+  fetchesResolved: ComputedRef<boolean>,
+  isFetchResolving: ComputedRef<(token: string) => { fetchStatus: TopLevelFetchPathInterface|undefined, resolving: boolean }>,
   isCurrentFetchingToken: ComputedRef<(token: string) => boolean|undefined>
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreDefinition: ResourcesStore): CwaFetcherGettersInterface {
-  function getValidFetchStatusByToken (token: string) {
+  function getFetchStatusByToken (token: string): TopLevelFetchPathInterface|undefined {
     const fetchStatus = fetcherState.fetches[token]
     if (!fetchStatus) {
       return
     }
+    return fetchStatus
+  }
+
+  function isFetchResolving (token: string): boolean {
+    const fetchStatus = getFetchStatusByToken(token)
+
+    if (!fetchStatus) {
+      return false
+    }
+
+    if (fetchStatus.abort) {
+      return false
+    }
 
     // validate we have resources
     const resources = fetchStatus.resources
-    if (!resources.length) {
-      return
-    }
-
-    // validate the manifest status has resources (empty array is ok) and no errors on the manifest fetch - not in progress I guess...
-    if (fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined) {
-      return
-    }
-
-    if (fetchStatus.abort || (fetchStatus.isPrimary && token !== fetcherState.primaryFetch.fetchingToken && token !== fetcherState.primaryFetch.successToken)) {
-      return
-    }
-
-    return fetchStatus
+    const isManifestResolving = !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
+    return !resources.length || isManifestResolving
   }
 
   const primaryFetchPath = computed(() => {
@@ -51,8 +53,8 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
         return false
       }
 
-      const fetchStatus = getValidFetchStatusByToken(fetcherState.primaryFetch.successToken)
-      if (!fetchStatus) {
+      const fetchStatus = getFetchStatusByToken(fetcherState.primaryFetch.successToken)
+      if (!fetchStatus || isFetchResolving(fetcherState.primaryFetch.successToken)) {
         return false
       }
 
@@ -93,35 +95,20 @@ export default function (fetcherState: CwaFetcherStateInterface, resourcesStoreD
 
       return true
     }),
-    // todo: re-think this, do we really need the resources store in here. aren't fetch resources current resources already now?
-    //  Could we have a getter for if the fetch token is valid, then one in resources to check if current resources are loaded...
-    //  then we could use fetch tokens in the resources store to determine the fetched resource and calculate the layout page and
-    //  page data that is loaded... hmmm...
-    isFetchChainComplete: computed(() => {
-      return (token: string) => {
-        const fetchStatus = getValidFetchStatusByToken(token)
-        if (!fetchStatus) {
-          // aborted status should return true to avoid any hanging waiting for the fetches to finish
-          // nb. this will result in inconsistent server-client side renders if outputting current resources
-          //   but requests are aborted for redirects.
-          //   there may be a better way, we would need to clear current resources and stuff... works OK for now.
-          return !!fetcherState.fetches?.[token]?.abort
+    fetchesResolved: computed(() => {
+      for (const token of Object.keys(fetcherState.fetches)) {
+        if (isFetchResolving(token)) {
+          return false
         }
-
-        const resourcesStore = resourcesStoreDefinition.useStore()
-
-        for (const resource of fetchStatus.resources) {
-          const resourceData = resourcesStore.current.byId[resource]
-          if (!resourceData) {
-            throw new Error(`The resource '${resource}' does not exist but is defined in the fetch chain with token '${token}'`)
-          }
-
-          if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-            return false
-          }
-        }
-        return true
       }
+      return true
+    }),
+    // todo: test
+    isFetchResolving: computed(() => {
+      return (token: string) => ({
+        fetchStatus: getFetchStatusByToken(token),
+        resolving: isFetchResolving(token)
+      })
     }),
     isCurrentFetchingToken: computed(() => {
       return (token: string) => {

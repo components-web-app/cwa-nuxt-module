@@ -156,12 +156,17 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const fetchStatus = getFetchStatusFromToken(event.token)
 
       if (
-        !fetchStatus.isPrimary ||
-        !fetcherGetters.isCurrentFetchingToken.value(event.token)
+        !fetchStatus.isPrimary
       ) {
         // chain not needed anymore, will not be referenced anywhere
         delete fetcherState.fetches[event.token]
         return
+      }
+
+      if (fetcherState.primaryFetch.fetchingToken === event.token) {
+        fetcherState.primaryFetch.fetchingToken = undefined
+      } else {
+        delete fetcherState.fetches[event.token]
       }
 
       // delete existing primary fetch chain
@@ -173,7 +178,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       }
 
       // set the new success token
-      fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = event.token
     },
     addFetchResource (event: AddFetchResourceEvent) {

@@ -299,7 +299,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
   })
 })
 
-describe('FetcherStore getters -> isFetchChainComplete', () => {
+describe.todo('FetcherStore getters -> isFetchChainComplete', () => {
   let state: CwaFetcherStateInterface
   let getterFns: CwaFetcherGettersInterface
   let resourcesStore: ResourcesStore

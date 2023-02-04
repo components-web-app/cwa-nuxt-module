@@ -1,4 +1,4 @@
-import { computed, watch, WatchStopHandle } from 'vue'
+import { computed, ComputedRef, watch, WatchStopHandle } from 'vue'
 import Bluebird, { TimeoutError } from 'bluebird'
 import consola from 'consola'
 import { storeToRefs } from 'pinia'
@@ -171,13 +171,34 @@ export default class FetchStatusManager {
     this.fetcherStore.finishFetch(event)
   }
 
+  private computedFetchChainComplete (token: string): ComputedRef<boolean> {
+    return computed(() => {
+      const resolvingResponse = this.fetcherStore.isFetchResolving(token)
+      if (resolvingResponse.resolving) {
+        return false
+      }
+
+      if (resolvingResponse.fetchStatus?.abort) {
+        return true
+      }
+
+      const resources = resolvingResponse.fetchStatus?.resources
+      if (!resources) {
+        return false
+      }
+
+      return !this.resourcesStore.resourcesApiStateIsPending(resources)
+    })
+  }
+
   private async waitForFetchChainToComplete (token: string): Promise<void> {
     let fetchChainCompletePromiseResolver: () => void
     const fetchChainCompletePromise = new Promise<void>((resolve) => {
       fetchChainCompletePromiseResolver = resolve
     })
 
-    const computedFetchChainComplete = computed(() => this.fetcherStore.isFetchChainComplete(token))
+    const computedFetchChainComplete = this.computedFetchChainComplete(token)
+
     const callback = (isFetchChainComplete: boolean|undefined) => {
       if (isFetchChainComplete === true) {
         fetchChainCompletePromiseResolver()

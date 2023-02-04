@@ -22,7 +22,7 @@ function createDefaultCwaPages (
       path: `:cwaPage${currentDepth}*`,
       file: pageComponentFilePath,
       meta: {
-        layout: false
+        layout: 'cwa-layout-loader'
       }
     }
     if (currentDepth === 0) {
@@ -50,6 +50,15 @@ export default defineNuxtModule<CwaModuleOptions>({
   defaults: {
     storeName: 'cwa'
   },
+  // todo: think through and test hook set if needed
+  hooks: {
+    'components:dirs' (dirs) {
+      dirs.push({
+        path: fileURLToPath(new URL('./runtime/templates/components/utils', import.meta.url)),
+        prefix: 'cwa'
+      })
+    }
+  },
   async setup (options: CwaModuleOptions, nuxt) {
     Bluebird.config({ cancellation: true })
 
@@ -70,6 +79,12 @@ export default defineNuxtModule<CwaModuleOptions>({
       src: resolve(vueTemplatesDir, 'layouts', 'cwa-default.vue'),
       filename: join('cwa', 'layouts', 'cwa-default.vue')
     }, 'cwa-default')
+
+    // we use a layout loader so the page does not need to use NuxtLayout and result in remounting and restarting any transitions etc. and so that we can then use NuxtLayout in there to load the correct layout
+    addLayout({
+      src: resolve(vueTemplatesDir, 'layouts', 'cwa-layout-loader.vue'),
+      filename: join('cwa', 'layouts', 'cwa-layout-loader.vue')
+    }, 'cwa-layout-loader')
     // end do not test yet
 
     // todo: test
