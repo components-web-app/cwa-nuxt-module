@@ -26,7 +26,6 @@ export class ResourcesManager {
     })
   }
 
-  // todo: test
   public get isLoading (): ComputedRef<boolean> {
     return computed(() => {
       return !this.fetcherStore.fetchesResolved || !!this.resourceLoadStatus.pending

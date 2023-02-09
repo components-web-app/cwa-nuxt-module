@@ -40,9 +40,12 @@ vi.mock('../storage/stores/resources/resources-store', () => {
 
 describe('ResourceManager class tests', () => {
   let resourcesManager: ResourcesManager
+  let resourcesStore: ResourcesStore
+  let fetcherStore: FetcherStore
   beforeEach(() => {
-    const resourcesStore = new ResourcesStore('storeName')
-    resourcesManager = new ResourcesManager(resourcesStore, new FetcherStore('storeName', resourcesStore))
+    resourcesStore = new ResourcesStore('storeName')
+    fetcherStore = new FetcherStore('storeName', resourcesStore)
+    resourcesManager = new ResourcesManager(resourcesStore, fetcherStore)
   })
   afterEach(() => {
     vi.clearAllMocks()
@@ -68,5 +71,27 @@ describe('ResourceManager class tests', () => {
   test('resourceLoadStatus getter', () => {
     const status = resourcesManager.resourceLoadStatus
     expect(status).toStrictEqual('any-load-status-result')
+  })
+
+  test.each([
+    { fetchesResolved: false, pending: false, result: true },
+    { fetchesResolved: true, pending: false, result: false },
+    { fetchesResolved: false, pending: true, result: true },
+    { fetchesResolved: true, pending: true, result: true }
+  ])('isLoading getter', ({ fetchesResolved, pending, result }) => {
+    vi.spyOn(resourcesStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        resourceLoadStatus: {
+          pending
+        }
+      }
+    })
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        fetchesResolved
+      }
+    })
+    const isLoading = resourcesManager.isLoading
+    expect(isLoading.value).toStrictEqual(result)
   })
 })
