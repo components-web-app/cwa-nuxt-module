@@ -45,7 +45,7 @@ describe('Storage is initialised properly', () => {
     const apiDocumentationStoreMock:StoreMock = ApiDocumentationStore
 
     expect(resourcesStoreMock).toBeCalledWith(storeName)
-    expect(fetcherStoreMock).toBeCalledWith(storeName, resourcesStoreMock.results[0][1])
+    expect(fetcherStoreMock).toBeCalledWith(storeName)
     expect(mercureStoreMock).toBeCalledWith(storeName)
     expect(apiDocumentationStoreMock).toBeCalledWith(storeName)
 

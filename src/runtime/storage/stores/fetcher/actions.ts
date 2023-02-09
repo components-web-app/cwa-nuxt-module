@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
 import consola from 'consola'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
-import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
+import { CwaFetcherStateInterface, FetchStatus } from './state'
 import { CwaFetcherGettersInterface } from './getters'
 
 export interface StartFetchEvent {
@@ -10,6 +10,7 @@ export interface StartFetchEvent {
   path: string,
   manifestPath?: string
   isPrimary?: boolean
+  isCurrentSuccessResourcesResolved: boolean
 }
 
 export interface FinishFetchEvent {
@@ -88,6 +89,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         fetchStatus.manifest.error = event.error.asObject
       }
     },
+    // todo: test isCurrentSuccessStateResolved
     startFetch (event: StartFetchEvent): StartFetchResponse {
       if (event.token) {
         try {
@@ -114,7 +116,8 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         // todo: when working on the redirect after finalising, we could check here if the fetched path is a route resource, and if the redirect path matches the new event path, then it is also the same fetch
 
         // todo: what if only some of the resource paths are different.. do we really need to fetch everything again or can we skip everything that has the correct headers and continue fetching the chain for anything that's changed...
-        if (lastSuccessState.path === event.path && fetcherGetters.isSuccessfulPrimaryFetchValid.value) {
+
+        if (lastSuccessState?.path === event.path && event.isCurrentSuccessResourcesResolved) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
           for (const existingToken of Object.keys(fetcherState.fetches)) {
@@ -133,8 +136,9 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         }
       }
 
+      // initialise
       const token = uuidv4()
-      const initialState: TopLevelFetchPathInterface = reactive({
+      const initialState: FetchStatus = reactive({
         path: event.path,
         resources: [],
         isPrimary: !!event.isPrimary

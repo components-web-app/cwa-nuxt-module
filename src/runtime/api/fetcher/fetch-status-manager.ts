@@ -35,6 +35,8 @@ export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent 
   error?: CwaResourceError
 }
 
+type _StartFetchEvent = Omit<StartFetchEvent, 'isCurrentSuccessResourcesResolved'>
+
 /**
  * This class manages the state across the fetcher store, resources store and additional services for API Documentation and Mercure
  */
@@ -87,8 +89,8 @@ export default class FetchStatusManager {
     return resolvedResource || currentResource.data
   }
 
-  public startFetch (event: StartFetchEvent): StartFetchResponse {
-    const startFetchStatus = this.fetcherStore.startFetch(event)
+  public startFetch (event: _StartFetchEvent): StartFetchResponse {
+    const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
       this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
     }
@@ -225,6 +227,15 @@ export default class FetchStatusManager {
 
   public get primaryFetchPath (): string|undefined {
     return this.fetcherStore.primaryFetchPath
+  }
+
+  // todo : test
+  public get isCurrentSuccessResourcesResolved (): boolean {
+    const successFetchStatus = this.fetcherStore.resolvedSuccessFetchStatus
+    if (!successFetchStatus) {
+      return false
+    }
+    return this.resourcesStore.isFetchStatusResourcesResolved(successFetchStatus)
   }
 
   private get fetcherStore () {

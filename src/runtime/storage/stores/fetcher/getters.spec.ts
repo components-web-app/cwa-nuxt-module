@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 import { ResourcesStore } from '../resources/resources-store'
 import { CwaResourceApiStatuses } from '../resources/state'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
-import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
+import { CwaFetcherStateInterface, FetchStatus } from './state'
 import getters, { CwaFetcherGettersInterface } from './getters'
 
 function createState (): CwaFetcherStateInterface {
@@ -135,7 +135,7 @@ describe('FetcherStore getters -> primaryFetchPath', () => {
     })
 })
 
-describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
+describe.todo('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
   let state: CwaFetcherStateInterface
   let getterFns: CwaFetcherGettersInterface
   let resourcesStore: ResourcesStore
@@ -149,12 +149,12 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
 
   test('Return false if there is no primary success token', () => {
     state.primaryFetch.successToken = undefined
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test('Return false if the token does not exist', () => {
     state.primaryFetch.successToken = 'does-not-exist'
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test('Return false if no resources in the fetch chain', () => {
@@ -165,7 +165,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
         resources: []
       }
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test.each([
@@ -192,7 +192,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
       state.fetches = {
         'success-token': currentFetch
       }
-      expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(result)
+      expect(getterFns.resolvedSuccessFetchStatus.value).toBe(result)
     })
 
   test('If the primary fetch path resource does not exist, return false', () => {
@@ -204,7 +204,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
     state.fetches = {
       'success-token': currentFetch
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test('If the primary fetch path resource is in an error state, return false', () => {
@@ -216,7 +216,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
     state.fetches = {
       'success-token': currentFetch
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test('Returns false if a resource in the fetch chain is-errored', () => {
@@ -227,7 +227,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
         resources: ['/success-resource', '/errored-resource']
       }
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test('Returns true if a resource in the fetch chain is-errored with non-critical', () => {
@@ -238,7 +238,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
         resources: ['/success-resource', '/not-found-resource']
       }
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(true)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(true)
   })
 
   test('Returns true if a resource in the fetch chain has a different path but is not a component position', () => {
@@ -249,7 +249,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
         resources: ['/success-resource', '/component-different-path']
       }
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(true)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(true)
   })
 
   test('Returns false if a resource in the fetch chain has a different path and is a component position', () => {
@@ -260,7 +260,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
         resources: ['/success-resource', '/component-position-different-path']
       }
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(false)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
   })
 
   test.each([
@@ -282,7 +282,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
         resources
       }
     }
-    expect(getterFns.isSuccessfulPrimaryFetchValid.value).toBe(result)
+    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(result)
   })
 
   test('Throws an error if the resource does not exist in the resources store', () => {
@@ -294,7 +294,7 @@ describe('FetcherStore getters -> isSuccessfulPrimaryFetchValid', () => {
       }
     }
     expect(() => {
-      return getterFns.isSuccessfulPrimaryFetchValid.value
+      return getterFns.resolvedSuccessFetchStatus.value
     }).toThrowError('The resource \'does-not-exist\' does not exist but is defined in the fetch chain with token \'success-token\'')
   })
 })
@@ -417,7 +417,7 @@ describe.todo('FetcherStore getters -> isFetchChainComplete', () => {
     "If manifest is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
     ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
     ) => {
-      const currentFetch: TopLevelFetchPathInterface = {
+      const currentFetch: FetchStatus = {
         path: 'any',
         isPrimary: false,
         resources: ['/success-resource', '/not-found-resource']

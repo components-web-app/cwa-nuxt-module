@@ -7,7 +7,7 @@ interface FetchManifestInterface {
   error?: CwaResourceErrorObject
 }
 
-export interface TopLevelFetchPathInterface {
+export interface FetchStatus {
   path: string,
   isPrimary: boolean,
   resources: string[],
@@ -16,7 +16,7 @@ export interface TopLevelFetchPathInterface {
 }
 
 export interface FetcherChainInterface {
-  [token: string]: TopLevelFetchPathInterface
+  [token: string]: FetchStatus
 }
 
 export interface CwaFetcherStateInterface {

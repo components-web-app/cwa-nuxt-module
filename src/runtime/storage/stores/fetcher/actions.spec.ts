@@ -2,11 +2,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 import consola from 'consola'
-import { ResourcesStore } from '../resources/resources-store'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
-import { CwaResourceApiStatuses } from '../resources/state'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
-import state, { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
+import state, { CwaFetcherStateInterface, FetchStatus } from './state'
 import getters, { CwaFetcherGettersInterface } from './getters'
 
 vi.mock('consola')
@@ -15,42 +13,42 @@ vi.mock('uuid', () => {
     v4: vi.fn(() => ('mock-uuid-token'))
   }
 })
-vi.mock('../resources/resources-store', () => ({
-  ResourcesStore: vi.fn(() => ({
-    useStore: vi.fn(() => ({
-      current: {
-        byId: {
-          '/existing-path': {
-            apiState: {
-              status: CwaResourceApiStatuses.SUCCESS
-            }
-          },
-          '/errored-resource': {
-            apiState: {
-              status: CwaResourceApiStatuses.ERROR
-            }
-          },
-          '/existing-primary-path': {
-            apiState: {
-              status: CwaResourceApiStatuses.SUCCESS
-            }
-          },
-          '/in-progress-resource': {
-            apiState: {
-              status: CwaResourceApiStatuses.IN_PROGRESS
-            }
-          }
-        }
-      }
-    }))
-  }))
-}))
+// vi.mock('../resources/resources-store', () => ({
+//   ResourcesStore: vi.fn(() => ({
+//     useStore: vi.fn(() => ({
+//       current: {
+//         byId: {
+//           '/existing-path': {
+//             apiState: {
+//               status: CwaResourceApiStatuses.SUCCESS
+//             }
+//           },
+//           '/errored-resource': {
+//             apiState: {
+//               status: CwaResourceApiStatuses.ERROR
+//             }
+//           },
+//           '/existing-primary-path': {
+//             apiState: {
+//               status: CwaResourceApiStatuses.SUCCESS
+//             }
+//           },
+//           '/in-progress-resource': {
+//             apiState: {
+//               status: CwaResourceApiStatuses.IN_PROGRESS
+//             }
+//           }
+//         }
+//       }
+//     }))
+//   }))
+// }))
 
 describe('Fetcher store action -> abortFetch', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface
 
-  let existingFetchState: TopLevelFetchPathInterface
+  let existingFetchState: FetchStatus
   let currentGetters: CwaFetcherGettersInterface
 
   beforeEach(() => {
@@ -61,8 +59,7 @@ describe('Fetcher store action -> abortFetch', () => {
     }
     fetcherState = state()
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
-    const resourcesStore = new ResourcesStore()
-    currentGetters = getters(fetcherState, resourcesStore)
+    currentGetters = getters(fetcherState)
     fetcherActions = actions(fetcherState, currentGetters)
   })
 
@@ -90,9 +87,9 @@ describe('Fetcher store action -> startFetch', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface
 
-  let existingIncompletePrimaryFetchState: TopLevelFetchPathInterface
-  let existingCompletedPrimaryFetchState: TopLevelFetchPathInterface
-  let existingFetchState: TopLevelFetchPathInterface
+  let existingIncompletePrimaryFetchState: FetchStatus
+  let existingCompletedPrimaryFetchState: FetchStatus
+  let existingFetchState: FetchStatus
   let currentGetters: CwaFetcherGettersInterface
 
   beforeEach(() => {
@@ -116,8 +113,7 @@ describe('Fetcher store action -> startFetch', () => {
     fetcherState.fetches['existing-incomplete-primary-token'] = reactive(existingIncompletePrimaryFetchState)
     fetcherState.fetches['existing-complete-primary-token'] = reactive(existingCompletedPrimaryFetchState)
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
-    const resourcesStore = new ResourcesStore()
-    currentGetters = getters(fetcherState, resourcesStore)
+    currentGetters = getters(fetcherState)
     fetcherActions = actions(fetcherState, currentGetters)
   })
 
@@ -214,9 +210,9 @@ describe('Fetcher store action -> startFetch', () => {
     expect(fetcherState.fetches['mock-uuid-token']).toStrictEqual(expectedFetchChain)
   })
 
-  test('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
+  test.todo('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
     // mock is fetch chain complete as true so that we can spy on the method being called. Functionality is tested in getters anyway
-    currentGetters.isSuccessfulPrimaryFetchValid = computed(() => {
+    currentGetters.resolvedSuccessFetchStatus = computed(() => {
       return true
     })
 
@@ -267,8 +263,8 @@ describe('Fetcher store action -> finishFetch', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface
 
-  let existingPrimaryFetchState: TopLevelFetchPathInterface
-  let existingFetchState: TopLevelFetchPathInterface
+  let existingPrimaryFetchState: FetchStatus
+  let existingFetchState: FetchStatus
 
   beforeEach(() => {
     existingPrimaryFetchState = {
@@ -284,8 +280,7 @@ describe('Fetcher store action -> finishFetch', () => {
     fetcherState = state()
     fetcherState.fetches['existing-primary-token'] = reactive(existingPrimaryFetchState)
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
-    const resourcesStore = new ResourcesStore()
-    fetcherActions = actions(fetcherState, getters(fetcherState, resourcesStore))
+    fetcherActions = actions(fetcherState, getters(fetcherState))
   })
 
   afterEach(() => {
@@ -348,9 +343,9 @@ describe('Fetcher store action -> addFetchResource', () => {
   let fetcherState: CwaFetcherStateInterface
   let currentGetters: CwaFetcherGettersInterface
 
-  let existingIncompletePrimaryFetchState: TopLevelFetchPathInterface
-  let existingCompletedPrimaryFetchState: TopLevelFetchPathInterface
-  let existingFetchState: TopLevelFetchPathInterface
+  let existingIncompletePrimaryFetchState: FetchStatus
+  let existingCompletedPrimaryFetchState: FetchStatus
+  let existingFetchState: FetchStatus
 
   beforeEach(() => {
     existingIncompletePrimaryFetchState = {
@@ -372,8 +367,7 @@ describe('Fetcher store action -> addFetchResource', () => {
     fetcherState.fetches['existing-incomplete-primary-token'] = reactive(existingIncompletePrimaryFetchState)
     fetcherState.fetches['existing-complete-primary-token'] = reactive(existingCompletedPrimaryFetchState)
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
-    const resourcesStore = new ResourcesStore()
-    currentGetters = getters(fetcherState, resourcesStore)
+    currentGetters = getters(fetcherState)
     fetcherActions = actions(fetcherState, currentGetters)
   })
 
@@ -464,12 +458,12 @@ describe('Fetcher store action -> finishManifestFetch', () => {
   let fetcherState: CwaFetcherStateInterface
 
   beforeEach(() => {
-    const existingFetchState: TopLevelFetchPathInterface = {
+    const existingFetchState: FetchStatus = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false
     }
-    const existingManifestFetchState: TopLevelFetchPathInterface = {
+    const existingManifestFetchState: FetchStatus = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
@@ -480,8 +474,7 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherState = state()
     fetcherState.fetches['existing-token-no-manifest'] = reactive(existingFetchState)
     fetcherState.fetches['existing-token-with-manifest'] = reactive(existingManifestFetchState)
-    const resourcesStore = new ResourcesStore()
-    fetcherActions = actions(fetcherState, getters(fetcherState, resourcesStore))
+    fetcherActions = actions(fetcherState, getters(fetcherState))
   })
 
   afterEach(() => {

@@ -207,11 +207,14 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
         startFetch: vi.fn(() => (startFetchResponse))
       }
     })
+    vi.spyOn(fetchStatusManager, 'isCurrentSuccessResourcesResolved', 'get').mockImplementationOnce(() => {
+      return 'customResponse'
+    })
     const startFetchEvent: StartFetchEvent = {
       path: '/fetch-path'
     }
     const response = fetchStatusManager.startFetch(startFetchEvent)
-    expect(fetcherStore.useStore.mock.results[0].value.startFetch).toHaveBeenCalledWith(startFetchEvent)
+    expect(fetcherStore.useStore.mock.results[0].value.startFetch).toHaveBeenCalledWith({ ...startFetchEvent, isCurrentSuccessResourcesResolved: 'customResponse' })
     expect(ResourcesStore.mock.results[0].value.useStore).not.toHaveBeenCalled()
     expect(response).toStrictEqual(startFetchResponse)
   })
