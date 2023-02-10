@@ -89,7 +89,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         fetchStatus.manifest.error = event.error.asObject
       }
     },
-    // todo: test isCurrentSuccessStateResolved
     startFetch (event: StartFetchEvent): StartFetchResponse {
       if (event.token) {
         try {
@@ -114,9 +113,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         const lastSuccessState = fetcherState.fetches[fetcherState.primaryFetch.successToken]
         // check if this new path is the same as the last successful primary fetch and that the chain of fetch is complete
         // todo: when working on the redirect after finalising, we could check here if the fetched path is a route resource, and if the redirect path matches the new event path, then it is also the same fetch
-
         // todo: what if only some of the resource paths are different.. do we really need to fetch everything again or can we skip everything that has the correct headers and continue fetching the chain for anything that's changed...
-
         if (lastSuccessState?.path === event.path && event.isCurrentSuccessResourcesResolved) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined

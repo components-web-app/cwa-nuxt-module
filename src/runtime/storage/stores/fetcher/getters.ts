@@ -1,5 +1,6 @@
 import { computed, ComputedRef } from 'vue'
 import { CwaFetcherStateInterface, FetchStatus } from './state'
+import { FetcherGetterUtils } from './getter-utils'
 
 export interface CwaFetcherGettersInterface {
   resolvedSuccessFetchStatus: ComputedRef<FetchStatus|undefined>
@@ -10,30 +11,7 @@ export interface CwaFetcherGettersInterface {
 }
 
 export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGettersInterface {
-  function getFetchStatusByToken (token: string): FetchStatus|undefined {
-    const fetchStatus = fetcherState.fetches[token]
-    if (!fetchStatus) {
-      return
-    }
-    return fetchStatus
-  }
-
-  function isFetchResolving (token: string): boolean {
-    const fetchStatus = getFetchStatusByToken(token)
-
-    if (!fetchStatus) {
-      return false
-    }
-
-    if (fetchStatus.abort) {
-      return false
-    }
-
-    // validate we have resources
-    const resources = fetchStatus.resources
-    const isManifestResolving = !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
-    return !resources.length || isManifestResolving
-  }
+  const utils = new FetcherGetterUtils(fetcherState)
 
   const primaryFetchPath = computed(() => {
     const primaryFetchToken = fetcherState.primaryFetch.fetchingToken || fetcherState.primaryFetch.successToken
@@ -45,14 +23,13 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
   })
   return {
     primaryFetchPath,
-    // todo: test
     resolvedSuccessFetchStatus: computed(() => {
       if (!fetcherState.primaryFetch.successToken) {
         return
       }
 
-      const fetchStatus = getFetchStatusByToken(fetcherState.primaryFetch.successToken)
-      if (!fetchStatus || isFetchResolving(fetcherState.primaryFetch.successToken)) {
+      const fetchStatus = utils.getFetchStatusByToken(fetcherState.primaryFetch.successToken)
+      if (!fetchStatus || utils.isFetchResolving(fetcherState.primaryFetch.successToken)) {
         return
       }
 
@@ -61,7 +38,7 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
     // todo: test
     fetchesResolved: computed(() => {
       for (const token of Object.keys(fetcherState.fetches)) {
-        if (isFetchResolving(token)) {
+        if (utils.isFetchResolving(token)) {
           return false
         }
       }
@@ -70,8 +47,8 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
     // todo: test
     isFetchResolving: computed(() => {
       return (token: string) => ({
-        fetchStatus: getFetchStatusByToken(token),
-        resolving: isFetchResolving(token)
+        fetchStatus: utils.getFetchStatusByToken(token),
+        resolving: utils.isFetchResolving(token)
       })
     }),
     isCurrentFetchingToken: computed(() => {

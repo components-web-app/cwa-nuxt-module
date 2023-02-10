@@ -210,15 +210,11 @@ describe('Fetcher store action -> startFetch', () => {
     expect(fetcherState.fetches['mock-uuid-token']).toStrictEqual(expectedFetchChain)
   })
 
-  test.todo('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
-    // mock is fetch chain complete as true so that we can spy on the method being called. Functionality is tested in getters anyway
-    currentGetters.resolvedSuccessFetchStatus = computed(() => {
-      return true
-    })
-
+  test('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
     const startFetchEvent = {
       path: '/existing-complete-primary-path',
-      isPrimary: true
+      isPrimary: true,
+      isCurrentSuccessResourcesResolved: true
     }
     fetcherState.primaryFetch.successToken = 'existing-complete-primary-token'
     fetcherState.primaryFetch.fetchingToken = 'any-other-primary-fetch-token'
