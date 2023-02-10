@@ -747,3 +747,43 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
     expect(fetchStatusManager.primaryFetchPath).toBe('anything')
   })
 })
+
+describe('FetchStatusManager -> isCurrentSuccessResourcesResolved', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Returns false is there is no success fetch status', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        resolvedSuccessFetchStatus: undefined
+      }
+    })
+    expect(fetchStatusManager.isCurrentSuccessResourcesResolved).toBe(false)
+  })
+
+  test('Returns the result of isFetchStatusResourcesResolved called with the fetch status', () => {
+    const fetcherStore = FetcherStore.mock.results[0].value
+    const resourcesStore = ResourcesStore.mock.results[0].value
+    vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
+      return {
+        resolvedSuccessFetchStatus: 'something'
+      }
+    })
+    vi.spyOn(resourcesStore, 'useStore').mockImplementationOnce(() => {
+      return {
+        isFetchStatusResourcesResolved: vi.fn(() => {
+          return true
+        })
+      }
+    })
+    expect(fetchStatusManager.isCurrentSuccessResourcesResolved).toBe(true)
+  })
+})

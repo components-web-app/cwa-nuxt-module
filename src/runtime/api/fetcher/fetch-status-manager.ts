@@ -229,7 +229,6 @@ export default class FetchStatusManager {
     return this.fetcherStore.primaryFetchPath
   }
 
-  // todo : test
   public get isCurrentSuccessResourcesResolved (): boolean {
     const successFetchStatus = this.fetcherStore.resolvedSuccessFetchStatus
     if (!successFetchStatus) {

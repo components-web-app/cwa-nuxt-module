@@ -43,7 +43,7 @@ interface CwaFetchResponseRaw {
 interface FetchBatchEvent {
   paths: string[]
   token?: string
-  noSave: boolean
+  noSave?: boolean
 }
 
 interface FetchNestedResourcesEvent {

@@ -35,7 +35,6 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
 
       return fetchStatus
     }),
-    // todo: test
     fetchesResolved: computed(() => {
       for (const token of Object.keys(fetcherState.fetches)) {
         if (utils.isFetchResolving(token)) {
@@ -44,7 +43,6 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
       }
       return true
     }),
-    // todo: test
     isFetchResolving: computed(() => {
       return (token: string) => ({
         fetchStatus: utils.getFetchStatusByToken(token),
