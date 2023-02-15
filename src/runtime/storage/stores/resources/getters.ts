@@ -2,6 +2,7 @@ import { ComputedRef, computed } from 'vue'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { FetchStatus } from '../fetcher/state'
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import { ResourcesGetterUtils } from './getter-utils'
 
 interface ResourcesLoadStatusInterface {
   pending: number
@@ -18,20 +19,13 @@ export interface CwaResourcesGettersInterface {
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
   currentResourcesApiStateIsPending: ComputedRef<boolean>
-  isFetchStatusResourcesResolved: ComputedRef<(fetchStatus: FetchStatus) => boolean>,
   resourcesApiStateIsPending: ComputedRef<(resources: string[]) => boolean>
+  isFetchStatusResourcesResolved: ComputedRef<(fetchStatus: FetchStatus) => boolean>
   resourceLoadStatus: ComputedRef<ResourcesLoadStatusInterface>
 }
 
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesGettersInterface {
-  const totalResourcesPending = computed<number>(() => {
-    return resourcesState.current.currentIds.reduce((count, id) => {
-      if (resourcesState.current.byId[id].apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-        return ++count
-      }
-      return count
-    }, 0)
-  })
+  const utils = new ResourcesGetterUtils(resourcesState)
 
   return {
     resourcesByType: computed(() => {
@@ -53,16 +47,15 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
       return resources
     }),
-    totalResourcesPending,
+    totalResourcesPending: computed<number>(() => utils.totalResourcesPending),
+    // todo: update test
     currentResourcesApiStateIsPending: computed<boolean>(() => {
-      for (const resourceState of Object.values(resourcesState.current.byId)) {
-        if (resourceState.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-          return true
-        }
-      }
-      return false
+      return utils.resourcesApiStateIsPending(Object.keys(resourcesState.current.byId))
     }),
-    // todo: test
+    // todo: test returns function for resource array input
+    resourcesApiStateIsPending: computed(() => {
+      return utils.resourcesApiStateIsPending
+    }),
     isFetchStatusResourcesResolved: computed(() => {
       return (fetchStatus: FetchStatus) => {
         // can check to ensure the main fetch path is successful
@@ -101,25 +94,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         return true
       }
     }),
-    // todo: test
-    resourcesApiStateIsPending: computed(() => {
-      return (resources: string[]) => {
-        for (const resource of resources) {
-          const resourceData = resourcesState.current.byId[resource]
-          if (!resourceData) {
-            // resources should all be initialised with an api state even if no data
-            throw new Error(`The resource '${resource}' does not exist.`)
-          }
-
-          if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-            return true
-          }
-        }
-        return false
-      }
-    }),
+    // todo: update test
     resourceLoadStatus: computed(() => {
-      const pending = totalResourcesPending.value
+      const pending = utils.totalResourcesPending
       const total = resourcesState.current.currentIds.length
       const complete = total - pending
       let percent

@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { reactive } from 'vue'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
+import { FetchStatus } from '../fetcher/state'
 import getters, { CwaResourcesGettersInterface } from './getters'
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
@@ -61,7 +62,7 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
   })
 })
 
-describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
+describe('ResourcesStore Getters -> currentResourcesApiStateIsPending', () => {
   let state: CwaResourcesStateInterface
   let getterFns: CwaResourcesGettersInterface
 
@@ -86,7 +87,7 @@ describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
   })
 })
 
-describe('ResourcesStore Getters -> totalResourcesPending', () => {
+describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
   let state: CwaResourcesStateInterface
   let getterFns: CwaResourcesGettersInterface
 
@@ -95,20 +96,301 @@ describe('ResourcesStore Getters -> totalResourcesPending', () => {
     getterFns = getters(state)
   })
 
-  test('returns 0 if no resources are pending', () => {
-    expect(getterFns.totalResourcesPending.value).toBe(0)
+  test('If the primary fetch path resource does not exist, return false', () => {
+    const currentFetch: FetchStatus = {
+      path: '/does-not-exist',
+      isPrimary: false,
+      resources: []
+    }
+    state.current.byId = {}
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(false)
   })
 
-  test('returns true if there is a resource that is pending', () => {
-    state.current.currentIds = ['id']
+  test('If the primary fetch path resource is in an error state, return false', () => {
+    const currentFetch: FetchStatus = {
+      path: '/errored-resource',
+      isPrimary: false,
+      resources: ['/success-resource', '/not-found-resource']
+    }
     state.current.byId = {
-      id: {
+      '/errored-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR,
+          error: {
+            statusCode: 500
+          },
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      }
+    }
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(false)
+  })
+
+  test('Throws an error if the resource does not exist in the resources store', () => {
+    const currentFetch: FetchStatus = {
+      path: '/success-resource',
+      isPrimary: true,
+      resources: ['does-not-exist']
+    }
+    state.current.byId = {
+      '/success-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      }
+    }
+    expect(() => {
+      return getterFns.isFetchStatusResourcesResolved.value(currentFetch)
+    }).toThrowError('The resource \'does-not-exist\' does not exist')
+  })
+
+  test('Returns false if a resource in the fetch chain is-errored', () => {
+    const currentFetch: FetchStatus = {
+      path: '/success-resource',
+      isPrimary: false,
+      resources: ['/success-resource', '/errored-resource']
+    }
+    state.current.byId = {
+      '/success-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/errored-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR,
+          error: {
+            statusCode: 500
+          },
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      }
+    }
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(false)
+  })
+
+  test('Returns true if a resource in the fetch chain is-errored with non-critical', () => {
+    const currentFetch: FetchStatus = {
+      path: '/success-resource',
+      isPrimary: false,
+      resources: ['/success-resource', '/not-found-resource']
+    }
+    state.current.byId = {
+      '/success-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/not-found-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR,
+          error: {
+            statusCode: 404
+          },
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      }
+    }
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(true)
+  })
+
+  test('Returns true if a resource in the fetch chain has a different path but is not a component position', () => {
+    state.current.byId = {
+      '/success-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/component-different-path': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/another-path'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      }
+    }
+    const currentFetch: FetchStatus = {
+      path: '/success-resource',
+      isPrimary: false,
+      resources: ['/success-resource', '/component-different-path']
+    }
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(true)
+  })
+
+  test('Returns false if a resource in the fetch chain has a different path and is a component position', () => {
+    const currentFetch: FetchStatus = {
+      path: '/success-resource',
+      isPrimary: false,
+      resources: ['/success-resource', '/component-position-different-path']
+    }
+    state.current.byId = {
+      '/success-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/component-position-different-path': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/another-path'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT_POSITION
+        }
+      }
+    }
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(false)
+  })
+
+  test.each([
+    { path: '/not-found-resource', resources: ['/success-resource', '/not-found-resource'], result: false },
+    { path: '/does-not-exist', resources: ['/success-resource', '/not-found-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource'], result: true },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/errored-resource'], result: false },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource'], result: true },
+    { path: '/success-resource', resources: ['/success-resource', '/not-found-resource', '/in-progress-resource-no-data'], result: false }
+  ])('If we only want successful fetch chains, we check the main path. If the main path is $path with the resources $resources the result should be $result', ({
+    path,
+    resources,
+    result
+  }) => {
+    const currentFetch: FetchStatus = {
+      path,
+      isPrimary: false,
+      resources
+    }
+    state.current.byId = {
+      '/success-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/not-found-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR,
+          error: {
+            statusCode: 404
+          },
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/errored-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR,
+          error: {
+            statusCode: 500
+          },
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/in-progress-resource': {
+        apiState: {
+          status: CwaResourceApiStatuses.IN_PROGRESS,
+          headers: {
+            path: '/success-resource'
+          }
+        },
+        data: {
+          '@type': CwaResourceTypes.COMPONENT
+        }
+      },
+      '/in-progress-resource-no-data': {
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS
         }
       }
     }
-    expect(getterFns.totalResourcesPending.value).toBe(1)
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
+  })
+})
+
+describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  test.todo('If a resource does not exist, an error is thrown', () => {
+    // const resources = []
+    // expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
+  })
+
+  test.todo('If any resource is in progress, return true', () => {
+
+  })
+
+  test.todo('If no resource is in progress, return false', () => {
+
   })
 })
 
