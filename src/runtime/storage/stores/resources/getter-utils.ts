@@ -10,6 +10,7 @@ export class ResourcesGetterUtils {
   public resourcesApiStateIsPending (resources: string[]): boolean {
     if (!this.resourcesState) {
       // todo: work out why on server-side this would not be defined and can be called before the constructor
+      // eslint-disable-next-line no-console
       console.warn('resourcesState not defined')
       return false
     }

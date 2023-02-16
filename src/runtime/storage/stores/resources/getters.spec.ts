@@ -4,6 +4,16 @@ import { CwaResourceTypes } from '../../../resources/resource-utils'
 import { FetchStatus } from '../fetcher/state'
 import getters, { CwaResourcesGettersInterface } from './getters'
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import { ResourcesGetterUtils } from './getter-utils'
+
+vi.mock('./getter-utils', () => {
+  return {
+    ResourcesGetterUtils: vi.fn(() => ({
+      resourcesApiStateIsPending: vi.fn(),
+      totalResourcesPending: vi.fn()
+    }))
+  }
+})
 
 function createState (): CwaResourcesStateInterface {
   return {
@@ -26,6 +36,10 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
   beforeEach(() => {
     state = createState()
     getterFns = getters(state)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   test('returns current resources with their type as the object key', () => {
@@ -62,6 +76,27 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
   })
 })
 
+describe('ResourcesStore Getters -> totalResourcesPending', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('A computed value is returned from the utils', () => {
+    vi.spyOn(ResourcesGetterUtils.mock.results[0].value, 'totalResourcesPending', 'get').mockImplementationOnce(() => {
+      return 999
+    })
+    expect(getterFns.totalResourcesPending.value).toBe(999)
+  })
+})
+
 describe('ResourcesStore Getters -> currentResourcesApiStateIsPending', () => {
   let state: CwaResourcesStateInterface
   let getterFns: CwaResourcesGettersInterface
@@ -71,19 +106,22 @@ describe('ResourcesStore Getters -> currentResourcesApiStateIsPending', () => {
     getterFns = getters(state)
   })
 
-  test('returns false if no resources are pending', () => {
-    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(false)
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  test('returns true if there is a resource that is pending', () => {
+  test('Returns the result of utils resourcesApiStateIsPending with current ids', () => {
     state.current.byId = {
-      id: {
-        apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS
-        }
-      }
+      id: {}
     }
-    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(true)
+    vi.spyOn(ResourcesGetterUtils.mock.results[0].value, 'resourcesApiStateIsPending').mockImplementationOnce(() => {
+      return false
+    })
+    const result = getterFns.currentResourcesApiStateIsPending.value
+    const spy = ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending
+    expect(result).toBe(spy.mock.results[0].value)
+    expect(spy).toHaveBeenCalledOnce()
+    expect(spy).toHaveBeenCalledWith(['id'])
   })
 })
 
@@ -96,17 +134,15 @@ describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
     getterFns = getters(state)
   })
 
-  test.todo('If a resource does not exist, an error is thrown', () => {
-    // const resources = []
-    // expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  test.todo('If any resource is in progress, return true', () => {
-
-  })
-
-  test.todo('If no resource is in progress, return false', () => {
-
+  test('Returns the result of utils resourcesApiStateIsPending with current ids', () => {
+    const result = getterFns.resourcesApiStateIsPending.value
+    const spy = ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending
+    expect(result).toBe(ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending)
+    expect(spy).not.toHaveBeenCalled()
   })
 })
 
@@ -117,6 +153,10 @@ describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
   beforeEach(() => {
     state = createState()
     getterFns = getters(state)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   test('If the primary fetch path resource does not exist, return false', () => {
@@ -415,6 +455,9 @@ describe('ResourcesStore Getters -> resourceLoadStatus', () => {
     { total: 3, complete: 3, expectedPercent: 100 }
   ])('If the total to fetch is $total and we have loaded $complete the percentage should be $expectedPercent', ({ total, complete, expectedPercent }) => {
     const pending = total - complete
+    vi.spyOn(ResourcesGetterUtils.mock.results[0].value, 'totalResourcesPending', 'get').mockImplementationOnce(() => {
+      return pending
+    })
     const currentIds = Array.from(Array(total).keys())
     state.current = reactive({
       allIds: currentIds,

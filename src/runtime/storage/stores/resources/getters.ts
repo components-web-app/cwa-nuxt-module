@@ -48,11 +48,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return resources
     }),
     totalResourcesPending: computed<number>(() => utils.totalResourcesPending),
-    // todo: update test
     currentResourcesApiStateIsPending: computed<boolean>(() => {
       return utils.resourcesApiStateIsPending(Object.keys(resourcesState.current.byId))
     }),
-    // todo: test returns function for resource array input
     resourcesApiStateIsPending: computed(() => {
       return utils.resourcesApiStateIsPending
     }),
@@ -94,7 +92,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         return true
       }
     }),
-    // todo: update test
     resourceLoadStatus: computed(() => {
       const pending = utils.totalResourcesPending
       const total = resourcesState.current.currentIds.length
