@@ -1,13 +1,18 @@
 import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 
 export class ResourcesGetterUtils {
-  private resourcesState: CwaResourcesStateInterface
+  private readonly resourcesState: CwaResourcesStateInterface
 
   public constructor (resourcesState: CwaResourcesStateInterface) {
     this.resourcesState = resourcesState
   }
 
   public resourcesApiStateIsPending (resources: string[]): boolean {
+    if (!this.resourcesState) {
+      // todo: work out why on server-side this would not be defined and can be called before the constructor
+      console.warn('resourcesState not defined')
+      return false
+    }
     for (const resource of resources) {
       const resourceData = this.resourcesState.current.byId[resource]
       if (!resourceData) {

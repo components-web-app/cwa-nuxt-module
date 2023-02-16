@@ -87,6 +87,29 @@ describe('ResourcesStore Getters -> currentResourcesApiStateIsPending', () => {
   })
 })
 
+describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  test.todo('If a resource does not exist, an error is thrown', () => {
+    // const resources = []
+    // expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
+  })
+
+  test.todo('If any resource is in progress, return true', () => {
+
+  })
+
+  test.todo('If no resource is in progress, return false', () => {
+
+  })
+})
+
 describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
   let state: CwaResourcesStateInterface
   let getterFns: CwaResourcesGettersInterface
@@ -368,29 +391,6 @@ describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
       }
     }
     expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
-  })
-})
-
-describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
-  let state: CwaResourcesStateInterface
-  let getterFns: CwaResourcesGettersInterface
-
-  beforeEach(() => {
-    state = createState()
-    getterFns = getters(state)
-  })
-
-  test.todo('If a resource does not exist, an error is thrown', () => {
-    // const resources = []
-    // expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
-  })
-
-  test.todo('If any resource is in progress, return true', () => {
-
-  })
-
-  test.todo('If no resource is in progress, return false', () => {
-
   })
 })
 
