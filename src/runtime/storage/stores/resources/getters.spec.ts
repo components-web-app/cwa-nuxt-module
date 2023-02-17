@@ -139,10 +139,12 @@ describe('ResourcesStore Getters -> resourcesApiStateIsPending', () => {
   })
 
   test('Returns the result of utils resourcesApiStateIsPending with current ids', () => {
-    const result = getterFns.resourcesApiStateIsPending.value
+    const fn = getterFns.resourcesApiStateIsPending.value
     const spy = ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending
-    expect(result).toBe(ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending)
     expect(spy).not.toHaveBeenCalled()
+    const result = fn(['resource'])
+    expect(result).toBe(ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending.mock.results[0].value)
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 })
 

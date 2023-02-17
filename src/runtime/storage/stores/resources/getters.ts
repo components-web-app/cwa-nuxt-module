@@ -52,7 +52,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return utils.resourcesApiStateIsPending(Object.keys(resourcesState.current.byId))
     }),
     resourcesApiStateIsPending: computed(() => {
-      return utils.resourcesApiStateIsPending
+      return (resources: string[]) => utils.resourcesApiStateIsPending(resources)
     }),
     isFetchStatusResourcesResolved: computed(() => {
       return (fetchStatus: FetchStatus) => {

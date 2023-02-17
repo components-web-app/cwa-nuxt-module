@@ -1,6 +1,5 @@
 import { CwaFetcherStateInterface, FetchStatus } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/state'
 
-// todo: test
 export class FetcherGetterUtils {
   private fetcherState: CwaFetcherStateInterface
 
@@ -27,9 +26,11 @@ export class FetcherGetterUtils {
       return false
     }
 
-    // validate we have resources
     const resources = fetchStatus.resources
-    const isManifestResolving = !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
-    return !resources.length || isManifestResolving
+    if (!resources.length) {
+      return false
+    }
+
+    return !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
   }
 }

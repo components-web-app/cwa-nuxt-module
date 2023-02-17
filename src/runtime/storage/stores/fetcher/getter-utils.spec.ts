@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
-import { CwaFetcherStateInterface } from './state'
-import getters, { CwaFetcherGettersInterface } from './getters'
+import { CwaFetcherStateInterface, FetchStatus } from './state'
+import { FetcherGetterUtils } from './getter-utils'
 
 function createState (): CwaFetcherStateInterface {
   return {
@@ -10,110 +10,56 @@ function createState (): CwaFetcherStateInterface {
   }
 }
 
-describe.todo('FetcherStore getters -> resolvedSuccessFetchStatus', () => {
+describe('FetcherStore getters -> getFetchStatusByToken', () => {
   let state: CwaFetcherStateInterface
-  let getterFns: CwaFetcherGettersInterface
+  let getterUtils: FetcherGetterUtils
 
   beforeEach(() => {
     state = createState()
-    state.primaryFetch.successToken = 'success-token'
-    getterFns = getters(state)
+    getterUtils = new FetcherGetterUtils(state)
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
-  test.todo('Return false if no resources in the fetch status', () => {
-    state.fetches = {
-      'success-token': {
-        path: 'any',
-        isPrimary: false,
-        resources: []
-      }
+  test('Return undefined if the token does not exist', () => {
+    expect(getterUtils.getFetchStatusByToken('does-not-exist')).toBeUndefined()
+  })
+
+  test('Return the fetch status if it exists', () => {
+    const fetchStatus = {
+      path: 'any',
+      isPrimary: false,
+      resources: []
     }
-    expect(getterFns.resolvedSuccessFetchStatus.value).toBe(false)
+    state.fetches = {
+      'some-token': fetchStatus
+    }
+    expect(getterUtils.getFetchStatusByToken('some-token')).toStrictEqual(fetchStatus)
   })
-
-  test.todo.each([
-    { manifest: false, manifestResources: undefined, manifestError: undefined, result: true },
-    { manifest: true, manifestResources: undefined, manifestError: undefined, result: false },
-    { manifest: true, manifestResources: ['                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      vv                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              /some-resource'], manifestError: undefined, result: true },
-    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: true }
-  ])(
-    "If manifest exist status is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
-    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
-    ) => {
-      const currentFetch: FetchStatus = {
-        path: '/success-resource',
-        isPrimary: false,
-        resources: ['/success-resource', '/not-found-resource']
-      }
-      if (manifest) {
-        currentFetch.manifest = {
-          path: 'any',
-          resources: manifestResources,
-          error: manifestError
-        }
-      }
-      state.fetches = {
-        'success-token': currentFetch
-      }
-      expect(getterFns.resolvedSuccessFetchStatus.value).toBe(result)
-    })
 })
 
 // utils
-describe.todo('FetcherStore getters -> isFetchResolving', () => {
+describe('FetcherStore getters -> isFetchResolving', () => {
   let state: CwaFetcherStateInterface
-  let getterFns: CwaFetcherGettersInterface
+  let getterUtils: FetcherGetterUtils
 
   beforeEach(() => {
     state = createState()
     state.primaryFetch.successToken = 'success-token'
-    getterFns = getters(state)
+    getterUtils = new FetcherGetterUtils(state)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   test('Return false if the token does not exist', () => {
-    expect(getterFns.isFetchChainComplete.value('no-token')).toBe(false)
+    expect(getterUtils.isFetchResolving('no-token')).toBe(false)
   })
 
-  test('Return false if no resources in the fetch chain', () => {
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: false,
-        resources: []
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
-  })
-
-  test('Throws an error if the resource does not exist in the resources store', () => {
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: false,
-        resources: ['does-not-exist']
-      }
-    }
-    expect(() => {
-      getterFns.isFetchChainComplete.value('some-token')
-    }).toThrowError('The resource \'does-not-exist\' does not exist but is defined in the fetch chain with token \'some-token\'')
-  })
-
-  test('Returns false if a resource in the fetch chain is still in progress', () => {
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: false,
-        resources: ['/success-resource', '/not-found-resource', '/in-progress-resource']
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
-  })
-
-  test('Returns true if the fetch chain is aborted', () => {
+  test('Returns false if the fetch chain is aborted', () => {
     state.fetches = {
       'some-token': {
         path: 'any',
@@ -122,60 +68,25 @@ describe.todo('FetcherStore getters -> isFetchResolving', () => {
         abort: true
       }
     }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
+    expect(getterUtils.isFetchResolving('some-token')).toBe(false)
   })
 
-  test('Returns false is the fetch is primary but not a current or successful primary fetch', () => {
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: true,
-        resources: ['/success-resource', '/not-found-resource']
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(false)
-  })
-
-  test('Returns true if all resources in a completed state', () => {
+  test('Return false if no resources in the fetch status', () => {
     state.fetches = {
       'some-token': {
         path: 'any',
         isPrimary: false,
-        resources: ['/success-resource', '/not-found-resource']
+        resources: []
       }
     }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
-  })
-
-  test('Returns true if all resources in a completed state and primary successful token test', () => {
-    state.primaryFetch.successToken = 'some-token'
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: true,
-        resources: ['/success-resource', '/not-found-resource']
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
-  })
-
-  test('Returns true if all resources in a completed state and primary fetching token test', () => {
-    state.primaryFetch.fetchingToken = 'some-token'
-    state.fetches = {
-      'some-token': {
-        path: 'any',
-        isPrimary: true,
-        resources: ['/success-resource', '/not-found-resource']
-      }
-    }
-    expect(getterFns.isFetchChainComplete.value('some-token')).toBe(true)
+    expect(getterUtils.isFetchResolving('some-token')).toBe(false)
   })
 
   test.each([
-    { manifest: false, manifestResources: undefined, manifestError: undefined, result: true },
-    { manifest: true, manifestResources: undefined, manifestError: undefined, result: false },
-    { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: true },
-    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: true }
+    { manifest: false, manifestResources: undefined, manifestError: undefined, result: false },
+    { manifest: true, manifestResources: undefined, manifestError: undefined, result: true },
+    { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: false },
+    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: false }
   ])(
     "If manifest is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
     ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
@@ -195,6 +106,6 @@ describe.todo('FetcherStore getters -> isFetchResolving', () => {
       state.fetches = {
         'some-token': currentFetch
       }
-      expect(getterFns.isFetchChainComplete.value('some-token')).toBe(result)
+      expect(getterUtils.isFetchResolving('some-token')).toBe(result)
     })
 })
