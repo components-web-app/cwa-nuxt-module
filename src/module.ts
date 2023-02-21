@@ -1,6 +1,14 @@
 import { fileURLToPath } from 'url'
 import { join } from 'path'
-import { defineNuxtModule, createResolver, addPluginTemplate, installModule, addLayout, extendPages } from '@nuxt/kit'
+import {
+  defineNuxtModule,
+  createResolver,
+  addPluginTemplate,
+  installModule,
+  addLayout,
+  extendPages,
+  addImports
+} from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
 import Bluebird from 'bluebird'
 
@@ -102,5 +110,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       filename: join('cwa', 'cwa-plugin.ts'),
       options
     })
+
+    addImports([{ from: resolve('./runtime/composable.js'), name: 'useCwa' }])
   }
 })
