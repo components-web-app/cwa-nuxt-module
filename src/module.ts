@@ -58,15 +58,6 @@ export default defineNuxtModule<CwaModuleOptions>({
   defaults: {
     storeName: 'cwa'
   },
-  // todo: think through and test hook set if needed
-  hooks: {
-    'components:dirs' (dirs) {
-      dirs.push({
-        path: fileURLToPath(new URL('./runtime/templates/components/utils', import.meta.url)),
-        prefix: 'cwa'
-      })
-    }
-  },
   async setup (options: CwaModuleOptions, nuxt) {
     Bluebird.config({ cancellation: true })
 
@@ -112,5 +103,21 @@ export default defineNuxtModule<CwaModuleOptions>({
     })
 
     addImports([{ from: resolve('./runtime/composable.js'), name: 'useCwa' }])
+
+    nuxt.hook('components:dirs', (dirs) => {
+      dirs.unshift({
+        path: resolve(join(nuxt.options.srcDir, 'cwa', 'pages')),
+        prefix: 'CwaPage'
+      })
+      dirs.unshift({
+        path: resolve(join(nuxt.options.srcDir, 'cwa', 'components')),
+        prefix: 'CwaComponent'
+      })
+      // todo: think through and test hook set if needed
+      dirs.unshift({
+        path: fileURLToPath(new URL('./runtime/templates/components/utils', import.meta.url)),
+        prefix: 'CwaUtils'
+      })
+    })
   }
 })

@@ -20,21 +20,21 @@ export class ResourcesManager {
     return this.resourcesStore.current.currentIds
   }
 
+  public getResource (id: string) {
+    return computed(() => this.resourcesStore.current.byId?.[id])
+  }
+
   // todo: this may be temporary, but if proves useful, functionality to be moved to a resources store getter and this as a proxy
   public get currentResources () {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
-      obj[id] = this.resourcesStore.current.byId[id]
+      obj[id] = this.getResource(id).value
       return obj
     }, {} as {
       [key: string]: CwaCurrentResourceInterface
     })
   }
 
-  // todo: start: created this as a proxy so we can determine which page should be displayed currently and time the page change
-  public get resources () {
-    return this.currentResources
-  }
-
+  // todo: start
   private get primaryResource () {
     const successFetchStatus = this.fetcherStore.resolvedSuccessFetchStatus
     if (!successFetchStatus) {
@@ -43,7 +43,7 @@ export class ResourcesManager {
     return { path: successFetchStatus.path, type: getResourceTypeFromIri(successFetchStatus.path) }
   }
 
-  private get pageIri (): string|undefined {
+  public get pageIri (): string|undefined {
     const primaryResource = this.primaryResource
     if (!primaryResource || !primaryResource.type) {
       return
@@ -51,7 +51,7 @@ export class ResourcesManager {
     if (primaryResource.type === CwaResourceTypes.PAGE) {
       return primaryResource.path
     } else if ([CwaResourceTypes.ROUTE, CwaResourceTypes.PAGE_DATA].includes(primaryResource.type)) {
-      const successResource = this.resourcesStore.current.byId[primaryResource.path]
+      const successResource = this.getResource(primaryResource.path).value
       return successResource.data.page
     }
   }
@@ -60,7 +60,7 @@ export class ResourcesManager {
     if (!this.pageIri) {
       return
     }
-    return this.resourcesStore.current.byId[this.pageIri]
+    return this.getResource(this.pageIri).value
   }
 
   public get layout (): ComputedRef<CwaCurrentResourceInterface|undefined> {
@@ -74,7 +74,7 @@ export class ResourcesManager {
         return
       }
 
-      return this.resourcesStore.current.byId?.[pageResource.data?.layout]
+      return this.getResource(pageResource.data?.layout).value
     })
   }
   // todo: end

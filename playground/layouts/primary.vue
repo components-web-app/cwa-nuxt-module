@@ -1,6 +1,6 @@
 <template>
   <div>
-    <CwaDefaultSpinner :show="$cwa.resourcesManager.isLoading.value === true" class="page-spinner" />
+    <CwaUtilsSpinner :show="$cwa.resourcesManager.isLoading.value === true" class="page-spinner" />
     <header>
       <Popover class="cwa-relative cwa-bg-white">
         <div class="cwa-mx-auto cwa-flex cwa-max-w-7xl cwa-items-center cwa-p-6 cwa-justify-start cwa-space-x-10 lg:cwa-px-8">
