@@ -26,7 +26,12 @@ export interface CwaResourceApiStateSuccess {
 declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess
 
 export interface CwaCurrentResourceInterface {
-  data?: any
+  data?: {
+    '@id': string
+    '@type': string
+    uiComponent?: string
+    [key: string]: any
+  }
   apiState: CwaResourceApiState
 }
 

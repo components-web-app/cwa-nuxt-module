@@ -77,6 +77,7 @@ export class ResourcesManager {
       return this.getResource(pageResource.data?.layout).value
     })
   }
+
   // todo: end
 
   public get isLoading (): ComputedRef<boolean> {
