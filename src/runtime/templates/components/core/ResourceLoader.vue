@@ -37,6 +37,7 @@ const resolvedComponent = computed(() => {
   if (!Object.keys(components).includes(uiComponent.value)) {
     return
   }
+  // eslint-disable-next-line import/namespace
   return components[uiComponent.value]
 })
 </script>

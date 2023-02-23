@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-p-4">
-    <ResourceLoader :iri="$cwa.resourcesManager.pageIri" />
+    <ResourceLoader :iri="$cwa.resourcesManager.pageIri.value" />
     <CwaCurrentResources />
   </div>
 </template>

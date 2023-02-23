@@ -1,11 +1,12 @@
 import { computed, ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri
 } from './resource-utils'
+import { FetchStatus } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/state'
 
 export class ResourcesManager {
   private resourcesStoreDefinition: ResourcesStore
@@ -35,37 +36,54 @@ export class ResourcesManager {
   }
 
   // todo: start
-  private get primaryResource () {
-    const successFetchStatus = this.fetcherStore.resolvedSuccessFetchStatus
-    if (!successFetchStatus) {
-      return
+  private get displayFetchStatus () {
+    const fetchingToken = this.fetcherStore.primaryFetch.fetchingToken
+    // if the page is fetched in a primary fetching token in progress we start showing that page load progress
+    if (fetchingToken) {
+      const fetchingStatus = this.fetcherStore.fetches[fetchingToken]
+      if (fetchingStatus) {
+        const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
+        if (pageIri) {
+          const pageResource = this.getResource(pageIri).value
+          if (pageResource && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+            return fetchingStatus
+          }
+        }
+      }
     }
-    return { path: successFetchStatus.path, type: getResourceTypeFromIri(successFetchStatus.path) }
+    return this.fetcherStore.resolvedSuccessFetchStatus
   }
 
-  public get pageIri (): string|undefined {
-    const primaryResource = this.primaryResource
-    if (!primaryResource || !primaryResource.type) {
+  private getPageIriByFetchStatus (fetchStatus?: FetchStatus): string|undefined {
+    if (!fetchStatus) {
       return
     }
-    if (primaryResource.type === CwaResourceTypes.PAGE) {
-      return primaryResource.path
-    } else if ([CwaResourceTypes.ROUTE, CwaResourceTypes.PAGE_DATA].includes(primaryResource.type)) {
-      const successResource = this.getResource(primaryResource.path).value
-      return successResource.data.page
+    const type = getResourceTypeFromIri(fetchStatus.path)
+    if (!type) {
+      return
     }
+    if (type === CwaResourceTypes.PAGE) {
+      return fetchStatus.path
+    } else if ([CwaResourceTypes.ROUTE, CwaResourceTypes.PAGE_DATA].includes(type)) {
+      const successResource = this.getResource(fetchStatus.path).value
+      return successResource.data?.page
+    }
+  }
+
+  public get pageIri (): ComputedRef<string|undefined> {
+    return computed(() => this.getPageIriByFetchStatus(this.displayFetchStatus))
   }
 
   private get page () {
-    if (!this.pageIri) {
+    if (!this.pageIri.value) {
       return
     }
-    return this.getResource(this.pageIri).value
+    return this.getResource(this.pageIri.value).value
   }
 
   public get layout (): ComputedRef<CwaCurrentResourceInterface|undefined> {
     return computed(() => {
-      if (!this.pageIri) {
+      if (!this.pageIri.value) {
         return
       }
 

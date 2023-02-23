@@ -1,6 +1,6 @@
 <template>
   <div>
-    Primary Page Template {{ props }}
+    {{ props.iri }}
   </div>
 </template>
 
