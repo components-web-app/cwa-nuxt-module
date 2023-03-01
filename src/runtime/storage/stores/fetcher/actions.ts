@@ -164,22 +164,31 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         return
       }
 
-      if (fetcherState.primaryFetch.fetchingToken === event.token) {
+      const initialFetchingToken = fetcherState.primaryFetch.fetchingToken
+      const initialSuccessToken = fetcherState.primaryFetch.successToken
+
+      // update the token references
+      if (event.token === initialFetchingToken) {
         fetcherState.primaryFetch.fetchingToken = undefined
-      } else {
+        fetcherState.primaryFetch.successToken = event.token
+      }
+
+      // we should delete an old success token if a new one is being set
+      // we should not delete if it is the old success token that we are setting it back to
+      if (
+        initialSuccessToken && fetcherState.primaryFetch.successToken !== initialSuccessToken
+      ) {
+        delete fetcherState.fetches[initialSuccessToken]
+      }
+
+      if (event.token !== fetcherState.primaryFetch.successToken) {
         delete fetcherState.fetches[event.token]
       }
 
-      // delete existing primary fetch chain
-      if (fetcherState.primaryFetch.successToken) {
-        // as we are in a primary fetch, should we also return all these resources that are OK to delete?
-        // or do we return a status boolean and let the fetch status manager see that it was primary so that
-        // it can delete all resources that are not currentIds
-        delete fetcherState.fetches[fetcherState.primaryFetch.successToken]
-      }
-
-      // set the new success token
-      fetcherState.primaryFetch.successToken = event.token
+      // // delete the entire thing if a previous fetching token has now been overwritten
+      // if (event.token !== initialSuccessToken) {
+      //   delete fetcherState.fetches[event.token]
+      // }
     },
     addFetchResource (event: AddFetchResourceEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)

@@ -43,9 +43,9 @@ export class ResourcesManager {
       const fetchingStatus = this.fetcherStore.fetches[fetchingToken]
       if (fetchingStatus) {
         const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
-        if (pageIri) {
+        if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
           const pageResource = this.getResource(pageIri).value
-          if (pageResource && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+          if (pageResource.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
             return fetchingStatus
           }
         }

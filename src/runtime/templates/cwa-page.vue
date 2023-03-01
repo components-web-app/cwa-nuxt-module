@@ -1,5 +1,6 @@
 <template>
   <div class="cwa-p-4">
+    CWA PAGE... {{ $cwa.resourcesManager.pageIri.value }}<br>
     <ResourceLoader :iri="$cwa.resourcesManager.pageIri.value" />
     <CwaCurrentResources />
   </div>

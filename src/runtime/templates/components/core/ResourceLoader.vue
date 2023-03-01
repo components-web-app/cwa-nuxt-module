@@ -1,6 +1,9 @@
 <template>
   <div>
-    <CwaUtilsSpinner v-if="isLoading" />
+    <div v-if="!props.iri">
+      No IRI found
+    </div>
+    <CwaUtilsSpinner v-else-if="isLoading" />
     <component :is="resolvedComponent" v-else-if="resolvedComponent" :iri="props.iri" />
     <div v-else>
       The component {{ uiComponent }} does not exist
@@ -26,10 +29,16 @@ const props = defineProps({
 const resource = $cwa.resourcesManager.getResource(props.iri)
 
 const isLoading = computed(() => {
+  if (!resource.value) {
+    return false
+  }
   return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const uiComponent = computed(() => {
+  if (!resource.value) {
+    return
+  }
   return 'CwaPage' + (resource.value.data.uiComponent || resource.value.data['@type'])
 })
 
