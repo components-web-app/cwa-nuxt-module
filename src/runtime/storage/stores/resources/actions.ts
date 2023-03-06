@@ -1,3 +1,4 @@
+import { showError } from '#app'
 import {
   CwaResource,
   CwaResourceTypes,
@@ -30,7 +31,7 @@ export interface SetResourceResetStatusEvent {
 }
 declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent|SetResourceCompletedStatusEvent|SetResourceResetStatusEvent
 
-export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean }
+export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, isPrimary?: boolean }
 
 interface InitResourceEvent {
   iri: string
@@ -191,7 +192,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
       data.apiState = newApiState
     },
-    setResourceFetchError ({ iri, error, isCurrent }: SetResourceFetchErrorEvent): void {
+    setResourceFetchError ({ iri, error, isCurrent, isPrimary }: SetResourceFetchErrorEvent): void {
       const data = initResource({
         resourcesState,
         iri,
@@ -200,6 +201,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       data.apiState = {
         status: CwaResourceApiStatuses.ERROR,
         error: error?.asObject
+      }
+
+      // todo: test isPrimary
+      if (isPrimary && error) {
+        showError({ statusCode: error.statusCode, message: error.message })
       }
     },
     saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {

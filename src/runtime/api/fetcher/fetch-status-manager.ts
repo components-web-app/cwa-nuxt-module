@@ -126,8 +126,12 @@ export default class FetchStatusManager {
       return
     }
 
+    // todo: test isPrimary and passing to setResourceFetchError
+    const fetchStatus = this.fetcherStore.fetches[event.token]
+    const isPrimary = fetchStatus.path === event.resource
+
     if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent })
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent, isPrimary })
       return
     }
 
@@ -135,7 +139,8 @@ export default class FetchStatusManager {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current.`)),
-        isCurrent
+        isCurrent,
+        isPrimary
       })
       return
     }
@@ -146,7 +151,8 @@ export default class FetchStatusManager {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
-        isCurrent
+        isCurrent,
+        isPrimary
       })
       return
     }
