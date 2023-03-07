@@ -1,6 +1,6 @@
 <template>
   <div>
-    {{ $cwa.resourcesManager.pageLoadProgress.value.percent }}
+    <CwaUtilsProgressBar :show="$cwa.resourcesManager.pageLoadProgress.value.percent < 100" :percent="$cwa.resourcesManager.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
     <CwaUtilsSpinner :show="$cwa.resourcesManager.isLoading.value === true" class="page-spinner" />
     <header>
       <Popover class="cwa-relative cwa-bg-white">
@@ -40,6 +40,12 @@ const { $cwa } = useNuxtApp()
   position: absolute;
   top: 1rem;
   right: 1rem;
+  z-index: 1000;
+}
+.page-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 1000;
 }
 </style>

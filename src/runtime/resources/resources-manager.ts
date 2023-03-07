@@ -62,7 +62,7 @@ export class ResourcesManager {
   }
 
   private get pageLoadResources () {
-    const token = this.fetcherStore.primaryFetch.fetchingToken || this.fetcherStore.primaryFetch.successToken
+    const token = this.fetcherStore.primaryFetch.fetchingToken
     if (!token) {
       return
     }
@@ -125,7 +125,7 @@ export class ResourcesManager {
       if (complete === 0) {
         percent = total === 0 ? 100 : 0
       } else {
-        percent = Math.round((complete / total) * 10000) / 100
+        percent = Math.round((complete / total) * 100)
       }
 
       return {

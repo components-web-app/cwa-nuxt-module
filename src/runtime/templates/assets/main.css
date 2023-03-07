@@ -1,5 +1,5 @@
 /*
-! tailwindcss v3.2.4 | MIT License | https://tailwindcss.com
+! tailwindcss v3.2.7 | MIT License | https://tailwindcss.com
 *//*
 1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
 2. Allow adding a border to an element by just adding a border-width. (https://github.com/tailwindcss/tailwindcss/pull/116)
@@ -485,9 +485,6 @@ video {
 .cwa-relative {
   position: relative;
 }
-.cwa-top-16 {
-  top: 4rem;
-}
 .cwa-bottom-2 {
   bottom: 0.5rem;
 }
@@ -496,6 +493,9 @@ video {
 }
 .cwa-right-2 {
   right: 0.5rem;
+}
+.cwa-top-16 {
+  top: 4rem;
 }
 .cwa-mx-auto {
   margin-left: auto;
@@ -507,6 +507,9 @@ video {
 .cwa-grid {
   display: grid;
 }
+.cwa-h-1 {
+  height: 0.25rem;
+}
 .cwa-h-56 {
   height: 14rem;
 }
@@ -516,20 +519,17 @@ video {
 .cwa-w-6 {
   width: 1.5rem;
 }
+.cwa-w-full {
+  width: 100%;
+}
+.cwa-w-0 {
+  width: 0px;
+}
 .cwa-max-w-7xl {
   max-width: 80rem;
 }
 .cwa-transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-}
-@keyframes cwa-spin {
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-.cwa-animate-spin {
-  animation: cwa-spin 1s linear infinite;
 }
 @keyframes cwa-spin {
 
@@ -574,9 +574,9 @@ video {
 .cwa-whitespace-nowrap {
   white-space: nowrap;
 }
-.cwa-bg-slate-100 {
+.cwa-bg-green-400 {
   --tw-bg-opacity: 1;
-  background-color: rgb(241 245 249 / var(--tw-bg-opacity));
+  background-color: rgb(74 222 128 / var(--tw-bg-opacity));
 }
 .cwa-bg-lime-200 {
   --tw-bg-opacity: 1;
@@ -586,12 +586,16 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgb(254 202 202 / var(--tw-bg-opacity));
 }
+.cwa-bg-red-200\/95 {
+  background-color: rgb(254 202 202 / 0.95);
+}
+.cwa-bg-slate-100 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(241 245 249 / var(--tw-bg-opacity));
+}
 .cwa-bg-slate-200 {
   --tw-bg-opacity: 1;
   background-color: rgb(226 232 240 / var(--tw-bg-opacity));
-}
-.cwa-bg-red-200\/95 {
-  background-color: rgb(254 202 202 / 0.95);
 }
 .cwa-bg-white {
   --tw-bg-opacity: 1;
@@ -600,11 +604,11 @@ video {
 .cwa-fill-blue-600 {
   fill: #2563eb;
 }
-.cwa-p-4 {
-  padding: 1rem;
-}
 .cwa-p-3 {
   padding: 0.75rem;
+}
+.cwa-p-4 {
+  padding: 1rem;
 }
 .cwa-p-6 {
   padding: 1.5rem;
@@ -617,6 +621,10 @@ video {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
+.cwa-text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
 .cwa-text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem;
@@ -624,10 +632,6 @@ video {
 .cwa-text-xs {
   font-size: 0.75rem;
   line-height: 1rem;
-}
-.cwa-text-base {
-  font-size: 1rem;
-  line-height: 1.5rem;
 }
 .cwa-font-bold {
   font-weight: 700;
@@ -639,13 +643,13 @@ video {
   --tw-text-opacity: 1 !important;
   color: rgb(17 24 39 / var(--tw-text-opacity)) !important;
 }
-.cwa-text-gray-500 {
-  --tw-text-opacity: 1;
-  color: rgb(107 114 128 / var(--tw-text-opacity));
-}
 .cwa-text-gray-300 {
   --tw-text-opacity: 1;
   color: rgb(209 213 219 / var(--tw-text-opacity));
+}
+.cwa-text-gray-500 {
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity));
 }
 .cwa-underline {
   text-decoration-line: underline;
@@ -656,9 +660,6 @@ video {
 .cwa-opacity-100 {
   opacity: 1;
 }
-.cwa-opacity-50 {
-  opacity: 0.5;
-}
 .cwa-transition {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
@@ -666,23 +667,49 @@ video {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+.cwa-transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.cwa-delay-150 {
+  transition-delay: 150ms;
+}
+.cwa-delay-200 {
+  transition-delay: 200ms;
+}
+.cwa-delay-500 {
+  transition-delay: 500ms;
+}
+.cwa-delay-1000 {
+  transition-delay: 1000ms;
+}
+.cwa-delay-300 {
+  transition-delay: 300ms;
+}
+.cwa-duration-100 {
+  transition-duration: 100ms;
+}
 .cwa-duration-300 {
   transition-duration: 300ms;
-}
-.cwa-duration-200 {
-  transition-duration: 200ms;
 }
 .cwa-duration-500 {
   transition-duration: 500ms;
 }
-.cwa-duration-1000 {
-  transition-duration: 1000ms;
+.cwa-duration-75 {
+  transition-duration: 75ms;
 }
-.cwa-ease-out {
-  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+.cwa-duration-200 {
+  transition-duration: 200ms;
+}
+.cwa-duration-150 {
+  transition-duration: 150ms;
 }
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+.cwa-ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
 .hover\:cwa-text-gray-900:hover {
   --tw-text-opacity: 1;
