@@ -85,10 +85,16 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         break
       }
       case CwaResourceTypes.COMPONENT: {
+        if (!resource.data) {
+          break
+        }
         // if it is a component, the position will also be deleted in an auto-cascade on the server if the position is not dynamic, we should replicate locally and delete the position
         const componentPositions = resource.data.componentPositions
         for (const positionIri of componentPositions) {
           const positionResource = resourcesState.current.byId[positionIri]
+          if (!positionResource.data) {
+            continue
+          }
           if (positionResource.data.pageDataProperty) {
             positionResource.data.component = undefined
           } else {
@@ -212,7 +218,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       const iri = event.resource['@id']
       if (event.isNew) {
         const existingResource = resourcesState.current.byId[iri]
-        if (existingResource && isCwaResourceSame(existingResource.data, event.resource)) {
+        if (existingResource?.data && isCwaResourceSame(existingResource.data, event.resource)) {
           return
         }
         resourcesState.new.byId[iri] = {

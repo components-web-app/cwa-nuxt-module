@@ -1,5 +1,6 @@
 <template>
   <div>
+    {{ $cwa.resourcesManager.pageLoadProgress.value.percent }}
     <CwaUtilsSpinner :show="$cwa.resourcesManager.isLoading.value === true" class="page-spinner" />
     <header>
       <Popover class="cwa-relative cwa-bg-white">
