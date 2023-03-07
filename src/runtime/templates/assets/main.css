@@ -497,18 +497,14 @@ video {
 .cwa-top-16 {
   top: 4rem;
 }
-.cwa-mx-auto {
-  margin-left: auto;
-  margin-right: auto;
-}
-.cwa-flex {
-  display: flex;
-}
 .cwa-grid {
   display: grid;
 }
-.cwa-h-1 {
-  height: 0.25rem;
+.cwa-h-0 {
+  height: 0px;
+}
+.cwa-h-0\.5 {
+  height: 0.125rem;
 }
 .cwa-h-56 {
   height: 14rem;
@@ -516,17 +512,14 @@ video {
 .cwa-h-6 {
   height: 1.5rem;
 }
+.cwa-w-0 {
+  width: 0px;
+}
 .cwa-w-6 {
   width: 1.5rem;
 }
 .cwa-w-full {
   width: 100%;
-}
-.cwa-w-0 {
-  width: 0px;
-}
-.cwa-max-w-7xl {
-  max-width: 80rem;
 }
 .cwa-transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
@@ -543,24 +536,8 @@ video {
 .cwa-grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
-.cwa-items-center {
-  align-items: center;
-}
-.cwa-justify-start {
-  justify-content: flex-start;
-}
 .cwa-gap-3 {
   gap: 0.75rem;
-}
-.cwa-space-x-10 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(2.5rem * var(--tw-space-x-reverse));
-  margin-left: calc(2.5rem * calc(1 - var(--tw-space-x-reverse)));
-}
-.cwa-space-x-5 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(1.25rem * var(--tw-space-x-reverse));
-  margin-left: calc(1.25rem * calc(1 - var(--tw-space-x-reverse)));
 }
 .cwa-overflow-auto {
   overflow: auto;
@@ -574,9 +551,9 @@ video {
 .cwa-whitespace-nowrap {
   white-space: nowrap;
 }
-.cwa-bg-green-400 {
+.cwa-bg-green-500 {
   --tw-bg-opacity: 1;
-  background-color: rgb(74 222 128 / var(--tw-bg-opacity));
+  background-color: rgb(34 197 94 / var(--tw-bg-opacity));
 }
 .cwa-bg-lime-200 {
   --tw-bg-opacity: 1;
@@ -597,10 +574,6 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgb(226 232 240 / var(--tw-bg-opacity));
 }
-.cwa-bg-white {
-  --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
-}
 .cwa-fill-blue-600 {
   fill: #2563eb;
 }
@@ -610,9 +583,6 @@ video {
 .cwa-p-4 {
   padding: 1rem;
 }
-.cwa-p-6 {
-  padding: 1.5rem;
-}
 .cwa-px-2 {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
@@ -620,10 +590,6 @@ video {
 .cwa-py-1 {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
-}
-.cwa-text-base {
-  font-size: 1rem;
-  line-height: 1.5rem;
 }
 .cwa-text-sm {
   font-size: 0.875rem;
@@ -636,23 +602,9 @@ video {
 .cwa-font-bold {
   font-weight: 700;
 }
-.cwa-font-medium {
-  font-weight: 500;
-}
-.\!cwa-text-gray-900 {
-  --tw-text-opacity: 1 !important;
-  color: rgb(17 24 39 / var(--tw-text-opacity)) !important;
-}
 .cwa-text-gray-300 {
   --tw-text-opacity: 1;
   color: rgb(209 213 219 / var(--tw-text-opacity));
-}
-.cwa-text-gray-500 {
-  --tw-text-opacity: 1;
-  color: rgb(107 114 128 / var(--tw-text-opacity));
-}
-.cwa-underline {
-  text-decoration-line: underline;
 }
 .cwa-opacity-0 {
   opacity: 0;
@@ -672,38 +624,14 @@ video {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
-.cwa-delay-150 {
-  transition-delay: 150ms;
-}
 .cwa-delay-200 {
   transition-delay: 200ms;
-}
-.cwa-delay-500 {
-  transition-delay: 500ms;
-}
-.cwa-delay-1000 {
-  transition-delay: 1000ms;
-}
-.cwa-delay-300 {
-  transition-delay: 300ms;
-}
-.cwa-duration-100 {
-  transition-duration: 100ms;
-}
-.cwa-duration-300 {
-  transition-duration: 300ms;
-}
-.cwa-duration-500 {
-  transition-duration: 500ms;
-}
-.cwa-duration-75 {
-  transition-duration: 75ms;
 }
 .cwa-duration-200 {
   transition-duration: 200ms;
 }
-.cwa-duration-150 {
-  transition-duration: 150ms;
+.cwa-duration-300 {
+  transition-duration: 300ms;
 }
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
@@ -711,21 +639,10 @@ video {
 .cwa-ease-out {
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
-.hover\:cwa-text-gray-900:hover {
-  --tw-text-opacity: 1;
-  color: rgb(17 24 39 / var(--tw-text-opacity));
-}
 @media (min-width: 768px) {
 
   .md\:cwa-grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1024px) {
-
-  .lg\:cwa-px-8 {
-    padding-left: 2rem;
-    padding-right: 2rem;
   }
 }
 @media (min-width: 1280px) {

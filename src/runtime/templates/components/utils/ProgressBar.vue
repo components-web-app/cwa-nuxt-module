@@ -7,8 +7,8 @@
     leave-active-class="cwa-duration-300 cwa-ease-in cwa-delay-200"
     leave-to-class="cwa-transform cwa-opacity-0"
   >
-    <div v-show="props.show" class="cwa-w-full cwa-h-1">
-      <div class="cwa-bg-green-400 cwa-h-1 cwa-transition-all cwa-duration-300" :style=" { width: `${props.percent}%` }" />
+    <div v-show="props.show" class="cwa-w-full cwa-h-0.5">
+      <div class="cwa-bg-green-500 cwa-h-0.5 cwa-transition-all cwa-duration-300" :style=" { width: `${props.percent}%` }" />
     </div>
   </Transition>
 </template>

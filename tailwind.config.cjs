@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/**/*.vue', './playground/layouts/**/*.vue'],
+  content: ['./src/**/*.vue'],
   theme: {
     extend: {
       animation: {
