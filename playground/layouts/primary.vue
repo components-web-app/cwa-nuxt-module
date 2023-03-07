@@ -3,19 +3,19 @@
     <CwaUtilsProgressBar :show="$cwa.resourcesManager.pageLoadProgress.value.percent < 100" :percent="$cwa.resourcesManager.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
     <CwaUtilsSpinner :show="$cwa.resourcesManager.isLoading.value === true" class="page-spinner" />
     <header>
-      <Popover class="cwa-relative cwa-bg-white">
-        <div class="cwa-mx-auto cwa-flex cwa-max-w-7xl cwa-items-center cwa-p-6 cwa-justify-start cwa-space-x-10 lg:cwa-px-8">
-          <PopoverGroup as="nav" class="cwa-space-x-5 cwa-flex">
-            <nuxt-link to="/" exact-active-class="!cwa-text-gray-900 cwa-underline" class="cwa-text-base cwa-font-medium cwa-text-gray-500 hover:cwa-text-gray-900">
+      <Popover class="relative bg-white">
+        <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">
+          <PopoverGroup as="nav" class="space-x-5 flex">
+            <nuxt-link to="/" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
               Home
             </nuxt-link>
-            <nuxt-link to="/blog-articles" exact-active-class="!cwa-text-gray-900 cwa-underline" class="cwa-text-base cwa-font-medium cwa-text-gray-500 hover:cwa-text-gray-900">
+            <nuxt-link to="/blog-articles" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
               Blog
             </nuxt-link>
-            <nuxt-link to="/form" exact-active-class="!cwa-text-gray-900 cwa-underline" class="cwa-text-base cwa-font-medium cwa-text-gray-500 hover:cwa-text-gray-900">
+            <nuxt-link to="/form" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
               Form
             </nuxt-link>
-            <nuxt-link to="/home" exact-active-class="!cwa-text-gray-900 cwa-underline" class="cwa-text-base cwa-font-medium cwa-text-gray-500 hover:cwa-text-gray-900">
+            <nuxt-link to="/home" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
               Home Redirect
             </nuxt-link>
           </PopoverGroup>

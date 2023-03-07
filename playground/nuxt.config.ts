@@ -9,6 +9,9 @@ export default defineNuxtConfig({
   modules: [
     CwaModule
   ],
+  css: [
+    '@/assets/css/main.css'
+  ],
   cwa: {
     apiUrl: API_URL,
     apiUrlBrowser: API_URL_BROWSER
