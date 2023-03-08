@@ -1,8 +1,5 @@
 <template>
-  <div>
-    {{ props.iri }}
-    <CwaComponentGroup reference="primary" :location="props.iri" />
-  </div>
+  <CwaComponentGroup reference="primary" :location="props.iri" />
 </template>
 
 <script setup>

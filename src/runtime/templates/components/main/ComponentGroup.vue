@@ -4,9 +4,7 @@
       <CwaUtilsSpinner :show="true" />
     </div>
     <template v-else>
-      Reference: {{ props.reference }}<br>
-      Location: {{ props.location }}
-      <pre>{{ resource }}</pre>
+      <pre>{{ resource.data }}</pre>
     </template>
   </div>
 </template>
