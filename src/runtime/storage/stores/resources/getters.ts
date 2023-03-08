@@ -1,7 +1,7 @@
 import { ComputedRef, computed } from 'vue'
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { FetchStatus } from '../fetcher/state'
-import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
 interface ResourcesLoadStatusInterface {
@@ -12,7 +12,7 @@ interface ResourcesLoadStatusInterface {
 }
 
 type ResourcesByTypeInterface = {
-  [T in CwaResourceTypes]: CwaResource[];
+  [T in CwaResourceTypes]: CwaCurrentResourceInterface[];
 }
 
 export interface CwaResourcesGettersInterface {
@@ -28,7 +28,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   const utils = new ResourcesGetterUtils(resourcesState)
 
   return {
-    resourcesByType: computed(() => {
+    resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],
         [CwaResourceTypes.PAGE]: [],
@@ -38,12 +38,13 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         [CwaResourceTypes.COMPONENT_POSITION]: [],
         [CwaResourceTypes.COMPONENT]: []
       }
-      for (const iri of resourcesState.current.currentIds) {
+      for (const iri of resourcesState.current.allIds) {
         const type = getResourceTypeFromIri(iri)
-        if (!type) {
+        const resource = resourcesState.current.byId[iri]
+        if (!type || !resource) {
           continue
         }
-        resources[type].push(resourcesState.current.byId[iri].data)
+        resources[type].push(resource)
       }
       return resources
     }),

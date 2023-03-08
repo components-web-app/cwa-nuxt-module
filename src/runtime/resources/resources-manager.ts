@@ -116,7 +116,7 @@ export class ResourcesManager {
           continue
         }
         const resource = this.getResource(resourceIri).value
-        if (resource.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
+        if (resource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
           complete++
         }
       }
@@ -154,7 +154,7 @@ export class ResourcesManager {
       return
     }
     const pageResource = this.getResource(pageIri).value
-    return pageResource.data?.layout
+    return pageResource?.data?.layout
   }
 
   private getPageIriByFetchStatus (fetchStatus?: FetchStatus): string|undefined {

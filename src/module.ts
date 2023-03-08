@@ -106,6 +106,10 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     nuxt.hook('components:dirs', (dirs) => {
       dirs.unshift({
+        path: resolve(vueTemplatesDir, 'components', 'main'),
+        prefix: 'Cwa'
+      })
+      dirs.unshift({
         path: resolve(join(nuxt.options.srcDir, 'cwa', 'pages')),
         prefix: 'CwaPage'
       })
