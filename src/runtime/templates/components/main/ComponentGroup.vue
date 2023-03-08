@@ -4,7 +4,7 @@
       <CwaUtilsSpinner :show="true" />
     </div>
     <template v-else>
-      <pre>{{ resource.data }}</pre>
+      <pre>{{ resource?.data }}</pre>
     </template>
   </div>
 </template>
@@ -34,13 +34,13 @@ const resource = computed(() => {
   }
   const locationResourceReference = locationResource.data?.reference
   const fullReference = `${props.reference}_${locationResourceReference}`
-  return componentGroups.find((resource) => {
-    return resource.data?.reference === fullReference
+  return componentGroups.find((componentGroupResource) => {
+    return componentGroupResource.data?.reference === fullReference
   })
 })
 
 const showLoader = computed(() => {
-  return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS || !resource.value
 })
 
 watch($cwa.resourcesManager.isLoading, (isLoading) => {

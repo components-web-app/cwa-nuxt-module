@@ -139,8 +139,7 @@ export default class FetchStatusManager {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current.`)),
-        isCurrent,
-        isPrimary
+        isCurrent
       })
       return
     }
