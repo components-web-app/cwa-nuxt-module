@@ -1,12 +1,14 @@
 <template>
-  <div v-if="!props.iri">
-    No IRI has been passed as a property to the ResourceLoader
+  <CwaUtilsAlertWarning v-if="!props.iri">
+    <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
+  </CwaUtilsAlertWarning>
+  <div v-else-if="isLoading">
+    <CwaUtilsSpinner />
   </div>
-  <CwaUtilsSpinner v-else-if="isLoading" />
-  <component :is="resolvedComponent" v-else-if="resolvedComponent" :iri="props.iri" />
-  <div v-else>
-    The component {{ uiComponent }} does not exist
-  </div>
+  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="resolvedComponent" :iri="props.iri" />
+  <CwaUtilsAlertWarning v-else>
+    <p>The component `{{ uiComponent }}` defined by the API does not exist</p>
+  </CwaUtilsAlertWarning>
 </template>
 
 <script setup>
