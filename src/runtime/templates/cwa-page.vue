@@ -1,5 +1,5 @@
 <template>
-  <ResourceLoader :iri="$cwa.resourcesManager.pageIri.value" />
+  <ResourceLoader :iri="$cwa.resourcesManager.pageIri.value" component-prefix="CwaPage" />
 </template>
 
 <script setup>

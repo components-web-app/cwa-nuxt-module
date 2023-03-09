@@ -23,6 +23,11 @@ const props = defineProps({
   iri: {
     type: String,
     required: true
+  },
+  componentPrefix: {
+    type: String,
+    required: false,
+    default: ''
   }
 })
 
@@ -39,7 +44,7 @@ const uiComponent = computed(() => {
   if (!resource.value) {
     return
   }
-  return 'CwaPage' + (resource.value.data.uiComponent || resource.value.data['@type'])
+  return props.componentPrefix + (resource.value.data.uiComponent || resource.value.data['@type'])
 })
 
 const resolvedComponent = computed(() => {
