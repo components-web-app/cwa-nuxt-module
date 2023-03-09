@@ -1,7 +1,5 @@
 <template>
-  <div class="cwa-p-4">
-    <ResourceLoader :iri="$cwa.resourcesManager.pageIri.value" />
-  </div>
+  <ResourceLoader :iri="$cwa.resourcesManager.pageIri.value" />
 </template>
 
 <script setup>
