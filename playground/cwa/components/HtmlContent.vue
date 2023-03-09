@@ -1,8 +1,5 @@
 <template>
-  <div>
-    Cwa Component for HTML Content {{ props.iri }}
-    <CodeBlock>{{ resource }}</CodeBlock>
-  </div>
+  <div v-html="resource.data?.html" />
 </template>
 
 <script setup>
