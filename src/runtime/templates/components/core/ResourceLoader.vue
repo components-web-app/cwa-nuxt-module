@@ -3,12 +3,12 @@
     <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
   </CwaUtilsAlertWarning>
   <div v-else-if="isLoading">
-    <CwaUtilsSpinner />
+    <CwaUtilsSpinner :show="true" />
   </div>
-  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="resolvedComponent" :iri="props.iri" />
-  <CwaUtilsAlertWarning v-else>
-    <p>The component `{{ uiComponent }}` defined by the API does not exist</p>
+  <CwaUtilsAlertWarning v-else-if="!resolvedComponent">
+    <p>The component `{{ uiComponent }}` cannot be found</p>
   </CwaUtilsAlertWarning>
+  <component v-bind="$attrs" :is="resolvedComponent" v-else :iri="props.iri" />
 </template>
 
 <script setup>
@@ -28,6 +28,11 @@ const props = defineProps({
     type: String,
     required: false,
     default: ''
+  },
+  uiComponent: {
+    type: [String, Object],
+    required: false,
+    default: undefined
   }
 })
 
@@ -35,7 +40,7 @@ const resource = $cwa.resourcesManager.getResource(props.iri)
 
 const isLoading = computed(() => {
   if (!resource.value) {
-    return false
+    return true
   }
   return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
@@ -48,6 +53,10 @@ const uiComponent = computed(() => {
 })
 
 const resolvedComponent = computed(() => {
+  if (props.uiComponent) {
+    return props.uiComponent
+  }
+
   if (!Object.keys(components).includes(uiComponent.value)) {
     return
   }

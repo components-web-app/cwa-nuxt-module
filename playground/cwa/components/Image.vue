@@ -1,14 +1,14 @@
 <template>
-  <ResourceLoader :iri="componentIri" component-prefix="CwaComponent" />
+  <div>
+    Cwa Component for Image {{ props.iri }}
+    <CodeBlock>{{ resource }}</CodeBlock>
+  </div>
 </template>
 
 <script setup>
 import { useNuxtApp } from '#app'
-import { computed } from 'vue'
-import ResourceLoader from './ResourceLoader.vue'
 
 const { $cwa } = useNuxtApp()
-
 const props = defineProps({
   iri: {
     type: String,
@@ -17,7 +17,4 @@ const props = defineProps({
 })
 
 const resource = $cwa.resourcesManager.getResource(props.iri)
-const componentIri = computed(() => {
-  return resource.value?.data?.component
-})
 </script>

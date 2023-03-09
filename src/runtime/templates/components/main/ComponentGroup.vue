@@ -1,10 +1,13 @@
 <template>
-  <div v-if="showLoader" class="component-group-placeholder cwa-p-3">
+  <div v-if="showLoader" class="component-group-placeholder">
     <CwaUtilsSpinner :show="true" />
   </div>
-  <template v-else>
-    <pre>{{ resource?.data?.componentPositions }}</pre>
+  <template v-else-if="componentPositions">
+    <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
+  <CwaUtilsAlertInfo v-else>
+    <p>No component positions in this component group - add functionality coming soon</p>
+  </CwaUtilsAlertInfo>
 </template>
 
 <script setup>
@@ -14,6 +17,8 @@ import { computed, watch } from 'vue'
 import consola from 'consola'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import ResourceLoader from '../core/ResourceLoader.vue'
+import ComponentPosition from '../core/ComponentPosition.vue'
 
 const { $cwa } = useNuxtApp()
 
@@ -40,6 +45,10 @@ const resource = computed(() => {
 
 const showLoader = computed(() => {
   return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS || !resource.value
+})
+
+const componentPositions = computed(() => {
+  return resource.value?.data?.componentPositions
 })
 
 // todo: ensure the allowed components configured matches in the API
