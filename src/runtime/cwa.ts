@@ -8,6 +8,7 @@ import { CwaApiDocumentationDataInterface } from './storage/stores/api-documenta
 import CwaFetch from './api/fetcher/cwa-fetch'
 import FetchStatusManager from './api/fetcher/fetch-status-manager'
 import { ResourcesManager } from './resources/resources-manager'
+import { Resources } from './resources/resources'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -17,6 +18,7 @@ export default class Cwa {
   private readonly mercure: Mercure
   private readonly fetcher: Fetcher
   private readonly cwaFetch: CwaFetch
+  public readonly resources: Resources
   public readonly resourcesManager: ResourcesManager
 
   constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
@@ -34,6 +36,7 @@ export default class Cwa {
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
+    this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.resourcesManager = new ResourcesManager(this.storage.stores.resources, this.storage.stores.fetcher)
 
     this.mercure.setFetcher(this.fetcher)

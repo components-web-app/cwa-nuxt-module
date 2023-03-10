@@ -43,16 +43,17 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
   })
 
   test('returns current resources with their type as the object key', () => {
-    state.current.currentIds = ['/_/routes/id', '/random-to-exclude']
-    state.current.byId = {
-      '/_/routes/id': {
-        apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS
-        },
-        data: {
-          '@id': '/_/routes/id'
-        }
+    state.current.allIds = ['/_/routes/id', '/random-to-exclude']
+    const routeResource = {
+      apiState: {
+        status: CwaResourceApiStatuses.IN_PROGRESS
       },
+      data: {
+        '@id': '/_/routes/id'
+      }
+    }
+    state.current.byId = {
+      '/_/routes/id': routeResource,
       '/random-to-exclude': {
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS
@@ -63,9 +64,7 @@ describe('ResourcesStore Getters -> resourcesByType', () => {
       }
     }
     expect(getterFns.resourcesByType.value).toStrictEqual({
-      [CwaResourceTypes.ROUTE]: [{
-        '@id': '/_/routes/id'
-      }],
+      [CwaResourceTypes.ROUTE]: [routeResource],
       [CwaResourceTypes.PAGE]: [],
       [CwaResourceTypes.PAGE_DATA]: [],
       [CwaResourceTypes.LAYOUT]: [],

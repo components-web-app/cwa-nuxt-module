@@ -10,7 +10,7 @@ import { computed } from 'vue'
 
 const { $cwa } = useNuxtApp()
 const layoutName = computed(() => {
-  const layoutResource = $cwa.resourcesManager.layout.value
+  const layoutResource = $cwa.resources.layout.value
   return layoutResource?.data?.uiComponent || 'cwa-default'
 })
 </script>

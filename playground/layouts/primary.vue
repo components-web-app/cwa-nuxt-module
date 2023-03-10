@@ -1,12 +1,12 @@
 <template>
   <div>
-    <CwaUtilsProgressBar :show="$cwa.resourcesManager.pageLoadProgress.value.percent < 100" :percent="$cwa.resourcesManager.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
-    <CwaUtilsSpinner :show="$cwa.resourcesManager.isLoading.value === true" class="page-spinner" />
+    <CwaUtilsProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
+    <CwaUtilsSpinner :show="$cwa.resources.isLoading.value === true" class="page-spinner" />
     <header>
       <Popover class="relative bg-white">
         <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">
           <PopoverGroup as="nav" class="space-x-5 flex">
-            <CwaComponentGroup reference="top" :location="$cwa.resourcesManager.layoutIri.value" />
+            <CwaComponentGroup reference="top" :location="$cwa.resources.layoutIri.value" />
           </PopoverGroup>
         </div>
       </Popover>
@@ -15,7 +15,7 @@
       <slot />
     </div>
     <div>
-      <CwaComponentGroup reference="bottom" :location="$cwa.resourcesManager.layoutIri.value" />
+      <CwaComponentGroup reference="bottom" :location="$cwa.resources.layoutIri.value" />
     </div>
   </div>
 </template>

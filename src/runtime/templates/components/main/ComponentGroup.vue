@@ -2,7 +2,7 @@
   <div v-if="showLoader" class="component-group-placeholder">
     <CwaUtilsSpinner :show="true" />
   </div>
-  <template v-else-if="componentPositions">
+  <template v-else-if="resource && componentPositions && componentPositions.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
   <CwaUtilsAlertInfo v-else>
@@ -44,18 +44,18 @@ const resource = computed(() => {
 })
 
 const showLoader = computed(() => {
-  return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS || !resource.value
+  return !resource.value || (!resource.value.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS)
 })
 
 const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-// todo: ensure the allowed components configured matches in the API
+// todo: ALLOWED COMPONENTS ensure the allowed components configured matches in the API
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-watch($cwa.resourcesManager.isLoading, (isLoading) => {
+watch($cwa.resources.isLoading, (isLoading) => {
   if (!isLoading && !resource.value) {
     // todo: create component group
     consola.warn('TODO: NO COMPONENT GROUP FOUND - CREATE IT')

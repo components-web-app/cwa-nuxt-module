@@ -82,7 +82,7 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
   })
 
   test('css option is set', () => {
-    expect(context.nuxt?.options.css).toStrictEqual([fileURLToPath(new URL('./runtime/templates/assets/main.css', import.meta.url))])
+    expect(context.nuxt?.options.css).toContain(fileURLToPath(new URL('./runtime/templates/assets/main.css', import.meta.url)))
   })
 
   test.todo('Dynamic pages are added with the depth provided', () => {

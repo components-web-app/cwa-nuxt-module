@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-const resource = $cwa.resourcesManager.getResource(props.iri)
+const resource = $cwa.resources.getResource(props.iri)
 const componentIri = computed(() => {
   return resource.value?.data?.component
 })

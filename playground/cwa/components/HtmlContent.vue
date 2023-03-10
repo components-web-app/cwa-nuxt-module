@@ -13,7 +13,7 @@ const props = defineProps({
   }
 })
 
-const resource = $cwa.resourcesManager.getResource(props.iri)
+const resource = $cwa.resources.getResource(props.iri)
 </script>
 
 <style>

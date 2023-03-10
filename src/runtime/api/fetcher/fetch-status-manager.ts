@@ -115,9 +115,10 @@ export default class FetchStatusManager {
       return
     }
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
+    const fetchStatus = this.fetcherStore.fetches[event.token]
 
     // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
-    if (this.fetcherStore.fetches[event.token]?.abort) {
+    if (fetchStatus?.abort) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)),
@@ -127,8 +128,7 @@ export default class FetchStatusManager {
     }
 
     // todo: test isPrimary and passing to setResourceFetchError
-    const fetchStatus = this.fetcherStore.fetches[event.token]
-    const isPrimary = fetchStatus.path === event.resource
+    const isPrimary = fetchStatus?.path === event.resource
 
     if (!event.success) {
       this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent, isPrimary })

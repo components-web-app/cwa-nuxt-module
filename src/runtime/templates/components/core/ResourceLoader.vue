@@ -5,10 +5,18 @@
   <div v-else-if="isLoading">
     <CwaUtilsSpinner :show="true" />
   </div>
-  <CwaUtilsAlertWarning v-else-if="!resolvedComponent">
-    <p>The component `{{ uiComponent }}` cannot be found</p>
+  <CwaUtilsAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
+    <p v-if="!resource">
+      Resource not found with iri `{{ props.iri }}`
+    </p>
+    <p v-else-if="!resource?.data">
+      Resource not found with iri `{{ props.iri }}` data
+    </p>
+    <p v-else>
+      The component `{{ uiComponent }}` cannot be found
+    </p>
   </CwaUtilsAlertWarning>
-  <component v-bind="$attrs" :is="resolvedComponent" v-else :iri="props.iri" />
+  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="props.iri" />
 </template>
 
 <script setup>
@@ -36,20 +44,28 @@ const props = defineProps({
   }
 })
 
-const resource = $cwa.resourcesManager.getResource(props.iri)
+const resource = $cwa.resources.getResource(props.iri)
 
 const isLoading = computed(() => {
   if (!resource.value) {
     return true
   }
-  return resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const uiComponent = computed(() => {
-  if (!resource.value) {
+  if (!resource.value || !resource.value?.data) {
     return
   }
   return props.componentPrefix + (resource.value.data.uiComponent || resource.value.data['@type'])
+})
+
+const hasError = computed(() => {
+  return resource.value.apiState.status === CwaResourceApiStatuses.ERROR
+})
+
+const hasSilentError = computed(() => {
+  return hasError.value && resource.value.apiState.error.statusCode >= 400 && resource.value.apiState.error.statusCode < 500
 })
 
 const resolvedComponent = computed(() => {

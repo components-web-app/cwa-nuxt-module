@@ -433,7 +433,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
         name: 'CwaResourceError',
         statusCode: 100,
         message: 'something'
-      }
+      },
+      isPrimary: false
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
 
@@ -507,7 +508,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/another-resource',
       error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
-      isCurrent: true
+      isCurrent: true,
+      isPrimary: false
     })
 
     expect(response).toBeUndefined()
