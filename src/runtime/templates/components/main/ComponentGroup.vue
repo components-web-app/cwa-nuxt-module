@@ -20,6 +20,7 @@
 import { useNuxtApp } from '#app'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
+import _isEqual from 'lodash/isEqual'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import ResourceLoader from '../core/ResourceLoader.vue'
@@ -31,7 +32,8 @@ const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs
 
 const props = defineProps({
   reference: { required: true, type: String },
-  location: { required: true, type: String }
+  location: { required: true, type: String },
+  allowedComponents: { required: false, type: Array, default () { return null } }
 })
 
 const fullReference = computed(() => {
@@ -70,7 +72,7 @@ async function createComponentGroup () {
   const postData = {
     reference: fullReference.value,
     location: props.location,
-    allowedComponents: null
+    allowedComponents: props.allowedComponents
   }
   if (locationProperty) {
     postData[locationProperty] = [props.location]
@@ -82,7 +84,11 @@ async function createComponentGroup () {
 }
 
 function updateAllowedComponents () {
-  // todo
+  if (_isEqual(props.allowedComponents, resource.value.data?.allowedComponents)) {
+    return
+  }
+  // todo update the resource
+  console.log('SHOULD UPDATE THE CG ALLOWED COMPONENTS')
 }
 
 watch($cwa.resources.isLoading, async (isLoading) => {
@@ -90,8 +96,7 @@ watch($cwa.resources.isLoading, async (isLoading) => {
     // todo: check only if logged in. otherwise we are not permitted to update the API
     if (!resource.value) {
       await createComponentGroup()
-    } else {
-      // todo: check if current allowed components matches array
+    } else if (resource.value?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
       updateAllowedComponents()
     }
   }
