@@ -6,24 +6,16 @@
       <Popover class="relative bg-white">
         <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">
           <PopoverGroup as="nav" class="space-x-5 flex">
-            <nuxt-link to="/" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
-              Home
-            </nuxt-link>
-            <nuxt-link to="/blog-articles" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
-              Blog
-            </nuxt-link>
-            <nuxt-link to="/form" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
-              Form
-            </nuxt-link>
-            <nuxt-link to="/home" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
-              Home Redirect
-            </nuxt-link>
+            <CwaComponentGroup reference="top" :location="$cwa.resourcesManager.layoutIri.value" />
           </PopoverGroup>
         </div>
       </Popover>
     </header>
     <div>
       <slot />
+    </div>
+    <div>
+      <CwaComponentGroup reference="bottom" :location="$cwa.resourcesManager.layoutIri.value" />
     </div>
   </div>
 </template>

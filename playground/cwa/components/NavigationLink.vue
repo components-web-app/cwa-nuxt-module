@@ -1,5 +1,7 @@
 <template>
-  <div class="html-content" v-html="resource.data?.html" />
+  <nuxt-link :to="resource.data.url" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
+    {{ resource.data.label }}
+  </nuxt-link>
 </template>
 
 <script setup>
@@ -15,9 +17,3 @@ const props = defineProps({
 
 const resource = $cwa.resourcesManager.getResource(props.iri)
 </script>
-
-<style>
-.html-content p:not(:last-child) {
-  margin-bottom: 1rem
-}
-</style>
