@@ -10,8 +10,7 @@ export default defineNuxtConfig({
     CwaModule,
     '@nuxtjs/tailwindcss',
     '@kevinmarrec/nuxt-pwa',
-    '@nuxt/image-edge',
-    '@sidebase/nuxt-auth'
+    '@nuxt/image-edge'
   ],
   cwa: {
     apiUrl: API_URL,
