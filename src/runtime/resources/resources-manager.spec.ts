@@ -16,7 +16,12 @@ describe.todo('ResourceManager class tests', () => {
     vi.clearAllMocks()
   })
 
-  test.todo('A test', () => {
-    console.log(resourcesManager)
+  test.todo('resourcesManager -> createResource', async () => {
+    await resourcesManager.createResource({
+      endpoint: 'some_endpoint',
+      data: {
+        key: 'value'
+      }
+    })
   })
 })

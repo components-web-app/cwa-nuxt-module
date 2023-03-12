@@ -2,12 +2,12 @@
   <div v-if="showLoader" class="component-group-placeholder">
     <CwaUtilsSpinner :show="true" />
   </div>
-  <template v-else-if="resource && componentPositions && componentPositions.length">
+  <CwaUtilsAlertInfo v-else-if="!resource">
+    <p>Component Group does not exist, will automatically add when logged in. Functionality coming soon</p>
+  </CwaUtilsAlertInfo>
+  <template v-else-if="componentPositions && componentPositions.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
-  <CwaUtilsAlertInfo v-else-if="!resource">
-    <p>Resource does not exist, will automatically add when logged in. Functionality coming soon</p>
-  </CwaUtilsAlertInfo>
   <CwaUtilsAlertInfo v-else>
     <p>No component positions in this component group - add functionality coming soon (if logged in)</p>
   </CwaUtilsAlertInfo>
@@ -53,7 +53,7 @@ const resource = computed(() => {
 })
 
 const showLoader = computed(() => {
-  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS && $cwa.resources.isLoading
+  return $cwa.resources.isLoading.value && (!resource.value || (!resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS))
 })
 
 const componentPositions = computed(() => {
