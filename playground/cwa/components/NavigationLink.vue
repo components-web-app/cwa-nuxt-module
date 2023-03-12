@@ -1,0 +1,19 @@
+<template>
+  <nuxt-link :to="resource.data.url" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
+    {{ resource.data.label }}
+  </nuxt-link>
+</template>
+
+<script setup>
+import { useNuxtApp } from '#app'
+
+const { $cwa } = useNuxtApp()
+const props = defineProps({
+  iri: {
+    type: String,
+    required: true
+  }
+})
+
+const resource = $cwa.resources.getResource(props.iri)
+</script>

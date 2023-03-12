@@ -36,14 +36,18 @@
     "@heroicons/vue": "^2.0.13",
     "@pinia/nuxt": "^0.4.6",
     "bluebird": "^3.7.2",
+    "consola": "^2.15.3",
+    "lodash": "^4.17.21",
     "pinia": "^2.0.27",
     "uuid": "^9.0.0",
     "vue": "^3.2"
   },
   "devDependencies": {
+    "@nuxt/image-edge": "^1.0.0-27968280.9739e4d",
     "@nuxt/module-builder": "^0.2.1",
     "@nuxt/test-utils": "^3.0.0",
     "@nuxtjs/eslint-config-typescript": "^12.0.0",
+    "@nuxtjs/tailwindcss": "^6.4.1",
     "@pinia/testing": "^0.0.14",
     "@stryker-mutator/core": "^6.3.0",
     "@stryker-mutator/jest-runner": "^6.3.0",

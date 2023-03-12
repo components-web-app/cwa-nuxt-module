@@ -1,7 +1,6 @@
 import { describe, expect, test, beforeEach, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { ResourcesStore } from '../resources/resources-store'
 import { FetcherStore } from './fetcher-store'
 import actions from './actions'
 import state from './state'
@@ -35,8 +34,7 @@ describe('ApiDocumentationStore tests', () => {
   })
 
   test('Store populated with state and actions', () => {
-    const resourcesStore = new ResourcesStore('storeName')
-    const store = new FetcherStore('storeName', resourcesStore)
+    const store = new FetcherStore('storeName')
     const storeDefinition = store.useStore()
 
     expect(state).toBeCalledTimes(1)
@@ -49,7 +47,7 @@ describe('ApiDocumentationStore tests', () => {
     expect(storeDefinition).toHaveProperty('someFunction')
 
     expect(getters).toBeCalledTimes(1)
-    expect(getters).toBeCalledWith({ stateKey: 'value' }, resourcesStore)
+    expect(getters).toBeCalledWith({ stateKey: 'value' })
     expect(storeDefinition).toHaveProperty('someGetter')
   })
 })

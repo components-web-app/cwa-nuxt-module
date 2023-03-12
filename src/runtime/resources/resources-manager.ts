@@ -1,29 +1,57 @@
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import CwaFetch from '../api/fetcher/cwa-fetch'
+import FetchStatusManager from '../api/fetcher/fetch-status-manager'
+import { CwaResource } from './resource-utils'
+
+interface CreateResourceEvent {
+  endpoint: string
+  data: any
+}
+
+interface RequestHeaders extends Record<string, string> {
+  path: string
+}
+
+interface RequestOptions {
+  headers: RequestHeaders
+  method: 'POST'|'PUT'
+}
 
 export class ResourcesManager {
+  private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
+  private fetcherStoreDefinition: FetcherStore
+  private fetchStatusManager: FetchStatusManager
 
-  constructor (resourcesStoreDefinition: ResourcesStore) {
+  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore, fetchStatusManager: FetchStatusManager) {
+    this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
+    this.fetcherStoreDefinition = fetcherStoreDefinition
+    this.fetchStatusManager = fetchStatusManager
   }
 
-  public get currentIds () {
-    return this.resourcesStore.current.currentIds
-  }
-
-  // todo: this may be temporary, but if proves useful, functionality to be moved to a resources store getter and this as a proxy
-  public get currentResources () {
-    return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
-      obj[id] = this.resourcesStore.current.byId[id]
-      return obj
-    }, {} as {
-      [key: string]: CwaCurrentResourceInterface
+  public async createResource (event: CreateResourceEvent) {
+    const resource = await this.cwaFetch.fetch<CwaResource>(
+      event.endpoint,
+      this.requestOptions('POST')
+    )
+    this.resourcesStore.saveResource({
+      resource
     })
   }
 
-  public get resourceLoadStatus () {
-    return this.resourcesStore.resourceLoadStatus
+  private requestOptions (method: 'POST'|'PUT'): RequestOptions {
+    return {
+      method,
+      headers: {
+        path: this.fetchStatusManager.primaryFetchPath || ''
+      }
+    }
+  }
+
+  private get fetcherStore () {
+    return this.fetcherStoreDefinition.useStore()
   }
 
   private get resourcesStore () {

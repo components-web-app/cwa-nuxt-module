@@ -21,11 +21,9 @@ export class Storage {
   constructor (storeName: string) {
     this.storeName = storeName
 
-    const resources = new ResourcesStore(storeName)
-    const fetcher = new FetcherStore(storeName, resources)
     this.stores = {
-      resources,
-      fetcher,
+      resources: new ResourcesStore(storeName),
+      fetcher: new FetcherStore(storeName),
       mercure: new MercureStore(storeName),
       apiDocumentation: new ApiDocumentationStore(storeName)
     }

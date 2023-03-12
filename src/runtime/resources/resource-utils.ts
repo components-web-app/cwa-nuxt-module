@@ -12,6 +12,7 @@ export interface CwaResource {
   '@id': string
   '@type': string
   publishedResource?: string
+  uiComponent?: string
   _metadata: {
     persisted: boolean
     publishable?: {

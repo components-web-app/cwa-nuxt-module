@@ -1,6 +1,8 @@
 import { ComputedRef, computed } from 'vue'
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
-import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { FetchStatus } from '../fetcher/state'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import { ResourcesGetterUtils } from './getter-utils'
 
 interface ResourcesLoadStatusInterface {
   pending: number
@@ -10,28 +12,23 @@ interface ResourcesLoadStatusInterface {
 }
 
 type ResourcesByTypeInterface = {
-  [T in CwaResourceTypes]: CwaResource[];
+  [T in CwaResourceTypes]: CwaCurrentResourceInterface[];
 }
 
 export interface CwaResourcesGettersInterface {
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
-  resourcesApiStateIsPending: ComputedRef<boolean>
+  currentResourcesApiStateIsPending: ComputedRef<boolean>
+  resourcesApiStateIsPending: ComputedRef<(resources: string[]) => boolean>
+  isFetchStatusResourcesResolved: ComputedRef<(fetchStatus: FetchStatus) => boolean>
   resourceLoadStatus: ComputedRef<ResourcesLoadStatusInterface>
 }
 
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesGettersInterface {
-  const totalResourcesPending = computed<number>(() => {
-    return resourcesState.current.currentIds.reduce((count, id) => {
-      if (resourcesState.current.byId[id].apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-        return ++count
-      }
-      return count
-    }, 0)
-  })
+  const utils = new ResourcesGetterUtils(resourcesState)
 
   return {
-    resourcesByType: computed(() => {
+    resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],
         [CwaResourceTypes.PAGE]: [],
@@ -41,26 +38,63 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         [CwaResourceTypes.COMPONENT_POSITION]: [],
         [CwaResourceTypes.COMPONENT]: []
       }
-      for (const iri of resourcesState.current.currentIds) {
+      for (const iri of resourcesState.current.allIds) {
         const type = getResourceTypeFromIri(iri)
-        if (!type) {
+        const resource = resourcesState.current.byId[iri]
+        if (!type || !resource) {
           continue
         }
-        resources[type].push(resourcesState.current.byId[iri].data)
+        resources[type].push(resource)
       }
       return resources
     }),
-    totalResourcesPending,
-    resourcesApiStateIsPending: computed<boolean>(() => {
-      for (const resourceState of Object.values(resourcesState.current.byId)) {
-        if (resourceState.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
-          return true
+    totalResourcesPending: computed<number>(() => utils.totalResourcesPending),
+    currentResourcesApiStateIsPending: computed<boolean>(() => {
+      return utils.resourcesApiStateIsPending(Object.keys(resourcesState.current.byId))
+    }),
+    resourcesApiStateIsPending: computed(() => {
+      return (resources: string[]) => utils.resourcesApiStateIsPending(resources)
+    }),
+    isFetchStatusResourcesResolved: computed(() => {
+      return (fetchStatus: FetchStatus) => {
+        // can check to ensure the main fetch path is successful
+        const resourceData = resourcesState.current.byId[fetchStatus.path]
+        // Any errors for the primary resource should result in a re-fetch. In progress handled below
+        if (!resourceData || resourceData.apiState.status === CwaResourceApiStatuses.ERROR) {
+          return false
         }
+
+        for (const resource of fetchStatus.resources) {
+          const resourceData = resourcesState.current.byId[resource]
+          if (!resourceData) {
+            throw new Error(`The resource '${resource}' does not exist.`)
+          }
+
+          // Some errored results still class as successful. In fact, only server errors are really unsuccessful and would warrant a re-fetch
+          if (resourceData.apiState.status === CwaResourceApiStatuses.ERROR) {
+            const lastStatusCode = resourceData.apiState.error?.statusCode
+            if ((!lastStatusCode || lastStatusCode >= 500)) {
+              return false
+            }
+            continue
+          }
+
+          // in progress and never been successful
+          if (resourceData.apiState.status === CwaResourceApiStatuses.IN_PROGRESS && !resourceData.data) {
+            return false
+          }
+
+          // component positions can be dynamic and different depending on the path
+          if (resourceData.data['@type'] === CwaResourceTypes.COMPONENT_POSITION && resourceData.apiState.headers?.path !== fetchStatus.path) {
+            return false
+          }
+        }
+
+        return true
       }
-      return false
     }),
     resourceLoadStatus: computed(() => {
-      const pending = totalResourcesPending.value
+      const pending = utils.totalResourcesPending
       const total = resourcesState.current.currentIds.length
       const complete = total - pending
       let percent

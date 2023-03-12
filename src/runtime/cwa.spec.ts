@@ -8,6 +8,7 @@ import Fetcher from './api/fetcher/fetcher'
 import CwaFetch from './api/fetcher/cwa-fetch'
 import FetchStatusManager from './api/fetcher/fetch-status-manager'
 import { ResourcesManager } from './resources/resources-manager'
+import { Resources } from './resources/resources'
 
 vi.mock('./storage/storage', () => {
   return {
@@ -48,6 +49,7 @@ vi.mock('./api/api-documentation', () => {
 vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
 vi.mock('./resources/resources-manager')
+vi.mock('./resources/resources')
 
 const path = 'something'
 const storeName = 'dummystore'
@@ -134,12 +136,19 @@ describe('Cwa class test', () => {
   })
 
   test('Fetcher is initialised', () => {
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], FetchStatusManager.mock.instances[0], { path })
+    const stores = Storage.mock.results[0].value.stores
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], FetchStatusManager.mock.instances[0], { path }, stores.resources)
+  })
+
+  test('Resources is initialised and accessible', () => {
+    const stores = Storage.mock.results[0].value.stores
+    expect(Resources).toBeCalledWith(stores.resources, stores.fetcher)
+    expect($cwa.resources).toBe(Resources.mock.instances[0])
   })
 
   test('ResourcesManager is initialised and accessible', () => {
     const stores = Storage.mock.results[0].value.stores
-    expect(ResourcesManager).toBeCalledWith(stores.resources)
+    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, stores.fetcher, FetchStatusManager.mock.instances[0])
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
   })
 })

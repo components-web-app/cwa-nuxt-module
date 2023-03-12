@@ -1,14 +1,10 @@
 <template>
-  <div>
-    <NuxtLayout :name="layout">
-      <div class="cwa-p-4">
-        <CwaCurrentResources />
-      </div>
-    </NuxtLayout>
-  </div>
+  <ResourceLoader :iri="$cwa.resources.pageIri.value" component-prefix="CwaPage" />
 </template>
 
 <script setup>
-import CwaCurrentResources from './components/CwaCurrentResources.vue'
-const layout = 'cwa-default'
+import { useNuxtApp } from '#app'
+import ResourceLoader from './components/core/ResourceLoader.vue'
+
+const { $cwa } = useNuxtApp()
 </script>

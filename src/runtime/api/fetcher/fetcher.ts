@@ -4,6 +4,7 @@ import { FetchResponse } from 'ofetch'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
+import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
@@ -42,7 +43,7 @@ interface CwaFetchResponseRaw {
 interface FetchBatchEvent {
   paths: string[]
   token?: string
-  noSave: boolean
+  noSave?: boolean
 }
 
 interface FetchNestedResourcesEvent {
@@ -69,15 +70,18 @@ export default class Fetcher {
   private readonly cwaFetch: CwaFetch
   private fetchStatusManager: FetchStatusManager
   private currentRoute: RouteLocationNormalizedLoaded
+  private resourcesStoreDefinition: ResourcesStore
 
   constructor (
     cwaFetch: CwaFetch,
     fetchStatusManager: FetchStatusManager,
-    currentRoute: RouteLocationNormalizedLoaded
+    currentRoute: RouteLocationNormalizedLoaded,
+    resourcesStoreDefinition: ResourcesStore
   ) {
     this.cwaFetch = cwaFetch
     this.fetchStatusManager = fetchStatusManager
     this.currentRoute = currentRoute
+    this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
   public async fetchRoute (path: string): Promise<CwaResource|undefined> {
@@ -89,7 +93,7 @@ export default class Fetcher {
       manifestPath
     })
     if (!startFetchResult.continue) {
-      return
+      return this.resourcesStore.current.byId[iri]?.data
     }
     const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
 
@@ -272,5 +276,9 @@ export default class Fetcher {
       requestHeaders.preload = preload.join(',')
     }
     return requestHeaders
+  }
+
+  private get resourcesStore () {
+    return this.resourcesStoreDefinition.useStore()
   }
 }

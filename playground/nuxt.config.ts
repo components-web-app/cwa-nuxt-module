@@ -7,7 +7,10 @@ const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
 
 export default defineNuxtConfig({
   modules: [
-    CwaModule
+    CwaModule,
+    '@nuxtjs/tailwindcss',
+    '@kevinmarrec/nuxt-pwa',
+    '@nuxt/image-edge'
   ],
   cwa: {
     apiUrl: API_URL,
@@ -26,5 +29,6 @@ export default defineNuxtConfig({
         '../**/*.test.ts'
       ]
     }
-  }
+  },
+  pwa: {}
 })

@@ -1,0 +1,82 @@
+<template>
+  <CwaUtilsAlertWarning v-if="!props.iri">
+    <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
+  </CwaUtilsAlertWarning>
+  <div v-else-if="isLoading">
+    <CwaUtilsSpinner :show="true" />
+  </div>
+  <CwaUtilsAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
+    <p v-if="!resource">
+      Resource not found with iri `{{ props.iri }}`
+    </p>
+    <p v-else-if="!resource?.data">
+      Resource not found with iri `{{ props.iri }}` data
+    </p>
+    <p v-else>
+      The component `{{ uiComponent }}` cannot be found
+    </p>
+  </CwaUtilsAlertWarning>
+  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="props.iri" />
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useNuxtApp } from '#app'
+import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import * as components from '#components'
+
+const { $cwa } = useNuxtApp()
+
+const props = defineProps({
+  iri: {
+    type: String,
+    required: true
+  },
+  componentPrefix: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  uiComponent: {
+    type: [String, Object],
+    required: false,
+    default: undefined
+  }
+})
+
+const resource = $cwa.resources.getResource(props.iri)
+
+const isLoading = computed(() => {
+  if (!resource.value) {
+    return true
+  }
+  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+})
+
+const uiComponent = computed(() => {
+  if (!resource.value || !resource.value?.data) {
+    return
+  }
+  return props.componentPrefix + (resource.value.data.uiComponent || resource.value.data['@type'])
+})
+
+const hasError = computed(() => {
+  return resource.value.apiState.status === CwaResourceApiStatuses.ERROR
+})
+
+const hasSilentError = computed(() => {
+  return hasError.value && resource.value.apiState.error.statusCode >= 400 && resource.value.apiState.error.statusCode < 500
+})
+
+const resolvedComponent = computed(() => {
+  if (props.uiComponent) {
+    return props.uiComponent
+  }
+
+  if (!Object.keys(components).includes(uiComponent.value)) {
+    return
+  }
+  // eslint-disable-next-line import/namespace
+  return components[uiComponent.value]
+})
+</script>

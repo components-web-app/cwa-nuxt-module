@@ -1,3 +1,4 @@
+import { showError } from '#app'
 import {
   CwaResource,
   CwaResourceTypes,
@@ -30,7 +31,7 @@ export interface SetResourceResetStatusEvent {
 }
 declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent|SetResourceCompletedStatusEvent|SetResourceResetStatusEvent
 
-export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean }
+export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, isPrimary?: boolean }
 
 interface InitResourceEvent {
   iri: string
@@ -75,7 +76,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // remove a component position from all component groups
         const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
         for (const componentGroup of Object.values(componentGroups)) {
-          const componentPositions = componentGroup.componentPositions
+          const componentPositions = componentGroup.data?.componentPositions
           const positionIndex = componentPositions.indexOf(event.resource)
           if (positionIndex !== -1) {
             componentPositions.splice(positionIndex, 1)
@@ -84,10 +85,16 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         break
       }
       case CwaResourceTypes.COMPONENT: {
+        if (!resource.data) {
+          break
+        }
         // if it is a component, the position will also be deleted in an auto-cascade on the server if the position is not dynamic, we should replicate locally and delete the position
         const componentPositions = resource.data.componentPositions
         for (const positionIri of componentPositions) {
           const positionResource = resourcesState.current.byId[positionIri]
+          if (!positionResource.data) {
+            continue
+          }
           if (positionResource.data.pageDataProperty) {
             positionResource.data.component = undefined
           } else {
@@ -191,7 +198,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
       data.apiState = newApiState
     },
-    setResourceFetchError ({ iri, error, isCurrent }: SetResourceFetchErrorEvent): void {
+    setResourceFetchError ({ iri, error, isCurrent, isPrimary }: SetResourceFetchErrorEvent): void {
       const data = initResource({
         resourcesState,
         iri,
@@ -201,12 +208,17 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         status: CwaResourceApiStatuses.ERROR,
         error: error?.asObject
       }
+
+      // todo: test isPrimary
+      if (isPrimary && error) {
+        showError({ statusCode: error.statusCode, message: error.message })
+      }
     },
     saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
       const iri = event.resource['@id']
       if (event.isNew) {
         const existingResource = resourcesState.current.byId[iri]
-        if (existingResource && isCwaResourceSame(existingResource.data, event.resource)) {
+        if (existingResource?.data && isCwaResourceSame(existingResource.data, event.resource)) {
           return
         }
         resourcesState.new.byId[iri] = {

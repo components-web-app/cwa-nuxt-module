@@ -1,4 +1,4 @@
-import { computed, watch, WatchStopHandle } from 'vue'
+import { computed, ComputedRef, watch, WatchStopHandle } from 'vue'
 import Bluebird, { TimeoutError } from 'bluebird'
 import consola from 'consola'
 import { storeToRefs } from 'pinia'
@@ -34,6 +34,8 @@ export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent 
   success: false
   error?: CwaResourceError
 }
+
+type _StartFetchEvent = Omit<StartFetchEvent, 'isCurrentSuccessResourcesResolved'>
 
 /**
  * This class manages the state across the fetcher store, resources store and additional services for API Documentation and Mercure
@@ -87,8 +89,8 @@ export default class FetchStatusManager {
     return resolvedResource || currentResource.data
   }
 
-  public startFetch (event: StartFetchEvent): StartFetchResponse {
-    const startFetchStatus = this.fetcherStore.startFetch(event)
+  public startFetch (event: _StartFetchEvent): StartFetchResponse {
+    const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
       this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
     }
@@ -113,9 +115,10 @@ export default class FetchStatusManager {
       return
     }
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
+    const fetchStatus = this.fetcherStore.fetches[event.token]
 
     // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
-    if (this.fetcherStore.fetches[event.token]?.abort) {
+    if (fetchStatus?.abort) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)),
@@ -124,8 +127,11 @@ export default class FetchStatusManager {
       return
     }
 
+    // todo: test isPrimary and passing to setResourceFetchError
+    const isPrimary = fetchStatus?.path === event.resource
+
     if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent })
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent, isPrimary })
       return
     }
 
@@ -144,7 +150,8 @@ export default class FetchStatusManager {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
-        isCurrent
+        isCurrent,
+        isPrimary
       })
       return
     }
@@ -171,13 +178,34 @@ export default class FetchStatusManager {
     this.fetcherStore.finishFetch(event)
   }
 
+  private computedFetchChainComplete (token: string): ComputedRef<boolean> {
+    return computed(() => {
+      const resolvingResponse = this.fetcherStore.isFetchResolving(token)
+      if (resolvingResponse.resolving) {
+        return false
+      }
+
+      if (resolvingResponse.fetchStatus?.abort) {
+        return true
+      }
+
+      const resources = resolvingResponse.fetchStatus?.resources
+      if (!resources) {
+        return false
+      }
+
+      return !this.resourcesStore.resourcesApiStateIsPending(resources)
+    })
+  }
+
   private async waitForFetchChainToComplete (token: string): Promise<void> {
     let fetchChainCompletePromiseResolver: () => void
     const fetchChainCompletePromise = new Promise<void>((resolve) => {
       fetchChainCompletePromiseResolver = resolve
     })
 
-    const computedFetchChainComplete = computed(() => this.fetcherStore.isFetchChainComplete(token))
+    const computedFetchChainComplete = this.computedFetchChainComplete(token)
+
     const callback = (isFetchChainComplete: boolean|undefined) => {
       if (isFetchChainComplete === true) {
         fetchChainCompletePromiseResolver()
@@ -204,6 +232,14 @@ export default class FetchStatusManager {
 
   public get primaryFetchPath (): string|undefined {
     return this.fetcherStore.primaryFetchPath
+  }
+
+  public get isCurrentSuccessResourcesResolved (): boolean {
+    const successFetchStatus = this.fetcherStore.resolvedSuccessFetchStatus
+    if (!successFetchStatus) {
+      return false
+    }
+    return this.resourcesStore.isFetchStatusResourcesResolved(successFetchStatus)
   }
 
   private get fetcherStore () {

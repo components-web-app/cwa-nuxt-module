@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
 import consola from 'consola'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
-import { CwaFetcherStateInterface, TopLevelFetchPathInterface } from './state'
+import { CwaFetcherStateInterface, FetchStatus } from './state'
 import { CwaFetcherGettersInterface } from './getters'
 
 export interface StartFetchEvent {
@@ -10,6 +10,7 @@ export interface StartFetchEvent {
   path: string,
   manifestPath?: string
   isPrimary?: boolean
+  isCurrentSuccessResourcesResolved: boolean
 }
 
 export interface FinishFetchEvent {
@@ -112,9 +113,8 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         const lastSuccessState = fetcherState.fetches[fetcherState.primaryFetch.successToken]
         // check if this new path is the same as the last successful primary fetch and that the chain of fetch is complete
         // todo: when working on the redirect after finalising, we could check here if the fetched path is a route resource, and if the redirect path matches the new event path, then it is also the same fetch
-
         // todo: what if only some of the resource paths are different.. do we really need to fetch everything again or can we skip everything that has the correct headers and continue fetching the chain for anything that's changed...
-        if (lastSuccessState.path === event.path && fetcherGetters.isSuccessfulPrimaryFetchValid.value) {
+        if (lastSuccessState?.path === event.path && event.isCurrentSuccessResourcesResolved) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
           for (const existingToken of Object.keys(fetcherState.fetches)) {
@@ -133,8 +133,9 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         }
       }
 
+      // initialise
       const token = uuidv4()
-      const initialState: TopLevelFetchPathInterface = reactive({
+      const initialState: FetchStatus = reactive({
         path: event.path,
         resources: [],
         isPrimary: !!event.isPrimary
@@ -156,25 +157,38 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const fetchStatus = getFetchStatusFromToken(event.token)
 
       if (
-        !fetchStatus.isPrimary ||
-        !fetcherGetters.isCurrentFetchingToken.value(event.token)
+        !fetchStatus.isPrimary
       ) {
         // chain not needed anymore, will not be referenced anywhere
         delete fetcherState.fetches[event.token]
         return
       }
 
-      // delete existing primary fetch chain
-      if (fetcherState.primaryFetch.successToken) {
-        // as we are in a primary fetch, should we also return all these resources that are OK to delete?
-        // or do we return a status boolean and let the fetch status manager see that it was primary so that
-        // it can delete all resources that are not currentIds
-        delete fetcherState.fetches[fetcherState.primaryFetch.successToken]
+      const initialFetchingToken = fetcherState.primaryFetch.fetchingToken
+      const initialSuccessToken = fetcherState.primaryFetch.successToken
+
+      // update the token references
+      if (event.token === initialFetchingToken) {
+        fetcherState.primaryFetch.fetchingToken = undefined
+        fetcherState.primaryFetch.successToken = event.token
       }
 
-      // set the new success token
-      fetcherState.primaryFetch.fetchingToken = undefined
-      fetcherState.primaryFetch.successToken = event.token
+      // we should delete an old success token if a new one is being set
+      // we should not delete if it is the old success token that we are setting it back to
+      if (
+        initialSuccessToken && fetcherState.primaryFetch.successToken !== initialSuccessToken
+      ) {
+        delete fetcherState.fetches[initialSuccessToken]
+      }
+
+      if (event.token !== fetcherState.primaryFetch.successToken) {
+        delete fetcherState.fetches[event.token]
+      }
+
+      // // delete the entire thing if a previous fetching token has now been overwritten
+      // if (event.token !== initialSuccessToken) {
+      //   delete fetcherState.fetches[event.token]
+      // }
     },
     addFetchResource (event: AddFetchResourceEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
