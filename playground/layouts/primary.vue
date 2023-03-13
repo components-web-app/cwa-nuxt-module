@@ -7,6 +7,9 @@
         <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">
           <PopoverGroup as="nav" class="space-x-5 flex">
             <CwaComponentGroup reference="top" :location="$cwa.resources.layoutIri.value" />
+            <nuxt-link to="/login" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
+              Login
+            </nuxt-link>
           </PopoverGroup>
         </div>
       </Popover>

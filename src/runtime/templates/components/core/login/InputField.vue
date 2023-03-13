@@ -1,0 +1,56 @@
+<template>
+  <div>
+    <label :for="id" class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300">{{ props.label }}</label>
+    <div class="cwa-mt-2">
+      <input
+        :id="id"
+        :name="props.name"
+        :type="props.type"
+        :autocomplete="props.autocomplete"
+        :required="props.required"
+        :value="modelValue"
+        class="cwa-block cwa-w-full cwa-rounded-md cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
+        @input="$emit('update:modelValue', $event.target.value)"
+      >
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { v4 as uuidv4 } from 'uuid'
+
+defineEmits(['update:modelValue'])
+
+const props = defineProps({
+  name: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    required: false,
+    default: 'text'
+  },
+  label: {
+    type: String,
+    required: true
+  },
+  autocomplete: {
+    type: String,
+    required: false,
+    default: undefined
+  },
+  required: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
+  modelValue: {
+    type: String,
+    default: '',
+    required: true
+  }
+})
+
+const id = uuidv4()
+</script>

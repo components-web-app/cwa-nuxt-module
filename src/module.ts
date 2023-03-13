@@ -70,7 +70,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
     nuxt.options.build.transpile.push(runtimeDir)
 
-    nuxt.options.css.push(resolve('./runtime/templates/assets/main.css'))
+    nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
 
     // layouts and pages do not test yet
     const vueTemplatesDir = fileURLToPath(new URL('./runtime/templates', import.meta.url))
@@ -90,6 +90,16 @@ export default defineNuxtModule<CwaModuleOptions>({
     const extendPagesCallback = (pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
+
+      const loginPage: NuxtPage = {
+        name: 'cwaLoginPage',
+        path: '/login',
+        file: resolve(vueTemplatesDir, 'login-page.vue'),
+        meta: {
+          cwa: false
+        }
+      }
+      pages.push(loginPage)
     }
     extendPages(extendPagesCallback)
 

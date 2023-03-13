@@ -9,6 +9,7 @@ import CwaFetch from './api/fetcher/cwa-fetch'
 import FetchStatusManager from './api/fetcher/fetch-status-manager'
 import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
+import Auth from './api/auth'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -20,6 +21,7 @@ export default class Cwa {
   private readonly cwaFetch: CwaFetch
   public readonly resources: Resources
   public readonly resourcesManager: ResourcesManager
+  public readonly auth: Auth
 
   constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
     const defaultApiUrl = 'https://api-url-not-set.com'
@@ -38,7 +40,7 @@ export default class Cwa {
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.storage.stores.fetcher, fetchStatusManager)
-
+    this.auth = new Auth(this.cwaFetch)
     this.mercure.setFetcher(this.fetcher)
   }
 

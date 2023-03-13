@@ -5,5 +5,7 @@ module.exports = {
   content: [
     fileURLToPath(new URL('./cwa/**/*.{js,vue,ts}', import.meta.url))
   ],
-  plugins: []
+  plugins: [
+    require('@tailwindcss/forms')
+  ]
 }
