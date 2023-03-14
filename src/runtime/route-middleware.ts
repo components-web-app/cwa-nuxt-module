@@ -2,7 +2,6 @@ import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from 
 import { v4 as uuidv4 } from 'uuid'
 import consola from 'consola'
 import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
-import { CwaAuthStatus } from '@cwa/nuxt-module/runtime/api/auth'
 
 let middlewareToken = ''
 

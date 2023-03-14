@@ -3,6 +3,7 @@ import { FetchError } from 'ofetch'
 import { computed, ComputedRef, ref, Ref } from 'vue'
 import CwaFetch from './fetcher/cwa-fetch'
 import { AuthStore } from '@cwa/nuxt-module/runtime/storage/stores/auth/auth-store'
+import { CwaUserRoles } from '@cwa/nuxt-module/runtime/storage/stores/auth/state'
 
 interface Credentials {
   username: string
@@ -78,6 +79,20 @@ export default class Auth {
 
   public get user () {
     return this.authStore.data.user
+  }
+
+  public get roles () {
+    if (!this.user) {
+      return
+    }
+    return this.user.roles
+  }
+
+  public hasRole (role: CwaUserRoles|string) {
+    if (!this.roles) {
+      return false
+    }
+    return this.roles.includes(role)
   }
 
   private async loginRequest (credentials: Credentials) {
