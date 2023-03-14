@@ -7,12 +7,11 @@ import {
   CwaStore
 } from '../cwa-store-types'
 import CwaAuthState, { CwaAuthStateInterface } from './state'
-import CwaAuthGetters, { CwaAuthGettersInterface } from './getters'
 
 /**
  * Interface Definitions
  */
-export interface CwaAuthInterface extends CwaAuthStateInterface, CwaAuthGettersInterface {}
+export interface CwaAuthInterface extends CwaAuthStateInterface {}
 export interface CwaAuthStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.auth`, CwaAuthInterface> {}
 export interface CwaAuthStoreInterface extends CwaPiniaStoreInterface<`${string}.auth`, CwaAuthInterface> {}
 
@@ -25,10 +24,8 @@ export class AuthStore implements CwaStore {
   constructor (storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.auth`, (): CwaAuthInterface => {
       const fetcherState = CwaAuthState()
-      const getters = CwaAuthGetters(fetcherState)
       return {
-        ...fetcherState,
-        ...getters
+        ...fetcherState
       }
     })
   }

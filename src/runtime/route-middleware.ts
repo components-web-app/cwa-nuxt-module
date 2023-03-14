@@ -2,6 +2,7 @@ import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from 
 import { v4 as uuidv4 } from 'uuid'
 import consola from 'consola'
 import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
+import { CwaAuthStatus } from '@cwa/nuxt-module/runtime/api/auth'
 
 let middlewareToken = ''
 
@@ -41,6 +42,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (process.client) {
+    await nuxtApp.$cwa.auth.init()
+
+    // skip on first client side run as server-side will have completed
+    if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
+      return
+    }
     const startedMiddlewareToken = middlewareToken
     nuxtApp.$cwa.fetcher.fetchRoute(to.path)
       .then(async (resource: CwaResource|undefined) => {

@@ -6,12 +6,14 @@ import { MercureStore } from './stores/mercure/mercure-store'
 import {
   ApiDocumentationStore
 } from './stores/api-documentation/api-documentation-store'
+import { AuthStore } from './stores/auth/auth-store'
 
 export interface CwaStores {
   resources: ResourcesStore
   fetcher: FetcherStore
   mercure: MercureStore
   apiDocumentation: ApiDocumentationStore
+  auth: AuthStore
 }
 
 export class Storage {
@@ -25,7 +27,8 @@ export class Storage {
       resources: new ResourcesStore(storeName),
       fetcher: new FetcherStore(storeName),
       mercure: new MercureStore(storeName),
-      apiDocumentation: new ApiDocumentationStore(storeName)
+      apiDocumentation: new ApiDocumentationStore(storeName),
+      auth: new AuthStore(storeName)
     }
   }
 }
