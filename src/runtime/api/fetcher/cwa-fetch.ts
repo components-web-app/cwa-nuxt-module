@@ -8,7 +8,8 @@ export default class CwaFetch {
       baseURL,
       headers: {
         accept: 'application/ld+json,application/json'
-      }
+      },
+      credentials: 'include'
     })
   }
 }

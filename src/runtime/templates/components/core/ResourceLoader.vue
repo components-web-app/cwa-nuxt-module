@@ -20,9 +20,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { CwaAuthStatus } from '../../../api/auth'
 import * as components from '#components'
 
 const { $cwa } = useNuxtApp()
@@ -79,4 +80,17 @@ const resolvedComponent = computed(() => {
   // eslint-disable-next-line import/namespace
   return components[uiComponent.value]
 })
+
+onMounted(() => {
+  watch(() => [$cwa.auth.status, hasSilentError, resource], async ([authStatus, hasSilentError, resource]) => {
+    if (!resource.value.data && hasSilentError.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
+      await $cwa.fetchResource({
+        path: props.iri
+      })
+    }
+  }, {
+    immediate: true
+  })
+})
+
 </script>

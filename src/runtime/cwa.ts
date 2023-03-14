@@ -1,7 +1,7 @@
 import { NuxtApp } from '#app/nuxt'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
-import Fetcher from './api/fetcher/fetcher'
+import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
 import Mercure from './api/mercure'
 import ApiDocumentation from './api/api-documentation'
 import { CwaApiDocumentationDataInterface } from './storage/stores/api-documentation/state'
@@ -46,5 +46,9 @@ export default class Cwa {
 
   public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
     return await this.apiDocumentation.getApiDocumentation(refresh)
+  }
+
+  public fetchResource (event: FetchResourceEvent) {
+    return this.fetcher.fetchResource(event)
   }
 }

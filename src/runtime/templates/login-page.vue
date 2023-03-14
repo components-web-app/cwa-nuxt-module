@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { useHead, useNuxtApp } from '#app'
+import { navigateTo, useHead, useNuxtApp } from '#app'
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
 import InputField from './components/core/login/InputField.vue'
@@ -75,11 +75,12 @@ const submitting = ref(false)
 async function signIn () {
   submitting.value = true
   error.value = null
-  const result = await $cwa.auth.signIn(credentials)
-  if (result instanceof FetchError) {
-    error.value = result.data?.message || result.statusMessage
+  const user = await $cwa.auth.signIn(credentials)
+  if (user instanceof FetchError) {
+    error.value = user.data?.message || user.statusMessage
+  } else {
+    navigateTo('/')
   }
-  console.log(result)
   submitting.value = false
 }
 </script>

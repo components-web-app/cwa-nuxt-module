@@ -34,7 +34,7 @@ export class ResourcesManager {
   public async createResource (event: CreateResourceEvent) {
     const resource = await this.cwaFetch.fetch<CwaResource>(
       event.endpoint,
-      this.requestOptions('POST')
+      { ...this.requestOptions('POST'), body: event.data }
     )
     this.resourcesStore.saveResource({
       resource
@@ -45,7 +45,8 @@ export class ResourcesManager {
     return {
       method,
       headers: {
-        path: this.fetchStatusManager.primaryFetchPath || ''
+        path: this.fetchStatusManager.primaryFetchPath || '',
+        accept: 'application/ld+json,application/json'
       }
     }
   }

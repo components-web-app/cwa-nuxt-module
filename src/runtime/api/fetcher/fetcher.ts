@@ -9,7 +9,7 @@ import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
 
-interface FetchResourceEvent {
+export interface FetchResourceEvent {
   path: string
   token?: string
   manifestPath?: string
