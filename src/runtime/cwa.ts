@@ -1,5 +1,4 @@
 import { NuxtApp } from '#app/nuxt'
-import consola from 'consola'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'

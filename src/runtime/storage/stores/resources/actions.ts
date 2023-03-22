@@ -41,6 +41,7 @@ interface InitResourceEvent {
 
 export interface CwaResourcesActionsInterface {
   resetCurrentResources (currentIds?: string[]): void
+  clearResources (): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent|SaveNewResourceEvent): void
@@ -168,11 +169,16 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           }
         }
       }
-      resourcesState.new = {
-        byId: {},
-        allIds: []
-      }
+      resourcesState.new.byId = {}
+      resourcesState.new.allIds = []
       resourcesState.current.currentIds = currentIds || []
+    },
+    clearResources (): void {
+      resourcesState.current.byId = {}
+      resourcesState.current.allIds = []
+      resourcesState.current.currentIds = []
+      resourcesState.new.byId = {}
+      resourcesState.new.allIds = []
     },
     setResourceFetchStatus (event: SetResourceStatusEvent): void {
       const data = initResource({
