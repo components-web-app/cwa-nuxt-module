@@ -94,9 +94,9 @@ export default class FetchStatusManager {
     if (event.isPrimary) {
       this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
     }
-    if (!startFetchStatus.continue) {
-      this.mercure.init()
-    }
+    // if (!startFetchStatus.continue) {
+    //   this.mercure.init()
+    // }
     return startFetchStatus
   }
 

@@ -41,12 +41,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (process.client) {
-    await nuxtApp.$cwa.auth.init()
+    await nuxtApp.$cwa.initClientSide()
 
     // skip on first client side run as server-side will have completed
     if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
       return
     }
+
     const startedMiddlewareToken = middlewareToken
     nuxtApp.$cwa.fetcher.fetchRoute(to.path)
       .then(async (resource: CwaResource|undefined) => {

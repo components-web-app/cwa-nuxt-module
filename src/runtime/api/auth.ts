@@ -1,9 +1,10 @@
 import { CookieRef, useCookie } from '#app'
 import { FetchError } from 'ofetch'
 import { computed, ComputedRef, ref, Ref } from 'vue'
+import { AuthStore } from '../storage/stores/auth/auth-store'
+import { CwaUserRoles } from '../storage/stores/auth/state'
 import CwaFetch from './fetcher/cwa-fetch'
-import { AuthStore } from '@cwa/nuxt-module/runtime/storage/stores/auth/auth-store'
-import { CwaUserRoles } from '@cwa/nuxt-module/runtime/storage/stores/auth/state'
+import Mercure from './mercure'
 
 interface Credentials {
   username: string
@@ -21,12 +22,14 @@ export default class Auth {
   private authStoreDefinition: AuthStore
   private cookie: CookieRef<string | null>
   private loading: Ref<boolean>
+  private mercure: Mercure
 
-  public constructor (cwaFetch: CwaFetch, authStoreDefinition: AuthStore) {
+  public constructor (cwaFetch: CwaFetch, authStoreDefinition: AuthStore, mercure: Mercure) {
     this.cwaFetch = cwaFetch
     this.authStoreDefinition = authStoreDefinition
     this.cookie = useCookie('cwa_auth')
     this.loading = ref(false)
+    this.mercure = mercure
   }
 
   public async signIn (credentials: Credentials) {
@@ -34,6 +37,7 @@ export default class Auth {
     if (result instanceof FetchError) {
       return result
     }
+    this.mercure.init()
     return this.refreshUser()
   }
 
@@ -103,6 +107,7 @@ export default class Auth {
         body: credentials
       })
     } catch (error) {
+      this.loading.value = false
       if (!(error instanceof FetchError)) {
         throw error
       }
@@ -123,6 +128,7 @@ export default class Auth {
   private clearSession () {
     this.authStore.data.user = undefined
     this.cookie.value = '0'
+    this.mercure.init()
 
     // todo: when we sign out we should re-fetch all components that are current and clear all components that are not current or are in pending.
     // todo: if on re-fetch we have an error, we should clear the data... or... we could just reload the page. Or we could clear all the data and re-call the primary fetch..

@@ -1,4 +1,5 @@
 import { NuxtApp } from '#app/nuxt'
+import consola from 'consola'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -22,6 +23,7 @@ export default class Cwa {
   public readonly resources: Resources
   public readonly resourcesManager: ResourcesManager
   public readonly auth: Auth
+  private clientSideInitComplete = false
 
   constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
     const defaultApiUrl = 'https://api-url-not-set.com'
@@ -40,7 +42,7 @@ export default class Cwa {
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.storage.stores.fetcher, fetchStatusManager)
-    this.auth = new Auth(this.cwaFetch, this.storage.stores.auth)
+    this.auth = new Auth(this.cwaFetch, this.storage.stores.auth, this.mercure)
     this.mercure.setFetcher(this.fetcher)
   }
 
@@ -50,5 +52,15 @@ export default class Cwa {
 
   public fetchResource (event: FetchResourceEvent) {
     return this.fetcher.fetchResource(event)
+  }
+
+  public async initClientSide () {
+    if (this.clientSideInitComplete) {
+      consola.debug('CWA client-side already initialised')
+      return
+    }
+    await this.auth.init()
+    this.mercure.init()
+    this.clientSideInitComplete = true
   }
 }

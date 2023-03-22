@@ -60,7 +60,7 @@ export default class Mercure {
     }
 
     // Event is already setup and in a ready state
-    if (this.eventSource && this.eventSource.readyState === 2 && this.eventSource.url === this.hubUrl) {
+    if (this.eventSource && this.eventSource.readyState === 1 && this.eventSource.url === this.hubUrl) {
       consola.debug(`Mercure already initialized '${this.hubUrl}'`)
       return
     }
