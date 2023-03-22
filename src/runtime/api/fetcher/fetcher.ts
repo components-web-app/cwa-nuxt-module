@@ -85,9 +85,16 @@ export default class Fetcher {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  public async fetchRoute (path: string): Promise<CwaResource|undefined> {
-    const iri = `/_/routes/${path}`
-    const manifestPath = `/_/routes_manifest/${path}`
+  public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
+    let iri: string
+    let manifestPath: string|undefined
+    if (route.name === 'cwaPage') {
+      iri = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
+      // todo: validate iri is page or page data resource
+    } else {
+      iri = `/_/routes/${route.path}`
+      manifestPath = `/_/routes_manifest/${route.path}`
+    }
     return await this.fetchResource({
       path: iri,
       isPrimary: true,

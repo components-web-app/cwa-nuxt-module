@@ -49,7 +49,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     const startedMiddlewareToken = middlewareToken
-    nuxtApp.$cwa.fetcher.fetchRoute(to.path)
+    nuxtApp.$cwa.fetcher.fetchRoute(to)
       .then(async (resource: CwaResource|undefined) => {
         // check if the request finishing is still current to perform redirect
         if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
@@ -64,6 +64,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
-  const resource = await nuxtApp.$cwa.fetcher.fetchRoute(to.path)
+  const resource = await nuxtApp.$cwa.fetcher.fetchRoute(to)
   return handleRouteRedirect(resource)
 })
