@@ -23,7 +23,6 @@ export default class Cwa {
   public readonly resources: Resources
   public readonly resourcesManager: ResourcesManager
   public readonly auth: Auth
-  private clientSideInitComplete = false
 
   constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
     const defaultApiUrl = 'https://api-url-not-set.com'
@@ -55,12 +54,7 @@ export default class Cwa {
   }
 
   public async initClientSide () {
-    if (this.clientSideInitComplete) {
-      consola.debug('CWA client-side already initialised')
-      return
-    }
     await this.auth.init()
     this.mercure.init()
-    this.clientSideInitComplete = true
   }
 }
