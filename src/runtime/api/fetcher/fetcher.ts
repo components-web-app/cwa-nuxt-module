@@ -88,10 +88,10 @@ export default class Fetcher {
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
     let iri: string
     let manifestPath: string|undefined
-    if (route.name === 'cwaPage') {
-      iri = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
-      // todo: validate iri is page or page data resource
-    } else {
+    const routeParam = route.params.cwaPage0
+    iri = Array.isArray(routeParam) ? routeParam[0] : routeParam
+    const resourceType = getResourceTypeFromIri(iri)
+    if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
       iri = `/_/routes/${route.path}`
       manifestPath = `/_/routes_manifest/${route.path}`
     }

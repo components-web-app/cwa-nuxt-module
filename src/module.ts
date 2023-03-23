@@ -24,17 +24,6 @@ function createDefaultCwaPages (
   pageComponentFilePath: string,
   maxDepth: number
 ) {
-  // must be first to match first on client-side loads instead of wildcards below
-  const page: NuxtPage = {
-    name: 'cwaPage',
-    path: '/_cwa/page/:iri',
-    file: pageComponentFilePath,
-    meta: {
-      layout: 'cwa-layout-loader'
-    }
-  }
-  pages.push(page)
-
   function create (currentDepth = 0) {
     const page: NuxtPage = {
       name: `cwaPage${currentDepth}`,
