@@ -51,7 +51,7 @@ const isLoading = computed(() => {
   if (!resource.value) {
     return true
   }
-  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return !resource.value.data && resource.value.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const uiComponent = computed(() => {
@@ -62,11 +62,11 @@ const uiComponent = computed(() => {
 })
 
 const hasError = computed(() => {
-  return resource.value.apiState.status === CwaResourceApiStatuses.ERROR
+  return resource.value?.apiState.status === CwaResourceApiStatuses.ERROR
 })
 
 const hasSilentError = computed(() => {
-  return hasError.value && resource.value.apiState.error.statusCode >= 400 && resource.value.apiState.error.statusCode < 500
+  return hasError.value && resource.value?.apiState.error.statusCode >= 400 && resource.value?.apiState.error.statusCode < 500
 })
 
 const resolvedComponent = computed(() => {
@@ -83,7 +83,7 @@ const resolvedComponent = computed(() => {
 
 onMounted(() => {
   watch(() => [$cwa.auth.status, hasSilentError, resource], async ([authStatus, hasSilentError, resource]) => {
-    if (!resource.value.data && hasSilentError.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
+    if (!resource.value?.data && hasSilentError.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
       await $cwa.fetchResource({
         path: props.iri
       })

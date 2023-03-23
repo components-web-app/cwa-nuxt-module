@@ -55,6 +55,7 @@ export interface CwaFetcherActionsInterface {
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
   addFetchResource (event: AddFetchResourceEvent): boolean
+  clearFetches (): void
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface): CwaFetcherActionsInterface {
@@ -200,6 +201,13 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
       fetchStatus.resources.push(event.resource)
       return true
+    },
+    clearFetches () {
+      fetcherState.primaryFetch.fetchingToken = undefined
+      fetcherState.primaryFetch.successToken = undefined
+      for (const token of Object.keys(fetcherState.fetches)) {
+        delete fetcherState.fetches[token]
+      }
     }
   }
 }

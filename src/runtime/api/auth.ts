@@ -1,10 +1,13 @@
-import { CookieRef, useCookie } from '#app'
+import { CookieRef, useCookie, useRoute } from '#app'
 import { FetchError } from 'ofetch'
 import { computed, ComputedRef, ref, Ref } from 'vue'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
+import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from './fetcher/cwa-fetch'
 import Mercure from './mercure'
+import Fetcher from './fetcher/fetcher'
+import { FetcherStore } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/fetcher-store'
 
 interface Credentials {
   username: string
@@ -19,17 +22,30 @@ export enum CwaAuthStatus {
 
 export default class Auth {
   private cwaFetch: CwaFetch
+  private mercure: Mercure
+  private fetcher: Fetcher
   private authStoreDefinition: AuthStore
+  private resourcesStoreDefinition: ResourcesStore
+  private fetcherStoreDefinition: FetcherStore
   private cookie: CookieRef<string | null>
   private loading: Ref<boolean>
-  private mercure: Mercure
 
-  public constructor (cwaFetch: CwaFetch, authStoreDefinition: AuthStore, mercure: Mercure) {
+  public constructor (
+    cwaFetch: CwaFetch,
+    mercure: Mercure,
+    fetcher: Fetcher,
+    authStoreDefinition: AuthStore,
+    resourcesStoreDefinition: ResourcesStore,
+    fetcherStoreDefinition: FetcherStore
+  ) {
     this.cwaFetch = cwaFetch
     this.authStoreDefinition = authStoreDefinition
+    this.mercure = mercure
+    this.resourcesStoreDefinition = resourcesStoreDefinition
+    this.fetcher = fetcher
+    this.fetcherStoreDefinition = fetcherStoreDefinition
     this.cookie = useCookie('cwa_auth')
     this.loading = ref(false)
-    this.mercure = mercure
   }
 
   public async signIn (credentials: Credentials) {
@@ -125,16 +141,26 @@ export default class Auth {
     })
   }
 
-  private clearSession () {
+  private async clearSession () {
     this.authStore.data.user = undefined
     this.cookie.value = '0'
     this.mercure.init()
 
-    // todo: when we sign out we should re-fetch all components that are current and clear all components that are not current or are in pending.
-    // todo: if on re-fetch we have an error, we should clear the data... or... we could just reload the page. Or we could clear all the data and re-call the primary fetch..
+    this.resourcesStore.clearResources()
+    this.fetcherStore.clearFetches()
+    const route = useRoute()
+    await this.fetcher.fetchRoute(route)
   }
 
   private get authStore () {
     return this.authStoreDefinition.useStore()
+  }
+
+  private get resourcesStore () {
+    return this.resourcesStoreDefinition.useStore()
+  }
+
+  private get fetcherStore () {
+    return this.fetcherStoreDefinition.useStore()
   }
 }
