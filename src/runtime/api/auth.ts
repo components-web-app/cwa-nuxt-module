@@ -53,7 +53,7 @@ export default class Auth {
     if (result instanceof FetchError) {
       return result
     }
-    this.mercure.init()
+    this.mercure.init(true)
     return this.refreshUser()
   }
 
@@ -61,7 +61,7 @@ export default class Auth {
     this.loading.value = true
     try {
       const result = await this.cwaFetch.fetch('/logout')
-      this.clearSession()
+      await this.clearSession()
       return result
     } catch (error) {
       if (!(error instanceof FetchError)) {
@@ -84,7 +84,7 @@ export default class Auth {
       if (!(error instanceof FetchError)) {
         throw error
       }
-      this.clearSession()
+      await this.clearSession()
       return error
     } finally {
       this.loading.value = false
@@ -144,7 +144,7 @@ export default class Auth {
   private async clearSession () {
     this.authStore.data.user = undefined
     this.cookie.value = '0'
-    this.mercure.init()
+    this.mercure.init(true)
 
     this.resourcesStore.clearResources()
     this.fetcherStore.clearFetches()
