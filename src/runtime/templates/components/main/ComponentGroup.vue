@@ -34,7 +34,7 @@ const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs
 const props = defineProps({
   reference: { required: true, type: String },
   location: { required: true, type: String },
-  allowedComponents: { required: false, type: Array, default () { return undefined } }
+  allowedComponents: { required: false, type: Array, default () { return null } }
 })
 
 const fullReference = computed(() => {
@@ -84,12 +84,16 @@ async function createComponentGroup () {
   })
 }
 
-function updateAllowedComponents () {
-  if (_isEqual(props.allowedComponents, resource.value.data?.allowedComponents)) {
+async function updateAllowedComponents () {
+  if (_isEqual(props.allowedComponents, resource.value?.data?.allowedComponents)) {
     return
   }
-  // todo update the resource
-  console.log('SHOULD UPDATE THE CG ALLOWED COMPONENTS', props.allowedComponents, resource.value.data?.allowedComponents)
+  await $cwa.resourcesManager.updateResource({
+    endpoint: resource.value.data['@id'],
+    data: {
+      allowedComponents: props.allowedComponents
+    }
+  })
 }
 
 watch(() => [$cwa.resources.isLoading, $cwa.auth.status, resource], async ([isLoading, authStatus, resource]) => {
@@ -97,7 +101,7 @@ watch(() => [$cwa.resources.isLoading, $cwa.auth.status, resource], async ([isLo
     if (!resource.value) {
       await createComponentGroup()
     } else if (resource.value?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-      updateAllowedComponents()
+      await updateAllowedComponents()
     }
   }
 }, {

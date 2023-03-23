@@ -4,18 +4,16 @@ import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
 import { CwaResource } from './resource-utils'
 
-interface CreateResourceEvent {
+interface ApiResourceEvent {
   endpoint: string
   data: any
 }
 
-interface RequestHeaders extends Record<string, string> {
-  path: string
-}
+interface RequestHeaders extends Record<string, string> {}
 
 interface RequestOptions {
   headers: RequestHeaders
-  method: 'POST'|'PUT'
+  method: 'POST'|'PATCH'
 }
 
 export class ResourcesManager {
@@ -31,7 +29,7 @@ export class ResourcesManager {
     this.fetchStatusManager = fetchStatusManager
   }
 
-  public async createResource (event: CreateResourceEvent) {
+  public async createResource (event: ApiResourceEvent) {
     const resource = await this.cwaFetch.fetch<CwaResource>(
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
@@ -41,13 +39,33 @@ export class ResourcesManager {
     })
   }
 
-  private requestOptions (method: 'POST'|'PUT'): RequestOptions {
+  public async updateResource (event: ApiResourceEvent) {
+    const resource = await this.cwaFetch.fetch<CwaResource>(
+      event.endpoint,
+      { ...this.requestOptions('PATCH'), body: event.data }
+    )
+    this.resourcesStore.saveResource({
+      resource
+    })
+  }
+
+  private requestOptions (method: 'POST'|'PATCH'): RequestOptions {
+    const headers: {
+      accept: string
+      path?: string
+      'Content-Type'?: string
+    } = {
+      accept: 'application/ld+json,application/json'
+    }
+    if (this.fetchStatusManager.primaryFetchPath) {
+      headers.path = this.fetchStatusManager.primaryFetchPath
+    }
+    if (method === 'PATCH') {
+      headers['Content-Type'] = 'application/merge-patch+json'
+    }
     return {
       method,
-      headers: {
-        path: this.fetchStatusManager.primaryFetchPath || '',
-        accept: 'application/ld+json,application/json'
-      }
+      headers
     }
   }
 

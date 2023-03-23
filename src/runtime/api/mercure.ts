@@ -70,7 +70,7 @@ export default class Mercure {
 
     consola.info(`Initializing Mercure '${this.hubUrl}'`)
     this.eventSource = new EventSource(this.hubUrl, { withCredentials: true })
-    this.eventSource.onmessage = this.handleMercureMessage
+    this.eventSource.onmessage = (event: MessageEvent) => this.handleMercureMessage(event)
   }
 
   public closeMercure () {
