@@ -1,5 +1,5 @@
 <template>
-  <LoginPage :error="error" :submitting="submitting" submit-button-text="Sign In" @submit="signIn">
+  <LoginPage :error="error" :submitting="submitting" submit-button-text="Reset Password" @submit="signIn">
     <InputField
       v-model="credentials.username"
       label="Username or Email"
@@ -8,17 +8,9 @@
       autocomplete="username"
       :required="true"
     />
-    <InputField
-      v-model="credentials.password"
-      label="Password"
-      name="password"
-      type="password"
-      autocomplete="current-password"
-      :required="true"
-    />
 
     <div class="cwa-flex cwa-items-center cwa-justify-between">
-      <LoginPageLink link-to="/forgot-password" link-text="Forgot your password?" />
+      <LoginPageLink link-to="/login" link-text="< Back to login" />
     </div>
   </LoginPage>
 </template>
@@ -47,8 +39,7 @@ useHead({
 })
 
 const credentials = reactive({
-  username: '',
-  password: ''
+  username: ''
 })
 
 const error = ref(null)
@@ -57,12 +48,12 @@ const submitting = ref(false)
 async function signIn () {
   submitting.value = true
   error.value = null
-  const user = await $cwa.auth.signIn(credentials)
-  if (user instanceof FetchError) {
-    error.value = user.data?.message || user.statusMessage
-  } else {
-    navigateTo('/')
-  }
+  // const user = await $cwa.auth.signIn(credentials)
+  // if (user instanceof FetchError) {
+  //   error.value = user.data?.message || user.statusMessage
+  // } else {
+  //   navigateTo('/')
+  // }
   submitting.value = false
 }
 </script>
