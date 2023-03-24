@@ -18,6 +18,7 @@
     />
 
     <div class="cwa-flex cwa-items-center cwa-justify-between">
+      <LoginPageLink link-to="/" link-text="< Back to home" />
       <LoginPageLink link-to="/forgot-password" link-text="Forgot your password?" />
     </div>
   </LoginPage>

@@ -28,8 +28,6 @@
 </template>
 
 <script setup>
-import LoginPageLink from '@cwa/nuxt-module/layer/_components/login/LoginPageLink.vue'
-
 defineEmits(['submit'])
 const props = defineProps({
   submitButtonText: {
@@ -42,7 +40,7 @@ const props = defineProps({
   },
   error: {
     type: String,
-    required: true,
+    required: false,
     default: null
   }
 })

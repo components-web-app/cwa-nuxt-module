@@ -57,6 +57,19 @@ export default class Auth {
     return this.refreshUser()
   }
 
+  public async forgotPassword (username: string) {
+    try {
+      return await this.cwaFetch.fetch(`/password/reset/request/${encodeURIComponent(
+        username
+      )}`)
+    } catch (error) {
+      if (!(error instanceof FetchError)) {
+        throw error
+      }
+      return error
+    }
+  }
+
   public async signOut () {
     this.loading.value = true
     try {

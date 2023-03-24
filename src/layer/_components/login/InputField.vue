@@ -18,6 +18,7 @@
 
 <script setup>
 import { v4 as uuidv4 } from 'uuid'
+import { ref } from 'vue'
 
 defineEmits(['update:modelValue'])
 
@@ -52,5 +53,5 @@ const props = defineProps({
   }
 })
 
-const id = uuidv4()
+const id = ref(uuidv4())
 </script>
