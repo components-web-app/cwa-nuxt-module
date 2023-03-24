@@ -39,7 +39,7 @@ const props = defineProps({
     default: ''
   },
   uiComponent: {
-    type: [String, Object],
+    type: Object,
     required: false,
     default: undefined
   }

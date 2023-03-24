@@ -51,9 +51,13 @@
 import { navigateTo, useHead, useNuxtApp } from '#app'
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
-import InputField from './components/core/login/InputField.vue'
+import InputField from '../_components/login/InputField.vue'
 
 const { $cwa } = useNuxtApp()
+
+definePageMeta({
+  cwa: false
+})
 
 useHead({
   bodyAttrs: {

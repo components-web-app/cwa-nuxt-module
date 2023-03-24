@@ -1,5 +1,5 @@
 <template>
-  <ResourceLoader :iri="componentIri" component-prefix="CwaComponent" />
+  <ResourceLoader :iri="componentIri" component-prefix="CwaComponents" />
 </template>
 
 <script setup>

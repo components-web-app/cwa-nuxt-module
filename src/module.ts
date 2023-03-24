@@ -90,16 +90,6 @@ export default defineNuxtModule<CwaModuleOptions>({
     const extendPagesCallback = (pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
-
-      const loginPage: NuxtPage = {
-        name: 'cwaLoginPage',
-        path: '/login',
-        file: resolve(vueTemplatesDir, 'login-page.vue'),
-        meta: {
-          cwa: false
-        }
-      }
-      pages.push(loginPage)
     }
     extendPages(extendPagesCallback)
 
@@ -115,22 +105,24 @@ export default defineNuxtModule<CwaModuleOptions>({
     addImports([{ from: resolve('./runtime/composable.js'), name: 'useCwa' }])
 
     nuxt.hook('components:dirs', (dirs) => {
+      // component dirs from module
       dirs.unshift({
         path: resolve(vueTemplatesDir, 'components', 'main'),
         prefix: 'Cwa'
       })
       dirs.unshift({
+        path: resolve(vueTemplatesDir, 'components', 'utils'),
+        prefix: 'CwaUtils'
+      })
+
+      // component dirs to be configured by application
+      dirs.unshift({
         path: resolve(join(nuxt.options.srcDir, 'cwa', 'pages')),
-        prefix: 'CwaPage'
+        prefix: 'CwaPages'
       })
       dirs.unshift({
         path: resolve(join(nuxt.options.srcDir, 'cwa', 'components')),
-        prefix: 'CwaComponent'
-      })
-      // todo: think through and test hook set if needed
-      dirs.unshift({
-        path: fileURLToPath(new URL('./runtime/templates/components/utils', import.meta.url)),
-        prefix: 'CwaUtils'
+        prefix: 'CwaComponents'
       })
     })
   }
