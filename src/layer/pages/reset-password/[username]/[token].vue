@@ -1,5 +1,5 @@
 <template>
-  <LoginPage :error="error" :submitting="submitting" :submit-button-text="success ? 'Go to Login' : 'Reset Password'" @submit="resetPassword">
+  <LoginPage :error="inputErrors?.form || error" :submitting="submitting" :submit-button-text="success ? 'Go to Login' : 'Reset Password'" @submit="resetPassword">
     <div v-if="success">
       <h1 class="cwa-font-bold cwa-text-xl cwa-mb-2">
         Password Reset
@@ -13,6 +13,7 @@
         name="firstPassword"
         type="password"
         autocomplete="new-password"
+        :errors="inputErrors?.password"
         :required="true"
       />
       <InputField
@@ -29,7 +30,7 @@
 
 <script setup lang="ts">
 import { navigateTo, useHead, useNuxtApp, useRoute } from '#app'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
 import InputField from '../../../_components/login/InputField.vue'
 import LoginPage from '@cwa/nuxt-module/layer/_components/login/LoginPage.vue'
@@ -61,6 +62,27 @@ const passwords = reactive({
   second: ''
 })
 
+const form = computed(() => {
+  const formIri = submittedFormIri.value
+  if (!formIri) {
+    return
+  }
+  return $cwa.forms.getForm(formIri)
+})
+
+const inputErrors = computed(() => {
+  const formIri = submittedFormIri.value
+  if (!formIri) {
+    return
+  }
+  return {
+    form: $cwa.forms.getFormViewErrors(formIri, 'password_update').value,
+    password: $cwa.forms.getFormViewErrors(formIri, 'password_update[plainPassword][first]').value
+  }
+})
+
+$cwa.forms.getFormViewErrors(submittedFormIri.value, 'password_update[plainPassword][first]')
+
 function getStringFromParam (paramName: string): string {
   const paramValue = route.params[paramName]
   return Array.isArray(paramValue) ? paramValue[0] : paramValue
@@ -75,7 +97,7 @@ function handleResetError (fetchError: FetchError) {
       resource: fetchError.data
     })
     submittedFormIri.value = fetchError.data['@id']
-    return 'Form validation error.' + submittedFormIri.value
+    return
   }
   return fetchError.data?.message || fetchError.statusMessage || 'Unexpected error'
 }

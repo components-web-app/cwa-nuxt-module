@@ -12,13 +12,18 @@
         class="cwa-block cwa-w-full cwa-rounded-md cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
         @input="$emit('update:modelValue', $event.target.value)"
       >
+      <div v-if="errors">
+        <CwaUtilsAlertWarning v-for="(error, index) in errors" :key="`error-${id}-${index}`" class="cwa-mt-2">
+          {{ error }}
+        </CwaUtilsAlertWarning>
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
-import { ref } from 'vue'
+import { PropType, ref } from 'vue'
 
 defineEmits(['update:modelValue'])
 
@@ -50,6 +55,11 @@ const props = defineProps({
     type: String,
     default: '',
     required: true
+  },
+  errors: {
+    type: Array as PropType<string[]>,
+    required: false,
+    default: undefined
   }
 })
 
