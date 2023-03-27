@@ -123,5 +123,10 @@ export default defineNuxtModule<CwaModuleOptions>({
         prefix: 'CwaComponents'
       })
     })
+
+    addImports({
+      name: 'useCwa',
+      from: resolve('./runtime/composablses/index.ts')
+    })
   }
 })

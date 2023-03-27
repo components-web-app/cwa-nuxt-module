@@ -3,6 +3,11 @@ import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
 import { CwaResource } from './resource-utils'
+import {
+  DeleteResourceEvent,
+  SaveNewResourceEvent,
+  SaveResourceEvent
+} from '@cwa/nuxt-module/runtime/storage/stores/resources/actions'
 
 interface ApiResourceEvent {
   endpoint: string
@@ -34,7 +39,7 @@ export class ResourcesManager {
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
     )
-    this.resourcesStore.saveResource({
+    this.saveResource({
       resource
     })
   }
@@ -44,9 +49,17 @@ export class ResourcesManager {
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     )
-    this.resourcesStore.saveResource({
+    this.saveResource({
       resource
     })
+  }
+
+  public saveResource (event: SaveResourceEvent|SaveNewResourceEvent) {
+    return this.resourcesStore.saveResource(event)
+  }
+
+  public deleteResource (event: DeleteResourceEvent) {
+    return this.resourcesStore.deleteResource(event)
   }
 
   private requestOptions (method: 'POST'|'PATCH'): RequestOptions {

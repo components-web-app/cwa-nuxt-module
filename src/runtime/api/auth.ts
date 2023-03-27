@@ -20,6 +20,15 @@ export enum CwaAuthStatus {
   SIGNED_IN = 2
 }
 
+interface ResetPasswordEvent {
+  username: string
+  token: string
+  passwords: {
+    first: string
+    second: string
+  }
+}
+
 export default class Auth {
   private cwaFetch: CwaFetch
   private mercure: Mercure
@@ -62,6 +71,26 @@ export default class Auth {
       return await this.cwaFetch.fetch(`/password/reset/request/${encodeURIComponent(
         username
       )}`)
+    } catch (error) {
+      if (!(error instanceof FetchError)) {
+        throw error
+      }
+      return error
+    }
+  }
+
+  public async resetPassword (event: ResetPasswordEvent) {
+    try {
+      return await this.cwaFetch.fetch('/component/forms/password_reset/submit', {
+        method: 'PATCH',
+        body: {
+          password_update: {
+            username: event.username,
+            newPasswordConfirmationToken: event.token,
+            plainPassword: event.passwords
+          }
+        }
+      })
     } catch (error) {
       if (!(error instanceof FetchError)) {
         throw error
