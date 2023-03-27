@@ -86,7 +86,7 @@ export default class Auth {
         body: {
           password_update: {
             username: event.username,
-            newPasswordConfirmationToken: event.token,
+            plainNewPasswordConfirmationToken: event.token,
             plainPassword: event.passwords
           }
         }

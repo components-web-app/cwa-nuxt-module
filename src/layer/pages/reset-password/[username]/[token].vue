@@ -62,14 +62,6 @@ const passwords = reactive({
   second: ''
 })
 
-const form = computed(() => {
-  const formIri = submittedFormIri.value
-  if (!formIri) {
-    return
-  }
-  return $cwa.forms.getForm(formIri)
-})
-
 const inputErrors = computed(() => {
   const formIri = submittedFormIri.value
   if (!formIri) {
