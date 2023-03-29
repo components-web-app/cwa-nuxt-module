@@ -6,7 +6,7 @@ import {
   addPluginTemplate,
   installModule,
   extendPages,
-  addImports
+  addImports, addTemplate
 } from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
 import Bluebird from 'bluebird'
@@ -92,11 +92,16 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // clear options no longer needed and add plugin
     delete options.pagesDepth
-    const lodashTemplatesDir = fileURLToPath(new URL('./templates', import.meta.url))
+    const lodashTemplatesDir = fileURLToPath(new URL('./runtime', import.meta.url))
     addPluginTemplate({
-      src: resolve(lodashTemplatesDir, 'plugin.template.ts'),
-      filename: join('cwa', 'cwa-plugin.ts'),
-      options
+      src: resolve(lodashTemplatesDir, 'plugin.ts'),
+      filename: join('cwa', 'cwa-plugin.ts')
+    })
+    addTemplate({
+      filename: 'cwa-options.ts',
+      write: true,
+      getContents: () =>
+        `import { CwaModuleOptions } from '@cwa/nuxt-module/module'; export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}`
     })
 
     addImports([{ from: resolve('./runtime/composable.js'), name: 'useCwa' }])
