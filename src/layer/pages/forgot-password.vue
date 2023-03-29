@@ -15,7 +15,6 @@
         autocomplete="username"
         :required="true"
       />
-
       <div class="cwa-flex cwa-items-center cwa-justify-between">
         <LoginPageLink link-to="/login" link-text="< Back to login" />
       </div>

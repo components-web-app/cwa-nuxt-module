@@ -13,5 +13,8 @@
   "scripts": {
     "postcss": "postcss assets/css/tailwind.css -o ./assets/css/main.css",
     "postcss:watch": "postcss assets/css/tailwind.css -o ./assets/css/main.css --watch"
+  },
+  "dependencies": {
+    "@nuxt/devtools": "^0.3.1"
   }
 }

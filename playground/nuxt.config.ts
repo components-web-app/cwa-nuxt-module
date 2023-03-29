@@ -11,7 +11,8 @@ export default defineNuxtConfig({
   modules: [
     '@nuxtjs/tailwindcss',
     '@kevinmarrec/nuxt-pwa',
-    '@nuxt/image-edge'
+    '@nuxt/image-edge',
+    '@nuxt/devtools'
   ],
   cwa: {
     apiUrl: API_URL,

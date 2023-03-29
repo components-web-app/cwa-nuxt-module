@@ -5,7 +5,6 @@ import {
   createResolver,
   addPluginTemplate,
   installModule,
-  addLayout,
   extendPages,
   addImports
 } from '@nuxt/kit'
@@ -74,14 +73,14 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // layouts and pages do not test yet
     const vueTemplatesDir = fileURLToPath(new URL('./runtime/templates', import.meta.url))
-    addLayout({
-      src: resolve(vueTemplatesDir, 'layouts', 'cwa-default.vue')
-    }, 'cwa-default')
-
-    // we use a layout loader so the page does not need to use NuxtLayout and result in remounting and restarting any transitions etc. and so that we can then use NuxtLayout in there to load the correct layout
-    addLayout({
-      src: resolve(vueTemplatesDir, 'layouts', 'cwa-root-layout.vue')
-    }, 'cwa-root-layout')
+    // addLayout({
+    //   src: resolve(vueTemplatesDir, 'layouts', 'cwa-default.vue')
+    // }, 'cwa-default')
+    //
+    // // we use a layout loader so the page does not need to use NuxtLayout and result in remounting and restarting any transitions etc. and so that we can then use NuxtLayout in there to load the correct layout
+    // addLayout({
+    //   src: resolve(vueTemplatesDir, 'layouts', 'cwa-root-layout.vue')
+    // }, 'cwa-root-layout')
     // end do not test yet
 
     // todo: test
@@ -124,9 +123,12 @@ export default defineNuxtModule<CwaModuleOptions>({
       })
     })
 
-    addImports({
-      name: 'useCwa',
-      from: resolve('./runtime/composablses/index.ts')
-    })
+    const exportNames = ['useCwa', 'useCwaResources', 'useCwaResourcesManager', 'useCwaAuth', 'useCwaForms']
+    for (const name of exportNames) {
+      addImports({
+        name,
+        from: resolve('./composables.ts')
+      })
+    }
   }
 })
