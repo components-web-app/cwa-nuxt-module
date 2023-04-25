@@ -43,7 +43,10 @@ export default {
       return this.isExternal
     },
     isExternal() {
-      return this.to.match(/^(?:(?:http(?:s)?|ftp):)?\/\//)
+      return (
+        this.to.match(/^(?:(?:http(?:s)?|ftp):)?\/\//) ||
+        this.to.startsWith('mailto:')
+      )
     },
     linkProps() {
       const href = this.to

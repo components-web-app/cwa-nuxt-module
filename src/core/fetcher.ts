@@ -421,7 +421,7 @@ export class Fetcher {
         return this.fetchCollection(
           { paths: componentGroup.componentPositions },
           (componentPosition) => {
-            if (!componentPosition.component) {
+            if (componentPosition.component === undefined) {
               return
             }
             return this.fetchComponent(componentPosition.component)
