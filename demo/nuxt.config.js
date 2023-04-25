@@ -63,7 +63,8 @@ export default {
       // required for HTML component to convert anchor links to cwa-nuxt-link components
       // enables runtime compiler
       config.resolve.alias.vue = 'vue/dist/vue.common'
-    }
+    },
+    transpile: ['defu']
   },
   styleResources: {
     sass: ['~/assets/sass/vars/*.sass', '../src/core/assets/sass/vars/*.sass']
