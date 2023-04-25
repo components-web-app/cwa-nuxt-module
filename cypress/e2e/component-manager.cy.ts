@@ -80,10 +80,8 @@ describe('Component Manager Functions', () => {
     cy.get('.cwa-component-manager-holder').should('not.be.visible')
     cy.get('.cwa-manager-highlight').should('not.exist')
 
-    cy.get('@newComponent')
-      .click()
-      .get('.cwa-manager-highlight:not(.is-draft)')
-      .should('exist')
+    cy.get('@newComponent').click()
+    cy.get('.cwa-manager-highlight:not(.is-draft)').should('exist')
   })
 
   it('Handle errors when adding a component', () => {
