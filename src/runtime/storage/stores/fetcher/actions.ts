@@ -55,6 +55,7 @@ export interface CwaFetcherActionsInterface {
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
   addFetchResource (event: AddFetchResourceEvent): boolean
+  clearFetches (): void
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface): CwaFetcherActionsInterface {
@@ -184,11 +185,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (event.token !== fetcherState.primaryFetch.successToken) {
         delete fetcherState.fetches[event.token]
       }
-
-      // // delete the entire thing if a previous fetching token has now been overwritten
-      // if (event.token !== initialSuccessToken) {
-      //   delete fetcherState.fetches[event.token]
-      // }
     },
     addFetchResource (event: AddFetchResourceEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
@@ -200,6 +196,13 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
       fetchStatus.resources.push(event.resource)
       return true
+    },
+    clearFetches () {
+      fetcherState.primaryFetch.fetchingToken = undefined
+      fetcherState.primaryFetch.successToken = undefined
+      for (const token of Object.keys(fetcherState.fetches)) {
+        delete fetcherState.fetches[token]
+      }
     }
   }
 }

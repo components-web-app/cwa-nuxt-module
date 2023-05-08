@@ -10,4 +10,9 @@ module.exports = {
   },
   plugins: [],
   prefix: 'cwa-',
+  // todo: need to decide on this.. disabling to prevent duplicate preflight settings for website.. should the module preflight the css or just define its own...
+  corePlugins: {
+    preflight: false,
+  },
+  important: true
 }

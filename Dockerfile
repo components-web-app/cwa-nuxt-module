@@ -24,6 +24,7 @@ RUN mkdir -p playground/ssl/
 RUN ./playground/dev-ssl.sh
 
 RUN npm install && npm cache clean --force
+RUN cd playground && npm install && npm cache clean --force
 
 EXPOSE 3000
 

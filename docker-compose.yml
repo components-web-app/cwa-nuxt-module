@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/app:rw,cached
+      - /app/node_modules
+      - /app/playground/node_modules
     environment:
       NODE_ENV: ~
       LOCAL_TLS: ~

@@ -20,9 +20,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { CwaAuthStatus } from '../../../api/auth'
 import * as components from '#components'
 
 const { $cwa } = useNuxtApp()
@@ -38,7 +39,7 @@ const props = defineProps({
     default: ''
   },
   uiComponent: {
-    type: [String, Object],
+    type: Object,
     required: false,
     default: undefined
   }
@@ -50,7 +51,7 @@ const isLoading = computed(() => {
   if (!resource.value) {
     return true
   }
-  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return !resource.value.data && resource.value.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const uiComponent = computed(() => {
@@ -61,11 +62,11 @@ const uiComponent = computed(() => {
 })
 
 const hasError = computed(() => {
-  return resource.value.apiState.status === CwaResourceApiStatuses.ERROR
+  return resource.value?.apiState.status === CwaResourceApiStatuses.ERROR
 })
 
 const hasSilentError = computed(() => {
-  return hasError.value && resource.value.apiState.error.statusCode >= 400 && resource.value.apiState.error.statusCode < 500
+  return hasError.value && resource.value?.apiState.error.statusCode >= 400 && resource.value?.apiState.error.statusCode < 500
 })
 
 const resolvedComponent = computed(() => {
@@ -79,4 +80,17 @@ const resolvedComponent = computed(() => {
   // eslint-disable-next-line import/namespace
   return components[uiComponent.value]
 })
+
+onMounted(() => {
+  watch(() => [$cwa.auth.status, hasSilentError, resource], async ([authStatus, hasSilentError, resource]) => {
+    if (!resource.value?.data && hasSilentError.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
+      await $cwa.fetchResource({
+        path: props.iri
+      })
+    }
+  }, {
+    immediate: true
+  })
+})
+
 </script>

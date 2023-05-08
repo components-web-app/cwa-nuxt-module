@@ -1,0 +1,1 @@
+This directory is created with an underscore prefix to prevent the components being auto-imported for the resulting application. They should not be required but an application could still manually import these components if required for advanced use cases.

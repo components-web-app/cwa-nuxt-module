@@ -41,8 +41,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (process.client) {
+    await nuxtApp.$cwa.initClientSide()
+
+    // skip on first client side run as server-side will have completed
+    if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
+      return
+    }
+
     const startedMiddlewareToken = middlewareToken
-    nuxtApp.$cwa.fetcher.fetchRoute(to.path)
+    nuxtApp.$cwa.fetcher.fetchRoute(to)
       .then(async (resource: CwaResource|undefined) => {
         // check if the request finishing is still current to perform redirect
         if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
@@ -57,6 +64,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
-  const resource = await nuxtApp.$cwa.fetcher.fetchRoute(to.path)
+  const resource = await nuxtApp.$cwa.fetcher.fetchRoute(to)
   return handleRouteRedirect(resource)
 })

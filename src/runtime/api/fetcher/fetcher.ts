@@ -9,13 +9,14 @@ import CwaFetch from './cwa-fetch'
 import FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
 
-interface FetchResourceEvent {
+export interface FetchResourceEvent {
   path: string
   token?: string
   manifestPath?: string
   preload?: string[]
   shallowFetch?: boolean
   noSave?: boolean
+  isPrimary?: boolean
 }
 
 export interface FetchManifestEvent {
@@ -84,29 +85,29 @@ export default class Fetcher {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  public async fetchRoute (path: string): Promise<CwaResource|undefined> {
-    const iri = `/_/routes/${path}`
-    const manifestPath = `/_/routes_manifest/${path}`
-    const startFetchResult = this.fetchStatusManager.startFetch({
+  public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
+    let iri: string
+    let manifestPath: string|undefined
+    const routeParam = route.params.cwaPage0
+    iri = Array.isArray(routeParam) ? routeParam[0] : routeParam
+    const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
+    if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
+      iri = `/_/routes/${route.path}`
+      manifestPath = `/_/routes_manifest/${route.path}`
+    }
+    return await this.fetchResource({
       path: iri,
       isPrimary: true,
       manifestPath
     })
-    if (!startFetchResult.continue) {
-      return this.resourcesStore.current.byId[iri]?.data
-    }
-    const resource = await this.fetchResource({ path: iri, token: startFetchResult.token, manifestPath })
-
-    await this.fetchStatusManager.finishFetch({
-      token: startFetchResult.token
-    })
-    return resource
   }
 
-  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave }: FetchResourceEvent): Promise<CwaResource|undefined> {
+  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave, isPrimary }: FetchResourceEvent): Promise<CwaResource|undefined> {
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
-      token
+      token,
+      isPrimary,
+      manifestPath
     })
     if (!startFetchResult.continue) {
       return this.fetchStatusManager.getFetchedCurrentResource(path)

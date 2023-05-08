@@ -47,7 +47,7 @@ export default class Mercure {
     consola.debug('Mercure hub set', this.hub)
   }
 
-  public init (): void {
+  public init (forceRestart?: boolean): void {
     if (process.server) {
       consola.debug('Mercure can only initialise on the client side')
       return
@@ -59,8 +59,8 @@ export default class Mercure {
       return
     }
 
-    // Event is already setup and in a ready state
-    if (this.eventSource && this.eventSource.readyState === 2 && this.eventSource.url === this.hubUrl) {
+    // Event is already setup and in a ready state to the correct URL
+    if (!forceRestart && this.eventSource && this.eventSource.readyState === 1 && this.eventSource.url === this.hubUrl) {
       consola.debug(`Mercure already initialized '${this.hubUrl}'`)
       return
     }
@@ -70,7 +70,7 @@ export default class Mercure {
 
     consola.info(`Initializing Mercure '${this.hubUrl}'`)
     this.eventSource = new EventSource(this.hubUrl, { withCredentials: true })
-    this.eventSource.onmessage = this.handleMercureMessage
+    this.eventSource.onmessage = (event: MessageEvent) => this.handleMercureMessage(event)
   }
 
   public closeMercure () {

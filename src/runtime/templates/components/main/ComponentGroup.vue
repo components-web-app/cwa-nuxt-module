@@ -25,6 +25,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/res
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import ResourceLoader from '../core/ResourceLoader.vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
+import { CwaAuthStatus } from '../../../api/auth'
 
 const { $cwa } = useNuxtApp()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
@@ -83,21 +84,24 @@ async function createComponentGroup () {
   })
 }
 
-function updateAllowedComponents () {
-  if (_isEqual(props.allowedComponents, resource.value.data?.allowedComponents)) {
+async function updateAllowedComponents () {
+  if (_isEqual(props.allowedComponents, resource.value?.data?.allowedComponents)) {
     return
   }
-  // todo update the resource
-  console.log('SHOULD UPDATE THE CG ALLOWED COMPONENTS')
+  await $cwa.resourcesManager.updateResource({
+    endpoint: resource.value.data['@id'],
+    data: {
+      allowedComponents: props.allowedComponents
+    }
+  })
 }
 
-watch($cwa.resources.isLoading, async (isLoading) => {
-  if (!isLoading) {
-    // todo: check only if logged in. otherwise we are not permitted to update the API
+watch(() => [$cwa.resources.isLoading, $cwa.auth.status, resource], async ([isLoading, authStatus, resource]) => {
+  if (!isLoading.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
     if (!resource.value) {
       await createComponentGroup()
     } else if (resource.value?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-      updateAllowedComponents()
+      await updateAllowedComponents()
     }
   }
 }, {
