@@ -49,3 +49,14 @@ nuxi analyze
 
 
 virtuals and template literals in javascript
+
+
+useNuxt is build nuxt, useNuxtApp is the nuxt app built
+
+addTemplate is what is adding a virtual file
+
+unplugin
+
+purge-commits
+
+could set app config in module possibly instead of

@@ -6,7 +6,8 @@ import {
   addPluginTemplate,
   installModule,
   extendPages,
-  addImports, addTemplate
+  addTemplate,
+  addImportsDir, addPlugin
 } from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
 import Bluebird from 'bluebird'
@@ -71,40 +72,32 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
 
-    // layouts and pages do not test yet
     const vueTemplatesDir = fileURLToPath(new URL('./runtime/templates', import.meta.url))
-    // addLayout({
-    //   src: resolve(vueTemplatesDir, 'layouts', 'cwa-default.vue')
-    // }, 'cwa-default')
-    //
-    // // we use a layout loader so the page does not need to use NuxtLayout and result in remounting and restarting any transitions etc. and so that we can then use NuxtLayout in there to load the correct layout
-    // addLayout({
-    //   src: resolve(vueTemplatesDir, 'layouts', 'cwa-root-layout.vue')
-    // }, 'cwa-root-layout')
-    // end do not test yet
 
     // todo: test
     const extendPagesCallback = (pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
     }
+
     extendPages(extendPagesCallback)
 
     // clear options no longer needed and add plugin
     delete options.pagesDepth
     const lodashTemplatesDir = fileURLToPath(new URL('./runtime', import.meta.url))
-    addPluginTemplate({
-      src: resolve(lodashTemplatesDir, 'plugin.ts'),
-      filename: join('cwa', 'cwa-plugin.ts')
-    })
+
     addTemplate({
       filename: 'cwa-options.ts',
-      write: true,
-      getContents: () =>
-        `import { CwaModuleOptions } from '@cwa/nuxt-module/module'; export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}`
+      getContents: () => `import { CwaModuleOptions } from '@cwa/nuxt-module/module';
+export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
+`
     })
 
-    addImports([{ from: resolve('./runtime/composable.js'), name: 'useCwa' }])
+    addPlugin({
+      src: resolve(lodashTemplatesDir, 'plugin.ts')
+    })
+
+    addImportsDir(resolve('./runtime/composables'))
 
     nuxt.hook('components:dirs', (dirs) => {
       // component dirs from module
@@ -127,13 +120,5 @@ export default defineNuxtModule<CwaModuleOptions>({
         prefix: 'CwaComponents'
       })
     })
-
-    const exportNames = ['useCwa', 'useCwaResources', 'useCwaResourcesManager', 'useCwaAuth', 'useCwaForms']
-    for (const name of exportNames) {
-      addImports({
-        name,
-        from: resolve('./composables.ts')
-      })
-    }
   }
 })

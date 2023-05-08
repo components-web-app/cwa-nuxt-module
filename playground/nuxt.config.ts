@@ -18,9 +18,6 @@ export default defineNuxtConfig({
     apiUrl: API_URL,
     apiUrlBrowser: API_URL_BROWSER
   },
-  alias: {
-    '@cwa/nuxt-module': fileURLToPath(new URL('../src', import.meta.url))
-  },
   typescript: {
     tsConfig: {
       include: [
