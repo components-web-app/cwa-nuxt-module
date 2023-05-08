@@ -3,7 +3,6 @@ import { join } from 'path'
 import {
   defineNuxtModule,
   createResolver,
-  addPluginTemplate,
   installModule,
   extendPages,
   addTemplate,

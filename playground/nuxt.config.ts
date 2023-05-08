@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'url'
 import { defineNuxtConfig } from 'nuxt/config'
 
 const API_URL = process.env.API_URL || 'https://localhost:8443'
