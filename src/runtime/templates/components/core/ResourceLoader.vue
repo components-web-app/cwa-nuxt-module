@@ -20,11 +20,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, getCurrentInstance } from 'vue'
 import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { CwaAuthStatus } from '../../../api/auth'
-import * as components from '#components'
 
 const { $cwa } = useNuxtApp()
 
@@ -74,11 +73,13 @@ const resolvedComponent = computed(() => {
     return props.uiComponent
   }
 
-  if (!Object.keys(components).includes(uiComponent.value)) {
+  const instance = getCurrentInstance()
+
+  if (typeof instance?.appContext.components !== 'object' || !(uiComponent.value in instance.appContext.components)) {
     return
   }
-  // eslint-disable-next-line import/namespace
-  return components[uiComponent.value]
+
+  return uiComponent.value
 })
 
 onMounted(() => {
