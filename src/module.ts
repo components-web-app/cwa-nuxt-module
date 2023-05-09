@@ -109,7 +109,7 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
         prefix: 'CwaUtils'
       })
 
-      // component dirs to be configured by application
+      // component dirs to be configured by application - global, so they are split
       dirs.unshift({
         path: resolve(join(nuxt.options.srcDir, 'cwa', 'pages')),
         prefix: 'CwaPages',

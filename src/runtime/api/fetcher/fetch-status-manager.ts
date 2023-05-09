@@ -1,6 +1,6 @@
 import { computed, ComputedRef, watch, WatchStopHandle } from 'vue'
 import Bluebird, { TimeoutError } from 'bluebird'
-import consola from 'consola'
+import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
@@ -79,7 +79,7 @@ export default class FetchStatusManager {
       .timeout(timeout, `Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
       .catch((error) => {
         if (error instanceof TimeoutError) {
-          consola.warn(error.message)
+          logger.warn(error.message)
         }
       })
       .finally(() => {

@@ -1,6 +1,6 @@
 import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { v4 as uuidv4 } from 'uuid'
-import consola from 'consola'
+import logger from 'consola'
 import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 
 let middlewareToken = ''
@@ -41,6 +41,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (process.client) {
+    // todo: typehint $cwa
     await nuxtApp.$cwa.initClientSide()
 
     // skip on first client side run as server-side will have completed
@@ -57,7 +58,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         }
         const response = await handleRouteRedirect(resource)
         if (response) {
-          consola.info('Redirect handler failed', response)
+          logger.info('Redirect handler failed', response)
         }
       })
     return

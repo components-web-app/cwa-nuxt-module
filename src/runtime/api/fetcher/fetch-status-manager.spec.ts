@@ -4,7 +4,7 @@ import { Headers } from 'ofetch'
 import { storeToRefs } from 'pinia'
 import Bluebird from 'bluebird'
 import { computed, reactive } from 'vue'
-import consola from 'consola'
+import logger from 'consola'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
@@ -180,7 +180,7 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
     expect(result).toStrictEqual({
       '@id': '/original-resource'
     })
-    expect(consola.warn).toHaveBeenCalledWith('Timed out 5ms waiting to fetch current resource \'/some-resource\' in pending API state.')
+    expect(logger.warn).toHaveBeenCalledWith('Timed out 5ms waiting to fetch current resource \'/some-resource\' in pending API state.')
   })
 })
 

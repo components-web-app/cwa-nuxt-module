@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import consola from 'consola'
+import logger from 'consola'
 import { reactive } from 'vue'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -80,7 +80,7 @@ describe('Mercure -> setMercureHubFromLinkHeader', () => {
     const mercureStore = mercureStoreDef.useStore()
 
     mercure.setMercureHubFromLinkHeader(invalidLinkHeader)
-    expect(consola.error).toHaveBeenCalledWith('No Mercure rel in link header.')
+    expect(logger.error).toHaveBeenCalledWith('No Mercure rel in link header.')
     expect(mercureStore.hub).toBeNull()
   })
 
@@ -126,7 +126,7 @@ describe('Mercure -> init', () => {
   test('We do not initialise and log to the console if server-side request', () => {
     process.server = true
     mercure.init()
-    expect(consola.debug).toHaveBeenCalledWith('Mercure can only initialise on the client side')
+    expect(logger.debug).toHaveBeenCalledWith('Mercure can only initialise on the client side')
     expect(mercure.hubUrl).not.toHaveBeenCalled()
   })
 
@@ -136,7 +136,7 @@ describe('Mercure -> init', () => {
       return false
     })
     mercure.init()
-    expect(consola.warn).toHaveBeenCalledWith('Cannot initialize Mercure. Hub URL is not set.')
+    expect(logger.warn).toHaveBeenCalledWith('Cannot initialize Mercure. Hub URL is not set.')
     expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
   })
 
@@ -147,7 +147,7 @@ describe('Mercure -> init', () => {
     eventSource.url = 'http://hub-url'
     mercure.eventSource = eventSource
     mercure.init()
-    expect(consola.debug).toHaveBeenCalledWith("Mercure already initialized 'http://hub-url'")
+    expect(logger.debug).toHaveBeenCalledWith("Mercure already initialized 'http://hub-url'")
     expect(mercure.closeMercure).not.toHaveBeenCalled()
   })
 
@@ -158,7 +158,7 @@ describe('Mercure -> init', () => {
     })
     mercure.init()
     expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
-    expect(consola.info).toHaveBeenCalledWith("Initializing Mercure 'http://hub-url'")
+    expect(logger.info).toHaveBeenCalledWith("Initializing Mercure 'http://hub-url'")
     expect(EventSource).toHaveBeenCalledTimes(1)
     expect(EventSource).toHaveBeenCalledWith('http://hub-url', { withCredentials: true })
     expect(EventSource.mock.results[0].value.onmessage).toBe(mercure.handleMercureMessage)
@@ -175,13 +175,13 @@ describe('Mercure -> closeMercure', () => {
 
   test('We do not attempt to close an event source if it does not exist', () => {
     mercure.closeMercure()
-    expect(consola.warn).toHaveBeenLastCalledWith('No Mercure Event Source exists to close')
+    expect(logger.warn).toHaveBeenLastCalledWith('No Mercure Event Source exists to close')
   })
 
   test('We can close an event source and will output to the log', () => {
     mercure.eventSource = new EventSource()
     mercure.closeMercure()
-    expect(consola.info).toHaveBeenLastCalledWith('Mercure Event Source Closed')
+    expect(logger.info).toHaveBeenLastCalledWith('Mercure Event Source Closed')
     expect(mercure.eventSource.close).toHaveBeenCalledTimes(1)
   })
 })
