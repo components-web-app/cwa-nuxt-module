@@ -65,7 +65,7 @@ describe('Test route middleware', () => {
     fetchRouteRedirectFn.mockClear()
   })
 
-  test.only('Test route middleware is enabled by default', async () => {
+  test('Test route middleware is enabled by default', async () => {
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
