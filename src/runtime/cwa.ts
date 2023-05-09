@@ -65,10 +65,6 @@ export default class Cwa {
     return this.fetcher.fetchResource(event)
   }
 
-  public checkResourceTypeExistence (id: string, type: CwaResourceTypes): boolean {
-    return this.resources.checkResourceTypeExistence(id, type)
-  }
-
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved
   public async initClientSide () {
     await this.auth.init()
