@@ -1,7 +1,7 @@
 import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
-import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
+import { CwaResource } from './resources/resource-utils'
 
 let middlewareToken = ''
 
@@ -50,7 +50,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     const startedMiddlewareToken = middlewareToken
-    nuxtApp.$cwa.fetcher.fetchRoute(to)
+    nuxtApp.$cwa.fetchRoute(to)
       .then(async (resource: CwaResource|undefined) => {
         // check if the request finishing is still current to perform redirect
         if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
@@ -65,6 +65,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
-  const resource = await nuxtApp.$cwa.fetcher.fetchRoute(to)
+  const resource = await nuxtApp.$cwa.fetchRoute(to)
   return handleRouteRedirect(resource)
 })

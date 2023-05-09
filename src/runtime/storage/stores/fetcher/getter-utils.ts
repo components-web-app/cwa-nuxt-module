@@ -1,4 +1,4 @@
-import { CwaFetcherStateInterface, FetchStatus } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/state'
+import { CwaFetcherStateInterface, FetchStatus } from './state'
 
 export class FetcherGetterUtils {
   private fetcherState: CwaFetcherStateInterface

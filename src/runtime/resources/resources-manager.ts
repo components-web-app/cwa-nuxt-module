@@ -2,12 +2,12 @@ import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
-import { CwaResource } from './resource-utils'
 import {
   DeleteResourceEvent,
   SaveNewResourceEvent,
   SaveResourceEvent
-} from '@cwa/nuxt-module/runtime/storage/stores/resources/actions'
+} from '../storage/stores/resources/actions'
+import { CwaResource } from './resource-utils'
 
 interface ApiResourceEvent {
   endpoint: string

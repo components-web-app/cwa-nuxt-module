@@ -15,7 +15,8 @@ describe('Create a fetch instances with defaults', () => {
       baseURL: 'https://my-api',
       headers: {
         accept: 'application/ld+json,application/json'
-      }
+      },
+      credentials: 'include'
     })
     expect(cwaFetch.fetch).toBe('mockedFetchCreateInstance')
   })

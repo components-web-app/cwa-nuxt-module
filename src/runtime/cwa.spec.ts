@@ -50,6 +50,8 @@ vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
 vi.mock('./resources/resources-manager')
 vi.mock('./resources/resources')
+vi.mock('./api/auth')
+vi.mock('./api/forms')
 
 const path = 'something'
 const storeName = 'dummystore'

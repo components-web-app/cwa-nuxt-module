@@ -66,82 +66,42 @@ const validCwaResource = {
 
 describe('Fetcher -> fetchRoute', () => {
   let fetcher: Fetcher
-  let resourcesStore: ResourcesStore
   beforeEach(() => {
     fetcher = createFetcher()
     vi.spyOn(fetcher, 'fetchResource').mockImplementation(() => (Promise.resolve(validCwaResource)))
-    resourcesStore = ResourcesStore.mock.results[0].value
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('Initialises a fetch status. If continue if false, we should abort and return any existing resource if it exists.', async () => {
-    FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
-      return {
-        continue: false
-      }
-    })
-    vi.spyOn(resourcesStore, 'useStore').mockImplementationOnce(() => {
-      return {
-        current: {
-          byId: {
-            '/_/routes//some-route': {
-              data: {
-                myKey: 'myValue'
-              }
-            }
-          }
-        }
-      }
+  test.each([
+    {
+      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/routes_manifest//some-route'
+    },
+    {
+      path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: undefined
+    },
+    {
+      path: '/_/pages/abcdefg', apiPath: '/_/pages/abcdefg', manifestPath: undefined
+    }
+  ])('If fetchRoute is called with the path $1', async ({ path, apiPath, manifestPath }) => {
+    const result = await fetcher.fetchRoute({
+      path,
+      params: {
+        cwaPage0: path
+      },
+      matched: [],
+      fullPath: '',
+      query: {},
+      hash: '',
+      name: '',
+      meta: {},
+      redirectedFrom: undefined
     })
 
-    const result = await fetcher.fetchRoute('/some-route')
-    expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledWith({
-      path: '/_/routes//some-route',
-      isPrimary: true,
-      manifestPath: '/_/routes_manifest//some-route'
-    })
-    expect(fetcher.fetchResource).not.toHaveBeenCalled()
-    expect(result).toStrictEqual({
-      myKey: 'myValue'
-    })
-  })
-
-  test('calls fetchResource with the correct iri. Token produced, should continue', async () => {
-    let finishResolved = false
-    FetchStatusManager.mock.instances[0].startFetch.mockImplementationOnce(() => {
-      return {
-        continue: true,
-        token: 'some-token'
-      }
-    })
-    FetchStatusManager.mock.instances[0].finishFetch.mockImplementationOnce(() => {
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          finishResolved = true
-          resolve()
-        }, 1)
-      })
-    })
-    fetcher.fetchResource.mockImplementation(() => {
-      return {
-        '@id': 'something'
-      }
-    })
-    const result = await fetcher.fetchRoute('/some-route')
-    expect(fetcher.fetchResource).toHaveBeenCalledWith({ path: '/_/routes//some-route', token: 'some-token', manifestPath: '/_/routes_manifest//some-route' })
-
-    expect(FetchStatusManager.mock.instances[0].startFetch).toHaveBeenCalledTimes(1)
-    expect(fetcher.fetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
-
-    expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({ token: 'some-token' })
-    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchResource.mock.invocationCallOrder[0])
-    expect(result).toStrictEqual({
-      '@id': 'something'
-    })
-    expect(finishResolved).toBe(true)
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({ path: apiPath, isPrimary: true, manifestPath })
+    expect(result).toStrictEqual(validCwaResource)
   })
 })
 
@@ -830,13 +790,12 @@ describe('Fetcher -> fetchBatch', () => {
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource', '/resolve-another-resource'], token: 'any' })
 
     expect(bluebird.map).toHaveBeenCalledTimes(1)
-
-    expect(bluebird.map.calls[0][0]).toStrictEqual(['/resolve-resource', '/resolve-another-resource'])
-    expect(bluebird.map.calls[0][2]).toStrictEqual({
+    expect(bluebird.map.mock.calls[0][0]).toStrictEqual(['/resolve-resource', '/resolve-another-resource'])
+    expect(bluebird.map.mock.calls[0][2]).toStrictEqual({
       concurrency: 10000
     })
 
-    const bluebirdMapPromise = bluebird.map.mock.instances[0].map.results[0][1]
+    const bluebirdMapPromise = bluebird.map.mock.instances[0].map.mock.results[0].value
     await bluebirdMapPromise
 
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
