@@ -1,8 +1,6 @@
-import { defineConfig } from 'vitest/config'
-import NuxtVitest from 'vite-plugin-nuxt-test'
+import { defineVitestConfig } from 'nuxt-vitest/config'
 
-export default defineConfig({
-  plugins: [NuxtVitest()],
+export default defineVitestConfig({
   test: {
     coverage: {
       provider: 'c8',
