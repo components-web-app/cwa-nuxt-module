@@ -24,6 +24,7 @@ import { computed, onMounted, watch, getCurrentInstance } from 'vue'
 import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { CwaAuthStatus } from '../../../api/auth'
+import { useCwaComponent } from '#imports'
 
 const { $cwa } = useNuxtApp()
 
@@ -44,7 +45,7 @@ const props = defineProps({
   }
 })
 
-const resource = $cwa.resources.getResource(props.iri)
+const resource = useCwaComponent(props.iri)
 
 const isLoading = computed(() => {
   if (!resource.value) {
