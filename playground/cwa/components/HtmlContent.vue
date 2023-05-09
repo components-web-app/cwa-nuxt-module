@@ -3,9 +3,6 @@
 </template>
 
 <script setup>
-import { useNuxtApp } from '#app'
-
-const { $cwa } = useNuxtApp()
 const props = defineProps({
   iri: {
     type: String,
@@ -13,7 +10,7 @@ const props = defineProps({
   }
 })
 
-const resource = $cwa.resources.getResource(props.iri)
+const resource = useCwaComponent(props.iri)
 </script>
 
 <style>

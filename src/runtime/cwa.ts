@@ -11,6 +11,7 @@ import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import Auth from './api/auth'
 import Forms from '@cwa/nuxt-module/runtime/api/forms'
+import { CwaResourceTypes } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -62,6 +63,10 @@ export default class Cwa {
   // fetcher is private, exposing the only function required by applications
   public fetchResource (event: FetchResourceEvent) {
     return this.fetcher.fetchResource(event)
+  }
+
+  public checkResourceTypeExistence (id: string, type: CwaResourceTypes): boolean {
+    return this.resources.checkResourceTypeExistence(id, type)
   }
 
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved
