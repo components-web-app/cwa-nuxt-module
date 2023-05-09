@@ -7,6 +7,8 @@
 </template>
 
 <script setup>
+import { useCwaComponent } from '#imports'
+
 const props = defineProps({
   iri: {
     type: String,

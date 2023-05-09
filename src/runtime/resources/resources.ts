@@ -32,10 +32,6 @@ export class Resources {
     return computed(() => this.resourcesStore.current.byId?.[id])
   }
 
-  public checkResourceTypeExistence (id: string, type: CwaResourceTypes): boolean {
-    return !!this.resourcesStore.resourcesByType[type].find(resource => resource.data?.['@id'] === id)
-  }
-
   // todo: this may be temporary, but if proves useful, functionality to be moved to a resources store getter and this as a proxy
   public get currentResources () {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
