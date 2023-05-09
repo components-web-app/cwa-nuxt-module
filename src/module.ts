@@ -1,12 +1,13 @@
 import { fileURLToPath } from 'url'
 import { join } from 'path'
 import {
-  defineNuxtModule,
-  createResolver,
-  installModule,
-  extendPages,
+  addImportsDir,
+  addPlugin,
   addTemplate,
-  addImportsDir, addPlugin
+  createResolver,
+  defineNuxtModule,
+  extendPages,
+  installModule
 } from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
 import Bluebird from 'bluebird'
