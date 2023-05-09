@@ -1,6 +1,6 @@
 import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { v4 as uuidv4 } from 'uuid'
-import consola from 'consola'
+import logger from 'consola'
 import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 
 let middlewareToken = ''
@@ -57,7 +57,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         }
         const response = await handleRouteRedirect(resource)
         if (response) {
-          consola.info('Redirect handler failed', response)
+          logger.info('Redirect handler failed', response)
         }
       })
     return

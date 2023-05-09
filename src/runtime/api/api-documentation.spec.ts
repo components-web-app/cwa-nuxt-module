@@ -1,6 +1,6 @@
 import { describe, test, vi, beforeEach, expect, beforeAll } from 'vitest'
 import { setActivePinia } from 'pinia'
-import consola from 'consola'
+import logger from 'consola'
 import { createTestingPinia } from '@pinia/testing'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
 import ApiDocumentation from './api-documentation'
@@ -67,7 +67,7 @@ describe('API Documentation setDocsPathFromLinkHeader functionality', () => {
     const piniaStore = apiDocumentationStore.useStore()
 
     apiDocumentation.setDocsPathFromLinkHeader(invalidLinkHeader)
-    expect(consola.error).toHaveBeenCalledWith('The "Link" HTTP header is not of the type "http://www.w3.org/ns/hydra/core#apiDocumentation".')
+    expect(logger.error).toHaveBeenCalledWith('The "Link" HTTP header is not of the type "http://www.w3.org/ns/hydra/core#apiDocumentation".')
     expect(piniaStore.$patch).not.toHaveBeenCalled()
     expect(piniaStore.$state.docsPath).toBe(undefined)
   })
@@ -107,7 +107,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
 
   test('We will wait for docsPath to be set before continuing', async () => {
     apiDocumentation.getApiDocumentation()
-    expect(consola.debug).toHaveBeenLastCalledWith('Waiting for docsPath to bet set to fetch API Documentation')
+    expect(logger.debug).toHaveBeenLastCalledWith('Waiting for docsPath to bet set to fetch API Documentation')
     await delay(5)
     expect(cwaFetchInstance.fetch).not.toHaveBeenCalled()
   })
@@ -144,7 +144,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
     const piniaStore = await apiDocumentationStore.useStore()
     expect(await docs).toEqual(apiDocsObject)
     expect(await docsAwait).toEqual(apiDocsObject)
-    expect(consola.debug).toHaveBeenCalledWith('Waiting for previous request to complete for API Documentation')
+    expect(logger.debug).toHaveBeenCalledWith('Waiting for previous request to complete for API Documentation')
     await delay(mockedFetchResponseTime)
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
   })

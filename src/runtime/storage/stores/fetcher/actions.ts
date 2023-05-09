@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
-import consola from 'consola'
+import logger from 'consola'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
 import { CwaFetcherStateInterface, FetchStatus } from './state'
 import { CwaFetcherGettersInterface } from './getters'
@@ -77,7 +77,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       try {
         fetchStatus = getFetchStatusFromToken(event.token)
       } catch (error: any) {
-        consola.trace(error.message)
+        logger.trace(error.message)
         return
       }
       if (!fetchStatus.manifest) {

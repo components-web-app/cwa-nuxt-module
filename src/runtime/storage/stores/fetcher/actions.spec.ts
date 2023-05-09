@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, reactive } from 'vue'
-import consola from 'consola'
+import logger from 'consola'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
 import state, { CwaFetcherStateInterface, FetchStatus } from './state'
@@ -483,8 +483,8 @@ describe('Fetcher store action -> finishManifestFetch', () => {
       token: 'non-existent',
       resources: ['/any']
     })
-    expect(consola.trace).toHaveBeenCalledTimes(1)
-    expect(consola.trace).toHaveBeenCalledWith("The fetch chain token 'non-existent' does not exist")
+    expect(logger.trace).toHaveBeenCalledTimes(1)
+    expect(logger.trace).toHaveBeenCalledWith("The fetch chain token 'non-existent' does not exist")
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toBeUndefined()
   })
 

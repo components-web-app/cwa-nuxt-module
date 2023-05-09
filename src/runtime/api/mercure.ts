@@ -1,4 +1,4 @@
-import consola from 'consola'
+import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 import { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
@@ -38,37 +38,37 @@ export default class Mercure {
 
     const matches = linkHeader.match(/<([^>]+)>;\s+rel="mercure".*/)
     if (!matches || !matches[1]) {
-      consola.error('No Mercure rel in link header.')
+      logger.error('No Mercure rel in link header.')
       return
     }
 
     const { hub } = storeToRefs(this.mercureStore)
     hub.value = matches[1]
-    consola.debug('Mercure hub set', this.hub)
+    logger.debug('Mercure hub set', this.hub)
   }
 
   public init (forceRestart?: boolean): void {
     if (process.server) {
-      consola.debug('Mercure can only initialise on the client side')
+      logger.debug('Mercure can only initialise on the client side')
       return
     }
 
     if (!this.hubUrl) {
-      consola.warn('Cannot initialize Mercure. Hub URL is not set.')
+      logger.warn('Cannot initialize Mercure. Hub URL is not set.')
       this.closeMercure()
       return
     }
 
     // Event is already setup and in a ready state to the correct URL
     if (!forceRestart && this.eventSource && this.eventSource.readyState === 1 && this.eventSource.url === this.hubUrl) {
-      consola.debug(`Mercure already initialized '${this.hubUrl}'`)
+      logger.debug(`Mercure already initialized '${this.hubUrl}'`)
       return
     }
 
     // It may be setup but not in the correct state or with the correct URL
     this.closeMercure()
 
-    consola.info(`Initializing Mercure '${this.hubUrl}'`)
+    logger.info(`Initializing Mercure '${this.hubUrl}'`)
     this.eventSource = new EventSource(this.hubUrl, { withCredentials: true })
     this.eventSource.onmessage = (event: MessageEvent) => this.handleMercureMessage(event)
   }
@@ -76,9 +76,9 @@ export default class Mercure {
   public closeMercure () {
     if (this.eventSource) {
       this.eventSource.close()
-      consola.info('Mercure Event Source Closed')
+      logger.info('Mercure Event Source Closed')
     } else {
-      consola.warn('No Mercure Event Source exists to close')
+      logger.warn('No Mercure Event Source exists to close')
     }
   }
 

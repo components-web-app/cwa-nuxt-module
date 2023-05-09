@@ -1,5 +1,5 @@
 import { ref, Ref, watch } from 'vue'
-import consola from 'consola'
+import logger from 'consola'
 import {
   ApiDocumentationStore, CwaApiDocumentationStoreInterface
 } from '../storage/stores/api-documentation/api-documentation-store'
@@ -27,7 +27,7 @@ export default class ApiDocumentation {
         linkHeader
       )
     if (!matches || !matches[1]) {
-      consola.error(
+      logger.error(
         'The "Link" HTTP header is not of the type "http://www.w3.org/ns/hydra/core#apiDocumentation".'
       )
       return
@@ -37,13 +37,13 @@ export default class ApiDocumentation {
       docsPath: matches[1]
     })
     this.apiDocsSet.value = true
-    consola.debug('ApiDocumentation docsPath', this.docsPath)
+    logger.debug('ApiDocumentation docsPath', this.docsPath)
   }
 
   public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
     // check if api docs is set and if not, wait for it to be set and continue
     if (!this.docsPath) {
-      consola.debug('Waiting for docsPath to bet set to fetch API Documentation')
+      logger.debug('Waiting for docsPath to bet set to fetch API Documentation')
       return this.reRunGetApiDocumentationWhenReady(refresh)
     }
 
@@ -52,7 +52,7 @@ export default class ApiDocumentation {
       return currentDocs
     }
 
-    consola.debug('Fetching API Documentation')
+    logger.debug('Fetching API Documentation')
     return await this.fetchAllApiDocumentation(this.docsPath)
   }
 
@@ -69,14 +69,14 @@ export default class ApiDocumentation {
 
   private getCurrentApiDocs (refresh: boolean) {
     if (!this.apiDocPromise && !refresh && this.store.$state.apiDocumentation) {
-      consola.debug('Not refreshing API Documentation. Returning cached data.')
+      logger.debug('Not refreshing API Documentation. Returning cached data.')
       return this.store.$state.apiDocumentation
     }
     return null
   }
 
   private async awaitApiDocPromise () {
-    consola.debug('Waiting for previous request to complete for API Documentation')
+    logger.debug('Waiting for previous request to complete for API Documentation')
     await this.apiDocPromise
     return this.store.$state.apiDocumentation
   }
@@ -95,7 +95,7 @@ export default class ApiDocumentation {
           docs: responses[1]
         }
       })
-      consola.debug('New API Documentation Saved')
+      logger.debug('New API Documentation Saved')
       this.apiDocPromise = undefined
     })
     await this.apiDocPromise
