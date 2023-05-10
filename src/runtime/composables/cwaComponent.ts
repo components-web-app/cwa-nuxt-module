@@ -1,9 +1,12 @@
 import { useCwa } from './cwa'
 
-export const useCwaComponent = (componentId: string) => {
-  if (!componentId) {
-    throw new Error('You should provide component id')
+export const iri = {
+  iri: {
+    type: String,
+    required: true
   }
+}
 
-  return useCwa().resources.getResource(componentId)
+export const useCwaResource = (resourceId: string) => {
+  return useCwa().resources.getResource(resourceId)
 }

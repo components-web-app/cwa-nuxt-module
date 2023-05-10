@@ -6,14 +6,11 @@
 </template>
 
 <script setup>
-import { useCwaComponent } from '#imports'
+import { useCwaResource, iri } from '#imports'
 
 const props = defineProps({
-  iri: {
-    type: String,
-    required: true
-  }
+  ...iri
 })
 
-const resource = useCwaComponent(props.iri)
+const resource = useCwaResource(props.iri)
 </script>
