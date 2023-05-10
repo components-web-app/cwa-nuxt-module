@@ -1,13 +1,9 @@
-import { defineConfig } from 'vitest/config'
-import NuxtVitest from 'vite-plugin-nuxt-test'
+import { defineVitestConfig } from 'nuxt-vitest/config'
 
-export default defineConfig({
-  plugins: [NuxtVitest()],
+export default defineVitestConfig({
   test: {
-    deps: {
-      inline: ['@nuxt/test-utils']
-    },
     coverage: {
+      reportsDirectory: '../coverage',
       provider: 'c8',
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
