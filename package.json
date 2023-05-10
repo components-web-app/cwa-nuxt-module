@@ -25,7 +25,7 @@
     "test": "vitest --run --reporter=verbose",
     "test:watch": "vitest --watch --reporter=verbose",
     "test:watch:coverage": "vitest --watch --coverage --reporter=verbose",
-    "test:coverage": "vitest --run --coverage.enabled --reporter=verbose",
+    "test:coverage": "vitest --run --coverage --reporter=verbose",
     "stryker:init": "stryker init",
     "stryker:run": "stryker run",
     "postcss": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css",

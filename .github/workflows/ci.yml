@@ -66,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: vitest-logs-unit${{ matrix.node }}
-          path: coverage
+          path: ./coverage
           if-no-files-found: error
       - name: Upload coverage results to Codecov
         if: matrix.coverage
