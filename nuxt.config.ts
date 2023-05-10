@@ -13,5 +13,6 @@ export default defineNuxtConfig({
   },
   extends: [
     './src/layer'
-  ]
+  ],
+  srcDir: './playground'
 })
