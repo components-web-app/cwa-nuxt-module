@@ -1,6 +1,13 @@
 name: ci
 
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
+      - '!main'
+  pull_request:
+    branches-ignore:
+      - main
 
 jobs:
   test:
@@ -60,6 +67,7 @@ jobs:
         with:
           name: vitest-logs-unit${{ matrix.node }}
           path: coverage
+          if-no-files-found: error
       - name: Upload coverage results to Codecov
         if: matrix.coverage
         uses: codecov/codecov-action@v3
