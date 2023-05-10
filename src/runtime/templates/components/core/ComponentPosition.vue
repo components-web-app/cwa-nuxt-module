@@ -3,20 +3,15 @@
 </template>
 
 <script setup>
-import { useNuxtApp } from '#app'
 import { computed } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
-
-const { $cwa } = useNuxtApp()
+import { useCwaResource, iri } from '#imports'
 
 const props = defineProps({
-  iri: {
-    type: String,
-    required: true
-  }
+  ...iri
 })
 
-const resource = $cwa.resources.getResource(props.iri)
+const resource = useCwaResource(props.iri)
 const componentIri = computed(() => {
   return resource.value?.data?.component
 })

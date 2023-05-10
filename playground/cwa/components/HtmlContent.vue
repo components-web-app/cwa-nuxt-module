@@ -3,17 +3,13 @@
 </template>
 
 <script setup>
-import { useNuxtApp } from '#app'
+import { useCwaResource, iri } from '#imports'
 
-const { $cwa } = useNuxtApp()
 const props = defineProps({
-  iri: {
-    type: String,
-    required: true
-  }
+  ...iri
 })
 
-const resource = $cwa.resources.getResource(props.iri)
+const resource = useCwaResource(props.iri)
 </script>
 
 <style>
