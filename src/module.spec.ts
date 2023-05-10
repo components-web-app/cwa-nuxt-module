@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'url'
-import { join } from 'path'
 import { setup, useTestContext } from '@nuxt/test-utils'
 import { describe, test, expect, vi } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
@@ -11,7 +10,8 @@ vi.mock('@nuxt/kit', async () => {
   const newModule = {
     ...module,
     defineNuxtModule: vi.fn(ops => module.defineNuxtModule(ops)),
-    addPluginTemplate: vi.fn(module.addPluginTemplate)
+    addTemplate: vi.fn(module.addTemplate),
+    addPlugin: vi.fn(module.addPlugin)
   }
   return {
     ...newModule,
@@ -69,15 +69,18 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
   })
 
   test('Plugins are added', () => {
-    expect(nuxtKit.addPluginTemplate).toBeCalledTimes(1)
-    expect(nuxtKit.addPluginTemplate).toBeCalledWith({
-      src: fileURLToPath(new URL('./templates/plugin.template.ts', import.meta.url)),
-      filename: join('cwa', 'cwa-plugin.ts'),
-      options: {
-        storeName: 'cwa',
-        apiUrl: 'https://localhost:8443',
-        apiUrlBrowser: 'https://localhost:8443'
-      }
+    expect(nuxtKit.addTemplate).toBeCalledTimes(1)
+    expect(nuxtKit.addTemplate.mock.calls[0][0].filename).toBe('cwa-options.ts')
+    expect(nuxtKit.addTemplate.mock.calls[0][0].getContents()).toBe(`import { CwaModuleOptions } from '@cwa/nuxt-module/module';
+export const options:CwaModuleOptions = {
+  "storeName": "cwa",
+  "apiUrl": "https://localhost:8443",
+  "apiUrlBrowser": "https://localhost:8443"
+}
+`)
+    expect(nuxtKit.addPlugin).toBeCalledTimes(1)
+    expect(nuxtKit.addPlugin).toBeCalledWith({
+      src: fileURLToPath(new URL('./runtime/plugin.ts', import.meta.url))
     })
   })
 

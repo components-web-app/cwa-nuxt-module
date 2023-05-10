@@ -1,4 +1,5 @@
 import { NuxtApp } from '#app/nuxt'
+import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -10,7 +11,7 @@ import FetchStatusManager from './api/fetcher/fetch-status-manager'
 import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import Auth from './api/auth'
-import Forms from '@cwa/nuxt-module/runtime/api/forms'
+import Forms from './api/forms'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -62,6 +63,10 @@ export default class Cwa {
   // fetcher is private, exposing the only function required by applications
   public fetchResource (event: FetchResourceEvent) {
     return this.fetcher.fetchResource(event)
+  }
+
+  public fetchRoute (route: RouteLocationNormalizedLoaded) {
+    return this.fetcher.fetchRoute(route)
   }
 
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved

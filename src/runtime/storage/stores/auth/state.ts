@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { CwaResource } from '@cwa/nuxt-module/runtime/resources/resource-utils'
+import { CwaResource } from '../../../resources/resource-utils'
 
 export enum CwaUserRoles {
   SUPER_ADMIN = 'ROLE_SUPER_ADMIN',
