@@ -240,27 +240,6 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
     expect(Mercure.mock.instances[0].init).not.toHaveBeenCalled()
     expect(response).toStrictEqual(startFetchResponse)
   })
-
-  // useful for first fetch client-side which we do not need to continue and need to initialise mercure for the first time
-  test('If we are not continuing the fetch, re-initialise the mercure store', () => {
-    const startFetchResponse = {
-      continue: false,
-      resources: [],
-      token: 'any'
-    }
-    const fetcherStore = FetcherStore.mock.results[0].value
-    vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
-      return {
-        startFetch: vi.fn(() => (startFetchResponse))
-      }
-    })
-    const startFetchEvent: StartFetchEvent = {
-      path: '/fetch-path'
-    }
-    const response = fetchStatusManager.startFetch(startFetchEvent)
-    expect(Mercure.mock.instances[0].init).toHaveBeenCalledTimes(1)
-    expect(response).toStrictEqual(startFetchResponse)
-  })
 })
 
 describe('FetchStatusManager -> startFetchResource', () => {

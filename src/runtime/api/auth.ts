@@ -4,10 +4,10 @@ import { computed, ComputedRef, ref, Ref } from 'vue'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from './fetcher/cwa-fetch'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
-import { FetcherStore } from '@cwa/nuxt-module/runtime/storage/stores/fetcher/fetcher-store'
 
 interface Credentials {
   username: string

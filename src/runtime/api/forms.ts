@@ -1,5 +1,5 @@
 import { computed, ComputedRef } from 'vue'
-import { ResourcesStore } from '@cwa/nuxt-module/runtime/storage/stores/resources/resources-store'
+import { ResourcesStore } from '../storage/stores/resources/resources-store'
 interface ViewVars {
   full_name: string
   name: string
