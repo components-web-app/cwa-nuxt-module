@@ -14,5 +14,16 @@ export default defineNuxtConfig({
   extends: [
     './src/layer'
   ],
-  srcDir: './playground'
+  srcDir: './playground',
+  typescript: {
+    tsConfig: {
+      include: [
+        './src'
+      ],
+      exclude: [
+        './**/*.spec.ts',
+        './**/*.test.ts'
+      ]
+    }
+  }
 })
