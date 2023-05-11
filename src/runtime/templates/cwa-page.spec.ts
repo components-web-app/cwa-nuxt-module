@@ -23,12 +23,16 @@ describe('CWA page', () => {
   test('should display ResourceLoader component IF pageIri is defined', () => {
     const wrapper = createWrapper()
 
+    console.log('artur check', wrapper.html())
+
     expect(wrapper.findComponent(ResourceLoader)).toBeDefined()
     expect(wrapper.element).toMatchSnapshot()
   })
 
   test('should NOT display ResourceLoader IF pageIri is NOT defined', () => {
     const wrapper = createWrapper('')
+
+    console.log('artur check', wrapper.html())
 
     expect(wrapper.element).toMatchSnapshot()
   })
