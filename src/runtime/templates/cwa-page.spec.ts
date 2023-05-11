@@ -19,7 +19,7 @@ function createWrapper (iri = '12345') {
   return shallowMount(CwaPage, {
     global: {
       stubs: {
-        RecourceLoader: true
+        ResourceLoader: true
       }
     }
   })
