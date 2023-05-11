@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CWA page > should NOT display ResourceLoader IF pageIri is NOT defined 1`] = `<!--v-if-->`;
+
+exports[`CWA page > should display ResourceLoader component IF pageIri is defined 1`] = `
+<resource-loader-stub
+  componentprefix="CwaPages"
+  iri="12345"
+/>
+`;
