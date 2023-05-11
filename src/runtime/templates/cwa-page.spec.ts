@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import ResourceLoader from '../../../dist/runtime/templates/components/core/ResourceLoader.vue'
 import CwaPage from './cwa-page.vue'
@@ -16,7 +16,13 @@ function createWrapper (iri = '12345') {
     }
   }))
 
-  return shallowMount(CwaPage)
+  return mount(CwaPage, {
+    global: {
+      stubs: {
+        ResourceLoader: true
+      }
+    }
+  })
 }
 
 describe('CWA page', () => {
