@@ -10,7 +10,7 @@ export default defineVitestConfig({
       all: true
     },
     singleThread: true,
-    environment: 'happy-dom',
+    environment: 'jsdom',
     resolveSnapshotPath (path: string, extension: string) {
       return path + extension
     }
