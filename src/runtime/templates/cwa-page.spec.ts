@@ -16,7 +16,7 @@ function createWrapper (iri = '12345') {
     }
   }))
 
-  console.log(shallowMount, mount)
+  console.log('check functions', shallowMount, mount)
 
   return mount(CwaPage, { shallow: true })
 }
