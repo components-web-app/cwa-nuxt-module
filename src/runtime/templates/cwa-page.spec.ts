@@ -16,7 +16,13 @@ function createWrapper (iri = '12345') {
     }
   }))
 
-  return shallowMount(CwaPage)
+  return shallowMount(CwaPage, {
+    global: {
+      stubs: {
+        RecourceLoader: true
+      }
+    }
+  })
 }
 
 describe('CWA page', () => {
