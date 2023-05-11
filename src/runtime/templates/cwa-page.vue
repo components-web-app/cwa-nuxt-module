@@ -1,5 +1,9 @@
 <template>
-  <ResourceLoader v-if="$cwa.resources.pageIri.value" :iri="$cwa.resources.pageIri.value" component-prefix="CwaPages" />
+  <ResourceLoader
+    v-if="$cwa.resources.pageIri.value"
+    :iri="$cwa.resources.pageIri.value"
+    component-prefix="CwaPages"
+  />
 </template>
 
 <script setup>
