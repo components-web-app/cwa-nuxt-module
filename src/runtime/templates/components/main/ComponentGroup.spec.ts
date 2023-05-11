@@ -30,6 +30,10 @@ function createWrapper ({ reference, location, resourcesByType, byId, cwaResourc
             value: false
           }
         },
+        resourcesManager: {
+          createResource: vi.fn(),
+          updateResource: vi.fn()
+        },
         storage: {
           stores: {
             resources: {
@@ -213,6 +217,77 @@ describe('ComponentGroup', () => {
         })
 
         expect(wrapper.vm.componentPositions).toEqual(mockComponentPositions)
+      })
+    })
+  })
+
+  describe('methods', () => {
+    describe('createComponentGroup', () => {
+      test('should call resource manager method with correct params', async () => {
+        const mockLocation = '/_/pages/mock-page'
+        const mockReference = 'mockReference'
+        const mockResourceReference = 'mockResourceReference'
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const mockAllowedComponents = ['comp1', 'comp2']
+
+        const wrapper = createWrapper({
+          location: mockLocation,
+          reference: mockReference,
+          byId: mockById
+        })
+
+        await wrapper.setProps({ allowedComponents: mockAllowedComponents })
+
+        await wrapper.vm.createComponentGroup()
+
+        expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
+          data: {
+            reference: wrapper.vm.fullReference,
+            location: '/_/pages/mock-page',
+            allowedComponents: mockAllowedComponents,
+            pages: ['/_/pages/mock-page']
+          },
+          endpoint: '/_/component_groups'
+        })
+      })
+
+      test('should call resource manager method with correct params without location option IF no such location type is available', async () => {
+        const mockLocation = '/_/routes/mock-route'
+        const mockReference = 'mockReference'
+        const mockResourceReference = 'mockResourceReference'
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const mockAllowedComponents = ['comp1', 'comp2']
+
+        const wrapper = createWrapper({
+          location: mockLocation,
+          reference: mockReference,
+          byId: mockById
+        })
+
+        await wrapper.setProps({ allowedComponents: mockAllowedComponents })
+
+        await wrapper.vm.createComponentGroup()
+
+        expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
+          data: {
+            reference: wrapper.vm.fullReference,
+            location: mockLocation,
+            allowedComponents: mockAllowedComponents
+          },
+          endpoint: '/_/component_groups'
+        })
       })
     })
   })
