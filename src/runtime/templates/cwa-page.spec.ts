@@ -2,7 +2,6 @@ import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import ResourceLoader from '../templates/components/core/ResourceLoader.vue'
-import pkg from '../../../package.json'
 import CwaPage from './cwa-page.vue'
 
 function createWrapper (iri = '12345') {
@@ -36,8 +35,6 @@ describe('CWA page', () => {
 
   test('should NOT display ResourceLoader IF pageIri is NOT defined', () => {
     const wrapper = createWrapper('')
-
-    console.log(pkg)
 
     expect(wrapper.element).toMatchSnapshot()
   })
