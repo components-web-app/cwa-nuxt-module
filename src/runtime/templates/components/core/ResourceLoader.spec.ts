@@ -9,7 +9,7 @@ import { CwaResourceApiStatuses } from '@cwa/nuxt-module/runtime/storage/stores/
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
 
-function createWrapper(resource: any, status?: CwaAuthStatus) {
+function createWrapper (resource: any, status?: CwaAuthStatus) {
   // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
     $cwa: {
