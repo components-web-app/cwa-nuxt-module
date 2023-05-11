@@ -7,16 +7,34 @@ import { CwaResourceTypes } from '@cwa/nuxt-module/runtime/resources/resource-ut
 import { CwaAuthStatus } from '@cwa/nuxt-module/runtime/api/auth'
 import { CwaResourceApiStatuses } from '@cwa/nuxt-module/runtime/storage/stores/resources/state'
 
-function createWrapper ({ reference, location, resourcesByType, byId, cwaResources }: {
-  reference: string;
-  location: string;
+const mockReference = 'mockReference'
+const mockResourceReference = 'mockResourceReference'
+const mockLocation = 'mockLocation'
+const mockResourcesByType = { [CwaResourceTypes.COMPONENT_GROUP]: [] }
+const mockCwaResources = {
+  isLoading: {
+    value: false
+  }
+}
+
+function createWrapper ({
+  reference = mockReference,
+  location = mockLocation,
+  resourcesByType = mockResourcesByType,
+  byId = {},
+  cwaResources = mockCwaResources,
+  allowedComponents = []
+}: {
+  location?: string;
   resourcesByType?: any;
+  reference?: string;
   byId?: any;
   cwaResources?: any;
-}) {
+  allowedComponents?: string[];
+} = {}) {
   const mockStore = reactive({
-    resourcesByType: ref(resourcesByType || { [CwaResourceTypes.COMPONENT_GROUP]: [] }),
-    current: ref({ byId: byId || {} })
+    resourcesByType: ref(resourcesByType),
+    current: ref({ byId })
   })
   // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
@@ -25,11 +43,7 @@ function createWrapper ({ reference, location, resourcesByType, byId, cwaResourc
         auth: {
           status: CwaAuthStatus.SIGNED_OUT
         },
-        resources: cwaResources || {
-          isLoading: {
-            value: false
-          }
-        },
+        resources: cwaResources,
         resourcesManager: {
           createResource: vi.fn(),
           updateResource: vi.fn()
@@ -50,7 +64,8 @@ function createWrapper ({ reference, location, resourcesByType, byId, cwaResourc
   return shallowMount(ComponentGroup, {
     props: {
       reference,
-      location
+      location,
+      allowedComponents
     }
   })
 }
@@ -59,20 +74,12 @@ describe('ComponentGroup', () => {
   describe('computed properties', () => {
     describe('fullReference', () => {
       test('should return nothing IF there is no resource matching location', () => {
-        const mockReference = 'mockReference'
-        const mockLocation = 'mockLocation'
-        const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation
-        })
+        const wrapper = createWrapper()
 
         expect(wrapper.vm.fullReference).toBeUndefined()
       })
 
       test('should return fullReference BASED on location resource data', () => {
-        const mockReference = 'mockReference'
-        const mockResourceReference = 'mockResourceReference'
-        const mockLocation = 'mockLocation'
         const mockById = {
           [mockLocation]: {
             data: {
@@ -81,8 +88,6 @@ describe('ComponentGroup', () => {
           }
         }
         const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation,
           byId: mockById
         })
 
@@ -92,9 +97,6 @@ describe('ComponentGroup', () => {
 
     describe('resource', () => {
       test('should return resource from resources list BASED on type AND full reference', () => {
-        const mockReference = 'mockReference'
-        const mockResourceReference = 'mockResourceReference'
-        const mockLocation = 'mockLocation'
         const mockGroupElement = { data: { reference: `${mockReference}_${mockResourceReference}` } }
         const mockByType = {
           [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
@@ -107,8 +109,6 @@ describe('ComponentGroup', () => {
           }
         }
         const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation,
           resourcesByType: mockByType,
           byId: mockById
         })
@@ -119,12 +119,7 @@ describe('ComponentGroup', () => {
 
     describe('showLoader', () => {
       test('should return false IF resources loading flag is false', () => {
-        const mockReference = 'mockReference'
-        const mockLocation = 'mockLocation'
-
         const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation,
           cwaResources: {
             isLoading: {
               value: false
@@ -136,15 +131,11 @@ describe('ComponentGroup', () => {
       })
 
       test('should return true IF resources loading flag is true AND resource is not defined', () => {
-        const mockReference = 'mockReference'
-        const mockLocation = 'mockLocation'
         const mockByType = {
           [CwaResourceTypes.COMPONENT_GROUP]: []
         }
 
         const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation,
           resourcesByType: mockByType,
           cwaResources: {
             isLoading: {
@@ -157,9 +148,6 @@ describe('ComponentGroup', () => {
       })
 
       test('should return true IF resources loading flag is true AND resource is in loading state', () => {
-        const mockReference = 'mockReference'
-        const mockLocation = 'mockLocation'
-        const mockResourceReference = 'mockResourceReference'
         const mockGroupElement = {
           data: {
             reference: `${mockReference}_${mockResourceReference}`
@@ -173,8 +161,6 @@ describe('ComponentGroup', () => {
         }
 
         const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation,
           resourcesByType: mockByType,
           cwaResources: {
             isLoading: {
@@ -189,9 +175,6 @@ describe('ComponentGroup', () => {
 
     describe('componentPositions', () => {
       test('should return resource component positions BASED on its data', () => {
-        const mockReference = 'mockReference'
-        const mockResourceReference = 'mockResourceReference'
-        const mockLocation = 'mockLocation'
         const mockComponentPositions = ['pos1', 'pos2', 'pos3']
         const mockGroupElement = {
           data: {
@@ -210,8 +193,6 @@ describe('ComponentGroup', () => {
           }
         }
         const wrapper = createWrapper({
-          reference: mockReference,
-          location: mockLocation,
           resourcesByType: mockByType,
           byId: mockById
         })
@@ -225,8 +206,6 @@ describe('ComponentGroup', () => {
     describe('createComponentGroup', () => {
       test('should call resource manager method with correct params', async () => {
         const mockLocation = '/_/pages/mock-page'
-        const mockReference = 'mockReference'
-        const mockResourceReference = 'mockResourceReference'
         const mockById = {
           [mockLocation]: {
             data: {
@@ -238,11 +217,9 @@ describe('ComponentGroup', () => {
 
         const wrapper = createWrapper({
           location: mockLocation,
-          reference: mockReference,
-          byId: mockById
+          byId: mockById,
+          allowedComponents: mockAllowedComponents
         })
-
-        await wrapper.setProps({ allowedComponents: mockAllowedComponents })
 
         await wrapper.vm.createComponentGroup()
 
@@ -259,8 +236,6 @@ describe('ComponentGroup', () => {
 
       test('should call resource manager method with correct params without location option IF no such location type is available', async () => {
         const mockLocation = '/_/routes/mock-route'
-        const mockReference = 'mockReference'
-        const mockResourceReference = 'mockResourceReference'
         const mockById = {
           [mockLocation]: {
             data: {
@@ -272,7 +247,6 @@ describe('ComponentGroup', () => {
 
         const wrapper = createWrapper({
           location: mockLocation,
-          reference: mockReference,
           byId: mockById
         })
 
@@ -287,6 +261,71 @@ describe('ComponentGroup', () => {
             allowedComponents: mockAllowedComponents
           },
           endpoint: '/_/component_groups'
+        })
+      })
+    })
+
+    describe('updateAllowedComponents', () => {
+      test('should NOT perform update operation IF allowed components from props and resource are equal', async () => {
+        const mockGroupElement = {
+          data: {
+            reference: `${mockReference}_${mockResourceReference}`,
+            allowedComponents: ['comp1']
+          }
+        }
+        const mockByType = {
+          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+        }
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const wrapper = createWrapper({
+          resourcesByType: mockByType,
+          byId: mockById,
+          allowedComponents: ['comp1']
+        })
+
+        await wrapper.vm.updateAllowedComponents()
+
+        expect(wrapper.vm.$cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
+      })
+
+      test('should perform update operation IF allowed components from props and resource are NOT equal', async () => {
+        const mockId = '/_/test'
+        const mockGroupElement = {
+          data: {
+            reference: `${mockReference}_${mockResourceReference}`,
+            allowedComponents: ['comp1'],
+            '@id': mockId
+          }
+        }
+        const mockByType = {
+          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+        }
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const wrapper = createWrapper({
+          resourcesByType: mockByType,
+          byId: mockById,
+          allowedComponents: ['comp2']
+        })
+
+        await wrapper.vm.updateAllowedComponents()
+
+        expect(wrapper.vm.$cwa.resourcesManager.updateResource).toHaveBeenCalledWith({
+          endpoint: mockId,
+          data: {
+            allowedComponents: wrapper.props().allowedComponents
+          }
         })
       })
     })
