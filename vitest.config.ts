@@ -9,6 +9,7 @@ export default defineVitestConfig({
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true
     },
+    singleThread: true,
     environment: 'happy-dom',
     resolveSnapshotPath (path: string, extension: string) {
       return path + extension
