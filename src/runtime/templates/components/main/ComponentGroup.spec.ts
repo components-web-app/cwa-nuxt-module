@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
-import { reactive, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 import { CwaAuthStatus } from '@cwa/nuxt-module/runtime/api/auth'
@@ -16,6 +16,9 @@ const mockCwaResources = {
     value: false
   }
 }
+const mockAuth = {
+  status: CwaAuthStatus.SIGNED_OUT
+}
 
 function createWrapper ({
   reference = mockReference,
@@ -23,7 +26,8 @@ function createWrapper ({
   resourcesByType = mockResourcesByType,
   byId = {},
   cwaResources = mockCwaResources,
-  allowedComponents = []
+  allowedComponents = [],
+  auth = mockAuth
 }: {
   location?: string;
   resourcesByType?: any;
@@ -31,6 +35,7 @@ function createWrapper ({
   byId?: any;
   cwaResources?: any;
   allowedComponents?: string[];
+  auth?: any;
 } = {}) {
   const mockStore = reactive({
     resourcesByType: ref(resourcesByType),
@@ -40,9 +45,7 @@ function createWrapper ({
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
     return {
       $cwa: {
-        auth: {
-          status: CwaAuthStatus.SIGNED_OUT
-        },
+        auth,
         resources: cwaResources,
         resourcesManager: {
           createResource: vi.fn(),
@@ -221,7 +224,7 @@ describe('ComponentGroup', () => {
           allowedComponents: mockAllowedComponents
         })
 
-        await wrapper.vm.createComponentGroup()
+        await wrapper.vm.context.createComponentGroup()
 
         expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
           data: {
@@ -252,7 +255,7 @@ describe('ComponentGroup', () => {
 
         await wrapper.setProps({ allowedComponents: mockAllowedComponents })
 
-        await wrapper.vm.createComponentGroup()
+        await wrapper.vm.context.createComponentGroup()
 
         expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
           data: {
@@ -289,7 +292,7 @@ describe('ComponentGroup', () => {
           allowedComponents: ['comp1']
         })
 
-        await wrapper.vm.updateAllowedComponents()
+        await wrapper.vm.context.updateAllowedComponents()
 
         expect(wrapper.vm.$cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
       })
@@ -319,7 +322,7 @@ describe('ComponentGroup', () => {
           allowedComponents: ['comp2']
         })
 
-        await wrapper.vm.updateAllowedComponents()
+        await wrapper.vm.context.updateAllowedComponents()
 
         expect(wrapper.vm.$cwa.resourcesManager.updateResource).toHaveBeenCalledWith({
           endpoint: mockId,
@@ -328,6 +331,111 @@ describe('ComponentGroup', () => {
           }
         })
       })
+    })
+  })
+
+  describe('watch', () => {
+    test('should NOT create group OR update allowed components IF resources are loading', async () => {
+      const mockLoading = ref(false)
+      const wrapper = createWrapper({
+        cwaResources: {
+          isLoading: mockLoading
+        }
+      })
+      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+
+      mockLoading.value = true
+
+      await nextTick()
+
+      expect(createGroupSpy).not.toHaveBeenCalled()
+      expect(updateAllowedComponentsSpy).not.toHaveBeenCalled()
+    })
+
+    test('should NOT create group OR update allowed components IF user is unauthorized', async () => {
+      const mockLoading = ref(true)
+      const wrapper = createWrapper({
+        cwaResources: {
+          isLoading: mockLoading
+        },
+        auth: {
+          status: ref(CwaAuthStatus.SIGNED_OUT)
+        }
+      })
+      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+
+      mockLoading.value = false
+
+      await nextTick()
+
+      expect(createGroupSpy).not.toHaveBeenCalled()
+      expect(updateAllowedComponentsSpy).not.toHaveBeenCalled()
+    })
+
+    test('should create group IF resources are not loading AND user is authorized AND resource does not exist', async () => {
+      const mockStatus = ref(CwaAuthStatus.SIGNED_OUT)
+      const wrapper = createWrapper({
+        cwaResources: {
+          isLoading: ref(false)
+        },
+        auth: {
+          status: mockStatus
+        }
+      })
+
+      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+
+      mockStatus.value = CwaAuthStatus.SIGNED_IN
+
+      await nextTick()
+
+      expect(createGroupSpy).toHaveBeenCalled()
+      expect(updateAllowedComponentsSpy).not.toHaveBeenCalled()
+    })
+
+    test('should update allowed components IF resources are not loading AND user is authorized AND resource api status is success', async () => {
+      const mockGroupElement = {
+        data: {
+          reference: `${mockReference}_${mockResourceReference}`
+        },
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS
+        }
+      }
+      const mockByType = {
+        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+      }
+      const mockById = {
+        [mockLocation]: {
+          data: {
+            reference: mockResourceReference
+          }
+        }
+      }
+      const mockStatus = ref(CwaAuthStatus.SIGNED_OUT)
+      const wrapper = createWrapper({
+        cwaResources: {
+          isLoading: ref(false)
+        },
+        auth: {
+          status: mockStatus
+        },
+        resourcesByType: mockByType,
+        byId: mockById
+      })
+
+      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+
+      mockStatus.value = CwaAuthStatus.SIGNED_IN
+
+      await nextTick()
+
+      expect(createGroupSpy).not.toHaveBeenCalled()
+      expect(updateAllowedComponentsSpy).toHaveBeenCalled()
     })
   })
 })
