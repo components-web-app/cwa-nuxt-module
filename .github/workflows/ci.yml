@@ -16,6 +16,7 @@ jobs:
       matrix:
         node: [lts/*,latest]
         include:
+          - node: 16.20.0
           - node: latest
             coverage: true
             lint: true
