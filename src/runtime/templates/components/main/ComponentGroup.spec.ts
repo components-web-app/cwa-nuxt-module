@@ -69,6 +69,9 @@ function createWrapper ({
       reference,
       location,
       allowedComponents
+    },
+    global: {
+      renderStubDefaultSlot: true
     }
   })
 }
@@ -224,7 +227,7 @@ describe('ComponentGroup', () => {
           allowedComponents: mockAllowedComponents
         })
 
-        await wrapper.vm.context.createComponentGroup()
+        await wrapper.vm.methods.createComponentGroup()
 
         expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
           data: {
@@ -255,7 +258,7 @@ describe('ComponentGroup', () => {
 
         await wrapper.setProps({ allowedComponents: mockAllowedComponents })
 
-        await wrapper.vm.context.createComponentGroup()
+        await wrapper.vm.methods.createComponentGroup()
 
         expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
           data: {
@@ -292,7 +295,7 @@ describe('ComponentGroup', () => {
           allowedComponents: ['comp1']
         })
 
-        await wrapper.vm.context.updateAllowedComponents()
+        await wrapper.vm.methods.updateAllowedComponents()
 
         expect(wrapper.vm.$cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
       })
@@ -322,7 +325,7 @@ describe('ComponentGroup', () => {
           allowedComponents: ['comp2']
         })
 
-        await wrapper.vm.context.updateAllowedComponents()
+        await wrapper.vm.methods.updateAllowedComponents()
 
         expect(wrapper.vm.$cwa.resourcesManager.updateResource).toHaveBeenCalledWith({
           endpoint: mockId,
@@ -342,8 +345,8 @@ describe('ComponentGroup', () => {
           isLoading: mockLoading
         }
       })
-      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
 
       mockLoading.value = true
 
@@ -363,8 +366,8 @@ describe('ComponentGroup', () => {
           status: ref(CwaAuthStatus.SIGNED_OUT)
         }
       })
-      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
 
       mockLoading.value = false
 
@@ -385,8 +388,8 @@ describe('ComponentGroup', () => {
         }
       })
 
-      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
 
       mockStatus.value = CwaAuthStatus.SIGNED_IN
 
@@ -427,8 +430,8 @@ describe('ComponentGroup', () => {
         byId: mockById
       })
 
-      const createGroupSpy = vi.spyOn(wrapper.vm.context, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.context, 'updateAllowedComponents').mockImplementation(() => {})
+      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
+      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
 
       mockStatus.value = CwaAuthStatus.SIGNED_IN
 
@@ -436,6 +439,56 @@ describe('ComponentGroup', () => {
 
       expect(createGroupSpy).not.toHaveBeenCalled()
       expect(updateAllowedComponentsSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('snapshots', () => {
+    test('should match snapshot IF loader is shown', () => {
+      const wrapper = createWrapper({
+        cwaResources: {
+          isLoading: ref(true)
+        }
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF resource is not found', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF there are component positions defined', () => {
+      const mockComponentPositions = ['pos1', 'pos2', 'pos3']
+      const mockGroupElement = {
+        data: {
+          reference: `${mockReference}_${mockResourceReference}`,
+          componentPositions: mockComponentPositions
+        }
+      }
+      const mockByType = {
+        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+      }
+      const mockById = {
+        [mockLocation]: {
+          data: {
+            reference: mockResourceReference
+          }
+        }
+      }
+      const wrapper = createWrapper({
+        resourcesByType: mockByType,
+        byId: mockById
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF there are no component positions defined', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
     })
   })
 })
