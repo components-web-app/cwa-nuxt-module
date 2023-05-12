@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Warning > snapshot > should match snapshot with passed slot content 1`] = `
+<div
+  class="cwa-flex cwa-items-start cwa-bg-red-500 cwa-text-white cwa-text-sm cwa-font-bold cwa-px-4 cwa-py-3"
+  role="alert"
+>
+  
+  <div>
+    This is test
+  </div>
+  
+</div>
+`;
