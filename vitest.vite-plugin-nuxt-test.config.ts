@@ -13,7 +13,7 @@ export default defineConfig({
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true
     },
-    environment: 'jsdom',
+    environment: 'happy-dom',
     resolveSnapshotPath (path: string, extension: string) {
       return path + extension
     }
