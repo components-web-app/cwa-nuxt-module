@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import ResourceLoader from '../templates/components/core/ResourceLoader.vue'
 import CwaPage from './cwa-page.vue'
@@ -16,17 +16,13 @@ function createWrapper (iri = '12345') {
     }
   }))
 
-  return mount(CwaPage, {
-    global: {
-      stubs: {
-        ResourceLoader: true
-      }
-    }
-  })
+  return shallowMount(CwaPage)
 }
 
 describe('CWA page', () => {
   test('should display ResourceLoader component IF pageIri is defined', () => {
+    console.log(process)
+
     const wrapper = createWrapper()
 
     expect(wrapper.findComponent(ResourceLoader)).toBeDefined()
