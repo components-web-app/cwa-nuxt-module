@@ -22,7 +22,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
 <div
   data-v-app=""
 >
-  
+
   <resource-loader-stub
     componentprefix=""
     iri="pos1"
@@ -38,7 +38,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
     iri="pos3"
     uicomponent="[object Object]"
   />
-  
+
 </div>
 `;
 
