@@ -16,13 +16,17 @@ describe('CWA page', () => {
       }
     }))
 
-    return mount(CwaPage, {
+    const result = mount(CwaPage, {
       global: {
         stubs: {
           ResourceLoader: true
         }
       }
     })
+
+    console.log(result)
+
+    return result
   }
 
   test('should display ResourceLoader component IF pageIri is defined', () => {
