@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { mockComponent } from 'nuxt-vitest/utils'
 import CwaPage from './cwa-page.vue'
@@ -25,7 +25,13 @@ describe('CWA page', () => {
       }
     }))
 
-    return shallowMount(CwaPage)
+    return mount(CwaPage, {
+      global: {
+        stubs: {
+          ResourceLoader: true
+        }
+      }
+    })
   }
 
   test('should display ResourceLoader component IF pageIri is defined', () => {
