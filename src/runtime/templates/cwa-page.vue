@@ -8,7 +8,7 @@
 
 <script setup>
 import { useNuxtApp } from '#app'
-import ResourceLoader from './components/core/ResourceLoader.vue'
+import ResourceLoader from './components/core/ResourceLoader'
 
 const { $cwa } = useNuxtApp()
 </script>
