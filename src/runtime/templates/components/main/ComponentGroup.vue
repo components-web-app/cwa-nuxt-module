@@ -61,7 +61,7 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-const context = {
+const methods = {
   async createComponentGroup () {
     const resourceTypeProperty = {
       [CwaResourceTypes.PAGE]: 'pages',
@@ -100,9 +100,9 @@ const context = {
 watch(() => [$cwa.resources.isLoading.value, $cwa.auth.status.value, resource.value], async ([isLoading, authStatus, resource]) => {
   if (!isLoading && authStatus === CwaAuthStatus.SIGNED_IN) {
     if (!resource) {
-      await context.createComponentGroup()
+      await methods.createComponentGroup()
     } else if (resource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-      await context.updateAllowedComponents()
+      await methods.updateAllowedComponents()
     }
   }
 }, {
