@@ -1,7 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
-import ResourceLoader from '../templates/components/core/ResourceLoader.vue'
 import CwaPage from './cwa-page.vue'
 
 describe('CWA page', () => {
@@ -23,7 +22,7 @@ describe('CWA page', () => {
   test('should display ResourceLoader component IF pageIri is defined', () => {
     const wrapper = createWrapper()
 
-    expect(wrapper.findComponent(ResourceLoader)).toBeDefined()
+    expect(wrapper.findComponent({ name: 'ResourceLoader' })).toBeDefined()
     expect(wrapper.element).toMatchSnapshot()
   })
 
