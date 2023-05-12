@@ -6,7 +6,7 @@ import CwaPage from './cwa-page.vue'
 
 function createWrapper (iri = '12345') {
   // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
+  vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => ({
     $cwa: {
       resources: {
         pageIri: {
@@ -21,8 +21,6 @@ function createWrapper (iri = '12345') {
 
 describe('CWA page', () => {
   test('should display ResourceLoader component IF pageIri is defined', () => {
-    console.log(process)
-
     const wrapper = createWrapper()
 
     expect(wrapper.findComponent(ResourceLoader)).toBeDefined()
