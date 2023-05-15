@@ -79,7 +79,39 @@ jobs:
           files: ./coverage/coverage-final.json
       - name: Audit
         run: npm audit
-
+  deploy-next:
+    if: github.ref == 'refs/heads/nuxt3'
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+      - name: Install dependencies
+        run: npm install
+      - name: Update package name and version number
+        run: node ./scripts/bump-next.cjs
+      - name: Build
+        run: |
+          npm run prepack
+      - name: Publish Next
+        run: |
+          echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+          npm publish
+        env:
+          GIT_REF: ${{ github.ref }}
+          NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
 #  e2e:
 #    runs-on: ubuntu-latest
 #    strategy:
