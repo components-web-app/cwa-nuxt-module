@@ -1,8 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`ComponentPosition > should display ResourceLoader component with componentIri 1`] = `
-<resource-loader-stub
-  componentprefix="CwaComponents"
-  iri="test"
-/>
-`;

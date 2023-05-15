@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { mockComponent } from 'vitest-environment-nuxt/utils'
@@ -36,6 +36,5 @@ describe('ComponentPosition', () => {
 
     expect(wrapper.findComponent(ResourceLoader)).toBeDefined()
     expect(wrapper.findComponent(ResourceLoader).props().iri).toEqual(mockComponentName)
-    // expect(wrapper.element).toMatchSnapshot()
   })
 })
