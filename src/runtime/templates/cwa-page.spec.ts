@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
