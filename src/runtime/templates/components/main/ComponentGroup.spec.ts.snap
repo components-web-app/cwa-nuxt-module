@@ -4,18 +4,18 @@ exports[`ComponentGroup > snapshots > should match snapshot IF loader is shown 1
 <div
   class="component-group-placeholder"
 >
-  <spinner-stub
+  <cwa-utils-spinner-stub
     show="true"
   />
 </div>
 `;
 
 exports[`ComponentGroup > snapshots > should match snapshot IF resource is not found 1`] = `
-<info-stub>
+<cwa-utils-alert-info-stub>
   <p>
     Component Group does not exist, will automatically add when logged in. Functionality coming soon
   </p>
-</info-stub>
+</cwa-utils-alert-info-stub>
 `;
 
 exports[`ComponentGroup > snapshots > should match snapshot IF there are component positions defined 1`] = `
@@ -43,9 +43,9 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
 `;
 
 exports[`ComponentGroup > snapshots > should match snapshot IF there are no component positions defined 1`] = `
-<info-stub>
+<cwa-utils-alert-info-stub>
   <p>
     Component Group does not exist, will automatically add when logged in. Functionality coming soon
   </p>
-</info-stub>
+</cwa-utils-alert-info-stub>
 `;

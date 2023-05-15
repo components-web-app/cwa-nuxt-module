@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'

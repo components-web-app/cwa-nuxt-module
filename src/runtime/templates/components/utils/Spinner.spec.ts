@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, test, expect } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import Spinner from './Spinner.vue'

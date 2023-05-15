@@ -1,5 +1,7 @@
+// @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { mockComponent } from 'vitest-environment-nuxt/utils'
 import * as cwa from '../../../composables/cwaComponent'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPosition from './ComponentPosition.vue'
@@ -7,6 +9,11 @@ import ComponentPosition from './ComponentPosition.vue'
 const mockComponentName = 'test'
 
 function createWrapper () {
+  mockComponent('./ResourceLoader', () => ({
+    name: 'ResourceLoader',
+    props: ['iri', 'componentPrefix']
+  }))
+
   // @ts-ignore
   vi.spyOn(cwa, 'useCwaResource').mockImplementation(() => ({
     value: {
