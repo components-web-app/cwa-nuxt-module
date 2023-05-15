@@ -9,9 +9,9 @@ export default defineNuxtPlugin({
   enforce: 'pre',
   setup (nuxtApp) {
     if (process.env.NODE_ENV === 'test') {
-      const pinia = createPinia();
-      nuxtApp.vueApp.use(pinia);
-      setActivePinia(pinia);
+      const pinia = createPinia()
+      nuxtApp.vueApp.use(pinia)
+      setActivePinia(pinia)
     }
 
     addRouteMiddleware('cwa', CwaRouteMiddleware, { global: true })
