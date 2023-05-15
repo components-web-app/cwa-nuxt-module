@@ -94,7 +94,7 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
     })
 
     addPlugin({
-      src: resolve(lodashTemplatesDir, 'plugin.ts')
+      src: resolve(lodashTemplatesDir, 'plugin')
     })
 
     addImportsDir(resolve('./runtime/composables'))

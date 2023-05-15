@@ -80,7 +80,7 @@ export const options:CwaModuleOptions = {
 `)
     expect(nuxtKit.addPlugin).toBeCalledTimes(1)
     expect(nuxtKit.addPlugin).toBeCalledWith({
-      src: fileURLToPath(new URL('./runtime/plugin.ts', import.meta.url))
+      src: fileURLToPath(new URL('./runtime/plugin', import.meta.url))
     })
   })
 

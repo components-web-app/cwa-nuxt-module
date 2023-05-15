@@ -124,6 +124,7 @@ jobs:
         run: |
           npm run dev:prepare
           npm run prepack
+          npm run copy-layer
       - name: Publish Next
         run: |
           echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc

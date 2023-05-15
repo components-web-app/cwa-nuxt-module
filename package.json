@@ -15,13 +15,14 @@
       "require": "./dist/module.cjs"
     }
   },
-  "main": "./dist/runtime/layer/nuxt.config.mjs",
+  "main": "./dist/module.cjs",
   "types": "./dist/types.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
     "prepack": "nuxt-module-build",
+    "copy-layer": "cp -r src/layer dist/layer",
     "dev": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
