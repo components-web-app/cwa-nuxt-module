@@ -5,6 +5,6 @@ export default defineNuxtConfig({
     CwaModule
   ],
   alias: {
-    '@cwa/nuxt-module': fileURLToPath(new URL('../', import.meta.url))
+    '@cwa/nuxt3': fileURLToPath(new URL('../', import.meta.url))
   }
 })

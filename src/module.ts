@@ -49,7 +49,7 @@ function createDefaultCwaPages (
 
 export default defineNuxtModule<CwaModuleOptions>({
   meta: {
-    name: '@cwa/nuxt-module',
+    name: '@cwa/nuxt3',
     configKey: 'cwa',
     compatibility: {
       nuxt: '^3.0.0'
@@ -88,13 +88,13 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     addTemplate({
       filename: 'cwa-options.ts',
-      getContents: () => `import { CwaModuleOptions } from '@cwa/nuxt-module/module';
+      getContents: () => `import { CwaModuleOptions } from '@cwa/nuxt3/module';
 export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
 `
     })
 
     addPlugin({
-      src: resolve(lodashTemplatesDir, 'plugin.ts')
+      src: resolve(lodashTemplatesDir, 'plugin')
     })
 
     addImportsDir(resolve('./runtime/composables'))

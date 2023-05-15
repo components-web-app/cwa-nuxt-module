@@ -44,7 +44,7 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
         storeName: 'cwa'
       },
       meta: {
-        name: '@cwa/nuxt-module',
+        name: '@cwa/nuxt3',
         configKey: 'cwa',
         compatibility: {
           nuxt: '^3.0.0'
@@ -59,7 +59,7 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
       return
     }
     const requiredModules = Object.keys(context.nuxt.options._requiredModules)
-    expect(requiredModules).toContain('@cwa/nuxt-module')
+    expect(requiredModules).toContain('@cwa/nuxt3')
     expect(requiredModules).toContain('pinia')
   })
 
@@ -71,7 +71,7 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
   test('Plugins are added', () => {
     expect(nuxtKit.addTemplate).toBeCalledTimes(1)
     expect(nuxtKit.addTemplate.mock.calls[0][0].filename).toBe('cwa-options.ts')
-    expect(nuxtKit.addTemplate.mock.calls[0][0].getContents()).toBe(`import { CwaModuleOptions } from '@cwa/nuxt-module/module';
+    expect(nuxtKit.addTemplate.mock.calls[0][0].getContents()).toBe(`import { CwaModuleOptions } from '@cwa/nuxt3/module';
 export const options:CwaModuleOptions = {
   "storeName": "cwa",
   "apiUrl": "https://localhost:8443",
@@ -80,7 +80,7 @@ export const options:CwaModuleOptions = {
 `)
     expect(nuxtKit.addPlugin).toBeCalledTimes(1)
     expect(nuxtKit.addPlugin).toBeCalledWith({
-      src: fileURLToPath(new URL('./runtime/plugin.ts', import.meta.url))
+      src: fileURLToPath(new URL('./runtime/plugin', import.meta.url))
     })
   })
 

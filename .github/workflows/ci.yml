@@ -16,7 +16,6 @@ jobs:
       matrix:
         node: [lts/*,latest]
         include:
-          - node: 16.20.0
           - node: latest
             coverage: true
             lint: true
@@ -29,13 +28,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Cache Node.js modules
+        id: cache-npm
         uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
         with:
           path: ~/.npm
-          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-.lock') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.OS }}-node-
-            ${{ runner.OS }}-
+            ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+            ${{ runner.os }}-
+      - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: npm list
       - name: Install dependencies
         run: npm install
       - name: Install playground dependencies
@@ -80,7 +86,52 @@ jobs:
           files: ./coverage/coverage-final.json
       - name: Audit
         run: npm audit
-
+  deploy-next:
+    if: github.ref == 'refs/heads/nuxt3'
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Cache Node.js modules
+        id: cache-npm
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+            ${{ runner.os }}-
+      - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: npm list
+      - name: Install dependencies
+        run: npm install
+      - name: Install playground dependencies
+        run: |
+          cd playground
+          npm install
+      - name: Update package name and version number
+        run: node ./scripts/bump-next.cjs
+      - name: Build
+        run: |
+          npm run dev:prepare
+          npm run prepack
+          npm run copy-layer
+      - name: Publish Next
+        run: |
+          echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+          npm publish
+        env:
+          GIT_REF: ${{ github.ref }}
+          NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
 #  e2e:
 #    runs-on: ubuntu-latest
 #    strategy:

@@ -5,10 +5,10 @@
 </template>
 
 <script setup>
-import { useNuxtApp } from '#app'
 import { computed } from 'vue'
+import { useCwa } from '#imports'
 
-const { $cwa } = useNuxtApp()
+const $cwa = useCwa()
 const layoutName = computed(() => {
   const layoutResource = $cwa.resources.layout.value
   return layoutResource?.data?.uiComponent || 'cwa-default'
