@@ -32,8 +32,8 @@
 import { navigateTo, useHead, useRoute } from '#app'
 import { computed, reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
-import LoginPage from '@cwa/nuxt3/runtime/layer/_components/login/LoginPage.vue'
 import InputField from '../../../_components/login/InputField.vue'
+import LoginPage from '@cwa/nuxt3/runtime/layer/_components/login/LoginPage.vue'
 import { definePageMeta, useCwa } from '#imports'
 
 const route = useRoute()
