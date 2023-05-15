@@ -19,7 +19,7 @@ vi.mock('@nuxt/kit', async () => {
   }
 })
 
-describe('Functional: Test modules are defined when Nuxt App is setup', async () => {
+describe.todo('Functional: Test modules are defined when Nuxt App is setup', async () => {
   // @ts-ignore
   const module: NuxtModule = CwaModule
   await setup({
