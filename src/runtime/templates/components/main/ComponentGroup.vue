@@ -24,6 +24,7 @@ import ComponentPosition from '@cwa/nuxt3/runtime/templates/components/core/Comp
 import ResourceLoader from '@cwa/nuxt3/runtime/templates/components/core/ResourceLoader'
 import { CwaAuthStatus } from '@cwa/nuxt3/runtime/api/auth'
 import { CwaResourceTypes, getResourceTypeFromIri } from '@cwa/nuxt3/runtime/resources/resource-utils'
+import { CwaResourceApiStatuses } from '@cwa/nuxt3/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
