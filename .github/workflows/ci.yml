@@ -100,6 +100,10 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm install
+      - name: Install playground dependencies
+        run: |
+          cd playground
+          npm install
       - name: Update package name and version number
         run: node ./scripts/bump-next.cjs
       - name: Build
