@@ -13,6 +13,9 @@
     ".": {
       "import": "./dist/module.mjs",
       "require": "./dist/module.cjs"
+    },
+    "./layer": {
+      "import": "./dist/layer"
     }
   },
   "main": "./dist/module.cjs",
@@ -22,7 +25,7 @@
   ],
   "scripts": {
     "prepack": "nuxt-module-build",
-    "copy-layer": "cp -r src/layer dist/layer",
+    "copy-layer": "copyfiles -u 1 src/layer/** dist/",
     "dev": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
@@ -61,6 +64,7 @@
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.31.0",
     "autoprefixer": "^10.4.13",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.31.0",
     "nuxt": "^3.4.0",
     "nuxt-vitest": "^0.6.12",
