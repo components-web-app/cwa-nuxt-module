@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
+  "description": "Nuxt Module for Components Web Apps and API Components Bundle",
+  "author": "Daniel West <daniel@silverback.is>",
+  "repository": "https://github.com/components-web-app/cwa-nuxt-module",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/module.mjs",
