@@ -4,7 +4,7 @@ import { FetchStatus } from '../fetcher/state'
 import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
-interface ResourcesLoadStatusInterface {
+export interface ResourcesLoadStatusInterface {
   pending: number
   complete: number
   total: number
