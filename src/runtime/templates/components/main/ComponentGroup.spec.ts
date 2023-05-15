@@ -52,6 +52,11 @@ function createWrapper ({
     name: 'CwaUtilsAlertInfo'
   }))
 
+  mockComponent('ResourceLoader', () => ({
+    name: 'ResourceLoader',
+    props: ['iri', 'uiComponent']
+  }))
+
   const mockStore = reactive({
     resourcesByType: ref(resourcesByType),
     current: ref({ byId })
