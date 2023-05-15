@@ -57,6 +57,11 @@ function createWrapper ({
     props: ['iri', 'uiComponent']
   }))
 
+  mockComponent('ComponentPosition', () => ({
+    name: 'ComponentPosition',
+    props: ['iri']
+  }))
+
   const mockStore = reactive({
     resourcesByType: ref(resourcesByType),
     current: ref({ byId })
