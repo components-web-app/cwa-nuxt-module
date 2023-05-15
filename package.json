@@ -13,9 +13,6 @@
     ".": {
       "import": "./dist/module.mjs",
       "require": "./dist/module.cjs"
-    },
-    "./layer": {
-      "import": "./dist/layer"
     }
   },
   "main": "./dist/module.cjs",
@@ -24,8 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "_prepack": "nuxt-module-build && npm run copy-layer",
-    "prod:build": "nuxt-module-build",
+    "prepack": "nuxt-module-build && sleep 0.2 && npm run copy-layer",
     "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
     "dev": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
