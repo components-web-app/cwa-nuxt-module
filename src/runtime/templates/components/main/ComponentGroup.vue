@@ -17,17 +17,17 @@
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-import { useNuxtApp } from '#app'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import _isEqual from 'lodash/isEqual'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaAuthStatus } from '@cwa/nuxt3/runtime/api/auth'
+import { CwaResourceTypes, getResourceTypeFromIri } from '@cwa/nuxt3/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import ResourceLoader from '../core/ResourceLoader.vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
-import { CwaAuthStatus } from '../../../api/auth'
+import { useCwa } from '#imports'
 
-const { $cwa } = useNuxtApp()
+const $cwa = useCwa()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
 const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs(resourcesStore)
 
