@@ -5,7 +5,7 @@ const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
 
 export default defineNuxtConfig({
   extends: [
-    '../src/layer'
+    '../src/runtime/layer'
   ],
   modules: [
     '@nuxtjs/tailwindcss',

@@ -15,7 +15,7 @@
       "require": "./dist/module.cjs"
     }
   },
-  "main": "./dist/module.cjs",
+  "main": "./dist/runtime/layer/nuxt.config.mjs",
   "types": "./dist/types.d.ts",
   "files": [
     "dist"
