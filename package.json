@@ -24,8 +24,9 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "nuxt-module-build",
-    "copy-layer": "copyfiles -u 1 src/layer/** dist/",
+    "_prepack": "nuxt-module-build && npm run copy-layer",
+    "prod:build": "nuxt-module-build",
+    "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
     "dev": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
