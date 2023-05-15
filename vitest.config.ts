@@ -9,7 +9,6 @@ export default defineVitestConfig({
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true
     },
-    environment: 'nuxt',
     resolveSnapshotPath (path: string, extension: string) {
       return path + extension
     }
