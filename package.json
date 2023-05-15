@@ -56,7 +56,7 @@
     "autoprefixer": "^10.4.13",
     "eslint": "^8.31.0",
     "nuxt": "^3.4.0",
-    "nuxt-vitest": "^0.6.12",
+    "nuxt-vitest": "0.7.0",
     "postcss": "^8.4.20",
     "postcss-cli": "^10.1.0",
     "sass": "^1.56.2",
