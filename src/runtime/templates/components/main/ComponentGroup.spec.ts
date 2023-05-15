@@ -1,7 +1,9 @@
+// @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { nextTick, reactive, ref } from 'vue'
+import { mockComponent } from 'vitest-environment-nuxt/utils'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '@cwa/nuxt-module/runtime/resources/resource-utils'
 import { CwaAuthStatus } from '@cwa/nuxt-module/runtime/api/auth'
@@ -37,6 +39,19 @@ function createWrapper ({
   allowedComponents?: string[];
   auth?: any;
 } = {}) {
+  mockComponent('CwaUtilsAlertWarning', () => ({
+    name: 'CwaUtilsAlertWarning'
+  }))
+
+  mockComponent('CwaUtilsSpinner', () => ({
+    name: 'CwaUtilsSpinner',
+    props: ['show']
+  }))
+
+  mockComponent('CwaUtilsAlertInfo', () => ({
+    name: 'CwaUtilsAlertInfo'
+  }))
+
   const mockStore = reactive({
     resourcesByType: ref(resourcesByType),
     current: ref({ byId })
