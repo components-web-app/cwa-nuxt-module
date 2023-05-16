@@ -7,13 +7,15 @@
     "@tailwindcss/forms": "^0.5.3",
     "autoprefixer": "^10.4.13",
     "postcss": "^8.4.21",
-    "tailwindcss": "^3.2.7"
+    "tailwindcss": "^3.2.7",
+    "@nuxt/devtools": "^0.3.1"
   },
   "scripts": {
+    "dev": "nuxt dev",
     "postcss": "postcss assets/css/tailwind.css -o ./assets/css/main.css",
     "postcss:watch": "postcss assets/css/tailwind.css -o ./assets/css/main.css --watch"
   },
   "dependencies": {
-    "@nuxt/devtools": "^0.3.1"
+    "nuxt": "^3.4.3"
   }
 }
