@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { useCwa } from '@cwa/nuxt3/runtime/composables/cwa'
+import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const $cwa = useCwa()
 </script>
