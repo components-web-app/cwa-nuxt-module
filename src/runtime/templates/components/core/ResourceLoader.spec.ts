@@ -220,7 +220,7 @@ describe('ResourceLoader', () => {
 
     describe('resolvedComponent', () => {
       test('should return value from props IF it is defined', async () => {
-        const mockUiComponent = {}
+        const mockUiComponent = { name: 'MockComponent', template: '<div>I am mock</div>' }
         const wrapper = createWrapper({
           data: null,
           apiState: {
