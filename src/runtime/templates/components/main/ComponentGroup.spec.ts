@@ -52,7 +52,7 @@ function createWrapper ({
     name: 'CwaUtilsAlertInfo'
   }))
 
-  mockComponent('../src/runtime/templates/components/core/ResourceLoader.vue', () => ({
+  mockComponent('../core/ResourceLoader', () => ({
     name: 'ResourceLoader',
     props: ['iri', 'uiComponent']
   }))
