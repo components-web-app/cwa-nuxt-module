@@ -3,7 +3,6 @@ import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { mockComponent } from 'vitest-environment-nuxt/utils'
 import * as cwa from '../../../composables/cwaComponent'
-import ResourceLoader from './ResourceLoader.vue'
 import ComponentPosition from './ComponentPosition.vue'
 
 const mockComponentName = 'test'
@@ -33,8 +32,10 @@ function createWrapper () {
 describe('ComponentPosition', () => {
   test('should display ResourceLoader component with componentIri', () => {
     const wrapper = createWrapper()
+    const child = wrapper.findComponent({ name: 'ResourceLoader' })
+    const { iri, componentPrefix } = child.props()
 
-    expect(wrapper.findComponent(ResourceLoader)).toBeDefined()
-    expect(wrapper.findComponent(ResourceLoader).props().iri).toEqual(mockComponentName)
+    expect(iri).toEqual(mockComponentName)
+    expect(componentPrefix).toEqual('CwaComponents')
   })
 })

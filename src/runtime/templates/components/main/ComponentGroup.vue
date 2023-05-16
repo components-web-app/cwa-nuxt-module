@@ -20,11 +20,11 @@
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import _isEqual from 'lodash/isEqual'
-import ComponentPosition from '@cwa/nuxt3/runtime/templates/components/core/ComponentPosition'
-import ResourceLoader from '@cwa/nuxt3/runtime/templates/components/core/ResourceLoader'
-import { CwaAuthStatus } from '@cwa/nuxt3/runtime/api/auth'
-import { CwaResourceTypes, getResourceTypeFromIri } from '@cwa/nuxt3/runtime/resources/resource-utils'
-import { CwaResourceApiStatuses } from '@cwa/nuxt3/runtime/storage/stores/resources/state'
+import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
+import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
+import { CwaAuthStatus } from '#cwa/runtime/api/auth'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
