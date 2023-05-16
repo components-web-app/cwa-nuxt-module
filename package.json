@@ -21,8 +21,8 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "nuxt-module-build",
-    "copy-layer": "cp -r src/layer dist/layer",
+    "prepack": "nuxt-module-build && sleep 0.2 && npm run copy-layer",
+    "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
     "dev": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
@@ -46,6 +46,7 @@
     "consola": "^3.0.1",
     "lodash": "^4.17.21",
     "pinia": "^2.0.27",
+    "uuid": "^9.0.0",
     "vue": "^3.2"
   },
   "devDependencies": {
@@ -61,6 +62,7 @@
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.31.0",
     "autoprefixer": "^10.4.13",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.31.0",
     "nuxt": "^3.4.0",
     "nuxt-vitest": "^0.6.12",
@@ -69,7 +71,6 @@
     "sass": "^1.56.2",
     "sass-loader": "^13.2.0",
     "tailwindcss": "^3.2.4",
-    "uuid": "^9.0.0",
     "vite-plugin-nuxt-test": "^0.0.10",
     "vitest": "^0.30.1"
   }

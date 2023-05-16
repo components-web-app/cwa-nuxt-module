@@ -1,6 +1,6 @@
 import { addRouteMiddleware, defineNuxtPlugin } from '#app'
-import CwaRouteMiddleware from '@cwa/nuxt3/runtime/route-middleware'
-import Cwa from '@cwa/nuxt3/runtime/cwa'
+import CwaRouteMiddleware from '#cwa/runtime/route-middleware'
+import Cwa from '#cwa/runtime/cwa'
 import { options } from '#build/cwa-options'
 
 export default defineNuxtPlugin({

@@ -29,7 +29,7 @@
 <script setup>
 import { useNuxtApp } from '#app'
 import { Popover, PopoverGroup } from '@headlessui/vue'
-import { CwaAuthStatus } from '@cwa/nuxt3/runtime/api/auth'
+import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 
 const { $cwa } = useNuxtApp()
 

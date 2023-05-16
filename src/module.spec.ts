@@ -71,7 +71,7 @@ describe('Functional: Test modules are defined when Nuxt App is setup', async ()
   test('Plugins are added', () => {
     expect(nuxtKit.addTemplate).toBeCalledTimes(1)
     expect(nuxtKit.addTemplate.mock.calls[0][0].filename).toBe('cwa-options.ts')
-    expect(nuxtKit.addTemplate.mock.calls[0][0].getContents()).toBe(`import { CwaModuleOptions } from '@cwa/nuxt3/module';
+    expect(nuxtKit.addTemplate.mock.calls[0][0].getContents()).toBe(`import { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = {
   "storeName": "cwa",
   "apiUrl": "https://localhost:8443",
