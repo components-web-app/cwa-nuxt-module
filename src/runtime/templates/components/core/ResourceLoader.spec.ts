@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { mockComponent } from 'vitest-environment-nuxt/utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -229,6 +229,8 @@ describe('ResourceLoader', () => {
         })
 
         await wrapper.setProps({ uiComponent: mockUiComponent })
+
+        await nextTick()
 
         expect(wrapper.vm.resolvedComponent).toEqual(mockUiComponent)
       })
