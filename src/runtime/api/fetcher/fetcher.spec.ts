@@ -1,4 +1,5 @@
-import bluebird from 'bluebird'
+// eslint-disable-next-line import/named
+import { Promise as bluebird } from 'bluebird'
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
@@ -36,7 +37,7 @@ vi.mock('../api-documentation')
 vi.mock('bluebird', async () => {
   const actual = await vi.importActual('bluebird')
   return {
-    default: {
+    Promise: {
       map: vi.fn((arg1, arg2, arg3) => actual.map(arg1, arg2, arg3))
     }
   }
