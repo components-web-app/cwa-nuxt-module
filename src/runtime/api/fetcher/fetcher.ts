@@ -1,6 +1,7 @@
-import bluebird from 'bluebird'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ofetch'
+// eslint-disable-next-line import/named
+import { Promise as bluebird } from 'bluebird'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'

@@ -11,11 +11,7 @@
     "@nuxt/devtools": "^0.3.1"
   },
   "scripts": {
-    "dev": "nuxt dev",
     "postcss": "postcss assets/css/tailwind.css -o ./assets/css/main.css",
     "postcss:watch": "postcss assets/css/tailwind.css -o ./assets/css/main.css --watch"
-  },
-  "dependencies": {
-    "nuxt": "^3.4.3"
   }
 }
