@@ -66,13 +66,15 @@ export default defineNuxtModule<CwaModuleOptions>({
     // modules
     await installModule('@pinia/nuxt')
 
+    // common alias due to releasing different package names
+    nuxt.options.alias['#cwa'] = resolve('./')
     // transpile runtime
-    const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
+    const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
 
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
 
-    const vueTemplatesDir = fileURLToPath(new URL('./runtime/templates', import.meta.url))
+    const vueTemplatesDir = resolve('./runtime/templates')
 
     // todo: test
     const extendPagesCallback = (pages: NuxtPage[]) => {
@@ -84,17 +86,15 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // clear options no longer needed and add plugin
     delete options.pagesDepth
-    const lodashTemplatesDir = fileURLToPath(new URL('./runtime', import.meta.url))
-
     addTemplate({
       filename: 'cwa-options.ts',
-      getContents: () => `import { CwaModuleOptions } from '@cwa/nuxt3/module';
+      getContents: () => `import { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
 `
     })
 
     addPlugin({
-      src: resolve(lodashTemplatesDir, 'plugin')
+      src: resolve('./runtime/plugin')
     })
 
     addImportsDir(resolve('./runtime/composables'))
@@ -102,22 +102,22 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
     nuxt.hook('components:dirs', (dirs) => {
       // component dirs from module
       dirs.unshift({
-        path: resolve(vueTemplatesDir, 'components', 'main'),
+        path: join(vueTemplatesDir, 'components', 'main'),
         prefix: 'Cwa'
       })
       dirs.unshift({
-        path: resolve(vueTemplatesDir, 'components', 'utils'),
+        path: join(vueTemplatesDir, 'components', 'utils'),
         prefix: 'CwaUtils'
       })
 
       // component dirs to be configured by application - global, so they are split
       dirs.unshift({
-        path: resolve(join(nuxt.options.srcDir, 'cwa', 'pages')),
+        path: join(nuxt.options.srcDir, 'cwa', 'pages'),
         prefix: 'CwaPages',
         global: true
       })
       dirs.unshift({
-        path: resolve(join(nuxt.options.srcDir, 'cwa', 'components')),
+        path: join(nuxt.options.srcDir, 'cwa', 'components'),
         prefix: 'CwaComponents',
         global: true
       })
