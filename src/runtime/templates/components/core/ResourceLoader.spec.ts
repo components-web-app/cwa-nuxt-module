@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { mockComponent } from 'vitest-environment-nuxt/utils'
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -12,7 +12,7 @@ import * as cwa from '#cwa/runtime/composables/cwaComponent'
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
 
-function createWrapper (resource: any, status?: CwaAuthStatus) {
+function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) {
   mockComponent('CwaUtilsAlertWarning', () => ({
     name: 'CwaUtilsAlertWarning'
   }))
@@ -44,7 +44,8 @@ function createWrapper (resource: any, status?: CwaAuthStatus) {
   return shallowMount(ResourceLoader, {
     props: {
       iri: mockIri,
-      componentPrefix: mockPrefix
+      componentPrefix: mockPrefix,
+      uiComponent: component
     },
     global: {
       renderStubDefaultSlot: true
@@ -219,18 +220,14 @@ describe('ResourceLoader', () => {
     })
 
     describe('resolvedComponent', () => {
-      test('should return value from props IF it is defined', async () => {
+      test('should return value from props IF it is defined', () => {
         const mockUiComponent = { name: 'MockComponent', template: '<div>I am mock</div>' }
         const wrapper = createWrapper({
           data: null,
           apiState: {
             status: CwaResourceApiStatuses.SUCCESS
           }
-        })
-
-        await wrapper.setProps({ uiComponent: mockUiComponent })
-
-        await nextTick()
+        }, CwaAuthStatus.SIGNED_IN, mockUiComponent)
 
         expect(wrapper.vm.resolvedComponent).toEqual(mockUiComponent)
       })
