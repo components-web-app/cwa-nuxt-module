@@ -1,7 +1,5 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ofetch'
-// eslint-disable-next-line import/named
-import { Promise as bluebird } from 'bluebird'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -198,7 +196,7 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources ({ resource, token, noSave }: FetchNestedResourcesEvent): undefined|bluebird<(CwaResource|undefined)[]> {
+  private fetchNestedResources ({ resource, token, noSave }: FetchNestedResourcesEvent): undefined|Promise<(CwaResource|undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
@@ -220,17 +218,21 @@ export default class Fetcher {
     return this.fetchBatch({ paths: nestedIris, token, noSave })
   }
 
-  private fetchBatch ({ paths, token, noSave }: FetchBatchEvent): bluebird<(CwaResource|undefined)[]> {
-    return bluebird
-      .map(
-        paths,
-        (path: string) => {
-          return this.fetchResource({ path, token, noSave })
-        },
-        {
-          concurrency: 10000
-        }
-      )
+  private fetchBatch ({ paths, token, noSave }: FetchBatchEvent): Promise<(CwaResource|undefined)[]> {
+    const promises = []
+    for (const path of paths) {
+      const pathPromise: Promise<(CwaResource|undefined)> = new Promise((resolve) => {
+        this.fetchResource({ path, token, noSave })
+          .then((resource: CwaResource|undefined) => {
+            resolve(resource)
+          })
+          .catch(() => {
+            resolve(undefined)
+          })
+      })
+      promises.push(pathPromise)
+    }
+    return Promise.all(promises)
   }
 
   private fetch (event: FetchEvent): CwaFetchResponseRaw {
