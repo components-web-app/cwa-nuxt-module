@@ -8,6 +8,9 @@ export default defineVitestConfig({
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true
+    },
+    resolveSnapshotPath (path: string, extension: string) {
+      return path + extension
     }
   }
 })
