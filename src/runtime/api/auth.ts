@@ -1,6 +1,6 @@
-import { CookieRef, useCookie, useRoute } from '#app'
 import { FetchError } from 'ofetch'
 import { computed, ComputedRef, ref, Ref } from 'vue'
+import { CookieRef, useCookie, useRoute } from '#app'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'

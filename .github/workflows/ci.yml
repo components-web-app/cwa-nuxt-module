@@ -23,51 +23,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Enable corepack and PNPM
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      - name: Cache Node.js modules
-        id: cache-npm
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-            ${{ runner.os }}-
-      - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-        name: List the state of node modules
-        continue-on-error: true
-        run: npm list
+          cache: "pnpm"
+
       - name: Install dependencies
-        run: npm install
-      - name: Install playground dependencies
-        run: |
-          cd playground
-          npm install
-      - name: Prepare and build module
-        run: |
-          npm run dev:prepare
-          npm run dev:build
-      - name: Lint
+        run: pnpm install
+
+      - name: Prepare and Lint
         if: matrix.lint
-        run: npm run lint
+        run: |
+          pnpm run dev:prepare
+          pnpm run lint
+
+      - name: Build module
+        run: pnpm run dev:build
+
       - name: Enable code coverage
         if: matrix.coverage
         run: echo "COVERAGE=1" >> $GITHUB_ENV
+
       - name: Unit tests
         run: |
           mkdir -p coverage
           if [ "$COVERAGE" = '1' ]; then
-            npm run test:coverage
+            pnpm run test:coverage
           else
-            npm run test
+            pnpm run test
           fi
         env:
           CI: true
+
       - name: Upload test artifacts
         if: matrix.coverage
         uses: actions/upload-artifact@v3
@@ -75,6 +69,7 @@ jobs:
           name: vitest-logs-unit${{ matrix.node }}
           path: ./coverage
           if-no-files-found: error
+
       - name: Upload coverage results to Codecov
         if: matrix.coverage
         uses: codecov/codecov-action@v3
@@ -84,8 +79,10 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/coverage-final.json
+
       - name: Audit
-        run: npm audit
+        run: pnpm audit
+
   deploy-next:
     if: github.ref == 'refs/heads/nuxt3'
     needs: [test]
@@ -93,39 +90,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Enable corepack and PNPM
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      - name: Cache Node.js modules
-        id: cache-npm
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-            ${{ runner.os }}-
-      - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
-        name: List the state of node modules
-        continue-on-error: true
-        run: npm list
+          cache: "pnpm"
+
       - name: Install dependencies
-        run: npm install
-      - name: Install playground dependencies
-        run: |
-          cd playground
-          npm install
+        run: pnpm install
+
       - name: Update package name and version number
         run: node ./scripts/bump-next.cjs
-      - name: Build
-        run: |
-          npm run dev:prepare
+
       - name: Publish Next
         run: |
           echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
+          pnpm dev:prepare
           npm publish
         env:
           GIT_REF: ${{ github.ref }}
@@ -175,26 +161,3 @@ jobs:
 #        env:
 #          CYPRESS_BASE_URL: http://localhost:3000
 #        run: yarn e2e --record --key=${{secrets.CYPRESS_RECORD_KEY}}
-#
-#  deploy-next:
-#    if: github.ref == 'refs/heads/dev'
-#    needs: [test,e2e]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#      - name: Install dependencies
-#        run: yarn --frozen-lockfile
-#      - name: Update package name and version number
-#        run: node ./scripts/bump-next.cjs
-#      - name: Build
-#        run: |
-#          yarn clean
-#          yarn build
-#      - name: Publish Next
-#        run: |
-#            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
-#            npm publish
-#        env:
-#            GIT_REF: ${{ github.ref }}
-#            NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}

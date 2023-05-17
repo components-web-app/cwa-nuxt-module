@@ -25,9 +25,9 @@
 </template>
 
 <script setup>
-import { navigateTo, useHead } from '#app'
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
+import { navigateTo, useHead } from '#app'
 import InputField from '../_components/login/InputField.vue'
 import LoginPageLink from '#cwa/layer/_components/login/LoginPageLink.vue'
 import LoginPage from '#cwa/layer/_components/login/LoginPage.vue'

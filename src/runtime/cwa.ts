@@ -1,5 +1,5 @@
-import { NuxtApp } from '#app/nuxt'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { NuxtApp } from '#app/nuxt'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -33,7 +33,7 @@ export default class Cwa {
 
   public readonly forms: Forms
 
-  constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
+  constructor (nuxtApp: Pick<NuxtApp, '_route'>, options: CwaModuleOptions) {
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (process.client) {
       this.apiUrl = options.apiUrlBrowser || options.apiUrl || defaultApiUrl

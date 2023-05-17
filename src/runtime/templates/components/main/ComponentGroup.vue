@@ -17,10 +17,10 @@
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-import { useNuxtApp } from '#app'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import _isEqual from 'lodash/isEqual'
+import { useNuxtApp } from '#app'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import ResourceLoader from '../core/ResourceLoader.vue'
