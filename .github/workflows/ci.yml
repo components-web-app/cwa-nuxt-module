@@ -24,6 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Enable corepack and PNPM
+        run: corepack enable
+
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
         with:
@@ -85,6 +88,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Enable corepack and PNPM
+        run: corepack enable
 
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
