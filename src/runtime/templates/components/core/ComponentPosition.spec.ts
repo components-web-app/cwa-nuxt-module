@@ -38,4 +38,12 @@ describe('ComponentPosition', () => {
     expect(iri).toEqual(mockComponentName)
     expect(componentPrefix).toEqual('CwaComponents')
   })
+
+  describe('snapshots', () => {
+    test('should match snapshot with ResourceLoader component with componentIri', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+  })
 })
