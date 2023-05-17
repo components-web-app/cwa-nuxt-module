@@ -17,17 +17,17 @@
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-import { useNuxtApp } from '#app'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import _isEqual from 'lodash/isEqual'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
-import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
-import ResourceLoader from '../core/ResourceLoader.vue'
-import ComponentPosition from '../core/ComponentPosition.vue'
-import { CwaAuthStatus } from '../../../api/auth'
+import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
+import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
+import { CwaAuthStatus } from '#cwa/runtime/api/auth'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { useCwa } from '#imports'
 
-const { $cwa } = useNuxtApp()
+const $cwa = useCwa()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
 const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs(resourcesStore)
 
@@ -61,47 +61,48 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-async function createComponentGroup () {
-  const resourceTypeProperty = {
-    [CwaResourceTypes.PAGE]: 'pages',
-    [CwaResourceTypes.LAYOUT]: 'layouts',
-    [CwaResourceTypes.COMPONENT]: 'components'
-  }
-  const locationResourceType = getResourceTypeFromIri(props.location)
-  const locationProperty = resourceTypeProperty[locationResourceType]
+const methods = {
+  async createComponentGroup () {
+    const resourceTypeProperty = {
+      [CwaResourceTypes.PAGE]: 'pages',
+      [CwaResourceTypes.LAYOUT]: 'layouts',
+      [CwaResourceTypes.COMPONENT]: 'components'
+    }
+    const locationResourceType = getResourceTypeFromIri(props.location)
+    const locationProperty = resourceTypeProperty[locationResourceType]
 
-  const postData = {
-    reference: fullReference.value,
-    location: props.location,
-    allowedComponents: props.allowedComponents
-  }
-  if (locationProperty) {
-    postData[locationProperty] = [props.location]
-  }
-  await $cwa.resourcesManager.createResource({
-    endpoint: '/_/component_groups',
-    data: postData
-  })
-}
-
-async function updateAllowedComponents () {
-  if (_isEqual(props.allowedComponents, resource.value?.data?.allowedComponents)) {
-    return
-  }
-  await $cwa.resourcesManager.updateResource({
-    endpoint: resource.value.data['@id'],
-    data: {
+    const postData = {
+      reference: fullReference.value,
+      location: props.location,
       allowedComponents: props.allowedComponents
     }
-  })
+    if (locationProperty) {
+      postData[locationProperty] = [props.location]
+    }
+    await $cwa.resourcesManager.createResource({
+      endpoint: '/_/component_groups',
+      data: postData
+    })
+  },
+  async updateAllowedComponents () {
+    if (_isEqual(props.allowedComponents, resource.value?.data?.allowedComponents)) {
+      return
+    }
+    await $cwa.resourcesManager.updateResource({
+      endpoint: resource.value.data['@id'],
+      data: {
+        allowedComponents: props.allowedComponents
+      }
+    })
+  }
 }
 
-watch(() => [$cwa.resources.isLoading, $cwa.auth.status, resource], async ([isLoading, authStatus, resource]) => {
-  if (!isLoading.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
-    if (!resource.value) {
-      await createComponentGroup()
-    } else if (resource.value?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-      await updateAllowedComponents()
+watch(() => [$cwa.resources.isLoading.value, $cwa.auth.status.value, resource.value], async ([isLoading, authStatus, resource]) => {
+  if (!isLoading && authStatus === CwaAuthStatus.SIGNED_IN) {
+    if (!resource) {
+      await methods.createComponentGroup()
+    } else if (resource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+      await methods.updateAllowedComponents()
     }
   }
 }, {
