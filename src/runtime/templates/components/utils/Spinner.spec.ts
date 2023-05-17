@@ -3,10 +3,25 @@ import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import Spinner from './Spinner'
 
+function createWrapper (show: boolean) {
+  return shallowMount(Spinner, {
+    props: {
+      show
+    }
+  })
+}
 describe('Spinner', () => {
   describe('snapshots', () => {
-    test('should match snapshot', () => {
-      expect(shallowMount(Spinner, { props: { show: true } }).element).toMatchSnapshot()
+    test('should match snapshot IF spinner is shown', () => {
+      const wrapper = createWrapper(true)
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF spinner is NOT shown', () => {
+      const wrapper = createWrapper(false)
+
+      expect(wrapper.element).toMatchSnapshot()
     })
   })
 })
