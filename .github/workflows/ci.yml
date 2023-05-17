@@ -111,8 +111,8 @@ jobs:
       - name: Publish Next
         run: |
           echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" >> ~/.npmrc
-          pnpm run dev:prepare
-          pnpm publish
+          pnpm dev:prepare
+          npm publish
         env:
           GIT_REF: ${{ github.ref }}
           NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
