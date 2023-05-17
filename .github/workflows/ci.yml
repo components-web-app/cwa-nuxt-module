@@ -38,14 +38,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Lint
+      - name: Prepare and Lint
         if: matrix.lint
-        run: pnpm run lint
-
-      - name: Prepare and build module
         run: |
           pnpm run dev:prepare
-          pnpm run dev:build
+          pnpm run lint
+
+      - name: Build module
+        run: pnpm run dev:build
 
       - name: Enable code coverage
         if: matrix.coverage
