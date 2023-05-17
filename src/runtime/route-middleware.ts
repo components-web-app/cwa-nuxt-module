@@ -38,10 +38,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  if (process.env.NODE_ENV === 'test') {
-    return
-  }
-
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (process.client) {
