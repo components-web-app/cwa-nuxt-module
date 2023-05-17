@@ -33,7 +33,7 @@ export default class Cwa {
 
   public readonly forms: Forms
 
-  constructor (nuxtApp: NuxtApp, options: CwaModuleOptions) {
+  constructor (nuxtApp: Pick<NuxtApp, '_route'>, options: CwaModuleOptions) {
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (process.client) {
       this.apiUrl = options.apiUrlBrowser || options.apiUrl || defaultApiUrl
