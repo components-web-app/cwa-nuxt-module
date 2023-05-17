@@ -1,6 +1,11 @@
 <template>
   <div>
-    <label :for="id" class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300">{{ props.label }}</label>
+    <label
+      :for="id"
+      class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
+    >
+      {{ props.label }}
+    </label>
     <div class="cwa-mt-2">
       <input
         :id="id"
@@ -13,7 +18,11 @@
         @input="$emit('update:modelValue', $event.target.value)"
       >
       <div v-if="errors">
-        <CwaUtilsAlertWarning v-for="(error, index) in errors" :key="`error-${id}-${index}`" class="cwa-mt-2">
+        <CwaUtilsAlertWarning
+          v-for="(error, index) in errors"
+          :key="`error-${id}-${index}`"
+          class="cwa-mt-2"
+        >
           {{ error }}
         </CwaUtilsAlertWarning>
       </div>
