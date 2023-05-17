@@ -1,3 +1,4 @@
+import { showError } from '#app'
 import {
   CwaResource,
   CwaResourceTypes,
@@ -13,7 +14,6 @@ import {
   CwaResourcesStateInterface
 } from './state'
 import { CwaResourcesGettersInterface } from './getters'
-import { showError } from '#app'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }

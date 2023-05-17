@@ -1,4 +1,5 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { NuxtApp } from '#app/nuxt'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -11,7 +12,6 @@ import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import Auth from './api/auth'
 import Forms from './api/forms'
-import { NuxtApp } from '#app/nuxt'
 
 export default class Cwa {
   private readonly apiUrl: string

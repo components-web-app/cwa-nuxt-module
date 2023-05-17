@@ -20,12 +20,12 @@
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import _isEqual from 'lodash/isEqual'
+import { useNuxtApp } from '#app'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import ResourceLoader from '../core/ResourceLoader.vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import { CwaAuthStatus } from '../../../api/auth'
-import { useNuxtApp } from '#app'
 
 const { $cwa } = useNuxtApp()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
