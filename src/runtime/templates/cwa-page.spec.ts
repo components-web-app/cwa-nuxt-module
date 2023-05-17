@@ -37,4 +37,18 @@ describe('CWA page', () => {
     expect(iri).toEqual(defaultIri)
     expect(componentPrefix).toEqual('CwaPages')
   })
+
+  describe('snapshots', () => {
+    test('should display ResourceLoader component IF pageIri is defined', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should NOT display ResourceLoader IF pageIri is NOT defined', () => {
+      const wrapper = createWrapper('')
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+  })
 })
