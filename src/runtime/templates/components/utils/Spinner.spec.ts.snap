@@ -1,6 +1,22 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Spinner > snapshots > should match snapshot 1`] = `
+exports[`Spinner > snapshots > should match snapshot IF spinner is NOT shown 1`] = `
+<transition-stub
+  appear="false"
+  css="true"
+  enteractiveclass="cwa-duration-300 cwa-ease-out"
+  enterfromclass="cwa-transform cwa-opacity-0"
+  entertoclass="cwa-opacity-100"
+  leaveactiveclass="cwa-duration-300 cwa-ease-in"
+  leavefromclass="cwa-opacity-100"
+  leavetoclass="cwa-transform cwa-opacity-0"
+  persisted="false"
+>
+  <!--v-if-->
+</transition-stub>
+`;
+
+exports[`Spinner > snapshots > should match snapshot IF spinner is shown 1`] = `
 <transition-stub
   appear="false"
   css="true"
