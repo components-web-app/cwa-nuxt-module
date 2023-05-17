@@ -1,7 +1,7 @@
-import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
 import { CwaResource } from './resources/resource-utils'
+import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 
 let middlewareToken = ''
 

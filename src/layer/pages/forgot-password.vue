@@ -23,10 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import { navigateTo, useHead } from '#app'
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
 import InputField from '../_components/login/InputField.vue'
+import { navigateTo, useHead } from '#app'
 import LoginPageLink from '#cwa/layer/_components/login/LoginPageLink.vue'
 import LoginPage from '#cwa/layer/_components/login/LoginPage.vue'
 import { definePageMeta, useCwa } from '#imports'

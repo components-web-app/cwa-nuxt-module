@@ -3,8 +3,8 @@
 </template>
 
 <script setup>
-import { useNuxtApp } from '#app'
 import ResourceLoader from './components/core/ResourceLoader.vue'
+import { useNuxtApp } from '#app'
 
 const { $cwa } = useNuxtApp()
 </script>

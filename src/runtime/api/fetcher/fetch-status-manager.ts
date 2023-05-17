@@ -1,5 +1,4 @@
 import { computed, ComputedRef, watch, WatchStopHandle } from 'vue'
-import Bluebird, { TimeoutError } from 'bluebird'
 import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
@@ -67,25 +66,24 @@ export default class FetchStatusManager {
 
     timeout = timeout || 10000
     let stopWatch: WatchStopHandle
-    const bluebirdPromise = new Bluebird<CwaResource|undefined>((resolve) => {
+    const getResolvedResource = new Promise<CwaResource|undefined>((resolve) => {
+      const tooLongTimeout = setTimeout(() => {
+        logger.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
+        stopWatch()
+        resolve(undefined)
+      }, timeout)
+
       stopWatch = watch(currentResource, (resolvedResource) => {
         if (resolvedResource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
+          clearTimeout(tooLongTimeout)
           resolve(resolvedResource?.data)
+          stopWatch()
         }
       }, {
         immediate: true
       })
     })
-      .timeout(timeout, `Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
-      .catch((error) => {
-        if (error instanceof TimeoutError) {
-          logger.warn(error.message)
-        }
-      })
-      .finally(() => {
-        stopWatch()
-      })
-    const resolvedResource = await bluebirdPromise
+    const resolvedResource = await getResolvedResource
     return resolvedResource || currentResource.data
   }
 

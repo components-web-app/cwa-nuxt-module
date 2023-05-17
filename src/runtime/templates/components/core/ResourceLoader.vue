@@ -21,9 +21,9 @@
 
 <script setup>
 import { computed, onMounted, watch, getCurrentInstance } from 'vue'
-import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { CwaAuthStatus } from '../../../api/auth'
+import { useNuxtApp } from '#app'
 import { useCwaResource, iri } from '#imports'
 
 const { $cwa } = useNuxtApp()

@@ -2,7 +2,6 @@ import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
 import { Headers } from 'ofetch'
 import { storeToRefs } from 'pinia'
-import Bluebird from 'bluebird'
 import { computed, reactive } from 'vue'
 import logger from 'consola'
 import Mercure from '../mercure'
@@ -50,19 +49,6 @@ vi.mock('pinia', () => {
   }
 })
 
-vi.mock('bluebird', async () => {
-  const actual = await vi.importActual<Bluebird<any>>('bluebird')
-  actual.config({ cancellation: true })
-  return {
-    TimeoutError: actual.TimeoutError,
-    default: vi.fn((cb) => {
-      // eslint-disable-next-line new-cap
-      const actualPromise = new actual.default(cb)
-      vi.spyOn(actualPromise, 'timeout')
-      return actualPromise
-    })
-  }
-})
 vi.mock('consola')
 
 function createFetchStatusManager (): FetchStatusManager {
@@ -140,16 +126,11 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
 
   test('If the resource does not exist, return undefined', async () => {
     const result = await fetchStatusManager.getFetchedCurrentResource('anything')
-
-    expect(Bluebird).not.toHaveBeenCalled()
     expect(result).toBeUndefined()
   })
 
   test('If the resource exists we return the updated resource when API state is OK', async () => {
     const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource')
-    expect(Bluebird).toHaveBeenCalledTimes(1)
-    const bluebirdInstance = Bluebird.mock.results[0].value
-    expect(bluebirdInstance.timeout).toHaveBeenCalledWith(10000, 'Timed out 10000ms waiting to fetch current resource \'/some-resource\' in pending API state.')
 
     expect(vue.watch.mock.calls[0][0]).toBe(currentResource)
     expect(vue.watch.mock.calls[0][1]).toBeTypeOf('function')
@@ -174,8 +155,6 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
   test('If API state does not resolve within specified timeout, return the current resource data and log to console', async () => {
     const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource', 5)
     const result = await promise
-    const bluebirdInstance = Bluebird.mock.results[0].value
-    expect(bluebirdInstance.timeout).toHaveBeenCalledWith(5, 'Timed out 5ms waiting to fetch current resource \'/some-resource\' in pending API state.')
     expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
     expect(result).toStrictEqual({
       '@id': '/original-resource'

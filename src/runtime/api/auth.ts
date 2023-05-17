@@ -1,4 +1,3 @@
-import { CookieRef, useCookie, useRoute } from '#app'
 import { FetchError } from 'ofetch'
 import { computed, ComputedRef, ref, Ref } from 'vue'
 import { AuthStore } from '../storage/stores/auth/auth-store'
@@ -8,6 +7,7 @@ import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from './fetcher/cwa-fetch'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
+import { CookieRef, useCookie, useRoute } from '#app'
 
 interface Credentials {
   username: string
