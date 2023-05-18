@@ -69,5 +69,8 @@
     "vite-plugin-nuxt-test": "^0.0.10",
     "vitest": "^0.31.1",
     "vitest-environment-nuxt": "^0.7.0"
+  },
+  "dependencies": {
+    "bluebird": "^3.7.2"
   }
 }
