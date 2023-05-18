@@ -54,6 +54,7 @@
     "@pinia/testing": "^0.0.14",
     "@stryker-mutator/core": "^6.3.0",
     "@stryker-mutator/jest-runner": "^6.3.0",
+    "@types/bluebird": "^3.5.38",
     "@types/uuid": "^9.0.0",
     "@vitest/coverage-c8": "^0.30.0",
     "autoprefixer": "^10.4.13",
@@ -67,5 +68,8 @@
     "tailwindcss": "^3.2.4",
     "vite-plugin-nuxt-test": "^0.0.10",
     "vitest": "^0.31.1"
+  },
+  "dependencies": {
+    "bluebird": "^3.7.2"
   }
 }

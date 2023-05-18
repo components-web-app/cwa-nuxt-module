@@ -9,7 +9,7 @@ import {
   installModule
 } from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
-
+import Bluebird from 'bluebird'
 export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
   pagesDepth?: number,
@@ -57,6 +57,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     storeName: 'cwa'
   },
   async setup (options: CwaModuleOptions, nuxt) {
+    Bluebird.config({ cancellation: true })
+
     const { resolve } = createResolver(import.meta.url)
 
     // modules
