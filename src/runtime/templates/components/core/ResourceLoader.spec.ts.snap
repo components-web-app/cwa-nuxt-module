@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ResourceLoader > snapshots > should match snapshot IF component is not found 1`] = `
+<cwa-utils-alert-warning-stub>
+  <p>
+     The component \`TestComponentMock\` cannot be found 
+  </p>
+</cwa-utils-alert-warning-stub>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF component is rendered 1`] = `
+<dummy-component-stub
+  iri="testIri"
+/>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF resource is loading 1`] = `
+<div>
+  <cwa-utils-spinner-stub
+    show="true"
+  />
+</div>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF resource is not found 1`] = `
+<cwa-utils-alert-warning-stub>
+  <p>
+     Resource not found with iri \`testIri\` data 
+  </p>
+</cwa-utils-alert-warning-stub>
+`;
