@@ -1,14 +1,7 @@
 // @vitest-environment nuxt
 import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { mockComponent } from 'nuxt-vitest/utils'
 import LoginPage from './LoginPage.vue'
-
-vi.mock('../../../runtime/templates/components/main/Logo.vue', () => ({
-  default: {
-    name: 'CwaLogo'
-  }
-}))
 
 interface ILoginMeta {
   submitButtonText: string;
@@ -23,10 +16,6 @@ function createWrapper ({
   error = '',
   slotContent = ''
 }: ILoginMeta) {
-  mockComponent('CwaUtilsAlertWarning', () => ({
-    name: 'CwaUtilsAlertWarning'
-  }))
-
   return shallowMount(LoginPage, {
     props: {
       submitButtonText,

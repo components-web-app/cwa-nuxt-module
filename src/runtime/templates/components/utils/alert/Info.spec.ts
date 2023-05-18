@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import Info from './Info'
+import Info from './Info.vue'
 
 function createWrapper (content: string) {
   return shallowMount(Info, {
