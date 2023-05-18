@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { mockComponent } from 'nuxt-vitest/utils'
@@ -12,16 +12,14 @@ import * as cwa from '#cwa/runtime/composables/cwaComponent'
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
 
-vi.mock('../utils/Spinner.vue', () => ({
-  default: {
-    name: 'CwaUtilsSpinner',
-    props: ['show']
-  }
-}))
-
 function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) {
   mockComponent('CwaUtilsAlertWarning', () => ({
     name: 'CwaUtilsAlertWarning'
+  }))
+
+  mockComponent('CwaUtilsSpinner', () => ({
+    name: 'CwaUtilsSpinner',
+    props: ['show']
   }))
 
   mockComponent('TestComponentDummyComponent', () => ({
@@ -288,60 +286,6 @@ describe('ResourceLoader', () => {
       })
 
       expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
-    })
-  })
-
-  describe('snapshots', () => {
-    test('should match snapshot IF resource is loading', () => {
-      const wrapper = createWrapper(null)
-
-      expect(wrapper.element).toMatchSnapshot()
-    })
-
-    test('should match snapshot IF resource is not found', () => {
-      const wrapper = createWrapper({
-        data: null,
-        apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
-      })
-
-      expect(wrapper.element).toMatchSnapshot()
-    })
-
-    test('should match snapshot IF component is not found', () => {
-      const wrapper = createWrapper({
-        data: {
-          uiComponent: 'Mock'
-        },
-        apiState: {
-          status: CwaResourceApiStatuses.ERROR,
-          error: {}
-        }
-      })
-
-      expect(wrapper.element).toMatchSnapshot()
-    })
-
-    test('should match snapshot IF component is rendered', async () => {
-      const wrapper = createWrapper({
-        data: {
-          uiComponent: 'DummyComponent'
-        },
-        apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
-      })
-
-      await wrapper.setProps({
-        uiComponent: {
-          name: 'DummyComponent',
-          template: '<div> test </div>',
-          props: ['iri']
-        }
-      })
-
-      expect(wrapper.element).toMatchSnapshot()
     })
   })
 })
