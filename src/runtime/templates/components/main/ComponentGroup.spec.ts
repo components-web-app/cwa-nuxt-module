@@ -442,4 +442,54 @@ describe('ComponentGroup', () => {
       expect(updateAllowedComponentsSpy).toHaveBeenCalled()
     })
   })
+
+  describe('snapshots', () => {
+    test('should match snapshot IF loader is shown', () => {
+      const wrapper = createWrapper({
+        cwaResources: {
+          isLoading: ref(true)
+        }
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF resource is not found', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF there are component positions defined', () => {
+      const mockComponentPositions = ['pos1', 'pos2', 'pos3']
+      const mockGroupElement = {
+        data: {
+          reference: `${mockReference}_${mockResourceReference}`,
+          componentPositions: mockComponentPositions
+        }
+      }
+      const mockByType = {
+        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+      }
+      const mockById = {
+        [mockLocation]: {
+          data: {
+            reference: mockResourceReference
+          }
+        }
+      }
+      const wrapper = createWrapper({
+        resourcesByType: mockByType,
+        byId: mockById
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF there are no component positions defined', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+  })
 })

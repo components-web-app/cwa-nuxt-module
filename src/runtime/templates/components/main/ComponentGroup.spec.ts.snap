@@ -1,0 +1,51 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ComponentGroup > snapshots > should match snapshot IF loader is shown 1`] = `
+<div
+  class="component-group-placeholder"
+>
+  <spinner-stub
+    show="true"
+  />
+</div>
+`;
+
+exports[`ComponentGroup > snapshots > should match snapshot IF resource is not found 1`] = `
+<info-stub>
+  <p>
+    Component Group does not exist, will automatically add when logged in. Functionality coming soon
+  </p>
+</info-stub>
+`;
+
+exports[`ComponentGroup > snapshots > should match snapshot IF there are component positions defined 1`] = `
+<div
+  data-v-app=""
+>
+  
+  <resourceloader-stub
+    componentprefix=""
+    iri="pos1"
+    uicomponent="[object Object]"
+  />
+  <resourceloader-stub
+    componentprefix=""
+    iri="pos2"
+    uicomponent="[object Object]"
+  />
+  <resourceloader-stub
+    componentprefix=""
+    iri="pos3"
+    uicomponent="[object Object]"
+  />
+  
+</div>
+`;
+
+exports[`ComponentGroup > snapshots > should match snapshot IF there are no component positions defined 1`] = `
+<info-stub>
+  <p>
+    Component Group does not exist, will automatically add when logged in. Functionality coming soon
+  </p>
+</info-stub>
+`;
