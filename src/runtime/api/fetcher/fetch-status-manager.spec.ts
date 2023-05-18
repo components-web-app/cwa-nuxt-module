@@ -54,7 +54,6 @@ vi.mock('consola')
 
 vi.mock('bluebird', async () => {
   const actual = await vi.importActual<Bluebird<any>>('bluebird')
-  actual.config({ cancellation: true })
   return {
     TimeoutError: actual.TimeoutError,
     default: vi.fn((cb) => {
