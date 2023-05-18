@@ -2,7 +2,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
-import { mockComponent } from 'nuxt-vitest/utils'
 import { ref } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
@@ -13,20 +12,6 @@ const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
 
 function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) {
-  mockComponent('CwaUtilsAlertWarning', () => ({
-    name: 'CwaUtilsAlertWarning'
-  }))
-
-  mockComponent('CwaUtilsSpinner', () => ({
-    name: 'CwaUtilsSpinner',
-    props: ['show']
-  }))
-
-  mockComponent('TestComponentDummyComponent', () => ({
-    name: 'TestComponentDummyComponent',
-    props: ['iri']
-  }))
-
   // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
     $cwa: {

@@ -2,18 +2,12 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
-import { mockComponent } from 'nuxt-vitest/utils'
 import CwaPage from './cwa-page.vue'
 
 const defaultIri = '12345'
 
 describe('CWA page', () => {
   function createWrapper (iri = defaultIri) {
-    mockComponent('./components/core/ResourceLoader', () => ({
-      name: 'ResourceLoader',
-      props: ['iri', 'componentPrefix']
-    }))
-
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => ({
       $cwa: {

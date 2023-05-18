@@ -1,8 +1,7 @@
 // @vitest-environment nuxt
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { mockComponent } from 'nuxt-vitest/utils'
-import InputField from './InputField'
+import InputField from './InputField.vue'
 
 vi.mock('uuid', () => ({
   v4 () {
@@ -29,10 +28,6 @@ function createWrapper ({
   required = false,
   errors
 }: IInputMeta) {
-  mockComponent('CwaUtilsAlertWarning', () => ({
-    name: 'CwaUtilsAlertWarning'
-  }))
-
   return shallowMount(InputField, {
     props: {
       name,
