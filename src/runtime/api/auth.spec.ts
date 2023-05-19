@@ -4,7 +4,7 @@ import { FetchError } from 'ofetch'
 import { useRoute } from '#app'
 import Auth from './auth'
 import { ref } from '#imports'
-import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state';
+import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
 function createAuth () {
   const mockUserData = {
