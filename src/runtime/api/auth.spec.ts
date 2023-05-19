@@ -3,6 +3,8 @@ import { describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
 import { useRoute } from '#app'
 import Auth from './auth'
+import { ref } from '#imports'
+import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state';
 
 function createAuth () {
   const mockUserData = {
@@ -40,6 +42,7 @@ function createAuth () {
   const mockFetcher = {
     fetchRoute: vi.fn()
   }
+  const mockCookie = ref('0')
   const auth = new Auth(
     // @ts-ignore
     mockFetch,
@@ -47,7 +50,8 @@ function createAuth () {
     mockFetcher,
     mockAuthStore,
     mockResourcesStore,
-    mockFetcherStore
+    mockFetcherStore,
+    mockCookie
   )
 
   return {
@@ -57,7 +61,8 @@ function createAuth () {
     authStore: mockAuthStore,
     fetcherStore: mockFetcherStore,
     resourcesStore: mockResourcesStore,
-    fetcher: mockFetcher
+    fetcher: mockFetcher,
+    cookie: mockCookie
   }
 }
 
@@ -251,6 +256,165 @@ describe('Auth', () => {
       expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
       expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
       expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+    })
+  })
+
+  describe('refresh user', () => {
+    test('should return error AND clear session IF request fails', async () => {
+      const {
+        auth,
+        cwaFetch,
+        mercure,
+        resourcesStore,
+        fetcherStore,
+        fetcher
+      } = createAuth()
+      const mockError = new FetchError('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      const result = await auth.refreshUser()
+
+      expect(result).toEqual(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/me')
+      expect(mercure.init).toHaveBeenCalledWith(true)
+      expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
+      expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+    })
+
+    test('should throw error IF request fails AND error is not instance of FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      await expect(auth.refreshUser()).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/me')
+    })
+
+    test('should return result AND assign it to user store IF request succeeds', async () => {
+      const {
+        auth,
+        cwaFetch,
+        authStore
+      } = createAuth()
+      const mockResult = { name: 'test', age: 23 }
+
+      cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+
+      const result = await auth.refreshUser()
+
+      expect(result).toEqual(mockResult)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/me')
+      expect(authStore.useStore().data.user).toEqual(mockResult)
+    })
+  })
+
+  describe('init', () => {
+    test('should NOT refresh user IF status is NOT signed in', async () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '0'
+
+      const refreshSpy = vi.spyOn(auth, 'refreshUser')
+
+      await auth.init()
+
+      expect(refreshSpy).not.toHaveBeenCalled()
+    })
+
+    test('should NOT refresh user IF user is defined', async () => {
+      const { auth, cookie, authStore } = createAuth()
+
+      cookie.value = '1'
+
+      const refreshSpy = vi.spyOn(auth, 'refreshUser')
+
+      authStore.useStore().data.user = { name: 'test' }
+
+      await auth.init()
+
+      expect(refreshSpy).not.toHaveBeenCalled()
+    })
+
+    test('should refresh user IF user is NOT defined AND auth status EQUALS to signed in', async () => {
+      const { auth, cookie, authStore } = createAuth()
+
+      cookie.value = '1'
+
+      const refreshSpy = vi.spyOn(auth, 'refreshUser').mockResolvedValue({})
+
+      // @ts-ignore
+      authStore.useStore().data.user = undefined
+
+      await auth.init()
+
+      expect(refreshSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('user getter', () => {
+    test('should return user data from store', () => {
+      const { auth, authStore } = createAuth()
+      const mockUser = { name: 'test' }
+
+      authStore.useStore().data.user = mockUser
+
+      expect(auth.user).toEqual(mockUser)
+    })
+  })
+
+  describe('roles getter', () => {
+    test('should return nothing IF user is NOT defined', () => {
+      const { auth, authStore } = createAuth()
+
+      // @ts-ignore
+      authStore.useStore().data.user = undefined
+
+      expect(auth.roles).toBeUndefined()
+    })
+
+    test('should return roles BASED on user roles IF user is defined', () => {
+      const { auth, authStore } = createAuth()
+      const mockRoles = [CwaUserRoles.ADMIN, CwaUserRoles.SUPER_ADMIN]
+      authStore.useStore().data.user = {
+        roles: mockRoles
+      }
+
+      expect(auth.roles).toEqual(mockRoles)
+    })
+  })
+
+  describe('has role', () => {
+    test('should return false IF user has no roles', () => {
+      const { auth, authStore } = createAuth()
+
+      authStore.useStore().data.user = {
+        roles: null
+      }
+
+      expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(false)
+    })
+
+    test('should return false IF user does not have passed role', () => {
+      const { auth, authStore } = createAuth()
+
+      authStore.useStore().data.user = {
+        roles: [CwaUserRoles.USER]
+      }
+
+      expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(false)
+    })
+
+    test('should return false IF user has passed role', () => {
+      const { auth, authStore } = createAuth()
+
+      authStore.useStore().data.user = {
+        roles: [CwaUserRoles.ADMIN]
+      }
+
+      expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(true)
     })
   })
 })
