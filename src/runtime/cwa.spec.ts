@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
