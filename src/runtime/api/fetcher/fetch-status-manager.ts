@@ -1,5 +1,4 @@
-import { computed, ComputedRef, watch, WatchStopHandle } from 'vue'
-import Bluebird, { TimeoutError } from 'bluebird'
+import { computed, ComputedRef, watch, watchEffect, WatchStopHandle } from 'vue'
 import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
@@ -67,43 +66,22 @@ export default class FetchStatusManager {
 
     timeout = timeout || 10000
     let stopWatch: WatchStopHandle
-    // const getResolvedResource = new Promise<CwaResource|undefined>((resolve) => {
-    //   const timeoutFn = setTimeout(() => {
-    //     logger.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
-    //     stopWatch()
-    //     resolve(undefined)
-    //   }, timeout)
-    //
-    //   stopWatch = watch(currentResource, (resolvedResource) => {
-    //     if (resolvedResource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
-    //       clearTimeout(timeoutFn)
-    //       resolve(resolvedResource?.data)
-    //     }
-    //   }, {
-    //     immediate: true
-    //   })
-    // })
+    const getResolvedResource = new Promise<CwaResource|undefined>((resolve) => {
+      const tooLongTimeout = setTimeout(() => {
+        logger.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
+        resolve(undefined)
+      }, timeout)
 
-    const getResolvedResource = new Bluebird<CwaResource|undefined>((resolve) => {
-      stopWatch = watch(currentResource, (resolvedResource) => {
-        if (resolvedResource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
-          resolve(resolvedResource?.data)
+      stopWatch = watchEffect(() => {
+        if (currentResource.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
+          clearTimeout(tooLongTimeout)
+          resolve(currentResource.data)
         }
-      }, {
-        immediate: true
       })
     })
-      .timeout(timeout, `Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
-      .catch((error) => {
-        if (error instanceof TimeoutError) {
-          logger.warn(error.message)
-        }
-      })
-      .finally(() => {
-        stopWatch()
-      })
-
     const resolvedResource = await getResolvedResource
+    // @ts-ignore
+    stopWatch()
     return resolvedResource || currentResource.data
   }
 

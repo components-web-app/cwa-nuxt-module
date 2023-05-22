@@ -1,5 +1,4 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import bluebird from 'bluebird'
 import { FetchResponse } from 'ofetch'
 import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
@@ -220,30 +219,20 @@ export default class Fetcher {
   }
 
   private fetchBatch ({ paths, token, noSave }: FetchBatchEvent): Promise<(CwaResource|undefined)[]> {
-    return bluebird
-      .map(
-        paths,
-        (path: string) => {
-          return this.fetchResource({ path, token, noSave })
-        },
-        {
-          concurrency: 10000
-        }
-      )
-    // const promises = []
-    // for (const path of paths) {
-    //   const pathPromise: Promise<(CwaResource|undefined)> = new Promise((resolve) => {
-    //     this.fetchResource({ path, token, noSave })
-    //       .then((resource: CwaResource|undefined) => {
-    //         resolve(resource)
-    //       })
-    //       .catch(() => {
-    //         resolve(undefined)
-    //       })
-    //   })
-    //   promises.push(pathPromise)
-    // }
-    // return Promise.all(promises)
+    const promises = []
+    for (const path of paths) {
+      const pathPromise: Promise<(CwaResource|undefined)> = new Promise((resolve) => {
+        this.fetchResource({ path, token, noSave })
+          .then((resource: CwaResource|undefined) => {
+            resolve(resource)
+          })
+          .catch(() => {
+            resolve(undefined)
+          })
+      })
+      promises.push(pathPromise)
+    }
+    return Promise.all(promises)
   }
 
   private fetch (event: FetchEvent): CwaFetchResponseRaw {

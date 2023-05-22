@@ -1,5 +1,4 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
-import bluebird from 'bluebird'
 import { FetchError } from 'ofetch'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
@@ -33,14 +32,6 @@ vi.mock('../../storage/stores/resources/resources-store', () => {
 vi.mock('./fetch-status-manager')
 vi.mock('../mercure')
 vi.mock('../api-documentation')
-vi.mock('bluebird', async () => {
-  const actual = await vi.importActual('bluebird')
-  return {
-    default: {
-      map: vi.fn((arg1, arg2, arg3) => actual.map(arg1, arg2, arg3))
-    }
-  }
-})
 
 function delay (time: number, returnValue: any = undefined) {
   return new Promise((resolve) => {
@@ -768,7 +759,6 @@ describe('Fetcher -> fetchBatch', () => {
       }
     })
     vi.spyOn(fetcher, 'fetchBatch')
-    vi.spyOn(bluebird, 'map')
     vi.spyOn(fetcher, 'fetchResource')
   })
 
@@ -789,15 +779,6 @@ describe('Fetcher -> fetchBatch', () => {
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource', '/resolve-another-resource'], token: 'any' })
 
-    expect(bluebird.map).toHaveBeenCalledTimes(1)
-    expect(bluebird.map.mock.calls[0][0]).toStrictEqual(['/resolve-resource', '/resolve-another-resource'])
-    expect(bluebird.map.mock.calls[0][2]).toStrictEqual({
-      concurrency: 10000
-    })
-
-    const bluebirdMapPromise = bluebird.map.mock.instances[0].map.mock.results[0].value
-    await bluebirdMapPromise
-
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
       path: '/resolve-resource',
       token: 'any'
@@ -808,8 +789,7 @@ describe('Fetcher -> fetchBatch', () => {
     })
     expect(fetcher.fetchResource).toHaveBeenCalledTimes(2)
 
-    expect(fetcher.fetchBatch.mock.results[0].value).toBe(bluebirdMapPromise)
-    // const fetchResourceCallsArray = fetcher.fetchResource.mock.results.map(({ value }) => value)
-    // expect(fetcher.fetchBatch.mock.results[0].value).toStrictEqual(fetchResourceCallsArray)
+    const fetchResourceCallsArray = fetcher.fetchResource.mock.results.map(({ value }) => value)
+    expect(fetcher.fetchBatch.mock.results[0].value).toStrictEqual(fetchResourceCallsArray)
   })
 })
