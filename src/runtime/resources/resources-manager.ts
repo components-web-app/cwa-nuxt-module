@@ -1,7 +1,7 @@
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
-import { SaveNewResourceEvent, SaveResourceEvent } from '../storage/stores/resources/actions'
+import { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } from '../storage/stores/resources/actions'
 import { CwaResource } from './resource-utils'
 
 interface ApiResourceEvent {
@@ -49,6 +49,10 @@ export class ResourcesManager {
 
   public saveResource (event: SaveResourceEvent|SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
+  }
+
+  public deleteResource (event: DeleteResourceEvent) {
+    return this.resourcesStore.deleteResource(event)
   }
 
   private requestOptions (method: 'POST'|'PATCH'): RequestOptions {
