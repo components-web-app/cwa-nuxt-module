@@ -47,9 +47,6 @@ importers:
       '@stryker-mutator/jest-runner':
         specifier: ^6.4.2
         version: 6.4.2(@stryker-mutator/core@6.4.2)
-      '@types/bluebird':
-        specifier: ^3.5.38
-        version: 3.5.38
       '@types/uuid':
         specifier: ^9.0.1
         version: 9.0.1
@@ -1783,10 +1780,6 @@ packages:
     dependencies:
       '@tufjs/canonical-json': 1.0.0
       minimatch: 9.0.1
-    dev: true
-
-  /@types/bluebird@3.5.38:
-    resolution: {integrity: sha512-yR/Kxc0dd4FfwtEoLZMoqJbM/VE/W7hXn/MIjb+axcwag0iFmSPK7OBUZq1YWLynJUoWQkfUrI7T0HDqGApNSg==}
     dev: true
 
   /@types/chai-subset@1.3.3:
