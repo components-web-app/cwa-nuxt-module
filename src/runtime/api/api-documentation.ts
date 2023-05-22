@@ -15,11 +15,11 @@ export default class ApiDocumentation {
   constructor (cwaFetch: CwaFetch, store: ApiDocumentationStore) {
     this.cwaFetch = cwaFetch
     this.storeDefinition = store
-    this.apiDocsSet = ref(!!this.docsPath)
   }
 
   public setDocsPathFromLinkHeader (linkHeader: string) {
-    if (this.docsPath) {
+    this.apiDocsSet.value = !!this.docsPath
+    if (this.apiDocsSet.value) {
       return
     }
     const matches =
