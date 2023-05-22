@@ -18,7 +18,7 @@ export default class ApiDocumentation {
   }
 
   public setDocsPathFromLinkHeader (linkHeader: string) {
-    this.apiDocsSet.value = !!this.docsPath
+    this.apiDocsSet.value = this.apiDocsSet.value || !!this.docsPath
     if (this.apiDocsSet.value) {
       return
     }
