@@ -1,4 +1,4 @@
-import { computed, ComputedRef, watch, WatchStopHandle } from 'vue'
+import { computed, ComputedRef, watch, watchEffect, WatchStopHandle } from 'vue'
 import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
@@ -69,21 +69,19 @@ export default class FetchStatusManager {
     const getResolvedResource = new Promise<CwaResource|undefined>((resolve) => {
       const tooLongTimeout = setTimeout(() => {
         logger.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
-        stopWatch()
         resolve(undefined)
       }, timeout)
 
-      stopWatch = watch(currentResource, (resolvedResource) => {
-        if (resolvedResource?.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
+      stopWatch = watchEffect(() => {
+        if (currentResource.apiState.status !== CwaResourceApiStatuses.IN_PROGRESS) {
           clearTimeout(tooLongTimeout)
-          resolve(resolvedResource?.data)
-          stopWatch()
+          resolve(currentResource.data)
         }
-      }, {
-        immediate: true
       })
     })
     const resolvedResource = await getResolvedResource
+    // @ts-ignore
+    stopWatch()
     return resolvedResource || currentResource.data
   }
 

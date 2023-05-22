@@ -33,11 +33,15 @@ vi.mock('../../storage/stores/resources/resources-store', () => {
 vi.mock('../mercure')
 vi.mock('../api-documentation')
 vi.mock('vue', async () => {
-  const actual = await vi.importActual<{ watch: typeof vue.watch, computed: typeof vue.computed }>('vue')
+  const actual = await vi.importActual<{ watch: typeof vue.watch, watchEffect: typeof vue.watchEffect, computed: typeof vue.computed }>('vue')
   return {
     ...actual,
     watch: vi.fn((prop, fn, ops) => {
       const stopWatch = actual.watch(prop, fn, ops)
+      return vi.fn(() => stopWatch)
+    }),
+    watchEffect: vi.fn((prop, fn) => {
+      const stopWatch = actual.watchEffect(prop, fn)
       return vi.fn(() => stopWatch)
     }),
     computed: vi.fn(fn => actual.computed(fn))
@@ -132,10 +136,8 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
   test('If the resource exists we return the updated resource when API state is OK', async () => {
     const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource')
 
-    expect(vue.watch.mock.calls[0][0]).toBe(currentResource)
-    expect(vue.watch.mock.calls[0][1]).toBeTypeOf('function')
-    expect(vue.watch.mock.calls[0][2]).toStrictEqual({ immediate: true })
-    expect(vue.watch.mock.results[0].value).not.toHaveBeenCalled()
+    expect(vue.watchEffect.mock.calls[0][0]).toBeTypeOf('function')
+    expect(vue.watchEffect.mock.results[0].value).not.toHaveBeenCalled()
 
     currentResource.data = {
       '@id': '/resolved-id'
@@ -146,7 +148,7 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
 
     const result = await promise
 
-    expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
+    expect(vue.watchEffect.mock.results[0].value).toHaveBeenCalledTimes(1)
     expect(result).toStrictEqual({
       '@id': '/resolved-id'
     })
@@ -155,7 +157,7 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
   test('If API state does not resolve within specified timeout, return the current resource data and log to console', async () => {
     const promise = fetchStatusManager.getFetchedCurrentResource('/some-resource', 5)
     const result = await promise
-    expect(vue.watch.mock.results[0].value).toHaveBeenCalledTimes(1)
+    expect(vue.watchEffect.mock.results[0].value).toHaveBeenCalledTimes(1)
     expect(result).toStrictEqual({
       '@id': '/original-resource'
     })
