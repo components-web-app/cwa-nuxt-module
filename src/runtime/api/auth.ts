@@ -1,6 +1,6 @@
 import { FetchError } from 'ofetch'
 import { computed, ComputedRef, ref, Ref } from 'vue'
-import { CookieRef, useCookie, useRoute } from '#app'
+import { CookieRef, useRoute } from '#app'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -36,7 +36,6 @@ export default class Auth {
   private authStoreDefinition: AuthStore
   private resourcesStoreDefinition: ResourcesStore
   private fetcherStoreDefinition: FetcherStore
-  private cookie: CookieRef<string | null>
   private loading: Ref<boolean>
 
   public constructor (
@@ -45,7 +44,8 @@ export default class Auth {
     fetcher: Fetcher,
     authStoreDefinition: AuthStore,
     resourcesStoreDefinition: ResourcesStore,
-    fetcherStoreDefinition: FetcherStore
+    fetcherStoreDefinition: FetcherStore,
+    private readonly authCookie: CookieRef<string | null>
   ) {
     this.cwaFetch = cwaFetch
     this.authStoreDefinition = authStoreDefinition
@@ -53,7 +53,6 @@ export default class Auth {
     this.resourcesStoreDefinition = resourcesStoreDefinition
     this.fetcher = fetcher
     this.fetcherStoreDefinition = fetcherStoreDefinition
-    this.cookie = useCookie('cwa_auth')
     this.loading = ref(false)
   }
 
@@ -119,7 +118,7 @@ export default class Auth {
     this.loading.value = true
     try {
       const user = await this.cwaFetch.fetch('/me')
-      this.cookie.value = '1'
+      this.authCookie.value = '1'
       this.authStore.data.user = user
       return user
     } catch (error) {
@@ -179,13 +178,13 @@ export default class Auth {
         return CwaAuthStatus.LOADING
       }
 
-      return `${this.cookie.value}` === '1' ? CwaAuthStatus.SIGNED_IN : CwaAuthStatus.SIGNED_OUT
+      return `${this.authCookie.value}` === '1' ? CwaAuthStatus.SIGNED_IN : CwaAuthStatus.SIGNED_OUT
     })
   }
 
   private async clearSession () {
     this.authStore.data.user = undefined
-    this.cookie.value = '0'
+    this.authCookie.value = '0'
     this.mercure.init(true)
 
     this.resourcesStore.clearResources()

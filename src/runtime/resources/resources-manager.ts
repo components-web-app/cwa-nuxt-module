@@ -1,5 +1,4 @@
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
 import {
@@ -24,13 +23,11 @@ interface RequestOptions {
 export class ResourcesManager {
   private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
-  private fetcherStoreDefinition: FetcherStore
   private fetchStatusManager: FetchStatusManager
 
-  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore, fetchStatusManager: FetchStatusManager) {
+  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
-    this.fetcherStoreDefinition = fetcherStoreDefinition
     this.fetchStatusManager = fetchStatusManager
   }
 
@@ -80,10 +77,6 @@ export class ResourcesManager {
       method,
       headers
     }
-  }
-
-  private get fetcherStore () {
-    return this.fetcherStoreDefinition.useStore()
   }
 
   private get resourcesStore () {

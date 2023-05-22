@@ -12,6 +12,7 @@ import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import Auth from './api/auth'
 import Forms from './api/forms'
+import { useCookie } from '#imports'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -49,8 +50,8 @@ export default class Cwa {
     const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
-    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.storage.stores.fetcher, fetchStatusManager)
-    this.auth = new Auth(this.cwaFetch, this.mercure, this.fetcher, this.storage.stores.auth, this.storage.stores.resources, this.storage.stores.fetcher)
+    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, fetchStatusManager)
+    this.auth = new Auth(this.cwaFetch, this.mercure, this.fetcher, this.storage.stores.auth, this.storage.stores.resources, this.storage.stores.fetcher, useCookie('cwa_auth'))
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
   }

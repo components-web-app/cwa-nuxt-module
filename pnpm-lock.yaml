@@ -5,10 +5,10 @@ importers:
   .:
     dependencies:
       '@pinia/nuxt':
-        specifier: ^0.4.11
+        specifier: ^0.4.6
         version: 0.4.11(rollup@3.23.0)(typescript@5.0.4)(vue@3.3.4)
       consola:
-        specifier: ^3.1.0
+        specifier: ^3.0.1
         version: 3.1.0
       lodash:
         specifier: ^4.17.21
@@ -17,7 +17,7 @@ importers:
         specifier: ^3.5.1
         version: 3.5.1(@types/node@20.2.3)(eslint@8.41.0)(rollup@3.23.0)(sass@1.62.1)(typescript@5.0.4)
       pinia:
-        specifier: ^2.1.3
+        specifier: ^2.0.27
         version: 2.1.3(typescript@5.0.4)(vue@3.3.4)
       uuid:
         specifier: ^9.0.0
@@ -53,6 +53,9 @@ importers:
       '@vitest/coverage-c8':
         specifier: ^0.30.1
         version: 0.30.1(vitest@0.31.1)
+      '@vue/test-utils':
+        specifier: 2.3.2
+        version: 2.3.2(vue@3.3.4)
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.14(postcss@8.4.23)
@@ -86,6 +89,9 @@ importers:
       vitest:
         specifier: ^0.31.1
         version: 0.31.1(sass@1.62.1)
+      vitest-environment-nuxt:
+        specifier: ^0.7.0
+        version: 0.7.0(rollup@3.23.0)(vitest@0.31.1)(vue-router@4.2.1)(vue@3.3.4)
 
   playground:
     dependencies:
@@ -98,7 +104,7 @@ importers:
         version: 0.17.0
       '@nuxt/devtools':
         specifier: ^0.5.0
-        version: 0.5.0(bluebird@3.7.2)(nuxt@3.5.1)(rollup@3.23.0)(vite@4.3.8)
+        version: 0.5.0(nuxt@3.5.1)(rollup@3.23.0)(vite@4.3.8)
       '@sidebase/nuxt-auth':
         specifier: ^0.4.3
         version: 0.4.3(next-auth@4.22.1)(rollup@3.23.0)
@@ -1030,7 +1036,7 @@ packages:
       semver: 7.5.1
     dev: true
 
-  /@npmcli/git@4.0.4(bluebird@3.7.2):
+  /@npmcli/git@4.0.4:
     resolution: {integrity: sha512-5yZghx+u5M47LghaybLCkdSyFzV/w4OuH12d96HO389Ik9CDsLaDZJVynSGGVJOLn6gy/k7Dz5XYcplM3uxXRg==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dependencies:
@@ -1038,7 +1044,7 @@ packages:
       lru-cache: 7.18.3
       npm-pick-manifest: 8.0.1
       proc-log: 3.0.0
-      promise-inflight: 1.0.1(bluebird@3.7.2)
+      promise-inflight: 1.0.1
       promise-retry: 2.0.1
       semver: 7.5.1
       which: 3.0.1
@@ -1076,13 +1082,13 @@ packages:
       which: 3.0.1
     dev: true
 
-  /@npmcli/run-script@6.0.2(bluebird@3.7.2):
+  /@npmcli/run-script@6.0.2:
     resolution: {integrity: sha512-NCcr1uQo1k5U+SYlnIrbAh3cxy+OQT1VtqiAbxdymSlptbzBb62AjH2xXgjNCoP073hoa1CfCAcwoZ8k96C4nA==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     dependencies:
       '@npmcli/node-gyp': 3.0.0
       '@npmcli/promise-spawn': 6.0.2
-      node-gyp: 9.3.1(bluebird@3.7.2)
+      node-gyp: 9.3.1
       read-package-json-fast: 3.0.2
       which: 3.0.1
     transitivePeerDependencies:
@@ -1126,7 +1132,7 @@ packages:
       semver: 7.5.1
     dev: true
 
-  /@nuxt/devtools@0.5.0(bluebird@3.7.2)(nuxt@3.5.1)(rollup@3.23.0)(vite@4.3.8):
+  /@nuxt/devtools@0.5.0(nuxt@3.5.1)(rollup@3.23.0)(vite@4.3.8):
     resolution: {integrity: sha512-OUUi9D8QI86mDqRYAdBz7Ft/j++1GiBB/f53ZVbMs/vrODDYIT1zpE0FfkkrpWQEGgEA2JWphBZtL5/iYA9QtQ==}
     hasBin: true
     peerDependencies:
@@ -1152,7 +1158,7 @@ packages:
       magicast: 0.2.7
       nuxt: 3.5.1(@types/node@20.2.3)(eslint@8.41.0)(rollup@3.23.0)(sass@1.62.1)(typescript@5.0.4)
       nypm: 0.2.0
-      pacote: 15.2.0(bluebird@3.7.2)
+      pacote: 15.2.0
       pathe: 1.1.0
       perfect-debounce: 1.0.0
       picocolors: 1.0.0
@@ -2749,10 +2755,6 @@ packages:
     resolution: {integrity: sha512-iD3898SR7sWVRHbiQv+sHUtHnMvC1o3nW5rAcqnq3uOn07DSAppZYUkIGslDz6gXC7HfunPe7YVBgoEJASPcHA==}
     dev: true
 
-  /bluebird@3.7.2:
-    resolution: {integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==}
-    dev: true
-
   /blueimp-md5@2.19.0:
     resolution: {integrity: sha512-DRQrD6gJyy8FbiE4s+bDoXS9hiW3Vbx5uCdwvcCf3zLHL+Iv7LtGHLpr+GZV8rHG8tK766FGYBwRbu8pELTt+w==}
     dev: true
@@ -2886,7 +2888,7 @@ packages:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
     engines: {node: '>=8'}
 
-  /cacache@16.1.3(bluebird@3.7.2):
+  /cacache@16.1.3:
     resolution: {integrity: sha512-/+Emcj9DAXxX4cwlLmRI9c166RuL3w30zp4R7Joiv2cQTtTtA+jeuCAjH3ZlGnYS3tKENSrKhAzVVP9GVyzeYQ==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
     dependencies:
@@ -2903,7 +2905,7 @@ packages:
       minipass-pipeline: 1.2.4
       mkdirp: 1.0.4
       p-map: 4.0.0
-      promise-inflight: 1.0.1(bluebird@3.7.2)
+      promise-inflight: 1.0.1
       rimraf: 3.0.2
       ssri: 9.0.1
       tar: 6.1.15
@@ -5923,12 +5925,12 @@ packages:
     dependencies:
       semver: 6.3.0
 
-  /make-fetch-happen@10.2.1(bluebird@3.7.2):
+  /make-fetch-happen@10.2.1:
     resolution: {integrity: sha512-NgOPbRiaQM10DYXvN3/hhGVI2M5MtITFryzBGxHM5p4wnFxsVCbxkrBrDsk+EZ5OB4jEOT7AjDxtdF+KVEFT7w==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
     dependencies:
       agentkeepalive: 4.3.0
-      cacache: 16.1.3(bluebird@3.7.2)
+      cacache: 16.1.3
       http-cache-semantics: 4.1.1
       http-proxy-agent: 5.0.0
       https-proxy-agent: 5.0.1
@@ -6513,7 +6515,7 @@ packages:
     resolution: {integrity: sha512-NTZVKn9IylLwUzaKjkas1e4u2DLNcV4rdYagA4PWdPwW87Bi7z+BznyKSRwS/761tV/lzCGXplWsiaMjLqP2zQ==}
     hasBin: true
 
-  /node-gyp@9.3.1(bluebird@3.7.2):
+  /node-gyp@9.3.1:
     resolution: {integrity: sha512-4Q16ZCqq3g8awk6UplT7AuxQ35XN4R/yf/+wSAwcBUAjg7l58RTactWaP8fIDTi0FzI7YcVLujwExakZlfWkXg==}
     engines: {node: ^12.13 || ^14.13 || >=16}
     hasBin: true
@@ -6521,7 +6523,7 @@ packages:
       env-paths: 2.2.1
       glob: 7.2.3
       graceful-fs: 4.2.11
-      make-fetch-happen: 10.2.1(bluebird@3.7.2)
+      make-fetch-happen: 10.2.1
       nopt: 6.0.0
       npmlog: 6.0.2
       rimraf: 3.0.2
@@ -7040,15 +7042,15 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
-  /pacote@15.2.0(bluebird@3.7.2):
+  /pacote@15.2.0:
     resolution: {integrity: sha512-rJVZeIwHTUta23sIZgEIM62WYwbmGbThdbnkt81ravBplQv+HjyroqnLRNH2+sLJHcGZmLRmhPwACqhfTcOmnA==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
     hasBin: true
     dependencies:
-      '@npmcli/git': 4.0.4(bluebird@3.7.2)
+      '@npmcli/git': 4.0.4
       '@npmcli/installed-package-contents': 2.0.2
       '@npmcli/promise-spawn': 6.0.2
-      '@npmcli/run-script': 6.0.2(bluebird@3.7.2)
+      '@npmcli/run-script': 6.0.2
       cacache: 17.1.3
       fs-minipass: 3.0.2
       minipass: 5.0.0
@@ -7762,15 +7764,13 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: true
 
-  /promise-inflight@1.0.1(bluebird@3.7.2):
+  /promise-inflight@1.0.1:
     resolution: {integrity: sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g==}
     peerDependencies:
       bluebird: '*'
     peerDependenciesMeta:
       bluebird:
         optional: true
-    dependencies:
-      bluebird: 3.7.2
     dev: true
 
   /promise-retry@2.0.1:
@@ -9597,6 +9597,30 @@ packages:
       sass: 1.62.1
     optionalDependencies:
       fsevents: 2.3.2
+
+  /vitest-environment-nuxt@0.7.0(rollup@3.23.0)(vitest@0.31.1)(vue-router@4.2.1)(vue@3.3.4):
+    resolution: {integrity: sha512-y99McobcS14Afjw7QxCBrCujS70hRBRiNmJ3HPXdW5rch0KRVLmVNLMFyyCsjS8OHtlxamn4niTVVv5z/DAspQ==}
+    peerDependencies:
+      vitest: ^0.24.5 || ^0.26.0 || ^0.27.0 || ^0.28.0 || ^0.29.0 || ^0.30.0
+      vue: ^3.2.45
+      vue-router: ^4.0.0
+    dependencies:
+      '@nuxt/kit': 3.5.1(rollup@3.23.0)
+      '@vue/test-utils': 2.3.2(vue@3.3.4)
+      defu: 6.1.2
+      estree-walker: 3.0.3
+      h3: 1.6.6
+      happy-dom: 9.19.2
+      magic-string: 0.30.0
+      ofetch: 1.0.1
+      unenv: 1.4.1
+      vitest: 0.31.1(sass@1.62.1)
+      vue: 3.3.4
+      vue-router: 4.2.1(vue@3.3.4)
+    transitivePeerDependencies:
+      - rollup
+      - supports-color
+    dev: true
 
   /vitest-environment-nuxt@0.7.1(rollup@3.23.0)(vitest@0.31.1)(vue-router@4.2.1)(vue@3.3.4):
     resolution: {integrity: sha512-b/BSI9Vg3fycZpMWE34TpWhP3o7HfOiyQf7RUBBfYncZ8yTRqRkO7rhaZmiKdIau44tRBSpqH+EFZzqU0ksHYA==}

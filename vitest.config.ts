@@ -9,6 +9,9 @@ export default defineVitestConfig({
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true
     },
-    threads: false
+    resolveSnapshotPath (path: string, extension: string) {
+      return path + extension
+    },
+    setupFiles: ['./setup.ts']
   }
 })
