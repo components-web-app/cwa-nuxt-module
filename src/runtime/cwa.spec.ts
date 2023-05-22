@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
@@ -151,7 +152,7 @@ describe('Cwa class test', () => {
 
   test('ResourcesManager is initialised and accessible', () => {
     const stores = Storage.mock.results[0].value.stores
-    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, stores.fetcher, FetchStatusManager.mock.instances[0])
+    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0])
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
   })
 })

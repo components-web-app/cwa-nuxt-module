@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ResourceLoader > snapshots > should match snapshot IF component is not found 1`] = `
+<warning-stub>
+  <p>
+     The component \`TestComponentMock\` cannot be found 
+  </p>
+</warning-stub>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF component is rendered 1`] = `
+<dummycomponent-stub
+  iri="testIri"
+/>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF resource is loading 1`] = `
+<div>
+  <spinner-stub
+    show="true"
+  />
+</div>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF resource is not found 1`] = `
+<warning-stub>
+  <p>
+     Resource not found with iri \`testIri\` data 
+  </p>
+</warning-stub>
+`;
