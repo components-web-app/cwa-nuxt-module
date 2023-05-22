@@ -1,27 +1,149 @@
-import { describe, vi, test, beforeEach, afterEach } from 'vitest'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import { describe, vi, test, expect } from 'vitest'
 import { ResourcesManager } from './resources-manager'
+import { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
-describe.todo('ResourceManager class tests', () => {
-  let resourcesManager: ResourcesManager
-  let resourcesStore: ResourcesStore
-  let fetcherStore: FetcherStore
-  beforeEach(() => {
-    resourcesStore = new ResourcesStore('storeName')
-    fetcherStore = new FetcherStore('storeName', resourcesStore)
-    resourcesManager = new ResourcesManager(resourcesStore, fetcherStore)
-  })
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
+function createResourcesManager () {
+  const mockCwaFetch = {
+    fetch: vi.fn()
+  }
+  const resourcesStoreActions = {
+    saveResource: vi.fn(),
+    deleteResource: vi.fn()
+  }
+  const mockResourcesStore = {
+    useStore () {
+      return resourcesStoreActions
+    }
+  }
+  const mockFetchPath = {
+    value: ''
+  }
+  const mockFetchManager = {
+    get primaryFetchPath () {
+      return mockFetchPath.value
+    }
+  }
 
-  test.todo('resourcesManager -> createResource', async () => {
-    await resourcesManager.createResource({
-      endpoint: 'some_endpoint',
-      data: {
-        key: 'value'
+  const resourcesManager = new ResourcesManager(
+    // @ts-ignore
+    mockCwaFetch,
+    mockResourcesStore,
+    mockFetchManager
+  )
+
+  return {
+    resourcesManager,
+    cwaFetch: mockCwaFetch,
+    fetchPath: mockFetchPath,
+    resourceStore: mockResourcesStore
+  }
+}
+
+describe('Resources manager', () => {
+  describe('create resource', () => {
+    test('should send request AND then save result of that request', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      const mockResource = { id: 'new-resource' }
+      const mockPayload = {
+        endpoint: '/api/mock/endpoint',
+        data: {
+          test: true
+        }
       }
+      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      cwaFetch.fetch.mockResolvedValue(mockResource)
+
+      await resourcesManager.createResource(mockPayload)
+
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
+        method: 'POST',
+        headers: {
+          accept: 'application/ld+json,application/json'
+        },
+        body: mockPayload.data
+      })
+      expect(saveSpy).toHaveBeenCalledWith({
+        resource: mockResource
+      })
+    })
+
+    test('should send request with path header IF primary fetch path is defined AND then save result of that request', async () => {
+      const { resourcesManager, cwaFetch, fetchPath } = createResourcesManager()
+      const mockResource = { id: 'new-resource' }
+      const mockPayload = {
+        endpoint: '/api/mock/endpoint',
+        data: {
+          test: true
+        }
+      }
+      fetchPath.value = 'primary-path'
+      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      cwaFetch.fetch.mockResolvedValue(mockResource)
+
+      await resourcesManager.createResource(mockPayload)
+
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
+        method: 'POST',
+        headers: {
+          path: 'primary-path',
+          accept: 'application/ld+json,application/json'
+        },
+        body: mockPayload.data
+      })
+      expect(saveSpy).toHaveBeenCalledWith({
+        resource: mockResource
+      })
+    })
+  })
+
+  describe('update resource', () => {
+    test('should send request AND then save result of that request', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      const mockResource = { id: 'new-resource' }
+      const mockPayload = {
+        endpoint: '/api/mock/endpoint',
+        data: {
+          test: true
+        }
+      }
+      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      cwaFetch.fetch.mockResolvedValue(mockResource)
+
+      await resourcesManager.updateResource(mockPayload)
+
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/merge-patch+json',
+          accept: 'application/ld+json,application/json'
+        },
+        body: mockPayload.data
+      })
+      expect(saveSpy).toHaveBeenCalledWith({
+        resource: mockResource
+      })
+    })
+  })
+
+  describe('save resource', () => {
+    test('should save resource', () => {
+      const { resourcesManager, resourceStore } = createResourcesManager()
+      const mockCwaResource: CwaResource = {
+        '@id': 'mock-id',
+        '@type': 'Component',
+        _metadata: {
+          persisted: true
+        }
+      }
+      const mockPayload = { resource: mockCwaResource }
+      const mockResult = { test: true }
+
+      resourceStore.useStore().saveResource.mockReturnValue(mockResult)
+
+      const result = resourcesManager.saveResource(mockPayload)
+
+      expect(resourceStore.useStore().saveResource).toHaveBeenCalledWith(mockPayload)
+      expect(result).toEqual(mockResult)
     })
   })
 })

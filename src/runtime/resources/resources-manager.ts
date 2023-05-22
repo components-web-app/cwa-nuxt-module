@@ -24,13 +24,11 @@ interface RequestOptions {
 export class ResourcesManager {
   private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
-  private fetcherStoreDefinition: FetcherStore
   private fetchStatusManager: FetchStatusManager
 
-  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore, fetchStatusManager: FetchStatusManager) {
+  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
-    this.fetcherStoreDefinition = fetcherStoreDefinition
     this.fetchStatusManager = fetchStatusManager
   }
 
@@ -58,10 +56,6 @@ export class ResourcesManager {
     return this.resourcesStore.saveResource(event)
   }
 
-  public deleteResource (event: DeleteResourceEvent) {
-    return this.resourcesStore.deleteResource(event)
-  }
-
   private requestOptions (method: 'POST'|'PATCH'): RequestOptions {
     const headers: {
       accept: string
@@ -80,10 +74,6 @@ export class ResourcesManager {
       method,
       headers
     }
-  }
-
-  private get fetcherStore () {
-    return this.fetcherStoreDefinition.useStore()
   }
 
   private get resourcesStore () {
