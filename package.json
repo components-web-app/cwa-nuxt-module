@@ -40,7 +40,6 @@
   },
   "peerDependencies": {
     "@pinia/nuxt": "^0.4.6",
-    "bluebird": "^3.7.2",
     "consola": "^3.0.1",
     "lodash": "^4.17.21",
     "nuxt": "^3.5.1",
@@ -73,7 +72,6 @@
   },
   "dependencies": {
     "@pinia/nuxt": "^0.4.11",
-    "bluebird": "^3.7.2",
     "consola": "^3.1.0",
     "lodash": "^4.17.21",
     "nuxt": "^3.5.1",
