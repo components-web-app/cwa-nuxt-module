@@ -1,101 +1,260 @@
-import { fileURLToPath } from 'url'
-// import { setup, useTestContext } from '@nuxt/test-utils'
-import { describe, test, expect, vi } from 'vitest'
+import { join } from 'path'
+import { describe, expect, Mock, test, vi } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
-// import { NuxtModule } from '@nuxt/schema'
-// import CwaModule from './module'
 
 vi.mock('@nuxt/kit', async () => {
-  const module = await vi.importActual<typeof nuxtKit>('@nuxt/kit')
+  const actual = await vi.importActual<typeof nuxtKit>('@nuxt/kit')
+
   const newModule = {
-    ...module,
-    defineNuxtModule: vi.fn(ops => module.defineNuxtModule(ops)),
-    addTemplate: vi.fn(module.addTemplate),
-    addPlugin: vi.fn(module.addPlugin)
+    ...actual,
+    addPlugin: vi.fn(),
+    addImportsDir: vi.fn(),
+    addTemplate: vi.fn(),
+    extendPages: vi.fn(),
+    defineNuxtModule: vi.fn(),
+    installModule: vi.fn(),
+    createResolver: vi.fn().mockReturnValue({ resolve: vi.fn() })
   }
+
   return {
     ...newModule,
-    default: module
+    default: newModule
   }
 })
 
-// todo: await nuxt test utils update which will probably resolve but also conflicts with nuxt-vitest right now
-describe.todo('Functional: Test modules are defined when Nuxt App is setup', () => {
-  // @ts-ignore
-  // const module: NuxtModule = CwaModule
-  // await setup({
-  //   rootDir: fileURLToPath(new URL('../playground', import.meta.url)),
-  //   nuxtConfig: {
-  //     modules: [
-  //       module
-  //     ],
-  //     cwa: {
-  //       apiUrl: 'https://localhost:8443',
-  //       apiUrlBrowser: 'https://localhost:8443'
-  //     }
-  //   },
-  //   server: true
-  // })
-  // const context = useTestContext()
+async function prepareMockNuxt (options = {}, nuxt?) {
+  await import('./module')
 
-  test('Test module setup with correct options', () => {
-    expect(nuxtKit.defineNuxtModule).toHaveBeenCalledOnce()
-    expect(nuxtKit.defineNuxtModule).toHaveBeenCalledWith(expect.objectContaining({
-      defaults: {
-        storeName: 'cwa'
-      },
-      meta: {
+  const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+
+  const mockNuxt = nuxt || { hook: vi.fn(), options: { alias: {}, css: [], build: { transpile: [] } } }
+
+  await setup(options, mockNuxt)
+
+  return mockNuxt
+}
+
+describe('CWA module', () => {
+  describe('params', () => {
+    test('should be called with correct meta', async () => {
+      await import('./module')
+
+      const [{ meta }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+
+      expect(meta).toEqual({
         name: '@cwa/nuxt3',
         configKey: 'cwa',
-        compatibility: {
-          nuxt: '^3.0.0'
-        }
-      }
-    }))
-  })
+        compatibility: { nuxt: '^3.0.0' }
+      })
+    })
 
-  test('Modules are required', () => {
-    expect(context.nuxt).toBeDefined()
-    if (!context.nuxt) {
-      return
-    }
-    const requiredModules = Object.keys(context.nuxt.options._requiredModules)
-    expect(requiredModules).toContain('@cwa/nuxt3')
-    expect(requiredModules).toContain('pinia')
-  })
+    test('should be called with correct defaults', async () => {
+      await import('./module')
 
-  test('Runtime is added to build transpile', () => {
-    const runtimeDir = fileURLToPath(new URL('./runtime', import.meta.url))
-    expect(context.nuxt?.options.build.transpile).toContain(runtimeDir)
-  })
+      const [{ defaults }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  test('Plugins are added', () => {
-    expect(nuxtKit.addTemplate).toBeCalledTimes(1)
-    expect(nuxtKit.addTemplate.mock.calls[0][0].filename).toBe('cwa-options.ts')
-    expect(nuxtKit.addTemplate.mock.calls[0][0].getContents()).toBe(`import { CwaModuleOptions } from '#cwa/module';
-export const options:CwaModuleOptions = {
-  "storeName": "cwa",
-  "apiUrl": "https://localhost:8443",
-  "apiUrlBrowser": "https://localhost:8443"
-}
-`)
-    expect(nuxtKit.addPlugin).toBeCalledTimes(1)
-    expect(nuxtKit.addPlugin).toBeCalledWith({
-      src: fileURLToPath(new URL('./runtime/plugin', import.meta.url))
+      expect(defaults).toEqual({
+        storeName: 'cwa'
+      })
     })
   })
 
-  test('css option is set', () => {
-    expect(context.nuxt?.options.css).toContain(fileURLToPath(new URL('./runtime/templates/assets/main.css', import.meta.url)))
+  describe('setup', () => {
+    test('should install additional modules', async () => {
+      await prepareMockNuxt()
+
+      expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@pinia/nuxt')
+    })
+
+    test('should add aliases with result of resolved paths', async () => {
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+        resolve: mockResolver,
+        resolvePath: vi.fn()
+      })
+
+      const mockNuxt = await prepareMockNuxt()
+
+      expect(mockResolver).toHaveBeenCalledWith('./')
+      expect(mockNuxt.options.alias['#cwa']).toEqual(mockResolver('./'))
+    })
+
+    test('should add transpile directory', async () => {
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+        resolve: mockResolver,
+        resolvePath: vi.fn()
+      })
+
+      const mockNuxt = await prepareMockNuxt()
+
+      expect(mockResolver).toHaveBeenCalledWith('./runtime')
+      expect(mockNuxt.options.build.transpile).toEqual([mockResolver('./runtime')])
+    })
+
+    test('should add css directory', async () => {
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+        resolve: mockResolver,
+        resolvePath: vi.fn()
+      })
+
+      const mockNuxt = await prepareMockNuxt()
+
+      expect(mockResolver).toHaveBeenCalledWith('./runtime/templates/assets/main.css')
+      expect(mockNuxt.options.css).toEqual([mockResolver('./runtime/templates/assets/main.css')])
+    })
+
+    test('should add template', async () => {
+      const mockOptions = {
+        mock: true,
+        foo: 'bar'
+      }
+
+      await prepareMockNuxt(mockOptions)
+
+      expect((nuxtKit.addTemplate as Mock)).toHaveBeenCalled()
+
+      const { lastCall: [{ filename, getContents }] } = (nuxtKit.addTemplate as Mock).mock
+
+      expect(filename).toEqual('cwa-options.ts')
+      expect(getContents()).toEqual(`import { CwaModuleOptions } from '#cwa/module';
+export const options:CwaModuleOptions = {
+  "mock": true,
+  "foo": "bar"
+}
+`)
+    })
+
+    test('should add plugin', async () => {
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+        resolve: mockResolver,
+        resolvePath: vi.fn()
+      })
+
+      await prepareMockNuxt()
+
+      expect(mockResolver).toHaveBeenCalledWith('./runtime/plugin')
+
+      expect(nuxtKit.addPlugin as Mock).toHaveBeenCalledWith({
+        src: mockResolver('./runtime/plugin')
+      })
+    })
+
+    test('should add imports directory', async () => {
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+        resolve: mockResolver,
+        resolvePath: vi.fn()
+      })
+
+      await prepareMockNuxt()
+
+      expect(mockResolver).toHaveBeenCalledWith('./runtime/composables')
+
+      expect(nuxtKit.addImportsDir as Mock).toHaveBeenCalledWith(mockResolver('./runtime/composables'))
+    })
+
+    describe('hooks', () => {
+      test('should add paths for component dirs and page dirs', async () => {
+        const mockResolver = vi.fn(path => path)
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: mockResolver,
+          resolvePath: vi.fn()
+        })
+
+        const mockDirs = []
+        const mockNuxt = await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'components:dirs') {
+              callback(mockDirs)
+            }
+          }),
+          options: {
+            alias: {},
+            css: [],
+            build: {
+              transpile: []
+            },
+            srcDir: './mock'
+          }
+        })
+
+        const hookCall = mockNuxt.hook.mock.calls.find(call => call[0] === 'components:dirs')
+
+        expect(hookCall).toBeDefined()
+        expect(mockDirs).toContainEqual({
+          path: join(mockNuxt.options.srcDir, 'cwa', 'components'),
+          prefix: 'CwaComponents',
+          global: true
+        })
+        expect(mockDirs).toContainEqual({
+          path: join(mockNuxt.options.srcDir, 'cwa', 'pages'),
+          prefix: 'CwaPages',
+          global: true
+        })
+        expect(mockDirs).toContainEqual({
+          path: join(mockResolver('./runtime/templates'), 'components', 'utils'),
+          prefix: 'CwaUtils'
+        })
+        expect(mockDirs).toContainEqual({
+          path: join(mockResolver('./runtime/templates'), 'components', 'main'),
+          prefix: 'Cwa'
+        })
+      })
+    })
+
+    test('should extend pages with 3 levels by default', async () => {
+      let cb = null
+      const mockPages = []
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+        resolve: mockResolver,
+        resolvePath: vi.fn()
+      })
+      vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
+        cb = callback
+      })
+
+      await prepareMockNuxt()
+
+      expect(nuxtKit.extendPages).toHaveBeenCalledWith(cb)
+
+      cb(mockPages)
+
+      expect(mockPages).toEqual([
+        {
+          name: 'cwaPage0',
+          path: '/:cwaPage0*',
+          meta: { layout: 'cwa-root-layout' },
+          file: mockResolver('./runtime/templates'),
+          children: [
+            {
+              name: 'cwaPage1',
+              path: ':cwaPage1*',
+              meta: { layout: 'cwa-root-layout' },
+              file: mockResolver('./runtime/templates'),
+              children: [
+                {
+                  name: 'cwaPage2',
+                  path: ':cwaPage2*',
+                  meta: { layout: 'cwa-root-layout' },
+                  file: mockResolver('./runtime/templates'),
+                  children: [
+                    {
+                      name: 'cwaPage3',
+                      path: ':cwaPage3*',
+                      meta: { layout: 'cwa-root-layout' },
+                      file: mockResolver('./runtime/templates')
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ])
+    })
   })
-
-  test.todo('Dynamic pages are added with the depth provided', () => {
-
-  })
-
-  // Todo: need a dummy API for this ands some pages to try rendering and testing - perhaps will do this with Cypress though
-  // test('Load page', async () => {
-  //   const html = await $fetch('/')
-  //   console.log(html)
-  // }, 20000)
 })
