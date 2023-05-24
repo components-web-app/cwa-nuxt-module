@@ -38,11 +38,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Prepare and Lint
+      - name: Prepare
+        run: pnpm run dev:prepare
+
+      - name: Lint
         if: matrix.lint
-        run: |
-          pnpm run dev:prepare
-          pnpm run lint
+        run: pnpm run lint
 
       - name: Build module
         run: pnpm run dev:build
