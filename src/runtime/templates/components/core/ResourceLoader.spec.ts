@@ -81,11 +81,11 @@ describe('ResourceLoader', () => {
       })
     })
 
-    describe('uiComponent', () => {
+    describe('resourceUiComponent', () => {
       test('should return nothing IF no resource is present', () => {
         const wrapper = createWrapper(null)
 
-        expect(wrapper.vm.uiComponent).not.toBeDefined()
+        expect(wrapper.vm.resourceUiComponent).not.toBeDefined()
       })
 
       test('should return nothing IF resource data is empty', () => {
@@ -96,7 +96,7 @@ describe('ResourceLoader', () => {
           }
         })
 
-        expect(wrapper.vm.uiComponent).not.toBeDefined()
+        expect(wrapper.vm.resourceUiComponent).not.toBeDefined()
       })
 
       test('should return component name consisting of prefix and name from resource property', () => {
@@ -110,7 +110,7 @@ describe('ResourceLoader', () => {
           }
         })
 
-        expect(wrapper.vm.uiComponent).toEqual(mockPrefix + mockComponentName)
+        expect(wrapper.vm.resourceUiComponent).toEqual(mockPrefix + mockComponentName)
       })
 
       test('should return component name consisting of prefix and type from resource property', () => {
@@ -124,7 +124,7 @@ describe('ResourceLoader', () => {
           }
         })
 
-        expect(wrapper.vm.uiComponent).toEqual(mockPrefix + mockType)
+        expect(wrapper.vm.resourceUiComponent).toEqual(mockPrefix + mockType)
       })
     })
 
