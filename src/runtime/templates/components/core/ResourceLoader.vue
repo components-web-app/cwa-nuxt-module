@@ -13,7 +13,7 @@
       Resource not found with iri `{{ props.iri }}` data
     </p>
     <p v-else>
-      The component `{{ uiComponent }}` cannot be found
+      The component `{{ resourceUiComponent }}` cannot be found
     </p>
   </CwaUtilsAlertWarning>
   <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="props.iri" />
@@ -51,7 +51,7 @@ const isLoading = computed(() => {
   return !resource.value.data && resource.value.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
-const uiComponent = computed(() => {
+const resourceUiComponent = computed(() => {
   if (!resource.value || !resource.value?.data) {
     return
   }
@@ -73,7 +73,7 @@ const resolvedComponent = computed(() => {
 
   const instance = getCurrentInstance()
 
-  if (typeof instance?.appContext.components !== 'object' || !(uiComponent.value in instance.appContext.components)) {
+  if (typeof instance?.appContext.components !== 'object' || !(resourceUiComponent.value in instance.appContext.components)) {
     return
   }
 
