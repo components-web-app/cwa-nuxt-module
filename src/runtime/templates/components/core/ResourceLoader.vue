@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch, getCurrentInstance } from 'vue'
+import { computed, onMounted, watch, getCurrentInstance, ref } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { CwaAuthStatus } from '../../../api/auth'
 import { useCwaResource, iri, useCwa } from '#imports'
@@ -43,8 +43,15 @@ const props = defineProps({
 
 const resource = useCwaResource(props.iri)
 
+const resourceLoadPendingStart = ref<Boolean>(!resource.value)
+setTimeout(() => {
+  if (resourceLoadPendingStart.value && resource.value) {
+    resourceLoadPendingStart.value = false
+  }
+}, 20)
+
 const isLoading = computed(() => {
-  if (!resource.value) {
+  if (resourceLoadPendingStart.value) {
     return true
   }
   return !resource.value.data && resource.value.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
