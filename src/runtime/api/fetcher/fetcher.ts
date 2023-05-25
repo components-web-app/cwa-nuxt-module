@@ -85,6 +85,10 @@ export default class Fetcher {
   }
 
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
+    // todo: test
+    if (route.meta.cwa === false) {
+      return
+    }
     let iri: string
     let manifestPath: string|undefined
     const routeParam = route.params.cwaPage0
