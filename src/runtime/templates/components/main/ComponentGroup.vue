@@ -2,13 +2,10 @@
   <div v-if="showLoader" class="component-group-placeholder">
     <CwaUtilsSpinner :show="true" />
   </div>
-  <CwaUtilsAlertInfo v-else-if="!resource">
-    <p>Component Group does not exist, will automatically add when logged in. Functionality coming soon</p>
-  </CwaUtilsAlertInfo>
   <template v-else-if="componentPositions && componentPositions.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
-  <CwaUtilsAlertInfo v-else>
+  <CwaUtilsAlertInfo v-else-if="resource">
     <p>No component positions in this component group - add functionality coming soon (if logged in)</p>
   </CwaUtilsAlertInfo>
 </template>
@@ -19,7 +16,7 @@
 
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
-import _isEqual from 'lodash/isEqual'
+import _isEqual from 'lodash/isEqual.js'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
