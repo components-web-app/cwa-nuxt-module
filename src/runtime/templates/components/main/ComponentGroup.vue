@@ -5,8 +5,8 @@
   <template v-else-if="componentPositions && componentPositions.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
-  <CwaUtilsAlertInfo v-else-if="resource">
-    <p>No component positions in this component group - add functionality coming soon (if logged in)</p>
+  <CwaUtilsAlertInfo v-else-if="signedIn && resource">
+    <p>No component positions in this component group - add functionality coming soon</p>
   </CwaUtilsAlertInfo>
 </template>
 
@@ -93,6 +93,11 @@ const methods = {
     })
   }
 }
+
+// todo: should we move into auth class.... seems a very common check, perhaps this is used in the layout too
+const signedIn = computed(() => {
+  return $cwa.auth.status.value === CwaAuthStatus.SIGNED_IN
+})
 
 watch(() => [$cwa.resources.isLoading.value, $cwa.auth.status.value, resource.value], async ([isLoading, authStatus, resource]) => {
   if (!isLoading && authStatus === CwaAuthStatus.SIGNED_IN) {
