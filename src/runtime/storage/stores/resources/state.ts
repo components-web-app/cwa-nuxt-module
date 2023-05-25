@@ -9,17 +9,21 @@ export enum CwaResourceApiStatuses {
   SUCCESS = 1
 }
 
-export interface CwaResourceApiStateGeneral {
+interface SsrApiState {
+  ssr?: boolean
+}
+
+export interface CwaResourceApiStateGeneral extends SsrApiState {
   status: CwaResourceApiStatuses.IN_PROGRESS|undefined,
   headers?: CwaFetchRequestHeaders
 }
 
-export interface CwaResourceApiStateError {
+export interface CwaResourceApiStateError extends SsrApiState {
   status: CwaResourceApiStatuses.ERROR,
   error?: CwaResourceErrorObject
 }
 
-export interface CwaResourceApiStateSuccess {
+export interface CwaResourceApiStateSuccess extends SsrApiState {
   status: CwaResourceApiStatuses.SUCCESS,
   headers: CwaFetchRequestHeaders
 }
