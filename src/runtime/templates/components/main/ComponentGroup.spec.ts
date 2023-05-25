@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { nextTick, reactive, ref } from 'vue'
+import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
@@ -440,6 +441,43 @@ describe('ComponentGroup', () => {
 
       expect(createGroupSpy).not.toHaveBeenCalled()
       expect(updateAllowedComponentsSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('props', () => {
+    test('should pass correct uiComponent objects per each ResourceLoader component', () => {
+      const mockComponentPositions = ['pos1', 'pos2', 'pos3']
+      const mockGroupElement = {
+        data: {
+          reference: `${mockReference}_${mockResourceReference}`,
+          componentPositions: mockComponentPositions
+        }
+      }
+      const mockByType = {
+        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+      }
+      const mockById = {
+        [mockLocation]: {
+          data: {
+            reference: mockResourceReference
+          }
+        }
+      }
+      const wrapper = createWrapper({
+        resourcesByType: mockByType,
+        byId: mockById
+      })
+
+      const resourceLoaders = wrapper.findAllComponents({ name: 'ResourceLoader' })
+
+      expect(resourceLoaders.length).toEqual(mockComponentPositions.length)
+
+      resourceLoaders.forEach((resourceLoader, index) => {
+        const { iri, uiComponent } = resourceLoader.props()
+
+        expect(iri).toEqual(mockComponentPositions[index])
+        expect(uiComponent).toEqual(ComponentPosition)
+      })
     })
   })
 

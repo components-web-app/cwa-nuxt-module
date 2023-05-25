@@ -9,7 +9,7 @@ vi.mock('uuid', () => ({
   }
 }))
 
-interface IInputMeta {
+interface InputMeta {
   name: string;
   label: string;
   modelValue: string;
@@ -27,7 +27,7 @@ function createWrapper ({
   autocomplete = 'login',
   required = false,
   errors
-}: IInputMeta) {
+}: InputMeta) {
   return shallowMount(InputField, {
     props: {
       name,
@@ -68,6 +68,29 @@ describe('InputField', () => {
         name: 'login',
         label: 'Login',
         modelValue: ''
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF input is marked as required', () => {
+      const wrapper = createWrapper({
+        name: 'login',
+        label: 'Login',
+        modelValue: '',
+        required: true
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF input is of type password', () => {
+      const wrapper = createWrapper({
+        name: 'password',
+        label: 'Password',
+        autocomplete: 'password',
+        modelValue: '',
+        type: 'password'
       })
 
       expect(wrapper.element).toMatchSnapshot()

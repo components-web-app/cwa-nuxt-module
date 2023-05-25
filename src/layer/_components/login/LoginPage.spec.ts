@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import LoginPage from './LoginPage.vue'
 
-interface ILoginMeta {
+interface LoginMeta {
   submitButtonText: string;
   submitting: boolean;
   error?: string;
@@ -15,7 +15,7 @@ function createWrapper ({
   submitting,
   error = '',
   slotContent = ''
-}: ILoginMeta) {
+}: LoginMeta) {
   return shallowMount(LoginPage, {
     props: {
       submitButtonText,

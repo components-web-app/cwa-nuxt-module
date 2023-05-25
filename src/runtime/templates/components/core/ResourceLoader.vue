@@ -76,7 +76,7 @@ const resolvedComponent = computed(() => {
     return
   }
 
-  return uiComponent.value
+  return resourceUiComponent.value
 })
 
 onMounted(() => {
