@@ -41,12 +41,6 @@ function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) 
 describe('ResourceLoader', () => {
   describe('computed properties', () => {
     describe('isLoading', () => {
-      test('should return true IF there is no resource', () => {
-        const wrapper = createWrapper(null)
-
-        expect(wrapper.vm.isLoading).toEqual(true)
-      })
-
       test('should return true IF there is no resource data AND api status EQUALS in progress', () => {
         const wrapper = createWrapper({
           data: null,
@@ -83,7 +77,7 @@ describe('ResourceLoader', () => {
 
     describe('resourceUiComponent', () => {
       test('should return nothing IF no resource is present', () => {
-        const wrapper = createWrapper(null)
+        const wrapper = createWrapper({ data: null, apiState: {} })
 
         expect(wrapper.vm.resourceUiComponent).not.toBeDefined()
       })
@@ -260,13 +254,14 @@ describe('ResourceLoader', () => {
       expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
     })
 
-    test('should fetch resource IF resource data is empty, silent error occurred, user is signed in', () => {
+    test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR', () => {
       const wrapper = createWrapper({
         apiState: {
           status: CwaResourceApiStatuses.ERROR,
           error: {
             statusCode: 401
-          }
+          },
+          ssr: true
         }
       })
 
@@ -276,7 +271,7 @@ describe('ResourceLoader', () => {
 
   describe('snapshots', () => {
     test('should match snapshot IF resource is loading', () => {
-      const wrapper = createWrapper(null)
+      const wrapper = createWrapper({ data: null, apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } })
 
       expect(wrapper.element).toMatchSnapshot()
     })

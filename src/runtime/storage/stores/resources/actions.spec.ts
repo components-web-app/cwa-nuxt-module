@@ -349,7 +349,8 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.byId.errored.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.inProgress.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.SUCCESS,
-      headers: { path: '1' }
+      headers: { path: '1' },
+      ssr: undefined
     })
   })
 
@@ -403,7 +404,8 @@ describe('resources action -> setResourceFetchStatus', () => {
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
     expect(resourcesState.current.byId.id.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.IN_PROGRESS,
-      headers: { path: 'my-path' }
+      headers: { path: 'my-path' },
+      ssr: false
     })
   })
 
