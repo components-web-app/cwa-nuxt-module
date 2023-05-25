@@ -164,7 +164,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers) {
             resourcesState.current.byId[currentId].apiState = {
               status: CwaResourceApiStatuses.SUCCESS,
-              headers: currentState.headers
+              headers: currentState.headers,
+              ssr: currentState.ssr
             }
           }
         }
@@ -190,17 +191,20 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       if (event.isComplete) {
         data.apiState = {
           status: CwaResourceApiStatuses.SUCCESS,
-          headers: event.headers
+          headers: event.headers,
+          ssr: data.apiState.ssr
         }
         return
       }
 
       const newApiState: CwaResourceApiStateGeneral = {
-        status: CwaResourceApiStatuses.IN_PROGRESS
+        status: CwaResourceApiStatuses.IN_PROGRESS,
+        ssr: process.server
       }
       // if in progress, retain headers and final url from last success state
       if (data.apiState.status === CwaResourceApiStatuses.SUCCESS) {
         newApiState.headers = data.apiState.headers
+        newApiState.ssr = data.apiState.ssr
       }
       data.apiState = newApiState
     },
@@ -212,7 +216,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       })
       data.apiState = {
         status: CwaResourceApiStatuses.ERROR,
-        error: error?.asObject
+        error: error?.asObject,
+        ssr: process.server
       }
 
       // todo: test isPrimary

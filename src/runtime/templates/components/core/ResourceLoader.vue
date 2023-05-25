@@ -22,7 +22,6 @@
 <script setup>
 import { computed, onMounted, watch, getCurrentInstance, ref } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
-import { CwaAuthStatus } from '../../../api/auth'
 import { useCwaResource, iri, useCwa } from '#imports'
 
 const $cwa = useCwa()
@@ -87,8 +86,8 @@ const resolvedComponent = computed(() => {
 })
 
 onMounted(() => {
-  watch(() => [$cwa.auth.status, hasSilentError, resource], async ([authStatus, hasSilentError, resource]) => {
-    if (!resource.value?.data && hasSilentError.value && authStatus.value === CwaAuthStatus.SIGNED_IN) {
+  watch(() => [hasSilentError, resource], async ([hasSilentError, resource]) => {
+    if (resource.value.apiState.ssr && !resource.value?.data && hasSilentError.value) {
       await $cwa.fetchResource({
         path: props.iri
       })
