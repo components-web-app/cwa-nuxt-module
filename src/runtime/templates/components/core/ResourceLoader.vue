@@ -21,12 +21,11 @@
 
 <script setup>
 import { computed, onMounted, watch, getCurrentInstance } from 'vue'
-import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { CwaAuthStatus } from '../../../api/auth'
-import { useCwaResource, iri } from '#imports'
+import { useCwaResource, iri, useCwa } from '#imports'
 
-const { $cwa } = useNuxtApp()
+const $cwa = useCwa()
 
 const props = defineProps({
   ...iri,
@@ -77,7 +76,7 @@ const resolvedComponent = computed(() => {
     return
   }
 
-  return uiComponent.value
+  return resourceUiComponent.value
 })
 
 onMounted(() => {

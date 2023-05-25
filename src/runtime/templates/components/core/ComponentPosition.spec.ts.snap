@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ComponentPosition > snapshots > should match snapshot with ResourceLoader component with componentIri 1`] = `
+<resourceloader-stub
+  componentprefix="CwaComponents"
+  iri="test"
+/>
+`;
