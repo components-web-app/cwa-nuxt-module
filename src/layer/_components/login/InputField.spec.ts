@@ -62,6 +62,21 @@ describe('InputField', () => {
     })
   })
 
+  describe('props', () => {
+    test('native input should accept value from modelValue prop', () => {
+      const value = 'mock_user'
+      const wrapper = createWrapper({
+        name: 'login',
+        label: 'Login',
+        modelValue: value
+      })
+
+      const input = wrapper.find('input')
+
+      expect(input.element.value).toEqual(value)
+    })
+  })
+
   describe('snapshots', () => {
     test('should match snapshot with passed content', () => {
       const wrapper = createWrapper({
