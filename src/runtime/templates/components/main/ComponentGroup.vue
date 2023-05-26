@@ -5,7 +5,7 @@
   <template v-else-if="componentPositions && componentPositions.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
-  <CwaUtilsAlertInfo v-else-if="signedIn && resource">
+  <CwaUtilsAlertInfo v-else-if="areNoPositions">
     <p>No component positions in this component group - add functionality coming soon</p>
   </CwaUtilsAlertInfo>
 </template>
@@ -19,7 +19,6 @@ import { computed, watch } from 'vue'
 import _isEqual from 'lodash/isEqual.js'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
-import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
@@ -48,6 +47,10 @@ const resource = computed(() => {
   return componentGroups.find((componentGroupResource) => {
     return componentGroupResource.data?.reference === fullReference.value
   })
+})
+
+const areNoPositions = computed(() => {
+  return $cwa.auth.signedIn.value && !!resource.value
 })
 
 const showLoader = computed(() => {
@@ -94,13 +97,8 @@ const methods = {
   }
 }
 
-// todo: should we move into auth class.... seems a very common check, perhaps this is used in the layout too
-const signedIn = computed(() => {
-  return $cwa.auth.status.value === CwaAuthStatus.SIGNED_IN
-})
-
-watch(() => [$cwa.resources.isLoading.value, $cwa.auth.status.value, resource.value], async ([isLoading, authStatus, resource]) => {
-  if (!isLoading && authStatus === CwaAuthStatus.SIGNED_IN) {
+watch(() => [$cwa.resources.isLoading.value, $cwa.auth.signedIn.value, resource.value], async ([isLoading, signedIn, resource]) => {
+  if (!isLoading && signedIn) {
     if (!resource) {
       await methods.createComponentGroup()
     } else if (resource.apiState.status === CwaResourceApiStatuses.SUCCESS) {

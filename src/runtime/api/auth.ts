@@ -133,7 +133,7 @@ export default class Auth {
   }
 
   public async init () {
-    if (this.status.value === CwaAuthStatus.SIGNED_IN && !this.user) {
+    if (this.signedIn.value && !this.user) {
       await this.refreshUser()
     }
   }
@@ -147,6 +147,10 @@ export default class Auth {
       return
     }
     return this.user.roles
+  }
+
+  public get signedIn () {
+    return computed(() => this.status.value === CwaAuthStatus.SIGNED_IN)
   }
 
   public hasRole (role: CwaUserRoles|string) {
