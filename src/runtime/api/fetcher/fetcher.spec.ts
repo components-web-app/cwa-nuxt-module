@@ -94,6 +94,15 @@ describe('Fetcher -> fetchRoute', () => {
     expect(fetcher.fetchResource).toHaveBeenCalledWith({ path: apiPath, isPrimary: true, manifestPath })
     expect(result).toStrictEqual(validCwaResource)
   })
+
+  test('should NOT fetch resource IF route meta cwa is false', async () => {
+    const fetchResourceSpy = vi.spyOn(fetcher, 'fetchResource')
+
+    // @ts-ignore
+    await fetcher.fetchRoute({ meta: { cwa: false } })
+
+    expect(fetchResourceSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe('Fetcher -> fetchResource', () => {

@@ -9,6 +9,7 @@ import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import * as ResourceUtils from '../resources/resource-utils'
 import { CwaResourceTypes } from '../resources/resource-utils'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import * as processComposables from '../composables/process'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
 
@@ -123,16 +124,25 @@ describe('Mercure -> init', () => {
     vi.spyOn(mercure, 'closeMercure').mockImplementation(() => {})
   })
 
-  test.todo('We do not initialise and log to the console if server-side request', () => {
-    // todo: find out why this does not set as expected using nuxt-vitest
-    process.server = true
+  test('We do not initialise and log to the console if server-side request', () => {
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isServer: true,
+        isClient: false
+      }
+    })
     mercure.init()
     expect(logger.debug).toHaveBeenCalledWith('Mercure can only initialise on the client side')
     expect(mercure.hubUrl).not.toHaveBeenCalled()
   })
 
   test('A warning is logged and request aborted if the hub url has not been set', () => {
-    process.server = false
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isServer: false,
+        isClient: true
+      }
+    })
     vi.spyOn(mercure, 'hubUrl', 'get').mockImplementationOnce(() => {
       return false
     })

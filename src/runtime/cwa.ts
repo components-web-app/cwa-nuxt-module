@@ -13,6 +13,7 @@ import { Resources } from './resources/resources'
 import Auth from './api/auth'
 import Forms from './api/forms'
 import { useCookie } from '#imports'
+import { useProcess } from '#cwa/runtime/composables/process'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -35,8 +36,9 @@ export default class Cwa {
   public readonly forms: Forms
 
   constructor (nuxtApp: Pick<NuxtApp, '_route'>, options: CwaModuleOptions) {
+    const { isClient } = useProcess()
     const defaultApiUrl = 'https://api-url-not-set.com'
-    if (process.client) {
+    if (isClient) {
       this.apiUrl = options.apiUrlBrowser || options.apiUrl || defaultApiUrl
     } else {
       this.apiUrl = options.apiUrl || options.apiUrlBrowser || defaultApiUrl

@@ -6,7 +6,6 @@ import { nextTick, reactive, ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
-import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 const mockReference = 'mockReference'
@@ -19,7 +18,7 @@ const mockCwaResources = {
   }
 }
 const mockAuth = {
-  status: CwaAuthStatus.SIGNED_OUT
+  signedIn: ref(false)
 }
 
 function createWrapper ({
@@ -208,6 +207,92 @@ describe('ComponentGroup', () => {
         expect(wrapper.vm.componentPositions).toEqual(mockComponentPositions)
       })
     })
+
+    describe('areNoPositions', () => {
+      test('should return true IF user is signed in AND resource is defined', () => {
+        const mockGroupElement = {
+          data: { reference: `${mockReference}_${mockResourceReference}` },
+          apiState: {
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          }
+        }
+        const mockByType = {
+          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+        }
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const wrapper = createWrapper({
+          resourcesByType: mockByType,
+          byId: mockById,
+          auth: {
+            signedIn: ref(true)
+          }
+        })
+
+        expect(wrapper.vm.areNoPositions).toEqual(true)
+      })
+
+      test('should return false IF user is signed out AND resource is defined', () => {
+        const mockGroupElement = {
+          data: { reference: `${mockReference}_${mockResourceReference}` },
+          apiState: {
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          }
+        }
+        const mockByType = {
+          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+        }
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const wrapper = createWrapper({
+          resourcesByType: mockByType,
+          byId: mockById,
+          auth: {
+            signedIn: ref(false)
+          }
+        })
+
+        expect(wrapper.vm.areNoPositions).toEqual(false)
+      })
+
+      test('should return false IF user is signed in AND resource is not defined', () => {
+        const mockGroupElement = {
+          data: { reference: 'another-reference' },
+          apiState: {
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          }
+        }
+        const mockByType = {
+          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+        }
+        const mockById = {
+          [mockLocation]: {
+            data: {
+              reference: mockResourceReference
+            }
+          }
+        }
+        const wrapper = createWrapper({
+          resourcesByType: mockByType,
+          byId: mockById,
+          auth: {
+            signedIn: ref(true)
+          }
+        })
+
+        expect(wrapper.vm.areNoPositions).toEqual(false)
+      })
+    })
   })
 
   describe('methods', () => {
@@ -365,7 +450,7 @@ describe('ComponentGroup', () => {
           isLoading: mockLoading
         },
         auth: {
-          status: ref(CwaAuthStatus.SIGNED_OUT)
+          signedIn: ref(false)
         }
       })
       const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
@@ -380,20 +465,20 @@ describe('ComponentGroup', () => {
     })
 
     test('should create group IF resources are not loading AND user is authorized AND resource does not exist', async () => {
-      const mockStatus = ref(CwaAuthStatus.SIGNED_OUT)
+      const mockSignedIn = ref(false)
       const wrapper = createWrapper({
         cwaResources: {
           isLoading: ref(false)
         },
         auth: {
-          status: mockStatus
+          signedIn: mockSignedIn
         }
       })
 
       const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
       const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
 
-      mockStatus.value = CwaAuthStatus.SIGNED_IN
+      mockSignedIn.value = true
 
       await nextTick()
 
@@ -420,13 +505,13 @@ describe('ComponentGroup', () => {
           }
         }
       }
-      const mockStatus = ref(CwaAuthStatus.SIGNED_OUT)
+      const mockSignedIn = ref(false)
       const wrapper = createWrapper({
         cwaResources: {
           isLoading: ref(false)
         },
         auth: {
-          status: mockStatus
+          signedIn: mockSignedIn
         },
         resourcesByType: mockByType,
         byId: mockById
@@ -435,7 +520,7 @@ describe('ComponentGroup', () => {
       const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
       const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
 
-      mockStatus.value = CwaAuthStatus.SIGNED_IN
+      mockSignedIn.value = true
 
       await nextTick()
 
@@ -526,6 +611,34 @@ describe('ComponentGroup', () => {
 
     test('should match snapshot IF there are no component positions defined', () => {
       const wrapper = createWrapper()
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF user is logged in but there are no positions', () => {
+      const mockGroupElement = {
+        data: { reference: `${mockReference}_${mockResourceReference}` },
+        apiState: {
+          status: CwaResourceApiStatuses.IN_PROGRESS
+        }
+      }
+      const mockByType = {
+        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
+      }
+      const mockById = {
+        [mockLocation]: {
+          data: {
+            reference: mockResourceReference
+          }
+        }
+      }
+      const wrapper = createWrapper({
+        resourcesByType: mockByType,
+        byId: mockById,
+        auth: {
+          signedIn: ref(true)
+        }
+      })
 
       expect(wrapper.element).toMatchSnapshot()
     })

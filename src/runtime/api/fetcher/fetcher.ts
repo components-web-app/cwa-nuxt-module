@@ -85,7 +85,6 @@ export default class Fetcher {
   }
 
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
-    // todo: test
     if (route.meta.cwa === false) {
       return
     }

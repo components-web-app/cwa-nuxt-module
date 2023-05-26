@@ -10,6 +10,7 @@ import CwaFetch from './api/fetcher/cwa-fetch'
 import FetchStatusManager from './api/fetcher/fetch-status-manager'
 import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
+import * as processComposables from './composables/process'
 
 vi.mock('./storage/storage', () => {
   return {
@@ -72,7 +73,12 @@ function createCwa ({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
 describe('$cwa.apiUrl tests', () => {
   test('API Url set correctly for client-side requests', () => {
     let $cwa
-    process.client = true
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isClient: true,
+        isServer: false
+      }
+    })
 
     $cwa = createCwa({ storeName })
     expect($cwa.apiUrl).toBe('https://api-url-not-set.com')
@@ -84,10 +90,14 @@ describe('$cwa.apiUrl tests', () => {
     expect($cwa.apiUrl).toBe('https://api-url')
   })
 
-  test.todo('API Url set correctly for server-side requests', () => {
+  test('API Url set correctly for server-side requests', () => {
     let $cwa
-    // todo: why can we not set the process vars in the test
-    process.client = false
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isClient: false,
+        isServer: true
+      }
+    })
 
     $cwa = createCwa({ storeName })
     expect($cwa.apiUrl).toBe('https://api-url-not-set.com')
