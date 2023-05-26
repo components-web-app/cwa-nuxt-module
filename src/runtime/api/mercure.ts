@@ -6,6 +6,7 @@ import { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/re
 import { getPublishedResourceIri, CwaResource, CwaResourceTypes } from '../resources/resource-utils'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import Fetcher from './fetcher/fetcher'
+import { useProcess } from '#cwa/runtime/composables/process'
 
 interface MercureMessageInterface {
   event: MessageEvent,
@@ -48,7 +49,8 @@ export default class Mercure {
   }
 
   public init (forceRestart?: boolean): void {
-    if (process.server) {
+    const { isServer } = useProcess()
+    if (isServer) {
       logger.debug('Mercure can only initialise on the client side')
       return
     }
