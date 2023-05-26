@@ -417,4 +417,22 @@ describe('Auth', () => {
       expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(true)
     })
   })
+
+  describe('signedIn getter', () => {
+    test('should return true IF status is signed in', () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '1'
+
+      expect(auth.signedIn.value).toEqual(true)
+    })
+
+    test('should return true IF status is signed out', () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '0'
+
+      expect(auth.signedIn.value).toEqual(false)
+    })
+  })
 })
