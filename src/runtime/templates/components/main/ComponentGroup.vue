@@ -2,7 +2,7 @@
   <div v-if="showLoader" class="component-group-placeholder">
     <CwaUtilsSpinner :show="true" />
   </div>
-  <template v-else-if="componentPositions && componentPositions.length">
+  <template v-else-if="componentPositions?.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
   <CwaUtilsAlertInfo v-else-if="areNoPositions">
