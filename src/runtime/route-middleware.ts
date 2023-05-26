@@ -2,10 +2,12 @@ import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
 import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { CwaResource } from './resources/resource-utils'
+import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''
 
 export default defineNuxtRouteMiddleware(async (to) => {
+  const { isClient } = useProcess()
   middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()
 
@@ -26,11 +28,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // todo: redirects do not work if clicking on route that should redirect quickly multiple times
   const handleRouteRedirect = async (resource: CwaResource|undefined) => {
-    // only check for the redirect path, we know the resource returned is the primary resource
+    // only check for the redirect path, we know the resource returned is the primary resource,
     // and we have requested to fetch a route, so will be a route resource.
     if (resource?.redirectPath) {
       // we are not just returning the route to redirect to for client side, and that's all navigateTo does if processing middleware it true
-      if (process.client && nuxtApp._processingMiddleware) {
+      if (isClient && nuxtApp._processingMiddleware) {
         await waitForMiddleware()
       }
 
@@ -40,7 +42,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
-  if (process.client) {
+  if (isClient) {
     // todo: typehint $cwa
     await nuxtApp.$cwa.initClientSide()
 

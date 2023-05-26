@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import * as nuxt from '#app'
+import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
 
 function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded {
@@ -25,8 +26,7 @@ function delay (time: number, returnValue: any = undefined) {
   })
 }
 
-// todo: await result of https://github.com/danielroe/nuxt-vitest/issues/162
-describe.todo('Test route middleware', () => {
+describe('Test route middleware', () => {
   let resolved = false
 
   const fetchRouteFn = vi.fn(() => {
@@ -70,12 +70,15 @@ describe.todo('Test route middleware', () => {
   })
 
   test('Test route middleware is enabled by default', async () => {
+    vi.useFakeTimers()
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
+    vi.runAllTimers()
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute)
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
     expect(resolved).toBe(true)
+    vi.useRealTimers()
   })
 
   test('Test route middleware can be set to true', async () => {
@@ -94,7 +97,12 @@ describe.todo('Test route middleware', () => {
   })
 
   test('Test we await promise for server-side requests.', async () => {
-    process.client = false
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isClient: false,
+        isServer: true
+      }
+    })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
@@ -104,7 +112,12 @@ describe.todo('Test route middleware', () => {
   })
 
   test('Test we do not await promise for client-side requests. See notes on middleware file re returning to original page if new page fetch not complete.', async () => {
-    process.client = true
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isClient: true,
+        isServer: false
+      }
+    })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
@@ -120,8 +133,12 @@ describe.todo('Test route middleware', () => {
         $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide }
       }
     })
-
-    process.client = false
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isClient: false,
+        isServer: true
+      }
+    })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
     expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
@@ -135,8 +152,12 @@ describe.todo('Test route middleware', () => {
         $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide }
       }
     })
-
-    process.client = true
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isClient: true,
+        isServer: false
+      }
+    })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
     await delay(1)
