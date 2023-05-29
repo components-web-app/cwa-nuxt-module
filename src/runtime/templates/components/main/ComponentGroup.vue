@@ -15,7 +15,7 @@
 // todo: merge in a new component position/ component being added
 
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import _isEqual from 'lodash/isEqual.js'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
@@ -62,6 +62,9 @@ const componentPositions = computed(() => {
 })
 
 const methods = {
+  getSynchronizationDeps () {
+    return [$cwa.resources.isLoading.value, $cwa.auth.signedIn.value, resource.value]
+  },
   async createComponentGroup () {
     const resourceTypeProperty = {
       [CwaResourceTypes.PAGE]: 'pages',
@@ -94,18 +97,22 @@ const methods = {
         allowedComponents: props.allowedComponents
       }
     })
+  },
+  async synchronizeComponentGroup ([isLoading, signedIn, resource]) {
+    if (!isLoading && signedIn) {
+      if (!resource) {
+        await methods.createComponentGroup()
+      } else if (resource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+        await methods.updateAllowedComponents()
+      }
+    }
   }
 }
 
-watch(() => [$cwa.resources.isLoading.value, $cwa.auth.signedIn.value, resource.value], async ([isLoading, signedIn, resource]) => {
-  if (!isLoading && signedIn) {
-    if (!resource) {
-      await methods.createComponentGroup()
-    } else if (resource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-      await methods.updateAllowedComponents()
-    }
-  }
-}, {
-  immediate: true
+onMounted(() => {
+  watch(methods.getSynchronizationDeps, methods.synchronizeComponentGroup, {
+    immediate: true
+  })
 })
+
 </script>

@@ -85,14 +85,21 @@ const resolvedComponent = computed(() => {
   return resourceUiComponent.value
 })
 
-onMounted(() => {
-  watch(() => [hasSilentError, resource], async ([hasSilentError, resource]) => {
+const methods = {
+  getFetchResourceDeps () {
+    return [hasSilentError, resource]
+  },
+  async fetchResource ([hasSilentError, resource]) {
     if (resource.value.apiState.ssr && !resource.value?.data && hasSilentError.value) {
       await $cwa.fetchResource({
         path: props.iri
       })
     }
-  }, {
+  }
+}
+
+onMounted(() => {
+  watch(methods.getFetchResourceDeps, methods.fetchResource, {
     immediate: true
   })
 })
