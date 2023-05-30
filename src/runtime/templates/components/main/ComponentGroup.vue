@@ -15,11 +15,10 @@
 // todo: merge in a new component position/ component being added
 
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, watch } from 'vue'
-import _isEqual from 'lodash/isEqual.js'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
 
@@ -32,6 +31,8 @@ const props = defineProps({
   location: { required: true, type: String },
   allowedComponents: { required: false, type: Array, default () { return null } }
 })
+
+let unsync = null
 
 const fullReference = computed(() => {
   const locationResource = resources[props.location]
@@ -61,58 +62,16 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-const methods = {
-  getSynchronizationDeps () {
-    return [$cwa.resources.isLoading.value, $cwa.auth.signedIn.value, resource.value]
-  },
-  async createComponentGroup () {
-    const resourceTypeProperty = {
-      [CwaResourceTypes.PAGE]: 'pages',
-      [CwaResourceTypes.LAYOUT]: 'layouts',
-      [CwaResourceTypes.COMPONENT]: 'components'
-    }
-    const locationResourceType = getResourceTypeFromIri(props.location)
-    const locationProperty = resourceTypeProperty[locationResourceType]
-
-    const postData = {
-      reference: fullReference.value,
-      location: props.location,
-      allowedComponents: props.allowedComponents
-    }
-    if (locationProperty) {
-      postData[locationProperty] = [props.location]
-    }
-    await $cwa.resourcesManager.createResource({
-      endpoint: '/_/component_groups',
-      data: postData
-    })
-  },
-  async updateAllowedComponents () {
-    if (_isEqual(props.allowedComponents, resource.value?.data?.allowedComponents)) {
-      return
-    }
-    await $cwa.resourcesManager.updateResource({
-      endpoint: resource.value.data['@id'],
-      data: {
-        allowedComponents: props.allowedComponents
-      }
-    })
-  },
-  async synchronizeComponentGroup ([isLoading, signedIn, resource]) {
-    if (!isLoading && signedIn) {
-      if (!resource) {
-        await methods.createComponentGroup()
-      } else if (resource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-        await methods.updateAllowedComponents()
-      }
-    }
-  }
-}
-
 onMounted(() => {
-  watch(methods.getSynchronizationDeps, methods.synchronizeComponentGroup, {
-    immediate: true
-  })
+  unsync = $cwa.groupSynchronizer.sync(
+    resource,
+    props.location,
+    fullReference,
+    props.allowedComponents
+  )
 })
 
+onBeforeUnmount(() => {
+  unsync?.()
+})
 </script>
