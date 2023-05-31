@@ -32,6 +32,8 @@ export class GroupSynchronizer {
             await this.updateAllowedComponents(allowedComponents, resource)
           }
         }
+      }, {
+        immediate: true
       })
   }
 
