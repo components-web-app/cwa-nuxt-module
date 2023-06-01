@@ -21,7 +21,7 @@ export class GroupSynchronizer {
     private readonly auth: Auth
   ) {}
 
-  public sync (resourceRef: ComputedRef<CwaResource>, location: string, fullReference: ComputedRef<string>, allowedComponents: any[]): WatchStopHandle {
+  public createSyncWatcher (resourceRef: ComputedRef<CwaResource>, location: string, fullReference: ComputedRef<string>, allowedComponents: any[]): WatchStopHandle {
     return watch(
       () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
       async ([isLoading, signedIn, resource]) => {

@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
 import { reactive, ref } from 'vue'
+import * as composables from '../../../composables/cwaComponent'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
@@ -42,6 +43,13 @@ function createWrapper ({
     resourcesByType: ref(resourcesByType),
     current: ref({ byId })
   })
+  // @ts-ignore
+  // vi.spyOn(composables, 'useSynchronizer').mockImplementationOnce(() => {
+  //   console.log('here2')
+  //   return {
+  //     watch: vi.fn()
+  //   }
+  // })
   // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
     return {
@@ -298,8 +306,16 @@ describe('ComponentGroup', () => {
     })
   })
 
-  describe('sync', () => {
+  describe('sync group', () => {
     test('should synchronize group AND unsync on component unmount', () => {
+      const unwatchSpy = vi.fn()
+      const createSyncWatcherSpy = vi.fn().mockReturnValue(unwatchSpy)
+      // @ts-ignore
+      vi.spyOn(composables, 'useSynchronizer').mockImplementation(() => {
+        return {
+          createSyncWatcher: createSyncWatcherSpy
+        }
+      })
       const mockGroupElement = { data: { reference: `${mockReference}_${mockResourceReference}` } }
       const mockByType = {
         [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
@@ -316,14 +332,14 @@ describe('ComponentGroup', () => {
         byId: mockById
       })
 
-      expect(wrapper.vm.$cwa.groupSynchronizer.sync.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
-      expect(wrapper.vm.$cwa.groupSynchronizer.sync.mock.calls[0][1]).toEqual(wrapper.props().location)
-      expect(wrapper.vm.$cwa.groupSynchronizer.sync.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
-      expect(wrapper.vm.$cwa.groupSynchronizer.sync.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
+      expect(createSyncWatcherSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
+      expect(createSyncWatcherSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
+      expect(createSyncWatcherSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
+      expect(createSyncWatcherSpy.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
 
       wrapper.unmount()
 
-      expect(wrapper.vm.unsync).toHaveBeenCalled()
+      expect(unwatchSpy).toHaveBeenCalled()
     })
   })
 

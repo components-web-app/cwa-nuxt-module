@@ -21,6 +21,7 @@ import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoade
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
+import { useSynchronizer } from '#cwa/runtime/composables/cwaComponent'
 
 const $cwa = useCwa()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
@@ -32,7 +33,7 @@ const props = defineProps({
   allowedComponents: { required: false, type: Array, default () { return null } }
 })
 
-let unsync = null
+let unwatch = null
 
 const fullReference = computed(() => {
   const locationResource = resources[props.location]
@@ -63,7 +64,7 @@ const componentPositions = computed(() => {
 })
 
 onMounted(() => {
-  unsync = $cwa.groupSynchronizer.sync(
+  unwatch = useSynchronizer().createSyncWatcher(
     resource,
     props.location,
     fullReference,
@@ -72,6 +73,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  unsync?.()
+  unwatch?.()
 })
 </script>

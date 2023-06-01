@@ -35,7 +35,7 @@ describe('Group synchronizer', () => {
     const mockComponents = ['a', 'b', 'c']
 
     // @ts-ignore
-    groupSynchronizer.sync(mockResource, mockLocation, mockReference, mockComponents)
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
 
     resources.isLoading.value = true
 
@@ -54,7 +54,7 @@ describe('Group synchronizer', () => {
     const mockComponents = ['a', 'b', 'c']
 
     // @ts-ignore
-    groupSynchronizer.sync(mockResource, mockLocation, mockReference, mockComponents)
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
 
     resources.isLoading.value = false
     auth.signedIn.value = false
@@ -74,7 +74,7 @@ describe('Group synchronizer', () => {
     const mockComponents = ['a', 'b', 'c']
 
     // @ts-ignore
-    groupSynchronizer.sync(mockResource, mockLocation, mockReference, mockComponents)
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
 
     resources.isLoading.value = false
     auth.signedIn.value = true
@@ -100,7 +100,7 @@ describe('Group synchronizer', () => {
     const mockComponents = ['a', 'b', 'c']
 
     // @ts-ignore
-    groupSynchronizer.sync(mockResource, mockLocation, mockReference, mockComponents)
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
 
     resources.isLoading.value = false
     auth.signedIn.value = true
@@ -137,7 +137,7 @@ describe('Group synchronizer', () => {
     const mockComponents = ['a', 'b', 'c']
 
     // @ts-ignore
-    groupSynchronizer.sync(mockResource, mockLocation, mockReference, mockComponents)
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
 
     resources.isLoading.value = false
     auth.signedIn.value = true
@@ -171,7 +171,7 @@ describe('Group synchronizer', () => {
     const mockComponents = ['a', 'b', 'c']
 
     // @ts-ignore
-    groupSynchronizer.sync(mockResource, mockLocation, mockReference, mockComponents)
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
 
     resources.isLoading.value = false
     auth.signedIn.value = true

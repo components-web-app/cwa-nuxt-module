@@ -14,7 +14,6 @@ import Auth from './api/auth'
 import Forms from './api/forms'
 import { useCookie } from '#imports'
 import { useProcess } from '#cwa/runtime/composables/process'
-import { GroupSynchronizer } from '#cwa/runtime/api/group-synchronizer'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -30,8 +29,6 @@ export default class Cwa {
 
   // public service for managing resources - CRUD functions etc.
   public readonly resourcesManager: ResourcesManager
-
-  public readonly groupSynchronizer: GroupSynchronizer
 
   // public service for authentication
   public readonly auth: Auth
@@ -58,7 +55,6 @@ export default class Cwa {
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, fetchStatusManager)
     this.auth = new Auth(this.cwaFetch, this.mercure, this.fetcher, this.storage.stores.auth, this.storage.stores.resources, this.storage.stores.fetcher, useCookie('cwa_auth'))
     this.forms = new Forms(this.storage.stores.resources)
-    this.groupSynchronizer = new GroupSynchronizer(this.resourcesManager, this.resources, this.auth)
     this.mercure.setFetcher(this.fetcher)
   }
 
