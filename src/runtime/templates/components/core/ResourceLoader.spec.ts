@@ -213,59 +213,84 @@ describe('ResourceLoader', () => {
     })
   })
 
+  describe('methods', () => {
+    describe('fetchResource', () => {
+      test('should NOT fetch resource IF ssr flag for api state is false', async () => {
+        const hasError = ref(false)
+        const resource = ref({ apiState: { ssr: false } })
+        const wrapper = createWrapper({
+          data: { test: true },
+          apiState: {
+            status: CwaResourceApiStatuses.SUCCESS
+          }
+        })
+
+        await wrapper.vm.methods.fetchResource([hasError, resource])
+
+        expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
+      })
+
+      test('should NOT fetch resource IF ssr flag for api state is true AND resource has data', async () => {
+        const hasError = ref(false)
+        const resource = ref({ apiState: { ssr: true }, data: { mock: true } })
+        const wrapper = createWrapper({
+          data: { test: true },
+          apiState: {
+            status: CwaResourceApiStatuses.SUCCESS
+          }
+        })
+
+        await wrapper.vm.methods.fetchResource([hasError, resource])
+
+        expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
+      })
+
+      test('should NOT fetch resource IF ssr flag for api state is true AND resource has no data AND no silent error', async () => {
+        const hasError = ref(false)
+        const resource = ref({ apiState: { ssr: true }, data: null })
+        const wrapper = createWrapper({
+          data: { test: true },
+          apiState: {
+            status: CwaResourceApiStatuses.SUCCESS
+          }
+        })
+
+        await wrapper.vm.methods.fetchResource([hasError, resource])
+
+        expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
+      })
+
+      test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR', async () => {
+        const hasError = ref(true)
+        const resource = ref({ apiState: { ssr: true }, data: null })
+        const wrapper = createWrapper({
+          apiState: {
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          }
+        })
+
+        await wrapper.vm.methods.fetchResource([hasError, resource])
+
+        expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
+      })
+    })
+  })
+
   describe('watch', () => {
-    test('should NOT fetch resource IF resource data IS NOT empty, silent error occurred, user is signed in', () => {
+    test('should be called with correct callback and options', async () => {
+      const vue = await import('vue')
+      const watchSpy = vi.spyOn(vue, 'watch')
       const wrapper = createWrapper({
-        data: { test: true },
         apiState: {
-          status: CwaResourceApiStatuses.ERROR,
-          error: {
-            statusCode: 401
-          }
+          status: CwaResourceApiStatuses.IN_PROGRESS
         }
       })
 
-      expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
-    })
-
-    test('should NOT fetch resource IF resource data is empty, silent error DID NOT occur, user is signed in', () => {
-      const wrapper = createWrapper({
-        apiState: {
-          status: CwaResourceApiStatuses.ERROR,
-          error: {
-            statusCode: 399
-          }
-        }
-      })
-
-      expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
-    })
-
-    test('should NOT fetch resource IF resource data is empty, silent error occurred, user is signed out', () => {
-      const wrapper = createWrapper({
-        apiState: {
-          status: CwaResourceApiStatuses.ERROR,
-          error: {
-            statusCode: 401
-          }
-        }
-      }, CwaAuthStatus.SIGNED_OUT)
-
-      expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
-    })
-
-    test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR', () => {
-      const wrapper = createWrapper({
-        apiState: {
-          status: CwaResourceApiStatuses.ERROR,
-          error: {
-            statusCode: 401
-          },
-          ssr: true
-        }
-      })
-
-      expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
+      expect(watchSpy).toHaveBeenCalledWith(
+        wrapper.vm.methods.getFetchResourceDeps,
+        wrapper.vm.methods.fetchResource,
+        { immediate: true }
+      )
     })
   })
 

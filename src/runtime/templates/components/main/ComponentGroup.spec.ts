@@ -2,7 +2,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import * as nuxt from '#app'
-import { nextTick, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
+import * as composables from '../../../composables/cwaComponent'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
@@ -43,6 +44,13 @@ function createWrapper ({
     current: ref({ byId })
   })
   // @ts-ignore
+  // vi.spyOn(composables, 'useSynchronizer').mockImplementationOnce(() => {
+  //   console.log('here2')
+  //   return {
+  //     watch: vi.fn()
+  //   }
+  // })
+  // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
     return {
       $cwa: {
@@ -60,6 +68,9 @@ function createWrapper ({
               }
             }
           }
+        },
+        groupSynchronizer: {
+          sync: vi.fn(() => vi.fn())
         }
       }
     }
@@ -295,206 +306,17 @@ describe('ComponentGroup', () => {
     })
   })
 
-  describe('methods', () => {
-    describe('createComponentGroup', () => {
-      test('should call resource manager method with correct params', async () => {
-        const mockLocation = '/_/pages/mock-page'
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const mockAllowedComponents = ['comp1', 'comp2']
-
-        const wrapper = createWrapper({
-          location: mockLocation,
-          byId: mockById,
-          allowedComponents: mockAllowedComponents
-        })
-
-        await wrapper.vm.methods.createComponentGroup()
-
-        expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
-          data: {
-            reference: wrapper.vm.fullReference,
-            location: '/_/pages/mock-page',
-            allowedComponents: mockAllowedComponents,
-            pages: ['/_/pages/mock-page']
-          },
-          endpoint: '/_/component_groups'
-        })
-      })
-
-      test('should call resource manager method with correct params without location option IF no such location type is available', async () => {
-        const mockLocation = '/_/routes/mock-route'
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const mockAllowedComponents = ['comp1', 'comp2']
-
-        const wrapper = createWrapper({
-          location: mockLocation,
-          byId: mockById
-        })
-
-        await wrapper.setProps({ allowedComponents: mockAllowedComponents })
-
-        await wrapper.vm.methods.createComponentGroup()
-
-        expect(wrapper.vm.$cwa.resourcesManager.createResource).toHaveBeenCalledWith({
-          data: {
-            reference: wrapper.vm.fullReference,
-            location: mockLocation,
-            allowedComponents: mockAllowedComponents
-          },
-          endpoint: '/_/component_groups'
-        })
-      })
-    })
-
-    describe('updateAllowedComponents', () => {
-      test('should NOT perform update operation IF allowed components from props and resource are equal', async () => {
-        const mockGroupElement = {
-          data: {
-            reference: `${mockReference}_${mockResourceReference}`,
-            allowedComponents: ['comp1']
-          }
-        }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById,
-          allowedComponents: ['comp1']
-        })
-
-        await wrapper.vm.methods.updateAllowedComponents()
-
-        expect(wrapper.vm.$cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
-      })
-
-      test('should perform update operation IF allowed components from props and resource are NOT equal', async () => {
-        const mockId = '/_/test'
-        const mockGroupElement = {
-          data: {
-            reference: `${mockReference}_${mockResourceReference}`,
-            allowedComponents: ['comp1'],
-            '@id': mockId
-          }
-        }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById,
-          allowedComponents: ['comp2']
-        })
-
-        await wrapper.vm.methods.updateAllowedComponents()
-
-        expect(wrapper.vm.$cwa.resourcesManager.updateResource).toHaveBeenCalledWith({
-          endpoint: mockId,
-          data: {
-            allowedComponents: wrapper.props().allowedComponents
-          }
-        })
-      })
-    })
-  })
-
-  describe('watch', () => {
-    test('should NOT create group OR update allowed components IF resources are loading', async () => {
-      const mockLoading = ref(false)
-      const wrapper = createWrapper({
-        cwaResources: {
-          isLoading: mockLoading
+  describe('sync group', () => {
+    test('should synchronize group AND unsync on component unmount', () => {
+      const unwatchSpy = vi.fn()
+      const createSyncWatcherSpy = vi.fn().mockReturnValue(unwatchSpy)
+      // @ts-ignore
+      vi.spyOn(composables, 'useSynchronizer').mockImplementation(() => {
+        return {
+          createSyncWatcher: createSyncWatcherSpy
         }
       })
-      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
-
-      mockLoading.value = true
-
-      await nextTick()
-
-      expect(createGroupSpy).not.toHaveBeenCalled()
-      expect(updateAllowedComponentsSpy).not.toHaveBeenCalled()
-    })
-
-    test('should NOT create group OR update allowed components IF user is unauthorized', async () => {
-      const mockLoading = ref(true)
-      const wrapper = createWrapper({
-        cwaResources: {
-          isLoading: mockLoading
-        },
-        auth: {
-          signedIn: ref(false)
-        }
-      })
-      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
-
-      mockLoading.value = false
-
-      await nextTick()
-
-      expect(createGroupSpy).not.toHaveBeenCalled()
-      expect(updateAllowedComponentsSpy).not.toHaveBeenCalled()
-    })
-
-    test('should create group IF resources are not loading AND user is authorized AND resource does not exist', async () => {
-      const mockSignedIn = ref(false)
-      const wrapper = createWrapper({
-        cwaResources: {
-          isLoading: ref(false)
-        },
-        auth: {
-          signedIn: mockSignedIn
-        }
-      })
-
-      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
-
-      mockSignedIn.value = true
-
-      await nextTick()
-
-      expect(createGroupSpy).toHaveBeenCalled()
-      expect(updateAllowedComponentsSpy).not.toHaveBeenCalled()
-    })
-
-    test('should update allowed components IF resources are not loading AND user is authorized AND resource api status is success', async () => {
-      const mockGroupElement = {
-        data: {
-          reference: `${mockReference}_${mockResourceReference}`
-        },
-        apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
-      }
+      const mockGroupElement = { data: { reference: `${mockReference}_${mockResourceReference}` } }
       const mockByType = {
         [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
       }
@@ -505,27 +327,19 @@ describe('ComponentGroup', () => {
           }
         }
       }
-      const mockSignedIn = ref(false)
       const wrapper = createWrapper({
-        cwaResources: {
-          isLoading: ref(false)
-        },
-        auth: {
-          signedIn: mockSignedIn
-        },
         resourcesByType: mockByType,
         byId: mockById
       })
 
-      const createGroupSpy = vi.spyOn(wrapper.vm.methods, 'createComponentGroup').mockImplementation(() => {})
-      const updateAllowedComponentsSpy = vi.spyOn(wrapper.vm.methods, 'updateAllowedComponents').mockImplementation(() => {})
+      expect(createSyncWatcherSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
+      expect(createSyncWatcherSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
+      expect(createSyncWatcherSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
+      expect(createSyncWatcherSpy.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
 
-      mockSignedIn.value = true
+      wrapper.unmount()
 
-      await nextTick()
-
-      expect(createGroupSpy).not.toHaveBeenCalled()
-      expect(updateAllowedComponentsSpy).toHaveBeenCalled()
+      expect(unwatchSpy).toHaveBeenCalled()
     })
   })
 
