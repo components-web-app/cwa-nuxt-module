@@ -14,7 +14,7 @@ const resourceTypeProperty = {
   [CwaResourceTypes.COMPONENT]: 'components'
 }
 
-export class ComponentGroupSynchronizer {
+export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
   private readonly resources: Resources
   private readonly auth: Auth
@@ -27,7 +27,7 @@ export class ComponentGroupSynchronizer {
     this.auth = auth
   }
 
-  public createSyncWatcher (resourceRef: ComputedRef<CwaResource>, location: string, fullReference: ComputedRef<string>, allowedComponents: any[]): WatchStopHandle {
+  public createSyncWatcher (resourceRef: ComputedRef<CwaResource>, location: string, fullReference: ComputedRef<string>, allowedComponents: any[]) {
     this.watcher = watch(
       () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
       async ([isLoading, signedIn, resource]) => {

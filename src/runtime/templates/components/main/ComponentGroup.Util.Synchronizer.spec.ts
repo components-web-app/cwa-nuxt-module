@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { ComponentGroupSynchronizer } from '#cwa/runtime/composables/_internal/component-group-synchronizer'
+import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 function createGroupSynchronizer () {
@@ -15,7 +15,7 @@ function createGroupSynchronizer () {
     signedIn: ref(false)
   }
   // @ts-ignore
-  const groupSynchronizer = new ComponentGroupSynchronizer()
+  const groupSynchronizer = new ComponentGroupUtilSynchronizer()
 
   return {
     groupSynchronizer,

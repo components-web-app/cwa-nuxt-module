@@ -16,12 +16,12 @@
 
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { ComponentGroupUtilSynchronizer } from './ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
-import { ComponentGroupSynchronizer } from '#cwa/runtime/composables/_internal/component-group-synchronizer'
 
 const $cwa = useCwa()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
@@ -61,7 +61,7 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-const componentGroupSynchroniser = new ComponentGroupSynchronizer()
+const componentGroupSynchroniser = new ComponentGroupUtilSynchronizer()
 
 onMounted(() => {
   componentGroupSynchroniser.createSyncWatcher(
