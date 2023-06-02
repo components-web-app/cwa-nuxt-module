@@ -6,6 +6,7 @@ import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runt
 import type { Resources } from '#cwa/runtime/resources/resources'
 import type Auth from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const resourceTypeProperty = {
   [CwaResourceTypes.PAGE]: 'pages',
@@ -13,7 +14,7 @@ const resourceTypeProperty = {
   [CwaResourceTypes.COMPONENT]: 'components'
 }
 
-export class GroupSynchronizer {
+class GroupSynchronizer {
   // eslint-disable-next-line no-useless-constructor
   constructor (
     private readonly resourcesManager: ResourcesManager,
@@ -68,4 +69,10 @@ export class GroupSynchronizer {
       }
     })
   }
+}
+
+export const useComponentGroupSynchronizer = () => {
+  const { auth, resources, resourcesManager } = useCwa()
+
+  return new GroupSynchronizer(resourcesManager, resources, auth)
 }

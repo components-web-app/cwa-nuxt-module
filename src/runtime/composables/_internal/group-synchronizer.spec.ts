@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { GroupSynchronizer } from '#cwa/runtime/api/group-synchronizer'
+import { GroupSynchronizer } from '#cwa/runtime/composables/_internal/group-synchronizer'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 function createGroupSynchronizer () {
