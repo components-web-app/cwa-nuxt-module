@@ -14,16 +14,21 @@ const resourceTypeProperty = {
   [CwaResourceTypes.COMPONENT]: 'components'
 }
 
-class GroupSynchronizer {
-  // eslint-disable-next-line no-useless-constructor
-  constructor (
-    private readonly resourcesManager: ResourcesManager,
-    private readonly resources: Resources,
-    private readonly auth: Auth
-  ) {}
+export class ComponentGroupSynchronizer {
+  private readonly resourcesManager: ResourcesManager
+  private readonly resources: Resources
+  private readonly auth: Auth
+  private watcher: WatchStopHandle|undefined
+
+  constructor () {
+    const { auth, resources, resourcesManager } = useCwa()
+    this.resourcesManager = resourcesManager
+    this.resources = resources
+    this.auth = auth
+  }
 
   public createSyncWatcher (resourceRef: ComputedRef<CwaResource>, location: string, fullReference: ComputedRef<string>, allowedComponents: any[]): WatchStopHandle {
-    return watch(
+    this.watcher = watch(
       () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
       async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
@@ -36,6 +41,11 @@ class GroupSynchronizer {
       }, {
         immediate: true
       })
+  }
+
+  // TODO: TEST THIS
+  public stopSyncWatcher () {
+    this.watcher?.()
   }
 
   private async createComponentGroup (iri: string, fullReference: ComputedRef<string>, allowedComponents: any[]) {
@@ -69,10 +79,4 @@ class GroupSynchronizer {
       }
     })
   }
-}
-
-export const useComponentGroupSynchronizer = () => {
-  const { auth, resources, resourcesManager } = useCwa()
-
-  return new GroupSynchronizer(resourcesManager, resources, auth)
 }

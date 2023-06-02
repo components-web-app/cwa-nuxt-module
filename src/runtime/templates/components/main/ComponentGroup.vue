@@ -15,13 +15,13 @@
 // todo: merge in a new component position/ component being added
 
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onBeforeUnmount, WatchStopHandle } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#imports'
-import { useComponentGroupSynchronizer } from '#cwa/runtime/composables/_internal/group-synchronizer'
+import { ComponentGroupSynchronizer } from '#cwa/runtime/composables/_internal/component-group-synchronizer'
 
 const $cwa = useCwa()
 const resourcesStore = $cwa.storage.stores.resources.useStore()
@@ -32,8 +32,6 @@ const props = defineProps({
   location: { required: true, type: String },
   allowedComponents: { required: false, type: Array, default () { return null } }
 })
-
-let unwatch: WatchStopHandle|undefined
 
 const fullReference = computed(() => {
   const locationResource = resources[props.location]
@@ -63,8 +61,10 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
+const componentGroupSynchroniser = new ComponentGroupSynchronizer()
+
 onMounted(() => {
-  unwatch = useComponentGroupSynchronizer().createSyncWatcher(
+  componentGroupSynchroniser.createSyncWatcher(
     resource,
     props.location,
     fullReference,
@@ -73,6 +73,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  unwatch?.()
+  componentGroupSynchroniser.stopSyncWatcher()
 })
 </script>
