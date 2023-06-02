@@ -10,12 +10,12 @@
   </CwaUtilsAlertInfo>
 </template>
 
-<script setup>
+<script setup lang="ts">
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onMounted, onBeforeUnmount, WatchStopHandle } from 'vue'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
@@ -33,7 +33,7 @@ const props = defineProps({
   allowedComponents: { required: false, type: Array, default () { return null } }
 })
 
-let unwatch = null
+let unwatch: WatchStopHandle|undefined
 
 const fullReference = computed(() => {
   const locationResource = resources[props.location]
