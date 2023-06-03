@@ -3,7 +3,7 @@
     <CwaUtilsSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
-    <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
+    <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
   <CwaUtilsAlertInfo v-else-if="areNoPositions">
     <p>No component positions in this component group - add functionality coming soon</p>
@@ -21,10 +21,10 @@ import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentP
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa } from '#imports'
+import { useCwa, useCwaResourceUtils } from '#imports'
 
 const $cwa = useCwa()
-const resourcesStore = $cwa.storage.stores.resources.useStore()
+const resourcesStore = useCwaResourceUtils().getResourceStore
 const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs(resourcesStore)
 
 const props = defineProps({
@@ -61,10 +61,14 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-const componentGroupSynchroniser = new ComponentGroupUtilSynchronizer()
+const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
+
+function getResourceKey (positionIri: string) {
+  return `ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`
+}
 
 onMounted(() => {
-  componentGroupSynchroniser.createSyncWatcher(
+  componentGroupSynchronizer.createSyncWatcher(
     resource,
     props.location,
     fullReference,
@@ -73,6 +77,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  componentGroupSynchroniser.stopSyncWatcher()
+  componentGroupSynchronizer.stopSyncWatcher()
 })
 </script>

@@ -8,6 +8,17 @@ import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
+
+vi.mock('./ComponentGroup.Util.Synchronizer', () => {
+  return {
+    ComponentGroupUtilSynchronizer: vi.fn(() => {
+      return {
+        createSyncWatcher: vi.fn()
+      }
+    })
+  }
+})
 
 const mockReference = 'mockReference'
 const mockResourceReference = 'mockResourceReference'
@@ -44,12 +55,11 @@ function createWrapper ({
     current: ref({ byId })
   })
   // @ts-ignore
-  // vi.spyOn(composables, 'useSynchronizer').mockImplementationOnce(() => {
-  //   console.log('here2')
-  //   return {
-  //     watch: vi.fn()
-  //   }
-  // })
+  vi.spyOn(composables, 'useCwaResourceUtils').mockImplementationOnce(() => {
+    return {
+      getResourceStore: mockStore
+    }
+  })
   // @ts-ignore
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
     return {
@@ -59,18 +69,6 @@ function createWrapper ({
         resourcesManager: {
           createResource: vi.fn(),
           updateResource: vi.fn()
-        },
-        storage: {
-          stores: {
-            resources: {
-              useStore () {
-                return mockStore
-              }
-            }
-          }
-        },
-        groupSynchronizer: {
-          sync: vi.fn(() => vi.fn())
         }
       }
     }
@@ -307,15 +305,7 @@ describe('ComponentGroup', () => {
   })
 
   describe('sync group', () => {
-    test('should synchronize group AND unsync on component unmount', () => {
-      const unwatchSpy = vi.fn()
-      const createSyncWatcherSpy = vi.fn().mockReturnValue(unwatchSpy)
-      // @ts-ignore
-      vi.spyOn(composables, 'useSynchronizer').mockImplementation(() => {
-        return {
-          createSyncWatcher: createSyncWatcherSpy
-        }
-      })
+    test('should synchronize group on mount AND unsync on component unmount', () => {
       const mockGroupElement = { data: { reference: `${mockReference}_${mockResourceReference}` } }
       const mockByType = {
         [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
@@ -327,15 +317,22 @@ describe('ComponentGroup', () => {
           }
         }
       }
+
+      const watchSpy = vi.fn()
+      const unwatchSpy = vi.fn()
+
+      // @ts-ignore
+      ComponentGroupUtilSynchronizer.mockReturnValueOnce({ createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy })
+
       const wrapper = createWrapper({
         resourcesByType: mockByType,
         byId: mockById
       })
 
-      expect(createSyncWatcherSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
-      expect(createSyncWatcherSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
-      expect(createSyncWatcherSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
-      expect(createSyncWatcherSpy.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
+      expect(watchSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
+      expect(watchSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
+      expect(watchSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
+      expect(watchSpy.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
 
       wrapper.unmount()
 
