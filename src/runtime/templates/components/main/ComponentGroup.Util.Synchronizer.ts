@@ -1,5 +1,4 @@
 import { ComputedRef, watch, WatchStopHandle } from 'vue'
-// @ts-ignore
 import _isEqual from 'lodash/isEqual.js'
 import type { ResourcesManager } from '#cwa/runtime/resources/resources-manager'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
@@ -18,7 +17,7 @@ export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
   private readonly resources: Resources
   private readonly auth: Auth
-  private watcher: WatchStopHandle|undefined
+  private watchStopHandle: WatchStopHandle|undefined
 
   constructor () {
     const { auth, resources, resourcesManager } = useCwa()
@@ -28,7 +27,7 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   public createSyncWatcher (resourceRef: ComputedRef<CwaCurrentResourceInterface | undefined>, location: string, fullReference: ComputedRef<string | undefined>, allowedComponents: any[]) {
-    this.watcher = watch(
+    this.watchStopHandle = watch(
       () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
       async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
@@ -44,7 +43,7 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   public stopSyncWatcher () {
-    this.watcher?.()
+    this.watchStopHandle?.()
   }
 
   private async createComponentGroup (iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: any[]) {

@@ -47,6 +47,9 @@ importers:
       '@stryker-mutator/jest-runner':
         specifier: ^6.4.2
         version: 6.4.2(@stryker-mutator/core@6.4.2)
+      '@types/lodash':
+        specifier: ^4.14.195
+        version: 4.14.195
       '@types/uuid':
         specifier: ^9.0.1
         version: 9.0.1
@@ -2901,6 +2904,10 @@ packages:
 
   /@types/json5@0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
+    dev: true
+
+  /@types/lodash@4.14.195:
+    resolution: {integrity: sha512-Hwx9EUgdwf2GLarOjQp5ZH8ZmblzcbTBC2wtQWNKARBSxM9ezRIAUpeDTgoQRAFB0+8CNWXVA9+MaSOzOF3nPg==}
     dev: true
 
   /@types/node@20.2.3:
