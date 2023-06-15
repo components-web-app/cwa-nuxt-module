@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineVitestConfig } from 'nuxt-vitest/config'
 
 export default defineVitestConfig({
@@ -8,6 +9,11 @@ export default defineVitestConfig({
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true
+    },
+    environmentOptions: {
+      nuxt: {
+        rootDir: fileURLToPath(new URL('./playground/', import.meta.url))
+      }
     },
     resolveSnapshotPath (path: string, extension: string) {
       return path + extension

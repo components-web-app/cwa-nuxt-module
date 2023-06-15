@@ -1,25 +1,25 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import CwaPage from './cwa-page.vue'
-import * as nuxt from '#app'
+import * as cwaComposable from '#cwa/runtime/composables/cwa'
 
 const defaultIri = '12345'
 
 describe('CWA page', () => {
   function createWrapper (iri = defaultIri) {
     // @ts-ignore
-    vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => ({
-      $cwa: {
-        resources: {
-          pageIri: {
-            value: iri
-          }
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      resources: {
+        pageIri: {
+          value: iri
         }
       }
     }))
 
-    return shallowMount(CwaPage)
+    return mount(CwaPage, {
+      shallow: true
+    })
   }
 
   test('should display ResourceLoader component IF pageIri is defined', () => {
