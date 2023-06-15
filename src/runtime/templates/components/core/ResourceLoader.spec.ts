@@ -1,9 +1,9 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import * as nuxt from '#app'
 import { ref } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
+import * as nuxt from '#app'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import * as cwa from '#cwa/runtime/composables/cwaComponent'
