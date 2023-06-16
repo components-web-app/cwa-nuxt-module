@@ -1,6 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { GroupSynchronizer } from '#cwa/runtime/api/group-synchronizer'
+import * as vue from 'vue'
+import * as nuxt from '#app'
+import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 function createGroupSynchronizer () {
@@ -14,8 +16,20 @@ function createGroupSynchronizer () {
   const mockAuth = {
     signedIn: ref(false)
   }
+
   // @ts-ignore
-  const groupSynchronizer = new GroupSynchronizer(mockResourcesManager, mockResources, mockAuth)
+  vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
+    return {
+      $cwa: {
+        auth: mockAuth,
+        resources: mockResources,
+        resourcesManager: mockResourcesManager
+      }
+    }
+  })
+
+  // @ts-ignore
+  const groupSynchronizer = new ComponentGroupUtilSynchronizer()
 
   return {
     groupSynchronizer,
@@ -179,5 +193,26 @@ describe('Group synchronizer', () => {
     await nextTick()
 
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+  })
+
+  test('should stop sync watcher', () => {
+    const unwatchSpy = vi.fn()
+    vi.spyOn(vue, 'watch').mockImplementation(() => {
+      return unwatchSpy
+    })
+
+    const { groupSynchronizer } = createGroupSynchronizer()
+
+    const mockResource = computed(() => { return { data: {} } })
+    const mockLocation = 'mockLocation'
+    const mockReference = computed(() => 'mockReference')
+    const mockComponents = ['a', 'b', 'c']
+
+    // @ts-ignore
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
+
+    groupSynchronizer.stopSyncWatcher()
+
+    expect(unwatchSpy).toHaveBeenCalled()
   })
 })

@@ -222,7 +222,7 @@ export class Resources {
     return this.fetcherStoreDefinition.useStore()
   }
 
-  private get resourcesStore () {
+  public get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
   }
 }

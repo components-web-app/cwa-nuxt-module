@@ -1,5 +1,4 @@
 import { useCwa } from './cwa'
-import { GroupSynchronizer } from '#cwa/runtime/api/group-synchronizer'
 
 export const iri = {
   iri: {
@@ -14,14 +13,9 @@ export const useCwaResource = (resourceId: string) => {
 
 export const useCwaResourceUtils = () => {
   return {
+    getResourceStore: useCwa().resources.resourcesStore,
     getResource: useCwa().resources.getResource
   }
-}
-
-export const useSynchronizer = () => {
-  const { auth, resources, resourcesManager } = useCwa()
-
-  return new GroupSynchronizer(resourcesManager, resources, auth)
 }
 
 export interface CwaResourceIdProp {

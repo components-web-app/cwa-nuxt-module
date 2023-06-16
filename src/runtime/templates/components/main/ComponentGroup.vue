@@ -3,28 +3,28 @@
     <CwaUtilsSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
-    <ResourceLoader v-for="positionIri of componentPositions" :key="`ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`" :iri="positionIri" :ui-component="ComponentPosition" />
+    <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
   <CwaUtilsAlertInfo v-else-if="areNoPositions">
     <p>No component positions in this component group - add functionality coming soon</p>
   </CwaUtilsAlertInfo>
 </template>
 
-<script setup>
+<script setup lang="ts">
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { ComponentGroupUtilSynchronizer } from './ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa } from '#imports'
-import { useSynchronizer } from '#cwa/runtime/composables/cwaComponent'
+import { useCwa, useCwaResourceUtils } from '#imports'
 
 const $cwa = useCwa()
-const resourcesStore = $cwa.storage.stores.resources.useStore()
+const resourcesStore = useCwaResourceUtils().getResourceStore
 const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs(resourcesStore)
 
 const props = defineProps({
@@ -32,8 +32,6 @@ const props = defineProps({
   location: { required: true, type: String },
   allowedComponents: { required: false, type: Array, default () { return null } }
 })
-
-let unwatch = null
 
 const fullReference = computed(() => {
   const locationResource = resources[props.location]
@@ -63,8 +61,14 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
+const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
+
+function getResourceKey (positionIri: string) {
+  return `ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`
+}
+
 onMounted(() => {
-  unwatch = useSynchronizer().createSyncWatcher(
+  componentGroupSynchronizer.createSyncWatcher(
     resource,
     props.location,
     fullReference,
@@ -73,6 +77,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  unwatch?.()
+  componentGroupSynchronizer.stopSyncWatcher()
 })
 </script>
