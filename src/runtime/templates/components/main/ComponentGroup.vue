@@ -14,18 +14,14 @@
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-import { storeToRefs } from 'pinia'
 import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { ComponentGroupUtilSynchronizer } from './ComponentGroup.Util.Synchronizer'
+import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
-import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa, useCwaResourceUtils } from '#imports'
+import { useCwa } from '#imports'
 
 const $cwa = useCwa()
-const resourcesStore = useCwaResourceUtils().getResourceStore
-const { resourcesByType, current: { value: { byId: resources } } } = storeToRefs(resourcesStore)
 
 const props = defineProps({
   reference: { required: true, type: String },
@@ -34,19 +30,19 @@ const props = defineProps({
 })
 
 const fullReference = computed(() => {
-  const locationResource = resources[props.location]
+  const locationResource = $cwa.resources.getResource(props.location)
   if (!locationResource) {
     return
   }
-  const locationResourceReference = locationResource.data?.reference
+  const locationResourceReference = locationResource.value.data?.reference
   return `${props.reference}_${locationResourceReference}`
 })
 
 const resource = computed(() => {
-  const componentGroups = resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
-  return componentGroups.find((componentGroupResource) => {
-    return componentGroupResource.data?.reference === fullReference.value
-  })
+  if (!fullReference.value) {
+    return
+  }
+  return $cwa.resources.getComponentGroupByReference(fullReference.value)
 })
 
 const areNoPositions = computed(() => {

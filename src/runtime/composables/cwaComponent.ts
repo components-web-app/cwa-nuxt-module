@@ -13,7 +13,6 @@ export const useCwaResource = (resourceId: string) => {
 
 export const useCwaResourceUtils = () => {
   return {
-    getResourceStore: useCwa().resources.resourcesStore,
     getResource: useCwa().resources.getResource
   }
 }
