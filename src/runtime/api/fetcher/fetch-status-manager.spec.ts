@@ -274,6 +274,52 @@ describe('FetchStatusManager -> startFetchResource', () => {
   })
 })
 
+describe('FetchStatusManager -> finishFetchShowError', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test.each([
+    {
+      fetchStatus: undefined,
+      resource: '',
+      expected: false
+    },
+    {
+      fetchStatus: {
+        isPrimary: true,
+        path: 'something'
+      },
+      resource: 'something',
+      expected: true
+    },
+    {
+      fetchStatus: {
+        isPrimary: true,
+        path: 'something'
+      },
+      resource: 'different',
+      expected: false
+    },
+    {
+      fetchStatus: {
+        isPrimary: false,
+        path: 'something'
+      },
+      resource: 'something',
+      expected: false
+    }
+  ])('If fetchStatus is $fetchStatus and resource is $resource finishFetchShowError should return $expected', ({ fetchStatus, resource, expected }) => {
+    expect(fetchStatusManager.finishFetchShowError(fetchStatus, resource)).toBe(expected)
+  })
+})
+
 describe('FetchStatusManager -> finishFetchResource', () => {
   let fetchStatusManager: FetchStatusManager
 
@@ -372,6 +418,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
 
   test('If the event passed determines the fetch was not successful, update resource with setResourceFetchError and do not call setResourceFetchStatus', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockImplementationOnce(() => true)
 
     const response = fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
@@ -394,7 +441,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
         statusCode: 100,
         message: 'something'
       },
-      isPrimary: false
+      showErrorPage: true
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
 
@@ -452,6 +499,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
   })
 
   test('If the response is not a valid resource, set an error message', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockImplementationOnce(() => true)
     const response = fetchStatusManager.finishFetchResource({
       resource: '/another-resource',
       success: true,
@@ -469,7 +517,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       iri: '/another-resource',
       error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
       isCurrent: true,
-      isPrimary: false
+      showErrorPage: true
     })
 
     expect(response).toBeUndefined()
