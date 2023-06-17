@@ -22,7 +22,7 @@
 <script setup>
 import { computed, onMounted, watch, getCurrentInstance, ref } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
-import { useCwaResource, iri, useCwa } from '#imports'
+import { iri, useCwa } from '#imports'
 
 const $cwa = useCwa()
 
@@ -40,7 +40,7 @@ const props = defineProps({
   }
 })
 
-const resource = useCwaResource(props.iri)
+const resource = $cwa.resources.getResource(props.iri)
 
 const resourceLoadPendingStart = ref<Boolean>(!resource.value)
 setTimeout(() => {

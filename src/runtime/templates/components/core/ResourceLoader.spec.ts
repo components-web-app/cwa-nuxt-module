@@ -2,29 +2,27 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
-import * as nuxt from '#app'
 import ResourceLoader from './ResourceLoader.vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import * as cwa from '#cwa/runtime/composables/cwaComponent'
+import * as cwaComposables from '#cwa/runtime/composables/cwa'
 
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
 
 function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) {
   // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
-    $cwa: {
-      auth: {
-        status: {
-          value: status ?? CwaAuthStatus.SIGNED_IN
-        }
-      },
-      fetchResource: vi.fn()
+  vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => ({
+    auth: {
+      status: {
+        value: status ?? CwaAuthStatus.SIGNED_IN
+      }
+    },
+    fetchResource: vi.fn(),
+    resources: {
+      getResource: vi.fn(() => ref(resource))
     }
   }))
-  // @ts-ignore
-  vi.spyOn(cwa, 'useCwaResource').mockImplementationOnce(() => ref(resource))
 
   return shallowMount(ResourceLoader, {
     props: {
