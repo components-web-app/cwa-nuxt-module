@@ -7,10 +7,6 @@ export const iri = {
   }
 }
 
-export const useCwaResource = (resourceId: string) => {
-  return useCwa().resources.getResource(resourceId)
-}
-
 export const useCwaResourceUtils = () => {
   return {
     getResource: useCwa().resources.getResource

@@ -90,9 +90,6 @@ importers:
       tailwindcss:
         specifier: ^3.3.2
         version: 3.3.2
-      vite-plugin-nuxt-test:
-        specifier: ^0.0.10
-        version: 0.0.10
       vite-tsconfig-paths:
         specifier: ^4.2.0
         version: 4.2.0(typescript@5.1.3)(vite@4.3.9)
@@ -4007,6 +4004,7 @@ packages:
   /autoprefixer@10.4.14(postcss@8.4.24):
     resolution: {integrity: sha512-FQzyfOsTlwVzjHxKEqRIAdJx9niO6VCBCoEwax/VLSoQF29ggECcPuBqUMZ+u8jCZOPSy8b8/8KnuFbp0SaFZQ==}
     engines: {node: ^10 || ^12 || >=14}
+    hasBin: true
     peerDependencies:
       postcss: ^8.1.0
     dependencies:
@@ -7586,6 +7584,7 @@ packages:
 
   /mkdist@1.2.0(sass@1.63.4)(typescript@5.1.3):
     resolution: {integrity: sha512-UTqu/bXmIk/+VKNVgufAeMyjUcNy1dn9Bl7wL1zZlCKVrpDgj/VllmZBeh3ZCC/2HWqUrt6frNFTKt9TRZbNvQ==}
+    hasBin: true
     peerDependencies:
       sass: ^1.60.0
       typescript: '>=4.9.5'
@@ -8683,6 +8682,7 @@ packages:
   /postcss-cli@10.1.0(postcss@8.4.24):
     resolution: {integrity: sha512-Zu7PLORkE9YwNdvOeOVKPmWghprOtjFQU3srMUGbdz3pHJiFh7yZ4geiZFMkjMfB0mtTFR3h8RemR62rPkbOPA==}
     engines: {node: '>=14'}
+    hasBin: true
     peerDependencies:
       postcss: ^8.0.0
     dependencies:
@@ -10304,6 +10304,7 @@ packages:
   /tailwind-config-viewer@1.7.2(tailwindcss@3.3.2):
     resolution: {integrity: sha512-3JJCeAAlvG+i/EBj+tQb0x4weo30QjdSAo4hlcnVbtD+CkpzHi/UwU9InbPMcYH+ESActoa2kCyjpLEyjEkn0Q==}
     engines: {node: '>=8'}
+    hasBin: true
     peerDependencies:
       tailwindcss: 1 || 2 || 2.0.1-compat || 3
     dependencies:
@@ -10432,6 +10433,7 @@ packages:
   /terser@5.18.0:
     resolution: {integrity: sha512-pdL757Ig5a0I+owA42l6tIuEycRuM7FPY4n62h44mRLRfnOxJkkOHd6i89dOpwZlpF6JXBwaAHF6yWzFrt+QyA==}
     engines: {node: '>=10'}
+    hasBin: true
     dependencies:
       '@jridgewell/source-map': 0.3.3
       acorn: 8.8.2
@@ -10562,6 +10564,7 @@ packages:
   /tsconfck@2.1.1(typescript@5.1.3):
     resolution: {integrity: sha512-ZPCkJBKASZBmBUNqGHmRhdhM8pJYDdOXp4nRgj/O0JwUwsMq50lCDRQP/M5GBNAA0elPrq4gAeu4dkaVCuKWww==}
     engines: {node: ^14.13.1 || ^16 || >=18}
+    hasBin: true
     peerDependencies:
       typescript: ^4.3.5 || ^5.0.0
     peerDependenciesMeta:
@@ -11033,6 +11036,7 @@ packages:
 
   /update-browserslist-db@1.0.11(browserslist@4.21.8):
     resolution: {integrity: sha512-dCwEFf0/oT85M1fHBg4F0jtLwJrutGoHSQXCh7u4o2t1drG+c0a9Flnqww6XUKSfQMPpJBRjU8d4RXB09qtvaA==}
+    hasBin: true
     peerDependencies:
       browserslist: '>= 4.21.0'
     dependencies:
@@ -11206,10 +11210,6 @@ packages:
       - supports-color
     dev: true
 
-  /vite-plugin-nuxt-test@0.0.10:
-    resolution: {integrity: sha512-lKDF0Kw8npCvD23y8UwPzkrxpoZs2oNGKYWSfVKwnqRT0UV1W5FioECX0E58f3ufHezSSO5kplazbX+eNaAo2Q==}
-    dev: true
-
   /vite-plugin-pwa@0.15.0(vite@4.3.9)(workbox-build@6.6.0)(workbox-window@6.6.0):
     resolution: {integrity: sha512-gpmx3BeubsRIXRBkjPToOTJbo8fknNmZFQs24i0TPZyaNVa0n27YHDo0Y72amnO70WvHKGE3e1fn8SYUP7e8SA==}
     peerDependencies:
@@ -11266,6 +11266,7 @@ packages:
   /vite@4.3.9(@types/node@20.3.1)(sass@1.63.4):
     resolution: {integrity: sha512-qsTNZjO9NoJNW7KnOrgYwczm0WctJ8m/yqYAMAK9Lxt4SoySUfS5S8ia9K7JHpa3KEeMfyF8LoJ3c5NeBJy6pg==}
     engines: {node: ^14.18.0 || >=16.0.0}
+    hasBin: true
     peerDependencies:
       '@types/node': '>= 14'
       less: '*'
@@ -11424,6 +11425,7 @@ packages:
   /vue-demi@0.14.5(vue@3.3.4):
     resolution: {integrity: sha512-o9NUVpl/YlsGJ7t+xuqJKx8EBGf1quRhCiT6D/J0pfwmk9zUwYkC7yrF4SZCe6fETvSM3UNL2edcbYrSyc4QHA==}
     engines: {node: '>=12'}
+    hasBin: true
     requiresBuild: true
     peerDependencies:
       '@vue/composition-api': ^1.0.0-rc.1
