@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import * as vue from 'vue'
-import * as nuxt from '#app'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import * as cwaComposables from '#cwa/runtime/composables/cwa'
 
 function createGroupSynchronizer () {
   const mockResourcesManager = {
@@ -18,13 +18,11 @@ function createGroupSynchronizer () {
   }
 
   // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
+  vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
-      $cwa: {
-        auth: mockAuth,
-        resources: mockResources,
-        resourcesManager: mockResourcesManager
-      }
+      auth: mockAuth,
+      resources: mockResources,
+      resourcesManager: mockResourcesManager
     }
   })
 
