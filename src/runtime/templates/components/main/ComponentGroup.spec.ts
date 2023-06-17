@@ -2,11 +2,11 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
-import * as nuxt from '#app'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
+import * as cwaComposables from '#cwa/runtime/composables/cwa'
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
@@ -40,15 +40,16 @@ function createWrapper ({
   signedIn?: boolean;
 } = {}) {
   // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
+  vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
     return {
-      $cwa: {
-        auth: { signedIn: ref(signedIn) },
-        resources: Object.assign({}, mockCwaResources, { isLoading: { value: isLoading } }),
-        resourcesManager: {
-          createResource: vi.fn(),
-          updateResource: vi.fn()
-        }
+      auth: { signedIn: ref(signedIn) },
+      resources: {
+        ...mockCwaResources,
+        isLoading: { value: isLoading }
+      },
+      resourcesManager: {
+        createResource: vi.fn(),
+        updateResource: vi.fn()
       }
     }
   })
