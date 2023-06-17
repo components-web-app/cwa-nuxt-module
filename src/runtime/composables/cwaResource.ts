@@ -9,7 +9,8 @@ export const iri = {
 
 export const useCwaResourceUtils = () => {
   return {
-    getResource: useCwa().resources.getResource
+    // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
+    getResource: (id:string) => useCwa().resources.getResource(id)
   }
 }
 

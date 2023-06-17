@@ -10,7 +10,6 @@ import { useCwaResourceUtils, iri } from '#imports'
 const props = defineProps({
   ...iri
 })
-
 const resource = useCwaResourceUtils().getResource(props.iri)
 const componentIri = computed(() => {
   return resource.value?.data?.component

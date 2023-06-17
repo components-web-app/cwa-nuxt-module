@@ -3,13 +3,13 @@
 </template>
 
 <script setup>
-import { useCwaResource, iri } from '#imports'
+import { useCwaResourceUtils, iri } from '#imports'
 
 const props = defineProps({
   ...iri
 })
 
-const resource = useCwaResource(props.iri)
+const resource = useCwaResourceUtils().getResource(props.iri)
 </script>
 
 <style>
