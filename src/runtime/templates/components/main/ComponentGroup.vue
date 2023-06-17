@@ -5,7 +5,7 @@
   <template v-else-if="componentPositions?.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
-  <CwaUtilsAlertInfo v-else-if="areNoPositions">
+  <CwaUtilsAlertInfo v-else-if="signedInAndResourceExists">
     <p>No component positions in this component group - add functionality coming soon</p>
   </CwaUtilsAlertInfo>
 </template>
@@ -45,12 +45,21 @@ const resource = computed(() => {
   return $cwa.resources.getComponentGroupByReference(fullReference.value)
 })
 
-const areNoPositions = computed(() => {
-  return $cwa.auth.signedIn.value && !!resource.value
+const signedInAndResourceExists = computed(() => {
+  return $cwa.auth.signedIn.value && !!resource.value?.data
 })
 
 const showLoader = computed(() => {
-  return $cwa.resources.isLoading.value && (!resource.value || (!resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS))
+  // is the whole resource chain loading is not loading, do not show the group as loading
+  if (!$cwa.resources.isLoading.value) {
+    return false
+  }
+  // if the resource has not been initialised yet, show the loader
+  if (!resource.value) {
+    return true
+  }
+  // if we do not have data yet (nothing cached either) and the api fetch status is in progress
+  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const componentPositions = computed(() => {
