@@ -13,9 +13,6 @@
   </Transition>
 </template>
 
-<script setup>
-const props = defineProps({
-  show: { required: true, type: Boolean },
-  percent: { required: true, type: Number }
-})
+<script setup lang="ts">
+const props = defineProps<{ show: boolean, percent: number }>()
 </script>

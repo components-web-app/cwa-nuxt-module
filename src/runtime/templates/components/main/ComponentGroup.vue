@@ -23,11 +23,7 @@ import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 
-const props = defineProps({
-  reference: { required: true, type: String },
-  location: { required: true, type: String },
-  allowedComponents: { required: false, type: Array, default () { return null } }
-})
+const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 
 const fullReference = computed(() => {
   const locationResource = $cwa.resources.getResource(props.location)

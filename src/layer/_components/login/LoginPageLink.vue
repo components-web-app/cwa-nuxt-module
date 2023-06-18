@@ -6,15 +6,6 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  linkText: {
-    type: String,
-    required: true
-  },
-  linkTo: {
-    type: String,
-    required: true
-  }
-})
+<script setup lang="ts">
+const props = defineProps<{ linkText: string, linkTo: string }>()
 </script>

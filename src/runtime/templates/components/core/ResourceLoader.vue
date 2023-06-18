@@ -19,26 +19,21 @@
   <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="props.iri" />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
-import { iri, useCwa } from '#imports'
+import { useCwa } from '#imports'
+import { IriProp } from '#cwa/runtime/composables/cwaResource.js'
 
 const $cwa = useCwa()
 
-const props = defineProps({
-  ...iri,
-  componentPrefix: {
-    type: String,
-    required: false,
-    default: ''
-  },
-  uiComponent: {
-    type: Object,
-    required: false,
-    default: undefined
+const props = withDefaults(
+  defineProps<IriProp & { componentPrefix?: string, uiComponent?: any }>(),
+  {
+    componentPrefix: '',
+    uiComponent: undefined
   }
-})
+)
 
 const resource = $cwa.resources.getResource(props.iri)
 

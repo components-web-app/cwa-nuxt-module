@@ -2,12 +2,11 @@
   <div class="html-content" v-html="resource.data?.html" />
 </template>
 
-<script setup>
-import { useCwaResourceUtils, iri } from '#imports'
+<script setup lang="ts">
+import { IriProp } from '#cwa/runtime/composables/cwaResource'
+import { useCwaResourceUtils } from '#imports'
 
-const props = defineProps({
-  ...iri
-})
+const props = defineProps<IriProp>()
 
 const resource = useCwaResourceUtils().getResource(props.iri)
 </script>
