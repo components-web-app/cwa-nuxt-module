@@ -160,6 +160,7 @@ describe('Test route middleware', () => {
     })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
+    // real delay needed for an await because we will not wait for that
     await delay(1)
     expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
     expect(nuxt.callWithNuxt).toHaveBeenCalledWith(nuxt.useNuxtApp.mock.results[0].value, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])

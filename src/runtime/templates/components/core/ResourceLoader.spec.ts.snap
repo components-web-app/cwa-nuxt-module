@@ -3,7 +3,7 @@
 exports[`ResourceLoader > snapshots > should match snapshot IF component is not found 1`] = `
 <warning-stub>
   <p>
-     The component \`TestComponentMock\` cannot be found 
+     The component \`TestComponentMock\` for resource \`testIri\` cannot be resolved 
   </p>
 </warning-stub>
 `;
@@ -25,7 +25,7 @@ exports[`ResourceLoader > snapshots > should match snapshot IF resource is loadi
 exports[`ResourceLoader > snapshots > should match snapshot IF resource is not found 1`] = `
 <warning-stub>
   <p>
-     Resource not found with iri \`testIri\` data 
+     No data received for resource \`testIri\` 
   </p>
 </warning-stub>
 `;
