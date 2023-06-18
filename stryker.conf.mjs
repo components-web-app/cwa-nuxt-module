@@ -2,15 +2,13 @@
 // @ts-check
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 const config = {
-  _comment:
-    "This config was generated using 'stryker init'. Please see the guide for more information: https://stryker-mutator.io/docs/stryker-js/guides/vuejs",
+  packageManager: "pnpm",
   testRunner: "vitest",
-  mutator: {
-    plugins: [],
-  },
-  jest: {},
   reporters: ["progress", "clear-text", "html"],
   coverageAnalysis: "off",
-  ignorePatterns: ['src/templates/**', 'dist', 'coverage']
+  ignorePatterns: ['src/templates/**', 'dist', 'coverage'],
+  plugins: [
+    "@stryker-mutator/vitest-runner"
+  ]
 };
 export default config;
