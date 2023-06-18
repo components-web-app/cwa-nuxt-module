@@ -4,11 +4,8 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  iri: {
-    type: String,
-    required: true
-  }
-})
+<script setup lang="ts">
+import { IriProp } from '#cwa/runtime/composables/cwaResource'
+
+const props = defineProps<IriProp>()
 </script>

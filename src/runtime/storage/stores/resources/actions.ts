@@ -31,7 +31,7 @@ export interface SetResourceResetStatusEvent {
 }
 declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent|SetResourceCompletedStatusEvent|SetResourceResetStatusEvent
 
-export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, isPrimary?: boolean }
+export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, showErrorPage?: boolean }
 
 interface InitResourceEvent {
   iri: string
@@ -208,7 +208,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
       data.apiState = newApiState
     },
-    setResourceFetchError ({ iri, error, isCurrent, isPrimary }: SetResourceFetchErrorEvent): void {
+    setResourceFetchError ({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): void {
       const data = initResource({
         resourcesState,
         iri,
@@ -220,8 +220,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         ssr: process.server
       }
 
-      // todo: test isPrimary
-      if (isPrimary && error) {
+      if (showErrorPage && error) {
         showError({ statusCode: error.statusCode, message: error.message })
       }
     },

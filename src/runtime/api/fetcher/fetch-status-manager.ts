@@ -15,6 +15,7 @@ import { createCwaResourceError, CwaResourceError } from '../../errors/cwa-resou
 import { CwaResource, isCwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
+import { FetchStatus } from '#cwa/runtime/storage/stores/fetcher/state'
 
 export interface FinishFetchResourceEvent {
   resource: string,
@@ -120,11 +121,8 @@ export default class FetchStatusManager {
       return
     }
 
-    // todo: test isPrimary and passing to setResourceFetchError
-    const isPrimary = fetchStatus?.path === event.resource
-
     if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent, isPrimary })
+      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent, showErrorPage: this.finishFetchShowError(fetchStatus, event.resource) })
       return
     }
 
@@ -144,7 +142,7 @@ export default class FetchStatusManager {
         iri: event.resource,
         error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
         isCurrent,
-        isPrimary
+        showErrorPage: this.finishFetchShowError(fetchStatus, event.resource)
       })
       return
     }
@@ -169,6 +167,10 @@ export default class FetchStatusManager {
   public async finishFetch (event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
     this.fetcherStore.finishFetch(event)
+  }
+
+  private finishFetchShowError (fetchStatus: FetchStatus|undefined, eventResource: string) {
+    return !!fetchStatus?.isPrimary && fetchStatus?.path === eventResource
   }
 
   private computedFetchChainComplete (token: string): ComputedRef<boolean> {

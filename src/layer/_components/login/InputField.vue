@@ -23,44 +23,24 @@
 
 <script setup lang="ts">
 import { v4 as uuidv4 } from 'uuid'
-import { PropType, ref } from 'vue'
+import { ref } from 'vue'
 
 defineEmits(['update:modelValue'])
 
-const props = defineProps({
-  name: {
-    type: String,
-    required: true
-  },
-  type: {
-    type: String,
-    required: false,
-    default: 'text'
-  },
-  label: {
-    type: String,
-    required: true
-  },
-  autocomplete: {
-    type: String,
-    required: false,
-    default: undefined
-  },
-  required: {
-    type: Boolean,
-    required: false,
-    default: false
-  },
-  modelValue: {
-    type: String,
-    default: '',
-    required: true
-  },
-  errors: {
-    type: Array as PropType<string[]>,
-    required: false,
-    default: undefined
-  }
+const props = withDefaults(defineProps<{
+  name: string,
+  type?: string,
+  label: string,
+  autocomplete?: string,
+  required?: boolean,
+  modelValue: string,
+  errors?: string[]
+}>(), {
+  type: 'text',
+  autocomplete: undefined,
+  required: false,
+  modelValue: '',
+  errors: undefined
 })
 
 const id = ref(uuidv4())

@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { computed } from 'vue'
 import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 
 function createResources () {
   const mockResourcesStore = {
@@ -50,7 +51,7 @@ describe('Resources', () => {
     })
   })
 
-  describe('get resource', () => {
+  describe('getResource', () => {
     test('should return resource BASED on its id', () => {
       const { resources, resourcesStore } = createResources()
       const mockId = 'mockedId'
@@ -106,6 +107,20 @@ describe('Resources', () => {
         b: resourceB,
         c: resourceC
       })
+    })
+  })
+
+  describe('getComponentGroupByReference', () => {
+    test('Returns a component if it exists with the same reference', () => {
+      const { resources, resourcesStore } = createResources()
+      const component = { data: { any: 'thing', reference: 'ref' } }
+      // @ts-ignore
+      resourcesStore.useStore = () => ({
+        resourcesByType: {
+          [CwaResourceTypes.COMPONENT_GROUP]: [component, {}, { data: { some: 'dupe-not-to-return', reference: 'ref' } }]
+        }
+      })
+      expect(resources.getComponentGroupByReference('ref')).toEqual(component)
     })
   })
 

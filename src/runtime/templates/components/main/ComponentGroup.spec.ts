@@ -1,14 +1,12 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
-import { reactive, ref } from 'vue'
-import * as nuxt from '#app'
-import * as composables from '../../../composables/cwaComponent'
+import { describe, expect, test, vi, afterEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
-import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
+import * as cwaComposables from '#cwa/runtime/composables/cwa'
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
@@ -23,166 +21,146 @@ vi.mock('./ComponentGroup.Util.Synchronizer', () => {
 const mockReference = 'mockReference'
 const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
-const mockResourcesByType = { [CwaResourceTypes.COMPONENT_GROUP]: [] }
 const mockCwaResources = {
-  isLoading: {
-    value: false
-  }
-}
-const mockAuth = {
-  signedIn: ref(false)
+  getResource: vi.fn(),
+  getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference')
 }
 
 function createWrapper ({
+  isLoading = false,
   reference = mockReference,
   location = mockLocation,
-  resourcesByType = mockResourcesByType,
-  byId = {},
-  cwaResources = mockCwaResources,
   allowedComponents = [],
-  auth = mockAuth
+  signedIn = false
 }: {
-  location?: string;
-  resourcesByType?: any;
+  isLoading?: boolean;
   reference?: string;
-  byId?: any;
-  cwaResources?: any;
+  location?: string;
   allowedComponents?: string[];
-  auth?: any;
+  signedIn?: boolean;
 } = {}) {
-  const mockStore = reactive({
-    resourcesByType: ref(resourcesByType),
-    current: ref({ byId })
-  })
   // @ts-ignore
-  vi.spyOn(composables, 'useCwaResourceUtils').mockImplementationOnce(() => {
+  vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
     return {
-      getResourceStore: mockStore
-    }
-  })
-  // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
-    return {
-      $cwa: {
-        auth,
-        resources: cwaResources,
-        resourcesManager: {
-          createResource: vi.fn(),
-          updateResource: vi.fn()
-        }
+      auth: { signedIn: ref(signedIn) },
+      resources: {
+        ...mockCwaResources,
+        isLoading: { value: isLoading }
+      },
+      resourcesManager: {
+        createResource: vi.fn(),
+        updateResource: vi.fn()
       }
     }
   })
 
-  return shallowMount(ComponentGroup, {
+  return mount(ComponentGroup, {
     props: {
       reference,
       location,
       allowedComponents
     },
-    global: {
-      renderStubDefaultSlot: true
-    }
+    shallow: true
   })
 }
 
 describe('ComponentGroup', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('computed properties', () => {
     describe('fullReference', () => {
       test('should return nothing IF there is no resource matching location', () => {
         const wrapper = createWrapper()
 
         expect(wrapper.vm.fullReference).toBeUndefined()
+        expect(mockCwaResources.getResource).toHaveBeenCalledWith(mockLocation)
       })
 
       test('should return fullReference BASED on location resource data', () => {
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+          return {
+            value: {
+              data: {
+                reference: mockResourceReference
+              }
             }
           }
-        }
-        const wrapper = createWrapper({
-          byId: mockById
         })
 
+        const wrapper = createWrapper()
         expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${mockResourceReference}`)
+        expect(mockCwaResources.getResource).toHaveBeenCalledWith(mockLocation)
       })
     })
 
     describe('resource', () => {
+      test('should return undefined if full reference is undefined', () => {
+        const wrapper = createWrapper()
+        expect(mockCwaResources.getComponentGroupByReference).not.toHaveBeenCalled()
+        expect(wrapper.vm.resource).toBeUndefined()
+      })
+
       test('should return resource from resources list BASED on type AND full reference', () => {
-        const mockGroupElement = { data: { reference: `${mockReference}_${mockResourceReference}` } }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById
+        vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+          return 'COMPY-PONENET'
         })
 
-        expect(wrapper.vm.resource).toEqual(mockGroupElement)
+        // todo: see if we can isolate as this mock is because we seem to have to call fullReference computedref
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+          return {
+            value: {
+              data: {
+                reference: mockResourceReference
+              }
+            }
+          }
+        })
+
+        const wrapper = createWrapper()
+        expect(mockCwaResources.getComponentGroupByReference).toHaveBeenCalledWith(`${mockReference}_${mockResourceReference}`)
+        expect(wrapper.vm.resource).toEqual('COMPY-PONENET')
       })
     })
 
     describe('showLoader', () => {
       test('should return false IF resources loading flag is false', () => {
-        const wrapper = createWrapper({
-          cwaResources: {
-            isLoading: {
-              value: false
-            }
-          }
-        })
+        const wrapper = createWrapper()
 
         expect(wrapper.vm.showLoader).toEqual(false)
       })
 
       test('should return true IF resources loading flag is true AND resource is not defined', () => {
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: []
-        }
-
         const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          cwaResources: {
-            isLoading: {
-              value: true
-            }
-          }
+          isLoading: true
         })
 
         expect(wrapper.vm.showLoader).toEqual(true)
       })
 
       test('should return true IF resources loading flag is true AND resource is in loading state', () => {
-        const mockGroupElement = {
-          data: {
-            reference: `${mockReference}_${mockResourceReference}`
-          },
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          cwaResources: {
-            isLoading: {
-              value: true
+        // todo: is we can mock other computed vars then we do not need to mock all these as in depth to get other computeds to return
+        vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+          return {
+            data: undefined,
+            apiState: {
+              status: CwaResourceApiStatuses.IN_PROGRESS
             }
           }
+        })
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+          return {
+            value: {
+              data: {
+                reference: 'anything'
+              }
+            }
+          }
+        })
+
+        const wrapper = createWrapper({
+          isLoading: true
         })
 
         expect(wrapper.vm.showLoader).toEqual(true)
@@ -190,133 +168,119 @@ describe('ComponentGroup', () => {
     })
 
     describe('componentPositions', () => {
+      test.each([{
+        component: {
+          data: undefined
+        }
+      }, { component: undefined }])('should return undefined if component is $component', ({ component }) => {
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+          return {
+            value: {
+              data: {
+                reference: 'anything'
+              }
+            }
+          }
+        })
+        vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+          return component
+        })
+        const wrapper = createWrapper()
+
+        expect(wrapper.vm.componentPositions).toBeUndefined()
+      })
+
       test('should return resource component positions BASED on its data', () => {
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+          return {
+            value: {
+              data: {
+                reference: 'anything'
+              }
+            }
+          }
+        })
+
         const mockComponentPositions = ['pos1', 'pos2', 'pos3']
         const mockGroupElement = {
           data: {
-            reference: `${mockReference}_${mockResourceReference}`,
             componentPositions: mockComponentPositions
           }
         }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById
+        vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+          return mockGroupElement
         })
+        const wrapper = createWrapper()
 
         expect(wrapper.vm.componentPositions).toEqual(mockComponentPositions)
       })
     })
 
-    describe('areNoPositions', () => {
-      test('should return true IF user is signed in AND resource is defined', () => {
-        const mockGroupElement = {
-          data: { reference: `${mockReference}_${mockResourceReference}` },
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
+    describe('signedInAndResourceExists', () => {
+      test.each([
+        {
+          expected: false,
+          component: {
+            data: undefined
+          },
+          signedIn: true
+        },
+        {
+          expected: false,
+          component: undefined,
+          signedIn: true
+        },
+        {
+          expected: false,
+          component: {
+            data: {}
+          },
+          signedIn: false
+        },
+        {
+          expected: true,
+          component: {
+            data: {}
+          },
+          signedIn: true
         }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
+      ])('should return $expected IF user is signed in is $signedIn AND resource is $component', ({ expected, signedIn, component }) => {
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+          return {
+            value: {
+              data: {
+                reference: 'anything'
+              }
             }
           }
-        }
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById,
-          auth: {
-            signedIn: ref(true)
-          }
+        })
+        vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+          return component
         })
 
-        expect(wrapper.vm.areNoPositions).toEqual(true)
-      })
-
-      test('should return false IF user is signed out AND resource is defined', () => {
-        const mockGroupElement = {
-          data: { reference: `${mockReference}_${mockResourceReference}` },
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
         const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById,
-          auth: {
-            signedIn: ref(false)
-          }
+          signedIn: ref(signedIn)
         })
 
-        expect(wrapper.vm.areNoPositions).toEqual(false)
-      })
-
-      test('should return false IF user is signed in AND resource is not defined', () => {
-        const mockGroupElement = {
-          data: { reference: 'another-reference' },
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        }
-        const mockByType = {
-          [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-        }
-        const mockById = {
-          [mockLocation]: {
-            data: {
-              reference: mockResourceReference
-            }
-          }
-        }
-        const wrapper = createWrapper({
-          resourcesByType: mockByType,
-          byId: mockById,
-          auth: {
-            signedIn: ref(true)
-          }
-        })
-
-        expect(wrapper.vm.areNoPositions).toEqual(false)
+        expect(wrapper.vm.signedInAndResourceExists).toEqual(expected)
       })
     })
   })
 
-  describe('sync group', () => {
+  describe('Start and stop component group sync watcher', () => {
     test('should synchronize group on mount AND unsync on component unmount', () => {
-      const mockGroupElement = { data: { reference: `${mockReference}_${mockResourceReference}` } }
-      const mockByType = {
-        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-      }
-      const mockById = {
-        [mockLocation]: {
-          data: {
-            reference: mockResourceReference
+      vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+        return 'COMPY-PONENET'
+      })
+      vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+        return {
+          value: {
+            data: {
+              reference: mockResourceReference
+            }
           }
         }
-      }
+      })
 
       const watchSpy = vi.fn()
       const unwatchSpy = vi.fn()
@@ -324,11 +288,7 @@ describe('ComponentGroup', () => {
       // @ts-ignore
       ComponentGroupUtilSynchronizer.mockReturnValueOnce({ createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy })
 
-      const wrapper = createWrapper({
-        resourcesByType: mockByType,
-        byId: mockById
-      })
-
+      const wrapper = createWrapper()
       expect(watchSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
       expect(watchSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
       expect(watchSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
@@ -342,27 +302,26 @@ describe('ComponentGroup', () => {
 
   describe('props', () => {
     test('should pass correct uiComponent objects per each ResourceLoader component', () => {
+      vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+        return {
+          value: {
+            data: {
+              reference: 'anything'
+            }
+          }
+        }
+      })
+
       const mockComponentPositions = ['pos1', 'pos2', 'pos3']
       const mockGroupElement = {
         data: {
-          reference: `${mockReference}_${mockResourceReference}`,
           componentPositions: mockComponentPositions
         }
       }
-      const mockByType = {
-        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-      }
-      const mockById = {
-        [mockLocation]: {
-          data: {
-            reference: mockResourceReference
-          }
-        }
-      }
-      const wrapper = createWrapper({
-        resourcesByType: mockByType,
-        byId: mockById
+      vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+        return mockGroupElement
       })
+      const wrapper = createWrapper()
 
       const resourceLoaders = wrapper.findAllComponents({ name: 'ResourceLoader' })
 
@@ -380,9 +339,7 @@ describe('ComponentGroup', () => {
   describe('snapshots', () => {
     test('should match snapshot IF loader is shown', () => {
       const wrapper = createWrapper({
-        cwaResources: {
-          isLoading: ref(true)
-        }
+        isLoading: true
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -395,27 +352,26 @@ describe('ComponentGroup', () => {
     })
 
     test('should match snapshot IF there are component positions defined', () => {
+      vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+        return {
+          value: {
+            data: {
+              reference: 'anything'
+            }
+          }
+        }
+      })
+
       const mockComponentPositions = ['pos1', 'pos2', 'pos3']
       const mockGroupElement = {
         data: {
-          reference: `${mockReference}_${mockResourceReference}`,
           componentPositions: mockComponentPositions
         }
       }
-      const mockByType = {
-        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-      }
-      const mockById = {
-        [mockLocation]: {
-          data: {
-            reference: mockResourceReference
-          }
-        }
-      }
-      const wrapper = createWrapper({
-        resourcesByType: mockByType,
-        byId: mockById
+      vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+        return mockGroupElement
       })
+      const wrapper = createWrapper()
 
       expect(wrapper.element).toMatchSnapshot()
     })
@@ -427,28 +383,23 @@ describe('ComponentGroup', () => {
     })
 
     test('should match snapshot IF user is logged in but there are no positions', () => {
-      const mockGroupElement = {
-        data: { reference: `${mockReference}_${mockResourceReference}` },
-        apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS
-        }
-      }
-      const mockByType = {
-        [CwaResourceTypes.COMPONENT_GROUP]: [mockGroupElement]
-      }
-      const mockById = {
-        [mockLocation]: {
-          data: {
-            reference: mockResourceReference
+      vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+        return {
+          value: {
+            data: {
+              reference: 'anything'
+            }
           }
         }
-      }
-      const wrapper = createWrapper({
-        resourcesByType: mockByType,
-        byId: mockById,
-        auth: {
-          signedIn: ref(true)
+      })
+      vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+        return {
+          data: {}
         }
+      })
+
+      const wrapper = createWrapper({
+        signedIn: true
       })
 
       expect(wrapper.element).toMatchSnapshot()

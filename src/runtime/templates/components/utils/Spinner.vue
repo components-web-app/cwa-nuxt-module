@@ -17,8 +17,6 @@
   </Transition>
 </template>
 
-<script setup>
-const props = defineProps({
-  show: Boolean
-})
+<script setup lang="ts">
+const props = defineProps<{ show: boolean }>()
 </script>

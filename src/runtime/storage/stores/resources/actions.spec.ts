@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import * as app from '#app'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import * as ResourceUtils from '../../../resources/resource-utils'
 import actions, { CwaResourcesActionsInterface } from './actions'
@@ -461,6 +462,32 @@ describe('resources action setResourceFetchError', () => {
     resourcesActions.setResourceFetchError({ iri: 'id', error })
     expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.ERROR)
     expect(resourcesState.current.byId.id.apiState.error).toStrictEqual(error.asObject)
+  })
+
+  test.each([
+    {
+      showErrorPage: false,
+      error: null
+    },
+    {
+      showErrorPage: true,
+      error: null
+    },
+    {
+      showErrorPage: false,
+      error: createCwaResourceError({})
+    }
+  ])('If the isPrimary param is $isPrimary and error is $error then we should NOT show an error page', ({ showErrorPage, error }) => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    resourcesActions.setResourceFetchError({ showErrorPage, iri: 'id', error })
+    expect(app.showError).not.toHaveBeenCalled()
+  })
+
+  test('is isPrimary is true and there is an error then showError should be called', () => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    const error = createCwaResourceError({ message: 'my message' })
+    resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
+    expect(app.showError).toHaveBeenCalledWith({ statusCode: error.statusCode, message: error.message })
   })
 })
 

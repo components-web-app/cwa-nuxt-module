@@ -24,7 +24,7 @@
   </LoginPage>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
 import { navigateTo, useHead } from '#app'

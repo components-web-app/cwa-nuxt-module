@@ -32,6 +32,13 @@ export class Resources {
     return computed(() => this.resourcesStore.current.byId?.[id])
   }
 
+  public getComponentGroupByReference (reference: string) {
+    const componentGroups = this.resourcesStore.resourcesByType[CwaResourceTypes.COMPONENT_GROUP]
+    return componentGroups.find((componentGroupResource) => {
+      return componentGroupResource.data?.reference === reference
+    })
+  }
+
   // todo: this may be temporary, but if proves useful, functionality to be moved to a resources store getter and this as a proxy
   public get currentResources () {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
@@ -222,7 +229,7 @@ export class Resources {
     return this.fetcherStoreDefinition.useStore()
   }
 
-  public get resourcesStore () {
+  private get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
   }
 }

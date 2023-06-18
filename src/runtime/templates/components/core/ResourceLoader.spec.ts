@@ -2,29 +2,27 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
-import * as nuxt from '#app'
 import ResourceLoader from './ResourceLoader.vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import * as cwa from '#cwa/runtime/composables/cwaComponent'
+import * as cwaComposables from '#cwa/runtime/composables/cwa'
 
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
 
-function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) {
+function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any) {
   // @ts-ignore
-  vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
-    $cwa: {
-      auth: {
-        status: {
-          value: status ?? CwaAuthStatus.SIGNED_IN
-        }
-      },
-      fetchResource: vi.fn()
+  vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => ({
+    auth: {
+      status: {
+        value: status ?? CwaAuthStatus.SIGNED_IN
+      }
+    },
+    fetchResource: vi.fn(),
+    resources: {
+      getResource: vi.fn(() => ref(resource))
     }
   }))
-  // @ts-ignore
-  vi.spyOn(cwa, 'useCwaResource').mockImplementationOnce(() => ref(resource))
 
   return shallowMount(ResourceLoader, {
     props: {
@@ -39,39 +37,81 @@ function createWrapper (resource: any, status?: CwaAuthStatus, component?: any) 
 }
 
 describe('ResourceLoader', () => {
-  describe('computed properties', () => {
+  describe('reactive variables', () => {
+    describe('resourceLoadBuffering', () => {
+      test('If the resource exists, resourceLoadBuffering should be false', () => {
+        const wrapper = createWrapper({
+          apiState: {
+            status: CwaResourceApiStatuses.IN_PROGRESS
+          }
+        })
+        expect(wrapper.vm.resourceLoadBuffering).toEqual(false)
+      })
+      test('If the resource does not exist, resourceLoadBuffering should be true and then revert to false after 20ms', () => {
+        vi.useFakeTimers()
+        const wrapper = createWrapper(undefined)
+        expect(wrapper.vm.resourceLoadBuffering).toEqual(true)
+        vi.advanceTimersByTime(20)
+        expect(wrapper.vm.resourceLoadBuffering).toEqual(false)
+        vi.useRealTimers()
+      })
+    })
+
     describe('isLoading', () => {
-      test('should return true IF there is no resource data AND api status EQUALS in progress', () => {
-        const wrapper = createWrapper({
-          data: null,
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        })
-
-        expect(wrapper.vm.isLoading).toEqual(true)
-      })
-
-      test('should return false IF api status DOES NOT EQUAL to in progress', () => {
-        const wrapper = createWrapper({
-          data: null,
-          apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        })
-
-        expect(wrapper.vm.isLoading).toEqual(false)
-      })
-
-      test('should return false IF resource data is present', () => {
-        const wrapper = createWrapper({
-          data: { test: true },
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        })
-
-        expect(wrapper.vm.isLoading).toEqual(false)
+      test.each([
+        {
+          resourceLoadBuffering: false,
+          resource: {
+            data: null,
+            apiState: {
+              status: CwaResourceApiStatuses.IN_PROGRESS
+            }
+          },
+          result: true
+        },
+        {
+          resourceLoadBuffering: false,
+          resource: {
+            data: undefined,
+            apiState: {
+              status: CwaResourceApiStatuses.SUCCESS
+            }
+          },
+          result: false
+        },
+        {
+          resourceLoadBuffering: false,
+          resource: {
+            data: { test: true },
+            apiState: {
+              status: CwaResourceApiStatuses.IN_PROGRESS
+            }
+          },
+          result: false
+        },
+        {
+          resourceLoadBuffering: true,
+          resource: {
+            data: { test: true },
+            apiState: {
+              status: CwaResourceApiStatuses.IN_PROGRESS
+            }
+          },
+          result: true
+        },
+        {
+          resourceLoadBuffering: true,
+          resource: undefined,
+          result: true
+        }
+      ])('should return $result IF there resource is $resource and buffering is $resourceLoadBuffering', ({
+        resource,
+        result,
+        resourceLoadBuffering
+      }) => {
+        const wrapper = createWrapper(resource)
+        wrapper.vm.resourceLoadBuffering = resourceLoadBuffering
+        expect(wrapper.vm.isLoading).toEqual(result)
       })
     })
 

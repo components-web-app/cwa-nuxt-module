@@ -26,7 +26,7 @@ export class ComponentGroupUtilSynchronizer {
     this.auth = auth
   }
 
-  public createSyncWatcher (resourceRef: ComputedRef<CwaCurrentResourceInterface | undefined>, location: string, fullReference: ComputedRef<string | undefined>, allowedComponents: any[]) {
+  public createSyncWatcher (resourceRef: ComputedRef<CwaCurrentResourceInterface | undefined>, location: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[]|null) {
     this.watchStopHandle = watch(
       () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
       async ([isLoading, signedIn, resource]) => {
@@ -46,7 +46,7 @@ export class ComponentGroupUtilSynchronizer {
     this.watchStopHandle?.()
   }
 
-  private async createComponentGroup (iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: any[]) {
+  private async createComponentGroup (iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[]|null) {
     const locationResourceType = getResourceTypeFromIri(iri) as keyof typeof resourceTypeProperty
     const locationProperty = resourceTypeProperty[locationResourceType]
 
@@ -65,7 +65,7 @@ export class ComponentGroupUtilSynchronizer {
     })
   }
 
-  private async updateAllowedComponents (allowedComponents: any[], resource: any) {
+  private async updateAllowedComponents (allowedComponents: string[]|null, resource: any) {
     if (_isEqual(allowedComponents, resource?.data?.allowedComponents)) {
       return
     }

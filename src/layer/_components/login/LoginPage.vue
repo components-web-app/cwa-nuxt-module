@@ -27,21 +27,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 defineEmits(['submit'])
-const props = defineProps({
-  submitButtonText: {
-    type: String,
-    required: true
-  },
-  submitting: {
-    type: Boolean,
-    required: true
-  },
-  error: {
-    type: String,
-    required: false,
-    default: null
-  }
-})
+const props = defineProps<{ submitButtonText: string, submitting: boolean, error?: string }>()
 </script>
