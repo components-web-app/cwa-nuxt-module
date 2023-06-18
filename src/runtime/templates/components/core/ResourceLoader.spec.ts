@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
@@ -24,14 +24,22 @@ function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any)
     }
   }))
 
-  return shallowMount(ResourceLoader, {
+  return mount(ResourceLoader, {
+    shallow: true,
     props: {
       iri: mockIri,
       componentPrefix: mockPrefix,
       uiComponent: component
     },
     global: {
-      renderStubDefaultSlot: true
+      renderStubDefaultSlot: true,
+      components: {
+        GlobalComponent: {
+          name: 'GlobalComponent',
+          template: '<div> global </div>',
+          props: ['iri']
+        }
+      }
     }
   })
 }
@@ -256,8 +264,8 @@ describe('ResourceLoader', () => {
   describe('methods', () => {
     describe('fetchResource', () => {
       test('should NOT fetch resource IF ssr flag for api state is false', async () => {
-        const hasError = ref(false)
-        const resource = ref({ apiState: { ssr: false } })
+        const hasError = false
+        const resource = { apiState: { ssr: false } }
         const wrapper = createWrapper({
           data: { test: true },
           apiState: {
@@ -271,8 +279,8 @@ describe('ResourceLoader', () => {
       })
 
       test('should NOT fetch resource IF ssr flag for api state is true AND resource has data', async () => {
-        const hasError = ref(false)
-        const resource = ref({ apiState: { ssr: true }, data: { mock: true } })
+        const hasError = false
+        const resource = { apiState: { ssr: true }, data: { mock: true } }
         const wrapper = createWrapper({
           data: { test: true },
           apiState: {
@@ -286,8 +294,8 @@ describe('ResourceLoader', () => {
       })
 
       test('should NOT fetch resource IF ssr flag for api state is true AND resource has no data AND no silent error', async () => {
-        const hasError = ref(false)
-        const resource = ref({ apiState: { ssr: true }, data: null })
+        const hasError = false
+        const resource = { apiState: { ssr: true }, data: null }
         const wrapper = createWrapper({
           data: { test: true },
           apiState: {
@@ -301,8 +309,8 @@ describe('ResourceLoader', () => {
       })
 
       test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR', async () => {
-        const hasError = ref(true)
-        const resource = ref({ apiState: { ssr: true }, data: null })
+        const hasError = true
+        const resource = { apiState: { ssr: true }, data: null }
         const wrapper = createWrapper({
           apiState: {
             status: CwaResourceApiStatuses.IN_PROGRESS
@@ -326,11 +334,12 @@ describe('ResourceLoader', () => {
         }
       })
 
-      expect(watchSpy).toHaveBeenCalledWith(
-        wrapper.vm.methods.getFetchResourceDeps,
-        wrapper.vm.methods.fetchResource,
-        { immediate: true }
-      )
+      expect(watchSpy.mock.calls[0][0]).toHaveLength(2)
+      expect(watchSpy.mock.calls[0][0][0].value).toEqual(wrapper.vm.hasSilentError)
+      expect(watchSpy.mock.calls[0][0][1].value).toEqual(wrapper.vm.resource)
+      // expect(watchSpy.mock.calls[0][0]).toEqual([wrapper.vm.hasSilentError, wrapper.vm.resource])
+      expect(watchSpy.mock.calls[0][1]).toEqual(wrapper.vm.methods.fetchResource)
+      expect(watchSpy.mock.calls[0][2]).toEqual({ immediate: true })
     })
   })
 
@@ -341,7 +350,15 @@ describe('ResourceLoader', () => {
       expect(wrapper.element).toMatchSnapshot()
     })
 
-    test('should match snapshot IF resource is not found', () => {
+    test('should match snapshot IF resource does not exist after loading', async () => {
+      vi.useFakeTimers()
+      const wrapper = createWrapper(undefined)
+      await vi.advanceTimersByTimeAsync(20)
+      expect(wrapper.element).toMatchSnapshot()
+      vi.useRealTimers()
+    })
+
+    test('should match snapshot IF resource data is not resolved', () => {
       const wrapper = createWrapper({
         data: null,
         apiState: {
@@ -352,7 +369,7 @@ describe('ResourceLoader', () => {
       expect(wrapper.element).toMatchSnapshot()
     })
 
-    test('should match snapshot IF component is not found', () => {
+    test('should match snapshot IF UI component is not resolved', () => {
       const wrapper = createWrapper({
         data: {
           uiComponent: 'Mock'
@@ -366,7 +383,7 @@ describe('ResourceLoader', () => {
       expect(wrapper.element).toMatchSnapshot()
     })
 
-    test('should match snapshot IF component is rendered', async () => {
+    test('should match snapshot IF component is resolved from props', async () => {
       const wrapper = createWrapper({
         data: {
           uiComponent: 'DummyComponent'
@@ -382,6 +399,22 @@ describe('ResourceLoader', () => {
           template: '<div> test </div>',
           props: ['iri']
         }
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should match snapshot IF global component name is resolved', async () => {
+      const wrapper = createWrapper({
+        data: {
+          uiComponent: 'GlobalComponent'
+        },
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS
+        }
+      })
+      await wrapper.setProps({
+        componentPrefix: undefined
       })
 
       expect(wrapper.element).toMatchSnapshot()

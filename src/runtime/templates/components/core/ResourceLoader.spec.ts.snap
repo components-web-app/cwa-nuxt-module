@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ResourceLoader > snapshots > should match snapshot IF component is not found 1`] = `
+exports[`ResourceLoader > snapshots > should match snapshot IF UI component is not resolved 1`] = `
 <warning-stub>
   <p>
      The component \`TestComponentMock\` for resource \`testIri\` cannot be resolved 
@@ -8,10 +8,32 @@ exports[`ResourceLoader > snapshots > should match snapshot IF component is not 
 </warning-stub>
 `;
 
-exports[`ResourceLoader > snapshots > should match snapshot IF component is rendered 1`] = `
+exports[`ResourceLoader > snapshots > should match snapshot IF component is resolved from props 1`] = `
 <dummycomponent-stub
   iri="testIri"
 />
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF global component name is resolved 1`] = `
+<globalcomponent-stub
+  iri="testIri"
+/>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF resource data is not resolved 1`] = `
+<warning-stub>
+  <p>
+     No data received for resource \`testIri\` 
+  </p>
+</warning-stub>
+`;
+
+exports[`ResourceLoader > snapshots > should match snapshot IF resource does not exist after loading 1`] = `
+<warning-stub>
+  <p>
+     Resource \`testIri\` has not been requested 
+  </p>
+</warning-stub>
 `;
 
 exports[`ResourceLoader > snapshots > should match snapshot IF resource is loading 1`] = `
@@ -20,12 +42,4 @@ exports[`ResourceLoader > snapshots > should match snapshot IF resource is loadi
     show="true"
   />
 </div>
-`;
-
-exports[`ResourceLoader > snapshots > should match snapshot IF resource is not found 1`] = `
-<warning-stub>
-  <p>
-     No data received for resource \`testIri\` 
-  </p>
-</warning-stub>
 `;

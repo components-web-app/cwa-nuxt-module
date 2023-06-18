@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
-import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import { IriProp } from '#cwa/runtime/composables/cwaResource.js'
 
@@ -53,7 +53,7 @@ const isLoading = computed(() => {
   if (resourceLoadBuffering.value) {
     return true
   }
-  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return !!resource.value && !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const resourceUiComponent = computed(() => {
@@ -67,8 +67,12 @@ const hasError = computed(() => {
   return resource.value?.apiState.status === CwaResourceApiStatuses.ERROR
 })
 
-const hasSilentError = computed(() => {
-  return hasError.value && resource.value?.apiState.error.statusCode >= 400 && resource.value?.apiState.error.statusCode < 500
+const hasSilentError = computed<boolean>(() => {
+  if (!resource.value || resource.value.apiState.status !== CwaResourceApiStatuses.ERROR) {
+    return false
+  }
+  const statusCode = resource.value?.apiState?.error?.statusCode
+  return !!(statusCode && statusCode >= 400 && statusCode < 500)
 })
 
 const resolvedComponent = computed(() => {
@@ -77,8 +81,11 @@ const resolvedComponent = computed(() => {
   }
 
   const instance = getCurrentInstance()
-
-  if (typeof instance?.appContext.components !== 'object' || !(resourceUiComponent.value in instance.appContext.components)) {
+  if (
+    typeof instance?.appContext.components !== 'object' ||
+    !resourceUiComponent.value ||
+    !(resourceUiComponent.value in instance.appContext.components)
+  ) {
     return
   }
 
@@ -86,11 +93,8 @@ const resolvedComponent = computed(() => {
 })
 
 const methods = {
-  getFetchResourceDeps () {
-    return [hasSilentError, resource]
-  },
-  async fetchResource ([hasSilentError, resource]) {
-    if (resource.value?.apiState.ssr && !resource.value?.data && hasSilentError.value) {
+  async fetchResource ([hasSilentError, resource]: [boolean, CwaCurrentResourceInterface]) {
+    if (resource?.apiState.ssr && !resource?.data && hasSilentError) {
       await $cwa.fetchResource({
         path: props.iri
       })
@@ -99,7 +103,7 @@ const methods = {
 }
 
 onMounted(() => {
-  watch(methods.getFetchResourceDeps, methods.fetchResource, {
+  watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true
   })
 })
