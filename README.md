@@ -7,6 +7,14 @@ This file is auto-generate by a github hook please modify README.template.md if 
 
 This module is designed to work with the [API Component Bundle](https://github.com/components-web-app/api-components-bundle) and will provide a full user-interface and utilities to easily create custom web apps with an advanced in-line content management system
 
+## CWA Module in Action
+
+### Template using this module for front-end and API Components Bundle for back-end
+https://github.com/components-web-app/components-web-app/tree/v3
+
+### Template application deployed online
+https://cwa-v3-silverback-web-apps.vercel.app/
+
 ## Development
 
 - Run `npm run dev:prepare` to generate type stubs.
