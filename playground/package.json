@@ -3,8 +3,8 @@
   "name": "nuxt-cwa-module-playground",
   "devDependencies": {
     "@nuxt/devtools": "^0.6.1",
+    "@nuxtjs/tailwindcss": "^6.7.2",
     "@sidebase/nuxt-auth": "^0.4.3",
-    "@tailwindcss/forms": "^0.5.3",
     "@vite-pwa/nuxt": "^0.0.9",
     "autoprefixer": "^10.4.13",
     "postcss": "^8.4.21",

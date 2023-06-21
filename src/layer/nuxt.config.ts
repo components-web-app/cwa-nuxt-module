@@ -1,6 +1,1 @@
-import CwaModule from '../module'
-export default defineNuxtConfig({
-  modules: [
-    CwaModule
-  ]
-})
+export default defineNuxtConfig({})
