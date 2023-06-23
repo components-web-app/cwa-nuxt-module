@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import * as app from '#app'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import * as ResourceUtils from '../../../resources/resource-utils'
 import actions, { CwaResourcesActionsInterface } from './actions'
 import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import getters from './getters'
+import * as app from '#app'
 
 vi.mock('../../../resources/resource-utils', async () => {
   const actual = await vi.importActual<any>('../../../resources/resource-utils')
