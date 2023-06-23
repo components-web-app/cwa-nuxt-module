@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import logger from 'consola'
 import { reactive } from 'vue'
+import { flushPromises } from '@vue/test-utils'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
@@ -30,12 +31,6 @@ const MessageEvent = vi.fn((eventId = 'abc') => ({
   lastEventId: eventId
 }))
 vi.stubGlobal('MessageEvent', MessageEvent)
-
-function delay (time: number, returnValue: any = undefined) {
-  return new Promise((resolve) => {
-    setTimeout(() => { resolve(returnValue) }, time)
-  })
-}
 
 let mercureStoreDef: MercureStore
 let resourcesStoreDef: ResourcesStore
@@ -325,7 +320,7 @@ describe('Mercure -> handleMercureMessage', () => {
 
     // update resource so not pending
     current.byId.id.apiState.status = CwaResourceApiStatuses.SUCCESS
-    await delay(1)
+    await flushPromises()
     expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
   })
 })

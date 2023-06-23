@@ -2,6 +2,7 @@ import { describe, test, vi, beforeEach, expect, beforeAll } from 'vitest'
 import { setActivePinia } from 'pinia'
 import logger from 'consola'
 import { createTestingPinia } from '@pinia/testing'
+import { flushPromises } from '@vue/test-utils'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
 import ApiDocumentation from './api-documentation'
 import CwaFetch from './fetcher/cwa-fetch'
@@ -108,7 +109,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
   test('We will wait for docsPath to be set before continuing', async () => {
     apiDocumentation.getApiDocumentation()
     expect(logger.debug).toHaveBeenLastCalledWith('Waiting for docsPath to bet set to fetch API Documentation')
-    await delay(5)
+    await flushPromises()
     expect(cwaFetchInstance.fetch).not.toHaveBeenCalled()
   })
 
@@ -116,7 +117,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
     // will proceed with fetching when set
     apiDocumentation.setDocsPathFromLinkHeader(validLinkHeader)
     vi.clearAllMocks()
-    await delay(2)
+    await flushPromises()
     expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('/')
     expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('https://some-domain/docs.jsonld')
     await delay(mockedFetchResponseTime)
@@ -145,7 +146,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
     expect(await docs).toEqual(apiDocsObject)
     expect(await docsAwait).toEqual(apiDocsObject)
     expect(logger.debug).toHaveBeenCalledWith('Waiting for previous request to complete for API Documentation')
-    await delay(mockedFetchResponseTime)
+    await flushPromises()
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
   })
 })

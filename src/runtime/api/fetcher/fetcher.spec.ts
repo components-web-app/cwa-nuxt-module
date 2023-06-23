@@ -1,5 +1,6 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
+import { flushPromises } from '@vue/test-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -405,7 +406,7 @@ describe('Fetcher -> fetchManifest', () => {
       }
       await fetcher.fetchResource(fetchResourceEvent)
       expect(fetcher.fetchBatch).not.toHaveBeenCalled()
-      await delay(2)
+      await flushPromises()
       expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     })
 

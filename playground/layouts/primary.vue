@@ -1,7 +1,7 @@
 <template>
   <div>
-    <CwaUtilsProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
-    <CwaUtilsSpinner :show="$cwa.resources.isLoading.value === true" class="page-spinner" />
+    <CwaUiProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
+    <CwaUiSpinner :show="$cwa.resources.isLoading.value === true" class="page-spinner" />
     <header>
       <Popover class="relative bg-white">
         <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">

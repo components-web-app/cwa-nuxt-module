@@ -103,8 +103,8 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
         prefix: 'Cwa'
       })
       dirs.unshift({
-        path: join(vueTemplatesDir, 'components', 'utils'),
-        prefix: 'CwaUtils'
+        path: join(vueTemplatesDir, 'components', 'ui'),
+        prefix: 'CwaUi'
       })
 
       // component dirs to be configured by application - global, so they are split

@@ -1,13 +1,13 @@
 <template>
   <div v-if="showLoader" class="component-group-placeholder">
-    <CwaUtilsSpinner :show="true" />
+    <CwaUiSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
   </template>
-  <CwaUtilsAlertInfo v-else-if="signedInAndResourceExists">
+  <CwaUiAlertInfo v-else-if="signedInAndResourceExists">
     <p>No component positions in this component group - add functionality coming soon</p>
-  </CwaUtilsAlertInfo>
+  </CwaUiAlertInfo>
 </template>
 
 <script setup lang="ts">

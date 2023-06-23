@@ -195,8 +195,8 @@ export const options:CwaModuleOptions = {
           global: true
         })
         expect(mockDirs).toContainEqual({
-          path: join(mockResolver('./runtime/templates'), 'components', 'utils'),
-          prefix: 'CwaUtils'
+          path: join(mockResolver('./runtime/templates'), 'components', 'ui'),
+          prefix: 'CwaUi'
         })
         expect(mockDirs).toContainEqual({
           path: join(mockResolver('./runtime/templates'), 'components', 'main'),

@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import * as nuxt from '#app'
+import { flushPromises } from '@vue/test-utils'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
 
@@ -18,12 +19,6 @@ function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded 
     },
     redirectedFrom: undefined
   }
-}
-
-function delay (time: number, returnValue: any = undefined) {
-  return new Promise((resolve) => {
-    setTimeout(() => { resolve(returnValue) }, time)
-  })
 }
 
 describe('Test route middleware', () => {
@@ -160,8 +155,7 @@ describe('Test route middleware', () => {
     })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute, toRoute)
-    // real delay needed for an await because we will not wait for that
-    await delay(1)
+    await flushPromises()
     expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
     expect(nuxt.callWithNuxt).toHaveBeenCalledWith(nuxt.useNuxtApp.mock.results[0].value, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])
   })
