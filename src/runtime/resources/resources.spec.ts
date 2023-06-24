@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { computed } from 'vue'
 import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -84,7 +84,7 @@ describe('Resources', () => {
     })
   })
 
-  describe('current resources', () => {
+  describe('currentResources', () => {
     test('should return formatted resources', () => {
       const { resources, resourcesStore } = createResources()
       const resourceA = { id: 'a', otherData: {} }
@@ -110,6 +110,10 @@ describe('Resources', () => {
     })
   })
 
+  describe.todo('displayFetchStatus', () => {})
+
+  describe.todo('pageLoadResources', () => {})
+
   describe('getComponentGroupByReference', () => {
     test('Returns a component if it exists with the same reference', () => {
       const { resources, resourcesStore } = createResources()
@@ -124,7 +128,8 @@ describe('Resources', () => {
     })
   })
 
-  describe('page load progress', () => {
+  describe('pageLoadProgress', () => {
+    test.todo('REVIEW THESE TESTS - TOKEN NOT PRESENT?', () => {})
     test('should return default progress IF token is not present', () => {
       const { resources, fetcherStore } = createResources()
       const initialStoreState = fetcherStore.useStore()
@@ -185,4 +190,49 @@ describe('Resources', () => {
       })
     })
   })
+
+  describe.todo('getFetchStatusType', () => {})
+
+  describe.todo('getLayoutIriByFetchStatus', () => {})
+
+  describe.todo('getPageIriByFetchStatus', () => {})
+
+  describe('pageIri getter', () => {
+    test('makes correct calls and returns correct value', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'getPageIriByFetchStatus').mockImplementationOnce(() => 'mocked getPageIriByFetchStatus')
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockImplementationOnce(() => 'status')
+      expect(resources.pageIri.value).toEqual('mocked getPageIriByFetchStatus')
+      expect(resources.getPageIriByFetchStatus).toHaveBeenCalledWith('status')
+    })
+  })
+
+  describe('page getter', () => {
+    test('Returns undefined if no pageIri value', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageIri', 'get').mockImplementationOnce(() => computed(() => undefined))
+      expect(resources.page).toBeUndefined()
+    })
+
+    test('Returns getResource result passing pageIri as a parameter', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'getResource').mockImplementationOnce(() => computed(() => 'resource'))
+      vi.spyOn(resources, 'pageIri', 'get').mockImplementation(() => computed(() => 'pageIri'))
+      expect(resources.page).toEqual('resource')
+      expect(resources.getResource).toHaveBeenCalledWith('pageIri')
+      vi.clearAllMocks()
+    })
+  })
+
+  describe.todo('layoutIri getter', () => {})
+
+  describe.todo('layout getter', () => {})
+
+  describe.todo('isLoading getter', () => {})
+
+  describe.todo('resourceLoadStatus getter', () => {})
+
+  describe.todo('fetcherStore getter', () => {})
+
+  describe.todo('resourcesStore getter', () => {})
 })

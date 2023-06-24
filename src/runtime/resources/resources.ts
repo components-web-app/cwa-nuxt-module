@@ -49,7 +49,6 @@ export class Resources {
     })
   }
 
-  // todo: start
   private get displayFetchStatus () {
     const fetchingToken = this.fetcherStore.primaryFetch.fetchingToken
     // if the page is fetched in a primary fetching token in progress we start showing that page load progress
@@ -213,7 +212,6 @@ export class Resources {
       return this.getResource(layoutIri).value
     })
   }
-  // todo: end
 
   public get isLoading (): ComputedRef<boolean> {
     return computed(() => {

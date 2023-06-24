@@ -9,7 +9,6 @@ import {
   installModule
 } from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
-import { Config } from 'tailwindcss'
 
 export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
@@ -120,18 +119,19 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
       })
     })
 
-    nuxt.hook('tailwindcss:config', (tailwindConfig: Partial<Config>) => {
-      if (Array.isArray(tailwindConfig.corePlugins)) {
-        const preflightSafelistIndex = tailwindConfig.corePlugins.indexOf('preflight')
-        if (preflightSafelistIndex > -1) {
-          tailwindConfig.corePlugins.splice(preflightSafelistIndex, 1)
-        }
-        return
-      }
-      tailwindConfig.corePlugins = {
-        ...tailwindConfig.corePlugins,
-        preflight: false
-      }
-    })
+    // Todo: consider this approach - test if it's working in real world application and then implement and test
+    // nuxt.hook('tailwindcss:config', (tailwindConfig: Partial<Config>) => {
+    //   if (Array.isArray(tailwindConfig.corePlugins)) {
+    //     const preflightSafelistIndex = tailwindConfig.corePlugins.indexOf('preflight')
+    //     if (preflightSafelistIndex > -1) {
+    //       tailwindConfig.corePlugins.splice(preflightSafelistIndex, 1)
+    //     }
+    //     return
+    //   }
+    //   tailwindConfig.corePlugins = {
+    //     ...tailwindConfig.corePlugins,
+    //     preflight: false
+    //   }
+    // })
   }
 })

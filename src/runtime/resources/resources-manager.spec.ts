@@ -96,7 +96,7 @@ describe('Resources manager', () => {
     })
   })
 
-  describe('update resource', () => {
+  describe('updateResource', () => {
     test('should send request AND then save result of that request', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager()
       const mockResource = { id: 'new-resource' }
@@ -125,7 +125,7 @@ describe('Resources manager', () => {
     })
   })
 
-  describe('save resource', () => {
+  describe('saveResource', () => {
     test('should save resource', () => {
       const { resourcesManager, resourceStore } = createResourcesManager()
       const mockCwaResource: CwaResource = {
@@ -146,4 +146,8 @@ describe('Resources manager', () => {
       expect(result).toEqual(mockResult)
     })
   })
+
+  describe.todo('deleteResource', () => {})
+  describe.todo('requestOptions', () => {})
+  describe.todo('resourcesStore getter', () => {})
 })
