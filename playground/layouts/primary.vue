@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="$cwa.resources.layoutIri.value">
     <CwaUiProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
     <CwaUiSpinner :show="$cwa.resources.isLoading.value === true" class="page-spinner" />
     <header>
@@ -7,12 +7,14 @@
         <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">
           <PopoverGroup as="nav" class="space-x-5 flex">
             <CwaComponentGroup reference="top" :location="$cwa.resources.layoutIri.value" :allowed-components="['/component/navigation_links']" />
-            <nuxt-link v-if="$cwa.auth.status.value === CwaAuthStatus.SIGNED_OUT" to="/login" class="text-base font-medium text-gray-500 hover:text-gray-900">
-              Sign In
-            </nuxt-link>
-            <a v-else-if="$cwa.auth.status.value === CwaAuthStatus.SIGNED_IN" href="#" class="text-base font-medium text-gray-500 hover:text-gray-900" @click.prevent="signOut">
-              Sign Out
-            </a>
+            <ClientOnly>
+              <nuxt-link v-if="$cwa.auth.status.value === CwaAuthStatus.SIGNED_OUT" to="/login" class="text-base font-medium text-gray-500 hover:text-gray-900">
+                Sign In
+              </nuxt-link>
+              <a v-else-if="$cwa.auth.status.value === CwaAuthStatus.SIGNED_IN" href="#" class="text-base font-medium text-gray-500 hover:text-gray-900" @click.prevent="signOut">
+                Sign Out
+              </a>
+            </ClientOnly>
           </PopoverGroup>
         </div>
       </Popover>

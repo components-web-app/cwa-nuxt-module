@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <cwa-admin-header v-if="$cwa.auth.hasRole(CwaUserRoles.ADMIN)" />
+    <cwa-admin-header v-if="showAdmin" />
   </ClientOnly>
   <NuxtLayout :name="layoutName">
     <slot />
@@ -17,5 +17,9 @@ const $cwa = useCwa()
 const layoutName = computed(() => {
   const layoutResource = $cwa.resources.layout.value
   return layoutResource?.data?.uiComponent || 'cwa-default'
+})
+
+const showAdmin = computed(() => {
+  return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
 </script>
