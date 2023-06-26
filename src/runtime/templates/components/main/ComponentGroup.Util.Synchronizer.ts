@@ -66,7 +66,7 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   private async updateAllowedComponents (allowedComponents: string[]|null, resource: any) {
-    if (_isEqual(allowedComponents, resource?.data?.allowedComponents)) {
+    if (_isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
       return
     }
 

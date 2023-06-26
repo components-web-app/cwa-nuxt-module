@@ -72,7 +72,6 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     const vueTemplatesDir = resolve('./runtime/templates')
 
-    // todo: test
     const extendPagesCallback = (pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)

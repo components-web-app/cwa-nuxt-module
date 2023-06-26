@@ -77,32 +77,6 @@ describe('Group synchronizer', () => {
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
 
-  test('should create resource IF loading is not in progress, user is signed in, resource does not exist', async () => {
-    const { auth, resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
-
-    const mockResource = computed(() => { return null })
-    const mockLocation = 'mockLocation'
-    const mockReference = computed(() => 'mockReference')
-    const mockComponents = ['a', 'b', 'c']
-
-    // @ts-ignore
-    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
-
-    resources.isLoading.value = false
-    auth.signedIn.value = true
-
-    await nextTick()
-
-    expect(resourcesManager.createResource).toHaveBeenCalledWith({
-      endpoint: '/_/component_groups',
-      data: {
-        reference: mockReference.value,
-        location: mockLocation,
-        allowedComponents: mockComponents
-      }
-    })
-  })
-
   test('should create resource with additional location info IF loading is not in progress, user is signed in, resource does not exist', async () => {
     const { auth, resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
 
@@ -126,6 +100,32 @@ describe('Group synchronizer', () => {
         location: mockLocation,
         allowedComponents: mockComponents,
         pages: [mockLocation]
+      }
+    })
+  })
+
+  test('should create resource IF loading is not in progress, user is signed in, resource does not exist', async () => {
+    const { auth, resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+
+    const mockResource = computed(() => { return null })
+    const mockLocation = 'mockLocation'
+    const mockReference = computed(() => 'mockReference')
+    const mockComponents = ['a', 'b', 'c']
+
+    // @ts-ignore
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
+
+    resources.isLoading.value = false
+    auth.signedIn.value = true
+
+    await nextTick()
+
+    expect(resourcesManager.createResource).toHaveBeenCalledWith({
+      endpoint: '/_/component_groups',
+      data: {
+        reference: mockReference.value,
+        location: mockLocation,
+        allowedComponents: mockComponents
       }
     })
   })
@@ -181,6 +181,34 @@ describe('Group synchronizer', () => {
     const mockLocation = 'mockLocation'
     const mockReference = computed(() => 'mockReference')
     const mockComponents = ['a', 'b', 'c']
+
+    // @ts-ignore
+    groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
+
+    resources.isLoading.value = false
+    auth.signedIn.value = true
+
+    await nextTick()
+
+    expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+  })
+
+  test('should NOT update resource IF allowed components are undefined', async () => {
+    const { auth, resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+    const mockId = '/test'
+    const mockResource = computed(() => {
+      return {
+        data: {
+          '@id': mockId
+        },
+        apiState: {
+          status: CwaResourceApiStatuses.SUCCESS
+        }
+      }
+    })
+    const mockLocation = 'mockLocation'
+    const mockReference = computed(() => 'mockReference')
+    const mockComponents = null
 
     // @ts-ignore
     groupSynchronizer.createSyncWatcher(mockResource, mockLocation, mockReference, mockComponents)
