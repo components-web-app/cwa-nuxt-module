@@ -11,6 +11,8 @@ import FetchStatusManager from './api/fetcher/fetch-status-manager'
 import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import * as processComposables from './composables/process'
+import Admin from './admin/admin'
+import NavigationGuard from './admin/navigation-guard'
 
 vi.mock('./storage/storage', () => {
   return {
@@ -19,7 +21,8 @@ vi.mock('./storage/storage', () => {
         apiDocumentation: vi.fn(),
         resources: vi.fn(),
         fetcher: vi.fn(),
-        mercure: vi.fn()
+        mercure: vi.fn(),
+        admin: vi.fn()
       }
     }))
   }
@@ -54,15 +57,25 @@ vi.mock('./resources/resources-manager')
 vi.mock('./resources/resources')
 vi.mock('./api/auth')
 vi.mock('./api/forms')
+vi.mock('./admin/admin')
+vi.mock('./admin/navigation-guard', () => {
+  return {
+    default: vi.fn(() => ({
+      getMiddleware: vi.fn()
+    }))
+  }
+})
 
 const path = 'something'
 const storeName = 'dummystore'
+const $router = vi.fn()
 function createCwa ({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
   // @ts-ignore
   return new Cwa({
     _route: {
       path
-    }
+    },
+    $router
   }, {
     apiUrlBrowser,
     apiUrl,
@@ -164,5 +177,18 @@ describe('Cwa class test', () => {
     const stores = Storage.mock.results[0].value.stores
     expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0])
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
+  })
+
+  test('Admin is initialised and accessible', () => {
+    const stores = Storage.mock.results[0].value.stores
+    expect(Admin).toBeCalledWith(stores.admin)
+    expect($cwa.admin).toBe(Admin.mock.instances[0])
+  })
+
+  test('Admin navigation guard is initialised', () => {
+    const stores = Storage.mock.results[0].value.stores
+    expect(NavigationGuard).toBeCalledWith($router, stores.admin)
+    expect($cwa.adminNavGuard).toBe(NavigationGuard.mock.results[0].value)
+    expect($cwa.adminMiddleware).toBe(NavigationGuard.mock.results[0].value.getMiddleware)
   })
 })

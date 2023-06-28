@@ -11,10 +11,11 @@ import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import Auth from './api/auth'
 import Forms from './api/forms'
-import { NuxtApp } from '#app/nuxt'
+import { useProcess } from './composables/process'
+import Admin from './admin/admin'
+import NavigationGuard from './admin/navigation-guard'
 import { useCookie } from '#imports'
-import { useProcess } from '#cwa/runtime/composables/process'
-import Admin from '#cwa/runtime/admin/admin'
+import { NuxtApp } from '#app/nuxt'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -37,8 +38,9 @@ export default class Cwa {
   public readonly forms: Forms
 
   public readonly admin: Admin
+  private adminNavGuard: NavigationGuard
 
-  constructor (nuxtApp: Pick<NuxtApp, '_route'>, options: CwaModuleOptions) {
+  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
@@ -60,6 +62,11 @@ export default class Cwa {
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
     this.admin = new Admin(this.storage.stores.admin)
+    this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
+  }
+
+  public get adminMiddleware () {
+    return this.adminNavGuard.getMiddleware
   }
 
   // API Documentation service is private, exposing only function required by applications

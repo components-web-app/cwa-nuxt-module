@@ -1,12 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
+import { RouteLocationNormalized } from 'vue-router'
 import { CwaResource } from './resources/resource-utils'
 import { callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''
 
-export default defineNuxtRouteMiddleware(async (to) => {
+export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => {
   const { isClient } = useProcess()
   middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()
