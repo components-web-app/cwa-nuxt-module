@@ -1,6 +1,6 @@
 <template>
-  <div v-if="$cwa.resources.layoutIri.value">
-    <CwaUiProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar" />
+  <div v-if="$cwa.resources.layoutIri.value" class="relative">
+    <CwaUiProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar fixed left-0 top-0 z-50" />
     <CwaUiSpinner :show="$cwa.resources.isLoading.value === true" class="page-spinner" />
     <header>
       <Popover class="relative bg-white">
@@ -45,12 +45,6 @@ async function signOut () {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  z-index: 1000;
-}
-.page-progress-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
   z-index: 1000;
 }
 </style>
