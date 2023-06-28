@@ -1,7 +1,7 @@
 <template>
   <div v-if="$cwa.resources.layoutIri.value" class="relative">
     <CwaUiProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar fixed left-0 top-0 z-50" />
-    <CwaUiSpinner :show="$cwa.resources.isLoading.value === true" class="page-spinner" />
+    <CwaUiSpinner :show="$cwa.resources.isLoading.value === true" class="absolute top-4 right-4 z-50" />
     <header>
       <Popover class="relative bg-white">
         <div class="mx-auto flex max-w-7xl items-center p-6 justify-start space-x-10 lg:px-8">
@@ -39,12 +39,3 @@ async function signOut () {
   await $cwa.auth.signOut()
 }
 </script>
-
-<style>
-.page-spinner {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-}
-</style>
