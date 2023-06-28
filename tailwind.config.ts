@@ -11,7 +11,7 @@ module.exports = {
       colors: {
         dark: colors.stone['900'],
         light: colors.stone['100'],
-        medium: colors.stone['500']
+        medium: colors.stone['400']
       }
     }
   },
