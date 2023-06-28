@@ -6,9 +6,13 @@ export default class Admin {
   public constructor (private adminStoreDefinition: AdminStore) {
   }
 
-  public setEditMode (editing: boolean) {
+  public setEditing (editing?: boolean) {
     const { isEditing } = storeToRefs(this.adminStore)
-    isEditing.value = editing
+    isEditing.value = editing || !isEditing.value
+  }
+
+  public get isEditing () {
+    return this.adminStore.isEditing
   }
 
   private get adminStore () {
