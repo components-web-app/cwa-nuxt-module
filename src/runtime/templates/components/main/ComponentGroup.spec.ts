@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -22,7 +22,7 @@ const mockReference = 'mockReference'
 const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
 const mockCwaResources = {
-  getResource: vi.fn(),
+  getResource: vi.fn().mockImplementation(() => computed(() => { return undefined })),
   getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference')
 }
 

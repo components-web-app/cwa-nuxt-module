@@ -14,6 +14,7 @@ import Forms from './api/forms'
 import { NuxtApp } from '#app/nuxt'
 import { useCookie } from '#imports'
 import { useProcess } from '#cwa/runtime/composables/process'
+import Admin from '#cwa/runtime/admin/admin'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -34,6 +35,8 @@ export default class Cwa {
   public readonly auth: Auth
 
   public readonly forms: Forms
+
+  public readonly admin: Admin
 
   constructor (nuxtApp: Pick<NuxtApp, '_route'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
@@ -56,6 +59,7 @@ export default class Cwa {
     this.auth = new Auth(this.cwaFetch, this.mercure, this.fetcher, this.storage.stores.auth, this.storage.stores.resources, this.storage.stores.fetcher, useCookie('cwa_auth'))
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
+    this.admin = new Admin(this.storage.stores.admin)
   }
 
   // API Documentation service is private, exposing only function required by applications

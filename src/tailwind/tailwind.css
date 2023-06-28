@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.cwa-dark {
+  @apply cwa-bg-dark cwa-text-light;
+}
+.cwa-section {
+  @apply cwa-p-4;
+}
+.cwa-border {
+  @apply cwa-border-medium cwa-border-solid;
+}
