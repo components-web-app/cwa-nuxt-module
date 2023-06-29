@@ -42,13 +42,13 @@ describe('Test route middleware', () => {
   })
 
   const initClientSide = vi.fn()
-  const adminMiddleware = vi.fn((): boolean|RouteLocationRaw => true)
+  const adminNavigationGuardFn = vi.fn((): boolean|RouteLocationRaw => true)
 
   beforeAll(() => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminMiddleware }
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -70,7 +70,7 @@ describe('Test route middleware', () => {
 
   test('Admin Route Guard responding false results in aborted navigation', async () => {
     const toRoute = createToRoute()
-    adminMiddleware.mockImplementationOnce(() => false)
+    adminNavigationGuardFn.mockImplementationOnce(() => false)
     const response = await routeMiddleware(toRoute)
     expect(nuxt.abortNavigation).toHaveBeenCalled()
     expect(response).toEqual('abortNavigationResponse')
@@ -78,7 +78,7 @@ describe('Test route middleware', () => {
 
   test('Admin Route Guard responding false results in aborted navigation', async () => {
     const toRoute = createToRoute()
-    adminMiddleware.mockImplementationOnce(() => ({ path: 'path' }))
+    adminNavigationGuardFn.mockImplementationOnce(() => ({ path: 'path' }))
     const response = await routeMiddleware(toRoute)
     expect(nuxt.navigateTo).toHaveBeenCalledWith({ path: 'path' })
     expect(response).toEqual('navigateToResponse')
@@ -145,7 +145,7 @@ describe('Test route middleware', () => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminMiddleware }
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -164,7 +164,7 @@ describe('Test route middleware', () => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminMiddleware }
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
