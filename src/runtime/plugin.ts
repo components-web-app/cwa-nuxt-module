@@ -16,8 +16,7 @@ export default defineNuxtPlugin({
   enforce: 'pre',
   setup (nuxtApp: NuxtApp): SetupInterface {
     const cwa = new Cwa(nuxtApp, options)
-    addRouteMiddleware('cwa-admin-nav-guard', cwa.adminMiddleware, { global: true })
-    addRouteMiddleware('cwa-data-loader', CwaRouteMiddleware, { global: true })
+    addRouteMiddleware('cwa-route-middleware', CwaRouteMiddleware, { global: true })
     return {
       provide: {
         cwa

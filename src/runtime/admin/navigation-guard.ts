@@ -1,6 +1,5 @@
 import { RouteLocationNormalized, Router } from 'vue-router'
 import { AdminStore } from '#cwa/runtime/storage/stores/admin/admin-store'
-import { abortNavigation, defineNuxtRouteMiddleware, navigateTo } from '#app'
 
 export default class NavigationGuard {
   private programmatic = false
@@ -39,25 +38,25 @@ export default class NavigationGuard {
     })
   }
 
-  public get getMiddleware () {
-    return defineNuxtRouteMiddleware((toRoute: RouteLocationNormalized) => {
+  public get adminNavigationGuardFn () {
+    return (toRoute: RouteLocationNormalized) => {
       const cwaForceQuery = toRoute.query?.cwa_force
 
       if (!this.allowNavigation(toRoute)) {
-        return abortNavigation()
+        return false
       }
 
       this.programmatic = false
       if (!cwaForceQuery) {
-        return
+        return true
       }
 
       // only redirect if necessary - infinite loops otherwise
-      return navigateTo({
+      return {
         path: toRoute.path,
         query: toRoute.query
-      })
-    })
+      }
+    }
   }
 
   private get adminStore () {

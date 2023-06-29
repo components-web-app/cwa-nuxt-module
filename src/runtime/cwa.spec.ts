@@ -61,7 +61,7 @@ vi.mock('./admin/admin')
 vi.mock('./admin/navigation-guard', () => {
   return {
     default: vi.fn(() => ({
-      getMiddleware: vi.fn()
+      adminNavigationGuardFn: vi.fn()
     }))
   }
 })
@@ -189,6 +189,6 @@ describe('Cwa class test', () => {
     const stores = Storage.mock.results[0].value.stores
     expect(NavigationGuard).toBeCalledWith($router, stores.admin)
     expect($cwa.adminNavGuard).toBe(NavigationGuard.mock.results[0].value)
-    expect($cwa.adminMiddleware).toBe(NavigationGuard.mock.results[0].value.getMiddleware)
+    expect($cwa.adminNavigationGuardFn).toBe(NavigationGuard.mock.results[0].value.adminNavigationGuardFn)
   })
 })

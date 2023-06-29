@@ -4,6 +4,7 @@ import { flushPromises } from '@vue/test-utils'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
 import * as nuxt from '#app'
+import { RouteLocationRaw } from '#vue-router'
 
 function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded {
   return {
@@ -22,12 +23,12 @@ function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded 
 }
 
 describe('Test route middleware', () => {
-  let resolved = false
+  let fetchRouteRedirectResolved = false
 
   const fetchRouteFn = vi.fn(() => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolved = true
+        fetchRouteRedirectResolved = true
         resolve(true)
       }, 5)
     })
@@ -35,26 +36,29 @@ describe('Test route middleware', () => {
 
   const fetchRouteRedirectFn = vi.fn(() => {
     return new Promise((resolve) => {
-      resolved = true
+      fetchRouteRedirectResolved = true
       resolve({ redirectPath: '/redirect-path' })
     })
   })
 
   const initClientSide = vi.fn()
+  const adminMiddleware = vi.fn((): boolean|RouteLocationRaw => true)
 
   beforeAll(() => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide }
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminMiddleware }
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
     vi.spyOn(nuxt, 'navigateTo').mockImplementation(() => 'navigateToResponse')
+    vi.spyOn(nuxt, 'abortNavigation').mockImplementation(() => 'abortNavigationResponse')
+    vi.spyOn(nuxt, 'navigateTo').mockImplementation(() => 'navigateToResponse')
   })
 
   beforeEach(() => {
-    resolved = false
+    fetchRouteRedirectResolved = false
   })
 
   afterEach(() => {
@@ -64,21 +68,37 @@ describe('Test route middleware', () => {
     initClientSide.mockClear()
   })
 
+  test('Admin Route Guard responding false results in aborted navigation', async () => {
+    const toRoute = createToRoute()
+    adminMiddleware.mockImplementationOnce(() => false)
+    const response = await routeMiddleware(toRoute)
+    expect(nuxt.abortNavigation).toHaveBeenCalled()
+    expect(response).toEqual('abortNavigationResponse')
+  })
+
+  test('Admin Route Guard responding false results in aborted navigation', async () => {
+    const toRoute = createToRoute()
+    adminMiddleware.mockImplementationOnce(() => ({ path: 'path' }))
+    const response = await routeMiddleware(toRoute)
+    expect(nuxt.navigateTo).toHaveBeenCalledWith({ path: 'path' })
+    expect(response).toEqual('navigateToResponse')
+  })
+
   test('Test route middleware is enabled by default', async () => {
     vi.useFakeTimers()
     const toRoute = createToRoute()
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     vi.runAllTimers()
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute)
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
-    expect(resolved).toBe(true)
+    expect(fetchRouteRedirectResolved).toBe(true)
     vi.useRealTimers()
   })
 
   test('Test route middleware can be set to true', async () => {
     const toRoute = createToRoute(true)
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute)
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
@@ -86,7 +106,7 @@ describe('Test route middleware', () => {
 
   test('Test route middleware can be disabled', async () => {
     const toRoute = createToRoute(false)
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     expect(fetchRouteFn).not.toHaveBeenCalled()
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
   })
@@ -99,11 +119,11 @@ describe('Test route middleware', () => {
       }
     })
     const toRoute = createToRoute()
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute)
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
-    expect(resolved).toBe(true)
+    expect(fetchRouteRedirectResolved).toBe(true)
   })
 
   test('Test we do not await promise for client-side requests. See notes on middleware file re returning to original page if new page fetch not complete.', async () => {
@@ -114,18 +134,18 @@ describe('Test route middleware', () => {
       }
     })
     const toRoute = createToRoute()
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute)
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
-    expect(resolved).toBe(false)
+    expect(fetchRouteRedirectResolved).toBe(false)
   })
 
   test('Server-side redirects', async () => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide }
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminMiddleware }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -135,7 +155,7 @@ describe('Test route middleware', () => {
       }
     })
     const toRoute = createToRoute()
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
     expect(nuxt.callWithNuxt).toHaveBeenCalledWith(nuxt.useNuxtApp.mock.results[0].value, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])
   })
@@ -144,7 +164,7 @@ describe('Test route middleware', () => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide }
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminMiddleware }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -154,7 +174,7 @@ describe('Test route middleware', () => {
       }
     })
     const toRoute = createToRoute()
-    await routeMiddleware(toRoute, toRoute)
+    await routeMiddleware(toRoute)
     await flushPromises()
     expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
     expect(nuxt.callWithNuxt).toHaveBeenCalledWith(nuxt.useNuxtApp.mock.results[0].value, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])

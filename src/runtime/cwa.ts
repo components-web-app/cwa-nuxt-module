@@ -65,8 +65,8 @@ export default class Cwa {
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
   }
 
-  public get adminMiddleware () {
-    return this.adminNavGuard.getMiddleware
+  public get adminNavigationGuardFn () {
+    return this.adminNavGuard.adminNavigationGuardFn
   }
 
   // API Documentation service is private, exposing only function required by applications
