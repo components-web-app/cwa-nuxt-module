@@ -99,6 +99,9 @@ importers:
       tailwindcss:
         specifier: ^3.3.2
         version: 3.3.2
+      typescript:
+        specifier: ^5.1.6
+        version: 5.1.6
       vite-tsconfig-paths:
         specifier: ^4.2.0
         version: 4.2.0(typescript@5.1.6)(vite@4.3.9)
@@ -2519,32 +2522,6 @@ packages:
       - supports-color
     dev: true
 
-  /@nuxt/kit@3.6.0(rollup@3.25.3):
-    resolution: {integrity: sha512-rqQYyWlhE42oWRQNR58KU1JYhoWryN78x8eYzFTHgalfpMjtPqZv2j9K4+hFRk0XLRUKnut4tE/3+UYyZ7ybVw==}
-    engines: {node: ^14.18.0 || >=16.10.0}
-    dependencies:
-      '@nuxt/schema': 3.6.0(rollup@3.25.3)
-      c12: 1.4.2
-      consola: 3.2.2
-      defu: 6.1.2
-      globby: 13.2.0
-      hash-sum: 2.0.0
-      ignore: 5.2.4
-      jiti: 1.18.2
-      knitwork: 1.0.0
-      mlly: 1.4.0
-      pathe: 1.1.1
-      pkg-types: 1.0.3
-      scule: 1.0.0
-      semver: 7.5.3
-      unctx: 2.3.1
-      unimport: 3.0.10(rollup@3.25.3)
-      untyped: 1.3.2
-    transitivePeerDependencies:
-      - rollup
-      - supports-color
-    dev: true
-
   /@nuxt/kit@3.6.1(rollup@2.79.1):
     resolution: {integrity: sha512-7AoiKV0zAtyT3ZvjMfGislMcB+JMbBZxYw68/oWtkEPXCfGQMYuiMI9Ue246/0JT2Yp2KZclEgrJEJ6NLkqFcw==}
     engines: {node: ^14.18.0 || >=16.10.0}
@@ -2642,24 +2619,6 @@ packages:
       std-env: 3.3.3
       ufo: 1.1.2
       unimport: 3.0.10(rollup@2.79.1)
-      untyped: 1.3.2
-    transitivePeerDependencies:
-      - rollup
-      - supports-color
-    dev: true
-
-  /@nuxt/schema@3.6.0(rollup@3.25.3):
-    resolution: {integrity: sha512-6/nq+W77JODDfhMBZTi7HCD3hT5oHegsasAzUnDmvwWuY1io7BXX9x2mDhL8E3LhVzQuN5vhi3GBgwHwCfdKEA==}
-    engines: {node: ^14.18.0 || >=16.10.0}
-    dependencies:
-      defu: 6.1.2
-      hookable: 5.5.3
-      pathe: 1.1.1
-      pkg-types: 1.0.3
-      postcss-import-resolver: 2.0.0
-      std-env: 3.3.3
-      ufo: 1.1.2
-      unimport: 3.0.10(rollup@3.25.3)
       untyped: 1.3.2
     transitivePeerDependencies:
       - rollup
@@ -2969,7 +2928,7 @@ packages:
   /@nuxtjs/tailwindcss@6.8.0(rollup@3.25.3)(webpack@5.88.1):
     resolution: {integrity: sha512-jzuvD1nfA2BPnSbHtKK0aiI51ndMa7lNGL1iDEFuEPsltzilZ9ED7zOP6niGTrImg0n5Yt4GEJpixi6yWwp9Hw==}
     dependencies:
-      '@nuxt/kit': 3.6.0(rollup@3.25.3)
+      '@nuxt/kit': 3.6.1(rollup@3.25.3)
       '@nuxt/postcss8': 1.1.3(webpack@5.88.1)
       autoprefixer: 10.4.14(postcss@8.4.24)
       chokidar: 3.5.3
@@ -2978,8 +2937,8 @@ packages:
       cookie-es: 1.0.0
       defu: 6.1.2
       destr: 2.0.0
-      h3: 1.7.0
-      iron-webcrypto: 0.7.0
+      h3: 1.7.1
+      iron-webcrypto: 0.7.1
       micromatch: 4.0.5
       pathe: 1.1.1
       postcss: 8.4.24
@@ -11721,24 +11680,6 @@ packages:
     resolution: {integrity: sha512-rKxlbbjxVQR+6dL7OxJSuVOu96MtTvoRY0VBasGQTgZGTzKPrawZ4zMv7bmhLHRmUqG/CUAJ4uNZlaip+F/6+A==}
     dependencies:
       '@rollup/pluginutils': 5.0.2(rollup@3.25.2)
-      escape-string-regexp: 5.0.0
-      fast-glob: 3.2.12
-      local-pkg: 0.4.3
-      magic-string: 0.30.0
-      mlly: 1.4.0
-      pathe: 1.1.1
-      pkg-types: 1.0.3
-      scule: 1.0.0
-      strip-literal: 1.0.1
-      unplugin: 1.3.1
-    transitivePeerDependencies:
-      - rollup
-    dev: true
-
-  /unimport@3.0.10(rollup@3.25.3):
-    resolution: {integrity: sha512-rKxlbbjxVQR+6dL7OxJSuVOu96MtTvoRY0VBasGQTgZGTzKPrawZ4zMv7bmhLHRmUqG/CUAJ4uNZlaip+F/6+A==}
-    dependencies:
-      '@rollup/pluginutils': 5.0.2(rollup@3.25.3)
       escape-string-regexp: 5.0.0
       fast-glob: 3.2.12
       local-pkg: 0.4.3
