@@ -41,9 +41,9 @@
   "dependencies": {
     "@nuxtjs/color-mode": "^3.3.0",
     "@pinia/nuxt": "^0.4.11",
-    "consola": "^3.1.0",
+    "consola": "^3.2.2",
     "lodash": "^4.17.21",
-    "nuxt": "^3.6.0",
+    "nuxt": "^3.6.1",
     "pinia": "^2.1.4",
     "uuid": "^9.0.0",
     "vue": "^3.3.4"
@@ -64,7 +64,7 @@
     "autoprefixer": "^10.4.14",
     "copyfiles": "^2.4.1",
     "eslint": "^8.43.0",
-    "nuxt-vitest": "^0.8.5",
+    "nuxt-vitest": "^0.8.6",
     "postcss": "^8.4.24",
     "postcss-cli": "^10.1.0",
     "sass": "^1.63.6",
@@ -79,6 +79,7 @@
     }
   },
   "overrides": {
-    "semver": ">=7.5.2"
+    "semver": ">=7.5.2",
+    "word-wrap": "npm:@aashutoshrathi/word-wrap"
   }
 }
