@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { AdminStore } from '#cwa/runtime/storage/stores/admin/admin-store'
+import { AdminStore } from '../storage/stores/admin/admin-store'
 
 export default class Admin {
   // eslint-disable-next-line no-useless-constructor
