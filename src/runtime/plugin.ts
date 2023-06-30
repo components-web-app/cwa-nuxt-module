@@ -1,4 +1,5 @@
 import { addRouteMiddleware, defineNuxtPlugin } from '#app'
+import { NuxtApp } from '#app/nuxt'
 import CwaRouteMiddleware from '#cwa/runtime/route-middleware'
 import Cwa from '#cwa/runtime/cwa'
 // @ts-ignore
@@ -13,11 +14,12 @@ interface SetupInterface {
 export default defineNuxtPlugin({
   name: 'cwa-plugin',
   enforce: 'pre',
-  setup (nuxtApp): SetupInterface {
-    addRouteMiddleware('cwa', CwaRouteMiddleware, { global: true })
+  setup (nuxtApp: NuxtApp): SetupInterface {
+    const cwa = new Cwa(nuxtApp, options)
+    addRouteMiddleware('cwa-route-middleware', CwaRouteMiddleware, { global: true })
     return {
       provide: {
-        cwa: new Cwa(nuxtApp, options)
+        cwa
       }
     }
   },

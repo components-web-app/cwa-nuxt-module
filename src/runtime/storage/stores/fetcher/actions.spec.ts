@@ -13,36 +13,6 @@ vi.mock('uuid', () => {
     v4: vi.fn(() => ('mock-uuid-token'))
   }
 })
-// vi.mock('../resources/resources-store', () => ({
-//   ResourcesStore: vi.fn(() => ({
-//     useStore: vi.fn(() => ({
-//       current: {
-//         byId: {
-//           '/existing-path': {
-//             apiState: {
-//               status: CwaResourceApiStatuses.SUCCESS
-//             }
-//           },
-//           '/errored-resource': {
-//             apiState: {
-//               status: CwaResourceApiStatuses.ERROR
-//             }
-//           },
-//           '/existing-primary-path': {
-//             apiState: {
-//               status: CwaResourceApiStatuses.SUCCESS
-//             }
-//           },
-//           '/in-progress-resource': {
-//             apiState: {
-//               status: CwaResourceApiStatuses.IN_PROGRESS
-//             }
-//           }
-//         }
-//       }
-//     }))
-//   }))
-// }))
 
 describe('Fetcher store action -> abortFetch', () => {
   let fetcherActions: CwaFetcherActionsInterface

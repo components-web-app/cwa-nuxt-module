@@ -7,7 +7,7 @@ import {
   ApiDocumentationStore
 } from './stores/api-documentation/api-documentation-store'
 import { AuthStore } from './stores/auth/auth-store'
-import { ManagerStore } from './stores/manager/manager-store'
+import { AdminStore } from './stores/admin/admin-store'
 
 export interface CwaStores {
   resources: ResourcesStore
@@ -15,7 +15,7 @@ export interface CwaStores {
   mercure: MercureStore
   apiDocumentation: ApiDocumentationStore
   auth: AuthStore
-  manager: ManagerStore
+  admin: AdminStore
 }
 
 export class Storage {
@@ -31,7 +31,7 @@ export class Storage {
       mercure: new MercureStore(storeName),
       apiDocumentation: new ApiDocumentationStore(storeName),
       auth: new AuthStore(storeName),
-      manager: new ManagerStore(storeName)
+      admin: new AdminStore(storeName)
     }
   }
 }

@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{ reference: string, location: string, al
 
 const fullReference = computed(() => {
   const locationResource = $cwa.resources.getResource(props.location)
-  if (!locationResource) {
+  if (!locationResource.value) {
     return
   }
   const locationResourceReference = locationResource.value.data?.reference

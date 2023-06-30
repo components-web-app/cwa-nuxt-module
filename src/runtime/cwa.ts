@@ -1,4 +1,5 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { NuxtApp } from '#app/nuxt'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -11,9 +12,10 @@ import { ResourcesManager } from './resources/resources-manager'
 import { Resources } from './resources/resources'
 import Auth from './api/auth'
 import Forms from './api/forms'
-import { NuxtApp } from '#app/nuxt'
+import { useProcess } from './composables/process'
+import Admin from './admin/admin'
+import NavigationGuard from './admin/navigation-guard'
 import { useCookie } from '#imports'
-import { useProcess } from '#cwa/runtime/composables/process'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -35,7 +37,10 @@ export default class Cwa {
 
   public readonly forms: Forms
 
-  constructor (nuxtApp: Pick<NuxtApp, '_route'>, options: CwaModuleOptions) {
+  public readonly admin: Admin
+  private adminNavGuard: NavigationGuard
+
+  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
@@ -56,6 +61,12 @@ export default class Cwa {
     this.auth = new Auth(this.cwaFetch, this.mercure, this.fetcher, this.storage.stores.auth, this.storage.stores.resources, this.storage.stores.fetcher, useCookie('cwa_auth'))
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
+    this.admin = new Admin(this.storage.stores.admin)
+    this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
+  }
+
+  public get adminNavigationGuardFn () {
+    return this.adminNavGuard.adminNavigationGuardFn
   }
 
   // API Documentation service is private, exposing only function required by applications

@@ -23,7 +23,8 @@
   "scripts": {
     "prepack": "nuxt-module-build && sleep 0.2 && npm run copy-layer",
     "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
-    "dev": "nuxi dev playground --https",
+    "dev": "concurrently --kill-others \"pnpm postcss:watch\" \"pnpm dev:https\"",
+    "dev:https": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
@@ -41,35 +42,37 @@
   "dependencies": {
     "@nuxtjs/color-mode": "^3.3.0",
     "@pinia/nuxt": "^0.4.11",
-    "consola": "^3.1.0",
+    "consola": "^3.2.2",
     "lodash": "^4.17.21",
-    "nuxt": "^3.6.0",
+    "nuxt": "^3.6.1",
     "pinia": "^2.1.4",
     "uuid": "^9.0.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {
     "@nuxt/image-edge": "1.0.0-28059208.2abef1b",
-    "@nuxt/module-builder": "^0.2.1",
+    "@nuxt/module-builder": "^0.4.0",
     "@nuxtjs/eslint-config-typescript": "^12.0.0",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@pinia/testing": "^0.0.14",
-    "@stryker-mutator/core": "^7.0.2",
-    "@stryker-mutator/vitest-runner": "^7.0.2",
+    "@stryker-mutator/core": "^7.1.0",
+    "@stryker-mutator/vitest-runner": "^7.1.0",
     "@tailwindcss/forms": "^0.5.3",
     "@types/lodash": "^4.14.195",
     "@types/uuid": "^9.0.2",
     "@vitest/coverage-c8": "^0.32.2",
     "@vue/test-utils": "2.3.2",
     "autoprefixer": "^10.4.14",
+    "concurrently": "^8.2.0",
     "copyfiles": "^2.4.1",
     "eslint": "^8.43.0",
-    "nuxt-vitest": "^0.8.5",
+    "nuxt-vitest": "^0.8.6",
     "postcss": "^8.4.24",
     "postcss-cli": "^10.1.0",
     "sass": "^1.63.6",
     "sass-loader": "^13.3.2",
     "tailwindcss": "^3.3.2",
+    "typescript": "^5.1.6",
     "vite-tsconfig-paths": "^4.2.0",
     "vitest": "0.31.1"
   },
@@ -79,6 +82,7 @@
     }
   },
   "overrides": {
-    "semver": ">=7.5.2"
+    "semver": ">=7.5.2",
+    "word-wrap": "npm:@aashutoshrathi/word-wrap"
   }
 }

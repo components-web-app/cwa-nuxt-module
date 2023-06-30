@@ -6,7 +6,7 @@ import { ResourcesStore } from './stores/resources/resources-store'
 import { FetcherStore } from './stores/fetcher/fetcher-store'
 import { ApiDocumentationStore } from './stores/api-documentation/api-documentation-store'
 import { AuthStore } from './stores/auth/auth-store'
-import { ManagerStore } from '#cwa/runtime/storage/stores/manager/manager-store'
+import { AdminStore } from '#cwa/runtime/storage/stores/admin/admin-store'
 
 type TestStore = { name: string }
 type StoreMock = SpyFn<[], TestStore>
@@ -38,9 +38,9 @@ vi.mock('./stores/auth/auth-store', () => {
   }
 })
 
-vi.mock('./stores/manager/manager-store', () => {
+vi.mock('./stores/admin/admin-store', () => {
   return {
-    ManagerStore: vi.fn<[], TestStore>(() => ({ name: 'ManagerStore' }))
+    AdminStore: vi.fn<[], TestStore>(() => ({ name: 'AdminStore' }))
   }
 })
 
@@ -60,7 +60,7 @@ describe('Storage is initialised properly', () => {
     // @ts-ignore
     const authStoreMock:StoreMock = AuthStore
     // @ts-ignore
-    const managerStoreMock:StoreMock = ManagerStore
+    const adminStoreMock:StoreMock = AdminStore
 
     expect(resourcesStoreMock).toBeCalledWith(storeName)
     expect(fetcherStoreMock).toBeCalledWith(storeName)
@@ -74,7 +74,7 @@ describe('Storage is initialised properly', () => {
       mercure: mercureStoreMock.mock.results[0].value,
       apiDocumentation: apiDocumentationStoreMock.mock.results[0].value,
       auth: authStoreMock.mock.results[0].value,
-      manager: managerStoreMock.mock.results[0].value
+      admin: adminStoreMock.mock.results[0].value
     })
   })
 })
