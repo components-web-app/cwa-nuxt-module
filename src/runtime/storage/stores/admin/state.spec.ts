@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import state from './state'
 
 describe('Manager State context', () => {
