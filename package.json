@@ -23,7 +23,8 @@
   "scripts": {
     "prepack": "nuxt-module-build && sleep 0.2 && npm run copy-layer",
     "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
-    "dev": "nuxi dev playground --https",
+    "dev": "concurrently --kill-others \"pnpm postcss:watch\" \"pnpm dev:https\" \"pnpm test:watch\"",
+    "dev:https": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
@@ -62,6 +63,7 @@
     "@vitest/coverage-c8": "^0.32.2",
     "@vue/test-utils": "2.3.2",
     "autoprefixer": "^10.4.14",
+    "concurrently": "^8.2.0",
     "copyfiles": "^2.4.1",
     "eslint": "^8.43.0",
     "nuxt-vitest": "^0.8.6",

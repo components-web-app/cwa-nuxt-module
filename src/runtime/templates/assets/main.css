@@ -797,14 +797,8 @@ select {
 .cwa-cursor-pointer {
   cursor: pointer !important;
 }
-.cwa-grid-flow-row-dense {
-  grid-auto-flow: row dense !important;
-}
 .cwa-grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-}
-.cwa-grid-cols-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 }
 .cwa-flex-col {
   flex-direction: column !important;
@@ -824,15 +818,15 @@ select {
 .cwa-gap-3 {
   gap: 0.75rem !important;
 }
-.cwa-space-y-6 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-y-reverse: 0 !important;
-  margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse))) !important;
-  margin-bottom: calc(1.5rem * var(--tw-space-y-reverse)) !important;
-}
 .cwa-space-x-4 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-x-reverse: 0 !important;
   margin-right: calc(1rem * var(--tw-space-x-reverse)) !important;
   margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse))) !important;
+}
+.cwa-space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0 !important;
+  margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse))) !important;
+  margin-bottom: calc(1.5rem * var(--tw-space-y-reverse)) !important;
 }
 .cwa-overflow-auto {
   overflow: auto !important;
@@ -1005,14 +999,6 @@ select {
   --tw-text-opacity: 1 !important;
   color: rgb(209 213 219 / var(--tw-text-opacity)) !important;
 }
-.cwa-text-gray-500 {
-  --tw-text-opacity: 1 !important;
-  color: rgb(107 114 128 / var(--tw-text-opacity)) !important;
-}
-.cwa-text-gray-900 {
-  --tw-text-opacity: 1 !important;
-  color: rgb(17 24 39 / var(--tw-text-opacity)) !important;
-}
 .cwa-text-neutral-300 {
   --tw-text-opacity: 1 !important;
   color: rgb(212 212 212 / var(--tw-text-opacity)) !important;
@@ -1028,10 +1014,6 @@ select {
 .cwa-text-white {
   --tw-text-opacity: 1 !important;
   color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
-}
-.cwa-text-light {
-  --tw-text-opacity: 1 !important;
-  color: rgb(245 245 244 / var(--tw-text-opacity)) !important;
 }
 .cwa-opacity-0 {
   opacity: 0 !important;
