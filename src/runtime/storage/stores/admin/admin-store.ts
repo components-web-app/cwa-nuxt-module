@@ -7,11 +7,12 @@ import {
   CwaStore
 } from '../cwa-store-types'
 import CwaAdminState, { CwaAdminStateInterface } from './state'
+import CwaAdminActions, { CwaAdminActionsInterface } from './actions'
 
 /**
  * Interface Definitions
  */
-export interface CwaAdminInterface extends CwaAdminStateInterface {}
+export interface CwaAdminInterface extends CwaAdminStateInterface, CwaAdminActionsInterface {}
 export interface CwaAdminStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.admin`, CwaAdminInterface> {}
 export interface CwaAdminStoreInterface extends CwaPiniaStoreInterface<`${string}.admin`, CwaAdminInterface> {}
 
@@ -25,7 +26,8 @@ export class AdminStore implements CwaStore {
     this.storeDefinition = defineStore(`${storeName}.admin`, () => {
       const adminState = CwaAdminState()
       return {
-        ...adminState
+        ...adminState,
+        ...CwaAdminActions(adminState)
       }
     })
   }

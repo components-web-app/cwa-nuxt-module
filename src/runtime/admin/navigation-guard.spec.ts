@@ -8,8 +8,10 @@ vi.mock('../storage/stores/admin/admin-store', () => {
   return {
     AdminStore: vi.fn(() => ({
       useStore: vi.fn(() => ({
-        isEditing: false,
-        navigationGuardDisabled: false
+        state: {
+          isEditing: false,
+          navigationGuardDisabled: false
+        }
       }))
     }))
   }
@@ -107,8 +109,10 @@ describe('Test NavigationGuard Class', () => {
       return isRouteForcedNavigation
     })
     vi.spyOn(AdminStore.mock.results[0].value, 'useStore').mockImplementation(() => ({
-      isEditing,
-      navigationGuardDisabled
+      state: {
+        isEditing,
+        navigationGuardDisabled
+      }
     }))
 
     guard.programmatic = programmatic

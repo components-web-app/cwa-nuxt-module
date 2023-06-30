@@ -3,9 +3,15 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { AdminStore } from './admin-store'
 import state from './state'
-
+import actions from './actions'
 vi.mock('./state', () => ({
   default: vi.fn(() => ({ stateKey: 'value' }))
+}))
+
+vi.mock('./actions', () => ({
+  default: vi.fn(() => ({
+    someFunction: vi.fn()
+  }))
 }))
 
 describe('ManagerStore tests', () => {
@@ -24,5 +30,9 @@ describe('ManagerStore tests', () => {
     expect(state).toBeCalledTimes(1)
     // @ts-ignore
     expect(storeDefinition.stateKey).toBe('value')
+
+    expect(actions).toBeCalledTimes(1)
+    expect(actions).toBeCalledWith({ stateKey: 'value' })
+    expect(storeDefinition).toHaveProperty('someFunction')
   })
 })

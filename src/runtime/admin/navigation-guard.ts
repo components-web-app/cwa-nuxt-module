@@ -33,8 +33,8 @@ export default class NavigationGuard {
   private allowNavigation (toRoute: RouteLocationNormalized) {
     return this.isRouteForcedNavigation(toRoute) ||
       !this.programmatic ||
-      !this.adminStore.isEditing ||
-      this.adminStore.navigationGuardDisabled
+      !this.adminStore.state.isEditing ||
+      this.adminStore.state.navigationGuardDisabled
   }
 
   public get adminNavigationGuardFn () {

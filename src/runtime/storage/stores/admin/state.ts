@@ -1,15 +1,17 @@
-import { Ref, ref } from 'vue'
+import { reactive } from 'vue'
 
 export interface CwaAdminStateInterface {
-  isEditing: Ref<boolean>,
-  navigationGuardDisabled: Ref<boolean>,
-  editResourceStack: Ref<string[]|null>
+  state: {
+    isEditing: boolean,
+    navigationGuardDisabled: boolean
+  }
 }
 
 export default function (): CwaAdminStateInterface {
   return {
-    isEditing: ref(false),
-    navigationGuardDisabled: ref(false),
-    editResourceStack: ref(null)
+    state: reactive({
+      isEditing: false,
+      navigationGuardDisabled: false
+    })
   }
 }
