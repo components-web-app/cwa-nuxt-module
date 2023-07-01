@@ -13,6 +13,14 @@ const resourceTypeProperty = {
   [CwaResourceTypes.COMPONENT]: 'components'
 }
 
+interface SyncWatcherOps {
+  resource: ComputedRef<CwaCurrentResourceInterface | undefined>
+  location: string
+  fullReference: ComputedRef<string | undefined>
+  allowedComponents: string[]|null
+  showLoader: ComputedRef<boolean>
+}
+
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
   private readonly resources: Resources
@@ -26,15 +34,15 @@ export class ComponentGroupUtilSynchronizer {
     this.auth = auth
   }
 
-  public createSyncWatcher (resourceRef: ComputedRef<CwaCurrentResourceInterface | undefined>, location: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[]|null) {
+  public createSyncWatcher (ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
-      () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
+      [this.resources.isLoading, this.auth.signedIn, ops.resource],
       async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
           if (!resource) {
-            await this.createComponentGroup(location, fullReference, allowedComponents)
+            await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
           } else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
-            await this.updateAllowedComponents(allowedComponents, resource)
+            await this.updateAllowedComponents(ops.allowedComponents, resource)
           }
         }
       }, {

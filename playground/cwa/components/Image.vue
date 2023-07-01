@@ -12,7 +12,7 @@ import { useCwaResourceUtils } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const resource = useCwaResourceUtils().getResource(props.iri)
+const resource = useCwaResourceUtils(props.iri).getResource()
 </script>
 
 <style>

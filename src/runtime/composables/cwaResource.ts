@@ -1,14 +1,20 @@
 import { useCwa } from './cwa'
+import { useCwaManagerResource } from './cwaManagerResource'
 
 export type IriProp = {
  iri: string
 }
 
-interface cwaResourceUtilsOps {}
+interface cwaResourceUtilsOps {
+  iri: string
+  disableManager?: boolean
+}
 
-export const useCwaResourceUtils = (_: cwaResourceUtilsOps) => {
+export const useCwaResourceUtils = (iri: string, ops?: cwaResourceUtilsOps) => {
+  const manager = !ops?.disableManager ? useCwaManagerResource(iri) : undefined
   return {
+    manager,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
-    getResource: (id:string) => useCwa().resources.getResource(id)
+    getResource: () => useCwa().resources.getResource(iri)
   }
 }
