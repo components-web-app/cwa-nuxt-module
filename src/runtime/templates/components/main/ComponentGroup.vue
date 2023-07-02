@@ -78,7 +78,7 @@ onMounted(() => {
     allowedComponents: props.allowedComponents
   })
   watch([resource, componentPositions, showLoader], ([resource, componentPositions, showLoader]) => {
-    if (showLoader || !componentPositions?.length) {
+    if (showLoader) {
       return
     }
     const iri = resource?.data?.['@id']

@@ -3,13 +3,14 @@ import logger from 'consola'
 
 export default class ManageableComponent {
   private currentIri: string|undefined
+  private domElements: any[] = []
   // eslint-disable-next-line no-useless-constructor
-  constructor (private proxy: ComponentPublicInstance) {
+  constructor (private component: ComponentPublicInstance) {
   }
 
   private getAllEls (): any[] {
     const allSiblings: any[] = []
-    let currentEl: any = this.proxy.$el
+    let currentEl: any = this.component.$el
     if (currentEl.nodeType === 1) {
       return [currentEl]
     }
@@ -19,6 +20,13 @@ export default class ManageableComponent {
     }
 
     return allSiblings
+  }
+
+  private handleEvent () {
+    if (!this.currentIri) {
+      return
+    }
+    console.log(`Click handled for ${this.currentIri}`)
   }
 
   public initCwaManagerResource (iri: string) {
@@ -31,11 +39,11 @@ export default class ManageableComponent {
       this.destroyCwaManagerResource()
     }
 
-    // Just testing this works, getAllEls will probably be called on click to calculate what needs highlighting
-    const allEls = this.getAllEls()
-    console.log(iri, allEls)
-
     this.currentIri = iri
+    this.domElements = this.getAllEls()
+    for (const el of this.domElements) {
+      el.addEventListener('click', this, false)
+    }
   }
 
   public destroyCwaManagerResource () {
@@ -43,5 +51,11 @@ export default class ManageableComponent {
       return
     }
     logger.trace(`Destroy manager resource ${this.currentIri}`)
+    for (const el of this.domElements) {
+      el.removeEventListener('click', this)
+    }
+
+    this.currentIri = undefined
+    this.domElements = []
   }
 }

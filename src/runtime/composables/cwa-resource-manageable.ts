@@ -27,6 +27,6 @@ export const useCwaResourceManageable = (iri?: string) => {
   })
 
   return {
-    initCwaManagerResource: () => managerResource.initCwaManagerResource
+    initCwaManagerResource: (...args) => managerResource.initCwaManagerResource(...args)
   }
 }
