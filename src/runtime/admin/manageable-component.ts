@@ -33,9 +33,6 @@ export default class ManageableComponent {
     // because we need to be able to call this once resolving an IRI in some cases, if this is called again with a new
     // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
     if (this.currentIri) {
-      if (this.currentIri === iri) {
-        return
-      }
       this.destroyCwaManagerResource()
     }
 
