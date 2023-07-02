@@ -1,6 +1,11 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchResponse } from 'ofetch'
-import { CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../resources/resource-utils'
+import {
+  CwaResource,
+  CwaResourceTypes,
+  getResourceTypeFromIri,
+  resourceTypeToNestedResourceProperties
+} from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
@@ -50,20 +55,6 @@ interface FetchNestedResourcesEvent {
   resource: CwaResource
   token: string
   noSave: boolean
-}
-
-type TypeToNestedPropertiesMap = {
-  [T in CwaResourceTypes]: Array<string>;
-}
-
-const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
-  [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
-  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
-  [CwaResourceTypes.PAGE_DATA]: ['page'],
-  [CwaResourceTypes.LAYOUT]: ['componentGroups'],
-  [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
-  [CwaResourceTypes.COMPONENT_POSITION]: ['component'],
-  [CwaResourceTypes.COMPONENT]: ['componentGroups']
 }
 
 export default class Fetcher {

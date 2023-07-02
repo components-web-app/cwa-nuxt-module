@@ -1,3 +1,4 @@
+import { onMounted } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
 
@@ -10,11 +11,17 @@ interface cwaResourceUtilsOps {
   disableManager?: boolean
 }
 
-export const useCwaResourceUtils = (iri: string, ops?: cwaResourceUtilsOps) => {
+export const useCwaResource = (iri: string, ops?: cwaResourceUtilsOps) => {
+  const $cwa = useCwa()
   const manager = !ops?.disableManager ? useCwaResourceManageable(iri) : undefined
+
+  onMounted(() => {
+    $cwa.emitter.emit('componentMounted', iri)
+  })
+
   return {
     manager,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
-    getResource: () => useCwa().resources.getResource(iri)
+    getResource: () => $cwa.resources.getResource(iri)
   }
 }

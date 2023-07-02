@@ -35,8 +35,6 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits<{ loaded: string }>()
-
 const resource = $cwa.resources.getResource(props.iri)
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately

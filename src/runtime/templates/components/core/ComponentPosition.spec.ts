@@ -9,7 +9,7 @@ const mockComponentName = 'test'
 
 function createWrapper () {
   // @ts-ignore
-  vi.spyOn(cwaResourceComposables, 'useCwaResourceUtils').mockImplementation(() => ({
+  vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
     getResource: vi.fn(() => ref({ data: { component: mockComponentName } }))
   }))
 

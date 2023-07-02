@@ -23,6 +23,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      mitt:
+        specifier: ^3.0.0
+        version: 3.0.0
       nuxt:
         specifier: ^3.6.1
         version: 3.6.1(@types/node@20.3.2)(eslint@8.43.0)(rollup@3.25.3)(sass@1.63.6)(typescript@5.1.6)
@@ -7858,6 +7861,10 @@ packages:
     dependencies:
       minipass: 3.3.6
       yallist: 4.0.0
+
+  /mitt@3.0.0:
+    resolution: {integrity: sha512-7dX2/10ITVyqh4aOSVI9gdape+t9l2/8QxHrFmUXu4EEUpdlxl6RudZUPZoc+zuY2hk1j7XxVroIVIan/pD/SQ==}
+    dev: false
 
   /mkdirp-classic@0.5.3:
     resolution: {integrity: sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==}

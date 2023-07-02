@@ -6,9 +6,9 @@
 
 <script setup lang="ts">
 import { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import { useCwaResourceUtils } from '#imports'
+import { useCwaResource } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const resource = useCwaResourceUtils(props.iri).getResource()
+const resource = useCwaResource(props.iri).getResource()
 </script>

@@ -1,6 +1,7 @@
 import { getCurrentInstance, onBeforeUnmount, onMounted } from 'vue'
 import logger from 'consola'
 import ManageableComponent from '../admin/manageable-component'
+import { useCwa } from './cwa'
 
 /**
  * @internal
@@ -14,7 +15,7 @@ export const useCwaResourceManageable = (iri?: string) => {
     return
   }
 
-  const manageableComponent = new ManageableComponent(proxy)
+  const manageableComponent = new ManageableComponent(proxy, useCwa())
 
   onMounted(() => {
     if (iri) {
