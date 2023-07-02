@@ -7,8 +7,8 @@ export default class ManageableComponent {
   private currentIri: string|undefined
   private domElements: any[] = []
 
-  // eslint-disable-next-line no-useless-constructor
   constructor (private component: ComponentPublicInstance, private $cwa: Cwa) {
+    this.componentMountedListener = this.componentMountedListener.bind(this)
   }
 
   private getAllEls (): any[] {
@@ -64,7 +64,7 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
-    console.log(`Click handled for ${this.currentIri}`)
+    console.log(`Click handled for ${this.currentIri}`, this.domElements)
   }
 
   public initCwaManagerResource (iri: string) {
@@ -77,12 +77,14 @@ export default class ManageableComponent {
     this.currentIri = iri
     this.addClickEventListeners()
 
-    this.$cwa.emitter.on('componentMounted', (iri) => {
-      if (this.childIris.value.includes(iri)) {
-        this.removeClickEventListeners()
-        this.addClickEventListeners()
-      }
-    })
+    this.$cwa.emitter.on('componentMounted', this.componentMountedListener)
+  }
+
+  private componentMountedListener (iri: string) {
+    if (this.childIris.value.includes(iri)) {
+      this.removeClickEventListeners()
+      this.addClickEventListeners()
+    }
   }
 
   private addClickEventListeners () {
@@ -103,6 +105,7 @@ export default class ManageableComponent {
       return
     }
     logger.trace(`Destroy manager resource ${this.currentIri}`)
+    this.$cwa.emitter.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.currentIri = undefined
     this.domElements = []
