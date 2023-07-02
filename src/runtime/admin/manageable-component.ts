@@ -11,23 +11,40 @@ export default class ManageableComponent {
     this.componentMountedListener = this.componentMountedListener.bind(this)
   }
 
-  private getAllEls (): any[] {
-    const allSiblings: any[] = []
-    let currentEl: any = this.component.$el
-    if (!currentEl) {
-      return []
-    }
-    if (currentEl.nodeType === 1) {
-      return [currentEl]
-    }
-    while (currentEl?.nextSibling) {
-      currentEl.nodeType !== 3 && allSiblings.push(currentEl)
-      currentEl = currentEl.nextSibling
+  // PUBLIC
+  public initCwaManagerResource (iri: string) {
+    // because we need to be able to call this once resolving an IRI in some cases, if this is called again with a new
+    // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
+    if (this.currentIri) {
+      this.destroyCwaManagerResource()
     }
 
-    return allSiblings
+    this.currentIri = iri
+    this.addClickEventListeners()
+
+    this.$cwa.emitter.on('componentMounted', this.componentMountedListener)
   }
 
+  public destroyCwaManagerResource () {
+    if (!this.currentIri) {
+      return
+    }
+    logger.trace(`Destroy manager resource ${this.currentIri}`)
+    this.$cwa.emitter.off('componentMounted', this.componentMountedListener)
+    this.removeClickEventListeners()
+    this.currentIri = undefined
+    this.domElements = []
+  }
+
+  // REFRESHING INITIALISATION
+  private componentMountedListener (iri: string) {
+    if (this.childIris.value.includes(iri)) {
+      this.removeClickEventListeners()
+      this.addClickEventListeners()
+    }
+  }
+
+  // COMPUTED FOR REFRESHING
   private get childIris (): ComputedRef<string[]> {
     return computed(() => {
       if (!this.currentIri) {
@@ -58,33 +75,22 @@ export default class ManageableComponent {
     })
   }
 
-  // This will be called by the click event listener in context of this, and can be removed as well.
-  // if we define with a name and call that, the `this` context will be the clicked dom element
-  private handleEvent () {
-    if (!this.currentIri) {
-      return
+  // GET DOM ELEMENTS TO ADD CLICK EVENTS TO
+  private getAllEls (): any[] {
+    const allSiblings: any[] = []
+    let currentEl: any = this.component.$el
+    if (!currentEl) {
+      return []
     }
-    console.log(`Click handled for ${this.currentIri}`, this.domElements)
-  }
-
-  public initCwaManagerResource (iri: string) {
-    // because we need to be able to call this once resolving an IRI in some cases, if this is called again with a new
-    // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
-    if (this.currentIri) {
-      this.destroyCwaManagerResource()
+    if (currentEl.nodeType === 1) {
+      return [currentEl]
+    }
+    while (currentEl?.nextSibling) {
+      currentEl.nodeType !== 3 && allSiblings.push(currentEl)
+      currentEl = currentEl.nextSibling
     }
 
-    this.currentIri = iri
-    this.addClickEventListeners()
-
-    this.$cwa.emitter.on('componentMounted', this.componentMountedListener)
-  }
-
-  private componentMountedListener (iri: string) {
-    if (this.childIris.value.includes(iri)) {
-      this.removeClickEventListeners()
-      this.addClickEventListeners()
-    }
+    return allSiblings
   }
 
   private addClickEventListeners () {
@@ -100,14 +106,12 @@ export default class ManageableComponent {
     }
   }
 
-  public destroyCwaManagerResource () {
+  // This will be called by the click event listener in context of this, and can be removed as well.
+  // if we define with a name and call that, the `this` context will be the clicked dom element
+  private handleEvent () {
     if (!this.currentIri) {
       return
     }
-    logger.trace(`Destroy manager resource ${this.currentIri}`)
-    this.$cwa.emitter.off('componentMounted', this.componentMountedListener)
-    this.removeClickEventListeners()
-    this.currentIri = undefined
-    this.domElements = []
+    console.log(`Click handled for ${this.currentIri}`, this.domElements)
   }
 }
