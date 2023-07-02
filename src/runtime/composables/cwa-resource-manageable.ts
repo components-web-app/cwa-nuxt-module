@@ -14,19 +14,17 @@ export const useCwaResourceManageable = (iri?: string) => {
     return
   }
 
-  const managerResource = new ManageableComponent(proxy)
+  const manageableComponent = new ManageableComponent(proxy)
 
   onMounted(() => {
     if (iri) {
-      managerResource.initCwaManagerResource(iri)
+      manageableComponent.initCwaManagerResource(iri)
     }
   })
 
   onBeforeUnmount(() => {
-    managerResource.destroyCwaManagerResource()
+    manageableComponent.destroyCwaManagerResource()
   })
 
-  return {
-    initCwaManagerResource: (...args) => managerResource.initCwaManagerResource(...args)
-  }
+  return manageableComponent
 }

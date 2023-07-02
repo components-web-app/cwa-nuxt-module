@@ -77,7 +77,7 @@ onMounted(() => {
     fullReference,
     allowedComponents: props.allowedComponents
   })
-  watch([resource, componentPositions, showLoader], ([resource, componentPositions, showLoader]) => {
+  watch([resource, showLoader, componentPositions], ([resource, showLoader]) => {
     if (showLoader) {
       return
     }
