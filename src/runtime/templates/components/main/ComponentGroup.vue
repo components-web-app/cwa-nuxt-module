@@ -20,10 +20,10 @@ import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/component
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa, useCwaManagerResource } from '#imports'
+import { useCwa, useCwaResourceManageable } from '#imports'
 
 const $cwa = useCwa()
-const $manager = useCwaManagerResource()
+const $manager = useCwaResourceManageable()
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 

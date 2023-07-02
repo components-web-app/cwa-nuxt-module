@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import { useCwaResourceUtils } from '#imports'
-import { IriProp } from '#cwa/runtime/composables/cwaResource'
+import { IriProp } from '#cwa/runtime/composables/cwa-resource'
 
 const props = defineProps<IriProp>()
 const resource = useCwaResourceUtils(props.iri).getResource()
