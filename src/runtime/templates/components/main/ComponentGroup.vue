@@ -77,10 +77,9 @@ onMounted(() => {
     fullReference,
     allowedComponents: props.allowedComponents
   })
-  watch([resource, showLoader, componentPositions], ([resource, showLoader]) => {
-    if (showLoader) {
-      return
-    }
+
+  // initialise the manager when we know what the component group iri is
+  watch(resource, (resource) => {
     const iri = resource?.data?.['@id']
     iri && $manager?.init(iri)
   }, {
