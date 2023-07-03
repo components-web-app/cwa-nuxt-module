@@ -13,7 +13,6 @@
 <script setup lang="ts">
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
-// todo: TEST usage of useCwaManagerResource
 
 import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
@@ -79,13 +78,12 @@ onMounted(() => {
   })
 
   // initialise the manager when we know what the component group iri is
-  watch(resource, (resource) => {
-    const iri = resource?.data?.['@id']
-    iri && $manager?.init(iri)
-  }, {
-    immediate: true,
-    flush: 'post'
-  })
+  if ($manager) {
+    watch(resource, $manager.watcher, {
+      immediate: true,
+      flush: 'post'
+    })
+  }
 })
 
 onBeforeUnmount(() => {

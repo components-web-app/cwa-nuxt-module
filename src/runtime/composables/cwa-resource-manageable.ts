@@ -1,6 +1,7 @@
 import { getCurrentInstance, onBeforeUnmount, onMounted } from 'vue'
 import logger from 'consola'
 import ManageableComponent from '../admin/manageable-component'
+import { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import { useCwa } from './cwa'
 
 /**
@@ -27,5 +28,11 @@ export const useCwaResourceManageable = (iri?: string) => {
     manageableComponent.clear()
   })
 
-  return manageableComponent
+  return {
+    watcher: (resource: CwaCurrentResourceInterface) => {
+      const iri = resource?.data?.['@id']
+      iri && manageableComponent.init(iri)
+    },
+    manager: manageableComponent
+  }
 }
