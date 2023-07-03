@@ -35,7 +35,8 @@ function createResourcesManager () {
     resourcesManager,
     cwaFetch: mockCwaFetch,
     fetchPath: mockFetchPath,
-    resourceStore: mockResourcesStore
+    resourceStore: mockResourcesStore,
+    resourcesStoreActions
   }
 }
 
@@ -147,7 +148,62 @@ describe('Resources manager', () => {
     })
   })
 
-  describe.todo('deleteResource', () => {})
-  describe.todo('requestOptions', () => {})
-  describe.todo('resourcesStore getter', () => {})
+  describe('deleteResource', () => {
+    test('should delete resource', () => {
+      const { resourcesManager, resourcesStoreActions } = createResourcesManager()
+      const mockDeleteEvent = { resource: 'test' }
+
+      resourcesManager.deleteResource(mockDeleteEvent)
+
+      expect(resourcesStoreActions.deleteResource).toHaveBeenCalledWith(mockDeleteEvent)
+    })
+  })
+
+  describe('requestOptions', () => {
+    test('should return options for POST request', () => {
+      const { resourcesManager } = createResourcesManager()
+
+      expect(resourcesManager.requestOptions('POST')).toEqual({
+        method: 'POST',
+        headers: {
+          accept: 'application/ld+json,application/json'
+        }
+      })
+    })
+
+    test('should return options for PATCH request', () => {
+      const { resourcesManager } = createResourcesManager()
+
+      expect(resourcesManager.requestOptions('PATCH')).toEqual({
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/merge-patch+json',
+          accept: 'application/ld+json,application/json'
+        }
+      })
+    })
+
+    test('should options with path header IF primary fetch path is defined', () => {
+      const { resourcesManager, fetchPath } = createResourcesManager()
+
+      fetchPath.value = '/test'
+
+      expect(resourcesManager.requestOptions('PATCH')).toEqual({
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/merge-patch+json',
+          accept: 'application/ld+json,application/json',
+          path: '/test'
+        }
+      })
+    })
+  })
+
+  describe('resourcesStore getter', () => {
+    test('should return resourcesStore', () => {
+      const { resourcesManager, resourceStore } = createResourcesManager()
+
+      expect(resourcesManager.resourcesStore).toEqual(resourceStore.useStore())
+    })
+  })
 })

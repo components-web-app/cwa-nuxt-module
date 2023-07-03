@@ -4,9 +4,9 @@ import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import * as utils from '#cwa/runtime/resources/resource-utils'
 
-function createResources() {
+function createResources () {
   const mockResourcesStore = {
-    useStore() {
+    useStore () {
       return {
         current: {
           currentIds: [] as string[],
@@ -17,7 +17,7 @@ function createResources() {
   }
 
   const mockFetcherStore = {
-    useStore() {
+    useStore () {
       return {
         primaryFetch: {
           fetchingToken: '123' as string | null
@@ -726,7 +726,6 @@ describe('Resources', () => {
 
     test('should return iri BASED on resource data IF type is route AND page data is not defined', () => {
       const mockStatus = { path: '/test' }
-      const mockPageData = 'mock page data'
       const mockPage = 'mock page'
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.ROUTE)
@@ -794,7 +793,7 @@ describe('Resources', () => {
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
       const spy = vi.spyOn(resources, 'getResource')
-      .mockReturnValue(computed(() => mockLayout))
+        .mockReturnValue(computed(() => mockLayout))
 
       expect(resources.layout.value).toEqual(mockLayout)
       expect(spy).toHaveBeenCalledWith(mockLayoutIri)
