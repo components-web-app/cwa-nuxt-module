@@ -82,7 +82,7 @@ onMounted(() => {
       return
     }
     const iri = resource?.data?.['@id']
-    iri && $manager.initCwaManagerResource(iri)
+    iri && $manager?.init(iri)
   }, {
     immediate: true,
     flush: 'post'

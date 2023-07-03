@@ -12,11 +12,11 @@ export default class ManageableComponent {
   }
 
   // PUBLIC
-  public initCwaManagerResource (iri: string) {
+  public init (iri: string) {
     // because we need to be able to call this once resolving an IRI in some cases, if this is called again with a new
     // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
     if (this.currentIri) {
-      this.destroyCwaManagerResource()
+      this.clear()
     }
 
     this.currentIri = iri
@@ -25,7 +25,7 @@ export default class ManageableComponent {
     this.$cwa.emitter.on('componentMounted', this.componentMountedListener)
   }
 
-  public destroyCwaManagerResource () {
+  public clear () {
     if (!this.currentIri) {
       return
     }

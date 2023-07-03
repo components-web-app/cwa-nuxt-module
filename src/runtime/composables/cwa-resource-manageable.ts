@@ -19,12 +19,12 @@ export const useCwaResourceManageable = (iri?: string) => {
 
   onMounted(() => {
     if (iri) {
-      manageableComponent.initCwaManagerResource(iri)
+      manageableComponent.init(iri)
     }
   })
 
   onBeforeUnmount(() => {
-    manageableComponent.destroyCwaManagerResource()
+    manageableComponent.clear()
   })
 
   return manageableComponent
