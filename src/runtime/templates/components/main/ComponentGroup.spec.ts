@@ -343,14 +343,14 @@ describe('ComponentGroup', () => {
       vi.spyOn(vue, 'watch').mockImplementation(() => {
         return unwatchSpy
       })
-      const watcher = vi.fn()
+      const resourceWatchHandler = vi.fn()
       const resolvedResource = {
         data: undefined,
         apiState: {}
       }
       vi.spyOn(cwaResourceManageableComposables, 'useCwaResourceManageable').mockImplementationOnce(() => {
         return {
-          watcher
+          resourceWatchHandler
         }
       })
       vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
@@ -368,7 +368,7 @@ describe('ComponentGroup', () => {
       const wrapper = createWrapper()
 
       expect(vue.watch.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
-      expect(vue.watch.mock.calls[0][1]).toEqual(watcher)
+      expect(vue.watch.mock.calls[0][1]).toEqual(resourceWatchHandler)
       expect(vue.watch.mock.calls[0][2]).toEqual({
         immediate: true,
         flush: 'post'

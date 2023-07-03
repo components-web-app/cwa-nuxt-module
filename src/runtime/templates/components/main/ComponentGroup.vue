@@ -79,7 +79,7 @@ onMounted(() => {
 
   // initialise the manager when we know what the component group iri is
   if ($manager) {
-    watch(resource, $manager.watcher, {
+    watch(resource, $manager.resourceWatchHandler, {
       immediate: true,
       flush: 'post'
     })

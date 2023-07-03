@@ -29,7 +29,7 @@ export const useCwaResourceManageable = (iri?: string) => {
   })
 
   return {
-    watcher: (resource: CwaCurrentResourceInterface) => {
+    resourceWatchHandler: (resource: CwaCurrentResourceInterface) => {
       const iri = resource?.data?.['@id']
       iri && manageableComponent.init(iri)
     },
