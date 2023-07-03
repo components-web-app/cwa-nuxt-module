@@ -43,8 +43,8 @@ export default class Cwa {
   public readonly forms: Forms
 
   public readonly admin: Admin
-  private adminNavGuard: NavigationGuard
-  private emitter: Emitter<Events>
+  private readonly adminNavGuard: NavigationGuard
+  private readonly emitter: Emitter<Events>
 
   constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
@@ -70,6 +70,10 @@ export default class Cwa {
     this.admin = new Admin(this.storage.stores.admin)
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
     this.emitter = mitt<Events>()
+  }
+
+  public get eventBus () {
+    return this.emitter
   }
 
   public get adminNavigationGuardFn () {

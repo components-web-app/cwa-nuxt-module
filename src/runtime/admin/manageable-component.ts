@@ -22,7 +22,7 @@ export default class ManageableComponent {
     this.currentIri = iri
     this.addClickEventListeners()
 
-    this.$cwa.emitter.on('componentMounted', this.componentMountedListener)
+    this.$cwa.eventBus.on('componentMounted', this.componentMountedListener)
   }
 
   public clear () {
@@ -30,7 +30,7 @@ export default class ManageableComponent {
       return
     }
     logger.trace(`Destroy manager resource ${this.currentIri}`)
-    this.$cwa.emitter.off('componentMounted', this.componentMountedListener)
+    this.$cwa.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.currentIri = undefined
     this.domElements = []
