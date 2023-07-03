@@ -289,10 +289,10 @@ describe('ComponentGroup', () => {
       ComponentGroupUtilSynchronizer.mockReturnValueOnce({ createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy })
 
       const wrapper = createWrapper()
-      expect(watchSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
-      expect(watchSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
-      expect(watchSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
-      expect(watchSpy.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
+      expect(watchSpy.mock.calls[0][0].resource.value).toEqual(wrapper.vm.resource)
+      expect(watchSpy.mock.calls[0][0].location).toEqual(wrapper.props().location)
+      expect(watchSpy.mock.calls[0][0].fullReference.value).toEqual(wrapper.vm.fullReference)
+      expect(watchSpy.mock.calls[0][0].allowedComponents).toEqual(wrapper.props().allowedComponents)
 
       wrapper.unmount()
 
