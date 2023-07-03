@@ -1,11 +1,11 @@
 import { ComputedRef, watch, WatchStopHandle } from 'vue'
 import _isEqual from 'lodash/isEqual.js'
-import type { ResourcesManager } from '#cwa/runtime/resources/resources-manager'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
-import type { Resources } from '#cwa/runtime/resources/resources'
-import type Auth from '#cwa/runtime/api/auth'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import type { ResourcesManager } from '../../../resources/resources-manager'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import type { Resources } from '../../../resources/resources'
+import type Auth from '../../../api/auth'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { useCwa } from '../../../composables/cwa'
 
 const resourceTypeProperty = {
   [CwaResourceTypes.PAGE]: 'pages',
@@ -18,7 +18,6 @@ interface SyncWatcherOps {
   location: string
   fullReference: ComputedRef<string | undefined>
   allowedComponents: string[]|null
-  showLoader: ComputedRef<boolean>
 }
 
 export class ComponentGroupUtilSynchronizer {
@@ -64,7 +63,6 @@ export class ComponentGroupUtilSynchronizer {
       allowedComponents
     }
     if (locationProperty) {
-      // @ts-ignore
       postData[locationProperty] = [iri]
     }
     await this.resourcesManager.createResource({

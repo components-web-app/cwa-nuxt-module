@@ -2,7 +2,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
-import * as cwaResourceComposables from '../../../composables/cwaResource'
+import * as cwaResourceComposables from '../../../composables/cwa-resource'
 import ComponentPosition from './ComponentPosition.vue'
 
 const mockComponentName = 'test'
