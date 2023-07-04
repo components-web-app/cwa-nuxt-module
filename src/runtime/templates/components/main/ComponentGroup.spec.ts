@@ -1,12 +1,13 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { computed, ref } from 'vue'
+import * as vue from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import * as cwaComposables from '#cwa/runtime/composables/cwa'
+import * as cwaResourceManageableComposables from '#cwa/runtime/composables/cwa-resource-manageable'
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
@@ -22,7 +23,7 @@ const mockReference = 'mockReference'
 const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
 const mockCwaResources = {
-  getResource: vi.fn().mockImplementation(() => computed(() => { return undefined })),
+  getResource: vi.fn().mockImplementation(() => vue.computed(() => { return undefined })),
   getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference')
 }
 
@@ -42,7 +43,7 @@ function createWrapper ({
   // @ts-ignore
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
     return {
-      auth: { signedIn: ref(signedIn) },
+      auth: { signedIn: vue.ref(signedIn) },
       resources: {
         ...mockCwaResources,
         isLoading: { value: isLoading }
@@ -259,7 +260,7 @@ describe('ComponentGroup', () => {
         })
 
         const wrapper = createWrapper({
-          signedIn: ref(signedIn)
+          signedIn: vue.ref(signedIn)
         })
 
         expect(wrapper.vm.signedInAndResourceExists).toEqual(expected)
@@ -289,10 +290,10 @@ describe('ComponentGroup', () => {
       ComponentGroupUtilSynchronizer.mockReturnValueOnce({ createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy })
 
       const wrapper = createWrapper()
-      expect(watchSpy.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
-      expect(watchSpy.mock.calls[0][1]).toEqual(wrapper.props().location)
-      expect(watchSpy.mock.calls[0][2].value).toEqual(wrapper.vm.fullReference)
-      expect(watchSpy.mock.calls[0][3]).toEqual(wrapper.props().allowedComponents)
+      expect(watchSpy.mock.calls[0][0].resource.value).toEqual(wrapper.vm.resource)
+      expect(watchSpy.mock.calls[0][0].location).toEqual(wrapper.props().location)
+      expect(watchSpy.mock.calls[0][0].fullReference.value).toEqual(wrapper.vm.fullReference)
+      expect(watchSpy.mock.calls[0][0].allowedComponents).toEqual(wrapper.props().allowedComponents)
 
       wrapper.unmount()
 
@@ -332,6 +333,45 @@ describe('ComponentGroup', () => {
 
         expect(iri).toEqual(mockComponentPositions[index])
         expect(uiComponent).toEqual(ComponentPosition)
+      })
+    })
+  })
+
+  describe('Initialise manager when resource is available', () => {
+    test('Watcher is called with correct options', () => {
+      const unwatchSpy = vi.fn()
+      vi.spyOn(vue, 'watch').mockImplementation(() => {
+        return unwatchSpy
+      })
+      const resourceWatchHandler = vi.fn()
+      const resolvedResource = {
+        data: undefined,
+        apiState: {}
+      }
+      vi.spyOn(cwaResourceManageableComposables, 'useCwaResourceManageable').mockImplementationOnce(() => {
+        return {
+          resourceWatchHandler
+        }
+      })
+      vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
+        return {
+          value: {
+            data: {
+              reference: 'anything'
+            }
+          }
+        }
+      })
+      vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
+        return resolvedResource
+      })
+      const wrapper = createWrapper()
+
+      expect(vue.watch.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
+      expect(vue.watch.mock.calls[0][1]).toEqual(resourceWatchHandler)
+      expect(vue.watch.mock.calls[0][2]).toEqual({
+        immediate: true,
+        flush: 'post'
       })
     })
   })

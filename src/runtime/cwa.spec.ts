@@ -1,5 +1,6 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
+import mitt from 'mitt'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -13,6 +14,8 @@ import { Resources } from './resources/resources'
 import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+
+vi.mock('mitt')
 
 vi.mock('./storage/storage', () => {
   return {
@@ -190,5 +193,10 @@ describe('Cwa class test', () => {
     expect(NavigationGuard).toBeCalledWith($router, stores.admin)
     expect($cwa.adminNavGuard).toBe(NavigationGuard.mock.results[0].value)
     expect($cwa.adminNavigationGuardFn).toBe(NavigationGuard.mock.results[0].value.adminNavigationGuardFn)
+  })
+
+  test('Event bus is created', () => {
+    expect(mitt).toHaveBeenCalled()
+    expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
   })
 })
