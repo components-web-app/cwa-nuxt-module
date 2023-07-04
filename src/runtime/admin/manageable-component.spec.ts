@@ -1,4 +1,5 @@
 import { describe, test, vi, expect, afterEach } from 'vitest'
+import { computed } from 'vue'
 import Cwa from '../cwa'
 import ManageableComponent from './manageable-component'
 
@@ -92,6 +93,24 @@ describe('ManageableComponent Class', () => {
       expect(instance.removeClickEventListeners).toHaveBeenCalled()
       expect(instance.currentIri).toBeUndefined()
       expect(instance.domElements).toEqual([])
+    })
+  })
+
+  describe('componentMountedListener function', () => {
+    test.each([
+      { iri: '/child', childIris: ['/child', '/another-child'], callCount: 1 },
+      { iri: '/no-exist', childIris: ['/eeeerie'], callCount: 0 }
+    ])('If iri passed is $iri with childIris as $childIris then functions should be called $callCount times', ({ iri, childIris, callCount }) => {
+      const { instance } = createManageableComponent()
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
+      vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
+      vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => computed(() => childIris))
+      instance.componentMountedListener(iri)
+      expect(instance.removeClickEventListeners).toHaveBeenCalledTimes(callCount)
+      expect(instance.addClickEventListeners).toHaveBeenCalledTimes(callCount)
+      if (callCount) {
+        expect(instance.addClickEventListeners.mock.invocationCallOrder[0]).toBeGreaterThan(instance.removeClickEventListeners.mock.invocationCallOrder[0])
+      }
     })
   })
 })
