@@ -29,7 +29,6 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
-    logger.trace(`Destroy manager resource ${this.currentIri}`)
     this.$cwa.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.currentIri = undefined
