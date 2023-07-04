@@ -127,12 +127,7 @@ export class Resources {
         }
       }
 
-      let percent
-      if (complete === 0) {
-        percent = total === 0 ? 100 : 0
-      } else {
-        percent = Math.round((complete / total) * 100)
-      }
+      const percent = complete ? Math.round((complete / total) * 100) : 0
 
       return {
         resources: pageLoadResources,
