@@ -51,17 +51,17 @@ export default class ManageableComponent {
       const getChildren = (iri: string) => {
         const nested = []
         const resource = this.$cwa.resources.getResource(iri)
-        nested.push(iri)
         const type = getResourceTypeFromIri(iri)
         const properties = resourceTypeToNestedResourceProperties[type]
 
         for (const prop of properties) {
           const children = resource.value.data?.[prop]
           if (!children || !Array.isArray(children)) {
-            nested.push(children)
+            children && nested.push(children)
             continue
           }
           for (const child of children) {
+            nested.push(child)
             nested.push(...getChildren(child))
           }
         }
@@ -110,6 +110,7 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
-    console.log(`Click handled for ${this.currentIri}`, this.domElements)
+    // eslint-disable-next-line no-console
+    console.log(`TEMP LOGGING: Click handled for ${this.currentIri}`, this.domElements)
   }
 }

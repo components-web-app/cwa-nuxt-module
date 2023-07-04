@@ -1,6 +1,8 @@
 import { describe, test, vi, expect, afterEach } from 'vitest'
 import { computed } from 'vue'
 import Cwa from '../cwa'
+import * as ResourceUtils from '../resources/resource-utils'
+import { CwaResourceTypes } from '../resources/resource-utils'
 import ManageableComponent from './manageable-component'
 
 vi.mock('../cwa', () => {
@@ -9,7 +11,8 @@ vi.mock('../cwa', () => {
       eventBus: {
         on: vi.fn(),
         off: vi.fn()
-      }
+      },
+      resources: vi.fn()
     }))
   }
 })
@@ -111,6 +114,54 @@ describe('ManageableComponent Class', () => {
       if (callCount) {
         expect(instance.addClickEventListeners.mock.invocationCallOrder[0]).toBeGreaterThan(instance.removeClickEventListeners.mock.invocationCallOrder[0])
       }
+    })
+  })
+
+  describe('childIris getter fn', () => {
+    test('If there is no currentIri, and empty array is returned', () => {
+      const { instance } = createManageableComponent()
+      expect(instance.childIris.value).toEqual([])
+    })
+
+    test('A flat array of children is returned recursively', () => {
+      const { instance, $cwa } = createManageableComponent()
+      const getResource = vi.fn((iri: string) => {
+        return computed(() => {
+          let obj = { '@id': iri }
+          if (iri === '/group') {
+            obj = {
+              ...obj,
+              componentPositions: ['/position-1', '/position-2']
+            }
+          }
+          if (iri === '/position-1') {
+            obj = {
+              ...obj
+            }
+          }
+          if (iri === '/position-2') {
+            obj = {
+              ...obj,
+              component: '/component'
+            }
+          }
+          return {
+            data: obj
+          }
+        })
+      })
+
+      vi.spyOn($cwa, 'resources', 'get').mockImplementation(() => {
+        return {
+          getResource
+        }
+      })
+      vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {
+        return iri.startsWith('/position') ? CwaResourceTypes.COMPONENT_POSITION : CwaResourceTypes.COMPONENT_GROUP
+      })
+
+      instance.currentIri = '/group'
+      expect(instance.childIris.value).toEqual(['/position-1', '/position-2', '/component'])
     })
   })
 })
