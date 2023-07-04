@@ -1,5 +1,4 @@
 import { ComponentPublicInstance, computed, ComputedRef } from 'vue'
-import logger from 'consola'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
 

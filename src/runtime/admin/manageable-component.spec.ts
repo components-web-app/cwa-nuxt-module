@@ -39,6 +39,7 @@ describe('ManageableComponent Class', () => {
 
   test('componentMountedListener is bound to `this`', () => {
     const { instance } = createManageableComponent()
+    // eslint-disable-next-line no-prototype-builtins
     expect(instance.componentMountedListener.hasOwnProperty('prototype')).toEqual(false)
   })
 
@@ -66,6 +67,31 @@ describe('ManageableComponent Class', () => {
 
       expect(instance.addClickEventListeners).toHaveBeenCalledTimes(1)
       expect($cwa.eventBus.on).toHaveBeenCalledWith('componentMounted', listener)
+    })
+  })
+
+  describe('clear function', () => {
+    test('If there is no currentIri the clear functions will not be executed', () => {
+      const { instance, $cwa } = createManageableComponent()
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
+      const domElements = [createDomElement(1)]
+      instance.domElements = domElements
+      instance.clear()
+      expect($cwa.eventBus.off).not.toHaveBeenCalled()
+      expect(instance.removeClickEventListeners).not.toHaveBeenCalled()
+      expect(instance.domElements).toEqual(domElements)
+    })
+    test('if there is a currentIri clear functions are carried out', () => {
+      const { instance, $cwa } = createManageableComponent()
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
+      instance.currentIri = '/abc'
+      instance.domElements = [createDomElement(1)]
+      instance.clear()
+
+      expect($cwa.eventBus.off).toHaveBeenCalled()
+      expect(instance.removeClickEventListeners).toHaveBeenCalled()
+      expect(instance.currentIri).toBeUndefined()
+      expect(instance.domElements).toEqual([])
     })
   })
 })
