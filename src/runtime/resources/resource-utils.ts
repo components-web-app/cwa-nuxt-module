@@ -28,6 +28,10 @@ type TypeToPathPrefixMap = {
   [T in CwaResourceTypes]: string;
 }
 
+type TypeToNestedPropertiesMap = {
+  [T in CwaResourceTypes]: Array<string>;
+}
+
 const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
   [CwaResourceTypes.ROUTE]: '/_/routes/',
   [CwaResourceTypes.PAGE]: '/_/pages/',
@@ -80,4 +84,14 @@ export function isCwaResourceSame (resource1: CwaResource, resource2: CwaResourc
     return JSON.stringify(newObj)
   }
   return clearAndStringify(resource1) === clearAndStringify(resource2)
+}
+
+export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
+  [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
+  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
+  [CwaResourceTypes.PAGE_DATA]: ['page'],
+  [CwaResourceTypes.LAYOUT]: ['componentGroups'],
+  [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
+  [CwaResourceTypes.COMPONENT_POSITION]: ['component'],
+  [CwaResourceTypes.COMPONENT]: ['componentGroups']
 }

@@ -2,14 +2,14 @@
 import { describe, expect, test, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
-import * as cwaResourceComposables from '../../../composables/cwaResource'
+import * as cwaResourceComposables from '../../../composables/cwa-resource'
 import ComponentPosition from './ComponentPosition.vue'
 
 const mockComponentName = 'test'
 
 function createWrapper () {
   // @ts-ignore
-  vi.spyOn(cwaResourceComposables, 'useCwaResourceUtils').mockImplementation(() => ({
+  vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
     getResource: vi.fn(() => ref({ data: { component: mockComponentName } }))
   }))
 

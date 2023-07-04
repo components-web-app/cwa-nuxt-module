@@ -14,14 +14,15 @@
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa } from '#imports'
+import { useCwa, useCwaResourceManageable } from '#imports'
 
 const $cwa = useCwa()
+const $manager = useCwaResourceManageable()
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 
@@ -69,12 +70,20 @@ function getResourceKey (positionIri: string) {
 }
 
 onMounted(() => {
-  componentGroupSynchronizer.createSyncWatcher(
+  componentGroupSynchronizer.createSyncWatcher({
     resource,
-    props.location,
+    location: props.location,
     fullReference,
-    props.allowedComponents
-  )
+    allowedComponents: props.allowedComponents
+  })
+
+  // initialise the manager when we know what the component group iri is
+  if ($manager) {
+    watch(resource, $manager.resourceWatchHandler, {
+      immediate: true,
+      flush: 'post'
+    })
+  }
 })
 
 onBeforeUnmount(() => {

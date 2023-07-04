@@ -1,16 +1,23 @@
 import { ComputedRef, watch, WatchStopHandle } from 'vue'
 import _isEqual from 'lodash/isEqual.js'
-import type { ResourcesManager } from '#cwa/runtime/resources/resources-manager'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
-import type { Resources } from '#cwa/runtime/resources/resources'
-import type Auth from '#cwa/runtime/api/auth'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import type { ResourcesManager } from '../../../resources/resources-manager'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import type { Resources } from '../../../resources/resources'
+import type Auth from '../../../api/auth'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { useCwa } from '../../../composables/cwa'
 
 const resourceTypeProperty = {
   [CwaResourceTypes.PAGE]: 'pages',
   [CwaResourceTypes.LAYOUT]: 'layouts',
   [CwaResourceTypes.COMPONENT]: 'components'
+}
+
+interface SyncWatcherOps {
+  resource: ComputedRef<CwaCurrentResourceInterface | undefined>
+  location: string
+  fullReference: ComputedRef<string | undefined>
+  allowedComponents: string[]|null
 }
 
 export class ComponentGroupUtilSynchronizer {
@@ -26,15 +33,15 @@ export class ComponentGroupUtilSynchronizer {
     this.auth = auth
   }
 
-  public createSyncWatcher (resourceRef: ComputedRef<CwaCurrentResourceInterface | undefined>, location: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[]|null) {
+  public createSyncWatcher (ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
-      () => [this.resources.isLoading.value, this.auth.signedIn.value, resourceRef.value],
+      [this.resources.isLoading, this.auth.signedIn, ops.resource],
       async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
           if (!resource) {
-            await this.createComponentGroup(location, fullReference, allowedComponents)
+            await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
           } else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
-            await this.updateAllowedComponents(allowedComponents, resource)
+            await this.updateAllowedComponents(ops.allowedComponents, resource)
           }
         }
       }, {
@@ -56,7 +63,6 @@ export class ComponentGroupUtilSynchronizer {
       allowedComponents
     }
     if (locationProperty) {
-      // @ts-ignore
       postData[locationProperty] = [iri]
     }
     await this.resourcesManager.createResource({
