@@ -1,6 +1,8 @@
+import { Ref } from 'vue'
+
 interface _ResourceStackItem {
   iri: string
-  domElements: HTMLElement[]
+  domElements: Ref<HTMLElement[]>
 }
 
 // will be used to have additional properties not sent by the initial addToStack event

@@ -1,10 +1,10 @@
-import { ComponentPublicInstance, computed, ComputedRef } from 'vue'
+import { ComponentPublicInstance, computed, ComputedRef, ref, Ref } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
 
 export default class ManageableComponent {
   private currentIri: string|undefined
-  private domElements: HTMLElement[] = []
+  private domElements: Ref<HTMLElement[]> = ref([])
 
   constructor (private component: ComponentPublicInstance, private $cwa: Cwa) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
@@ -32,7 +32,7 @@ export default class ManageableComponent {
     this.$cwa.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.currentIri = undefined
-    this.domElements = []
+    this.domElements.value = []
   }
 
   // REFRESHING INITIALISATION
@@ -95,14 +95,14 @@ export default class ManageableComponent {
   }
 
   private addClickEventListeners () {
-    this.domElements = this.getAllEls()
-    for (const el of this.domElements) {
+    this.domElements.value = this.getAllEls()
+    for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
     }
   }
 
   private removeClickEventListeners () {
-    for (const el of this.domElements) {
+    for (const el of this.domElements.value) {
       el.removeEventListener('click', this.clickListener)
     }
   }
