@@ -217,4 +217,41 @@ describe('ManageableComponent Class', () => {
       ])
     })
   })
+
+  test('addClickEventListeners function', () => {
+    const { instance } = createManageableComponent()
+    const els = [
+      {
+        addEventListener: vi.fn()
+      },
+      {
+        addEventListener: vi.fn()
+      }
+    ]
+    vi.spyOn(instance, 'getAllEls').mockImplementationOnce(() => {
+      return els
+    })
+
+    instance.addClickEventListeners()
+    expect(instance.domElements).toEqual(els)
+    expect(els[0].addEventListener).toHaveBeenCalledWith('click', instance, false)
+    expect(els[1].addEventListener).toHaveBeenCalledWith('click', instance, false)
+  })
+
+  test('removeClickEventListeners function', () => {
+    const { instance } = createManageableComponent()
+    const els = [
+      {
+        removeEventListener: vi.fn()
+      },
+      {
+        removeEventListener: vi.fn()
+      }
+    ]
+    instance.domElements = els
+
+    instance.removeClickEventListeners()
+    expect(els[0].removeEventListener).toHaveBeenCalledWith('click', instance)
+    expect(els[1].removeEventListener).toHaveBeenCalledWith('click', instance)
+  })
 })
