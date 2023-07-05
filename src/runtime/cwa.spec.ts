@@ -15,7 +15,11 @@ import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 
-vi.mock('mitt')
+vi.mock('mitt', () => {
+  return {
+    default: vi.fn()
+  }
+})
 
 vi.mock('./storage/storage', () => {
   return {
