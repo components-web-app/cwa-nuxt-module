@@ -113,7 +113,7 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
-    this.$cwa.admin.manager.addToStack({
+    this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
       domElements: this.domElements,
       clickTarget: evt.target

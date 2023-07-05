@@ -8,7 +8,7 @@ interface AddToStackEvent {
   clickTarget: EventTarget|null
 }
 
-export default class Manager {
+export default class ComponentManager {
   private lastClickTarget: HTMLElement|undefined
   private currentResourceStack: ResourceStackItem[] = []
 

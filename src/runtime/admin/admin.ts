@@ -1,14 +1,14 @@
 import { AdminStore } from '../storage/stores/admin/admin-store'
-import Manager from './manager'
+import ComponentManager from './component-manager'
 
 export default class Admin {
-  private managerInstance: Manager
+  private readonly managerInstance: ComponentManager
 
   public constructor (private adminStoreDefinition: AdminStore) {
-    this.managerInstance = new Manager()
+    this.managerInstance = new ComponentManager()
   }
 
-  public get manager () {
+  public get componentManager () {
     return this.managerInstance
   }
 
