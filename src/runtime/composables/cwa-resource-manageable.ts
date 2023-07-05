@@ -7,7 +7,6 @@ import { useCwa } from './cwa'
 /**
  * @internal
  * @description Advanced usage - usually this composable will be initialised from useCwaResource where disableManager does not equal true. Primarily separated for the ComponentGroup component
- * @param iri
  */
 export const useCwaResourceManageable = (iri?: string) => {
   const proxy = getCurrentInstance()?.proxy
