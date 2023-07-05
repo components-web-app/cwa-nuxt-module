@@ -1,6 +1,6 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { NuxtApp } from '#app/nuxt'
-import mitt from 'mitt'
+import mitt, { Emitter } from 'mitt'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'

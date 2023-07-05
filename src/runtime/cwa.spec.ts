@@ -201,11 +201,6 @@ describe('Cwa class test', () => {
 
   test('Event bus is created', async () => {
     const $cwa = createCwa({ storeName })
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve()
-      }, 1)
-    })
     expect(mitt).toHaveBeenCalled()
     expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
   })
