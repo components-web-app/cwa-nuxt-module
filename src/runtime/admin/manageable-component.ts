@@ -1,5 +1,4 @@
 import { ComponentPublicInstance, computed, ComputedRef } from 'vue'
-import logger from 'consola'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
 
@@ -29,7 +28,6 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
-    logger.trace(`Destroy manager resource ${this.currentIri}`)
     this.$cwa.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.currentIri = undefined
@@ -50,20 +48,23 @@ export default class ManageableComponent {
       if (!this.currentIri) {
         return []
       }
-      const getChildren = (iri: string) => {
+      const getChildren = (iri: string): string[] => {
         const nested = []
         const resource = this.$cwa.resources.getResource(iri)
-        nested.push(iri)
         const type = getResourceTypeFromIri(iri)
+        if (!type) {
+          return []
+        }
         const properties = resourceTypeToNestedResourceProperties[type]
 
         for (const prop of properties) {
           const children = resource.value.data?.[prop]
           if (!children || !Array.isArray(children)) {
-            nested.push(children)
+            children && nested.push(children)
             continue
           }
           for (const child of children) {
+            nested.push(child)
             nested.push(...getChildren(child))
           }
         }
@@ -85,10 +86,9 @@ export default class ManageableComponent {
     if (currentEl.nodeType === 1) {
       return [currentEl]
     }
-    while (currentEl?.nextSibling) {
+    do {
       currentEl.nodeType !== 3 && allSiblings.push(currentEl)
-      currentEl = currentEl.nextSibling
-    }
+    } while ((currentEl = currentEl.nextSibling))
 
     return allSiblings
   }
@@ -112,6 +112,7 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
-    console.log(`Click handled for ${this.currentIri}`, this.domElements)
+    // eslint-disable-next-line no-console
+    console.log(`TEMP LOGGING: Click handled for ${this.currentIri}`, this.domElements)
   }
 }

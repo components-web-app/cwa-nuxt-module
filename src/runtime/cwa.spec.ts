@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import mitt from 'mitt'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
@@ -15,11 +15,7 @@ import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 
-vi.mock('mitt', () => {
-  return {
-    default: vi.fn()
-  }
-})
+vi.mock('mitt')
 
 vi.mock('./storage/storage', () => {
   return {
@@ -131,20 +127,17 @@ describe('$cwa.apiUrl tests', () => {
 })
 
 describe('Cwa class test', () => {
-  let $cwa: Cwa
-
-  beforeEach(() => {
-    $cwa = createCwa({ storeName })
-  })
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('Storage class is setup', () => {
+    createCwa({ storeName })
     expect(Storage).toBeCalledWith(storeName)
   })
 
   test('ApiDocumentation is setup and proxy method works', async () => {
+    const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(ApiDocumentation).toBeCalledWith(CwaFetch.mock.instances[0], stores.apiDocumentation)
 
@@ -155,44 +148,52 @@ describe('Cwa class test', () => {
   })
 
   test('Mercure instance created and accessible', () => {
+    createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
     expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.instances[0])
   })
 
   test('CwaFetch created to provide a fetch instance with defaults', () => {
+    createCwa({ storeName })
     expect(CwaFetch).toBeCalledWith('https://api-url-not-set.com')
   })
 
   test('FetchStatusManager is initialised', () => {
+    createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(FetchStatusManager).toBeCalledWith(stores.fetcher, Mercure.mock.results[0].value, ApiDocumentation.mock.results[0].value, stores.resources)
   })
 
   test('Fetcher is initialised', () => {
+    createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], FetchStatusManager.mock.instances[0], { path }, stores.resources)
   })
 
   test('Resources is initialised and accessible', () => {
+    const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Resources).toBeCalledWith(stores.resources, stores.fetcher)
     expect($cwa.resources).toBe(Resources.mock.instances[0])
   })
 
   test('ResourcesManager is initialised and accessible', () => {
+    const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0])
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
   })
 
   test('Admin is initialised and accessible', () => {
+    const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Admin).toBeCalledWith(stores.admin)
     expect($cwa.admin).toBe(Admin.mock.instances[0])
   })
 
   test('Admin navigation guard is initialised', () => {
+    const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(NavigationGuard).toBeCalledWith($router, stores.admin)
     expect($cwa.adminNavGuard).toBe(NavigationGuard.mock.results[0].value)
@@ -200,7 +201,7 @@ describe('Cwa class test', () => {
   })
 
   test('Event bus is created', () => {
-    expect(mitt).toHaveBeenCalled()
+    const $cwa = createCwa({ storeName })
     expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
   })
 })
