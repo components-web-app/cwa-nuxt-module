@@ -39,7 +39,6 @@ export class Resources {
     })
   }
 
-  // todo: this may be temporary, but if proves useful, functionality to be moved to a resources store getter and this as a proxy
   public get currentResources () {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
       obj[id] = this.getResource(id).value
