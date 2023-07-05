@@ -48,10 +48,13 @@ export default class ManageableComponent {
       if (!this.currentIri) {
         return []
       }
-      const getChildren = (iri: string) => {
+      const getChildren = (iri: string): string[] => {
         const nested = []
         const resource = this.$cwa.resources.getResource(iri)
         const type = getResourceTypeFromIri(iri)
+        if (!type) {
+          return []
+        }
         const properties = resourceTypeToNestedResourceProperties[type]
 
         for (const prop of properties) {
@@ -83,10 +86,9 @@ export default class ManageableComponent {
     if (currentEl.nodeType === 1) {
       return [currentEl]
     }
-    while (currentEl?.nextSibling) {
+    do {
       currentEl.nodeType !== 3 && allSiblings.push(currentEl)
-      currentEl = currentEl.nextSibling
-    }
+    } while ((currentEl = currentEl.nextSibling))
 
     return allSiblings
   }

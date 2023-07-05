@@ -1,5 +1,6 @@
 import { describe, test, vi, expect, afterEach } from 'vitest'
 import { computed } from 'vue'
+import { Mock } from '@vitest/spy'
 import Cwa from '../cwa'
 import * as ResourceUtils from '../resources/resource-utils'
 import { CwaResourceTypes } from '../resources/resource-utils'
@@ -17,17 +18,22 @@ vi.mock('../cwa', () => {
   }
 })
 
-function createDomElement (nodeType: 1|2|3) {
+interface DummyDom {
+  nodeType: 1|2|3
+  nextSibling?: DummyDom
+  addEventListener?: Mock
+}
+
+function createDomElement (nodeType: 1|2|3): DummyDom {
   return {
     nodeType,
-    nextSibling: null,
-    addEventListener: vi.fn()
+    nextSibling: null
   }
 }
 
-function createManageableComponent () {
+function createManageableComponent ($el?: DummyDom) {
   const component = {
-    $el: createDomElement(1)
+    $el: $el || createDomElement(1)
   }
   const $cwa = new Cwa()
   return {
@@ -131,7 +137,7 @@ describe('ManageableComponent Class', () => {
           if (iri === '/group') {
             obj = {
               ...obj,
-              componentPositions: ['/position-1', '/position-2']
+              componentPositions: ['/position-1', '/position-2', '/position-3']
             }
           }
           if (iri === '/position-1') {
@@ -143,6 +149,18 @@ describe('ManageableComponent Class', () => {
             obj = {
               ...obj,
               component: '/component'
+            }
+          }
+          if (iri === '/position-3') {
+            obj = {
+              ...obj,
+              component: '/no-type'
+            }
+          }
+          if (iri === '/no-type') {
+            obj = {
+              ...obj,
+              component: '/whatever'
             }
           }
           return {
@@ -157,11 +175,46 @@ describe('ManageableComponent Class', () => {
         }
       })
       vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {
+        if (iri === '/no-type') {
+          return undefined
+        }
         return iri.startsWith('/position') ? CwaResourceTypes.COMPONENT_POSITION : CwaResourceTypes.COMPONENT_GROUP
       })
 
       instance.currentIri = '/group'
-      expect(instance.childIris.value).toEqual(['/position-1', '/position-2', '/component'])
+      expect(instance.childIris.value).toEqual(['/position-1', '/position-2', '/component', '/position-3', '/no-type'])
+    })
+  })
+
+  describe('getAllEls function', () => {
+    test('If the component does not have a root element return an empty array', () => {
+      const { instance } = createManageableComponent()
+      instance.component.$el = undefined
+      const elementsArray = instance.getAllEls()
+      expect(elementsArray).toEqual([])
+    })
+
+    test('If the component root element is a nodeType of 1 then return the element in the array (it is a singular div etc. and not a comment/text)', () => {
+      const { instance } = createManageableComponent()
+      const elementsArray = instance.getAllEls()
+      expect(elementsArray).toEqual([instance.component.$el])
+    })
+
+    test('An array is returned of all siblings that do not have a nodeType of 3', () => {
+      const { instance } = createManageableComponent()
+      const rootElement = createDomElement(2)
+      rootElement.nextSibling = createDomElement(3)
+      rootElement.nextSibling.nextSibling = createDomElement(1)
+      rootElement.nextSibling.nextSibling.nextSibling = createDomElement(2)
+
+      instance.component.$el = rootElement
+      const elementsArray = instance.getAllEls()
+      expect(elementsArray).toEqual([
+        rootElement,
+        // rootElement.nextSibling, - SHOULD BE EXCLUDED FOR NODE TYPE
+        rootElement.nextSibling.nextSibling,
+        rootElement.nextSibling.nextSibling.nextSibling
+      ])
     })
   })
 })

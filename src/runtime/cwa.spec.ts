@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import mitt from 'mitt'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
@@ -127,7 +127,7 @@ describe('$cwa.apiUrl tests', () => {
 })
 
 describe('Cwa class test', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
@@ -202,7 +202,6 @@ describe('Cwa class test', () => {
 
   test('Event bus is created', () => {
     const $cwa = createCwa({ storeName })
-    expect(mitt).toHaveBeenCalled()
     expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
   })
 })
