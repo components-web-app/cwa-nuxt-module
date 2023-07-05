@@ -51,6 +51,8 @@ describe('ManageableComponent Class', () => {
     const { instance } = createManageableComponent()
     // eslint-disable-next-line no-prototype-builtins
     expect(instance.componentMountedListener.hasOwnProperty('prototype')).toEqual(false)
+    // eslint-disable-next-line no-prototype-builtins
+    expect(instance.clickListener.hasOwnProperty('prototype')).toEqual(false)
   })
 
   describe('init function', () => {
@@ -234,8 +236,8 @@ describe('ManageableComponent Class', () => {
 
     instance.addClickEventListeners()
     expect(instance.domElements).toEqual(els)
-    expect(els[0].addEventListener).toHaveBeenCalledWith('click', instance, false)
-    expect(els[1].addEventListener).toHaveBeenCalledWith('click', instance, false)
+    expect(els[0].addEventListener).toHaveBeenCalledWith('click', instance.clickListener, false)
+    expect(els[1].addEventListener).toHaveBeenCalledWith('click', instance.clickListener, false)
   })
 
   test('removeClickEventListeners function', () => {
@@ -251,7 +253,7 @@ describe('ManageableComponent Class', () => {
     instance.domElements = els
 
     instance.removeClickEventListeners()
-    expect(els[0].removeEventListener).toHaveBeenCalledWith('click', instance)
-    expect(els[1].removeEventListener).toHaveBeenCalledWith('click', instance)
+    expect(els[0].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
+    expect(els[1].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
   })
 })

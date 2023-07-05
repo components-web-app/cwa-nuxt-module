@@ -1,8 +1,15 @@
 import { AdminStore } from '../storage/stores/admin/admin-store'
+import Manager from './manager'
 
 export default class Admin {
-  // eslint-disable-next-line no-useless-constructor
+  private managerInstance: Manager
+
   public constructor (private adminStoreDefinition: AdminStore) {
+    this.managerInstance = new Manager()
+  }
+
+  public get manager () {
+    return this.managerInstance
   }
 
   public toggleEdit (editing?: boolean): void {

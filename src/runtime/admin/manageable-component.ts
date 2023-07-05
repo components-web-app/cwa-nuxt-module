@@ -4,10 +4,11 @@ import Cwa from '../cwa'
 
 export default class ManageableComponent {
   private currentIri: string|undefined
-  private domElements: any[] = []
+  private domElements: HTMLElement[] = []
 
   constructor (private component: ComponentPublicInstance, private $cwa: Cwa) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
+    this.clickListener = this.clickListener.bind(this)
   }
 
   // PUBLIC
@@ -96,23 +97,26 @@ export default class ManageableComponent {
   private addClickEventListeners () {
     this.domElements = this.getAllEls()
     for (const el of this.domElements) {
-      el.addEventListener('click', this, false)
+      el.addEventListener('click', this.clickListener, false)
     }
   }
 
   private removeClickEventListeners () {
     for (const el of this.domElements) {
-      el.removeEventListener('click', this)
+      el.removeEventListener('click', this.clickListener)
     }
   }
 
   // This will be called by the click event listener in context of this, and can be removed as well.
   // if we define with a name and call that, the `this` context will be the clicked dom element
-  private handleEvent () {
+  private clickListener (evt: Event) {
     if (!this.currentIri) {
       return
     }
-    // eslint-disable-next-line no-console
-    console.log(`TEMP LOGGING: Click handled for ${this.currentIri}`, this.domElements)
+    this.$cwa.admin.manager.addToStack({
+      iri: this.currentIri,
+      domElements: this.domElements,
+      clickTarget: evt.target
+    })
   }
 }

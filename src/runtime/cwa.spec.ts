@@ -73,7 +73,6 @@ const path = 'something'
 const storeName = 'dummystore'
 const $router = vi.fn()
 function createCwa ({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
-  // @ts-ignore
   return new Cwa({
     _route: {
       path
@@ -200,8 +199,13 @@ describe('Cwa class test', () => {
     expect($cwa.adminNavigationGuardFn).toBe(NavigationGuard.mock.results[0].value.adminNavigationGuardFn)
   })
 
-  test('Event bus is created', () => {
+  test('Event bus is created', async () => {
     const $cwa = createCwa({ storeName })
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve()
+      }, 1)
+    })
     expect(mitt).toHaveBeenCalled()
     expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
   })
