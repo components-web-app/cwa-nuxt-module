@@ -199,7 +199,7 @@ describe('Cwa class test', () => {
     expect($cwa.adminNavigationGuardFn).toBe(NavigationGuard.mock.results[0].value.adminNavigationGuardFn)
   })
 
-  test('Event bus is created', async () => {
+  test('Event bus is created', () => {
     const $cwa = createCwa({ storeName })
     expect(mitt).toHaveBeenCalled()
     expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
