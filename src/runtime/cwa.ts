@@ -55,6 +55,7 @@ export default class Cwa {
       this.apiUrl = options.apiUrl || options.apiUrlBrowser || defaultApiUrl
     }
 
+    this.emitter = mitt<Events>()
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
     this.storage = new Storage(this.options.storeName)
@@ -69,7 +70,6 @@ export default class Cwa {
     this.mercure.setFetcher(this.fetcher)
     this.admin = new Admin(this.storage.stores.admin)
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
-    this.emitter = mitt<Events>()
   }
 
   public get eventBus () {

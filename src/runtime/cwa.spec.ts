@@ -202,6 +202,7 @@ describe('Cwa class test', () => {
 
   test('Event bus is created', () => {
     const $cwa = createCwa({ storeName })
+    expect(mitt).toHaveBeenCalled()
     expect($cwa.eventBus).toEqual(mitt.mock.results[0].value)
   })
 })
