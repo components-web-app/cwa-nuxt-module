@@ -1,6 +1,5 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { NuxtApp } from '#app/nuxt'
-import mitt, { Emitter } from 'mitt'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -17,10 +16,6 @@ import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { useCookie } from '#imports'
-
-type Events = {
-  componentMounted: string
-}
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -44,7 +39,6 @@ export default class Cwa {
 
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
-  private readonly emitter: Emitter<Events>
 
   constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
@@ -55,7 +49,6 @@ export default class Cwa {
       this.apiUrl = options.apiUrl || options.apiUrlBrowser || defaultApiUrl
     }
 
-    this.emitter = mitt<Events>()
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
     this.storage = new Storage(this.options.storeName)
@@ -70,10 +63,6 @@ export default class Cwa {
     this.mercure.setFetcher(this.fetcher)
     this.admin = new Admin(this.storage.stores.admin)
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
-  }
-
-  public get eventBus () {
-    return this.emitter
   }
 
   public get adminNavigationGuardFn () {

@@ -22,14 +22,14 @@ export default class ManageableComponent {
     this.currentIri = iri
     this.addClickEventListeners()
 
-    this.$cwa.eventBus.on('componentMounted', this.componentMountedListener)
+    this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
   }
 
   public clear () {
     if (!this.currentIri) {
       return
     }
-    this.$cwa.eventBus.off('componentMounted', this.componentMountedListener)
+    this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.currentIri = undefined
     this.domElements.value = []

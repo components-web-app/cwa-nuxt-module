@@ -9,9 +9,11 @@ import ManageableComponent from './manageable-component'
 vi.mock('../cwa', () => {
   return {
     default: vi.fn(() => ({
-      eventBus: {
-        on: vi.fn(),
-        off: vi.fn()
+      admin: {
+        eventBus: {
+          on: vi.fn(),
+          off: vi.fn()
+        }
       },
       resources: vi.fn()
     }))
@@ -78,7 +80,7 @@ describe('ManageableComponent Class', () => {
       expect(instance.currentIri).toEqual('/something')
 
       expect(instance.addClickEventListeners).toHaveBeenCalledTimes(1)
-      expect($cwa.eventBus.on).toHaveBeenCalledWith('componentMounted', listener)
+      expect($cwa.admin.eventBus.on).toHaveBeenCalledWith('componentMounted', listener)
     })
   })
 
@@ -89,7 +91,7 @@ describe('ManageableComponent Class', () => {
       const domElements = [createDomElement(1)]
       instance.domElements = domElements
       instance.clear()
-      expect($cwa.eventBus.off).not.toHaveBeenCalled()
+      expect($cwa.admin.eventBus.off).not.toHaveBeenCalled()
       expect(instance.removeClickEventListeners).not.toHaveBeenCalled()
       expect(instance.domElements).toEqual(domElements)
     })
@@ -100,10 +102,10 @@ describe('ManageableComponent Class', () => {
       instance.domElements = [createDomElement(1)]
       instance.clear()
 
-      expect($cwa.eventBus.off).toHaveBeenCalled()
+      expect($cwa.admin.eventBus.off).toHaveBeenCalled()
       expect(instance.removeClickEventListeners).toHaveBeenCalled()
       expect(instance.currentIri).toBeUndefined()
-      expect(instance.domElements).toEqual([])
+      expect(instance.domElements.value).toEqual([])
     })
   })
 
@@ -235,7 +237,7 @@ describe('ManageableComponent Class', () => {
     })
 
     instance.addClickEventListeners()
-    expect(instance.domElements).toEqual(els)
+    expect(instance.domElements.value).toEqual(els)
     expect(els[0].addEventListener).toHaveBeenCalledWith('click', instance.clickListener, false)
     expect(els[1].addEventListener).toHaveBeenCalledWith('click', instance.clickListener, false)
   })
@@ -250,7 +252,7 @@ describe('ManageableComponent Class', () => {
         removeEventListener: vi.fn()
       }
     ]
-    instance.domElements = els
+    instance.domElements.value = els
 
     instance.removeClickEventListeners()
     expect(els[0].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
