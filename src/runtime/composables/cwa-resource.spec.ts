@@ -6,8 +6,10 @@ import { useCwaResource } from '#cwa/runtime/composables/cwa-resource'
 
 describe('CWA resources composable', () => {
   const mockCwa = {
-    eventBus: {
-      emit: vi.fn()
+    admin: {
+      eventBus: {
+        emit: vi.fn()
+      }
     },
     resources: {
       getResource: vi.fn()
@@ -43,7 +45,7 @@ describe('CWA resources composable', () => {
 
     useCwaResource(mockIri)
 
-    expect(mockCwa.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri)
+    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri)
   })
 
   test('should return object containing function to get resource by iri provided into composable', () => {
