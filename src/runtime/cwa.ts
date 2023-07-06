@@ -14,8 +14,8 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
-import { NuxtApp } from '#app/nuxt'
 import { useCookie } from '#imports'
+import { NuxtApp } from '#app/nuxt'
 
 export default class Cwa {
   private readonly apiUrl: string
