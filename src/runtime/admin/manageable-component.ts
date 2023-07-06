@@ -6,7 +6,7 @@ export default class ManageableComponent {
   private currentIri: string|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
 
-  constructor (private component: ComponentPublicInstance, private $cwa: Cwa) {
+  constructor (private component: ComponentPublicInstance, private $cwa: Cwa, private displayName?: string) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
   }
@@ -116,7 +116,9 @@ export default class ManageableComponent {
     this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
       domElements: this.domElements,
-      clickTarget: evt.target
+      clickTarget: evt.target,
+      displayName: this.displayName || null,
+      componentInstance: this.component
     })
   }
 }

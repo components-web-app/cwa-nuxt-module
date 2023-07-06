@@ -7,13 +7,14 @@ export type IriProp = {
 }
 
 interface cwaResourceUtilsOps {
-  iri: string
+  iri?: string
   disableManager?: boolean
+  displayName?: string
 }
 
 export const useCwaResource = (iri: string, ops?: cwaResourceUtilsOps) => {
   const $cwa = useCwa()
-  const manager = !ops?.disableManager ? useCwaResourceManageable(iri) : undefined
+  const manager = !ops?.disableManager ? useCwaResourceManageable(iri, ops?.displayName) : undefined
 
   onMounted(() => {
     $cwa.admin.eventBus.emit('componentMounted', iri)

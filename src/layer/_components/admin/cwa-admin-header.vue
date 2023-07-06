@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
@@ -23,5 +23,17 @@ const isNavEnabled = computed({
   set: (newValue: boolean) => {
     $cwa.admin.setNavigationGuardDisabled(newValue)
   }
+})
+
+function clickHandler (e: any) {
+  $cwa.admin.componentManager.resetStackOnClickMiss(e.target as HTMLElement)
+}
+
+onMounted(() => {
+  document.body.addEventListener('click', clickHandler)
+})
+
+onBeforeUnmount(() => {
+  document.body.removeEventListener('click', clickHandler)
 })
 </script>

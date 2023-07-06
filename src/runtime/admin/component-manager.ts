@@ -1,8 +1,10 @@
-import { Ref } from 'vue'
+import { Ref, ComponentPublicInstance } from 'vue'
 
 interface _ResourceStackItem {
   iri: string
   domElements: Ref<HTMLElement[]>
+  displayName: string|null
+  componentInstance: ComponentPublicInstance
 }
 
 // will be used to have additional properties not sent by the initial addToStack event
@@ -16,7 +18,7 @@ interface AddToStackWindowEvent {
 interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {}
 
 export default class ComponentManager {
-  private lastClickTarget: HTMLElement|undefined
+  private lastClickTarget: HTMLElement | null = null
   private currentResourceStack: ResourceStackItem[] = []
   private isEditing = false
 
@@ -28,15 +30,36 @@ export default class ComponentManager {
     }
   }
 
+  public get resourceStack () {
+    return this.currentResourceStack
+  }
+
   public resetStack () {
-    console.log('reset stack')
+    this.lastClickTarget = null
+    this.currentResourceStack = []
+  }
+
+  public resetStackOnClickMiss (element: HTMLElement) {
+    if (!this.isEditing) {
+      return
+    }
+
+    if (this.lastClickTarget !== element) {
+      this.resetStack()
+    }
   }
 
   public addToStack (event: AddToStackEvent | AddToStackWindowEvent) {
     if (!this.isEditing) {
       return
     }
-    // eslint-disable-next-line no-console
-    console.log('addToStack', event)
+
+    if (event.clickTarget !== this.lastClickTarget) {
+      this.resetStack()
+
+      this.lastClickTarget = event.clickTarget as HTMLElement
+    }
+
+    this.currentResourceStack.push(event as ResourceStackItem)
   }
 }
