@@ -25,6 +25,8 @@ export default class Admin {
 
   public toggleEdit (editing?: boolean): void {
     this.adminStore.toggleEdit(editing)
+
+    this.managerInstance.setEditMode(this.isEditing)
   }
 
   public setNavigationGuardDisabled (disabled: boolean) {

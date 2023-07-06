@@ -18,10 +18,24 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {}
 export default class ComponentManager {
   private lastClickTarget: HTMLElement|undefined
   private currentResourceStack: ResourceStackItem[] = []
+  private isEditing = false
 
-  public resetStack () {}
+  public setEditMode (newEditModeStatus: boolean) {
+    this.isEditing = newEditModeStatus
+
+    if (!this.isEditing) {
+      this.resetStack()
+    }
+  }
+
+  public resetStack () {
+    console.log('reset stack')
+  }
 
   public addToStack (event: AddToStackEvent | AddToStackWindowEvent) {
+    if (!this.isEditing) {
+      return
+    }
     // eslint-disable-next-line no-console
     console.log('addToStack', event)
   }
