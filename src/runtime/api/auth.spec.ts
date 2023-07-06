@@ -1,8 +1,8 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
-import Auth from './auth'
 import { useRoute } from '#app'
+import Auth from './auth'
 import { ref } from '#imports'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
