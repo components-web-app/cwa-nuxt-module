@@ -57,11 +57,12 @@ export default class ComponentManager {
     const { clickTarget, ...resourceStackItem } = event
     this.listenEditModeChange()
 
-    if (!this.isEditing || this.isItemAlreadyInStack((event as AddToStackEvent).iri)) {
+    const isWindowClickEvent = !('iri' in resourceStackItem)
+
+    if (!this.isEditing || (!isWindowClickEvent && this.isItemAlreadyInStack(resourceStackItem.iri))) {
       return
     }
 
-    const isWindowClickEvent = !('iri' in resourceStackItem)
     const isNewClickTarget = clickTarget !== this.lastClickTarget
 
     if (isWindowClickEvent) {
