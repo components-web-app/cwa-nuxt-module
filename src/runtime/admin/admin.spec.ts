@@ -34,12 +34,32 @@ describe('Admin class', () => {
     admin = createAdmin()
   })
   test('toggleEdit', () => {
+    const toggleSpy = vi.fn()
+
+    admin.adminStoreDefinition.useStore = () => ({
+      toggleEdit: toggleSpy,
+      state: {
+        isEditing: 'isEdit',
+        navigationGuardDisabled: 'ngs'
+      }
+    })
+
     expect(admin.toggleEdit(true)).toBeUndefined()
-    expect(AdminStore.mock.results[0].value.useStore.mock.results[0].value.toggleEdit).toHaveBeenCalledWith(true)
+    expect(toggleSpy).toHaveBeenCalledWith(true)
   })
   test('setNavigationGuardDisabled', () => {
+    const mockState = {
+      isEditing: 'isEdit',
+      navigationGuardDisabled: 'ngs'
+    }
+
+    admin.adminStoreDefinition.useStore = () => ({
+      toggleEdit: vi.fn(),
+      state: mockState
+    })
+
     expect(admin.setNavigationGuardDisabled(false)).toBeUndefined()
-    expect(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.navigationGuardDisabled).toBe(false)
+    expect(mockState.navigationGuardDisabled).toBe(false)
   })
   test('navigationGuardDisabled getter', () => {
     expect(admin.navigationGuardDisabled).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.navigationGuardDisabled)
@@ -48,7 +68,14 @@ describe('Admin class', () => {
     expect(admin.isEditing).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.isEditing)
   })
   test('adminStore getter', () => {
-    expect(admin.adminStore).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value)
+    const mockStore = {
+      toggleEdit: vi.fn(),
+      state: {}
+    }
+
+    admin.adminStoreDefinition.useStore = () => mockStore
+
+    expect(admin.adminStore).toBe(mockStore)
   })
   test('event bus was created AND accessible via getter', () => {
     const mockMitt = { mock: 'mitt' }
