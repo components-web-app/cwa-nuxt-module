@@ -1,7 +1,14 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { describe, expect, test, vi, beforeEach, Mock } from 'vitest'
 import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import Admin from './admin'
+import ComponentManager from './component-manager'
+
+vi.mock('./component-manager', () => {
+  return {
+    default: vi.fn()
+  }
+})
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
@@ -86,5 +93,11 @@ describe('Admin class', () => {
 
     expect(mitt).toHaveBeenCalled()
     expect(admin.eventBus).toEqual(mockMitt)
+  })
+
+  test('should have component manager created', () => {
+    admin = createAdmin()
+
+    expect(ComponentManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition)
   })
 })
