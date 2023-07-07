@@ -1,5 +1,5 @@
 import { Ref, ComponentPublicInstance, watch, WatchStopHandle } from 'vue'
-import { AdminStore } from '#cwa/runtime/storage/stores/admin/admin-store'
+import { AdminStore } from '../storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
   iri: string
@@ -20,7 +20,7 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 }
 
 export default class ComponentManager {
-  private lastClickTarget: HTMLElement | null = null
+  private lastClickTarget: EventTarget | null = null
   private currentResourceStack: ResourceStackItem[] = []
   private unwatch: WatchStopHandle | null = null
 
@@ -53,7 +53,7 @@ export default class ComponentManager {
     return !!this.currentResourceStack.find(el => el.iri === iri)
   }
 
-  public addToStack (event: AddToStackEvent | AddToStackWindowEvent) {
+  public addToStack (event: AddToStackEvent|AddToStackWindowEvent) {
     this.listenEditModeChange()
 
     if (!this.isEditing || this.isItemAlreadyInStack((event as AddToStackEvent).iri)) {
@@ -71,10 +71,11 @@ export default class ComponentManager {
     }
 
     if (isNewClickTarget) {
-      this.lastClickTarget = event.clickTarget as HTMLElement
+      this.lastClickTarget = event.clickTarget
     }
 
-    this.currentResourceStack.push(event as ResourceStackItem)
+    const resourceStackItem: ResourceStackItem = event
+    this.currentResourceStack.push(resourceStackItem)
   }
 
   private get isEditing () {
