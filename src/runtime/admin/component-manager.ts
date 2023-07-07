@@ -37,16 +37,6 @@ export default class ComponentManager {
     this.currentResourceStack = []
   }
 
-  public resetStackOnClickMiss (element: HTMLElement) {
-    if (!this.isEditing) {
-      return
-    }
-
-    if (this.lastClickTarget !== element) {
-      this.resetStack()
-    }
-  }
-
   private listenEditModeChange () {
     if (this.unwatch) {
       return
@@ -70,9 +60,22 @@ export default class ComponentManager {
       return
     }
 
-    if (event.clickTarget !== this.lastClickTarget) {
-      this.resetStack()
+    const isWindowClickEvent = !('iri' in event)
+    const isNewClickTarget = event.clickTarget !== this.lastClickTarget
 
+    if (isWindowClickEvent && !isNewClickTarget) {
+      return
+    }
+
+    if (isWindowClickEvent || isNewClickTarget) {
+      this.resetStack()
+    }
+
+    if (isWindowClickEvent) {
+      return
+    }
+
+    if (isNewClickTarget) {
       this.lastClickTarget = event.clickTarget as HTMLElement
     }
 

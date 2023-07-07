@@ -26,7 +26,7 @@ const isNavEnabled = computed({
 })
 
 function clickHandler (e: any) {
-  $cwa.admin.componentManager.resetStackOnClickMiss(e.target as HTMLElement)
+  $cwa.admin.componentManager.addToStack({ clickTarget: e.target })
 }
 
 onMounted(() => {
