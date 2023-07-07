@@ -59,10 +59,14 @@ export default class ComponentManager {
     })
   }
 
+  private isItemAlreadyInStack (iri: string): boolean {
+    return !!this.currentResourceStack.find(el => el.iri === iri)
+  }
+
   public addToStack (event: AddToStackEvent | AddToStackWindowEvent) {
     this.listenEditModeChange()
 
-    if (!this.isEditing) {
+    if (!this.isEditing || this.isItemAlreadyInStack((event as AddToStackEvent).iri)) {
       return
     }
 
