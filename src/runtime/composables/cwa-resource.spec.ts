@@ -26,7 +26,7 @@ describe('CWA resources composable', () => {
     const result = useCwaResource(mockIri)
 
     expect(result.manager).toEqual(mockManager)
-    expect(spy).toHaveBeenCalledWith(mockIri, undefined)
+    expect(spy).toHaveBeenCalledWith(mockIri, { displayName: undefined })
   })
 
   test('should return an object with manager as undefined IF disabling option is provided', () => {
