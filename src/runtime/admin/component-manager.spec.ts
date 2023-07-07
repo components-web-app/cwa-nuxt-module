@@ -21,7 +21,7 @@ function createComponentManager (mockStore?: any) {
 }
 
 describe('Component Manager', () => {
-  describe('store getter', () => {
+  describe('adminStore getter', () => {
     test('should return reference to store', () => {
       const mockStore = { mock: 'store' }
       const { manager } = createComponentManager(mockStore)
@@ -43,7 +43,7 @@ describe('Component Manager', () => {
     })
   })
 
-  describe('stack operations', () => {
+  describe('resourceStack getter', () => {
     test('should return stack', () => {
       const { manager } = createComponentManager()
       const mockStack = [1, 2, 3]
@@ -52,31 +52,37 @@ describe('Component Manager', () => {
 
       expect(manager.resourceStack).toEqual(mockStack)
     })
+  })
 
-    test('should check whether item is in stack or not by iri', () => {
-      const { manager } = createComponentManager()
-      const mockIri = '/mock/iri'
-      const mockStackItem = { iri: mockIri }
+  describe('stack operations', () => {
+    describe('isItemAlreadyInStack', () => {
+      test('should check whether item is in stack or not by iri', () => {
+        const { manager } = createComponentManager()
+        const mockIri = '/mock/iri'
+        const mockStackItem = { iri: mockIri }
 
-      manager.resourceStack.push(mockStackItem)
+        manager.resourceStack.push(mockStackItem)
 
-      expect(manager.isItemAlreadyInStack(mockIri)).toEqual(true)
-      expect(manager.isItemAlreadyInStack('/random')).toEqual(false)
+        expect(manager.isItemAlreadyInStack(mockIri)).toEqual(true)
+        expect(manager.isItemAlreadyInStack('/random')).toEqual(false)
+      })
     })
 
-    test('should reset stack and remove last click target', () => {
-      const { manager } = createComponentManager()
+    describe('resetStack', () => {
+      test('should reset stack and remove last click target', () => {
+        const { manager } = createComponentManager()
 
-      manager.currentResourceStack = [1, 2, 3]
-      manager.lastClickTarget = 'mock-target'
+        manager.currentResourceStack = [1, 2, 3]
+        manager.lastClickTarget = 'mock-target'
 
-      manager.resetStack()
+        manager.resetStack()
 
-      expect(manager.resourceStack).toEqual([])
-      expect(manager.lastClickTarget).toEqual(null)
+        expect(manager.resourceStack).toEqual([])
+        expect(manager.lastClickTarget).toEqual(null)
+      })
     })
 
-    describe('add to stack', () => {
+    describe('addToStack', () => {
       test('should listen to edit mode change', () => {
         const { manager } = createComponentManager()
 
@@ -144,7 +150,7 @@ describe('Component Manager', () => {
       })
     })
 
-    describe('edit mode change listener', () => {
+    describe('listenEditModeChange', () => {
       test('should start watching edit mode changes only once', () => {
         const watchSpy = vi.spyOn(vue, 'watch')
         const mockStore = { state: { isEditing: true } }
