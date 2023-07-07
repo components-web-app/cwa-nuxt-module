@@ -79,7 +79,7 @@ export default class ComponentManager {
     this.currentResourceStack.push(event as ResourceStackItem)
   }
 
-  public get isEditing () {
+  private get isEditing () {
     return this.adminStore.state.isEditing
   }
 
