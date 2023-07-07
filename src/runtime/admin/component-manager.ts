@@ -54,14 +54,15 @@ export default class ComponentManager {
   }
 
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent) {
+    const { clickTarget, ...resourceStackItem } = event
     this.listenEditModeChange()
 
     if (!this.isEditing || this.isItemAlreadyInStack((event as AddToStackEvent).iri)) {
       return
     }
 
-    const isWindowClickEvent = !('iri' in event)
-    const isNewClickTarget = event.clickTarget !== this.lastClickTarget
+    const isWindowClickEvent = !('iri' in resourceStackItem)
+    const isNewClickTarget = clickTarget !== this.lastClickTarget
 
     if (isWindowClickEvent) {
       if (isNewClickTarget) {
@@ -71,10 +72,9 @@ export default class ComponentManager {
     }
 
     if (isNewClickTarget) {
-      this.lastClickTarget = event.clickTarget
+      this.lastClickTarget = clickTarget
     }
 
-    const resourceStackItem: ResourceStackItem = event
     this.currentResourceStack.push(resourceStackItem)
   }
 
