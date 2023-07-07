@@ -63,15 +63,10 @@ export default class ComponentManager {
     const isWindowClickEvent = !('iri' in event)
     const isNewClickTarget = event.clickTarget !== this.lastClickTarget
 
-    if (isWindowClickEvent && !isNewClickTarget) {
-      return
-    }
-
-    if (isWindowClickEvent || isNewClickTarget) {
-      this.resetStack()
-    }
-
     if (isWindowClickEvent) {
+      if (isNewClickTarget) {
+        this.resetStack()
+      }
       return
     }
 
