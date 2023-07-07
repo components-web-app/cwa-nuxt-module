@@ -65,6 +65,17 @@ describe('Component Manager', () => {
     })
   })
 
+  describe('currentStackItem getter', () => {
+    test('should return first item from stack', () => {
+      const { manager } = createComponentManager()
+      const mockItem = { test: true }
+
+      manager.currentResourceStack = [mockItem, null, null]
+
+      expect(manager.currentStackItem).toEqual(mockItem)
+    })
+  })
+
   describe('stack operations', () => {
     describe('isItemAlreadyInStack', () => {
       test('should check whether item is in stack or not by iri', () => {

@@ -31,6 +31,10 @@ export default class ComponentManager {
     return this.currentResourceStack
   }
 
+  public get currentStackItem () {
+    return this.resourceStack[0]
+  }
+
   public resetStack () {
     this.lastClickTarget = null
     this.currentResourceStack = []
