@@ -54,8 +54,9 @@ export default class ComponentManager {
   }
 
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent) {
-    const { clickTarget, ...resourceStackItem } = event
     this.listenEditModeChange()
+
+    const { clickTarget, ...resourceStackItem } = event
 
     const isWindowClickEvent = !('iri' in resourceStackItem)
 
