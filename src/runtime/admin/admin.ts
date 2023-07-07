@@ -12,7 +12,7 @@ export default class Admin {
 
   public constructor (private adminStoreDefinition: AdminStore) {
     this.emitter = mitt<Events>()
-    this.managerInstance = new ComponentManager()
+    this.managerInstance = new ComponentManager(this.adminStoreDefinition)
   }
 
   public get eventBus () {

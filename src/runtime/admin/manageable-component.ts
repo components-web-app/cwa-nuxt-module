@@ -2,11 +2,15 @@ import { ComponentPublicInstance, computed, ComputedRef, ref, Ref } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
 
+export interface ManageableComponentOptions {
+  displayName?: string
+}
+
 export default class ManageableComponent {
   private currentIri: string|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
 
-  constructor (private component: ComponentPublicInstance, private $cwa: Cwa) {
+  constructor (private component: ComponentPublicInstance, private $cwa: Cwa, private options?: ManageableComponentOptions) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
   }
@@ -116,7 +120,9 @@ export default class ManageableComponent {
     this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
       domElements: this.domElements,
-      clickTarget: evt.target
+      clickTarget: evt.target,
+      displayName: this.options?.displayName || null,
+      componentInstance: this.component
     })
   }
 }

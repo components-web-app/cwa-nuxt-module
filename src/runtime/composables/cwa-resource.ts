@@ -1,19 +1,22 @@
 import { onMounted } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
+import { ManageableComponentOptions } from '#cwa/runtime/admin/manageable-component'
 
 export type IriProp = {
  iri: string
 }
 
-interface cwaResourceUtilsOps {
-  iri: string
-  disableManager?: boolean
+interface CwaResourceUtilsOps {
+  manager?: {
+    disabled?: boolean
+    options?: ManageableComponentOptions
+  }
 }
 
-export const useCwaResource = (iri: string, ops?: cwaResourceUtilsOps) => {
+export const useCwaResource = (iri: string, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
-  const manager = !ops?.disableManager ? useCwaResourceManageable(iri) : undefined
+  const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri, ops?.manager?.options) : undefined
 
   onMounted(() => {
     $cwa.admin.eventBus.emit('componentMounted', iri)
