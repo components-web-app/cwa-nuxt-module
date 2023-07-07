@@ -9,7 +9,7 @@ export type IriProp = {
 
 interface CwaResourceUtilsOps {
   manager?: {
-    disabled: boolean
+    disabled?: boolean
     options?: ManageableComponentOptions
   }
 }

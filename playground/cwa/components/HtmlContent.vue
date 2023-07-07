@@ -8,7 +8,7 @@ import { useCwaResource } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const resource = useCwaResource(props.iri, { displayName: 'HtmlContent' }).getResource()
+const resource = useCwaResource(props.iri, { manager: { options: { displayName: 'HtmlContent' } } }).getResource()
 </script>
 
 <style>
