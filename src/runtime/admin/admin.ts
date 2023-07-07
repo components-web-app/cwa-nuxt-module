@@ -12,7 +12,7 @@ export default class Admin {
 
   public constructor (private adminStoreDefinition: AdminStore) {
     this.emitter = mitt<Events>()
-    this.managerInstance = new ComponentManager()
+    this.managerInstance = new ComponentManager(this.adminStoreDefinition)
   }
 
   public get eventBus () {
@@ -25,8 +25,6 @@ export default class Admin {
 
   public toggleEdit (editing?: boolean): void {
     this.adminStore.toggleEdit(editing)
-
-    this.managerInstance.setEditMode(this.isEditing)
   }
 
   public setNavigationGuardDisabled (disabled: boolean) {

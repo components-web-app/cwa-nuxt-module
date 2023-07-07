@@ -1,9 +1,10 @@
-import { Ref, ComponentPublicInstance } from 'vue'
+import { Ref, ComponentPublicInstance, watch, WatchStopHandle } from 'vue'
+import { AdminStore } from '#cwa/runtime/storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
   iri: string
   domElements: Ref<HTMLElement[]>
-  displayName: string|null
+  displayName: string | null
   componentInstance: ComponentPublicInstance
 }
 
@@ -12,22 +13,19 @@ interface ResourceStackItem extends _ResourceStackItem {
 }
 
 interface AddToStackWindowEvent {
-  clickTarget: EventTarget|null
+  clickTarget: EventTarget | null
 }
 
-interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {}
+interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
+}
 
 export default class ComponentManager {
   private lastClickTarget: HTMLElement | null = null
   private currentResourceStack: ResourceStackItem[] = []
-  private isEditing = false
+  private unwatch: WatchStopHandle | null = null
 
-  public setEditMode (newEditModeStatus: boolean) {
-    this.isEditing = newEditModeStatus
-
-    if (!this.isEditing) {
-      this.resetStack()
-    }
+  // eslint-disable-next-line no-useless-constructor
+  constructor (private adminStoreDefinition: AdminStore) {
   }
 
   public get resourceStack () {
@@ -49,7 +47,21 @@ export default class ComponentManager {
     }
   }
 
+  private listenEditModeChange () {
+    if (this.unwatch) {
+      return
+    }
+
+    this.unwatch = watch(() => this.isEditing, (status) => {
+      if (!status) {
+        this.resetStack()
+      }
+    })
+  }
+
   public addToStack (event: AddToStackEvent | AddToStackWindowEvent) {
+    this.listenEditModeChange()
+
     if (!this.isEditing) {
       return
     }
@@ -61,5 +73,13 @@ export default class ComponentManager {
     }
 
     this.currentResourceStack.push(event as ResourceStackItem)
+  }
+
+  public get isEditing () {
+    return this.adminStore.state.isEditing
+  }
+
+  private get adminStore () {
+    return this.adminStoreDefinition.useStore()
   }
 }
