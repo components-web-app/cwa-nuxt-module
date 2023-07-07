@@ -126,22 +126,6 @@ export const options:CwaModuleOptions = {
 `)
     })
 
-    test('should add plugin', async () => {
-      const mockResolver = vi.fn(path => path)
-      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
-        resolve: mockResolver,
-        resolvePath: vi.fn()
-      })
-
-      await prepareMockNuxt()
-
-      expect(mockResolver).toHaveBeenCalledWith('./runtime/plugin')
-
-      expect(nuxtKit.addPlugin as Mock).toHaveBeenCalledWith({
-        src: mockResolver('./runtime/plugin')
-      })
-    })
-
     test('should add imports directory', async () => {
       const mockResolver = vi.fn(path => path)
       vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
@@ -157,6 +141,36 @@ export const options:CwaModuleOptions = {
     })
 
     describe('hooks', () => {
+      test('should install plugin', async () => {
+        const mockResolver = vi.fn(path => path)
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: mockResolver,
+          resolvePath: vi.fn()
+        })
+
+        const mockNuxt = await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            alias: {},
+            css: [],
+            build: {
+              transpile: []
+            },
+            srcDir: './mock'
+          }
+        })
+
+        const hookCall = mockNuxt.hook.mock.calls.find(call => call[0] === 'modules:done')
+
+        expect(hookCall).toBeDefined()
+
+        expect(nuxtKit.addPlugin as Mock).toHaveBeenCalledWith({ src: './runtime/plugin' })
+      })
+
       test('should add paths for component dirs and page dirs', async () => {
         const mockResolver = vi.fn(path => path)
         vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
