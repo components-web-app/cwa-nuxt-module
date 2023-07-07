@@ -13,6 +13,9 @@ vi.mock('../cwa', () => {
         eventBus: {
           on: vi.fn(),
           off: vi.fn()
+        },
+        componentManager: {
+          addToStack: vi.fn()
         }
       },
       resources: vi.fn()
@@ -257,5 +260,53 @@ describe('ManageableComponent Class', () => {
     instance.removeClickEventListeners()
     expect(els[0].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
     expect(els[1].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
+  })
+
+  describe('clickListener', () => {
+    test('should do nothing IF current iri is not set', () => {
+      const { instance, $cwa } = createManageableComponent()
+
+      instance.currentIri = null
+
+      instance.clickListener({})
+
+      expect($cwa.admin.componentManager.addToStack).not.toHaveBeenCalled()
+    })
+
+    test('should add to stack with name IF it was passed', () => {
+      const { instance, $cwa } = createManageableComponent()
+      const mockEvent = { target: 'mock' }
+      const mockName = 'some name'
+
+      instance.options = { displayName: mockName }
+      instance.currentIri = '/mock'
+
+      instance.clickListener(mockEvent)
+
+      expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
+        iri: instance.currentIri,
+        domElements: instance.domElements,
+        clickTarget: mockEvent.target,
+        displayName: mockName,
+        componentInstance: instance.component
+      })
+    })
+
+    test('should add to stack without name IF it was not passed', () => {
+      const { instance, $cwa } = createManageableComponent()
+      const mockEvent = { target: 'mock' }
+
+      instance.currentIri = '/mock'
+
+      instance.clickListener(mockEvent)
+
+      expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
+        iri: instance.currentIri,
+        domElements: instance.domElements,
+        clickTarget: mockEvent.target,
+        displayName: null,
+        componentInstance: instance.component
+      })
+    })
   })
 })
