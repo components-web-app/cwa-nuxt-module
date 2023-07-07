@@ -1,4 +1,4 @@
-import { Ref, ComponentPublicInstance, watch, WatchStopHandle } from 'vue'
+import { Ref, ComponentPublicInstance, watch } from 'vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
@@ -22,10 +22,9 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 export default class ComponentManager {
   private lastClickTarget: EventTarget | null = null
   private currentResourceStack: ResourceStackItem[] = []
-  private unwatch: WatchStopHandle | null = null
 
-  // eslint-disable-next-line no-useless-constructor
   constructor (private adminStoreDefinition: AdminStore) {
+    this.listenEditModeChange()
   }
 
   public get resourceStack () {
@@ -38,11 +37,7 @@ export default class ComponentManager {
   }
 
   private listenEditModeChange () {
-    if (this.unwatch) {
-      return
-    }
-
-    this.unwatch = watch(() => this.isEditing, (status) => {
+    watch(() => this.isEditing, (status) => {
       if (!status) {
         this.resetStack()
       }
@@ -54,8 +49,6 @@ export default class ComponentManager {
   }
 
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent) {
-    this.listenEditModeChange()
-
     const { clickTarget, ...resourceStackItem } = event
 
     const isWindowClickEvent = !('iri' in resourceStackItem)

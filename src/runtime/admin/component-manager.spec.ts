@@ -1,7 +1,11 @@
 import { describe, expect, test, vi } from 'vitest'
 import * as vue from 'vue'
 import { nextTick, reactive } from 'vue'
-import ComponentManager from '#cwa/runtime/admin/component-manager'
+import ComponentManager from './component-manager'
+
+// vi.mock('./component-manager', async () => {
+//   const actual = importActual()
+// })
 
 function createComponentManager (mockStore?: any) {
   const mockAdminStore = {
@@ -21,9 +25,16 @@ function createComponentManager (mockStore?: any) {
 }
 
 describe('Component Manager', () => {
+  test('Constructor should initialise a watcher', () => {
+    vi.spyOn(ComponentManager.prototype, 'listenEditModeChange').mockImplementationOnce(() => {})
+    const mockStore = { state: { isEditing: true } }
+    const { manager } = createComponentManager(mockStore)
+    expect(manager.listenEditModeChange).toHaveBeenCalledOnce()
+  })
+
   describe('adminStore getter', () => {
     test('should return reference to store', () => {
-      const mockStore = { mock: 'store' }
+      const mockStore = { state: { isEditing: true } }
       const { manager } = createComponentManager(mockStore)
 
       expect(manager.adminStore).toEqual(mockStore)
@@ -83,16 +94,6 @@ describe('Component Manager', () => {
     })
 
     describe('addToStack', () => {
-      test('should listen to edit mode change', () => {
-        const { manager } = createComponentManager()
-
-        const listenSpy = vi.spyOn(manager, 'listenEditModeChange')
-
-        manager.addToStack({})
-
-        expect(listenSpy).toHaveBeenCalled()
-      })
-
       test('should NOT add item to stack IF edit mode is off', () => {
         const mockStore = { state: { isEditing: false } }
         const { manager } = createComponentManager(mockStore)
@@ -151,17 +152,12 @@ describe('Component Manager', () => {
     })
 
     describe('listenEditModeChange', () => {
-      test('should start watching edit mode changes only once', () => {
+      test('Watch should be called', () => {
         const watchSpy = vi.spyOn(vue, 'watch')
         const mockStore = { state: { isEditing: true } }
-        const { manager } = createComponentManager(mockStore)
-
-        manager.listenEditModeChange()
-        manager.listenEditModeChange()
-
+        createComponentManager(mockStore)
         expect(watchSpy).toHaveBeenCalledOnce()
       })
-
       test('should reset stack IF edit mode is turned off', async () => {
         const mockStore = { state: reactive({ isEditing: true }) }
         const { manager } = createComponentManager(mockStore)

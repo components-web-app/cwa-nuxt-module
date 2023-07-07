@@ -88,8 +88,10 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
 `
     })
 
-    addPlugin({
-      src: resolve('./runtime/plugin')
+    nuxt.hook('modules:done', () => {
+      addPlugin({
+        src: resolve('./runtime/plugin')
+      })
     })
 
     addImportsDir(resolve('./runtime/composables'))

@@ -13,7 +13,7 @@ interface SetupInterface {
 
 export default defineNuxtPlugin({
   name: 'cwa-plugin',
-  enforce: 'pre',
+  enforce: 'post',
   setup (nuxtApp: NuxtApp): SetupInterface {
     const cwa = new Cwa(nuxtApp, options)
     addRouteMiddleware('cwa-route-middleware', CwaRouteMiddleware, { global: true })
