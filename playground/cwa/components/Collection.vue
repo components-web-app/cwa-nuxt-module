@@ -11,5 +11,6 @@ import { useCwaResource } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const resource = useCwaResource(props.iri).getResource()
+const cwaUtils = useCwaResource(props.iri)
+const resource = cwaUtils.getResource()
 </script>

@@ -121,8 +121,7 @@ export default class ManageableComponent {
       iri: this.currentIri,
       domElements: this.domElements,
       clickTarget: evt.target,
-      displayName: this.options?.displayName || null,
-      componentInstance: this.component
+      displayName: this.options?.displayName || null
     })
   }
 }

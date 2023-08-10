@@ -287,8 +287,7 @@ describe('ManageableComponent Class', () => {
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
-        displayName: mockName,
-        componentInstance: instance.component
+        displayName: mockName
       })
     })
 
@@ -304,8 +303,7 @@ describe('ManageableComponent Class', () => {
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
-        displayName: null,
-        componentInstance: instance.component
+        displayName: null
       })
     })
   })

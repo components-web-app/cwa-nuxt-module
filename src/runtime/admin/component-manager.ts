@@ -1,11 +1,10 @@
-import { Ref, ComponentPublicInstance, watch } from 'vue'
+import { Ref, watch } from 'vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
   iri: string
   domElements: Ref<HTMLElement[]>
   displayName: string | null
-  componentInstance: ComponentPublicInstance
 }
 
 // will be used to have additional properties not sent by the initial addToStack event
