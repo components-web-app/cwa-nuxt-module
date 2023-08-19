@@ -75,34 +75,31 @@ describe('Auth', () => {
     const credentials = { username: 'mock-user', password: 'sEcrEt' }
 
     test('should return error IF login request fails', async () => {
-      const { auth, cwaFetch, mercure } = createAuth()
+      const { auth, mercure } = createAuth()
       const mockError = new FetchError('oops')
+      const loginRequestSpy = vi.spyOn(auth, 'loginRequest').mockImplementationOnce(() => {
+        return new Promise(resolve => resolve(mockError))
+      })
       const refreshSpy = vi.spyOn(auth, 'refreshUser')
 
-      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
-
       const result = await auth.signIn(credentials)
-
-      // todo: test loginRequest separately
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
-      expect(result).toEqual(mockError)
-      expect(refreshSpy).not.toHaveBeenCalled()
+      expect(loginRequestSpy).toHaveBeenCalledWith(credentials)
       expect(mercure.init).not.toHaveBeenCalled()
+      expect(refreshSpy).not.toHaveBeenCalled()
+      expect(result).toEqual(mockError)
     })
 
     test('should init mercure AND refresh user', async () => {
-      const { auth, cwaFetch, mercure } = createAuth()
+      const { auth, mercure } = createAuth()
       const mockRefreshResult = { name: 'Mock' }
+      const loginRequestSpy = vi.spyOn(auth, 'loginRequest').mockImplementationOnce(() => {})
       const refreshSpy = vi.spyOn(auth, 'refreshUser').mockResolvedValue(mockRefreshResult)
 
-      cwaFetch.fetch = vi.fn().mockResolvedValue({ success: true })
-
-      await auth.signIn(credentials)
-
-      // todo: test loginRequest separately
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      const result = await auth.signIn(credentials)
+      expect(loginRequestSpy).toHaveBeenCalledWith(credentials)
       expect(mercure.init).toHaveBeenCalledWith(true)
       expect(refreshSpy).toHaveBeenCalled()
+      expect(result).toEqual(refreshSpy.mock.results[0].value)
     })
   })
 
@@ -443,7 +440,38 @@ describe('Auth', () => {
     })
   })
 
-  describe.todo('loginRequest', () => {})
+  describe('loginRequest', () => {
+    const credentials = { username: 'mock-user', password: 'sEcrEt' }
+
+    test('If login successful return the result and keep loading value as true', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const fetchResult = { success: true }
+      cwaFetch.fetch = vi.fn().mockResolvedValue(fetchResult)
+      const result = await auth.loginRequest(credentials)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      expect(auth.loading.value).toBe(true)
+      expect(result).toEqual(fetchResult)
+    })
+
+    test('If fetch throws a fetch error - reset loading and return the error', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new FetchError('oops')
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      const result = await auth.loginRequest(credentials)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      expect(auth.loading.value).toBe(false)
+      expect(result).toEqual(mockError)
+    })
+
+    test('If fetch throws any other error - reset loading and throw error', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      await expect(auth.loginRequest(credentials)).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      expect(auth.loading.value).toBe(false)
+    })
+  })
 
   describe.todo('status getter', () => {})
 
