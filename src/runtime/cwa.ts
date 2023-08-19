@@ -52,16 +52,25 @@ export default class Cwa {
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
     this.storage = new Storage(this.options.storeName)
+    this.admin = new Admin(this.storage.stores.admin)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
     this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, fetchStatusManager)
-    this.auth = new Auth(this.cwaFetch, this.mercure, this.fetcher, this.storage.stores.auth, this.storage.stores.resources, this.storage.stores.fetcher, useCookie('cwa_auth'))
+    this.auth = new Auth(
+      this.cwaFetch,
+      this.mercure,
+      this.fetcher,
+      this.admin,
+      this.storage.stores.auth,
+      this.storage.stores.resources,
+      this.storage.stores.fetcher,
+      useCookie('cwa_auth')
+    )
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
-    this.admin = new Admin(this.storage.stores.admin)
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
   }
 

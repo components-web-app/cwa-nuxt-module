@@ -1,5 +1,6 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, afterEach } from 'vitest'
+import { useCookie } from '#app/composables/cookie.js'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -13,6 +14,13 @@ import { Resources } from './resources/resources'
 import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+import Auth from './api/auth'
+
+vi.mock('#app/composables/cookie', () => {
+  return {
+    useCookie: vi.fn(name => name)
+  }
+})
 
 vi.mock('./storage/storage', () => {
   return {
@@ -22,7 +30,8 @@ vi.mock('./storage/storage', () => {
         resources: vi.fn(),
         fetcher: vi.fn(),
         mercure: vi.fn(),
-        admin: vi.fn()
+        admin: vi.fn(),
+        auth: vi.fn()
       }
     }))
   }
@@ -55,7 +64,11 @@ vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
 vi.mock('./resources/resources-manager')
 vi.mock('./resources/resources')
-vi.mock('./api/auth')
+vi.mock('./api/auth', () => {
+  return {
+    default: vi.fn()
+  }
+})
 vi.mock('./api/forms')
 vi.mock('./admin/admin')
 vi.mock('./admin/navigation-guard', () => {
@@ -179,6 +192,23 @@ describe('Cwa class test', () => {
     const stores = Storage.mock.results[0].value.stores
     expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0])
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
+  })
+
+  test('Auth is initialised and accessible', () => {
+    const $cwa = createCwa({ storeName })
+    const stores = Storage.mock.results[0].value.stores
+    expect(useCookie).toBeCalledWith('cwa_auth')
+    expect(Auth).toBeCalledWith(
+      CwaFetch.mock.instances[0],
+      Mercure.mock.results[0].value,
+      Fetcher.mock.instances[0],
+      Admin.mock.instances[0],
+      stores.auth,
+      stores.resources,
+      stores.fetcher,
+      useCookie.mock.results[0].value
+    )
+    expect($cwa.auth).toBe(Auth.mock.instances[0])
   })
 
   test('Admin is initialised and accessible', () => {

@@ -42,12 +42,14 @@ function createAuth () {
   const mockFetcher = {
     fetchRoute: vi.fn()
   }
+  const mockAdmin = { }
   const mockCookie = ref('0')
   const auth = new Auth(
     // @ts-ignore
     mockFetch,
     mockMercure,
     mockFetcher,
+    mockAdmin,
     mockAuthStore,
     mockResourcesStore,
     mockFetcherStore,

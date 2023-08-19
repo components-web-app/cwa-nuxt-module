@@ -8,6 +8,7 @@ import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from './fetcher/cwa-fetch'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
+import Admin from '#cwa/runtime/admin/admin'
 
 interface Credentials {
   username: string
@@ -30,29 +31,18 @@ interface ResetPasswordEvent {
 }
 
 export default class Auth {
-  private cwaFetch: CwaFetch
-  private mercure: Mercure
-  private fetcher: Fetcher
-  private authStoreDefinition: AuthStore
-  private resourcesStoreDefinition: ResourcesStore
-  private fetcherStoreDefinition: FetcherStore
   private loading: Ref<boolean>
 
   public constructor (
-    cwaFetch: CwaFetch,
-    mercure: Mercure,
-    fetcher: Fetcher,
-    authStoreDefinition: AuthStore,
-    resourcesStoreDefinition: ResourcesStore,
-    fetcherStoreDefinition: FetcherStore,
+    private cwaFetch: CwaFetch,
+    private mercure: Mercure,
+    private fetcher: Fetcher,
+    private admin: Admin,
+    private authStoreDefinition: AuthStore,
+    private resourcesStoreDefinition: ResourcesStore,
+    private fetcherStoreDefinition: FetcherStore,
     private readonly authCookie: CookieRef<string | null>
   ) {
-    this.cwaFetch = cwaFetch
-    this.authStoreDefinition = authStoreDefinition
-    this.mercure = mercure
-    this.resourcesStoreDefinition = resourcesStoreDefinition
-    this.fetcher = fetcher
-    this.fetcherStoreDefinition = fetcherStoreDefinition
     this.loading = ref(false)
   }
 
