@@ -2,9 +2,9 @@
 import { describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
 import { useRoute } from '#app'
+import { CwaUserRoles } from '../storage/stores/auth/state'
 import Auth from './auth'
 import { ref } from '#imports'
-import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
 function createAuth () {
   const mockUserData = {
@@ -42,7 +42,9 @@ function createAuth () {
   const mockFetcher = {
     fetchRoute: vi.fn()
   }
-  const mockAdmin = { }
+  const mockAdmin = {
+    toggleEdit: vi.fn()
+  }
   const mockCookie = ref('0')
   const auth = new Auth(
     // @ts-ignore
@@ -69,7 +71,7 @@ function createAuth () {
 }
 
 describe('Auth', () => {
-  describe('sign in', () => {
+  describe('signIn', () => {
     const credentials = { username: 'mock-user', password: 'sEcrEt' }
 
     test('should return error IF login request fails', async () => {
@@ -81,6 +83,7 @@ describe('Auth', () => {
 
       const result = await auth.signIn(credentials)
 
+      // todo: test loginRequest separately
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
       expect(result).toEqual(mockError)
       expect(refreshSpy).not.toHaveBeenCalled()
@@ -96,13 +99,14 @@ describe('Auth', () => {
 
       await auth.signIn(credentials)
 
+      // todo: test loginRequest separately
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
       expect(mercure.init).toHaveBeenCalledWith(true)
       expect(refreshSpy).toHaveBeenCalled()
     })
   })
 
-  describe('forgot password', () => {
+  describe('forgotPassword', () => {
     const mockUserName = 'george'
 
     test('should return error IF request fails', async () => {
@@ -140,7 +144,7 @@ describe('Auth', () => {
     })
   })
 
-  describe('reset password', () => {
+  describe('resetPassword', () => {
     const mockPayload = {
       username: 'mock-user',
       token: 'abcd1234',
@@ -212,7 +216,7 @@ describe('Auth', () => {
     })
   })
 
-  describe('sign out', () => {
+  describe('signOut', () => {
     test('should return error IF request fails', async () => {
       const { auth, cwaFetch } = createAuth()
       const mockError = new FetchError('oops')
@@ -251,6 +255,7 @@ describe('Auth', () => {
 
       const result = await auth.signOut()
 
+      // Todo: test clearSession
       expect(result).toEqual(mockResult)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
       expect(authStore.useStore().data.user).toEqual(undefined)
@@ -261,7 +266,7 @@ describe('Auth', () => {
     })
   })
 
-  describe('refresh user', () => {
+  describe('refreshUser', () => {
     test('should return error AND clear session IF request fails', async () => {
       const {
         auth,
@@ -388,7 +393,25 @@ describe('Auth', () => {
     })
   })
 
-  describe('has role', () => {
+  describe('signedIn getter', () => {
+    test('should return true IF status is signed in', () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '1'
+
+      expect(auth.signedIn.value).toEqual(true)
+    })
+
+    test('should return true IF status is signed out', () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '0'
+
+      expect(auth.signedIn.value).toEqual(false)
+    })
+  })
+
+  describe('hasRole', () => {
     test('should return false IF user has no roles', () => {
       const { auth, authStore } = createAuth()
 
@@ -420,21 +443,13 @@ describe('Auth', () => {
     })
   })
 
-  describe('signedIn getter', () => {
-    test('should return true IF status is signed in', () => {
-      const { auth, cookie } = createAuth()
+  describe.todo('loginRequest', () => {})
 
-      cookie.value = '1'
+  describe.todo('status getter', () => {})
 
-      expect(auth.signedIn.value).toEqual(true)
-    })
+  describe.todo('clearSession', () => {})
 
-    test('should return true IF status is signed out', () => {
-      const { auth, cookie } = createAuth()
-
-      cookie.value = '0'
-
-      expect(auth.signedIn.value).toEqual(false)
-    })
-  })
+  describe.todo('authStore getter', () => {})
+  describe.todo('resourcesStore getter', () => {})
+  describe.todo('fetcherStore getter', () => {})
 })

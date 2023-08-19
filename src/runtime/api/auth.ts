@@ -179,6 +179,7 @@ export default class Auth {
   private async clearSession () {
     this.authStore.data.user = undefined
     this.authCookie.value = '0'
+    this.admin.toggleEdit(false)
     this.mercure.init(true)
 
     this.resourcesStore.clearResources()
