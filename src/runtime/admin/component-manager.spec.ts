@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import * as vue from 'vue'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 import ComponentManager from './component-manager'
 
 // vi.mock('./component-manager', async () => {
@@ -70,9 +70,9 @@ describe('Component Manager', () => {
       const { manager } = createComponentManager()
       const mockItem = { test: true }
 
-      manager.currentResourceStack = [mockItem, null, null]
+      manager.currentResourceStack = ref([mockItem, null, null])
 
-      expect(manager.currentStackItem).toEqual(mockItem)
+      expect(manager.currentStackItem.value).toEqual(mockItem)
     })
   })
 
@@ -83,7 +83,7 @@ describe('Component Manager', () => {
         const mockIri = '/mock/iri'
         const mockStackItem = { iri: mockIri }
 
-        manager.resourceStack.push(mockStackItem)
+        manager.resourceStack.value.push(mockStackItem)
 
         expect(manager.isItemAlreadyInStack(mockIri)).toEqual(true)
         expect(manager.isItemAlreadyInStack('/random')).toEqual(false)
@@ -94,12 +94,12 @@ describe('Component Manager', () => {
       test('should reset stack and remove last click target', () => {
         const { manager } = createComponentManager()
 
-        manager.currentResourceStack = [1, 2, 3]
+        manager.currentResourceStack = ref([1, 2, 3])
         manager.lastClickTarget = 'mock-target'
 
         manager.resetStack()
 
-        expect(manager.resourceStack).toEqual([])
+        expect(manager.resourceStack.value).toEqual([])
         expect(manager.lastClickTarget).toEqual(null)
       })
     })
@@ -111,7 +111,7 @@ describe('Component Manager', () => {
 
         manager.addToStack({})
 
-        expect(manager.resourceStack.length).toEqual(0)
+        expect(manager.resourceStack.value.length).toEqual(0)
       })
 
       test('should NOT add item to stack IF item with such iri already in stack', () => {
@@ -119,11 +119,11 @@ describe('Component Manager', () => {
         const mockIri = '/mock'
         const { manager } = createComponentManager(mockStore)
 
-        manager.currentResourceStack = [{ iri: mockIri }]
+        manager.currentResourceStack = ref([{ iri: mockIri }])
 
         manager.addToStack({ iri: mockIri })
 
-        expect(manager.resourceStack.length).toEqual(1)
+        expect(manager.resourceStack.value.length).toEqual(1)
       })
 
       test('should NOT add item to stack IF item has no iri AND click target is not new', () => {
@@ -135,7 +135,7 @@ describe('Component Manager', () => {
 
         manager.addToStack({ clickTarget: mockTarget })
 
-        expect(manager.resourceStack.length).toEqual(0)
+        expect(manager.resourceStack.value.length).toEqual(0)
       })
 
       test('should update last click target IF new click target is passed AND event has iri', () => {
@@ -158,7 +158,7 @@ describe('Component Manager', () => {
         manager.addToStack({})
 
         expect(resetSpy).toHaveBeenCalled()
-        expect(manager.resourceStack.length).toEqual(0)
+        expect(manager.resourceStack.value.length).toEqual(0)
       })
     })
 

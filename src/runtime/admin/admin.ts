@@ -10,7 +10,7 @@ export default class Admin {
   private readonly managerInstance: ComponentManager
   private readonly emitter: Emitter<Events>
 
-  public constructor (private adminStoreDefinition: AdminStore) {
+  public constructor (private readonly adminStoreDefinition: AdminStore) {
     this.emitter = mitt<Events>()
     this.managerInstance = new ComponentManager(this.adminStoreDefinition)
   }

@@ -1,4 +1,4 @@
-import { Ref, watch } from 'vue'
+import { computed, ref, Ref, watch } from 'vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
@@ -20,7 +20,7 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 
 export default class ComponentManager {
   private lastClickTarget: EventTarget | null = null
-  private currentResourceStack: ResourceStackItem[] = []
+  private currentResourceStack: Ref<ResourceStackItem[]> = ref([])
 
   constructor (private adminStoreDefinition: AdminStore) {
     this.listenEditModeChange()
@@ -31,12 +31,14 @@ export default class ComponentManager {
   }
 
   public get currentStackItem () {
-    return this.resourceStack[0]
+    return computed(() => {
+      return this.resourceStack.value?.[0] || null
+    })
   }
 
   public resetStack () {
     this.lastClickTarget = null
-    this.currentResourceStack = []
+    this.currentResourceStack.value = []
   }
 
   private listenEditModeChange () {
@@ -48,32 +50,28 @@ export default class ComponentManager {
   }
 
   private isItemAlreadyInStack (iri: string): boolean {
-    return !!this.currentResourceStack.find(el => el.iri === iri)
+    return !!this.currentResourceStack.value.find(el => el.iri === iri)
   }
 
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent) {
     const { clickTarget, ...resourceStackItem } = event
 
-    const isWindowClickEvent = !('iri' in resourceStackItem)
+    const isResourceClick = ('iri' in resourceStackItem)
 
-    if (!this.isEditing || (!isWindowClickEvent && this.isItemAlreadyInStack(resourceStackItem.iri))) {
+    if (
+      !this.isEditing ||
+      (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri) && this.lastClickTarget)
+    ) {
       return
     }
 
-    const isNewClickTarget = clickTarget !== this.lastClickTarget
-
-    if (isWindowClickEvent) {
-      if (isNewClickTarget) {
-        this.resetStack()
-      }
-      return
+    if (!this.lastClickTarget) {
+      this.resetStack()
     }
 
-    if (isNewClickTarget) {
-      this.lastClickTarget = clickTarget
-    }
+    isResourceClick && this.currentResourceStack.value.push(resourceStackItem)
 
-    this.currentResourceStack.push(resourceStackItem)
+    this.lastClickTarget = isResourceClick ? clickTarget : null
   }
 
   private get isEditing () {

@@ -30,10 +30,10 @@ function clickHandler (e: any) {
 }
 
 onMounted(() => {
-  document.body.addEventListener('click', clickHandler)
+  window.addEventListener('click', clickHandler)
 })
 
 onBeforeUnmount(() => {
-  document.body.removeEventListener('click', clickHandler)
+  window.removeEventListener('click', clickHandler)
 })
 </script>
