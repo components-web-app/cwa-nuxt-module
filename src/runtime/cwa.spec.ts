@@ -16,7 +16,7 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import Auth from './api/auth'
 
-vi.mock('#app/composables/cookie', () => {
+vi.mock('#app/composables/cookie.js', () => {
   return {
     useCookie: vi.fn(name => name)
   }

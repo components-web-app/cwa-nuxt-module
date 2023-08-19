@@ -2,9 +2,9 @@
 import { describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
 import { useRoute } from '#app'
-import Auth from './auth'
+import { CwaUserRoles } from '../storage/stores/auth/state'
+import Auth, { CwaAuthStatus } from './auth'
 import { ref } from '#imports'
-import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
 function createAuth () {
   const mockUserData = {
@@ -42,7 +42,9 @@ function createAuth () {
   const mockFetcher = {
     fetchRoute: vi.fn()
   }
-  const mockAdmin = { }
+  const mockAdmin = {
+    toggleEdit: vi.fn()
+  }
   const mockCookie = ref('0')
   const auth = new Auth(
     // @ts-ignore
@@ -64,45 +66,45 @@ function createAuth () {
     fetcherStore: mockFetcherStore,
     resourcesStore: mockResourcesStore,
     fetcher: mockFetcher,
-    cookie: mockCookie
+    cookie: mockCookie,
+    admin: mockAdmin
   }
 }
 
 describe('Auth', () => {
-  describe('sign in', () => {
+  describe('signIn', () => {
     const credentials = { username: 'mock-user', password: 'sEcrEt' }
 
     test('should return error IF login request fails', async () => {
-      const { auth, cwaFetch, mercure } = createAuth()
+      const { auth, mercure } = createAuth()
       const mockError = new FetchError('oops')
+      const loginRequestSpy = vi.spyOn(auth, 'loginRequest').mockImplementationOnce(() => {
+        return new Promise(resolve => resolve(mockError))
+      })
       const refreshSpy = vi.spyOn(auth, 'refreshUser')
 
-      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
-
       const result = await auth.signIn(credentials)
-
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
-      expect(result).toEqual(mockError)
-      expect(refreshSpy).not.toHaveBeenCalled()
+      expect(loginRequestSpy).toHaveBeenCalledWith(credentials)
       expect(mercure.init).not.toHaveBeenCalled()
+      expect(refreshSpy).not.toHaveBeenCalled()
+      expect(result).toEqual(mockError)
     })
 
     test('should init mercure AND refresh user', async () => {
-      const { auth, cwaFetch, mercure } = createAuth()
+      const { auth, mercure } = createAuth()
       const mockRefreshResult = { name: 'Mock' }
+      const loginRequestSpy = vi.spyOn(auth, 'loginRequest').mockImplementationOnce(() => {})
       const refreshSpy = vi.spyOn(auth, 'refreshUser').mockResolvedValue(mockRefreshResult)
 
-      cwaFetch.fetch = vi.fn().mockResolvedValue({ success: true })
-
-      await auth.signIn(credentials)
-
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      const result = await auth.signIn(credentials)
+      expect(loginRequestSpy).toHaveBeenCalledWith(credentials)
       expect(mercure.init).toHaveBeenCalledWith(true)
       expect(refreshSpy).toHaveBeenCalled()
+      expect(result).toEqual(refreshSpy.mock.results[0].value)
     })
   })
 
-  describe('forgot password', () => {
+  describe('forgotPassword', () => {
     const mockUserName = 'george'
 
     test('should return error IF request fails', async () => {
@@ -140,7 +142,7 @@ describe('Auth', () => {
     })
   })
 
-  describe('reset password', () => {
+  describe('resetPassword', () => {
     const mockPayload = {
       username: 'mock-user',
       token: 'abcd1234',
@@ -212,56 +214,51 @@ describe('Auth', () => {
     })
   })
 
-  describe('sign out', () => {
+  describe('signOut', () => {
     test('should return error IF request fails', async () => {
       const { auth, cwaFetch } = createAuth()
       const mockError = new FetchError('oops')
+      const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
 
       const result = await auth.signOut()
 
-      expect(result).toEqual(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(clearSessionSpy).not.toHaveBeenCalled()
+      expect(result).toEqual(mockError)
     })
 
     test('should throw error IF request fails AND error is not instance of FetchError', async () => {
       const { auth, cwaFetch } = createAuth()
       const mockError = new Error('oops')
+      const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
 
       await expect(auth.signOut()).rejects.toThrow(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(clearSessionSpy).not.toHaveBeenCalled()
     })
 
     test('should return result IF request succeeds AND do cleanup', async () => {
       const {
         auth,
-        cwaFetch,
-        authStore,
-        mercure,
-        fetcherStore,
-        resourcesStore,
-        fetcher
+        cwaFetch
       } = createAuth()
       const mockResult = { success: true }
+      const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
 
       const result = await auth.signOut()
-
-      expect(result).toEqual(mockResult)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
-      expect(authStore.useStore().data.user).toEqual(undefined)
-      expect(mercure.init).toHaveBeenCalledWith(true)
-      expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
-      expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
-      expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+      expect(clearSessionSpy).toHaveBeenCalled()
+      expect(result).toEqual(mockResult)
     })
   })
 
-  describe('refresh user', () => {
+  describe('refreshUser', () => {
     test('should return error AND clear session IF request fails', async () => {
       const {
         auth,
@@ -388,7 +385,25 @@ describe('Auth', () => {
     })
   })
 
-  describe('has role', () => {
+  describe('signedIn getter', () => {
+    test('should return true IF status is signed in', () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '1'
+
+      expect(auth.signedIn.value).toEqual(true)
+    })
+
+    test('should return true IF status is signed out', () => {
+      const { auth, cookie } = createAuth()
+
+      cookie.value = '0'
+
+      expect(auth.signedIn.value).toEqual(false)
+    })
+  })
+
+  describe('hasRole', () => {
     test('should return false IF user has no roles', () => {
       const { auth, authStore } = createAuth()
 
@@ -420,21 +435,76 @@ describe('Auth', () => {
     })
   })
 
-  describe('signedIn getter', () => {
-    test('should return true IF status is signed in', () => {
-      const { auth, cookie } = createAuth()
+  describe('loginRequest', () => {
+    const credentials = { username: 'mock-user', password: 'sEcrEt' }
 
-      cookie.value = '1'
-
-      expect(auth.signedIn.value).toEqual(true)
+    test('If login successful return the result and keep loading value as true', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const fetchResult = { success: true }
+      cwaFetch.fetch = vi.fn().mockResolvedValue(fetchResult)
+      const result = await auth.loginRequest(credentials)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      expect(auth.loading.value).toBe(true)
+      expect(result).toEqual(fetchResult)
     })
 
-    test('should return true IF status is signed out', () => {
-      const { auth, cookie } = createAuth()
+    test('If fetch throws a fetch error - reset loading and return the error', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new FetchError('oops')
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      const result = await auth.loginRequest(credentials)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      expect(auth.loading.value).toBe(false)
+      expect(result).toEqual(mockError)
+    })
 
-      cookie.value = '0'
-
-      expect(auth.signedIn.value).toEqual(false)
+    test('If fetch throws any other error - reset loading and throw error', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      await expect(auth.loginRequest(credentials)).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/login', { method: 'POST', body: credentials })
+      expect(auth.loading.value).toBe(false)
     })
   })
+
+  describe('status getter', () => {
+    test.each([
+      { loading: true, authCookieValue: undefined, result: CwaAuthStatus.LOADING },
+      { loading: false, authCookieValue: '1', result: CwaAuthStatus.SIGNED_IN },
+      { loading: false, authCookieValue: undefined, result: CwaAuthStatus.SIGNED_OUT }
+    ])('If loading is %loading', ({ loading, authCookieValue, result }) => {
+      const { auth } = createAuth()
+      auth.loading.value = loading
+      auth.authCookie.value = authCookieValue
+      expect(auth.status.value).toBe(result)
+    })
+  })
+
+  describe('clearSession', () => {
+    test('Clear session requirements are met', async () => {
+      const {
+        auth,
+        authStore,
+        mercure,
+        fetcherStore,
+        resourcesStore,
+        fetcher,
+        admin
+      } = createAuth()
+
+      await auth.clearSession()
+
+      expect(authStore.useStore().data.user).toEqual(undefined)
+      expect(admin.toggleEdit).toHaveBeenCalledWith(false)
+      expect(mercure.init).toHaveBeenCalledWith(true)
+      expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
+      expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+    })
+  })
+
+  describe.todo('authStore getter', () => {})
+  describe.todo('resourcesStore getter', () => {})
+  describe.todo('fetcherStore getter', () => {})
 })

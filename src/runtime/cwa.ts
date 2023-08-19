@@ -1,5 +1,6 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { NuxtApp } from '#app/nuxt'
+import { useCookie } from '#app'
 import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -15,7 +16,6 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
-import { useCookie } from '#imports'
 
 export default class Cwa {
   private readonly apiUrl: string
