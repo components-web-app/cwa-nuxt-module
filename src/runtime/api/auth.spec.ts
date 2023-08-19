@@ -66,7 +66,8 @@ function createAuth () {
     fetcherStore: mockFetcherStore,
     resourcesStore: mockResourcesStore,
     fetcher: mockFetcher,
-    cookie: mockCookie
+    cookie: mockCookie,
+    admin: mockAdmin
   }
 }
 
@@ -217,49 +218,43 @@ describe('Auth', () => {
     test('should return error IF request fails', async () => {
       const { auth, cwaFetch } = createAuth()
       const mockError = new FetchError('oops')
+      const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
 
       const result = await auth.signOut()
 
-      expect(result).toEqual(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(clearSessionSpy).not.toHaveBeenCalled()
+      expect(result).toEqual(mockError)
     })
 
     test('should throw error IF request fails AND error is not instance of FetchError', async () => {
       const { auth, cwaFetch } = createAuth()
       const mockError = new Error('oops')
+      const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
 
       await expect(auth.signOut()).rejects.toThrow(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(clearSessionSpy).not.toHaveBeenCalled()
     })
 
     test('should return result IF request succeeds AND do cleanup', async () => {
       const {
         auth,
-        cwaFetch,
-        authStore,
-        mercure,
-        fetcherStore,
-        resourcesStore,
-        fetcher
+        cwaFetch
       } = createAuth()
       const mockResult = { success: true }
+      const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
 
       const result = await auth.signOut()
-
-      // Todo: test clearSession
-      expect(result).toEqual(mockResult)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
-      expect(authStore.useStore().data.user).toEqual(undefined)
-      expect(mercure.init).toHaveBeenCalledWith(true)
-      expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
-      expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
-      expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+      expect(clearSessionSpy).toHaveBeenCalled()
+      expect(result).toEqual(mockResult)
     })
   })
 
@@ -486,7 +481,28 @@ describe('Auth', () => {
     })
   })
 
-  describe.todo('clearSession', () => {})
+  describe('clearSession', () => {
+    test('Clear session requirements are met', async () => {
+      const {
+        auth,
+        authStore,
+        mercure,
+        fetcherStore,
+        resourcesStore,
+        fetcher,
+        admin
+      } = createAuth()
+
+      await auth.clearSession()
+
+      expect(authStore.useStore().data.user).toEqual(undefined)
+      expect(admin.toggleEdit).toHaveBeenCalledWith(false)
+      expect(mercure.init).toHaveBeenCalledWith(true)
+      expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
+      expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+    })
+  })
 
   describe.todo('authStore getter', () => {})
   describe.todo('resourcesStore getter', () => {})

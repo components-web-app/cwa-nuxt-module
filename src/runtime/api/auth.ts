@@ -181,7 +181,6 @@ export default class Auth {
     this.authCookie.value = '0'
     this.admin.toggleEdit(false)
     this.mercure.init(true)
-
     this.resourcesStore.clearResources()
     this.fetcherStore.clearFetches()
     const route = useRoute()
