@@ -118,7 +118,9 @@ describe('Component Manager', () => {
         const mockStore = { state: { isEditing: true } }
         const mockIri = '/mock'
         const { manager } = createComponentManager(mockStore)
+        const mockTarget = {}
 
+        manager.lastClickTarget = mockTarget
         manager.currentResourceStack = ref([{ iri: mockIri }])
 
         manager.addToStack({ iri: mockIri })
@@ -126,14 +128,25 @@ describe('Component Manager', () => {
         expect(manager.resourceStack.value.length).toEqual(1)
       })
 
-      test('should NOT add item to stack IF item has no iri AND click target is not new', () => {
+      test('should reset and add item to stack IF item with such iri already in stack but no previous click target', () => {
+        const mockStore = { state: { isEditing: true } }
+        const mockIri = '/mock'
+        const { manager } = createComponentManager(mockStore)
+        const resetSpy = vi.spyOn(manager, 'resetStack')
+
+        manager.lastClickTarget = null
+        manager.currentResourceStack = ref([{ iri: mockIri }])
+
+        manager.addToStack({ iri: mockIri })
+        expect(resetSpy).toHaveBeenCalledTimes(1)
+        expect(manager.resourceStack.value.length).toEqual(1)
+      })
+
+      test('should NOT add item to stack IF item has no iri', () => {
         const mockStore = { state: { isEditing: true } }
         const { manager } = createComponentManager(mockStore)
-        const mockTarget = {}
 
-        manager.lastClickTarget = mockTarget
-
-        manager.addToStack({ clickTarget: mockTarget })
+        manager.addToStack({})
 
         expect(manager.resourceStack.value.length).toEqual(0)
       })
@@ -150,15 +163,15 @@ describe('Component Manager', () => {
         expect(manager.lastClickTarget).toEqual(event.clickTarget)
       })
 
-      test('should reset stack AND NOT add item to stack IF event has no iri', () => {
+      test('should clear the last click target IF event has no iri', () => {
         const mockStore = { state: { isEditing: true } }
         const { manager } = createComponentManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
-
+        manager.lastClickTarget = { old: 'target' }
         manager.addToStack({})
-
-        expect(resetSpy).toHaveBeenCalled()
+        expect(resetSpy).not.toHaveBeenCalled()
         expect(manager.resourceStack.value.length).toEqual(0)
+        expect(manager.lastClickTarget).toBeNull()
       })
     })
 

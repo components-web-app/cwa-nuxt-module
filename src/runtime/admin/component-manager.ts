@@ -65,6 +65,7 @@ export default class ComponentManager {
       return
     }
 
+    // we are starting a new stack - last click before was a window or has been reset
     if (!this.lastClickTarget) {
       this.resetStack()
     }
