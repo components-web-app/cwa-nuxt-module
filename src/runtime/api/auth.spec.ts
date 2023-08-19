@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
 import { useRoute } from '#app'
 import { CwaUserRoles } from '../storage/stores/auth/state'
-import Auth from './auth'
+import Auth, { CwaAuthStatus } from './auth'
 import { ref } from '#imports'
 
 function createAuth () {
@@ -473,7 +473,18 @@ describe('Auth', () => {
     })
   })
 
-  describe.todo('status getter', () => {})
+  describe('status getter', () => {
+    test.each([
+      { loading: true, authCookieValue: undefined, result: CwaAuthStatus.LOADING },
+      { loading: false, authCookieValue: '1', result: CwaAuthStatus.SIGNED_IN },
+      { loading: false, authCookieValue: undefined, result: CwaAuthStatus.SIGNED_OUT }
+    ])('If loading is %loading', ({ loading, authCookieValue, result }) => {
+      const { auth } = createAuth()
+      auth.loading.value = loading
+      auth.authCookie.value = authCookieValue
+      expect(auth.status.value).toBe(result)
+    })
+  })
 
   describe.todo('clearSession', () => {})
 
