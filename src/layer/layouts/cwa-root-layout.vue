@@ -6,7 +6,7 @@
     <slot />
   </NuxtLayout>
   <ClientOnly>
-    <cwa-resource-manager />
+    <cwa-resource-manager v-if="showAdmin" />
   </ClientOnly>
 </template>
 
