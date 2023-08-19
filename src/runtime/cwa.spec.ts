@@ -1,6 +1,5 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi, afterEach } from 'vitest'
-import { useCookie } from '#app/composables/cookie.js'
+import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -136,7 +135,7 @@ describe('$cwa.apiUrl tests', () => {
 })
 
 describe('Cwa class test', () => {
-  afterEach(() => {
+  beforeEach(() => {
     vi.clearAllMocks()
   })
 
@@ -197,7 +196,6 @@ describe('Cwa class test', () => {
   test('Auth is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(useCookie).toBeCalledWith('cwa_auth')
     expect(Auth).toBeCalledWith(
       CwaFetch.mock.instances[0],
       Mercure.mock.results[0].value,
@@ -206,7 +204,7 @@ describe('Cwa class test', () => {
       stores.auth,
       stores.resources,
       stores.fetcher,
-      useCookie.mock.results[0].value
+      'cwa_auth'
     )
     expect($cwa.auth).toBe(Auth.mock.instances[0])
   })

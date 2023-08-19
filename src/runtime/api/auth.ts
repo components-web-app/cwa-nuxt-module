@@ -34,13 +34,13 @@ export default class Auth {
   private loading: Ref<boolean>
 
   public constructor (
-    private cwaFetch: CwaFetch,
-    private mercure: Mercure,
-    private fetcher: Fetcher,
-    private admin: Admin,
-    private authStoreDefinition: AuthStore,
-    private resourcesStoreDefinition: ResourcesStore,
-    private fetcherStoreDefinition: FetcherStore,
+    private readonly cwaFetch: CwaFetch,
+    private readonly mercure: Mercure,
+    private readonly fetcher: Fetcher,
+    private readonly admin: Admin,
+    private readonly authStoreDefinition: AuthStore,
+    private readonly resourcesStoreDefinition: ResourcesStore,
+    private readonly fetcherStoreDefinition: FetcherStore,
     private readonly authCookie: CookieRef<string | null>
   ) {
     this.loading = ref(false)
