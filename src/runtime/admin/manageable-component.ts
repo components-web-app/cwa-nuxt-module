@@ -1,6 +1,18 @@
-import { ComponentPublicInstance, computed, ComputedRef, ref, Ref } from 'vue'
+import {
+  App,
+  ComponentPublicInstance,
+  computed,
+  ComputedRef,
+  ref,
+  Ref,
+  watch,
+  WatchStopHandle,
+  createApp
+} from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
+import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
+import ComponentFocus from '#cwa/layer/_components/admin/component-focus.vue'
 
 export interface ManageableComponentOptions {
   displayName?: string
@@ -9,8 +21,14 @@ export interface ManageableComponentOptions {
 export default class ManageableComponent {
   private currentIri: string|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
+  private unwatchCurrentStackItem: undefined|WatchStopHandle
+  private focusComponent: undefined|App
+  private focusWrapper: HTMLElement|undefined
 
-  constructor (private component: ComponentPublicInstance, private $cwa: Cwa, private options?: ManageableComponentOptions) {
+  constructor (
+    private readonly component: ComponentPublicInstance,
+    private readonly $cwa: Cwa,
+    private readonly options?: ManageableComponentOptions) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
   }
@@ -25,8 +43,8 @@ export default class ManageableComponent {
 
     this.currentIri = iri
     this.addClickEventListeners()
-
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
+    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
   }
 
   public clear () {
@@ -37,6 +55,10 @@ export default class ManageableComponent {
     this.removeClickEventListeners()
     this.currentIri = undefined
     this.domElements.value = []
+    if (this.unwatchCurrentStackItem) {
+      this.unwatchCurrentStackItem()
+      this.unwatchCurrentStackItem = undefined
+    }
   }
 
   // REFRESHING INITIALISATION
@@ -45,6 +67,29 @@ export default class ManageableComponent {
       this.removeClickEventListeners()
       this.addClickEventListeners()
     }
+  }
+
+  private currentStackItemListener (stackItem: ResourceStackItem|null) {
+    if (stackItem?.iri !== this.currentIri) {
+      if (this.focusComponent) {
+        this.focusComponent.unmount()
+        this.focusComponent = undefined
+      }
+      if (this.focusWrapper) {
+        this.focusWrapper.remove()
+        this.focusWrapper = undefined
+      }
+      return
+    }
+    if (!stackItem) {
+      return
+    }
+    this.focusComponent = createApp(ComponentFocus, {
+      domElements: computed(() => stackItem.domElements)
+    })
+    this.focusWrapper = document.createElement('div')
+    this.focusComponent.mount(this.focusWrapper)
+    document.body.appendChild(this.focusWrapper)
   }
 
   // COMPUTED FOR REFRESHING

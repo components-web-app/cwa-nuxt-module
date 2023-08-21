@@ -8,7 +8,7 @@ interface _ResourceStackItem {
 }
 
 // will be used to have additional properties not sent by the initial addToStack event
-interface ResourceStackItem extends _ResourceStackItem {
+export interface ResourceStackItem extends _ResourceStackItem {
 }
 
 interface AddToStackWindowEvent {

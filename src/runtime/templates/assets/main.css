@@ -659,6 +659,9 @@ select {
 .cwa-fixed {
   position: fixed !important;
 }
+.cwa-absolute {
+  position: absolute !important;
+}
 .cwa-relative {
   position: relative !important;
 }
@@ -773,6 +776,15 @@ select {
 .cwa-animate-spin-fast {
   animation: cwa-spin .5s linear infinite !important;
 }
+@keyframes cwa-pulse {
+
+  50% {
+    opacity: .5;
+  }
+}
+.cwa-animate-pulse {
+  animation: cwa-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
 .cwa-cursor-pointer {
   cursor: pointer !important;
 }
@@ -863,6 +875,10 @@ select {
 .cwa-bg-white {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
+}
+.cwa-bg-gray-100 {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(243 244 246 / var(--tw-bg-opacity)) !important;
 }
 .cwa-fill-blue-600 {
   fill: #2563eb !important;
