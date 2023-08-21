@@ -4,7 +4,6 @@ import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 const current = $cwa.admin.componentManager.currentStackItem
-const stack = $cwa.admin.componentManager.resourceStack
 
 function clickHandler (e: any) {
   $cwa.admin.componentManager.addToStack({ clickTarget: e.target })
@@ -21,6 +20,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    {{ stack.length }}: {{ current }}
+    {{ current }}
   </div>
 </template>

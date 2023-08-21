@@ -10,9 +10,9 @@ import ComponentManager from './component-manager'
 function createComponentManager (mockStore?: any) {
   const mockAdminStore = {
     useStore: () => mockStore || ({
-      state: {
+      state: reactive({
         isEditing: false
-      }
+      })
     })
   }
 
@@ -55,13 +55,16 @@ describe('Component Manager', () => {
   })
 
   describe('resourceStack getter', () => {
-    test('should return stack', () => {
+    test.each([
+      { lastClickTarget: ref({}), mockStack: ['anything'], expected: [] },
+      { lastClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] }
+    ])('If lastClickTarget is $lastClickTarget the stack should return $expected', ({ lastClickTarget, mockStack, expected }) => {
       const { manager } = createComponentManager()
-      const mockStack = [1, 2, 3]
 
-      manager.currentResourceStack = mockStack
+      manager.lastClickTarget = ref(lastClickTarget)
+      manager.currentResourceStack = ref(mockStack)
 
-      expect(manager.resourceStack).toEqual(mockStack)
+      expect(manager.resourceStack.value).toEqual(expected)
     })
   })
 
@@ -95,12 +98,12 @@ describe('Component Manager', () => {
         const { manager } = createComponentManager()
 
         manager.currentResourceStack = ref([1, 2, 3])
-        manager.lastClickTarget = 'mock-target'
+        manager.lastClickTarget = ref('mock-target')
 
         manager.resetStack()
 
         expect(manager.resourceStack.value).toEqual([])
-        expect(manager.lastClickTarget).toEqual(null)
+        expect(manager.lastClickTarget.value).toEqual(null)
       })
     })
 
@@ -134,7 +137,7 @@ describe('Component Manager', () => {
         const { manager } = createComponentManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
 
-        manager.lastClickTarget = null
+        manager.lastClickTarget = ref(null)
         manager.currentResourceStack = ref([{ iri: mockIri }])
 
         manager.addToStack({ iri: mockIri })
@@ -156,44 +159,47 @@ describe('Component Manager', () => {
         const { manager } = createComponentManager(mockStore)
         const event = { iri: '/mock', clickTarget: { new: 'target' } }
 
-        manager.lastClickTarget = { old: 'target' }
+        manager.lastClickTarget = ref({ old: 'target' })
 
         manager.addToStack(event)
 
-        expect(manager.lastClickTarget).toEqual(event.clickTarget)
+        expect(manager.lastClickTarget.value).toEqual(event.clickTarget)
       })
 
       test('should clear the last click target IF event has no iri', () => {
         const mockStore = { state: { isEditing: true } }
         const { manager } = createComponentManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
-        manager.lastClickTarget = { old: 'target' }
+        manager.lastClickTarget = ref({ old: 'target' })
         manager.addToStack({})
         expect(resetSpy).not.toHaveBeenCalled()
         expect(manager.resourceStack.value.length).toEqual(0)
-        expect(manager.lastClickTarget).toBeNull()
+        expect(manager.lastClickTarget.value).toBeNull()
       })
     })
 
     describe('listenEditModeChange', () => {
-      test('Watch should be called', () => {
-        const watchSpy = vi.spyOn(vue, 'watch')
-        const mockStore = { state: { isEditing: true } }
-        createComponentManager(mockStore)
-        expect(watchSpy).toHaveBeenCalledOnce()
-      })
-      test('should reset stack IF edit mode is turned off', async () => {
-        const mockStore = { state: reactive({ isEditing: true }) }
+      test.each([
+        { initialEditingState: true, newEditingState: false, timesToCall: 1 },
+        { initialEditingState: false, newEditingState: true, timesToCall: 0 }
+      ])('When edit mode is changed from $initialEditingState to $newEditingState, reset spy should be called $timesToCall times', async ({
+        initialEditingState,
+        newEditingState,
+        timesToCall
+      }) => {
+        const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => {})
+        const mockStore = { state: reactive({ isEditing: initialEditingState }) }
+
         const { manager } = createComponentManager(mockStore)
-        const resetSpy = vi.spyOn(manager, 'resetStack')
+        vi.clearAllMocks()
 
+        const resetStackSpy = vi.spyOn(manager, 'resetStack')
         manager.listenEditModeChange()
+        expect(watchSpy).toHaveBeenCalledOnce()
 
-        mockStore.state.isEditing = false
-
+        mockStore.state.isEditing = newEditingState
         await nextTick()
-
-        expect(resetSpy).toHaveBeenCalled()
+        expect(resetStackSpy).toHaveBeenCalledTimes(timesToCall)
       })
     })
   })
