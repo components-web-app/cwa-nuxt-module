@@ -15,7 +15,7 @@ const position = computed(() => {
     windowSize: windowSize.value
   }
   for (const domElement of props.domElements.value) {
-    if (domElement.nodeType === 3) {
+    if (domElement.nodeType !== 1) {
       continue
     }
     const domRect = domElement.getBoundingClientRect()
