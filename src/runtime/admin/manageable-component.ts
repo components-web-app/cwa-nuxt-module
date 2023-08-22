@@ -173,6 +173,9 @@ export default class ManageableComponent {
       return [currentEl]
     }
     do {
+      if (currentEl.nodeType === 8 && currentEl.nodeValue === 'CWA_END') {
+        break
+      }
       currentEl.nodeType !== 3 && allSiblings.push(currentEl)
     } while ((currentEl = currentEl.nextSibling))
     return allSiblings

@@ -17,9 +17,6 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
   data-v-app=""
 >
   
-  <clientonly-stub>
-    <!--[-->
-  </clientonly-stub>
   
   <resourceloader-stub
     componentprefix=""
@@ -38,7 +35,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
   />
   
   <clientonly-stub>
-    <!--]-->
+    <!--CWA_END-->
   </clientonly-stub>
   
 </div>

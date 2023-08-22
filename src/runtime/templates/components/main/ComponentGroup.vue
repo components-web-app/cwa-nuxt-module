@@ -3,12 +3,9 @@
     <CwaUiSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
-    <client-only>
-      <!--[-->
-    </client-only>
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
     <client-only>
-      <!--]-->
+      <!--CWA_END-->
     </client-only>
   </template>
   <CwaUiAlertInfo v-else-if="signedInAndResourceExists">
