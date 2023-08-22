@@ -17,6 +17,10 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
   data-v-app=""
 >
   
+  <clientonly-stub>
+    <!--[-->
+  </clientonly-stub>
+  
   <resourceloader-stub
     componentprefix=""
     iri="pos1"
@@ -32,6 +36,10 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
     iri="pos3"
     uicomponent="[object Object]"
   />
+  
+  <clientonly-stub>
+    <!--]-->
+  </clientonly-stub>
   
 </div>
 `;
