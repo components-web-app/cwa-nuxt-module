@@ -24,6 +24,7 @@ export default class ManageableComponent {
   private unwatchCurrentStackItem: undefined|WatchStopHandle
   private focusComponent: undefined|App
   private focusWrapper: HTMLElement|undefined
+  private readonly yOffset = 100
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -84,12 +85,47 @@ export default class ManageableComponent {
     if (!stackItem) {
       return
     }
+
     this.focusComponent = createApp(ComponentFocus, {
       domElements: computed(() => stackItem.domElements)
     })
     this.focusWrapper = document.createElement('div')
     this.focusComponent.mount(this.focusWrapper)
     document.body.appendChild(this.focusWrapper)
+
+    this.scrollIntoView()
+  }
+
+  private scrollIntoView () {
+    let element: undefined|HTMLElement
+    let elementOutOfView = false
+
+    for (const elCandidate of this.domElements.value) {
+      if (elCandidate.nodeType === 1) {
+        if (!element) {
+          element = elCandidate
+        }
+
+        if (this.isElementOutsideViewport(element)) {
+          elementOutOfView = true
+        }
+        if (elementOutOfView && element) {
+          break
+        }
+      }
+    }
+
+    if (!element || !elementOutOfView) {
+      return
+    }
+    const y = element.getBoundingClientRect().top + window.scrollY - this.yOffset
+    window.scrollTo({ top: y, behavior: 'smooth' })
+  }
+
+  private isElementOutsideViewport (el: HTMLElement) {
+    const { top, left, bottom, right } = el.getBoundingClientRect()
+    const { innerHeight, innerWidth } = window
+    return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
   }
 
   // COMPUTED FOR REFRESHING
