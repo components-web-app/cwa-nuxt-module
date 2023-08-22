@@ -3,7 +3,13 @@
     <CwaUiSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
+    <client-only>
+      <!--[-->
+    </client-only>
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
+    <client-only>
+      <!--]-->
+    </client-only>
   </template>
   <CwaUiAlertInfo v-else-if="signedInAndResourceExists">
     <p>No component positions in this component group - add functionality coming soon</p>
@@ -11,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+// Comments around the resource loaders is to allow component groups not to need to be wrapped in a dev and so we know when one cg ends
+
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 

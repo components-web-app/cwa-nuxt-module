@@ -15,6 +15,9 @@ const position = computed(() => {
     windowSize: windowSize.value
   }
   for (const domElement of props.domElements.value) {
+    if (domElement.nodeType === 3) {
+      continue
+    }
     const domRect = domElement.getBoundingClientRect()
     clearCoords.top = Math.min(clearCoords.top, domRect.top)
     clearCoords.left = Math.min(clearCoords.left, domRect.left)

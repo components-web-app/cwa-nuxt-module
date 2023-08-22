@@ -71,7 +71,6 @@ export default class ComponentManager {
     const { clickTarget, ...resourceStackItem } = event
 
     const isResourceClick = ('iri' in resourceStackItem)
-
     if (
       !this.isEditing ||
       (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri) && this.lastClickTarget.value)

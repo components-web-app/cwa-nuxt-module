@@ -139,7 +139,6 @@ export default class ManageableComponent {
     do {
       currentEl.nodeType !== 3 && allSiblings.push(currentEl)
     } while ((currentEl = currentEl.nextSibling))
-
     return allSiblings
   }
 
