@@ -169,15 +169,19 @@ export default class ManageableComponent {
     if (!currentEl) {
       return []
     }
-    if (currentEl.nodeType === 1) {
+
+    if (currentEl.nodeType === Node.ELEMENT_NODE) {
       return [currentEl]
     }
+
     do {
-      if (currentEl.nodeType === 8 && currentEl.nodeValue === 'CWA_END') {
+      console.log(this.currentIri, currentEl)
+      if (currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === 'CWA_MANAGER_END') {
         break
       }
-      currentEl.nodeType !== 3 && allSiblings.push(currentEl)
+      currentEl.nodeType !== Node.TEXT_NODE && allSiblings.push(currentEl)
     } while ((currentEl = currentEl.nextSibling))
+
     return allSiblings
   }
 

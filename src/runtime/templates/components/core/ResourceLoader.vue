@@ -16,7 +16,9 @@
       The component `{{ resourceUiComponent }}` for resource `{{ props.iri }}` cannot be resolved
     </p>
   </CwaUiAlertWarning>
-  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="props.iri" />
+  <template v-else-if="!hasError">
+    <component v-bind="$attrs" :is="resolvedComponent" :iri="props.iri" />
+  </template>
 </template>
 
 <script setup lang="ts">

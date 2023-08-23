@@ -767,15 +767,6 @@ select {
 .cwa-transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
 }
-@keyframes cwa-spin {
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-.cwa-animate-spin-fast {
-  animation: cwa-spin .5s linear infinite !important;
-}
 @keyframes cwa-pulse {
 
   50% {
@@ -784,6 +775,15 @@ select {
 }
 .cwa-animate-pulse {
   animation: cwa-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+@keyframes cwa-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cwa-animate-spin-fast {
+  animation: cwa-spin .5s linear infinite !important;
 }
 .cwa-cursor-pointer {
   cursor: pointer !important;
@@ -875,10 +875,6 @@ select {
 .cwa-bg-white {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
-}
-.cwa-bg-gray-100 {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(243 244 246 / var(--tw-bg-opacity)) !important;
 }
 .cwa-fill-blue-600 {
   fill: #2563eb !important;

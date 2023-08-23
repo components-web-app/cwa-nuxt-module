@@ -4,9 +4,7 @@
   </div>
   <template v-else-if="componentPositions?.length">
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
-    <client-only>
-      <!--CWA_END-->
-    </client-only>
+    <!--CWA_MANAGER_END-->
   </template>
   <CwaUiAlertInfo v-else-if="signedInAndResourceExists">
     <p>No component positions in this component group - add functionality coming soon</p>

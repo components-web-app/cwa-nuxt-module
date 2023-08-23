@@ -61,7 +61,7 @@ onBeforeUnmount(() => {
 
 <template>
   <client-only>
-    <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-animate-pulse" :style="cssStyle" />
+    <div class="component-focus cwa-pointer-events-none cwa-absolute" :style="cssStyle" />
   </client-only>
 </template>
 
@@ -76,7 +76,7 @@ onBeforeUnmount(() => {
     left: 0;
     width: 100%;
     height: 100%;
-    outline: .75rem solid rgba(0,0,0,.15);
+    outline: 999999rem solid rgba(0,0,0,.45);
     outline-offset: 4px;
   }
 }
