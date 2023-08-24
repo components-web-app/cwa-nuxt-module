@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ComputedRef, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
+import { useCwa } from '#imports'
+
+const $cwa = useCwa()
 const props = defineProps<{
   iri: string
   domElements: ComputedRef<HTMLElement[]>
@@ -62,7 +65,15 @@ onBeforeUnmount(() => {
 const iri = toRef(props, 'iri')
 
 const borderColor = computed(() => {
+  const publishableInfo = resource.value?.data?._metadata.publishable
+  if (publishableInfo) {
+    return publishableInfo.published ? 'green' : 'orange'
+  }
   return iri.value.startsWith('/_/') ? 'magenta' : 'green'
+})
+
+const resource = computed(() => {
+  return $cwa.resources.getResource(iri.value).value
 })
 </script>
 
