@@ -67,12 +67,12 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-watch(() => [componentPositions.value.length, signedInAndResourceExists.value], (
-  [posLength, showPlaceholder], [oldPosLength, oldShowPlaceholder]) => {
-  if (posLength > 0 && posLength === oldPosLength) {
+watch(() => [componentPositions.value, signedInAndResourceExists.value], (
+  [positions, showPlaceholder], [oldPositions, oldShowPlaceholder]) => {
+  if (positions?.length > 0 && positions?.length === oldPositions?.length) {
     return
   }
-  const iri = resource.value.data?.['@id']
+  const iri = resource.value?.data?.['@id']
   if (!!iri && showPlaceholder !== oldShowPlaceholder) {
     $cwa.admin.eventBus.emit('componentMounted', iri)
   }

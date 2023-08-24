@@ -211,6 +211,8 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
+
+    console.log('clickListener', this.currentIri)
     this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
       domElements: this.domElements,
