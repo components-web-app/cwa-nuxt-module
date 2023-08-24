@@ -799,6 +799,24 @@ select {
 .cwa-animate-spin-fast {
   animation: cwa-spin .5s linear infinite !important;
 }
+@keyframes cwa-pulse {
+
+  50% {
+    opacity: .5;
+  }
+}
+.cwa-animate-pulse {
+  animation: cwa-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+@keyframes cwa-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cwa-animate-spin {
+  animation: cwa-spin 1s linear infinite !important;
+}
 .cwa-cursor-pointer {
   cursor: pointer !important;
 }
@@ -1017,6 +1035,12 @@ select {
 .cwa-outline-\[999999rem\] {
   outline-width: 999999rem !important;
 }
+.cwa-outline-0 {
+  outline-width: 0px !important;
+}
+.cwa-outline-2 {
+  outline-width: 2px !important;
+}
 .cwa-outline-offset-2 {
   outline-offset: 2px !important;
 }
@@ -1025,6 +1049,12 @@ select {
 }
 .cwa-outline-offset-1 {
   outline-offset: 1px !important;
+}
+.cwa-outline-offset-8 {
+  outline-offset: 8px !important;
+}
+.cwa-outline-offset-\[7px\] {
+  outline-offset: 7px !important;
 }
 .cwa-outline-magenta {
   outline-color: #e30a6c !important;
@@ -1069,6 +1099,11 @@ select {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
   transition-duration: 150ms !important;
 }
+.cwa-transition-opacity {
+  transition-property: opacity !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-duration: 150ms !important;
+}
 .cwa-delay-200 {
   transition-delay: 200ms !important;
 }
@@ -1080,6 +1115,12 @@ select {
 }
 .cwa-duration-300 {
   transition-duration: 300ms !important;
+}
+.cwa-duration-700 {
+  transition-duration: 700ms !important;
+}
+.cwa-duration-100 {
+  transition-duration: 100ms !important;
 }
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
