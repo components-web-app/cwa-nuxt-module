@@ -3,8 +3,9 @@
     <CwaUiSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
+    <!--CWA_MANAGER_START_GROUP-->
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
-    <!--CWA_MANAGER_END-->
+    <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
     <CwaUiHotSpot screen-reader-action="Add component position" />

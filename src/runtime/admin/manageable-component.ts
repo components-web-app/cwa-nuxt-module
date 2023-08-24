@@ -87,6 +87,7 @@ export default class ManageableComponent {
     }
 
     this.focusComponent = createApp(ComponentFocus, {
+      iri: this.currentIri,
       domElements: computed(() => stackItem.domElements)
     })
     this.focusWrapper = document.createElement('div')
@@ -174,8 +175,15 @@ export default class ManageableComponent {
       return [currentEl]
     }
 
+    let endCommentTag: undefined|string
+
     do {
-      if (currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === 'CWA_MANAGER_END') {
+      if (!endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue.startsWith('CWA_MANAGER_START_')) {
+        const startTag = currentEl.nodeValue
+        const startTagPostfix = startTag.replace(/^(CWA_MANAGER_START_)/, '')
+        endCommentTag = `CWA_MANAGER_END_${startTagPostfix}`
+      }
+      if (endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === endCommentTag) {
         break
       }
       currentEl.nodeType !== Node.TEXT_NODE && allSiblings.push(currentEl)

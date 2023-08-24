@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ComputedRef, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ComputedRef, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
 const props = defineProps<{
+  iri: string
   domElements: ComputedRef<HTMLElement[]>
 }>()
 
@@ -57,12 +58,18 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateWindowSize)
 })
+
+const iri = toRef(props, 'iri')
+
+const borderColor = computed(() => {
+  return iri.value.startsWith('/_/') ? 'magenta' : 'green'
+})
 </script>
 
 <template>
   <client-only>
     <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-2 cwa-outline-[999999rem] cwa-rounded" :style="cssStyle">
-      <div class="cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-orange cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
+      <div :class="[`cwa-outline-${borderColor}`]" class="cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
     </div>
   </client-only>
 </template>

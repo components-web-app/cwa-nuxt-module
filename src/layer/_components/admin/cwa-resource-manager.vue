@@ -21,5 +21,6 @@ onBeforeUnmount(() => {
 <template>
   <div>
     {{ current }}
+    <pre>{{ $cwa.admin.componentManager.resourceStack }}</pre>
   </div>
 </template>
