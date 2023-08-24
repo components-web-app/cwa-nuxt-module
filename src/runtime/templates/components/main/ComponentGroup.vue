@@ -66,6 +66,21 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
+watch(() => [componentPositions.value.length, signedInAndResourceExists.value], (
+  [posLength, showPlaceholder], [oldPosLength, oldShowPlaceholder]) => {
+  if (posLength > 0 && posLength === oldPosLength) {
+    return
+  }
+  const iri = resource.value.data?.['@id']
+  if (!!iri && showPlaceholder !== oldShowPlaceholder) {
+    $cwa.admin.eventBus.emit('componentMounted', iri)
+  }
+},
+{
+  flush: 'post'
+}
+)
+
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
 function getResourceKey (positionIri: string) {

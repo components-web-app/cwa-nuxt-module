@@ -74,6 +74,7 @@ function onContextMenu (e) {
     left: unref(x)
   }
   if (showDefaultContext(pos)) {
+    isOpen.value = false
     return
   }
   e.preventDefault()

@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
 
 <style>
 .component-focus {
-  outline: 2px solid green;
+  outline: 999999rem solid rgba(0,0,0,.45);
   outline-offset: 2px;
   &:before {
     content: '';
@@ -76,8 +76,8 @@ onBeforeUnmount(() => {
     left: 0;
     width: 100%;
     height: 100%;
-    outline: 999999rem solid rgba(0,0,0,.45);
-    outline-offset: 4px;
+    outline: 4px solid green;
+    outline-offset: 2px;
   }
 }
 </style>

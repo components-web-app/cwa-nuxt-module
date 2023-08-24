@@ -22,8 +22,15 @@ module.exports = {
         800: colors.gray['800'],
         900: colors.gray['900']
       },
+      neutral: {
+        400: colors.neutral['400'],
+        600: colors.neutral['600'],
+        800: colors.neutral['800'],
+        900: colors.neutral['900']
+      },
       white: colors.white,
-      magenta: '#e30a6c'
+      magenta: '#e30a6c',
+      transparent: colors.transparent
     },
     extend: {
       animation: {

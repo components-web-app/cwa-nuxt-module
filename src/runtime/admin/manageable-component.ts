@@ -158,7 +158,7 @@ export default class ManageableComponent {
         return nested
       }
 
-      return getChildren(this.currentIri)
+      return [this.currentIri, ...getChildren(this.currentIri)]
     })
   }
 
