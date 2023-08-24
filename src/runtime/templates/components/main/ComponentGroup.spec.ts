@@ -32,13 +32,15 @@ function createWrapper ({
   reference = mockReference,
   location = mockLocation,
   allowedComponents = [],
-  signedIn = false
+  signedIn = false,
+  isEditing = true
 }: {
   isLoading?: boolean;
   reference?: string;
   location?: string;
   allowedComponents?: string[];
   signedIn?: boolean;
+  isEditing: boolean;
 } = {}) {
   // @ts-ignore
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
@@ -51,7 +53,8 @@ function createWrapper ({
       resourcesManager: {
         createResource: vi.fn(),
         updateResource: vi.fn()
-      }
+      },
+      admin: { isEditing }
     }
   })
 
@@ -224,28 +227,40 @@ describe('ComponentGroup', () => {
           component: {
             data: undefined
           },
-          signedIn: true
+          signedIn: true,
+          isEditing: true
         },
         {
           expected: false,
           component: undefined,
-          signedIn: true
+          signedIn: true,
+          isEditing: true
         },
         {
           expected: false,
           component: {
             data: {}
           },
-          signedIn: false
+          signedIn: false,
+          isEditing: true
+        },
+        {
+          expected: false,
+          component: {
+            data: {}
+          },
+          signedIn: true,
+          isEditing: false
         },
         {
           expected: true,
           component: {
             data: {}
           },
-          signedIn: true
+          signedIn: true,
+          isEditing: true
         }
-      ])('should return $expected IF user is signed in is $signedIn AND resource is $component', ({ expected, signedIn, component }) => {
+      ])('should return $expected IF user is signed in is $signedIn AND resource is $component', ({ expected, signedIn, component, isEditing }) => {
         vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
           return {
             value: {
@@ -260,7 +275,8 @@ describe('ComponentGroup', () => {
         })
 
         const wrapper = createWrapper({
-          signedIn: vue.ref(signedIn)
+          signedIn: vue.ref(signedIn),
+          isEditing
         })
 
         expect(wrapper.vm.signedInAndResourceExists).toEqual(expected)

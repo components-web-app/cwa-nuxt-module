@@ -42,9 +42,11 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
 exports[`ComponentGroup > snapshots > should match snapshot IF there are no component positions defined 1`] = `<!--v-if-->`;
 
 exports[`ComponentGroup > snapshots > should match snapshot IF user is logged in but there are no positions 1`] = `
-<info-stub>
-  <p>
-    No component positions in this component group - add functionality coming soon
-  </p>
-</info-stub>
+<div
+  class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5"
+>
+  <hotspot-stub
+    screenreaderaction="Add component position"
+  />
+</div>
 `;

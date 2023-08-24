@@ -46,7 +46,7 @@ const resource = computed(() => {
 })
 
 const signedInAndResourceExists = computed(() => {
-  return $cwa.auth.signedIn.value && !!resource.value?.data
+  return $cwa.auth.signedIn.value && !!resource.value?.data && $cwa.admin.isEditing
 })
 
 const showLoader = computed(() => {

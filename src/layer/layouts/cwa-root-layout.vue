@@ -41,14 +41,21 @@ const { x, y } = useMouse()
 const { y: windowY } = useWindowScroll()
 const isOpen = ref(false)
 const virtualElement = ref({ getBoundingClientRect: () => ({}) })
+const cachedPosition = { top: 0, left: 0 }
 function onContextMenu (e) {
-  if (isOpen.value) {
+  const top = unref(y) - unref(windowY)
+  const left = unref(x)
+  const difference = {
+    top: Math.abs(top - cachedPosition.top),
+    left: Math.abs(left - cachedPosition.left)
+  }
+  if (isOpen.value && difference.top < 10 && difference.left < 10) {
     isOpen.value = false
     return
   }
   e.preventDefault()
-  const top = unref(y) - unref(windowY)
-  const left = unref(x)
+  cachedPosition.top = top
+  cachedPosition.left = left
   virtualElement.value.getBoundingClientRect = () => ({
     width: 0,
     height: 0,
