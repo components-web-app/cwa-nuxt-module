@@ -61,23 +61,14 @@ onBeforeUnmount(() => {
 
 <template>
   <client-only>
-    <div class="component-focus cwa-pointer-events-none cwa-absolute" :style="cssStyle" />
+    <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-2 cwa-outline-[999999rem] cwa-rounded" :style="cssStyle">
+      <div class="cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-orange cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
+    </div>
   </client-only>
 </template>
 
 <style>
 .component-focus {
-  outline: 999999rem solid rgba(0,0,0,.45);
-  outline-offset: 2px;
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    outline: 4px solid green;
-    outline-offset: 2px;
-  }
+  outline-color: rgba(0,0,0,.4);
 }
 </style>

@@ -29,8 +29,10 @@ module.exports = {
         900: colors.neutral['900']
       },
       white: colors.white,
+      transparent: colors.transparent,
       magenta: '#e30a6c',
-      transparent: colors.transparent
+      green: '#9CDD05',
+      orange: '#FFAA00'
     },
     extend: {
       animation: {
