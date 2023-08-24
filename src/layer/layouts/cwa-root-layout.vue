@@ -42,18 +42,21 @@ const { y: windowY } = useWindowScroll()
 const isOpen = ref(false)
 const virtualElement = ref({ getBoundingClientRect: () => ({}) })
 const cachedPosition = { top: 0, left: 0 }
-function onContextMenu (e) {
-  const top = unref(y) - unref(windowY)
-  const left = unref(x)
+
+type ContextPosition = {
+  top: number
+  left: number
+}
+
+function showDefaultContext ({ top, left }: ContextPosition) {
   const difference = {
     top: Math.abs(top - cachedPosition.top),
     left: Math.abs(left - cachedPosition.left)
   }
-  if (isOpen.value && difference.top < 10 && difference.left < 10) {
-    isOpen.value = false
-    return
-  }
-  e.preventDefault()
+  return isOpen.value && difference.top < 10 && difference.left < 10
+}
+
+function openContext ({ top, left }: ContextPosition) {
   cachedPosition.top = top
   cachedPosition.left = left
   virtualElement.value.getBoundingClientRect = () => ({
@@ -63,5 +66,17 @@ function onContextMenu (e) {
     left
   })
   isOpen.value = true
+}
+
+function onContextMenu (e) {
+  const pos: ContextPosition = {
+    top: unref(y) - unref(windowY),
+    left: unref(x)
+  }
+  if (showDefaultContext(pos)) {
+    return
+  }
+  e.preventDefault()
+  openContext(pos)
 }
 </script>
