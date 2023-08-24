@@ -101,7 +101,7 @@ export default class ManageableComponent {
     let elementOutOfView = false
 
     for (const elCandidate of this.domElements.value) {
-      if (elCandidate.nodeType === 1) {
+      if (elCandidate.nodeType === Node.ELEMENT_NODE) {
         if (!element) {
           element = elCandidate
         }
@@ -175,7 +175,6 @@ export default class ManageableComponent {
     }
 
     do {
-      console.log(this.currentIri, currentEl)
       if (currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === 'CWA_MANAGER_END') {
         break
       }

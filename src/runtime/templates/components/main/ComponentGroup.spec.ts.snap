@@ -34,9 +34,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
     uicomponent="[object Object]"
   />
   
-  <clientonly-stub>
-    <!--CWA_END-->
-  </clientonly-stub>
+  <!--CWA_MANAGER_END-->
   
 </div>
 `;

@@ -9,7 +9,7 @@
         :autocomplete="props.autocomplete"
         :required="props.required"
         :value="modelValue"
-        class="cwa-block cwa-w-full cwa-rounded-md cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
+        class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
         @input="$emit('update:modelValue', $event.target.value)"
       >
       <div v-if="errors">
