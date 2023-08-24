@@ -73,8 +73,8 @@ watch(() => [componentPositions.value, signedInAndResourceExists.value], (
     return
   }
   const iri = resource.value?.data?.['@id']
-  if (!!iri && showPlaceholder !== oldShowPlaceholder) {
-    $cwa.admin.eventBus.emit('componentMounted', iri)
+  if (!!iri && showPlaceholder !== oldShowPlaceholder && resource.value && $manager) {
+    $manager.resourceWatchHandler(resource.value)
   }
 },
 {

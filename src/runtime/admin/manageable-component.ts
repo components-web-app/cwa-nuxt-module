@@ -46,6 +46,7 @@ export default class ManageableComponent {
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
+    this.$cwa.admin.eventBus.emit('componentMounted', iri)
   }
 
   public clear () {
@@ -159,7 +160,7 @@ export default class ManageableComponent {
         return nested
       }
 
-      return [this.currentIri, ...getChildren(this.currentIri)]
+      return getChildren(this.currentIri)
     })
   }
 
@@ -212,7 +213,6 @@ export default class ManageableComponent {
       return
     }
 
-    console.log('clickListener', this.currentIri)
     this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
       domElements: this.domElements,
