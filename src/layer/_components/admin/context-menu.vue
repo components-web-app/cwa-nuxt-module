@@ -13,7 +13,7 @@ import { computed, toRef } from 'vue'
 import type { Ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import type { VirtualElement } from '@popperjs/core'
-import defu from 'defu'
+import { defu } from 'defu'
 import type { PopperOptions } from '../../../runtime/types'
 import { usePopper } from '#imports'
 
@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   modelValue: false,
   popper: {},
-  ui: {}
+  ui: () => ({})
 })
 
 const emit = defineEmits(['update:modelValue', 'close'])

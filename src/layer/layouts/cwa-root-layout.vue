@@ -2,7 +2,7 @@
   <ClientOnly>
     <cwa-admin-header v-if="showAdmin" />
   </ClientOnly>
-  <NuxtLayout id="cwa-root-layout" :name="layoutName" @contextmenu.prevent="onContextMenu">
+  <NuxtLayout id="cwa-root-layout" :name="layoutName" @contextmenu="onContextMenu">
     <slot />
   </NuxtLayout>
   <ClientOnly>
@@ -41,7 +41,12 @@ const { x, y } = useMouse()
 const { y: windowY } = useWindowScroll()
 const isOpen = ref(false)
 const virtualElement = ref({ getBoundingClientRect: () => ({}) })
-function onContextMenu () {
+function onContextMenu (e) {
+  if (isOpen.value) {
+    isOpen.value = false
+    return
+  }
+  e.preventDefault()
   const top = unref(y) - unref(windowY)
   const left = unref(x)
   virtualElement.value.getBoundingClientRect = () => ({

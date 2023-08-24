@@ -6,9 +6,9 @@
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
     <!--CWA_MANAGER_END-->
   </template>
-  <CwaUiAlertInfo v-else-if="signedInAndResourceExists">
-    <p>No component positions in this component group - add functionality coming soon</p>
-  </CwaUiAlertInfo>
+  <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
+    <CwaUiHotSpot screen-reader-action="Add component position" />
+  </div>
 </template>
 
 <script setup lang="ts">
