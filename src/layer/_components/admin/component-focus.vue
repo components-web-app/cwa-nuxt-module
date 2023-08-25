@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ComputedRef, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
 import { useCwa } from '#imports'
+import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 const props = defineProps<{
@@ -8,7 +9,7 @@ const props = defineProps<{
   domElements: ComputedRef<HTMLElement[]>
 }>()
 
-const windowSize = ref({ width: null, height: null })
+const windowSize = ref({ width: 0, height: 0 })
 
 const position = computed(() => {
   const clearCoords = {
@@ -65,9 +66,12 @@ onBeforeUnmount(() => {
 const iri = toRef(props, 'iri')
 
 const borderColor = computed(() => {
-  const publishableInfo = resource.value?.data?._metadata.publishable
-  if (publishableInfo) {
-    return publishableInfo.published ? 'cwa-outline-green' : 'cwa-outline-orange'
+  if (!resource.value) {
+    return
+  }
+  const publishedState = getPublishedResourceState(resource.value)
+  if (publishedState !== undefined) {
+    return publishedState ? 'cwa-outline-green' : 'cwa-outline-orange'
   }
   return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
