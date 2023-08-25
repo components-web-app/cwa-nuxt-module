@@ -67,9 +67,9 @@ const iri = toRef(props, 'iri')
 const borderColor = computed(() => {
   const publishableInfo = resource.value?.data?._metadata.publishable
   if (publishableInfo) {
-    return publishableInfo.published ? 'green' : 'orange'
+    return publishableInfo.published ? 'cwa-outline-green' : 'cwa-outline-orange'
   }
-  return iri.value.startsWith('/_/') ? 'magenta' : 'green'
+  return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
 
 const resource = computed(() => {
@@ -80,7 +80,7 @@ const resource = computed(() => {
 <template>
   <client-only>
     <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-[7px] cwa-outline-[999999rem] cwa-rounded" :style="cssStyle">
-      <div :class="[`cwa-outline-${borderColor}`]" class="cwa-animate-pulse cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
+      <div :class="[borderColor]" class="cwa-animate-pulse cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
     </div>
   </client-only>
 </template>
