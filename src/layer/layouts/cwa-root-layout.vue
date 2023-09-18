@@ -68,7 +68,7 @@ function openContext ({ top, left }: ContextPosition) {
   isOpen.value = true
 }
 
-function onContextMenu (e) {
+function onContextMenu (e: PointerEvent) {
   const pos: ContextPosition = {
     top: unref(y) - unref(windowY),
     left: unref(x)

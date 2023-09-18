@@ -808,9 +808,6 @@ select {
 .cwa-animate-spin-fast {
   animation: cwa-spin .5s linear infinite !important;
 }
-.cwa-animate-none {
-  animation: none !important;
-}
 .cwa-cursor-pointer {
   cursor: pointer !important;
 }
@@ -851,9 +848,6 @@ select {
 .cwa-rounded-full {
   border-radius: 9999px !important;
 }
-.cwa-border {
-  border-width: 1px !important;
-}
 .cwa-border-0 {
   border-width: 0px !important;
 }
@@ -876,6 +870,10 @@ select {
 .cwa-bg-gray-200 {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(229 231 235 / var(--tw-bg-opacity)) !important;
+}
+.cwa-bg-green {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(156 221 5 / var(--tw-bg-opacity)) !important;
 }
 .cwa-bg-indigo-600 {
   --tw-bg-opacity: 1 !important;
@@ -904,14 +902,6 @@ select {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
 }
-.cwa-bg-green {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(156 221 5 / var(--tw-bg-opacity)) !important;
-}
-.cwa-bg-orange {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(255 170 0 / var(--tw-bg-opacity)) !important;
-}
 .cwa-fill-blue-600 {
   fill: #2563eb !important;
 }
@@ -923,6 +913,15 @@ select {
 }
 .cwa-p-5 {
   padding: 1.25rem !important;
+}
+.cwa-p-4 {
+  padding: 1rem !important;
+}
+.cwa-p-10 {
+  padding: 2.5rem !important;
+}
+.cwa-p-8 {
+  padding: 2rem !important;
 }
 .cwa-px-3 {
   padding-left: 0.75rem !important;
@@ -1035,11 +1034,11 @@ select {
 .cwa-outline-offset-\[7px\] {
   outline-offset: 7px !important;
 }
-.cwa-outline-magenta {
-  outline-color: #e30a6c !important;
-}
 .cwa-outline-green {
   outline-color: #9CDD05 !important;
+}
+.cwa-outline-magenta {
+  outline-color: #e30a6c !important;
 }
 .cwa-outline-orange {
   outline-color: #FFAA00 !important;
@@ -1089,9 +1088,6 @@ select {
 }
 .cwa-duration-300 {
   transition-duration: 300ms !important;
-}
-.cwa-duration-0 {
-  transition-duration: 0s !important;
 }
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
@@ -1150,6 +1146,11 @@ select {
   .dark\:cwa-bg-gray-900 {
     --tw-bg-opacity: 1 !important;
     background-color: rgb(17 24 39 / var(--tw-bg-opacity)) !important;
+  }
+
+  .dark\:cwa-text-white {
+    --tw-text-opacity: 1 !important;
+    color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
   }
 
   .dark\:cwa-ring-gray-800 {

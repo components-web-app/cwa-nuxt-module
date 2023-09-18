@@ -197,18 +197,20 @@ export default class ManageableComponent {
     this.domElements.value = this.getAllEls()
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
+      el.addEventListener('contextmenu', this.clickListener, false)
     }
   }
 
   private removeClickEventListeners () {
     for (const el of this.domElements.value) {
       el.removeEventListener('click', this.clickListener)
+      el.removeEventListener('contextmenu', this.clickListener)
     }
   }
 
   // This will be called by the click event listener in context of this, and can be removed as well.
   // if we define with a name and call that, the `this` context will be the clicked dom element
-  private clickListener (evt: Event) {
+  private clickListener (evt: MouseEvent) {
     if (!this.currentIri) {
       return
     }
