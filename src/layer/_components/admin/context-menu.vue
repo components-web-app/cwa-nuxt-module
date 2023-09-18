@@ -22,7 +22,7 @@ const ops = {
   shadow: 'cwa-shadow-lg',
   rounded: '',
   ring: 'cwa-ring-1 cwa-ring-gray-200 dark:cwa-ring-gray-800',
-  base: 'cwa-overflow-hidden focus:cwa-outline-none cwa-p-4',
+  base: 'cwa-overflow-hidden focus:cwa-outline-none cwa-p-2',
   transition: {
     enterActiveClass: 'cwa-transition cwa-ease-out cwa-duration-200',
     enterFromClass: 'cwa-opacity-0 cwa-translate-y-1',
