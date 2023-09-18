@@ -13,6 +13,7 @@ import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '
 import Cwa from '../cwa'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import ComponentFocus from '#cwa/layer/_components/admin/component-focus.vue'
+import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export interface ManageableComponentOptions {
   displayName?: string
@@ -219,7 +220,23 @@ export default class ManageableComponent {
       iri: this.currentIri,
       domElements: this.domElements,
       clickTarget: evt.target,
-      displayName: this.options?.displayName || null
+      displayName: this.displayName
     })
+  }
+
+  private get displayName () {
+    const localDisplayName = this.options?.displayName
+    if (localDisplayName) {
+      return localDisplayName
+    }
+    const currentResource: CwaCurrentResourceInterface|undefined = this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+    if (!currentResource) {
+      return null
+    }
+    const type = currentResource.data?.['@type']
+    if (!type) {
+      return null
+    }
+    return this.$cwa.resourcesConfig[type]?.name || type
   }
 }

@@ -101,4 +101,8 @@ export default class Cwa {
   public get fetchingTotal () {
     return this.cwaFetch.fetchingTotal
   }
+
+  public get resourcesConfig () {
+    return this.options.resources
+  }
 }
