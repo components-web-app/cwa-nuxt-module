@@ -18,10 +18,10 @@ import type { PopperOptions } from '../../../runtime/types'
 import { usePopper } from '#imports'
 
 const ops = {
-  background: 'cwa-bg-white dark:cwa-bg-gray-900 dark:cwa-text-white',
+  background: 'cwa-bg-white/70 dark:cwa-bg-gray-900/70 dark:cwa-text-white cwa-backdrop-blur-md',
   shadow: 'cwa-shadow-lg',
   rounded: '',
-  ring: 'cwa-ring-1 cwa-ring-gray-200 dark:cwa-ring-gray-800',
+  ring: '',
   base: 'cwa-overflow-hidden focus:cwa-outline-none cwa-p-2',
   transition: {
     enterActiveClass: 'cwa-transition cwa-ease-out cwa-duration-200',
