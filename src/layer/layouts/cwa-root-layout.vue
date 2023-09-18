@@ -8,12 +8,7 @@
   <ClientOnly>
     <template v-if="showAdmin">
       <cwa-resource-manager />
-      <context-menu
-        v-model="isOpen"
-        :virtual-element="virtualElement"
-      >
-        My Menu
-      </context-menu>
+      <cwa-resource-manager-context-menu v-model="isOpen" :virtual-element="virtualElement" />
     </template>
   </clientonly>
 </template>
@@ -25,7 +20,7 @@ import { useCwa } from '#imports'
 import CwaAdminHeader from '#cwa/layer/_components/admin/cwa-admin-header.vue'
 import CwaResourceManager from '#cwa/layer/_components/admin/cwa-resource-manager.vue'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
-import ContextMenu from '#cwa/layer/_components/admin/context-menu.vue'
+import CwaResourceManagerContextMenu from '#cwa/layer/_components/admin/cwa-resource-manager-context-menu.vue'
 
 const $cwa = useCwa()
 const layoutName = computed(() => {

@@ -839,6 +839,16 @@ select {
   margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse))) !important;
   margin-bottom: calc(1.5rem * var(--tw-space-y-reverse)) !important;
 }
+.cwa-space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0 !important;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse))) !important;
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse)) !important;
+}
+.cwa-space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0 !important;
+  margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse))) !important;
+  margin-bottom: calc(0.75rem * var(--tw-space-y-reverse)) !important;
+}
 .cwa-overflow-hidden {
   overflow: hidden !important;
 }
@@ -853,6 +863,9 @@ select {
 }
 .cwa-border-2 {
   border-width: 2px !important;
+}
+.cwa-border {
+  border-width: 1px !important;
 }
 .cwa-border-b-2 {
   border-bottom-width: 2px !important;
@@ -922,6 +935,9 @@ select {
 }
 .cwa-p-8 {
   padding: 2rem !important;
+}
+.cwa-p-2 {
+  padding: 0.5rem !important;
 }
 .cwa-px-3 {
   padding-left: 0.75rem !important;
@@ -1027,6 +1043,12 @@ select {
 }
 .cwa-outline-\[999999rem\] {
   outline-width: 999999rem !important;
+}
+.cwa-outline-1 {
+  outline-width: 1px !important;
+}
+.cwa-outline-2 {
+  outline-width: 2px !important;
 }
 .cwa-outline-offset-4 {
   outline-offset: 4px !important;

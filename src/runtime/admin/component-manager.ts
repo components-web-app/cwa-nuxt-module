@@ -98,7 +98,7 @@ export default class ComponentManager {
       consola.error(`Cannot select stack index: '${index}' is out of range`)
       return
     }
-    this.currentResourceStack.value.slice(index)
+    this.currentResourceStack.value.splice(0, index)
     this.showManager.value = true
   }
 }
