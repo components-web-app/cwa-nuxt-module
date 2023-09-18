@@ -16,7 +16,7 @@ const nextIndex = computed(() => (props.index - 1))
 
 <template>
   <div
-    class="resource-context-item cwa-border cwa-border-dashed cwa-px-2 cwa-py-1 cwa-cursor-pointer cwa-text-stone-400 cwa-transition-all
+    class="resource-context-item cwa-border cwa-border-dashed cwa-px-2 cwa-py-1 cwa-cursor-pointer cwa-text-gray-300 cwa-transition-all
     [&:not(:has(.resource-context-item:hover)):hover]:dark:cwa-bg-gray-900
     [&:not(:has(.resource-context-item:hover)):hover]:cwa-border-gray-200
     [&:not(:has(.resource-context-item:hover)):hover]:cwa-border-solid

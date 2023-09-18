@@ -18,7 +18,7 @@ import type { PopperOptions } from '../../../runtime/types'
 import { usePopper } from '#imports'
 
 const ops = {
-  background: 'cwa-bg-white/70 dark:cwa-bg-gray-900/70 dark:cwa-text-white cwa-backdrop-blur-md',
+  background: 'cwa-bg-white/80 dark:cwa-bg-gray-900/80 dark:cwa-text-white cwa-backdrop-blur-md',
   shadow: 'cwa-shadow-lg',
   rounded: '',
   ring: '',
