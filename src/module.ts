@@ -14,7 +14,12 @@ export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
   pagesDepth?: number,
   apiUrlBrowser?: string
-  apiUrl?: string
+  apiUrl?: string,
+  resources?: {
+    [type:string]: {
+      name?: string
+    }
+  }
 }
 
 function createDefaultCwaPages (
@@ -54,7 +59,15 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
   },
   defaults: {
-    storeName: 'cwa'
+    storeName: 'cwa',
+    resources: {
+      ComponentPosition: {
+        name: 'Position'
+      },
+      ComponentGroup: {
+        name: 'Group'
+      }
+    }
   },
   async setup (options: CwaModuleOptions, nuxt) {
     const { resolve } = createResolver(import.meta.url)

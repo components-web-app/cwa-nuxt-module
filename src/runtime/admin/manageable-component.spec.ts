@@ -46,7 +46,8 @@ vi.mock('../cwa', () => {
       admin: {
         eventBus: {
           on: vi.fn(),
-          off: vi.fn()
+          off: vi.fn(),
+          emit: vi.fn()
         },
         componentManager: {
           addToStack: vi.fn()
@@ -118,6 +119,7 @@ describe('ManageableComponent Class', () => {
 
       expect(instance.addClickEventListeners).toHaveBeenCalledTimes(1)
       expect($cwa.admin.eventBus.on).toHaveBeenCalledWith('componentMounted', listener)
+      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', instance.currentIri)
     })
   })
 
@@ -307,7 +309,27 @@ describe('ManageableComponent Class', () => {
       expect($cwa.admin.componentManager.addToStack).not.toHaveBeenCalled()
     })
 
-    test('should add to stack with name IF it was passed', () => {
+    test('should add to stack with computed displayName', () => {
+      const { instance, $cwa } = createManageableComponent()
+      const mockEvent = { target: 'mock' }
+      const mockName = 'some name'
+
+      vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
+      instance.currentIri = '/mock'
+
+      instance.clickListener(mockEvent)
+
+      expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
+        iri: instance.currentIri,
+        domElements: instance.domElements,
+        clickTarget: mockEvent.target,
+        displayName: mockName
+      })
+    })
+  })
+
+  describe.todo('displayName getter', () => {
+    test.todo('should add to stack with computed displayName', () => {
       const { instance, $cwa } = createManageableComponent()
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
@@ -322,22 +344,6 @@ describe('ManageableComponent Class', () => {
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
         displayName: mockName
-      })
-    })
-
-    test('should add to stack without name IF it was not passed', () => {
-      const { instance, $cwa } = createManageableComponent()
-      const mockEvent = { target: 'mock' }
-
-      instance.currentIri = '/mock'
-
-      instance.clickListener(mockEvent)
-
-      expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
-        iri: instance.currentIri,
-        domElements: instance.domElements,
-        clickTarget: mockEvent.target,
-        displayName: null
       })
     })
   })

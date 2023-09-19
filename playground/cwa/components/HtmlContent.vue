@@ -11,7 +11,7 @@ import { NuxtLink } from '#components'
 
 const props = defineProps<IriProp>()
 
-const resource = useCwaResource(props.iri, { manager: { options: { displayName: 'HtmlContent' } } }).getResource()
+const resource = useCwaResource(props.iri, { manager: { options: { displayName: 'Body Text' } } }).getResource()
 
 const htmlContainer = ref<null|HTMLElement>(null)
 const htmlContent = ref<string>(resource.value.data?.html || '<div></div>')
