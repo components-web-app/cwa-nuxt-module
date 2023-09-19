@@ -2,7 +2,7 @@
   "private": true,
   "name": "nuxt-cwa-module-playground",
   "devDependencies": {
-    "@nuxt/devtools": "^0.6.1",
+    "@nuxt/devtools": "^0.8.3",
     "@nuxtjs/tailwindcss": "^6.7.2",
     "@sidebase/nuxt-auth": "^0.4.3",
     "@vite-pwa/nuxt": "^0.0.9",
