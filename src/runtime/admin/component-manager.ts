@@ -101,4 +101,8 @@ export default class ComponentManager {
     this.currentResourceStack.value.splice(0, index)
     this.showManager.value = true
   }
+
+  public get managerShowing () {
+    return computed(() => this.showManager.value)
+  }
 }

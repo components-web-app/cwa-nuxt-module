@@ -4,8 +4,8 @@ import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 const current = $cwa.admin.componentManager.currentStackItem
-const spacer = ref(null)
-const managerHolder = ref(null)
+const spacer = ref<HTMLElement|null>(null)
+const managerHolder = ref<HTMLElement|null>(null)
 
 function clickHandler (e: MouseEvent) {
   completeStack(e)
@@ -27,7 +27,7 @@ onBeforeUnmount(() => {
 })
 
 const showSpacer = computed(() => {
-  return $cwa.admin.componentManager.showManager.value && current
+  return $cwa.admin.componentManager.managerShowing.value && current
 })
 
 watch([spacer, managerHolder], () => {
@@ -51,7 +51,7 @@ watch([spacer, managerHolder], () => {
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark cwa-w-full cwa-text-white" @click.stop>
+    <div v-if="$cwa.admin.componentManager.managerShowing.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark cwa-w-full cwa-text-white" @click.stop>
       <div v-if="current" ref="managerHolder" class="cwa-p-4">
         {{ current.displayName }}: {{ current.iri }}
       </div>
