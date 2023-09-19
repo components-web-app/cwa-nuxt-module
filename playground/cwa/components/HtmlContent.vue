@@ -4,8 +4,8 @@
 
 <script setup lang="ts">
 // Todo: work on the nuxt link replacement so external links are not clickable during editing - make into composable for dynamically  changing anchor links into components for internal routing and easier manipulation of disabling
-import { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { createApp, onMounted, ref } from 'vue'
+import { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource } from '#imports'
 import { NuxtLink } from '#components'
 

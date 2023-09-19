@@ -30,8 +30,8 @@
 
 <script setup lang="ts">
 import { Popover, PopoverGroup } from '@headlessui/vue'
-import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { computed } from 'vue'
+import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
