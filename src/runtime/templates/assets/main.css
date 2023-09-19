@@ -665,6 +665,9 @@ select {
 .cwa-relative {
   position: relative !important;
 }
+.cwa-bottom-0 {
+  bottom: 0px !important;
+}
 .cwa-left-0 {
   left: 0px !important;
 }
@@ -676,9 +679,6 @@ select {
 }
 .cwa-top-1\/2 {
   top: 50% !important;
-}
-.cwa-bottom-0 {
-  bottom: 0px !important;
 }
 .cwa-z-20 {
   z-index: 20 !important;
@@ -750,14 +750,8 @@ select {
 .cwa-h-full {
   height: 100% !important;
 }
-.cwa-h-auto {
-  height: auto !important;
-}
 .cwa-min-h-full {
   min-height: 100% !important;
-}
-.cwa-min-h-\[10px\] {
-  min-height: 10px !important;
 }
 .cwa-w-0 {
   width: 0px !important;
@@ -783,23 +777,8 @@ select {
 .cwa-w-full {
   width: 100% !important;
 }
-.cwa-min-w-\[150px\] {
-  min-width: 150px !important;
-}
 .cwa-min-w-\[100px\] {
   min-width: 100px !important;
-}
-.cwa-min-w-\[80px\] {
-  min-width: 80px !important;
-}
-.cwa-min-w-\[90px\] {
-  min-width: 90px !important;
-}
-.cwa-min-w-\[110px\] {
-  min-width: 110px !important;
-}
-.cwa-min-w-\[120px\] {
-  min-width: 120px !important;
 }
 .cwa-flex-shrink-0 {
   flex-shrink: 0 !important;
@@ -826,10 +805,6 @@ select {
 }
 .cwa-translate-y-1 {
   --tw-translate-y: 0.25rem !important;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
-}
-.-cwa-translate-y-full {
-  --tw-translate-y: -100% !important;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
 }
 .cwa-translate-y-full {
@@ -922,6 +897,9 @@ select {
 .cwa-border-transparent {
   border-color: transparent !important;
 }
+.cwa-bg-blue-600\/90 {
+  background-color: rgb(37 99 235 / 0.9) !important;
+}
 .cwa-bg-gray-200 {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(229 231 235 / var(--tw-bg-opacity)) !important;
@@ -933,9 +911,6 @@ select {
 .cwa-bg-indigo-600 {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(79 70 229 / var(--tw-bg-opacity)) !important;
-}
-.cwa-bg-light\/90 {
-  background-color: rgb(245 245 244 / 0.9) !important;
 }
 .cwa-bg-magenta {
   --tw-bg-opacity: 1 !important;
@@ -963,20 +938,6 @@ select {
 .cwa-bg-white\/70 {
   background-color: rgb(255 255 255 / 0.7) !important;
 }
-.cwa-bg-gray-900 {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(17 24 39 / var(--tw-bg-opacity)) !important;
-}
-.cwa-bg-indigo-600\/90 {
-  background-color: rgb(79 70 229 / 0.9) !important;
-}
-.cwa-bg-blue-600\/90 {
-  background-color: rgb(37 99 235 / 0.9) !important;
-}
-.cwa-bg-blue-600 {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(37 99 235 / var(--tw-bg-opacity)) !important;
-}
 .cwa-fill-blue-600 {
   fill: #2563eb !important;
 }
@@ -986,11 +947,11 @@ select {
 .cwa-stroke-orange {
   stroke: #FFAA00 !important;
 }
-.cwa-p-5 {
-  padding: 1.25rem !important;
-}
 .cwa-p-4 {
   padding: 1rem !important;
+}
+.cwa-p-5 {
+  padding: 1.25rem !important;
 }
 .cwa-px-1 {
   padding-left: 0.25rem !important;
@@ -1064,10 +1025,6 @@ select {
 .cwa-leading-6 {
   line-height: 1.5rem !important;
 }
-.cwa-text-dark {
-  --tw-text-opacity: 1 !important;
-  color: rgb(28 25 23 / var(--tw-text-opacity)) !important;
-}
 .cwa-text-gray-300 {
   --tw-text-opacity: 1 !important;
   color: rgb(209 213 219 / var(--tw-text-opacity)) !important;
@@ -1083,10 +1040,6 @@ select {
 .cwa-text-white {
   --tw-text-opacity: 1 !important;
   color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
-}
-.cwa-text-gray-200 {
-  --tw-text-opacity: 1 !important;
-  color: rgb(229 231 235 / var(--tw-text-opacity)) !important;
 }
 .cwa-opacity-0 {
   opacity: 0 !important;
@@ -1188,9 +1141,6 @@ select {
 .cwa-duration-300 {
   transition-duration: 300ms !important;
 }
-.cwa-duration-1000 {
-  transition-duration: 1000ms !important;
-}
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
 }
@@ -1222,10 +1172,6 @@ select {
 .placeholder\:cwa-text-neutral-400::placeholder {
   --tw-text-opacity: 1 !important;
   color: rgb(163 163 163 / var(--tw-text-opacity)) !important;
-}
-.hover\:cwa-bg-light:hover {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(245 245 244 / var(--tw-bg-opacity)) !important;
 }
 .hover\:cwa-bg-blue-600:hover {
   --tw-bg-opacity: 1 !important;

@@ -22,7 +22,7 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 export default class ComponentManager {
   private lastClickTarget: Ref<EventTarget|null> = ref(null)
   private currentResourceStack: Ref<ResourceStackItem[]> = ref([])
-  private readonly showManager: Ref<boolean> = ref(false)
+  public readonly showManager: Ref<boolean> = ref(false)
 
   constructor (private adminStoreDefinition: AdminStore) {
     this.listenEditModeChange()
@@ -100,9 +100,5 @@ export default class ComponentManager {
     }
     this.currentResourceStack.value.splice(0, index)
     this.showManager.value = true
-  }
-
-  public get managerShowing () {
-    return computed(() => this.showManager.value)
   }
 }

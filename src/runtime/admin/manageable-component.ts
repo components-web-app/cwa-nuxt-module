@@ -215,6 +215,9 @@ export default class ManageableComponent {
     if (!this.currentIri) {
       return
     }
+    if (evt.type === 'contextmenu') {
+      this.$cwa.admin.componentManager.showManager.value = false
+    }
 
     this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
