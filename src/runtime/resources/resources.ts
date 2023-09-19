@@ -186,7 +186,7 @@ export class Resources {
     return computed(() => this.getPageIriByFetchStatus(this.displayFetchStatus))
   }
 
-  public get page () {
+  private get page () {
     if (!this.pageIri.value) {
       return
     }

@@ -16,7 +16,7 @@ exports[`ProgressBar > snapshots > should match snapshot IF progress bar has per
     class="cwa-w-full cwa-h-0.5"
   >
     <div
-      class="cwa-bg-green cwa-h-0.5 cwa-transition-all cwa-duration-300"
+      class="cwa-bg-green-500 cwa-h-0.5 cwa-transition-all cwa-duration-300"
       style="width: 75%;"
     />
   </div>
@@ -40,7 +40,7 @@ exports[`ProgressBar > snapshots > should match snapshot IF progress bar is NOT 
     style="display: none;"
   >
     <div
-      class="cwa-bg-green cwa-h-0.5 cwa-transition-all cwa-duration-300"
+      class="cwa-bg-green-500 cwa-h-0.5 cwa-transition-all cwa-duration-300"
       style="width: 0%;"
     />
   </div>
@@ -63,7 +63,7 @@ exports[`ProgressBar > snapshots > should match snapshot IF progress bar is show
     class="cwa-w-full cwa-h-0.5"
   >
     <div
-      class="cwa-bg-green cwa-h-0.5 cwa-transition-all cwa-duration-300"
+      class="cwa-bg-green-500 cwa-h-0.5 cwa-transition-all cwa-duration-300"
       style="width: 0%;"
     />
   </div>

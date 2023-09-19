@@ -18,12 +18,7 @@ export default defineNuxtConfig({
   ],
   cwa: {
     apiUrl: API_URL,
-    apiUrlBrowser: API_URL_BROWSER,
-    resources: {
-      NavigationLink: {
-        name: 'Link'
-      }
-    }
+    apiUrlBrowser: API_URL_BROWSER
   },
   typescript: {
     tsConfig: {

@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { computed, ComputedRef, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
-import { useCwa } from '#imports'
-import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
-
-const $cwa = useCwa()
+import { computed, ComputedRef, onBeforeUnmount, onMounted, ref } from 'vue'
 const props = defineProps<{
-  iri: string
   domElements: ComputedRef<HTMLElement[]>
 }>()
 
-const windowSize = ref({ width: 0, height: 0 })
+const windowSize = ref({ width: null, height: null })
 
 const position = computed(() => {
   const clearCoords = {
@@ -62,36 +57,27 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateWindowSize)
 })
-
-const iri = toRef(props, 'iri')
-
-const borderColor = computed(() => {
-  if (!resource.value) {
-    return
-  }
-  const publishedState = getPublishedResourceState(resource.value)
-  if (publishedState !== undefined) {
-    return publishedState ? 'cwa-outline-green' : 'cwa-outline-orange'
-  }
-  return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
-})
-
-const resource = computed(() => {
-  return $cwa.resources.getResource(iri.value).value
-})
 </script>
 
 <template>
   <client-only>
-    <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-[7px] cwa-outline-[999999rem] cwa-rounded" :style="cssStyle">
-      <div :class="[borderColor]" class="cwa-animate-pulse cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
-    </div>
+    <div class="component-focus cwa-pointer-events-none cwa-absolute" :style="cssStyle" />
   </client-only>
 </template>
 
 <style>
-
 .component-focus {
-  outline-color: rgba(0,0,0,.4);
+  outline: 2px solid green;
+  outline-offset: 2px;
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    outline: 999999rem solid rgba(0,0,0,.45);
+    outline-offset: 4px;
+  }
 }
 </style>

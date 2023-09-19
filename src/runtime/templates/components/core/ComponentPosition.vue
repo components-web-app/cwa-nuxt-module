@@ -1,7 +1,6 @@
 <template>
-  <!--CWA_MANAGER_START_POSITION-->
   <ResourceLoader :iri="componentIri" component-prefix="CwaComponents" />
-  <!--CWA_MANAGER_END_POSITION-->
+  <!--CWA_MANAGER_END-->
 </template>
 
 <script setup lang="ts">

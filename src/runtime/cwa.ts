@@ -97,8 +97,4 @@ export default class Cwa {
     await this.auth.init()
     this.mercure.init()
   }
-
-  public get resourcesConfig () {
-    return this.options.resources
-  }
 }

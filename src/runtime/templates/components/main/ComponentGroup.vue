@@ -3,9 +3,8 @@
     <CwaUiSpinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
-    <!--CWA_MANAGER_START_GROUP-->
     <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
-    <!--CWA_MANAGER_END_GROUP-->
+    <!--CWA_MANAGER_END-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
     <CwaUiHotSpot screen-reader-action="Add component position" />
@@ -66,23 +65,6 @@ const showLoader = computed(() => {
 const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
-
-// perhaps should use onUpdated hook instead... and generalise this
-// todo: test
-watch(() => [componentPositions.value, signedInAndResourceExists.value], (
-  [positions, showPlaceholder], [oldPositions, oldShowPlaceholder]) => {
-  if (positions?.length > 0 && positions?.length === oldPositions?.length) {
-    return
-  }
-  const iri = resource.value?.data?.['@id']
-  if (!!iri && showPlaceholder !== oldShowPlaceholder && resource.value && $manager) {
-    $manager.resourceWatchHandler(resource.value)
-  }
-},
-{
-  flush: 'post'
-}
-)
 
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
