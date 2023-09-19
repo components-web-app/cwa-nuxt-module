@@ -35,5 +35,5 @@ const isNavEnabled = computed({
   }
 })
 
-const isLoading = computed(() => $cwa.fetchingTotal.value > 0)
+const isLoading = computed(() => false)
 </script>

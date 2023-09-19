@@ -69,13 +69,39 @@ describe('Component Manager', () => {
   })
 
   describe('currentStackItem getter', () => {
-    test('should return first item from stack', () => {
+    test.each([
+      {
+        stack: [{ test: true }, null, null],
+        showManager: true,
+        lastClickTarget: undefined,
+        toEqual: { test: true }
+      },
+      {
+        stack: [{ test: true }, null, null],
+        showManager: false,
+        lastClickTarget: undefined,
+        toEqual: null
+      },
+      {
+        stack: [{ test: true }, null, null],
+        showManager: true,
+        lastClickTarget: {},
+        toEqual: null
+      },
+      {
+        stack: [],
+        showManager: true,
+        lastClickTarget: undefined,
+        toEqual: null
+      }
+    ])('should return first item from stack', ({ stack, showManager, lastClickTarget, toEqual }) => {
       const { manager } = createComponentManager()
-      const mockItem = { test: true }
 
-      manager.currentResourceStack = ref([mockItem, null, null])
+      manager.showManager.value = showManager
+      manager.lastClickTarget.value = lastClickTarget
+      manager.currentResourceStack = ref(stack)
 
-      expect(manager.currentStackItem.value).toEqual(mockItem)
+      expect(manager.currentStackItem.value).toEqual(toEqual)
     })
   })
 
@@ -180,26 +206,28 @@ describe('Component Manager', () => {
 
     describe('listenEditModeChange', () => {
       test.each([
-        { initialEditingState: true, newEditingState: false, timesToCall: 1 },
-        { initialEditingState: false, newEditingState: true, timesToCall: 0 }
-      ])('When edit mode is changed from $initialEditingState to $newEditingState, reset spy should be called $timesToCall times', async ({
+        { initialEditingState: true, newEditingState: false, showManager: false },
+        { initialEditingState: false, newEditingState: true, showManager: true }
+      ])('When edit mode is changed from $initialEditingState to $newEditingState while manager is true, showManager should be $showManager', async ({
         initialEditingState,
         newEditingState,
-        timesToCall
+        showManager
       }) => {
         const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => {})
         const mockStore = { state: reactive({ isEditing: initialEditingState }) }
 
         const { manager } = createComponentManager(mockStore)
+        manager.showManager.value = true
         vi.clearAllMocks()
 
-        const resetStackSpy = vi.spyOn(manager, 'resetStack')
+        // const resetStackSpy = vi.spyOn(manager, 'resetStack')
         manager.listenEditModeChange()
         expect(watchSpy).toHaveBeenCalledOnce()
 
         mockStore.state.isEditing = newEditingState
         await nextTick()
-        expect(resetStackSpy).toHaveBeenCalledTimes(timesToCall)
+        expect(manager.showManager.value).toEqual(showManager)
+        // expect(resetStackSpy).toHaveBeenCalledTimes(timesToCall)
       })
     })
   })

@@ -98,10 +98,6 @@ export default class Cwa {
     this.mercure.init()
   }
 
-  public get fetchingTotal () {
-    return this.cwaFetch.fetchingTotal
-  }
-
   public get resourcesConfig () {
     return this.options.resources
   }

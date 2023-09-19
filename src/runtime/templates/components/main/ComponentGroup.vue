@@ -68,6 +68,7 @@ const componentPositions = computed(() => {
 })
 
 // perhaps should use onUpdated hook instead... and generalise this
+// todo: test
 watch(() => [componentPositions.value, signedInAndResourceExists.value], (
   [positions, showPlaceholder], [oldPositions, oldShowPlaceholder]) => {
   if (positions?.length > 0 && positions?.length === oldPositions?.length) {

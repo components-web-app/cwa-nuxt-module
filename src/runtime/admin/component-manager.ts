@@ -1,5 +1,5 @@
 import { computed, ref, Ref, watch } from 'vue'
-import consola from 'consola'
+import { consola as logger } from 'consola'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
@@ -95,7 +95,7 @@ export default class ComponentManager {
       return
     }
     if (index < 0 || index > currentLength - 1) {
-      consola.error(`Cannot select stack index: '${index}' is out of range`)
+      logger.error(`Cannot select stack index: '${index}' is out of range`)
       return
     }
     this.currentResourceStack.value.splice(0, index)
