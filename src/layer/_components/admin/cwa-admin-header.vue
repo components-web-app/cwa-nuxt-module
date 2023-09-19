@@ -1,12 +1,12 @@
 <template>
   <div class="cwa-h-16" />
-  <div class="cwa-dark cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-50 cwa-w-full cwa-h-16 cwa-top-0">
+  <div class="cwa-dark cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-50 cwa-w-full cwa-h-16 cwa-top-0" @click.stop>
     <div class="cwa-flex cwa-justify-between cwa-items-center">
-      <div v-if="!$cwa.admin.isEditing" class="absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center">
+      <div v-if="!$cwa.admin.isEditing" class="absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-uppercase cwa-text-gray-300">
         {{ $cwa.resources?.page?.data?.reference }}
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
-        <button class="cwa-text-dark cwa-bg-light/90 hover:cwa-bg-light cwa-py-1 cwa-px-4" @click="$cwa.admin.toggleEdit()">
+        <button class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-py-1 cwa-px-4 cwa-min-w-[100px]" @click="$cwa.admin.toggleEdit()">
           {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
         </button>
         <CwaUiFormToggle v-if="$cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />

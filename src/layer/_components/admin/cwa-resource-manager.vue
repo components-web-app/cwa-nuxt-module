@@ -26,8 +26,18 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="$cwa.admin.componentManager.showManager.value">
-    {{ current }}
-    <pre>{{ $cwa.admin.componentManager.resourceStack }}</pre>
-  </div>
+  <Transition
+    enter-from-class="cwa-transform cwa-translate-y-full"
+    enter-active-class="cwa-duration-200 cwa-ease-out"
+    enter-to-class="cwa-translate-y-0"
+    leave-from-class="cwa-translate-y-0"
+    leave-active-class="cwa-duration-200 cwa-ease-in"
+    leave-to-class="cwa-transform cwa-translate-y-full"
+  >
+    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark cwa-w-full cwa-text-white" @click.stop>
+      <div v-if="current" class="cwa-p-4">
+        {{ current.displayName }}: {{ current.iri }}
+      </div>
+    </div>
+  </Transition>
 </template>

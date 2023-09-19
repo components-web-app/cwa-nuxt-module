@@ -22,7 +22,6 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 export default class ComponentManager {
   private lastClickTarget: Ref<EventTarget|null> = ref(null)
   private currentResourceStack: Ref<ResourceStackItem[]> = ref([])
-  private canvas: HTMLCanvasElement|undefined
   private readonly showManager: Ref<boolean> = ref(false)
 
   constructor (private adminStoreDefinition: AdminStore) {
@@ -44,13 +43,13 @@ export default class ComponentManager {
   public resetStack () {
     this.lastClickTarget.value = null
     this.currentResourceStack.value = []
-    this.showManager.value = false
   }
 
   private listenEditModeChange () {
-    watch(() => this.isEditing, (status) => {
-      if (!status) {
-        this.resetStack()
+    watch(() => this.isEditing, (isEditing) => {
+      if (!isEditing) {
+        // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
+        this.showManager.value = false
       }
     })
   }
@@ -64,10 +63,11 @@ export default class ComponentManager {
 
     const isResourceClick = ('iri' in resourceStackItem)
 
-    if (
-      !this.isEditing ||
-      (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri) && this.lastClickTarget.value)
-    ) {
+    if (!this.isEditing) {
+      this.resetStack()
+      return
+    }
+    if (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri) && this.lastClickTarget.value) {
       return
     }
 

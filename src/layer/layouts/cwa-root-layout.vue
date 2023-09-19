@@ -6,10 +6,8 @@
     <slot />
   </NuxtLayout>
   <ClientOnly>
-    <template v-if="showAdmin">
-      <cwa-resource-manager />
-      <cwa-resource-manager-context-menu v-model="isOpen" :virtual-element="virtualElement" />
-    </template>
+    <cwa-resource-manager />
+    <cwa-resource-manager-context-menu v-if="showAdmin" v-model="isOpen" :virtual-element="virtualElement" />
   </clientonly>
 </template>
 
