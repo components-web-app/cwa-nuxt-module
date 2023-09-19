@@ -756,6 +756,9 @@ select {
 .cwa-min-h-full {
   min-height: 100% !important;
 }
+.cwa-min-h-\[10px\] {
+  min-height: 10px !important;
+}
 .cwa-w-0 {
   width: 0px !important;
 }
@@ -969,6 +972,10 @@ select {
 }
 .cwa-bg-blue-600\/90 {
   background-color: rgb(37 99 235 / 0.9) !important;
+}
+.cwa-bg-blue-600 {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(37 99 235 / var(--tw-bg-opacity)) !important;
 }
 .cwa-fill-blue-600 {
   fill: #2563eb !important;
