@@ -51,6 +51,11 @@ export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined
   }
 }
 
+export function getPublishedResourceState (resource: CwaResource): undefined|boolean {
+  const publishableMeta = resource.data?._metadata.publishable
+  return publishableMeta?.published
+}
+
 export function getPublishedResourceIri (resource: CwaResource): string|null {
   const publishableMetadata = resource._metadata?.publishable
   const resourceIri = resource['@id']

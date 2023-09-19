@@ -13,6 +13,7 @@ import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '
 import Cwa from '../cwa'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import ComponentFocus from '#cwa/layer/_components/admin/component-focus.vue'
+import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export interface ManageableComponentOptions {
   displayName?: string
@@ -46,6 +47,7 @@ export default class ManageableComponent {
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
+    this.$cwa.admin.eventBus.emit('componentMounted', iri)
   }
 
   public clear () {
@@ -87,6 +89,7 @@ export default class ManageableComponent {
     }
 
     this.focusComponent = createApp(ComponentFocus, {
+      iri: this.currentIri,
       domElements: computed(() => stackItem.domElements)
     })
     this.focusWrapper = document.createElement('div')
@@ -174,8 +177,15 @@ export default class ManageableComponent {
       return [currentEl]
     }
 
+    let endCommentTag: undefined|string
+
     do {
-      if (currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === 'CWA_MANAGER_END') {
+      if (!endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue.startsWith('CWA_MANAGER_START_')) {
+        const startTag = currentEl.nodeValue
+        const startTagPostfix = startTag.replace(/^(CWA_MANAGER_START_)/, '')
+        endCommentTag = `CWA_MANAGER_END_${startTagPostfix}`
+      }
+      if (endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === endCommentTag) {
         break
       }
       currentEl.nodeType !== Node.TEXT_NODE && allSiblings.push(currentEl)
@@ -188,26 +198,48 @@ export default class ManageableComponent {
     this.domElements.value = this.getAllEls()
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
+      el.addEventListener('contextmenu', this.clickListener, false)
     }
   }
 
   private removeClickEventListeners () {
     for (const el of this.domElements.value) {
       el.removeEventListener('click', this.clickListener)
+      el.removeEventListener('contextmenu', this.clickListener)
     }
   }
 
   // This will be called by the click event listener in context of this, and can be removed as well.
   // if we define with a name and call that, the `this` context will be the clicked dom element
-  private clickListener (evt: Event) {
+  private clickListener (evt: MouseEvent) {
     if (!this.currentIri) {
       return
     }
+    if (evt.type === 'contextmenu') {
+      this.$cwa.admin.componentManager.showManager.value = false
+    }
+
     this.$cwa.admin.componentManager.addToStack({
       iri: this.currentIri,
       domElements: this.domElements,
       clickTarget: evt.target,
-      displayName: this.options?.displayName || null
+      displayName: this.displayName
     })
+  }
+
+  private get displayName () {
+    const localDisplayName = this.options?.displayName
+    if (localDisplayName) {
+      return localDisplayName
+    }
+    const currentResource: CwaCurrentResourceInterface|undefined = this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+    if (!currentResource) {
+      return null
+    }
+    const type = currentResource.data?.['@type']
+    if (!type) {
+      return null
+    }
+    return this.$cwa.resourcesConfig[type]?.name || type
   }
 }

@@ -383,9 +383,9 @@ describe('ComponentGroup', () => {
       })
       const wrapper = createWrapper()
 
-      expect(vue.watch.mock.calls[0][0].value).toEqual(wrapper.vm.resource)
-      expect(vue.watch.mock.calls[0][1]).toEqual(resourceWatchHandler)
-      expect(vue.watch.mock.calls[0][2]).toEqual({
+      expect(vue.watch.mock.calls[1][0].value).toEqual(wrapper.vm.resource)
+      expect(vue.watch.mock.calls[1][1]).toEqual(resourceWatchHandler)
+      expect(vue.watch.mock.calls[1][2]).toEqual({
         immediate: true,
         flush: 'post'
       })
