@@ -1,6 +1,6 @@
 <template>
   <div v-if="$cwa.resources.layoutIri.value" class="relative">
-    <CwaUiProgressBar :show="showPageLoadBar" :percent="percent" class="page-progress-bar fixed left-0 top-0 z-50" />
+    <CwaUiProgressBar :show="$cwa.resources.pageLoadProgress.value.percent < 100" :percent="$cwa.resources.pageLoadProgress.value.percent || 3" class="page-progress-bar fixed left-0 top-0 z-50" />
     <CwaUiSpinner :show="$cwa.resources.isLoading.value === true" class="absolute top-4 right-4 z-50" />
     <header>
       <Popover class="relative bg-white">
@@ -31,13 +31,9 @@
 <script setup lang="ts">
 import { Popover, PopoverGroup } from '@headlessui/vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
-import { computed } from 'vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
-
-const percent = computed(() => $cwa.resources.pageLoadProgress.value.percent || 3)
-const showPageLoadBar = computed(() => percent.value < 100)
 
 async function signOut () {
   await $cwa.auth.signOut()

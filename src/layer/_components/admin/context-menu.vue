@@ -2,9 +2,7 @@
   <div v-if="isOpen" ref="container" class="context-menu cwa-z-20">
     <Transition appear v-bind="ops.transition">
       <div :class="[ops.base, ops.ring, ops.rounded, ops.shadow, ops.background]">
-        <div :class="[ops.backgroundInner]">
-          <slot />
-        </div>
+        <slot />
       </div>
     </Transition>
   </div>
@@ -20,12 +18,11 @@ import type { PopperOptions } from '../../../runtime/types'
 import { usePopper } from '#imports'
 
 const ops = {
-  background: 'cwa-bg-white/40 dark:cwa-bg-gray-900/40 dark:cwa-text-white cwa-backdrop-blur-[3px] cwa-rounded-md cwa-shadow',
-  backgroundInner: 'cwa-bg-white/70 dark:cwa-bg-gray-900/70 cwa-backdrop-blur-lg cwa-rounded-md',
+  background: 'cwa-bg-white dark:cwa-bg-gray-900',
   shadow: 'cwa-shadow-lg',
   rounded: '',
-  ring: '',
-  base: 'cwa-overflow-hidden focus:cwa-outline-none cwa-pt-2 cwa-px-1 cwa-pb-1',
+  ring: 'cwa-ring-1 cwa-ring-gray-200 dark:cwa-ring-gray-800',
+  base: 'cwa-overflow-hidden focus:cwa-outline-none',
   transition: {
     enterActiveClass: 'cwa-transition cwa-ease-out cwa-duration-200',
     enterFromClass: 'cwa-opacity-0 cwa-translate-y-1',

@@ -5,12 +5,11 @@ exports[`ComponentPosition > snapshots > should match snapshot with ResourceLoad
   data-v-app=""
 >
   
-  <!--CWA_MANAGER_START_POSITION-->
   <resourceloader-stub
     componentprefix="CwaComponents"
     iri="test"
   />
-  <!--CWA_MANAGER_END_POSITION-->
+  <!--CWA_MANAGER_END-->
   
 </div>
 `;

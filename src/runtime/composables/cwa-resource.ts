@@ -18,11 +18,9 @@ export const useCwaResource = (iri: string, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
   const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri, ops?.manager?.options) : undefined
 
-  if (!manager) {
-    onMounted(() => {
-      $cwa.admin.eventBus.emit('componentMounted', iri)
-    })
-  }
+  onMounted(() => {
+    $cwa.admin.eventBus.emit('componentMounted', iri)
+  })
 
   return {
     manager,
