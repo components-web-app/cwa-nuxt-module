@@ -59,5 +59,5 @@ function openMenu () {
   isOpen.value = true
 }
 
-onClickOutside(pathSelector, event => isOpen.value = false)
+onClickOutside(pathSelector, () => { isOpen.value = false })
 </script>
