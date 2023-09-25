@@ -913,6 +913,10 @@ select {
 .cwa-bg-blue-600\/90 {
   background-color: rgb(37 99 235 / 0.9) !important;
 }
+.cwa-bg-dark {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(28 25 23 / var(--tw-bg-opacity)) !important;
+}
 .cwa-bg-gray-200 {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(229 231 235 / var(--tw-bg-opacity)) !important;
@@ -950,10 +954,6 @@ select {
 }
 .cwa-bg-white\/70 {
   background-color: rgb(255 255 255 / 0.7) !important;
-}
-.cwa-bg-dark {
-  --tw-bg-opacity: 1 !important;
-  background-color: rgb(28 25 23 / var(--tw-bg-opacity)) !important;
 }
 .cwa-fill-blue-600 {
   fill: #2563eb !important;
@@ -1169,10 +1169,10 @@ select {
   color: rgb(245 245 244 / var(--tw-text-opacity));
 }
 .cwa-dark-blur {
-  background-color: rgb(28 25 23 / .85);
+  background-color: rgb(28 25 23 / 0.9);
   --tw-text-opacity: 1;
   color: rgb(245 245 244 / var(--tw-text-opacity));
-  --tw-backdrop-blur: blur(12px);
+  --tw-backdrop-blur: blur(4px);
   -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
           backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
 }

@@ -51,7 +51,7 @@ watch([spacer, managerHolder], () => {
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark cwa-w-full cwa-text-white" @click.stop>
+    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop>
       <div v-if="current" ref="managerHolder" class="cwa-p-4">
         {{ current.displayName }}: {{ current.iri }}
       </div>

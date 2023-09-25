@@ -45,9 +45,6 @@ module.exports = {
       },
       backdropBlur: {
         xs: '3px'
-      },
-      opacity: {
-        85: '.85'
       }
     }
   },
