@@ -2,7 +2,7 @@ import { Config } from 'tailwindcss'
 import colors from 'tailwindcss/colors'
 
 module.exports = {
-  content: ['src/**/*.vue'],
+  content: ['src/**/*.vue', 'src/**/*.ts'],
   theme: {
     colors: {
       stone: {
@@ -45,6 +45,9 @@ module.exports = {
       },
       backdropBlur: {
         xs: '3px'
+      },
+      transitionProperty: {
+        'opacity-transform': 'opacity, transform'
       }
     }
   },

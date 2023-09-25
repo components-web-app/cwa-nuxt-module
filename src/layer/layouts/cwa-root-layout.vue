@@ -71,6 +71,6 @@ function onContextMenu (e: PointerEvent) {
     return
   }
   e.preventDefault()
-  openContext(pos)
+  $cwa.admin.isEditing && openContext(pos)
 }
 </script>

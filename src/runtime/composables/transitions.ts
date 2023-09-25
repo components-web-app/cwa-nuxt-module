@@ -12,12 +12,12 @@ interface Transitions {
 export function useTransitions (): Transitions {
   return {
     context: {
-      enterActiveClass: 'cwa-transition cwa-ease-out cwa-duration-200',
-      enterFromClass: 'cwa-opacity-0 cwa-translate-y-1',
-      enterToClass: 'cwa-opacity-100 cwa-translate-y-0',
+      enterActiveClass: 'cwa-transform-gpu cwa-transition-opacity-transform cwa-ease-out cwa-duration-300',
+      enterFromClass: 'cwa-opacity-0 cwa-translate-y-0 cwa-scale-105',
+      enterToClass: 'cwa-opacity-100 cwa-translate-y-0 cwa-scale-100',
       leaveActiveClass: 'cwa-duration-0',
       leaveFromClass: 'cwa-opacity-100 cwa-translate-y-0',
-      leaveToClass: 'cwa-opacity-0 cwa-translate-y-1'
+      leaveToClass: 'cwa-opacity-0 cwa-translate-y-0'
     }
   }
 }

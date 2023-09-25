@@ -7,10 +7,10 @@
     >
       {{ stackItem.displayName }}
     </div>
-    <Transition appear v-bind="transitions.context">
-      <div v-if="isOpen" class="cwa-absolute cwa-top-0 cwa-left-1/2 -cwa-translate-x-1/2 cwa-w-full cwa-box-content" :style="{ marginTop: marginTop, paddingLeft: paddingX, paddingRight: paddingX }">
-        <div class="cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-bg-dark">
-          <resource-context-item :index="stackSize - 1" @click="index => selectResource(index)" />
+    <Transition v-bind="transitions.context">
+      <div v-if="isOpen" class="cwa-absolute cwa-top-0 cwa-left-1/2 -cwa-translate-x-1/2 cwa-min-w-full cwa-box-content cwa-inline-block" :style="{ marginTop: marginTop }">
+        <div class="cwa-relative cwa-bg-dark cwa-inline-block">
+          <resource-context-item :index="stackSize - 1" :root-width="selectorWidth" @click="index => selectResource(index)" />
         </div>
       </div>
     </Transition>
@@ -39,11 +39,12 @@ const isEnabled = computed(() => {
 const marginTop = computed(() => {
   return spacingStackSize.value ? `calc(0px - ${spacingStackSize.value}px - ${spacingStackSize.value * 0.25}rem)` : 0
 })
-const paddingX = computed(() => {
-  return `calc(${spacingStackSize.value * 0.5}rem + ${spacingStackSize.value}px)` // spacingStackSize.value ? `calc(${stackSize.value * 0.5}rem - ${spacingStackSize.value}px)` : 0
-})
 const stackItem = computed(() => {
   return $cwa.admin.componentManager.resourceStack.value[0]
+})
+const selectorWidth = computed(() => {
+  // reactive to display name changing
+  return stackItem.value?.displayName && pathSelector.value ? pathSelector.value.clientWidth : undefined
 })
 
 function selectResource (index: number) {
