@@ -4,7 +4,7 @@
     <div class="cwa-flex cwa-justify-between cwa-items-center">
       <div class="absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300">
         <span v-if="!$cwa.admin.isEditing">{{ $cwa.resources?.page?.data?.reference }}</span>
-        <path-selector v-else />
+        <path-selector v-else-if="$cwa.admin.componentManager.showManager.value" />
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
         <button class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-py-1 cwa-px-4 cwa-min-w-[100px]" @click="$cwa.admin.toggleEdit()">
