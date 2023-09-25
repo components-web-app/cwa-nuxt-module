@@ -24,7 +24,7 @@ const isOpen = computed({
   }
 })
 
-function selectResource (index) {
+function selectResource (index: number) {
   $cwa.admin.componentManager.selectStackIndex(index)
   isOpen.value = false
 }

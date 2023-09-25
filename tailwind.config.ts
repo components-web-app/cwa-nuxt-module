@@ -42,6 +42,12 @@ module.exports = {
         dark: colors.stone['900'],
         light: colors.stone['100'],
         medium: colors.stone['400']
+      },
+      backdropBlur: {
+        xs: '3px'
+      },
+      opacity: {
+        85: '.85'
       }
     }
   },

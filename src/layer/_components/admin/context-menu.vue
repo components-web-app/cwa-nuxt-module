@@ -1,6 +1,6 @@
 <template>
   <div v-if="isOpen" ref="container" class="context-menu cwa-z-20">
-    <Transition appear v-bind="ops.transition">
+    <Transition appear v-bind="transitions.context">
       <div :class="[ops.base, ops.ring, ops.rounded, ops.shadow, ops.background]">
         <div :class="[ops.backgroundInner]">
           <slot />
@@ -18,22 +18,17 @@ import type { VirtualElement } from '@popperjs/core'
 import { defu } from 'defu'
 import type { PopperOptions } from '../../../runtime/types'
 import { usePopper } from '#imports'
+import { useTransitions } from '#cwa/runtime/composables/transitions'
+
+const transitions = useTransitions()
 
 const ops = {
-  background: 'cwa-bg-white/40 dark:cwa-bg-gray-900/40 dark:cwa-text-white cwa-backdrop-blur-[3px] cwa-rounded-md cwa-shadow',
+  background: 'cwa-bg-white/40 dark:cwa-bg-dark/40 dark:cwa-text-light cwa-backdrop-blur-xs cwa-rounded-md cwa-shadow',
   backgroundInner: 'cwa-bg-white/70 dark:cwa-bg-gray-900/70 cwa-backdrop-blur-lg cwa-rounded-md',
   shadow: 'cwa-shadow-lg',
   rounded: '',
   ring: '',
   base: 'cwa-overflow-hidden focus:cwa-outline-none cwa-pt-2 cwa-px-1 cwa-pb-1',
-  transition: {
-    enterActiveClass: 'cwa-transition cwa-ease-out cwa-duration-200',
-    enterFromClass: 'cwa-opacity-0 cwa-translate-y-1',
-    enterToClass: 'cwa-opacity-100 cwa-translate-y-0',
-    leaveActiveClass: 'cwa-transition cwa-ease-in cwa-duration-150',
-    leaveFromClass: 'cwa-opacity-100 cwa-translate-y-0',
-    leaveToClass: 'cwa-opacity-0 cwa-translate-y-1'
-  },
   popper: {
     placement: 'bottom-start',
     scroll: false
