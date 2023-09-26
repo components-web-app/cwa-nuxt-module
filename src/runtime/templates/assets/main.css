@@ -1265,6 +1265,10 @@ select {
     background-color: rgb(17 24 39 / 0.7) !important;
   }
 
+  .dark\:cwa-bg-dark\/70 {
+    background-color: rgb(28 25 23 / 0.7) !important;
+  }
+
   .dark\:cwa-text-light {
     --tw-text-opacity: 1 !important;
     color: rgb(245 245 244 / var(--tw-text-opacity)) !important;
@@ -1327,5 +1331,15 @@ select {
   .\[\&\:not\(\:has\(\.resource-context-item\:hover\)\)\:hover\]\:dark\:cwa-bg-gray-900:not(:has(.resource-context-item:hover)):hover {
     --tw-bg-opacity: 1 !important;
     background-color: rgb(17 24 39 / var(--tw-bg-opacity)) !important;
+  }
+
+  .\[\&\:not\(\:has\(\.resource-context-item\:hover\)\)\:hover\]\:dark\:cwa-bg-white:not(:has(.resource-context-item:hover)):hover {
+    --tw-bg-opacity: 1 !important;
+    background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
+  }
+
+  .\[\&\:not\(\:has\(\.resource-context-item\:hover\)\)\:hover\]\:dark\:cwa-bg-dark:not(:has(.resource-context-item:hover)):hover {
+    --tw-bg-opacity: 1 !important;
+    background-color: rgb(28 25 23 / var(--tw-bg-opacity)) !important;
   }
 }
