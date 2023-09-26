@@ -837,6 +837,11 @@ select {
   --tw-scale-y: 1.05 !important;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
 }
+.cwa-scale-110 {
+  --tw-scale-x: 1.1 !important;
+  --tw-scale-y: 1.1 !important;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
+}
 .cwa-scale-x-100 {
   --tw-scale-x: 1 !important;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
@@ -1187,6 +1192,12 @@ select {
 }
 .cwa-duration-300 {
   transition-duration: 300ms !important;
+}
+.cwa-duration-1000 {
+  transition-duration: 1000ms !important;
+}
+.cwa-duration-500 {
+  transition-duration: 500ms !important;
 }
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;

@@ -5,10 +5,10 @@
       :class="[isEnabled ? 'hover:cwa-bg-gray-900 cwa-cursor-pointer' : '']"
       @click="openMenu"
     >
-      {{ stackItem.displayName }}
+      <span :class="{ 'cwa-opacity-0 cwa-duration-200': isOpen }">{{ stackItem.displayName }}</span>
     </div>
     <Transition v-bind="transitions.context">
-      <div v-if="isOpen" class="cwa-absolute cwa-top-0 cwa-left-1/2 -cwa-translate-x-1/2 cwa-min-w-full cwa-box-content cwa-inline-block" :style="{ marginTop: marginTop }">
+      <div v-if="isOpen" class="cwa-absolute cwa-top-0 cwa-left-1/2 -cwa-translate-x-1/2 cwa-min-w-full cwa-box-content cwa-inline-block" :style="{ marginTop: marginTop, transformOrigin: tOrig }">
         <div class="cwa-relative cwa-bg-dark cwa-inline-block">
           <resource-context-item :index="stackSize - 1" :root-width="selectorWidth" @click="index => selectResource(index)" />
         </div>
@@ -27,11 +27,18 @@ import { useTransitions } from '#cwa/runtime/composables/transitions'
 const $cwa = useCwa()
 const transitions = useTransitions()
 
-const stackSize = computed(() => $cwa.admin.componentManager.resourceStack.value.length)
-const spacingStackSize = computed(() => stackSize.value - 1)
-
 const isOpen = ref(false)
 const pathSelector = ref(null)
+
+const stackSize = computed(() => $cwa.admin.componentManager.resourceStack.value.length)
+const spacingStackSize = computed(() => stackSize.value - 1)
+const tOrig = computed(() => {
+  if (!pathSelector.value) {
+    return
+  }
+  const buttonOffset = Math.round(pathSelector.value.offsetHeight / 2)
+  return `50% calc(${buttonOffset}px + ${stackSize.value}px + ${spacingStackSize.value * 0.25}rem)`
+})
 
 const isEnabled = computed(() => {
   return stackSize.value > 1
