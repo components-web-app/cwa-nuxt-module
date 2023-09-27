@@ -21,6 +21,8 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   }
 
   if (to.meta.cwa === false) {
+    // todo: test - need to clear the last fetched path so will re-fetch if we are logging in and visit it again
+    nuxtApp.$cwa.clearPrimaryFetch()
     return
   }
 

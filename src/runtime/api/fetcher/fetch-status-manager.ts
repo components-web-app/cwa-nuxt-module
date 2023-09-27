@@ -225,6 +225,11 @@ export default class FetchStatusManager {
     return this.fetcherStore.abortFetch({ token })
   }
 
+  // todo: test
+  public clearPrimaryFetch () {
+    this.fetcherStore.primaryFetch.successToken = undefined
+  }
+
   public get primaryFetchPath (): string|undefined {
     return this.fetcherStore.primaryFetchPath
   }

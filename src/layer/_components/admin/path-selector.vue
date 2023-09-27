@@ -2,7 +2,7 @@
   <div v-if="stackItem && stackSize" ref="pathSelector">
     <div
       class="cwa-py-2 cwa-px-4 cwa-bg-neutral-800 cwa-border cwa-border-dashed cwa-text-white"
-      :class="[isEnabled ? 'hover:cwa-bg-gray-900 cwa-cursor-pointer' : '']"
+      :class="[isEnabled ? 'hover:cwa-bg-dark cwa-cursor-pointer' : '']"
       @click="openMenu"
     >
       <span :class="{ 'cwa-opacity-0 cwa-duration-200': isOpen }">{{ stackItem.displayName }}</span>

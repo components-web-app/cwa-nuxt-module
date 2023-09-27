@@ -832,26 +832,9 @@ select {
   --tw-scale-y: 1 !important;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
 }
-.cwa-scale-105 {
-  --tw-scale-x: 1.05 !important;
-  --tw-scale-y: 1.05 !important;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
-}
 .cwa-scale-110 {
   --tw-scale-x: 1.1 !important;
   --tw-scale-y: 1.1 !important;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
-}
-.cwa-scale-x-100 {
-  --tw-scale-x: 1 !important;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
-}
-.cwa-scale-x-110 {
-  --tw-scale-x: 1.1 !important;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
-}
-.cwa-scale-x-105 {
-  --tw-scale-x: 1.05 !important;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important;
 }
 .cwa-transform {
@@ -977,6 +960,10 @@ select {
 .cwa-bg-neutral-900 {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(23 23 23 / var(--tw-bg-opacity)) !important;
+}
+.cwa-bg-red-500 {
+  --tw-bg-opacity: 1 !important;
+  background-color: rgb(239 68 68 / var(--tw-bg-opacity)) !important;
 }
 .cwa-bg-white {
   --tw-bg-opacity: 1 !important;
@@ -1193,12 +1180,6 @@ select {
 .cwa-duration-300 {
   transition-duration: 300ms !important;
 }
-.cwa-duration-1000 {
-  transition-duration: 1000ms !important;
-}
-.cwa-duration-500 {
-  transition-duration: 500ms !important;
-}
 .cwa-ease-in {
   transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
 }
@@ -1246,9 +1227,9 @@ select {
   --tw-bg-opacity: 1 !important;
   background-color: rgb(37 99 235 / var(--tw-bg-opacity)) !important;
 }
-.hover\:cwa-bg-gray-900:hover {
+.hover\:cwa-bg-dark:hover {
   --tw-bg-opacity: 1 !important;
-  background-color: rgb(17 24 39 / var(--tw-bg-opacity)) !important;
+  background-color: rgb(28 25 23 / var(--tw-bg-opacity)) !important;
 }
 .focus\:cwa-outline-none:focus {
   outline: 2px solid transparent !important;
@@ -1270,10 +1251,6 @@ select {
 
   .dark\:cwa-bg-dark\/40 {
     background-color: rgb(28 25 23 / 0.4) !important;
-  }
-
-  .dark\:cwa-bg-gray-900\/70 {
-    background-color: rgb(17 24 39 / 0.7) !important;
   }
 
   .dark\:cwa-bg-dark\/70 {
@@ -1338,16 +1315,6 @@ select {
   color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
 }
 @media (prefers-color-scheme: dark) {
-
-  .\[\&\:not\(\:has\(\.resource-context-item\:hover\)\)\:hover\]\:dark\:cwa-bg-gray-900:not(:has(.resource-context-item:hover)):hover {
-    --tw-bg-opacity: 1 !important;
-    background-color: rgb(17 24 39 / var(--tw-bg-opacity)) !important;
-  }
-
-  .\[\&\:not\(\:has\(\.resource-context-item\:hover\)\)\:hover\]\:dark\:cwa-bg-white:not(:has(.resource-context-item:hover)):hover {
-    --tw-bg-opacity: 1 !important;
-    background-color: rgb(255 255 255 / var(--tw-bg-opacity)) !important;
-  }
 
   .\[\&\:not\(\:has\(\.resource-context-item\:hover\)\)\:hover\]\:dark\:cwa-bg-dark:not(:has(.resource-context-item:hover)):hover {
     --tw-bg-opacity: 1 !important;

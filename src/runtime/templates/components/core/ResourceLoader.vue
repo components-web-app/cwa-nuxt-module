@@ -96,7 +96,8 @@ const resolvedComponent = computed(() => {
 
 const methods = {
   async fetchResource ([hasSilentError, resource]: [boolean, CwaCurrentResourceInterface]) {
-    if (resource?.apiState.ssr && !resource?.data && hasSilentError) {
+    const ssrNoDataWithSilentError = resource?.apiState.ssr && !resource?.data && hasSilentError
+    if (ssrNoDataWithSilentError) {
       await $cwa.fetchResource({
         path: props.iri
       })
@@ -105,6 +106,7 @@ const methods = {
 }
 
 onMounted(() => {
+  // if has a silent error, we are client-side and last attempt was not while logged in
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true
   })

@@ -32,7 +32,10 @@ module.exports = {
       transparent: colors.transparent,
       orange: '#FFAA00',
       magenta: '#e30a6c',
-      green: '#9CDD05'
+      green: '#9CDD05',
+      red: {
+        500: colors.red['500']
+      }
     },
     extend: {
       animation: {

@@ -24,6 +24,7 @@ export default class Cwa {
   private readonly apiDocumentation: ApiDocumentation
   private readonly mercure: Mercure
   private readonly fetcher: Fetcher
+  private readonly fetchStatusManager: FetchStatusManager
   private readonly cwaFetch: CwaFetch
 
   // public resources repository and utility getters
@@ -55,10 +56,10 @@ export default class Cwa {
     this.admin = new Admin(this.storage.stores.admin)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
-    const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
-    this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
+    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
+    this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
-    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, fetchStatusManager)
+    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager)
     this.auth = new Auth(
       this.cwaFetch,
       this.mercure,
@@ -90,6 +91,11 @@ export default class Cwa {
 
   public fetchRoute (route: RouteLocationNormalizedLoaded) {
     return this.fetcher.fetchRoute(route)
+  }
+
+  // todo: test
+  public clearPrimaryFetch () {
+    this.fetchStatusManager.clearPrimaryFetch()
   }
 
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved
