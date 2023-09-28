@@ -1,6 +1,8 @@
 import { createApp, onBeforeUnmount, onMounted, Ref, watch } from 'vue'
 import { NuxtLink } from '#components'
 
+// Todo: work on the nuxt link replacement so external links are not clickable during editing - make into composable for dynamically  changing anchor links into components for internal routing and easier manipulation of disabling
+
 export const useHtmlContent = (container: Ref<null|HTMLElement>) => {
   let watchStopHandle: undefined|WatchStopHandle
   function convertAnchor (anchor: HTMLElement) {

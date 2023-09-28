@@ -30,6 +30,9 @@ export default defineNuxtConfig({
         tabs: [],
         ui: []
       }
+    },
+    tailwind: {
+      base: false
     }
   },
   typescript: {

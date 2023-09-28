@@ -82,6 +82,9 @@ export default defineNuxtModule<CwaModuleOptions>({
       ComponentGroup: {
         name: 'Group'
       }
+    },
+    tailwind: {
+      base: true
     }
   },
   async setup (options: CwaModuleOptions, nuxt) {
@@ -97,6 +100,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     nuxt.options.build.transpile.push(runtimeDir)
 
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
+    options.tailwind.base && nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
 
     const vueTemplatesDir = resolve('./runtime/templates')
 

@@ -1,9 +1,8 @@
 <template>
-  <div ref="htmlContainer" v-html="htmlContent" />
+  <div ref="htmlContainer" class="html-content" v-html="htmlContent" />
 </template>
 
 <script setup lang="ts">
-// Todo: work on the nuxt link replacement so external links are not clickable during editing - make into composable for dynamically  changing anchor links into components for internal routing and easier manipulation of disabling
 import { ref, defineProps } from 'vue'
 import { useCwaResource, useHtmlContent, IriProp } from '#imports'
 
@@ -20,7 +19,12 @@ useHtmlContent(htmlContainer)
 </script>
 
 <style>
-.html-content p:not(:last-child) {
-  margin-bottom: 1rem
+.html-content {
+  a {
+    @apply underline
+  }
+  p:not(:last-child) {
+    margin-bottom: 1rem
+  }
 }
 </style>

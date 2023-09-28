@@ -37,7 +37,8 @@
     "stryker:init": "stryker init",
     "stryker:run": "stryker run",
     "postcss": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css",
-    "postcss:watch": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css --watch"
+    "postcss:watch": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css --watch",
+    "postcss:base": "postcss src/tailwind/tailwind-base.css -o ./src/runtime/templates/assets/base.css"
   },
   "dependencies": {
     "@nuxtjs/color-mode": "^3.3.0",
