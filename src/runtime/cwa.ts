@@ -79,6 +79,10 @@ export default class Cwa {
     return this.adminNavGuard.adminNavigationGuardFn
   }
 
+  public get navigationDisabled () {
+    return this.adminNavGuard.navigationDisabled
+  }
+
   // API Documentation service is private, exposing only function required by applications
   public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
     return await this.apiDocumentation.getApiDocumentation(refresh)
