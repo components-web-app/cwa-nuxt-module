@@ -40,6 +40,9 @@ const percent = computed(() => $cwa.resources.pageLoadProgress.value.percent || 
 const showPageLoadBar = computed(() => percent.value < 100)
 
 async function signOut () {
+  if ($cwa.navigationDisabled) {
+    return
+  }
   await $cwa.auth.signOut()
 }
 </script>
