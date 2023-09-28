@@ -1,5 +1,5 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { CwaModuleOptions } from '../module'
+import { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
 import Mercure from './api/mercure'
@@ -104,7 +104,7 @@ export default class Cwa {
     this.mercure.init()
   }
 
-  public get resourcesConfig () {
-    return this.options.resources
+  public get resourcesConfig (): CwaResourcesMeta {
+    return this.options.resources || {}
   }
 }

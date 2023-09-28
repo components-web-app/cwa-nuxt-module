@@ -9,17 +9,32 @@ import {
   installModule
 } from '@nuxt/kit'
 import { ModuleOptions, NuxtPage } from '@nuxt/schema'
+import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
+
+export interface CwaResourceManagerTab {
+  src: string,
+  options: CwaResourceManagerTabOptions
+}
+
+export interface CwaResourceUi {
+  src: string,
+  name?: string
+}
+
+export interface CwaResourcesMeta {
+  [type:string]: {
+    name?: string,
+    managerTabs?: string[],
+    ui?: CwaResourceUi[]
+  }
+}
 
 export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
   pagesDepth?: number,
   apiUrlBrowser?: string
   apiUrl?: string,
-  resources?: {
-    [type:string]: {
-      name?: string
-    }
-  }
+  resources?: CwaResourcesMeta
 }
 
 function createDefaultCwaPages (
@@ -108,6 +123,7 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
     })
 
     addImportsDir(resolve('./runtime/composables'))
+    addImportsDir(resolve('./runtime/composables/component'))
 
     nuxt.hook('components:dirs', (dirs) => {
       // component dirs from module

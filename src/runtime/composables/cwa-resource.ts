@@ -1,22 +1,21 @@
 import { onMounted } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
-import { ManageableComponentOptions } from '#cwa/runtime/admin/manageable-component'
 
 export type IriProp = {
  iri: string
 }
 
 interface CwaResourceUtilsOps {
+  name?: string
   manager?: {
     disabled?: boolean
-    options?: ManageableComponentOptions
   }
 }
 
 export const useCwaResource = (iri: string, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
-  const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri, ops?.manager?.options) : undefined
+  const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri) : undefined
 
   if (!manager) {
     onMounted(() => {
@@ -27,6 +26,11 @@ export const useCwaResource = (iri: string, ops?: CwaResourceUtilsOps) => {
   return {
     manager,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
-    getResource: () => $cwa.resources.getResource(iri)
+    getResource: () => $cwa.resources.getResource(iri),
+    exposeMeta: {
+      cwaResource: {
+        name: ops?.name
+      }
+    }
   }
 }

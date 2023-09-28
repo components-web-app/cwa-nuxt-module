@@ -1,11 +1,14 @@
 import { computed, ref, Ref, watch } from 'vue'
 import { consola as logger } from 'consola'
 import { AdminStore } from '../storage/stores/admin/admin-store'
+import { CwaResourceManagerTab, CwaResourceUi } from '#cwa/module'
 
 interface _ResourceStackItem {
   iri: string
   domElements: Ref<HTMLElement[]>
-  displayName: string | null
+  displayName?: string,
+  managerTabs?: CwaResourceManagerTab[],
+  ui?: CwaResourceUi[]
 }
 
 // will be used to have additional properties not sent by the initial addToStack event
