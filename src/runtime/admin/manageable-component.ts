@@ -21,6 +21,10 @@ interface AssociatedComponents {
   ui?: CwaResourceUi[]
 }
 
+export interface ManageableComponentOptions {
+  tabs?: any
+}
+
 export default class ManageableComponent {
   private currentIri: string|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
@@ -33,7 +37,9 @@ export default class ManageableComponent {
 
   constructor (
     private readonly component: ComponentPublicInstance,
-    private readonly $cwa: Cwa) {
+    private readonly $cwa: Cwa,
+    private readonly options?: ManageableComponentOptions
+  ) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
   }
@@ -61,6 +67,13 @@ export default class ManageableComponent {
     // need to search for associated components from file paths
 
     // this.resourceConfig?.managerTabs + resolved tab components from file structure - resolve these paths and get the meta
+    // console.log(process.cwd())
+    // const dirPath = process.cwd()
+    // const exists = isDirectory(`${dirPath}/admin`)
+    // console.log('admin exists', exists)
+    // if (exists) {
+    //
+    // }
 
     this.associatedComponents = {
       managerTabs,

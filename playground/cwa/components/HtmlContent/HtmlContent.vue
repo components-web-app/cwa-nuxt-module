@@ -3,18 +3,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps } from 'vue'
+import { ref } from 'vue'
 import { useCwaResource, useHtmlContent, IriProp } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const { getResource, exposeMeta } = useCwaResource(props.iri)
+const { getResource, exposeMeta } = useCwaResource(props.iri, {
+  manager: {
+    options: {
+      tabs: [
+        import('./admin/HtmlContent.vue')
+      ]
+    }
+  }
+})
 const resource = getResource()
 defineExpose(exposeMeta)
 
 const htmlContainer = ref<null|HTMLElement>(null)
 const htmlContent = ref<string>(resource.value.data?.html || '<div></div>')
-
 useHtmlContent(htmlContainer)
 </script>
 

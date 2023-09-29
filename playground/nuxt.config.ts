@@ -21,14 +21,10 @@ export default defineNuxtConfig({
     apiUrlBrowser: API_URL_BROWSER,
     resources: {
       NavigationLink: {
-        name: 'Link',
-        tabs: [],
-        ui: []
+        name: 'Link'
       },
       HtmlContent: {
-        name: 'Body Text',
-        tabs: [],
-        ui: []
+        name: 'Body Text'
       }
     },
     tailwind: {

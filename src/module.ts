@@ -1,4 +1,8 @@
 import { join } from 'path'
+import path from 'node:path'
+import { statSync } from 'node:fs'
+import _mergeWith from 'lodash/mergeWith.js'
+import _isArray from 'lodash/isArray.js'
 import {
   addImportsDir,
   addPlugin,
@@ -6,9 +10,10 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule
+  installModule, resolveAlias, useNuxt
 } from '@nuxt/kit'
-import { ModuleOptions, NuxtPage } from '@nuxt/schema'
+import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
+import { globby } from 'globby'
 import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 
 export interface CwaResourceManagerTab {
@@ -99,73 +104,105 @@ export default defineNuxtModule<CwaModuleOptions>({
     const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
 
+    // include css - dev can disable the base in options to allow usage of their own tailwind without conflict and duplication
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
     options.tailwind.base && nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
 
-    const vueTemplatesDir = resolve('./runtime/templates')
+    // include auto-imports for composables
+    addImportsDir(resolve('./runtime/composables'))
+    addImportsDir(resolve('./runtime/composables/component'))
 
-    const extendPagesCallback = (pages: NuxtPage[]) => {
+    const vueTemplatesDir = resolve('./runtime/templates')
+    extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
-    }
-
-    extendPages(extendPagesCallback)
-
-    // clear options no longer needed and add plugin
-    delete options.pagesDepth
-    addTemplate({
-      filename: 'cwa-options.ts',
-      getContents: () => `import { CwaModuleOptions } from '#cwa/module';
-export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
-`
     })
 
+    const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
+    const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
+    const extensions = nuxt.options.extensions.map(e => e.replace(/^\./g, ''))
+
+    async function extendCwaOptions (components: Component[]) {
+      const defaultResourcesConfig: CwaResourcesMeta = {}
+      const userComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+      for (const component of userComponents) {
+        const isDirectory = (p: string) => {
+          try {
+            return statSync(p).isDirectory()
+          } catch (_e) {
+            return false
+          }
+        }
+
+        const resourceType = component.pascalName.replace(/^CwaComponents/, '')
+        const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
+        const managerTabs = []
+        if (isDirectory(tabsDir)) {
+          const pattern = `**/*.{${extensions.join(',')},}`
+          const files = (await globby(pattern, { cwd: tabsDir })).sort()
+          managerTabs.push(...files.map(file => resolve(tabsDir, file)))
+        }
+
+        defaultResourcesConfig[resourceType] = {
+          // auto name with spaces in place of pascal/camel case
+          name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
+          managerTabs,
+          ui: []
+        }
+      }
+      options.resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
+        if (_isArray(a)) {
+          return b.concat(a)
+        }
+      })
+      return options
+    }
+
     nuxt.hook('modules:done', () => {
+      // clear options no longer needed and add plugin
+      delete options.pagesDepth
+      addTemplate({
+        write: true,
+        filename: 'cwa-options.ts',
+        getContents: async ({ app }) => {
+          await extendCwaOptions(app.components)
+          return `import { CwaModuleOptions } from '#cwa/module';
+export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
+`
+        }
+      })
       addPlugin({
         src: resolve('./runtime/plugin')
       })
     })
 
-    addImportsDir(resolve('./runtime/composables'))
-    addImportsDir(resolve('./runtime/composables/component'))
-
     nuxt.hook('components:dirs', (dirs) => {
       // component dirs from module
       dirs.unshift({
-        path: join(vueTemplatesDir, 'components', 'main'),
+        path: join(cwaVueComponentsDir, 'main'),
         prefix: 'Cwa'
       })
       dirs.unshift({
-        path: join(vueTemplatesDir, 'components', 'ui'),
+        path: join(cwaVueComponentsDir, 'ui'),
         prefix: 'CwaUi'
       })
 
-      // component dirs to be configured by application - global, so they are split
+      // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
         prefix: 'CwaPages',
         global: true
       })
+
+      // exclude importing those which will be for the default admin tabs and alternative ui
+      const pattern = `{**/!(admin|ui)/,}*.{${extensions.join(',')},}`
       dirs.unshift({
-        path: join(nuxt.options.srcDir, 'cwa', 'components'),
+        path: userComponentsPath,
+        extensions,
+        pattern,
         prefix: 'CwaComponents',
         global: true
       })
     })
-
-    // Todo: consider this approach - test if it's working in real world application and then implement and test
-    // nuxt.hook('tailwindcss:config', (tailwindConfig: Partial<Config>) => {
-    //   if (Array.isArray(tailwindConfig.corePlugins)) {
-    //     const preflightSafelistIndex = tailwindConfig.corePlugins.indexOf('preflight')
-    //     if (preflightSafelistIndex > -1) {
-    //       tailwindConfig.corePlugins.splice(preflightSafelistIndex, 1)
-    //     }
-    //     return
-    //   }
-    //   tailwindConfig.corePlugins = {
-    //     ...tailwindConfig.corePlugins,
-    //     preflight: false
-    //   }
-    // })
   }
 })

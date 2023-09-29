@@ -1,4 +1,6 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
+import { useCookie } from '#app/composables/cookie.js'
+import { NuxtApp } from '#app/nuxt'
 import { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -14,8 +16,6 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
-import { useCookie } from '#app/composables/cookie.js'
-import { NuxtApp } from '#app/nuxt'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -41,7 +41,7 @@ export default class Cwa {
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
 
-  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'>, options: CwaModuleOptions) {
+  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'|'cwaResources'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
@@ -79,6 +79,7 @@ export default class Cwa {
     return this.adminNavGuard.adminNavigationGuardFn
   }
 
+  // todo: test
   public get navigationDisabled () {
     return this.adminNavGuard.navigationDisabled
   }
@@ -110,5 +111,10 @@ export default class Cwa {
 
   public get resourcesConfig (): CwaResourcesMeta {
     return this.options.resources || {}
+  }
+
+  // @internal
+  public setResourceMeta (meta: CwaResourcesMeta) {
+    this.options.resources = meta
   }
 }
