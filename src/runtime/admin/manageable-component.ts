@@ -14,16 +14,6 @@ import Cwa from '../cwa'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import ComponentFocus from '#cwa/layer/_components/admin/component-focus.vue'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
-import { CwaResourceManagerTab, CwaResourceUi } from '#cwa/module'
-
-interface AssociatedComponents {
-  managerTabs?: CwaResourceManagerTab[],
-  ui?: CwaResourceUi[]
-}
-
-export interface ManageableComponentOptions {
-  tabs?: any
-}
 
 export default class ManageableComponent {
   private currentIri: string|undefined
@@ -31,14 +21,11 @@ export default class ManageableComponent {
   private unwatchCurrentStackItem: undefined|WatchStopHandle
   private focusComponent: undefined|App
   private focusWrapper: HTMLElement|undefined
-  private associatedComponents: AssociatedComponents|undefined
-  private managerTabs: CwaResourceManagerTab[]
   private readonly yOffset = 100
 
   constructor (
     private readonly component: ComponentPublicInstance,
-    private readonly $cwa: Cwa,
-    private readonly options?: ManageableComponentOptions
+    private readonly $cwa: Cwa
   ) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
@@ -53,32 +40,10 @@ export default class ManageableComponent {
     }
 
     this.currentIri = iri
-    this.initAssociatedComponents()
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
     this.$cwa.admin.eventBus.emit('componentMounted', iri)
-  }
-
-  private initAssociatedComponents () {
-    const managerTabs: CwaResourceManagerTab[] = []
-    const ui: CwaResourceUi[] = []
-
-    // need to search for associated components from file paths
-
-    // this.resourceConfig?.managerTabs + resolved tab components from file structure - resolve these paths and get the meta
-    // console.log(process.cwd())
-    // const dirPath = process.cwd()
-    // const exists = isDirectory(`${dirPath}/admin`)
-    // console.log('admin exists', exists)
-    // if (exists) {
-    //
-    // }
-
-    this.associatedComponents = {
-      managerTabs,
-      ui
-    }
   }
 
   public clear () {
@@ -87,7 +52,6 @@ export default class ManageableComponent {
     }
     this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
-    this.associatedComponents = undefined
     this.currentIri = undefined
     this.domElements.value = []
     if (this.unwatchCurrentStackItem) {
@@ -256,7 +220,7 @@ export default class ManageableComponent {
       domElements: this.domElements,
       clickTarget: evt.target,
       displayName: this.displayName,
-      ...this.mergedAssociatedComponents
+      managerTabs: this.resourceConfig?.managerTabs
     })
   }
 
@@ -281,13 +245,5 @@ export default class ManageableComponent {
 
   private get displayName () {
     return this.resourceConfig?.name || this.resourceType
-  }
-
-  // todo: test
-  private get mergedAssociatedComponents (): AssociatedComponents {
-    return {
-      ...this.associatedComponents,
-      ui: this.resourceConfig?.ui
-    }
   }
 }

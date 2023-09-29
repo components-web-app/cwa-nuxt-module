@@ -10,27 +10,15 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule, resolveAlias, useNuxt
+  installModule, resolveAlias
 } from '@nuxt/kit'
 import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
 import { globby } from 'globby'
-import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-
-export interface CwaResourceManagerTab {
-  src: string,
-  options: CwaResourceManagerTabOptions
-}
-
-export interface CwaResourceUi {
-  src: string,
-  name?: string
-}
 
 export interface CwaResourcesMeta {
   [type:string]: {
     name?: string,
-    managerTabs?: string[],
-    ui?: CwaResourceUi[]
+    managerTabs?: string[]
   }
 }
 
@@ -162,7 +150,6 @@ export default defineNuxtModule<CwaModuleOptions>({
       // clear options no longer needed and add plugin
       delete options.pagesDepth
       addTemplate({
-        write: true,
         filename: 'cwa-options.ts',
         getContents: async ({ app }) => {
           await extendCwaOptions(app.components)
