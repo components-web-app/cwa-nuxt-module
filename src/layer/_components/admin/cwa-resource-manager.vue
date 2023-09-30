@@ -68,7 +68,7 @@ watch([spacer, managerHolder], () => {
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop>
+    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop @contextmenu.stop>
       <template v-if="current">
         <ManagerTabs :tabs="tabs" :selected-index="selectedIndex" @click="selectTab" />
         <div ref="managerHolder" class="cwa-p-4">
@@ -86,7 +86,7 @@ watch([spacer, managerHolder], () => {
             />
           </template>
         </div>
-        <span class="cwa-text-xs cwa-p-1 cwa-text-stone-400">{{ current.displayName }}: {{ current.iri }}</span>
+        <span class="cwa-text-xs cwa-p-1 cwa-text-stone-400 cwa-bg-stone-900 cwa-w-full cwa-block cwa-opacity-70">{{ current.displayName }}: {{ current.iri }}</span>
       </template>
     </div>
   </Transition>

@@ -12,7 +12,7 @@ defineEmits<{
 }>()
 </script>
 <template>
-  <div class="cwa-flex">
+  <div class="cwa-flex cwa-border-b cwa-border-stone-700">
     <ManagerTab v-for="(tab, index) of tabs" :key="`tab_${index}_${tab.name}`" :tab="tab" :selected="index === selectedIndex" @click="$emit('click', index)" />
   </div>
 </template>
