@@ -912,6 +912,11 @@
     type: string
 }
 
+.\[key\:string\] {
+
+    key: string
+}
+
 .cwa-dark {
 
     --tw-bg-opacity: 1;

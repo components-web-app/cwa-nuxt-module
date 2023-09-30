@@ -53,8 +53,11 @@ watch([spacer, managerHolder], () => {
   >
     <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop>
       <div v-if="current" ref="managerHolder" class="cwa-p-4">
-        {{ current.displayName }}: {{ current }}
+        {{ current.displayName }}: {{ current.iri }}
       </div>
+      <template v-if="current?.managerTabs">
+        <component :is="tab.pascalName" v-for="(tab, index) of current.managerTabs" :key="`managerTab_${current.displayName}_${tab.name}_${index}`" />
+      </template>
     </div>
   </Transition>
 </template>

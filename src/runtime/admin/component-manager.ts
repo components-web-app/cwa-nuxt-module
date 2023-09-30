@@ -1,12 +1,13 @@
 import { computed, ref, Ref, watch } from 'vue'
 import { consola as logger } from 'consola'
+import { Component } from '@nuxt/schema'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 
 interface _ResourceStackItem {
   iri: string
   domElements: Ref<HTMLElement[]>
   displayName?: string,
-  managerTabs?: string[]
+  managerTabs?: Component[]
 }
 
 // will be used to have additional properties not sent by the initial addToStack event

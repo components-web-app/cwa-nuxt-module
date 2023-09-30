@@ -1,5 +1,4 @@
 import { onMounted } from 'vue'
-import { ManageableComponentOptions } from '../admin/manageable-component'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
 
@@ -10,8 +9,7 @@ export type IriProp = {
 interface CwaResourceUtilsOps {
   name?: string
   manager?: {
-    disabled?: boolean,
-    options?: ManageableComponentOptions
+    disabled?: boolean
   }
 }
 

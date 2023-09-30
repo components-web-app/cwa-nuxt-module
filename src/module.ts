@@ -18,7 +18,7 @@ import { globby } from 'globby'
 export interface CwaResourcesMeta {
   [type:string]: {
     name?: string,
-    managerTabs?: string[]
+    managerTabs?: Component[]
   }
 }
 
@@ -108,11 +108,17 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
     const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
+    nuxt.options.alias['#cwaComponents'] = userComponentsPath
     const extensions = nuxt.options.extensions.map(e => e.replace(/^\./g, ''))
 
     async function extendCwaOptions (components: Component[]) {
       const defaultResourcesConfig: CwaResourcesMeta = {}
-      const userComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+
+      // exclude files within admin and ui folders which will not need a configuration
+      const regex = /^\/(?!.+\/(admin|ui)\/).+.vue$/
+      const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+      const componentsByPath: { [key:string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
+      const userComponents = allUserComponents.filter(({ filePath }) => regex.test(filePath))
       for (const component of userComponents) {
         const isDirectory = (p: string) => {
           try {
@@ -122,20 +128,24 @@ export default defineNuxtModule<CwaModuleOptions>({
           }
         }
 
-        const resourceType = component.pascalName.replace(/^CwaComponents/, '')
+        const resourceType = component.pascalName.replace(/^CwaComponent/, '')
         const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
-        const managerTabs = []
+        const managerTabs: Component[] = []
         if (isDirectory(tabsDir)) {
           const pattern = `**/*.{${extensions.join(',')},}`
           const files = (await globby(pattern, { cwd: tabsDir })).sort()
-          managerTabs.push(...files.map(file => resolve(tabsDir, file)))
+          const tabFiles = files.map(file => resolve(tabsDir, file))
+          tabFiles.forEach((file) => {
+            if (componentsByPath[file]) {
+              managerTabs.push(componentsByPath[file])
+            }
+          })
         }
 
         defaultResourcesConfig[resourceType] = {
           // auto name with spaces in place of pascal/camel case
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
-          managerTabs,
-          ui: []
+          managerTabs
         }
       }
       options.resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
@@ -150,6 +160,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       // clear options no longer needed and add plugin
       delete options.pagesDepth
       addTemplate({
+        write: true,
         filename: 'cwa-options.ts',
         getContents: async ({ app }) => {
           await extendCwaOptions(app.components)
@@ -177,17 +188,13 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
-        prefix: 'CwaPages',
+        prefix: 'CwaPage',
         global: true
       })
 
-      // exclude importing those which will be for the default admin tabs and alternative ui
-      const pattern = `{**/!(admin|ui)/,}*.{${extensions.join(',')},}`
       dirs.unshift({
         path: userComponentsPath,
-        extensions,
-        pattern,
-        prefix: 'CwaComponents',
+        prefix: 'CwaComponent',
         global: true
       })
     })

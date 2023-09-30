@@ -208,12 +208,12 @@ export const options:CwaModuleOptions = {
         expect(hookCall).toBeDefined()
         expect(mockDirs).toContainEqual({
           path: join(mockNuxt.options.srcDir, 'cwa', 'components'),
-          prefix: 'CwaComponents',
+          prefix: 'CwaComponent',
           global: true
         })
         expect(mockDirs).toContainEqual({
           path: join(mockNuxt.options.srcDir, 'cwa', 'pages'),
-          prefix: 'CwaPages',
+          prefix: 'CwaPage',
           global: true
         })
         expect(mockDirs).toContainEqual({
