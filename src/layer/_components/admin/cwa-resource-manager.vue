@@ -1,11 +1,15 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#imports'
+import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
+import ManagerTabs from '#cwa/layer/_components/admin/resource-manager/manager-tabs.vue'
 
 const $cwa = useCwa()
 const current = $cwa.admin.componentManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
+const tabs = ref<CwaResourceManagerTabOptions[]>([])
+const selectedIndex = ref(0)
 
 function clickHandler (e: MouseEvent) {
   completeStack(e)
@@ -15,6 +19,15 @@ function clickHandler (e: MouseEvent) {
 function completeStack (e: MouseEvent) {
   $cwa.admin.componentManager.addToStack({ clickTarget: e.target })
 }
+
+function selectTab (index: number) {
+  selectedIndex.value = index
+}
+
+watch(current, () => {
+  tabs.value = []
+  selectedIndex.value = 0
+})
 
 onMounted(() => {
   window.addEventListener('click', clickHandler)
@@ -28,6 +41,10 @@ onBeforeUnmount(() => {
 
 const showSpacer = computed(() => {
   return $cwa.admin.componentManager.showManager.value && current
+})
+
+const selectedTab = computed(() => {
+  return current.value?.managerTabs?.[selectedIndex.value]
 })
 
 watch([spacer, managerHolder], () => {
@@ -52,11 +69,24 @@ watch([spacer, managerHolder], () => {
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
     <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop>
-      <div v-if="current" ref="managerHolder" class="cwa-p-4">
-        {{ current.displayName }}: {{ current.iri }}
-      </div>
-      <template v-if="current?.managerTabs">
-        <component :is="tab.pascalName" v-for="(tab, index) of current.managerTabs" :key="`managerTab_${current.displayName}_${tab.name}_${index}`" />
+      <template v-if="current">
+        <ManagerTabs :tabs="tabs" :selected-index="selectedIndex" @click="selectTab" />
+        <div ref="managerHolder" class="cwa-p-4">
+          <template v-if="current?.managerTabs">
+            <component
+              :is="tab.pascalName"
+              v-for="(tab, index) of current.managerTabs"
+              :key="`managerTab_${current.displayName}_${tab.pascalName}_${index}`"
+              :ref="(el: CwaResourceManagerTabOptions) => (tabs[index] = el)"
+              class="cwa-hidden"
+            />
+            <component
+              :is="selectedTab.pascalName"
+              v-if="selectedTab"
+            />
+          </template>
+        </div>
+        <span class="cwa-text-xs cwa-p-1 cwa-text-stone-400">{{ current.displayName }}: {{ current.iri }}</span>
       </template>
     </div>
   </Transition>
