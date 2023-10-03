@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import ResourceContextItem from '#cwa/layer/_components/admin/resource-context-item.vue'
+import ResourceContextItem from '../../_common/resource-context-item.vue'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useTransitions } from '#cwa/runtime/composables/transitions'
 

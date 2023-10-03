@@ -12,7 +12,7 @@ import {
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
-import ComponentFocus from '#cwa/layer/_components/admin/component-focus.vue'
+import { CwaAdminResourceManagerComponentFocus } from '#components'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export default class ManageableComponent {
@@ -84,7 +84,7 @@ export default class ManageableComponent {
       return
     }
 
-    this.focusComponent = createApp(ComponentFocus, {
+    this.focusComponent = createApp(CwaAdminResourceManagerComponentFocus, {
       iri: this.currentIri,
       domElements: computed(() => stackItem.domElements)
     })

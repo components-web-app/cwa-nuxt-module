@@ -163,7 +163,6 @@ export default defineNuxtModule<CwaModuleOptions>({
       // clear options no longer needed and add plugin
       delete options.pagesDepth
       addTemplate({
-        write: true,
         filename: 'cwa-options.ts',
         getContents: async ({ app }) => {
           await extendCwaOptions(app.components)
@@ -181,24 +180,28 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
       // component dirs from module
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'main'),
-        prefix: 'Cwa'
+        prefix: 'Cwa',
+        ignore: ['**/_*/*', '**/*.spec.{cts,mts,ts}']
       })
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'utils'),
-        prefix: 'CwaUtils'
+        prefix: 'CwaUtils',
+        ignore: ['**/*.spec.{cts,mts,ts}']
       })
 
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
         prefix: 'CwaPage',
-        global: true
+        global: true,
+        ignore: ['**/*.spec.{cts,mts,ts}']
       })
 
       dirs.unshift({
         path: userComponentsPath,
         prefix: 'CwaComponent',
-        global: true
+        global: true,
+        ignore: ['**/*.spec.{cts,mts,ts}']
       })
     })
   }

@@ -1,15 +1,62 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
+import { useMouse, useWindowScroll } from '@vueuse/core'
+import ManagerTabs from './_parts/manager-tabs.vue'
+import CwaAdminResourceManagerContextMenu from './_parts/cwa-resource-manager-context-menu.vue'
 import { useCwa } from '#imports'
-import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import ManagerTabs from '#cwa/layer/_components/admin/resource-manager/manager-tabs.vue'
+import CwaResourceManagerTabOptions from '#cwa/runtime/composables/cwa-resource-manager-tab'
+import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
 const $cwa = useCwa()
+const { x, y } = useMouse()
+const { y: windowY } = useWindowScroll()
+
 const current = $cwa.admin.componentManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
 const tabs = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
+const isOpen = ref(false)
+const virtualElement = ref({ getBoundingClientRect: () => ({}) })
+const cachedPosition = { top: 0, left: 0 }
+
+type ContextPosition = {
+  top: number
+  left: number
+}
+
+function showDefaultContext ({ top, left }: ContextPosition) {
+  const difference = {
+    top: Math.abs(top - cachedPosition.top),
+    left: Math.abs(left - cachedPosition.left)
+  }
+  return isOpen.value && difference.top < 10 && difference.left < 10
+}
+
+function openContext ({ top, left }: ContextPosition) {
+  cachedPosition.top = top
+  cachedPosition.left = left
+  virtualElement.value.getBoundingClientRect = () => ({
+    width: 0,
+    height: 0,
+    top,
+    left
+  })
+  isOpen.value = true
+}
+
+function onContextMenu (e: PointerEvent) {
+  const pos: ContextPosition = {
+    top: unref(y) - unref(windowY),
+    left: unref(x)
+  }
+  if (showDefaultContext(pos)) {
+    isOpen.value = false
+    return
+  }
+  e.preventDefault()
+  $cwa.admin.isEditing && openContext(pos)
+}
 
 function clickHandler (e: MouseEvent) {
   completeStack(e)
@@ -23,6 +70,10 @@ function completeStack (e: MouseEvent) {
 function selectTab (index: number) {
   selectedIndex.value = index
 }
+
+const showAdmin = computed(() => {
+  return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
+})
 
 watch(current, () => {
   tabs.value = []
@@ -55,6 +106,10 @@ watch([spacer, managerHolder], () => {
   spacer.value.style.height = `${newHeight}px`
 }, {
   flush: 'post'
+})
+
+defineExpose({
+  onContextMenu
 })
 </script>
 
@@ -89,4 +144,5 @@ watch([spacer, managerHolder], () => {
       </template>
     </div>
   </Transition>
+  <CwaAdminResourceManagerContextMenu v-if="showAdmin" v-model="isOpen" :virtual-element="virtualElement" />
 </template>

@@ -22,9 +22,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import LiveDraft from '#cwa/layer/_components/admin/live-draft.vue'
+import LiveDraft from './_parts/live-draft.vue'
+import PathSelector from './_parts/path-selector.vue'
 import { useCwa } from '#imports'
-import PathSelector from '#cwa/layer/_components/admin/path-selector.vue'
 
 const $cwa = useCwa()
 
