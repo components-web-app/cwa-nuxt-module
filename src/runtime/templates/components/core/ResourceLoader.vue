@@ -1,11 +1,11 @@
 <template>
-  <CwaUiAlertWarning v-if="!props.iri">
+  <CwaUtilsAlertWarning v-if="!props.iri">
     <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
-  </CwaUiAlertWarning>
+  </CwaUtilsAlertWarning>
   <div v-else-if="isLoading">
-    <CwaUiSpinner :show="true" />
+    <CwaUtilsSpinner :show="true" />
   </div>
-  <CwaUiAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
+  <CwaUtilsAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
     <p v-if="!resource">
       Resource `{{ props.iri }}` has not been requested
     </p>
@@ -15,7 +15,7 @@
     <p v-else>
       The component `{{ resourceUiComponent }}` for resource `{{ props.iri }}` cannot be resolved
     </p>
-  </CwaUiAlertWarning>
+  </CwaUtilsAlertWarning>
   <template v-else-if="!hasError">
     <component v-bind="$attrs" :is="resolvedComponent" :iri="props.iri" />
   </template>

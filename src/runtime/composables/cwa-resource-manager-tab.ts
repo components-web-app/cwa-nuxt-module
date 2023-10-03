@@ -1,5 +1,6 @@
 export interface CwaResourceManagerTabOptions {
-  name: string
+  name: string,
+  order?: number
 }
 
 export const useCwaResourceManagerTab = (options?: CwaResourceManagerTabOptions) => {

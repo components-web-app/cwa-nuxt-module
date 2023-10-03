@@ -10,11 +10,11 @@
         <button class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-py-1 cwa-px-4 cwa-min-w-[100px]" @click="$cwa.admin.toggleEdit()">
           {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
         </button>
-        <CwaUiFormToggle v-if="$cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
+        <CwaUtilsFormToggle v-if="$cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
       <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
         <LiveDraft />
-        <CwaUiSpinnerTick :is-loading="isLoading" />
+        <CwaUtilsSpinnerTick :is-loading="isLoading" />
       </div>
     </div>
   </div>

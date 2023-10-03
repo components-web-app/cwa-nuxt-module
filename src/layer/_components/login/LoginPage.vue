@@ -6,9 +6,9 @@
 
     <div class="cwa-mt-8 sm:cwa-mx-auto sm:cwa-w-full sm:cwa-max-w-md cwa-text-white">
       <div class="cwa-bg-neutral-800 cwa-py-8 cwa-px-4 cwa-shadow sm:cwa-px-10">
-        <CwaUiAlertWarning v-if="props.error" class="cwa-mb-4">
+        <CwaUtilsAlertWarning v-if="props.error" class="cwa-mb-4">
           {{ props.error }}
-        </CwaUiAlertWarning>
+        </CwaUtilsAlertWarning>
         <form action="#" class="cwa-space-y-6" @submit.prevent="$emit('submit')">
           <slot />
           <div>

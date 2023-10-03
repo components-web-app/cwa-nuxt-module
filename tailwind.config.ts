@@ -7,6 +7,7 @@ module.exports = {
     colors: {
       stone: {
         100: colors.stone['100'],
+        300: colors.stone['300'],
         400: colors.stone['400'],
         700: colors.stone['700'],
         900: colors.stone['900']

@@ -13,9 +13,9 @@
         @input="$emit('update:modelValue', $event.target.value)"
       >
       <div v-if="errors">
-        <CwaUiAlertWarning v-for="(error, index) in errors" :key="`error-${id}-${index}`" class="cwa-mt-2">
+        <CwaUtilsAlertWarning v-for="(error, index) in errors" :key="`error-${id}-${index}`" class="cwa-mt-2">
           {{ error }}
-        </CwaUiAlertWarning>
+        </CwaUtilsAlertWarning>
       </div>
     </div>
   </div>

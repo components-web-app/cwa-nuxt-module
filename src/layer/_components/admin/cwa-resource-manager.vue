@@ -74,19 +74,18 @@ watch([spacer, managerHolder], () => {
         <div ref="managerHolder" class="cwa-p-4">
           <template v-if="current?.managerTabs">
             <component
-              :is="tab.pascalName"
+              :is="tab"
               v-for="(tab, index) of current.managerTabs"
-              :key="`managerTab_${current.displayName}_${tab.pascalName}_${index}`"
+              :key="`managerTab_${current.displayName}_${tab}_${index}`"
               :ref="(el: CwaResourceManagerTabOptions) => (tabs[index] = el)"
               class="cwa-hidden"
             />
             <component
-              :is="selectedTab.pascalName"
+              :is="selectedTab"
               v-if="selectedTab"
             />
           </template>
         </div>
-        <span class="cwa-text-xs cwa-p-1 cwa-text-stone-400 cwa-bg-stone-900 cwa-w-full cwa-block cwa-opacity-70">{{ current.displayName }}: {{ current.iri }}</span>
       </template>
     </div>
   </Transition>

@@ -14,11 +14,14 @@ import {
 } from '@nuxt/kit'
 import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
 import { globby } from 'globby'
+import { GlobalComponents } from 'vue'
+
+export type GlobalComponentNames = keyof GlobalComponents
 
 export interface CwaResourcesMeta {
   [type:string]: {
     name?: string,
-    managerTabs?: Component[]
+    managerTabs?: GlobalComponentNames[]
   }
 }
 
@@ -130,14 +133,14 @@ export default defineNuxtModule<CwaModuleOptions>({
 
         const resourceType = component.pascalName.replace(/^CwaComponent/, '')
         const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
-        const managerTabs: Component[] = []
+        const managerTabs: GlobalComponentNames[] = []
         if (isDirectory(tabsDir)) {
           const pattern = `**/*.{${extensions.join(',')},}`
           const files = (await globby(pattern, { cwd: tabsDir })).sort()
           const tabFiles = files.map(file => resolve(tabsDir, file))
           tabFiles.forEach((file) => {
             if (componentsByPath[file]) {
-              managerTabs.push(componentsByPath[file])
+              componentsByPath[file].global && managerTabs.push(componentsByPath[file].pascalName)
             }
           })
         }
@@ -181,8 +184,8 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
         prefix: 'Cwa'
       })
       dirs.unshift({
-        path: join(cwaVueComponentsDir, 'ui'),
-        prefix: 'CwaUi'
+        path: join(cwaVueComponentsDir, 'utils'),
+        prefix: 'CwaUtils'
       })
 
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
