@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import LoginPage from './LoginPage.vue'
+import AuthTemplate from './AuthTemplate.vue'
 
 interface LoginMeta {
   submitButtonText: string;
@@ -16,7 +16,7 @@ function createWrapper ({
   error = '',
   slotContent = ''
 }: LoginMeta) {
-  return shallowMount(LoginPage, {
+  return shallowMount(AuthTemplate, {
     props: {
       submitButtonText,
       submitting,

@@ -309,12 +309,13 @@ describe('ManageableComponent Class', () => {
       expect($cwa.admin.componentManager.addToStack).not.toHaveBeenCalled()
     })
 
-    test('should add to stack with computed displayName', () => {
+    test('should add to stack with correct object', () => {
       const { instance, $cwa } = createManageableComponent()
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
 
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
+      vi.spyOn(instance, 'resourceConfig', 'get').mockImplementationOnce(() => ({ managerTabs: ['abc'] }))
       instance.currentIri = '/mock'
 
       instance.clickListener(mockEvent)
@@ -323,9 +324,14 @@ describe('ManageableComponent Class', () => {
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
-        displayName: mockName
+        displayName: mockName,
+        managerTabs: ['abc']
       })
     })
+  })
+
+  describe.todo('resourceConfig getter', () => {
+
   })
 
   describe.todo('displayName getter', () => {

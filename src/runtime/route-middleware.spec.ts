@@ -43,12 +43,13 @@ describe('Test route middleware', () => {
 
   const initClientSide = vi.fn()
   const adminNavigationGuardFn = vi.fn((): boolean|RouteLocationRaw => true)
+  const clearPrimaryFetch = vi.fn()
 
   beforeAll(() => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn }
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch }
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -107,6 +108,7 @@ describe('Test route middleware', () => {
   test('Test route middleware can be disabled', async () => {
     const toRoute = createToRoute(false)
     await routeMiddleware(toRoute)
+    expect(clearPrimaryFetch).toHaveBeenCalled()
     expect(fetchRouteFn).not.toHaveBeenCalled()
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
   })
