@@ -35,7 +35,7 @@ async function prepareMockNuxt (options = {}, nuxt?) {
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = Object.assign({ hook: vi.fn(), options: { alias: {}, css: [], build: { transpile: [] }, srcDir: '', extensions: [] } }, nuxt || {})
+  const mockNuxt = Object.assign({ hook: vi.fn(), options: { alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
 
   await setup(Object.assign({ tailwind: { base: true } }, options), mockNuxt)
 
@@ -125,8 +125,7 @@ describe('CWA module', () => {
           build: {
             transpile: []
           },
-          srcDir: '',
-          extensions: []
+          srcDir: ''
         }
       })
 
@@ -210,8 +209,7 @@ export const options:CwaModuleOptions = {
             build: {
               transpile: []
             },
-            srcDir: './mock',
-            extensions: []
+            srcDir: './mock'
           }
         })
 
@@ -242,8 +240,7 @@ export const options:CwaModuleOptions = {
             build: {
               transpile: []
             },
-            srcDir: './mock',
-            extensions: []
+            srcDir: './mock'
           }
         })
 

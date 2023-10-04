@@ -13,7 +13,6 @@ import {
   installModule, resolveAlias
 } from '@nuxt/kit'
 import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
-import { globby } from 'globby'
 import { GlobalComponents } from 'vue'
 
 export type GlobalComponentNames = keyof GlobalComponents
@@ -113,9 +112,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
     const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
-    const extensions = nuxt.options.extensions.map(e => e.replace(/^\./g, ''))
 
-    async function extendCwaOptions (components: Component[]) {
+    function extendCwaOptions (components: Component[]) {
       const defaultResourcesConfig: CwaResourcesMeta = {}
 
       // exclude files within admin and ui folders which will not need a configuration
