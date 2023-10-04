@@ -3,7 +3,7 @@ import { defineExpose } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 
 const { exposeMeta } = useCwaResourceManagerTab({
-  name: 'Tab Name'
+  name: 'New Name'
 })
 
 defineExpose(exposeMeta)

@@ -8,15 +8,7 @@ import { useCwaResource, useHtmlContent, IriProp } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const { getResource, exposeMeta } = useCwaResource(props.iri, {
-  manager: {
-    options: {
-      tabs: [
-        import('./admin/HtmlContent.vue')
-      ]
-    }
-  }
-})
+const { getResource, exposeMeta } = useCwaResource(props.iri)
 const resource = getResource()
 defineExpose(exposeMeta)
 

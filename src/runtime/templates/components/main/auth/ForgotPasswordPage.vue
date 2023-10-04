@@ -30,13 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 import AuthTemplate from './_parts/AuthTemplate.vue'
 import InputField from './_parts/InputField.vue'
-
-const AuthPageLink = defineAsyncComponent(() =>
-  import('./_parts/AuthPageLink.vue')
-)
+import AuthPageLink from './_parts/AuthPageLink.vue'
 
 const props = defineProps<{
   submitting: boolean,

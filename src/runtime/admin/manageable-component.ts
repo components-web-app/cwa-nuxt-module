@@ -7,12 +7,11 @@ import {
   Ref,
   watch,
   WatchStopHandle,
-  createApp
+  createApp, defineAsyncComponent
 } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
-import { CwaAdminResourceManagerComponentFocus } from '#components'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export default class ManageableComponent {
@@ -83,6 +82,8 @@ export default class ManageableComponent {
     if (!stackItem) {
       return
     }
+
+    const CwaAdminResourceManagerComponentFocus = defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'))
 
     this.focusComponent = createApp(CwaAdminResourceManagerComponentFocus, {
       iri: this.currentIri,

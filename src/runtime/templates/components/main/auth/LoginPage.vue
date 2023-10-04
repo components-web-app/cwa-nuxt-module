@@ -5,24 +5,22 @@
     :error="error"
     @submit="$emit('submit')"
   >
-    <template v-if="credentials">
-      <InputField
-        v-model="credentials.username"
-        label="Username or Email"
-        name="username"
-        type="text"
-        autocomplete="username"
-        :required="true"
-      />
-      <InputField
-        v-model="credentials.password"
-        label="Password"
-        name="password"
-        type="password"
-        autocomplete="current-password"
-        :required="true"
-      />
-    </template>
+    <InputField
+      v-model="credentials.username"
+      label="Username or Email"
+      name="username"
+      type="text"
+      autocomplete="username"
+      :required="true"
+    />
+    <InputField
+      v-model="credentials.password"
+      label="Password"
+      name="password"
+      type="password"
+      autocomplete="current-password"
+      :required="true"
+    />
     <slot>
       <div class="cwa-flex cwa-items-center cwa-justify-between">
         <AuthPageLink link-to="/" link-text="< Back to home" />
@@ -33,9 +31,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 import AuthTemplate from './_parts/AuthTemplate.vue'
 import InputField from './_parts/InputField.vue'
+import AuthPageLink from './_parts/AuthPageLink.vue'
 
 const emit = defineEmits(['submit', 'update:modelValue'])
 
@@ -48,10 +47,6 @@ const props = defineProps<{
   }
   error?: string
 }>()
-
-const AuthPageLink = defineAsyncComponent(() =>
-  import('./_parts/AuthPageLink.vue')
-)
 
 const credentials = computed({
   get () {
