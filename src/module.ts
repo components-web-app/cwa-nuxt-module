@@ -104,6 +104,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     addImportsDir(resolve('./runtime/composables/component'))
 
     const vueTemplatesDir = resolve('./runtime/templates')
+
     extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
@@ -118,7 +119,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       const defaultResourcesConfig: CwaResourcesMeta = {}
 
       // exclude files within admin and ui folders which will not need a configuration
-      const regex = /^\/(?!.+\/(admin|ui)\/).+.vue$/
+      const regex = /^(?!.+\/(admin|ui)\/).+.vue$/
       const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
       const componentsByPath: { [key:string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
       const userComponents = allUserComponents.filter(({ filePath }) => regex.test(filePath))
@@ -135,9 +136,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
         const managerTabs: GlobalComponentNames[] = []
         if (isDirectory(tabsDir)) {
-          const pattern = `**/*.{${extensions.join(',')},}`
-          const files = (await globby(pattern, { cwd: tabsDir })).sort()
-          const tabFiles = files.map(file => resolve(tabsDir, file))
+          const tabFiles = Object.keys(componentsByPath).filter(path => path.startsWith(tabsDir))
           tabFiles.forEach((file) => {
             if (componentsByPath[file]) {
               componentsByPath[file].global && managerTabs.push(componentsByPath[file].pascalName)
@@ -162,6 +161,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     nuxt.hook('modules:done', () => {
       // clear options no longer needed and add plugin
       delete options.pagesDepth
+      delete options.tailwind
       addTemplate({
         filename: 'cwa-options.ts',
         getContents: async ({ app }) => {

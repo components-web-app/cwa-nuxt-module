@@ -1,10 +1,10 @@
 // @vitest-environment nuxt
 import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import LoginPageLink from './LoginPageLink.vue'
+import AuthPageLink from './AuthPageLink.vue'
 
 function createWrapper () {
-  return shallowMount(LoginPageLink, {
+  return shallowMount(AuthPageLink, {
     props: {
       linkText: 'Click here to get money',
       linkTo: '/bank/loan'
@@ -12,7 +12,7 @@ function createWrapper () {
   })
 }
 
-describe('LoginPageLink', () => {
+describe('AuthPageLink', () => {
   describe('snapshots', () => {
     test('should match snapshot', () => {
       const wrapper = createWrapper()
