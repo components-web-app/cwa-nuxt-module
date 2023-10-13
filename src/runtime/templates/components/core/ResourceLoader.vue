@@ -102,11 +102,16 @@ const methods = {
         path: props.iri
       })
     }
+
+    // once we have a resource we need to make sure we have loaded the published as well if it is a draft, and the draft
+    // if it is published. Just in case the server was also authenticated to load the draft - so we cannot guarantee that
+    // a draft being loaded will also have the published
   }
 }
 
 onMounted(() => {
   // if has a silent error, we are client-side and last attempt was not while logged in
+  // todo: if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true
   })
