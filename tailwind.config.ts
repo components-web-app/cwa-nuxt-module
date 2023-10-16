@@ -1,7 +1,7 @@
 import { Config } from 'tailwindcss'
 import colors from 'tailwindcss/colors'
 
-module.exports = {
+export default {
   content: ['src/**/*.vue', 'src/**/*.ts'],
   theme: {
     colors: {
