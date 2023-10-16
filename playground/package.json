@@ -2,20 +2,12 @@
   "private": true,
   "name": "nuxt-cwa-module-playground",
   "devDependencies": {
+    "@headlessui/vue": "^1.7.13",
     "@nuxt/devtools": "^0.8.3",
     "@nuxtjs/tailwindcss": "^6.8.0",
-    "@sidebase/nuxt-auth": "^0.4.3",
-    "@vite-pwa/nuxt": "^0.0.9",
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.31",
-    "tailwindcss": "^3.2.7",
-    "vite-plugin-pwa": "^0.15.0"
-  },
-  "scripts": {
-    "postcss": "postcss assets/css/tailwind.css -o ./assets/css/main.css",
-    "postcss:watch": "postcss assets/css/tailwind.css -o ./assets/css/main.css --watch"
+    "@vite-pwa/nuxt": "^0.0.9"
   },
   "dependencies": {
-    "@headlessui/vue": "^1.7.13"
+    "@nuxt/image": "1.0.0-rc.3"
   }
 }

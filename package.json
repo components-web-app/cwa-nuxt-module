@@ -55,7 +55,7 @@
     "vue": "^3.3.4"
   },
   "devDependencies": {
-    "@nuxt/image-edge": "1.0.0-28059208.2abef1b",
+    "@headlessui/vue": "^1.7.13",
     "@nuxt/module-builder": "^0.4.0",
     "@nuxtjs/eslint-config-typescript": "^12.1.0",
     "@nuxtjs/tailwindcss": "^6.8.0",
@@ -72,8 +72,6 @@
     "eslint": "^8.51.0",
     "nuxt-vitest": "^0.8.7",
     "postcss-cli": "^10.1.0",
-    "sass": "^1.69.2",
-    "sass-loader": "^13.3.2",
     "typescript": "^5.2.2",
     "vite-tsconfig-paths": "^4.2.1",
     "vitest": "0.31.1"
