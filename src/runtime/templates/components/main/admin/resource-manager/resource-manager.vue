@@ -98,8 +98,8 @@ const selectedTab = computed(() => {
   return current.value?.managerTabs?.[selectedIndex.value]
 })
 
-watch([spacer, managerHolder], () => {
-  if (!spacer.value || !managerHolder.value) {
+watch([spacer, managerHolder, current, selectedIndex], () => {
+  if (!spacer.value || !managerHolder.value || !current.value) {
     return
   }
   const newHeight = managerHolder.value.clientHeight
@@ -124,9 +124,9 @@ defineExpose({
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
     <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop @contextmenu.stop>
-      <template v-if="current">
+      <div v-if="current" ref="managerHolder">
         <ManagerTabs :tabs="tabs" :selected-index="selectedIndex" @click="selectTab" />
-        <div ref="managerHolder" class="cwa-p-4">
+        <div class="cwa-p-4">
           <template v-if="current?.managerTabs">
             <component
               :is="tab"
@@ -141,7 +141,7 @@ defineExpose({
             />
           </template>
         </div>
-      </template>
+      </div>
     </div>
   </Transition>
   <CwaAdminResourceManagerContextMenu v-if="showAdmin" v-model="isOpen" :virtual-element="virtualElement" />
