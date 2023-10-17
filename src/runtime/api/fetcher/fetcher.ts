@@ -84,7 +84,8 @@ export default class Fetcher {
     let iri: string
     let manifestPath: string|undefined
     const routeParam = route.params.cwaPage0
-    iri = Array.isArray(routeParam) ? routeParam[0] : routeParam
+    // todo: test that we can get the iri from the route
+    iri = Array.isArray(routeParam) ? '/' + routeParam.join('/') : routeParam
     const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
     if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
       iri = `/_/routes/${route.path}`
