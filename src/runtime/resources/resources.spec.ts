@@ -759,7 +759,7 @@ describe('Resources', () => {
       const { resources } = createResources()
       vi.spyOn(resources, 'getResource').mockImplementationOnce(() => computed(() => 'resource'))
       vi.spyOn(resources, 'pageIri', 'get').mockImplementation(() => computed(() => 'pageIri'))
-      expect(resources.page).toEqual('resource')
+      expect(resources.page.value).toEqual('resource')
       expect(resources.getResource).toHaveBeenCalledWith('pageIri')
       vi.clearAllMocks()
     })

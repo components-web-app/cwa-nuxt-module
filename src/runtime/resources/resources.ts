@@ -159,7 +159,7 @@ export class Resources {
 
   private getPageIriByFetchStatus (fetchStatus?: FetchStatus): string|undefined {
     const type = this.getFetchStatusType(fetchStatus)
-    if (!fetchStatus || !type) {
+    if (!type) {
       return
     }
 
@@ -182,6 +182,28 @@ export class Resources {
     }
   }
 
+  public get pageDataIri () {
+    return computed(() => {
+      const fetchStatus = this.displayFetchStatus
+      const type = this.getFetchStatusType(fetchStatus)
+      if (!type) {
+        return
+      }
+      if (type === CwaResourceTypes.PAGE_DATA) {
+        return fetchStatus.path
+      }
+      const successResource = this.getResource(fetchStatus.path).value
+      return type === CwaResourceTypes.ROUTE ? successResource.data?.pageData : undefined
+    })
+  }
+
+  public get pageData () {
+    if (!this.pageDataIri.value) {
+      return
+    }
+    return this.getResource(this.pageDataIri.value)
+  }
+
   public get pageIri (): ComputedRef<string|undefined> {
     return computed(() => this.getPageIriByFetchStatus(this.displayFetchStatus))
   }
@@ -190,7 +212,7 @@ export class Resources {
     if (!this.pageIri.value) {
       return
     }
-    return this.getResource(this.pageIri.value).value
+    return this.getResource(this.pageIri.value)
   }
 
   public get layoutIri (): ComputedRef<string|undefined> {
@@ -223,5 +245,15 @@ export class Resources {
 
   private get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
+  }
+
+  public get isPageTemplate () {
+    return computed(() => !!this.page.value.data?.isTemplate)
+  }
+
+  public get isPageDynamic () {
+    return computed(() => {
+      return this.isPageTemplate.value && !!this.pageDataIri.value
+    })
   }
 }

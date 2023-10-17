@@ -239,7 +239,7 @@ describe('ManageableComponent Class', () => {
       })
 
       instance.currentIri = '/group'
-      expect(instance.childIris.value).toEqual(['/position-1', '/position-2', '/component', '/position-3', '/no-type'])
+      expect(instance.childIris.value).toEqual(['/position-1', '/position-1_placeholder', '/position-2', '/position-2_placeholder', '/component', '/position-3', '/position-3_placeholder', '/no-type'])
     })
   })
 

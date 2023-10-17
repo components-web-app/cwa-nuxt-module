@@ -79,7 +79,6 @@ export default class Cwa {
     return this.adminNavGuard.adminNavigationGuardFn
   }
 
-  // todo: test
   public get navigationDisabled () {
     return this.adminNavGuard.navigationDisabled
   }
@@ -98,7 +97,6 @@ export default class Cwa {
     return this.fetcher.fetchRoute(route)
   }
 
-  // todo: test
   public clearPrimaryFetch () {
     this.fetchStatusManager.clearPrimaryFetch()
   }
