@@ -1,4 +1,5 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import CwaModule from '../src/module'
 
 const API_URL = process.env.API_URL || 'https://localhost:8443'
 const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
@@ -8,9 +9,9 @@ export default defineNuxtConfig({
     '../src/layer'
   ],
   modules: [
-    '../src/module',
+    CwaModule,
     '@nuxtjs/tailwindcss',
-    '@nuxt/image',
+    '@nuxt/image-edge',
     '@nuxt/devtools',
     'nuxt-vitest',
     '@vite-pwa/nuxt'
@@ -21,13 +22,7 @@ export default defineNuxtConfig({
     resources: {
       NavigationLink: {
         name: 'Link'
-      },
-      HtmlContent: {
-        name: 'Body Text'
       }
-    },
-    tailwind: {
-      base: false
     }
   },
   typescript: {

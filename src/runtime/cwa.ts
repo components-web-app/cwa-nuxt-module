@@ -1,7 +1,5 @@
 import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { useCookie } from '#app/composables/cookie.js'
-import { NuxtApp } from '#app/nuxt'
-import { CwaModuleOptions, CwaResourcesMeta } from '../module'
+import { CwaModuleOptions } from '../module'
 import { Storage } from './storage/storage'
 import Fetcher, { FetchResourceEvent } from './api/fetcher/fetcher'
 import Mercure from './api/mercure'
@@ -16,6 +14,8 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+import { useCookie } from '#app/composables/cookie.js'
+import { NuxtApp } from '#app/nuxt'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -24,7 +24,6 @@ export default class Cwa {
   private readonly apiDocumentation: ApiDocumentation
   private readonly mercure: Mercure
   private readonly fetcher: Fetcher
-  private readonly fetchStatusManager: FetchStatusManager
   private readonly cwaFetch: CwaFetch
 
   // public resources repository and utility getters
@@ -41,7 +40,7 @@ export default class Cwa {
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
 
-  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'|'cwaResources'>, options: CwaModuleOptions) {
+  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
@@ -56,10 +55,10 @@ export default class Cwa {
     this.admin = new Admin(this.storage.stores.admin)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
-    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
-    this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
+    const fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
+    this.fetcher = new Fetcher(this.cwaFetch, fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
-    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager)
+    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, fetchStatusManager)
     this.auth = new Auth(
       this.cwaFetch,
       this.mercure,
@@ -79,11 +78,6 @@ export default class Cwa {
     return this.adminNavGuard.adminNavigationGuardFn
   }
 
-  // todo: test
-  public get navigationDisabled () {
-    return this.adminNavGuard.navigationDisabled
-  }
-
   // API Documentation service is private, exposing only function required by applications
   public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
     return await this.apiDocumentation.getApiDocumentation(refresh)
@@ -98,23 +92,13 @@ export default class Cwa {
     return this.fetcher.fetchRoute(route)
   }
 
-  // todo: test
-  public clearPrimaryFetch () {
-    this.fetchStatusManager.clearPrimaryFetch()
-  }
-
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved
   public async initClientSide () {
     await this.auth.init()
     this.mercure.init()
   }
 
-  public get resourcesConfig (): CwaResourcesMeta {
-    return this.options.resources || {}
-  }
-
-  // @internal
-  public setResourceMeta (meta: CwaResourcesMeta) {
-    this.options.resources = meta
+  public get resourcesConfig () {
+    return this.options.resources
   }
 }

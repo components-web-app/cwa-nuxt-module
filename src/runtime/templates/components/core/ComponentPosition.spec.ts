@@ -27,7 +27,7 @@ describe('ComponentPosition', () => {
     const { iri, componentPrefix } = child.props()
 
     expect(iri).toEqual(mockComponentName)
-    expect(componentPrefix).toEqual('CwaComponent')
+    expect(componentPrefix).toEqual('CwaComponents')
   })
 
   describe('snapshots', () => {
