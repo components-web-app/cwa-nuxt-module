@@ -7,7 +7,7 @@ import {
   Ref,
   watch,
   WatchStopHandle,
-  createApp
+  createApp, defineAsyncComponent
 } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
@@ -22,6 +22,7 @@ export default class ManageableComponent {
   private focusComponent: undefined|App
   private focusWrapper: HTMLElement|undefined
   private readonly yOffset = 100
+  private componentFocusComponent: typeof CwaAdminResourceManagerComponentFocus
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -29,6 +30,7 @@ export default class ManageableComponent {
   ) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
+    this.componentFocusComponent = defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'))
   }
 
   // PUBLIC
@@ -85,7 +87,7 @@ export default class ManageableComponent {
       return
     }
 
-    this.focusComponent = createApp(CwaAdminResourceManagerComponentFocus, {
+    this.focusComponent = createApp(this.componentFocusComponent, {
       iri: this.currentIri,
       domElements: computed(() => stackItem.domElements)
     })
@@ -221,8 +223,12 @@ export default class ManageableComponent {
       domElements: this.domElements,
       clickTarget: evt.target,
       displayName: this.displayName,
-      managerTabs: this.resourceConfig?.managerTabs
+      managerTabs: this.managerTabs
     })
+  }
+
+  private get managerTabs () {
+    return this.resourceConfig?.managerTabs
   }
 
   private get resourceType () {
