@@ -1,4 +1,8 @@
 import { join } from 'path'
+import path from 'node:path'
+import { statSync } from 'node:fs'
+import _mergeWith from 'lodash/mergeWith.js'
+import _isArray from 'lodash/isArray.js'
 import {
   addImportsDir,
   addPlugin,
@@ -6,20 +10,30 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule
+  installModule, resolveAlias, updateTemplates
 } from '@nuxt/kit'
-import { ModuleOptions, NuxtPage } from '@nuxt/schema'
+import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
+import { DefineComponent, GlobalComponents } from 'vue'
+
+export type GlobalComponentNames = keyof GlobalComponents
+
+export type ManagerTab = GlobalComponentNames|DefineComponent<{}, {}, any>
+
+export interface CwaResourceMeta {
+  name?: string,
+  managerTabs?: ManagerTab[]
+}
+
+export interface CwaResourcesMeta {
+  [type:string]: CwaResourceMeta
+}
 
 export interface CwaModuleOptions extends ModuleOptions {
   storeName: string
   pagesDepth?: number,
   apiUrlBrowser?: string
   apiUrl?: string,
-  resources?: {
-    [type:string]: {
-      name?: string
-    }
-  }
+  resources?: CwaResourcesMeta
 }
 
 function createDefaultCwaPages (
@@ -67,6 +81,9 @@ export default defineNuxtModule<CwaModuleOptions>({
       ComponentGroup: {
         name: 'Group'
       }
+    },
+    tailwind: {
+      base: true
     }
   },
   async setup (options: CwaModuleOptions, nuxt) {
@@ -81,71 +98,129 @@ export default defineNuxtModule<CwaModuleOptions>({
     const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
 
+    // include css - dev can disable the base in options to allow usage of their own tailwind without conflict and duplication
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
+    options.tailwind.base && nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
+
+    // include auto-imports for composables
+    addImportsDir(resolve('./runtime/composables'))
+    addImportsDir(resolve('./runtime/composables/component'))
 
     const vueTemplatesDir = resolve('./runtime/templates')
 
-    const extendPagesCallback = (pages: NuxtPage[]) => {
+    extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
-    }
-
-    extendPages(extendPagesCallback)
-
-    // clear options no longer needed and add plugin
-    delete options.pagesDepth
-    addTemplate({
-      filename: 'cwa-options.ts',
-      getContents: () => `import { CwaModuleOptions } from '#cwa/module';
-export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
-`
     })
 
+    const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
+    const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
+    nuxt.options.alias['#cwaComponents'] = userComponentsPath
+
+    function extendCwaOptions (components: Component[]) {
+      const defaultResourcesConfig: CwaResourcesMeta = {}
+
+      // exclude files within admin and ui folders which will not need a configuration
+      const regex = /^(?!.+\/(admin|ui)\/).+.vue$/
+      const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+      const componentsByPath: { [key:string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
+      const userComponents = allUserComponents.filter(({ filePath }) => regex.test(filePath))
+      for (const component of userComponents) {
+        const isDirectory = (p: string) => {
+          try {
+            return statSync(p).isDirectory()
+          } catch (_e) {
+            return false
+          }
+        }
+
+        const resourceType = component.pascalName.replace(/^CwaComponent/, '')
+        const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
+        const managerTabs: GlobalComponentNames[] = []
+        if (isDirectory(tabsDir)) {
+          const tabFiles = Object.keys(componentsByPath).filter(path => path.startsWith(tabsDir))
+          tabFiles.forEach((file) => {
+            if (componentsByPath[file]) {
+              // @ts-ignore: Unable to resolve that pascalName exists in keyof type
+              componentsByPath[file].global && managerTabs.push(componentsByPath[file].pascalName)
+            }
+          })
+        }
+
+        defaultResourcesConfig[resourceType] = {
+          // auto name with spaces in place of pascal/camel case
+          name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
+          managerTabs
+        }
+      }
+      const resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
+        if (_isArray(a)) {
+          return b.concat(a)
+        }
+      })
+      return { ...options, resources }
+    }
+
     nuxt.hook('modules:done', () => {
+      // clear options no longer needed and add plugin
+      delete options.pagesDepth
+      delete options.tailwind
+      addTemplate({
+        filename: 'cwa-options.ts',
+        getContents: ({ app }) => {
+          return `import { CwaModuleOptions } from '#cwa/module';
+export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
+`
+        }
+      })
       addPlugin({
         src: resolve('./runtime/plugin')
       })
     })
 
-    addImportsDir(resolve('./runtime/composables'))
-
     nuxt.hook('components:dirs', (dirs) => {
       // component dirs from module
       dirs.unshift({
-        path: join(vueTemplatesDir, 'components', 'main'),
-        prefix: 'Cwa'
+        path: join(cwaVueComponentsDir, 'main'),
+        prefix: 'Cwa',
+        ignore: ['**/_*/*', '**/*.spec.{cts,mts,ts}']
       })
       dirs.unshift({
-        path: join(vueTemplatesDir, 'components', 'ui'),
-        prefix: 'CwaUi'
+        path: join(cwaVueComponentsDir, 'utils'),
+        prefix: 'CwaUtils',
+        ignore: ['**/*.spec.{cts,mts,ts}']
       })
 
-      // component dirs to be configured by application - global, so they are split
+      // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
-        prefix: 'CwaPages',
-        global: true
+        prefix: 'CwaPage',
+        global: true,
+        ignore: ['**/*.spec.{cts,mts,ts}']
       })
+
       dirs.unshift({
-        path: join(nuxt.options.srcDir, 'cwa', 'components'),
-        prefix: 'CwaComponents',
-        global: true
+        path: userComponentsPath,
+        prefix: 'CwaComponent',
+        global: true,
+        ignore: ['**/*.spec.{cts,mts,ts}']
       })
     })
 
-    // Todo: consider this approach - test if it's working in real world application and then implement and test
-    // nuxt.hook('tailwindcss:config', (tailwindConfig: Partial<Config>) => {
-    //   if (Array.isArray(tailwindConfig.corePlugins)) {
-    //     const preflightSafelistIndex = tailwindConfig.corePlugins.indexOf('preflight')
-    //     if (preflightSafelistIndex > -1) {
-    //       tailwindConfig.corePlugins.splice(preflightSafelistIndex, 1)
-    //     }
-    //     return
-    //   }
-    //   tailwindConfig.corePlugins = {
-    //     ...tailwindConfig.corePlugins,
-    //     preflight: false
-    //   }
-    // })
+    // todo: test - this will rebuild the options template when cwa files are added or deleted so that we auto-detect tabs to change in dev
+    nuxt.hook('builder:watch', async (event, relativePath) => {
+      // only if files have been added or removed
+      if (!['add', 'unlink'].includes(event)) {
+        return
+      }
+      const path = resolve(nuxt.options.srcDir, relativePath)
+      if (path.startsWith(userComponentsPath + '/')) {
+        await updateTemplates({
+          filter: template => [
+            'cwa-options.ts'
+          ].includes(template.filename)
+        })
+      }
+    })
   }
 })

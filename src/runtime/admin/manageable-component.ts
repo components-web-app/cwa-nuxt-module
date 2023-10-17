@@ -7,17 +7,15 @@ import {
   Ref,
   watch,
   WatchStopHandle,
-  createApp
+  createApp, defineAsyncComponent, markRaw
 } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
+// todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
+import ManagerTabsResolver from './manager-tabs-resolver'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
-import ComponentFocus from '#cwa/layer/_components/admin/component-focus.vue'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
-
-export interface ManageableComponentOptions {
-  displayName?: string
-}
+import CwaAdminResourceManagerComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
 
 export default class ManageableComponent {
   private currentIri: string|undefined
@@ -26,11 +24,16 @@ export default class ManageableComponent {
   private focusComponent: undefined|App
   private focusWrapper: HTMLElement|undefined
   private readonly yOffset = 100
+  private readonly componentFocusComponent: typeof CwaAdminResourceManagerComponentFocus
+  private tabResolver: ManagerTabsResolver
 
   constructor (
     private readonly component: ComponentPublicInstance,
-    private readonly $cwa: Cwa,
-    private readonly options?: ManageableComponentOptions) {
+    private readonly $cwa: Cwa
+  ) {
+    // if we just use the imported component, we often get too many failed tries to load the chunk. If we async in the mounting function, we get flickers switching between components.
+    this.componentFocusComponent = defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'))
+    this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
   }
@@ -84,11 +87,12 @@ export default class ManageableComponent {
       }
       return
     }
+
     if (!stackItem) {
       return
     }
 
-    this.focusComponent = createApp(ComponentFocus, {
+    this.focusComponent = createApp(this.componentFocusComponent, {
       iri: this.currentIri,
       domElements: computed(() => stackItem.domElements)
     })
@@ -223,23 +227,35 @@ export default class ManageableComponent {
       iri: this.currentIri,
       domElements: this.domElements,
       clickTarget: evt.target,
-      displayName: this.displayName
+      displayName: this.displayName,
+      managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource }))
     })
   }
 
-  private get displayName () {
-    const localDisplayName = this.options?.displayName
-    if (localDisplayName) {
-      return localDisplayName
-    }
-    const currentResource: CwaCurrentResourceInterface|undefined = this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+  private get currentResource () {
+    return this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+  }
+
+  private get resourceType () {
+    const currentResource: CwaCurrentResourceInterface|undefined = this.currentResource
     if (!currentResource) {
-      return null
+      return
     }
-    const type = currentResource.data?.['@type']
-    if (!type) {
-      return null
+    return currentResource.data?.['@type']
+  }
+
+  private get resourceConfig () {
+    const currentResource: CwaCurrentResourceInterface|undefined = this.currentResource
+    if (!currentResource) {
+      return
     }
-    return this.$cwa.resourcesConfig[type]?.name || type
+    if (!this.$cwa.resourcesConfig || !this.resourceType) {
+      return
+    }
+    return this.$cwa.resourcesConfig[this.resourceType]
+  }
+
+  private get displayName () {
+    return this.resourceConfig?.name || this.resourceType
   }
 }

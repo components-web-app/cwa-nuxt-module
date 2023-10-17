@@ -1,7 +1,6 @@
 <template>
   <div class="p-4">
     <CwaComponentGroup reference="primary" :location="props.iri" />
-    <CwaComponentGroup reference="another" :location="props.iri" />
   </div>
 </template>
 

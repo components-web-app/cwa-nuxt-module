@@ -13,7 +13,7 @@ vi.mock('@nuxt/kit', async () => {
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
     installModule: vi.fn(),
-    createResolver: vi.fn().mockReturnValue({ resolve: vi.fn() })
+    createResolver: vi.fn().mockReturnValue({ resolvePath: vi.fn(), resolve: vi.fn(function (...args) { return join(...args) }) })
   }
 
   return {
@@ -22,14 +22,22 @@ vi.mock('@nuxt/kit', async () => {
   }
 })
 
+vi.mock('node:fs', () => {
+  return {
+    statSync: vi.fn(() => ({
+      isDirectory: vi.fn(() => true)
+    }))
+  }
+})
+
 async function prepareMockNuxt (options = {}, nuxt?) {
   await import('./module')
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = nuxt || { hook: vi.fn(), options: { alias: {}, css: [], build: { transpile: [] } } }
+  const mockNuxt = Object.assign({ hook: vi.fn(), options: { alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
 
-  await setup(options, mockNuxt)
+  await setup(Object.assign({ tailwind: { base: true } }, options), mockNuxt)
 
   return mockNuxt
 }
@@ -62,6 +70,9 @@ describe('CWA module', () => {
           ComponentGroup: {
             name: 'Group'
           }
+        },
+        tailwind: {
+          base: true
         }
       })
     })
@@ -75,42 +86,26 @@ describe('CWA module', () => {
     })
 
     test('should add aliases with result of resolved paths', async () => {
-      const mockResolver = vi.fn(path => path)
-      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
-        resolve: mockResolver,
-        resolvePath: vi.fn()
-      })
-
       const mockNuxt = await prepareMockNuxt()
-
+      const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
       expect(mockResolver).toHaveBeenCalledWith('./')
       expect(mockNuxt.options.alias['#cwa']).toEqual(mockResolver('./'))
     })
 
     test('should add transpile directory', async () => {
-      const mockResolver = vi.fn(path => path)
-      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
-        resolve: mockResolver,
-        resolvePath: vi.fn()
-      })
-
       const mockNuxt = await prepareMockNuxt()
+      const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
 
       expect(mockResolver).toHaveBeenCalledWith('./runtime')
       expect(mockNuxt.options.build.transpile).toEqual([mockResolver('./runtime')])
     })
 
     test('should add css directory', async () => {
-      const mockResolver = vi.fn(path => path)
-      vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
-        resolve: mockResolver,
-        resolvePath: vi.fn()
-      })
-
       const mockNuxt = await prepareMockNuxt()
+      const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
 
       expect(mockResolver).toHaveBeenCalledWith('./runtime/templates/assets/main.css')
-      expect(mockNuxt.options.css).toEqual([mockResolver('./runtime/templates/assets/main.css')])
+      expect(mockNuxt.options.css).toEqual([mockResolver('./runtime/templates/assets/base.css'), mockResolver('./runtime/templates/assets/main.css')])
     })
 
     test('should add template', async () => {
@@ -118,18 +113,64 @@ describe('CWA module', () => {
         mock: true,
         foo: 'bar'
       }
-
-      await prepareMockNuxt(mockOptions)
+      await prepareMockNuxt(mockOptions, {
+        hook: vi.fn((hookName, callback) => {
+          if (hookName === 'modules:done') {
+            callback()
+          }
+        }),
+        options: {
+          alias: {},
+          css: [],
+          build: {
+            transpile: []
+          },
+          srcDir: ''
+        }
+      })
 
       expect((nuxtKit.addTemplate as Mock)).toHaveBeenCalled()
 
       const { lastCall: [{ filename, getContents }] } = (nuxtKit.addTemplate as Mock).mock
 
       expect(filename).toEqual('cwa-options.ts')
-      expect(getContents()).toEqual(`import { CwaModuleOptions } from '#cwa/module';
+
+      const components = [
+        {
+          filePath: ''
+        },
+        {
+          filePath: 'cwa/components/HtmlContent/HtmlContent.vue',
+          pascalName: 'CwaComponentHtmlContent'
+        },
+        {
+          filePath: 'cwa/components/HtmlContent/admin/Tab.vue',
+          pascalName: 'CwaComponentHtmlContentAdminTab'
+        },
+        {
+          filePath: 'cwa/components/HtmlContent/admin/GlobalTab.vue',
+          pascalName: 'CwaComponentHtmlContentAdminGlobalTab',
+          global: true
+        },
+        {
+          filePath: 'cwa/components/HtmlContent/ui/AltUi.vue',
+          pascalName: 'CwaComponentHtmlContentUiAltUi',
+          global: true
+        }
+      ]
+
+      expect(await getContents({ app: { components } })).toEqual(`import { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = {
   "mock": true,
-  "foo": "bar"
+  "foo": "bar",
+  "resources": {
+    "HtmlContent": {
+      "name": "Html Content",
+      "managerTabs": [
+        "CwaComponentHtmlContentAdminGlobalTab"
+      ]
+    }
+  }
 }
 `)
     })
@@ -208,21 +249,25 @@ export const options:CwaModuleOptions = {
         expect(hookCall).toBeDefined()
         expect(mockDirs).toContainEqual({
           path: join(mockNuxt.options.srcDir, 'cwa', 'components'),
-          prefix: 'CwaComponents',
-          global: true
+          prefix: 'CwaComponent',
+          global: true,
+          ignore: ['**/*.spec.{cts,mts,ts}']
         })
         expect(mockDirs).toContainEqual({
           path: join(mockNuxt.options.srcDir, 'cwa', 'pages'),
-          prefix: 'CwaPages',
-          global: true
+          prefix: 'CwaPage',
+          global: true,
+          ignore: ['**/*.spec.{cts,mts,ts}']
         })
         expect(mockDirs).toContainEqual({
-          path: join(mockResolver('./runtime/templates'), 'components', 'ui'),
-          prefix: 'CwaUi'
+          path: join(mockResolver('./runtime/templates'), 'components', 'utils'),
+          prefix: 'CwaUtils',
+          ignore: ['**/*.spec.{cts,mts,ts}']
         })
         expect(mockDirs).toContainEqual({
           path: join(mockResolver('./runtime/templates'), 'components', 'main'),
-          prefix: 'Cwa'
+          prefix: 'Cwa',
+          ignore: ['**/_*/*', '**/*.spec.{cts,mts,ts}']
         })
       })
     })

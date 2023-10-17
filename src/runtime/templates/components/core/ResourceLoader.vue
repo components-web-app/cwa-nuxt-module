@@ -1,11 +1,11 @@
 <template>
-  <CwaUiAlertWarning v-if="!props.iri">
+  <CwaUtilsAlertWarning v-if="!props.iri">
     <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
-  </CwaUiAlertWarning>
+  </CwaUtilsAlertWarning>
   <div v-else-if="isLoading">
-    <CwaUiSpinner :show="true" />
+    <CwaUtilsSpinner :show="true" />
   </div>
-  <CwaUiAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
+  <CwaUtilsAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
     <p v-if="!resource">
       Resource `{{ props.iri }}` has not been requested
     </p>
@@ -15,7 +15,7 @@
     <p v-else>
       The component `{{ resourceUiComponent }}` for resource `{{ props.iri }}` cannot be resolved
     </p>
-  </CwaUiAlertWarning>
+  </CwaUtilsAlertWarning>
   <template v-else-if="!hasError">
     <component v-bind="$attrs" :is="resolvedComponent" :iri="props.iri" />
   </template>
@@ -96,15 +96,22 @@ const resolvedComponent = computed(() => {
 
 const methods = {
   async fetchResource ([hasSilentError, resource]: [boolean, CwaCurrentResourceInterface]) {
-    if (resource?.apiState.ssr && !resource?.data && hasSilentError) {
+    const ssrNoDataWithSilentError = resource?.apiState.ssr && !resource?.data && hasSilentError
+    if (ssrNoDataWithSilentError) {
       await $cwa.fetchResource({
         path: props.iri
       })
     }
+
+    // once we have a resource we need to make sure we have loaded the published as well if it is a draft, and the draft
+    // if it is published. Just in case the server was also authenticated to load the draft - so we cannot guarantee that
+    // a draft being loaded will also have the published
   }
 }
 
 onMounted(() => {
+  // if has a silent error, we are client-side and last attempt was not while logged in
+  // todo: if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true
   })

@@ -5,6 +5,7 @@ import Cwa from '../cwa'
 import * as ResourceUtils from '../resources/resource-utils'
 import { CwaResourceTypes } from '../resources/resource-utils'
 import ManageableComponent from './manageable-component'
+import * as ManagerTabsResolver from '#cwa/runtime/admin/manager-tabs-resolver'
 
 const Node = {
   ELEMENT_NODE: 1,
@@ -58,6 +59,14 @@ vi.mock('../cwa', () => {
   }
 })
 
+vi.mock('./manager-tabs-resolver', () => {
+  return {
+    default: vi.fn(() => ({
+      resolve: vi.fn()
+    }))
+  }
+})
+
 interface DummyDom {
   nodeType: 1|2|3
   nextSibling?: DummyDom
@@ -85,6 +94,11 @@ function createManageableComponent ($el?: DummyDom) {
 describe('ManageableComponent Class', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('ManagerTabsResolver is initialised with correct parameters', () => {
+    createManageableComponent()
+    expect(ManagerTabsResolver.default).toHaveBeenCalled()
   })
 
   test('componentMountedListener is bound to `this`', () => {
@@ -309,23 +323,40 @@ describe('ManageableComponent Class', () => {
       expect($cwa.admin.componentManager.addToStack).not.toHaveBeenCalled()
     })
 
-    test('should add to stack with computed displayName', () => {
+    test('should add to stack with correct object', () => {
+      const resourceType = 'type'
+      const resourceConfig = { managerTabs: ['abc'] }
+      const resource = { iri: '/abc' }
+
       const { instance, $cwa } = createManageableComponent()
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
 
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
+      vi.spyOn(instance, 'resourceType', 'get').mockImplementationOnce(() => (resourceType))
+      vi.spyOn(instance, 'resourceConfig', 'get').mockImplementationOnce(() => (resourceConfig))
+      vi.spyOn(instance, 'currentResource', 'get').mockImplementationOnce(() => (resource))
+
+      vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockImplementationOnce(() => (['abc']))
+
       instance.currentIri = '/mock'
 
       instance.clickListener(mockEvent)
+
+      expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig, resource })
 
       expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
-        displayName: mockName
+        displayName: mockName,
+        managerTabs: ['abc']
       })
     })
+  })
+
+  describe.todo('resourceConfig getter', () => {
+
   })
 
   describe.todo('displayName getter', () => {
@@ -334,7 +365,6 @@ describe('ManageableComponent Class', () => {
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
 
-      instance.options = { displayName: mockName }
       instance.currentIri = '/mock'
 
       instance.clickListener(mockEvent)
