@@ -192,7 +192,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         data.apiState = {
           status: CwaResourceApiStatuses.SUCCESS,
           headers: event.headers,
-          ssr: data.apiState.ssr
+          // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
+          ssr: process.server
         }
         return
       }

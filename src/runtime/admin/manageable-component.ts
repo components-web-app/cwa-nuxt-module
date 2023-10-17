@@ -3,19 +3,26 @@ import {
   ComponentPublicInstance,
   computed,
   ComputedRef,
+  createApp,
+  defineAsyncComponent,
+  markRaw,
   ref,
   Ref,
   watch,
-  WatchStopHandle,
-  createApp, defineAsyncComponent, markRaw
+  WatchStopHandle
 } from 'vue'
-import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
+import {
+  CwaResourceTypes,
+  getResourceTypeFromIri,
+  resourceTypeToNestedResourceProperties
+} from '../resources/resource-utils'
 import Cwa from '../cwa'
 // todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
-import CwaAdminResourceManagerComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
+import CwaAdminResourceManagerComponentFocus
+  from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
 
 export default class ManageableComponent {
   private currentIri: string|undefined
@@ -147,6 +154,11 @@ export default class ManageableComponent {
         const type = getResourceTypeFromIri(iri)
         if (!type) {
           return []
+        }
+        // we don't have a real IRI for a placeholder - placeholders only currently used for positions
+        // todo: test
+        if (type === CwaResourceTypes.COMPONENT_POSITION) {
+          nested.push(`${iri}_placeholder`)
         }
         const properties = resourceTypeToNestedResourceProperties[type]
 

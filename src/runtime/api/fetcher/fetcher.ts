@@ -77,7 +77,6 @@ export default class Fetcher {
 
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
     if (route.meta.cwa === false) {
-      // todo: clear empty the primary fetch
       this.fetchStatusManager.clearPrimaryFetch()
       return
     }
@@ -271,7 +270,8 @@ export default class Fetcher {
     }
     const requestHeaders: Record<string, string> = {}
     if (this.fetchStatusManager.primaryFetchPath) {
-      requestHeaders.path = this.fetchStatusManager.primaryFetchPath
+      // todo: test we replace the /_/routes prefix
+      requestHeaders.path = this.fetchStatusManager.primaryFetchPath.replace(/^\/_\/routes\//, '')
     }
     if (preload) {
       requestHeaders.preload = preload.join(',')

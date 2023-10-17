@@ -26,6 +26,7 @@ import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } fr
 import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 
@@ -97,7 +98,13 @@ const resolvedComponent = computed(() => {
 const methods = {
   async fetchResource ([hasSilentError, resource]: [boolean, CwaCurrentResourceInterface]) {
     const ssrNoDataWithSilentError = resource?.apiState.ssr && !resource?.data && hasSilentError
-    if (ssrNoDataWithSilentError) {
+    const iri = resource?.data?.['@id']
+    const ssrPositionHasPartialData = iri
+      ? (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_POSITION &&
+        resource.apiState.ssr &&
+        $cwa.auth.user)
+      : false
+    if (ssrNoDataWithSilentError || ssrPositionHasPartialData) {
       await $cwa.fetchResource({
         path: props.iri
       })
