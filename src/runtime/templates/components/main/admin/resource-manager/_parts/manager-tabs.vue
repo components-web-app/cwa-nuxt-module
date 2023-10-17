@@ -39,7 +39,7 @@ defineExpose({ resetTabs })
   <div class="cwa-flex cwa-border-b cwa-border-stone-700 cwa-border-dashed">
     <ManagerTab
       v-for="(tab, index) of orderedTabs"
-      :key="`tab_${tab.index}_${tab.name}`"
+      :key="`tab_${index}_${tab.name}`"
       :tab="tab"
       :selected="index === selectedIndex"
       class="-cwa-mb-[1px]"

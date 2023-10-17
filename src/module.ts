@@ -10,7 +10,7 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule, resolveAlias
+  installModule, resolveAlias, updateTemplates
 } from '@nuxt/kit'
 import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
 import { DefineComponent, GlobalComponents } from 'vue'
@@ -153,12 +153,12 @@ export default defineNuxtModule<CwaModuleOptions>({
           managerTabs
         }
       }
-      options.resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
+      const resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
         if (_isArray(a)) {
           return b.concat(a)
         }
       })
-      return options
+      return { ...options, resources }
     }
 
     nuxt.hook('modules:done', () => {
@@ -167,10 +167,9 @@ export default defineNuxtModule<CwaModuleOptions>({
       delete options.tailwind
       addTemplate({
         filename: 'cwa-options.ts',
-        getContents: async ({ app }) => {
-          await extendCwaOptions(app.components)
+        getContents: ({ app }) => {
           return `import { CwaModuleOptions } from '#cwa/module';
-export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
+export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
 `
         }
       })
@@ -206,6 +205,21 @@ export const options:CwaModuleOptions = ${JSON.stringify(options, undefined, 2)}
         global: true,
         ignore: ['**/*.spec.{cts,mts,ts}']
       })
+    })
+
+    nuxt.hook('builder:watch', async (event, relativePath) => {
+      // only if files have been added or removed
+      if (!['add', 'unlink'].includes(event)) {
+        return
+      }
+      const path = resolve(nuxt.options.srcDir, relativePath)
+      if (path.startsWith(userComponentsPath + '/')) {
+        await updateTemplates({
+          filter: template => [
+            'cwa-options.ts'
+          ].includes(template.filename)
+        })
+      }
     })
   }
 })
