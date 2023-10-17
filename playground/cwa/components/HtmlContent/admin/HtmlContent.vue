@@ -10,6 +10,6 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    Tab content
+    HTML Content Tab content
   </div>
 </template>

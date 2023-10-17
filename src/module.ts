@@ -13,15 +13,19 @@ import {
   installModule, resolveAlias
 } from '@nuxt/kit'
 import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
-import { GlobalComponents } from 'vue'
+import { DefineComponent, GlobalComponents } from 'vue'
 
 export type GlobalComponentNames = keyof GlobalComponents
 
+export type ManagerTab = GlobalComponentNames|DefineComponent<{}, {}, any>
+
+export interface CwaResourceMeta {
+  name?: string,
+  managerTabs?: ManagerTab[]
+}
+
 export interface CwaResourcesMeta {
-  [type:string]: {
-    name?: string,
-    managerTabs?: GlobalComponentNames[]
-  }
+  [type:string]: CwaResourceMeta
 }
 
 export interface CwaModuleOptions extends ModuleOptions {
@@ -137,6 +141,7 @@ export default defineNuxtModule<CwaModuleOptions>({
           const tabFiles = Object.keys(componentsByPath).filter(path => path.startsWith(tabsDir))
           tabFiles.forEach((file) => {
             if (componentsByPath[file]) {
+              // @ts-ignore: Unable to resolve that pascalName exists in keyof type
               componentsByPath[file].global && managerTabs.push(componentsByPath[file].pascalName)
             }
           })

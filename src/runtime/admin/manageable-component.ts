@@ -7,10 +7,11 @@ import {
   Ref,
   watch,
   WatchStopHandle,
-  createApp, defineAsyncComponent
+  createApp, defineAsyncComponent, markRaw
 } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
+import resolveTabs from './resolve-tabs'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import CwaAdminResourceManagerComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
@@ -22,7 +23,7 @@ export default class ManageableComponent {
   private focusComponent: undefined|App
   private focusWrapper: HTMLElement|undefined
   private readonly yOffset = 100
-  private componentFocusComponent: typeof CwaAdminResourceManagerComponentFocus
+  private readonly componentFocusComponent: typeof CwaAdminResourceManagerComponentFocus
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -30,6 +31,7 @@ export default class ManageableComponent {
   ) {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
+    // if we just use the imported component, we often get too many failed tries to load the chunk. If we async in the mounting function, we get flickers switching between components.
     this.componentFocusComponent = defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'))
   }
 
@@ -223,12 +225,8 @@ export default class ManageableComponent {
       domElements: this.domElements,
       clickTarget: evt.target,
       displayName: this.displayName,
-      managerTabs: this.managerTabs
+      managerTabs: markRaw(resolveTabs({ resourceType: this.resourceType, resourceConfig: this.resourceConfig }))
     })
-  }
-
-  private get managerTabs () {
-    return this.resourceConfig?.managerTabs
   }
 
   private get resourceType () {

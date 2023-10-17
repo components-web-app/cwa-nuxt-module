@@ -14,10 +14,11 @@ const { y: windowY } = useWindowScroll()
 const current = $cwa.admin.componentManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
-const tabs = ref<CwaResourceManagerTabOptions[]>([])
+const tabRefs = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
 const isOpen = ref(false)
 const virtualElement = ref({ getBoundingClientRect: () => ({}) })
+const managerTabs = ref<typeof ManagerTabs|null>(null)
 const cachedPosition = { top: 0, left: 0 }
 
 type ContextPosition = {
@@ -76,8 +77,8 @@ const showAdmin = computed(() => {
 })
 
 watch(current, () => {
-  tabs.value = []
-  selectedIndex.value = 0
+  tabRefs.value = []
+  managerTabs.value?.resetTabs()
 })
 
 onMounted(() => {
@@ -98,7 +99,12 @@ const selectedTab = computed(() => {
   return current.value?.managerTabs?.[selectedIndex.value]
 })
 
-watch([spacer, managerHolder, current, selectedIndex], () => {
+// tabs can be async components and need to be loaded before having a value
+const allTabsMeta = computed(() => {
+  return tabRefs.value.filter(i => i)
+})
+
+watch([spacer, managerHolder, current, selectedIndex, allTabsMeta], () => {
   if (!spacer.value || !managerHolder.value || !current.value) {
     return
   }
@@ -124,22 +130,20 @@ defineExpose({
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
     <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop @contextmenu.stop>
-      <div v-if="current" ref="managerHolder">
-        <ManagerTabs :tabs="tabs" :selected-index="selectedIndex" @click="selectTab" />
+      <component
+        :is="tab"
+        v-for="(tab, index) of current?.managerTabs"
+        :key="`managerTab_${current.displayName}_${tab}_${index}`"
+        :ref="(el: CwaResourceManagerTabOptions) => (tabRefs[index] = el)"
+        class="cwa-hidden"
+      />
+      <div v-if="allTabsMeta.length" ref="managerHolder">
+        <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
         <div class="cwa-p-4">
-          <template v-if="current?.managerTabs">
-            <component
-              :is="tab"
-              v-for="(tab, index) of current.managerTabs"
-              :key="`managerTab_${current.displayName}_${tab}_${index}`"
-              :ref="(el: CwaResourceManagerTabOptions) => (tabs[index] = el)"
-              class="cwa-hidden"
-            />
-            <component
-              :is="selectedTab"
-              v-if="selectedTab"
-            />
-          </template>
+          <component
+            :is="selectedTab"
+            v-if="selectedTab"
+          />
         </div>
       </div>
     </div>
