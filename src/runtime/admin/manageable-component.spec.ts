@@ -326,6 +326,7 @@ describe('ManageableComponent Class', () => {
     test('should add to stack with correct object', () => {
       const resourceType = 'type'
       const resourceConfig = { managerTabs: ['abc'] }
+      const resource = { iri: '/abc' }
 
       const { instance, $cwa } = createManageableComponent()
       const mockEvent = { target: 'mock' }
@@ -334,6 +335,7 @@ describe('ManageableComponent Class', () => {
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
       vi.spyOn(instance, 'resourceType', 'get').mockImplementationOnce(() => (resourceType))
       vi.spyOn(instance, 'resourceConfig', 'get').mockImplementationOnce(() => (resourceConfig))
+      vi.spyOn(instance, 'currentResource', 'get').mockImplementationOnce(() => (resource))
 
       vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockImplementationOnce(() => (['abc']))
 
@@ -341,7 +343,7 @@ describe('ManageableComponent Class', () => {
 
       instance.clickListener(mockEvent)
 
-      expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig })
+      expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig, resource })
 
       expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri,

@@ -228,12 +228,16 @@ export default class ManageableComponent {
       domElements: this.domElements,
       clickTarget: evt.target,
       displayName: this.displayName,
-      managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig }))
+      managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource }))
     })
   }
 
+  private get currentResource () {
+    return this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+  }
+
   private get resourceType () {
-    const currentResource: CwaCurrentResourceInterface|undefined = this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+    const currentResource: CwaCurrentResourceInterface|undefined = this.currentResource
     if (!currentResource) {
       return
     }
@@ -241,7 +245,7 @@ export default class ManageableComponent {
   }
 
   private get resourceConfig () {
-    const currentResource: CwaCurrentResourceInterface|undefined = this.currentIri ? this.$cwa.resources.getResource(this.currentIri)?.value : undefined
+    const currentResource: CwaCurrentResourceInterface|undefined = this.currentResource
     if (!currentResource) {
       return
     }
