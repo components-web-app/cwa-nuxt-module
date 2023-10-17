@@ -11,7 +11,8 @@ import {
 } from 'vue'
 import { getResourceTypeFromIri, resourceTypeToNestedResourceProperties } from '../resources/resource-utils'
 import Cwa from '../cwa'
-import resolveTabs from './resolve-tabs'
+// todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
+import ManagerTabsResolver from './manager-tabs-resolver'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import CwaAdminResourceManagerComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
@@ -24,15 +25,17 @@ export default class ManageableComponent {
   private focusWrapper: HTMLElement|undefined
   private readonly yOffset = 100
   private readonly componentFocusComponent: typeof CwaAdminResourceManagerComponentFocus
+  private tabResolver: ManagerTabsResolver
 
   constructor (
     private readonly component: ComponentPublicInstance,
     private readonly $cwa: Cwa
   ) {
-    this.componentMountedListener = this.componentMountedListener.bind(this)
-    this.clickListener = this.clickListener.bind(this)
     // if we just use the imported component, we often get too many failed tries to load the chunk. If we async in the mounting function, we get flickers switching between components.
     this.componentFocusComponent = defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'))
+    this.tabResolver = new ManagerTabsResolver()
+    this.componentMountedListener = this.componentMountedListener.bind(this)
+    this.clickListener = this.clickListener.bind(this)
   }
 
   // PUBLIC
@@ -225,7 +228,7 @@ export default class ManageableComponent {
       domElements: this.domElements,
       clickTarget: evt.target,
       displayName: this.displayName,
-      managerTabs: markRaw(resolveTabs({ resourceType: this.resourceType, resourceConfig: this.resourceConfig }))
+      managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig }))
     })
   }
 

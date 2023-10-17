@@ -35,6 +35,7 @@ watch([selectedIndex, orderedTabs], ([newIndex]) => {
 const emit = defineEmits<{(e: 'click', index: number): void }>()
 defineExpose({ resetTabs })
 </script>
+
 <template>
   <div class="cwa-flex cwa-border-b cwa-border-stone-700 cwa-border-dashed">
     <ManagerTab

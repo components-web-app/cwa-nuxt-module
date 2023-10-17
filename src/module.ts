@@ -207,6 +207,7 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
       })
     })
 
+    // todo: test - this will rebuild the options template when cwa files are added or deleted so that we auto-detect tabs to change in dev
     nuxt.hook('builder:watch', async (event, relativePath) => {
       // only if files have been added or removed
       if (!['add', 'unlink'].includes(event)) {
