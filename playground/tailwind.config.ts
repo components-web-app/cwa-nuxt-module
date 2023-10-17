@@ -1,6 +1,5 @@
 import { Config } from 'tailwindcss'
-
-module.exports = {
+export default {
   content: [
     './cwa/**/*.{js,vue,ts}'
   ],

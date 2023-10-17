@@ -77,6 +77,8 @@ export default class Fetcher {
 
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
     if (route.meta.cwa === false) {
+      // todo: clear empty the primary fetch
+      this.fetchStatusManager.clearPrimaryFetch()
       return
     }
     let iri: string

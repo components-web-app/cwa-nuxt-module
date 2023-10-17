@@ -4,7 +4,7 @@ exports[`CWA page > snapshots > should NOT display ResourceLoader IF pageIri is 
 
 exports[`CWA page > snapshots > should display ResourceLoader component IF pageIri is defined 1`] = `
 <resourceloader-stub
-  componentprefix="CwaPages"
+  componentprefix="CwaPage"
   iri="12345"
 />
 `;

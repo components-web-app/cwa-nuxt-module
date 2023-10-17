@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "Nuxt Module for Components Web Apps and API Components Bundle",
+  "description": "Components Web Apps Nuxt Module. UI for creating component-driven web apps with the API Components Bundle",
   "author": "Daniel West <daniel@silverback.is>",
   "repository": "https://github.com/components-web-app/cwa-nuxt-module",
   "publishConfig": {
@@ -37,56 +37,54 @@
     "stryker:init": "stryker init",
     "stryker:run": "stryker run",
     "postcss": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css",
-    "postcss:watch": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css --watch"
+    "postcss:watch": "postcss src/tailwind/tailwind.css -o ./src/runtime/templates/assets/main.css --watch",
+    "postcss:base": "postcss src/tailwind/tailwind-base.css -o ./src/runtime/templates/assets/base.css"
   },
   "dependencies": {
     "@nuxtjs/color-mode": "^3.3.0",
     "@pinia/nuxt": "^0.4.11",
     "@popperjs/core": "^2.11.8",
-    "@vueuse/core": "^10.4.1",
+    "@vueuse/core": "^10.5.0",
     "consola": "^3.2.3",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "mitt": "^3.0.1",
-    "nuxt": "^3.7.3",
-    "pinia": "^2.1.6",
+    "nuxt": "^3.7.4",
+    "pinia": "^2.1.7",
     "uuid": "^9.0.1",
     "vue": "^3.3.4"
   },
   "devDependencies": {
-    "@nuxt/image-edge": "1.0.0-28059208.2abef1b",
+    "@headlessui/vue": "^1.7.16",
     "@nuxt/module-builder": "^0.4.0",
     "@nuxtjs/eslint-config-typescript": "^12.1.0",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@pinia/testing": "^0.0.14",
-    "@stryker-mutator/core": "^7.1.1",
-    "@stryker-mutator/vitest-runner": "^7.1.1",
+    "@stryker-mutator/core": "^7.3.0",
+    "@stryker-mutator/vitest-runner": "^7.3.0",
     "@tailwindcss/forms": "^0.5.6",
-    "@types/lodash": "^4.14.198",
-    "@types/uuid": "^9.0.4",
+    "@types/lodash": "^4.14.199",
+    "@types/uuid": "^9.0.5",
     "@vitest/coverage-c8": "^0.32.4",
     "@vue/test-utils": "2.3.2",
-    "autoprefixer": "^10.4.15",
     "concurrently": "^8.2.1",
     "copyfiles": "^2.4.1",
-    "eslint": "^8.49.0",
+    "eslint": "^8.51.0",
     "nuxt-vitest": "^0.8.7",
-    "postcss": "^8.4.30",
     "postcss-cli": "^10.1.0",
-    "sass": "^1.67.0",
-    "sass-loader": "^13.3.2",
-    "tailwindcss": "^3.3.3",
     "typescript": "^5.2.2",
     "vite-tsconfig-paths": "^4.2.1",
     "vitest": "0.31.1"
   },
   "pnpm": {
     "overrides": {
-      "semver": ">=7.5.2"
+      "semver": ">=7.5.2",
+      "@babel/traverse": ">=7.23.2"
     }
   },
   "overrides": {
     "semver": ">=7.5.2",
+    "@babel/traverse": ">=7.23.2",
     "word-wrap": "npm:@aashutoshrathi/word-wrap"
   }
 }

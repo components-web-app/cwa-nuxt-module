@@ -42,7 +42,7 @@ describe('CWA resource manageable composable', () => {
 
     useCwaResourceManageable()
 
-    expect(ManageableComponent).toHaveBeenCalledWith(mockProxy, mockCwa, undefined)
+    expect(ManageableComponent).toHaveBeenCalledWith(mockProxy, mockCwa)
   })
 
   test('ManageableComponent should init IF iri is passed', () => {

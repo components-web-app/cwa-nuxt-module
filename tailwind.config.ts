@@ -1,13 +1,15 @@
 import { Config } from 'tailwindcss'
 import colors from 'tailwindcss/colors'
 
-module.exports = {
+export default {
   content: ['src/**/*.vue', 'src/**/*.ts'],
   theme: {
     colors: {
       stone: {
         100: colors.stone['100'],
+        300: colors.stone['300'],
         400: colors.stone['400'],
+        700: colors.stone['700'],
         900: colors.stone['900']
       },
       blue: {
@@ -32,7 +34,10 @@ module.exports = {
       transparent: colors.transparent,
       orange: '#FFAA00',
       magenta: '#e30a6c',
-      green: '#9CDD05'
+      green: '#9CDD05',
+      red: {
+        500: colors.red['500']
+      }
     },
     extend: {
       animation: {
