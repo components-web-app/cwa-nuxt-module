@@ -1,5 +1,3 @@
-import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
-
 export enum CwaResourceTypes {
   ROUTE = 'ROUTE',
   PAGE = 'PAGE',
@@ -53,7 +51,7 @@ export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined
   }
 }
 
-export function getPublishedResourceState (resource: CwaCurrentResourceInterface): undefined|boolean {
+export function getPublishedResourceState (resource: CwaResource): undefined|boolean {
   const publishableMeta = resource.data?._metadata.publishable
   return publishableMeta?.published
 }

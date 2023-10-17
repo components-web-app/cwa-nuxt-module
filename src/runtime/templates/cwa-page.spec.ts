@@ -29,7 +29,7 @@ describe('CWA page', () => {
 
     expect(child).toBeDefined()
     expect(iri).toEqual(defaultIri)
-    expect(componentPrefix).toEqual('CwaPage')
+    expect(componentPrefix).toEqual('CwaPages')
   })
 
   describe('snapshots', () => {

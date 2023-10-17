@@ -7,7 +7,7 @@ exports[`ComponentPosition > snapshots > should match snapshot with ResourceLoad
   
   <!--CWA_MANAGER_START_POSITION-->
   <resourceloader-stub
-    componentprefix="CwaComponent"
+    componentprefix="CwaComponents"
     iri="test"
   />
   <!--CWA_MANAGER_END_POSITION-->

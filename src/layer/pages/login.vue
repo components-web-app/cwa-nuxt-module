@@ -1,19 +1,39 @@
 <template>
-  <CwaAuthLoginPage
-    v-model="credentials"
-    :error="error"
-    :submitting="submitting"
-    submit-button-text="Sign In"
-    @submit="signIn"
-  />
+  <LoginPage :error="error" :submitting="submitting" submit-button-text="Sign In" @submit="signIn">
+    <InputField
+      v-model="credentials.username"
+      label="Username or Email"
+      name="username"
+      type="text"
+      autocomplete="username"
+      :required="true"
+    />
+    <InputField
+      v-model="credentials.password"
+      label="Password"
+      name="password"
+      type="password"
+      autocomplete="current-password"
+      :required="true"
+    />
+
+    <div class="cwa-flex cwa-items-center cwa-justify-between">
+      <LoginPageLink link-to="/" link-text="< Back to home" />
+      <LoginPageLink link-to="/forgot-password" link-text="Forgot your password?" />
+    </div>
+  </LoginPage>
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#app'
-import { CwaAuthLoginPage } from '#components'
-import { definePageMeta, useLogin } from '#imports'
+import { reactive, ref } from 'vue'
+import { FetchError } from 'ofetch'
+import InputField from '../_components/login/InputField.vue'
+import { navigateTo, useHead } from '#app'
+import LoginPageLink from '#cwa/layer/_components/login/LoginPageLink.vue'
+import LoginPage from '#cwa/layer/_components/login/LoginPage.vue'
+import { useCwa, definePageMeta } from '#imports'
 
-const { error, submitting, signIn, credentials } = useLogin()
+const $cwa = useCwa()
 
 definePageMeta({
   cwa: false
@@ -27,4 +47,24 @@ useHead({
     class: 'cwa-h-full cwa-bg-neutral-900'
   }
 })
+
+const credentials = reactive({
+  username: '',
+  password: ''
+})
+
+const error = ref(null)
+const submitting = ref(false)
+
+async function signIn () {
+  submitting.value = true
+  error.value = null
+  const user = await $cwa.auth.signIn(credentials)
+  if (user instanceof FetchError) {
+    error.value = user.data?.message || user.statusMessage
+  } else {
+    navigateTo('/')
+  }
+  submitting.value = false
+}
 </script>

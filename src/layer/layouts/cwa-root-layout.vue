@@ -1,28 +1,26 @@
 <template>
   <ClientOnly>
-    <CwaAdminHeader v-if="showAdmin" />
+    <cwa-admin-header v-if="showAdmin" />
   </ClientOnly>
   <NuxtLayout id="cwa-root-layout" :name="layoutName" @contextmenu="onContextMenu">
     <slot />
   </NuxtLayout>
   <ClientOnly>
-    <CwaAdminResourceManager ref="resourceManager" />
+    <cwa-resource-manager />
+    <cwa-resource-manager-context-menu v-if="showAdmin" v-model="isOpen" :virtual-element="virtualElement" />
   </clientonly>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, unref } from 'vue'
+import { useMouse, useWindowScroll } from '@vueuse/core'
 import { useCwa } from '#imports'
-import { CwaAdminHeader, CwaAdminResourceManager } from '#components'
+import CwaAdminHeader from '#cwa/layer/_components/admin/cwa-admin-header.vue'
+import CwaResourceManager from '#cwa/layer/_components/admin/cwa-resource-manager.vue'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
+import CwaResourceManagerContextMenu from '#cwa/layer/_components/admin/cwa-resource-manager-context-menu.vue'
 
 const $cwa = useCwa()
-const resourceManager = ref(null)
-
-function onContextMenu (e: PointerEvent) {
-  resourceManager.value && resourceManager.value.onContextMenu(e)
-}
-
 const layoutName = computed(() => {
   const layoutResource = $cwa.resources.layout.value
   return layoutResource?.data?.uiComponent || 'cwa-default'
@@ -31,4 +29,48 @@ const layoutName = computed(() => {
 const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
+
+const { x, y } = useMouse()
+const { y: windowY } = useWindowScroll()
+const isOpen = ref(false)
+const virtualElement = ref({ getBoundingClientRect: () => ({}) })
+const cachedPosition = { top: 0, left: 0 }
+
+type ContextPosition = {
+  top: number
+  left: number
+}
+
+function showDefaultContext ({ top, left }: ContextPosition) {
+  const difference = {
+    top: Math.abs(top - cachedPosition.top),
+    left: Math.abs(left - cachedPosition.left)
+  }
+  return isOpen.value && difference.top < 10 && difference.left < 10
+}
+
+function openContext ({ top, left }: ContextPosition) {
+  cachedPosition.top = top
+  cachedPosition.left = left
+  virtualElement.value.getBoundingClientRect = () => ({
+    width: 0,
+    height: 0,
+    top,
+    left
+  })
+  isOpen.value = true
+}
+
+function onContextMenu (e: PointerEvent) {
+  const pos: ContextPosition = {
+    top: unref(y) - unref(windowY),
+    left: unref(x)
+  }
+  if (showDefaultContext(pos)) {
+    isOpen.value = false
+    return
+  }
+  e.preventDefault()
+  $cwa.admin.isEditing && openContext(pos)
+}
 </script>

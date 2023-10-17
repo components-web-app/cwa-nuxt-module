@@ -1,9 +1,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
-import * as nuxt from '#app'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
+import * as nuxt from '#app'
 import { RouteLocationRaw } from '#vue-router'
 
 function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded {
@@ -43,13 +43,12 @@ describe('Test route middleware', () => {
 
   const initClientSide = vi.fn()
   const adminNavigationGuardFn = vi.fn((): boolean|RouteLocationRaw => true)
-  const clearPrimaryFetch = vi.fn()
 
   beforeAll(() => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch }
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -108,7 +107,6 @@ describe('Test route middleware', () => {
   test('Test route middleware can be disabled', async () => {
     const toRoute = createToRoute(false)
     await routeMiddleware(toRoute)
-    expect(clearPrimaryFetch).toHaveBeenCalled()
     expect(fetchRouteFn).not.toHaveBeenCalled()
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
   })
