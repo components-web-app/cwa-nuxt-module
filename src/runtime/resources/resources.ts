@@ -248,7 +248,7 @@ export class Resources {
   }
 
   public get isPageTemplate () {
-    return computed(() => !!this.page.value.data?.isTemplate)
+    return computed(() => !!this.page?.value?.data?.isTemplate)
   }
 
   public get isPageDynamic () {
