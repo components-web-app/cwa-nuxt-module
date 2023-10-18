@@ -98,13 +98,13 @@ const resolvedComponent = computed(() => {
 })
 
 const ssrNoDataWithSilentError = computed(() => {
-  return resource.value.apiState.ssr && resource.value.data === undefined && hasSilentError
+  return resource.value?.apiState.ssr && resource.value.data === undefined && hasSilentError
 })
 
 const ssrPositionHasPartialData = computed(() => {
   // error caused by position and component both re-fetching at the same time. We get a scheduler flush issue - 'Cannot read properties of null (reading 'parentNode')'
   // occurs if the component only has a draft version and on server load, then client-side tries to refresh the component and the position at the same time
-  return resource.value.apiState.ssr &&
+  return resource.value?.apiState.ssr &&
     $cwa.auth.user &&
     getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
     $cwa.resources.isPageTemplate &&
@@ -121,12 +121,13 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
   // if we already fetched a draft then we had permissions, if it was from server, and fetched published, we should re-fetch to check for draft version
   // the next fetch would simply fetch the draft if it's available as the default response from the API
   return publishableState === true &&
-    resource.value.apiState.ssr &&
+    resource.value?.apiState.ssr &&
     $cwa.auth.user
 })
 
 const methods = {
   async fetchResource () {
+    // todo: test all permutations
     if (ssrNoDataWithSilentError.value || ssrPositionHasPartialData.value || refetchPublishedSsrResourceToResolveDraft.value) {
       await $cwa.fetchResource({
         path: props.iri

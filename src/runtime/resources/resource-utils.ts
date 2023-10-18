@@ -14,6 +14,7 @@ export interface CwaResource {
   '@id': string
   '@type': string
   publishedResource?: string
+  draftResource?: string
   uiComponent?: string
   _metadata: {
     persisted: boolean
