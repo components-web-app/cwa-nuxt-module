@@ -115,6 +115,44 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     delete resourcesState.current.byId[event.resource]
   }
 
+  function clearPublishableMapping (iri: string) {
+    resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter((mapping) => {
+      return ![mapping.publishedIri, mapping.draftIri].includes(iri)
+    })
+  }
+
+  function mapPublishableResource (resource: CwaResource) {
+    if (!resource['@id'] || getResourceTypeFromIri(resource['@id']) !== CwaResourceTypes.COMPONENT) {
+      return
+    }
+    const isPublished = getPublishedResourceState({ data: resource })
+    if (isPublished === undefined) {
+      return
+    }
+
+    clearPublishableMapping(resource['@id'])
+    if (isPublished) {
+      if (!resource.draftResource) {
+        return
+      }
+      clearPublishableMapping(resource.draftResource)
+      resourcesState.current.publishableMapping.push({
+        publishedIri: resource['@id'],
+        draftIri: resource.draftResource
+      })
+      return
+    }
+
+    if (!resource.publishedResource) {
+      return
+    }
+    clearPublishableMapping(resource.publishedResource)
+    resourcesState.current.publishableMapping.push({
+      publishedIri: resource.publishedResource,
+      draftIri: resource['@id']
+    })
+  }
+
   return {
     deleteResource,
     mergeNewResources (): void {
@@ -126,6 +164,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           deleteResource({
             resource: newId
           })
+          // todo: test we save publishable mapping here
+          clearPublishableMapping(newId)
           continue
         }
 
@@ -147,6 +187,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         if (!resourcesState.current.currentIds.includes(newId)) {
           resourcesState.current.currentIds.push(newId)
         }
+        // todo: test we save publishable mapping here
+        mapPublishableResource(newResource.resource)
       }
       resourcesState.new = {
         byId: {},
@@ -173,11 +215,15 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
       resourcesState.current.currentIds = currentIds || []
+      // todo: test
+      resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(mapping => resourcesState.current.currentIds.includes(mapping.publishedIri) || resourcesState.current.currentIds.includes(mapping.draftIri))
     },
     clearResources (): void {
       resourcesState.current.byId = {}
       resourcesState.current.allIds = []
       resourcesState.current.currentIds = []
+      // todo: test mapping clears
+      resourcesState.current.publishableMapping = []
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
@@ -252,16 +298,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       data.data = event.resource
 
       // todo: test we save publishable mapping here
-      if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT) {
-        const isPublished = getPublishedResourceState(data)
-        if (isPublished !== undefined) {
-          if (isPublished) {
-            event.resource.draftResource && console.log('published - found draft assoc', event.resource.draftResource)
-          } else {
-            event.resource.publishedResource && console.log('draft - found published assoc', event.resource.publishedResource)
-          }
-        }
-      }
+      mapPublishableResource(event.resource)
     }
   }
 }

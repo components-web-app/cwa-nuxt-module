@@ -35,6 +35,11 @@ export interface CwaCurrentResourceInterface {
   apiState: CwaResourceApiState
 }
 
+interface PublishableMapping {
+  draftIri: string
+  publishedIri: string
+}
+
 export interface CwaResourcesStateInterface {
   current: {
     byId: {
@@ -42,6 +47,7 @@ export interface CwaResourcesStateInterface {
     },
     allIds: Array<string>
     currentIds: Array<string>
+    publishableMapping: Array<PublishableMapping>
   }
   new: {
     byId: {
@@ -59,7 +65,8 @@ export default function (): CwaResourcesStateInterface {
     current: reactive({
       byId: {},
       allIds: [],
-      currentIds: []
+      currentIds: [],
+      publishableMapping: []
     }),
     new: reactive({
       byId: {},

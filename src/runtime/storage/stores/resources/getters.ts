@@ -15,7 +15,13 @@ type ResourcesByTypeInterface = {
   [T in CwaResourceTypes]: CwaCurrentResourceInterface[];
 }
 
+interface PublishableMapping {
+  [key: string]: string
+}
+
 export interface CwaResourcesGettersInterface {
+  publishedToDraftIris: ComputedRef<PublishableMapping>
+  draftToPublishedIris: ComputedRef<PublishableMapping>
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
   currentResourcesApiStateIsPending: ComputedRef<boolean>
@@ -28,6 +34,18 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   const utils = new ResourcesGetterUtils(resourcesState)
 
   return {
+    publishedToDraftIris: computed(() => (
+      resourcesState.current.publishableMapping.reduce((obj, mapping) => {
+        obj[mapping.publishedIri] = mapping.draftIri
+        return obj
+      }, {} as PublishableMapping)
+    )),
+    draftToPublishedIris: computed(() => (
+      resourcesState.current.publishableMapping.reduce((obj, mapping) => {
+        obj[mapping.draftIri] = mapping.publishedIri
+        return obj
+      }, {} as PublishableMapping)
+    )),
     resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],
@@ -85,7 +103,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
           }
 
           // component positions can be dynamic and different depending on the path
-          if (resourceData.data['@type'] === CwaResourceTypes.COMPONENT_POSITION && resourceData.apiState.headers?.path !== fetchStatus.path) {
+          if (resourceData.data?.['@type'] === CwaResourceTypes.COMPONENT_POSITION && resourceData.apiState.headers?.path !== fetchStatus.path) {
             return false
           }
         }
