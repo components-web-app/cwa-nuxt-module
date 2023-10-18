@@ -5,26 +5,11 @@
   @apply cwa-bg-dark cwa-text-light;
 }
 .cwa-dark-blur {
-  @apply cwa-bg-dark/90 cwa-backdrop-blur-sm cwa-text-light
+  @apply cwa-bg-dark/85 cwa-backdrop-blur-sm cwa-text-light
 }
 .cwa-section {
   @apply cwa-p-4;
 }
 .cwa-border {
   @apply cwa-border-medium cwa-border-solid;
-}
-
-@keyframes shadow-pulse {
-  0% {
-    box-shadow: inset 0 0 0 0 rgba(255,170,0,0.6);
-  }
-  50% {
-    box-shadow: inset 0 0 15px 0 rgba(255,170,0,0.6);
-  }
-  100% {
-    box-shadow: inset 0 0 0 0 rgba(255,170,0,0.6);
-  }
-}
-.cwa-shadow-inset-highlight-pulse {
-  animation: shadow-pulse 2s infinite;
 }

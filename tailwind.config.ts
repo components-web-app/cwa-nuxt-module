@@ -53,6 +53,12 @@ export default {
       },
       transitionProperty: {
         'opacity-transform': 'opacity, transform'
+      },
+      boxShadow: {
+        'orange-bottom': '0 0 10px 1px #FFAA00'
+      },
+      opacity: {
+        85: '.85'
       }
     }
   },

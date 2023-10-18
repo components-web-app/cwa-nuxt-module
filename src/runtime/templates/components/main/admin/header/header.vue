@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-h-16" />
-  <div class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-50 cwa-w-full cwa-h-16 cwa-top-0 cwa-dark-blur" :class="[highlightTemplatePage ? 'cwa-shadow-inset-highlight-pulse' : '']" @click.stop @contextmenu.stop>
+  <div class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-50 cwa-w-full cwa-h-16 cwa-top-0 cwa-dark-blur" :class="[highlightClass]" @click.stop @contextmenu.stop>
     <div class="cwa-flex cwa-justify-between cwa-items-center">
       <div class="absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300">
         <span v-if="!$cwa.admin.isEditing">{{ $cwa.resources?.page?.data?.reference }}</span>
@@ -40,6 +40,12 @@ const isNavEnabled = computed({
 const isLoading = computed(() => false)
 
 const highlightTemplatePage = computed(() => {
-  return $cwa.resources.isPageTemplate.value && !$cwa.resources.isPageDynamic.value && $cwa.admin.isEditing
+  return $cwa.resources.isPageTemplate.value && !$cwa.resources.isPageDynamic.value
+})
+const highlightClass = computed(() => {
+  if (!highlightTemplatePage.value) {
+    return
+  }
+  return 'cwa-shadow-orange-bottom'
 })
 </script>

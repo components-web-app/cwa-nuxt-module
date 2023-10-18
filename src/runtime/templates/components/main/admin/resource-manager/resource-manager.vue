@@ -139,7 +139,7 @@ defineExpose({
       />
       <div v-if="allTabsMeta.length" ref="managerHolder">
         <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
-        <div class="cwa-p-4">
+        <div class="cwa-p-4 cwa-bg-dark">
           <component
             :is="selectedTab"
             v-if="selectedTab"
