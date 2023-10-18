@@ -15,6 +15,9 @@ interface CwaResourceUtilsOps {
 
 export const useCwaResource = (iri: string, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
+
+  // todo: the iri could be the published or draft one, but we want to resolve the iri that we expect to be displayed at the given time
+
   const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri) : undefined
 
   if (!manager) {

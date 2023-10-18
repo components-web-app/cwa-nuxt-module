@@ -211,6 +211,7 @@ export default class Fetcher {
         nestedIris.push(propIris)
       }
     }
+
     return this.fetchBatch({ paths: nestedIris, token, noSave })
   }
 

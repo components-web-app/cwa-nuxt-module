@@ -58,9 +58,9 @@ export function getPublishedResourceState (resource: CwaCurrentResourceInterface
   return publishableMeta?.published
 }
 
-export function getPublishedResourceIri (resource: CwaResource): string|null {
-  const publishableMetadata = resource._metadata?.publishable
-  const resourceIri = resource['@id']
+export function getPublishedResourceIri (resourceData: CwaResource): string|null {
+  const publishableMetadata = resourceData._metadata?.publishable
+  const resourceIri = resourceData['@id']
   // not a publishable resource
   if (!publishableMetadata) {
     return resourceIri
@@ -68,8 +68,10 @@ export function getPublishedResourceIri (resource: CwaResource): string|null {
   if (publishableMetadata.published) {
     return resourceIri
   }
-  return resource.publishedResource || null
+  return resourceData.publishedResource || null
 }
+
+export function getAssociatedPublishableIris () {}
 
 export function isCwaResource (obj: any): obj is CwaResource {
   if (typeof obj !== 'object') {
@@ -100,5 +102,6 @@ export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap =
   [CwaResourceTypes.LAYOUT]: ['componentGroups'],
   [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
   [CwaResourceTypes.COMPONENT_POSITION]: ['component'],
-  [CwaResourceTypes.COMPONENT]: ['componentGroups']
+  // draft will always be fetched by default if exists and auth to do, so we just need to fetch the associated published resource - will only be returned if we have auth
+  [CwaResourceTypes.COMPONENT]: ['componentGroups', 'publishedResource']
 }

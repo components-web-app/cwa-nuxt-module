@@ -1,7 +1,7 @@
 import { showError } from '#app'
 import {
   CwaResource,
-  CwaResourceTypes,
+  CwaResourceTypes, getPublishedResourceState,
   getResourceTypeFromIri,
   isCwaResourceSame
 } from '../../../resources/resource-utils'
@@ -195,6 +195,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
           ssr: process.server
         }
+
         return
       }
 
@@ -247,7 +248,20 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         iri,
         isCurrent: true
       })
+
       data.data = event.resource
+
+      // todo: test we save publishable mapping here
+      if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT) {
+        const isPublished = getPublishedResourceState(data)
+        if (isPublished !== undefined) {
+          if (isPublished) {
+            event.resource.draftResource && console.log('published - found draft assoc', event.resource.draftResource)
+          } else {
+            event.resource.publishedResource && console.log('draft - found published assoc', event.resource.publishedResource)
+          }
+        }
+      }
     }
   }
 }

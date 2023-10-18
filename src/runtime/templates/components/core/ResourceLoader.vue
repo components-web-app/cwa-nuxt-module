@@ -24,7 +24,11 @@ import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } fr
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import {
+  CwaResourceTypes,
+  getPublishedResourceState,
+  getResourceTypeFromIri
+} from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 
@@ -107,9 +111,23 @@ const ssrPositionHasPartialData = computed(() => {
     !$cwa.resources.isPageDynamic
 })
 
+const refetchPublishedSsrResourceToResolveDraft = computed(() => {
+  if (getResourceTypeFromIri(props.iri) !== CwaResourceTypes.COMPONENT) {
+    return false
+  }
+  // will always have metadata even if not auth saying whether it's published or not
+  const publishableState = getPublishedResourceState(resource.value)
+
+  // if we already fetched a draft then we had permissions, if it was from server, and fetched published, we should re-fetch to check for draft version
+  // the next fetch would simply fetch the draft if it's available as the default response from the API
+  return publishableState === true &&
+    resource.value.apiState.ssr &&
+    $cwa.auth.user
+})
+
 const methods = {
   async fetchResource () {
-    if (ssrNoDataWithSilentError.value || ssrPositionHasPartialData.value) {
+    if (ssrNoDataWithSilentError.value || ssrPositionHasPartialData.value || refetchPublishedSsrResourceToResolveDraft.value) {
       await $cwa.fetchResource({
         path: props.iri
       })
@@ -129,4 +147,5 @@ onMounted(() => {
   })
 })
 
+// TODO - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft
 </script>
