@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useCwaResource, useHtmlContent, IriProp } from '#imports'
 
 const props = defineProps<IriProp>()
@@ -13,7 +13,7 @@ const resource = getResource()
 defineExpose(exposeMeta)
 
 const htmlContainer = ref<null|HTMLElement>(null)
-const htmlContent = ref<string>(resource.value.data?.html || '<div></div>')
+const htmlContent = computed<string>(() => (resource.value.data?.html || '<div></div>'))
 useHtmlContent(htmlContainer)
 </script>
 
