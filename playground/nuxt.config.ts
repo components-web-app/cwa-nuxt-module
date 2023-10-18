@@ -1,7 +1,10 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import { createResolver } from '@nuxt/kit'
 
 const API_URL = process.env.API_URL || 'https://localhost:8443'
 const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
+
+const { resolve } = createResolver(import.meta.url)
 
 export default defineNuxtConfig({
   extends: [
@@ -38,6 +41,16 @@ export default defineNuxtConfig({
       exclude: [
         '../**/*.spec.ts',
         '../**/*.test.ts'
+      ]
+    }
+  },
+  tailwindcss: {
+    config: {
+      content: [
+        resolve('cwa/**/*.{js,vue,ts}')
+      ],
+      plugins: [
+        require('@tailwindcss/forms')
       ]
     }
   },
