@@ -162,6 +162,9 @@ export class Resources {
     if (!type) {
       return
     }
+    if (!fetchStatus?.path) {
+      return
+    }
 
     if (type === CwaResourceTypes.PAGE) {
       return fetchStatus.path
@@ -187,6 +190,9 @@ export class Resources {
       const fetchStatus = this.displayFetchStatus
       const type = this.getFetchStatusType(fetchStatus)
       if (!type) {
+        return
+      }
+      if (!fetchStatus?.path) {
         return
       }
       if (type === CwaResourceTypes.PAGE_DATA) {
@@ -226,6 +232,18 @@ export class Resources {
         return
       }
       return this.getResource(layoutIri).value
+    })
+  }
+
+  public findPublishedComponentIri (iri: string) {
+    return computed(() => {
+      return this.resourcesStore.draftToPublishedIris[iri] || iri
+    })
+  }
+
+  public findDraftComponentIri (iri: string) {
+    return computed(() => {
+      return this.resourcesStore.publishedToDraftIris[iri] || iri
     })
   }
 

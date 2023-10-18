@@ -3,12 +3,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toRef } from 'vue'
 import { useCwaResource, useHtmlContent, IriProp } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const { getResource, exposeMeta } = useCwaResource(props.iri)
+const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
 const resource = getResource()
 defineExpose(exposeMeta)
 

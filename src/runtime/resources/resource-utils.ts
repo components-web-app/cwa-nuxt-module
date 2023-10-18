@@ -59,6 +59,7 @@ export function getPublishedResourceState (resource: Pick<CwaCurrentResourceInte
   return publishableMeta?.published
 }
 
+// todo: used in mercure, perhaps we should use the new resource store mapping though? This doesn't require any more fetches to have been made though..
 export function getPublishedResourceIri (resourceData: CwaResource): string|null {
   const publishableMetadata = resourceData._metadata?.publishable
   const resourceIri = resourceData['@id']

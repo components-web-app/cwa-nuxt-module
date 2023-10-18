@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource } from '#imports'
@@ -15,8 +15,10 @@ import { IriProp } from '#cwa/runtime/composables/cwa-resource'
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
 
-const resource = useCwaResource(props.iri).getResource()
+const resource = useCwaResource(toRef(props, 'iri')).getResource()
 const componentIri = computed(() => {
-  return resource.value?.data?.component
+  const iri = resource.value?.data?.component
+  // todo: the iri could be the published or draft one, but we want to resolve the iri that we expect to be displayed at the given time
+  return $cwa.admin.isEditing ? $cwa.resources.findDraftComponentIri(iri).value : $cwa.resources.findPublishedComponentIri(iri).value
 })
 </script>
