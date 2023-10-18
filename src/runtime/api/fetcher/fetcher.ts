@@ -77,14 +77,14 @@ export default class Fetcher {
 
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
     if (route.meta.cwa === false) {
-      // todo: clear empty the primary fetch
       this.fetchStatusManager.clearPrimaryFetch()
       return
     }
     let iri: string
     let manifestPath: string|undefined
     const routeParam = route.params.cwaPage0
-    iri = Array.isArray(routeParam) ? routeParam[0] : routeParam
+    // todo: test that we can get the iri from the route
+    iri = Array.isArray(routeParam) ? '/' + routeParam.join('/') : routeParam
     const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
     if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
       iri = `/_/routes/${route.path}`
@@ -270,7 +270,8 @@ export default class Fetcher {
     }
     const requestHeaders: Record<string, string> = {}
     if (this.fetchStatusManager.primaryFetchPath) {
-      requestHeaders.path = this.fetchStatusManager.primaryFetchPath
+      // todo: test we replace the /_/routes prefix
+      requestHeaders.path = this.fetchStatusManager.primaryFetchPath.replace(/^\/_\/routes\//, '')
     }
     if (preload) {
       requestHeaders.preload = preload.join(',')

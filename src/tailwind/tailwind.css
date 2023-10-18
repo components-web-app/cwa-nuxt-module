@@ -5,7 +5,7 @@
   @apply cwa-bg-dark cwa-text-light;
 }
 .cwa-dark-blur {
-  @apply cwa-bg-dark/90 cwa-backdrop-blur-sm cwa-text-light
+  @apply cwa-bg-dark/85 cwa-backdrop-blur-sm cwa-text-light
 }
 .cwa-section {
   @apply cwa-p-4;
