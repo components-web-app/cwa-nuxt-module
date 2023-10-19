@@ -19,6 +19,9 @@ const resource = useCwaResource(toRef(props, 'iri')).getResource()
 const componentIri = computed(() => {
   const iri = resource.value?.data?.component
   // todo: the iri could be the published or draft one, but we want to resolve the iri that we expect to be displayed at the given time
-  return $cwa.admin.isEditing ? $cwa.resources.findDraftComponentIri(iri).value : $cwa.resources.findPublishedComponentIri(iri).value
+  if ($cwa.admin.isEditing) {
+    return $cwa.resources.findDraftComponentIri(iri).value || iri
+  }
+  return $cwa.resources.findPublishedComponentIri(iri).value
 })
 </script>

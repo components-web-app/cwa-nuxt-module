@@ -4,7 +4,7 @@ import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../storage/
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import { FetchStatus } from '../storage/stores/fetcher/state'
 import {
-  CwaResourceTypes,
+  CwaResourceTypes, getPublishedResourceState,
   getResourceTypeFromIri
 } from './resource-utils'
 
@@ -235,15 +235,37 @@ export class Resources {
     })
   }
 
+  private findIsPublishedFromIri (iri: string) {
+    const resource = this.getResource(iri).value
+    if (!resource) {
+      return false
+    }
+    return getPublishedResourceState(resource)
+  }
+
   public findPublishedComponentIri (iri: string) {
     return computed(() => {
-      return this.resourcesStore.draftToPublishedIris[iri] || iri
+      const isPublished = this.findIsPublishedFromIri(iri)
+      if (isPublished === undefined) {
+        return
+      }
+      if (isPublished) {
+        return iri
+      }
+      return this.resourcesStore.draftToPublishedIris[iri]
     })
   }
 
   public findDraftComponentIri (iri: string) {
     return computed(() => {
-      return this.resourcesStore.publishedToDraftIris[iri] || iri
+      const isPublished = this.findIsPublishedFromIri(iri)
+      if (isPublished === undefined) {
+        return
+      }
+      if (!isPublished) {
+        return iri
+      }
+      return this.resourcesStore.publishedToDraftIris[iri]
     })
   }
 

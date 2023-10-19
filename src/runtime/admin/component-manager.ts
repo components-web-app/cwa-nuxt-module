@@ -50,17 +50,19 @@ export default class ComponentManager {
     this.currentResourceStack.value = []
   }
 
-  private listenEditModeChange () {
-    watch(() => this.isEditing, (isEditing) => {
-      if (!isEditing) {
-        // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
-        this.showManager.value = false
-      }
-    })
-  }
-
-  private isItemAlreadyInStack (iri: string): boolean {
-    return !!this.currentResourceStack.value.find(el => el.iri === iri)
+  public selectStackIndex (index: number) {
+    const currentLength = this.currentResourceStack.value.length
+    if (!currentLength) {
+      this.showManager.value = false
+      return
+    }
+    if (index < 0 || index > currentLength - 1) {
+      logger.error(`Cannot select stack index: '${index}' is out of range`)
+      return
+    }
+    // shallow ref, cannot splice - will not trigger reactivity - for some reason here...
+    this.currentResourceStack.value = this.currentResourceStack.value.slice(index)
+    this.showManager.value = true
   }
 
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent) {
@@ -86,12 +88,12 @@ export default class ComponentManager {
       return
     }
 
-    // @ts-ignore-next-line : this has been determined by the above check for isResourceClick
-    const addToStackEvent: AddToStackEvent = event
-    this.insertResourceStackItem(addToStackEvent, resourceStackItem)
+    // @ts-ignore-next-line : this type has been determined by the above check for isResourceClick, but ts thinks can still be AddToStackWindowEvent
+    this.insertResourceStackItem(event, resourceStackItem)
     this.lastClickTarget.value = clickTarget
   }
 
+  // todo: test checking and inserting at correct index
   private insertResourceStackItem (addToStackEvent: AddToStackEvent, resourceStackItem: ResourceStackItem) {
     const iris = [addToStackEvent.iri]
     const relatedIri = this.resourcesStore.draftToPublishedIris[addToStackEvent.iri] || this.resourcesStore.publishedToDraftIris[addToStackEvent.iri]
@@ -106,6 +108,19 @@ export default class ComponentManager {
     insertAtIndex === -1 ? this.currentResourceStack.value.push(resourceStackItem) : this.currentResourceStack.value.splice(insertAtIndex, 0, resourceStackItem)
   }
 
+  private listenEditModeChange () {
+    watch(() => this.isEditing, (isEditing) => {
+      if (!isEditing) {
+        // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
+        this.showManager.value = false
+      }
+    })
+  }
+
+  private isItemAlreadyInStack (iri: string): boolean {
+    return !!this.currentResourceStack.value.find(el => el.iri === iri)
+  }
+
   private get isEditing () {
     return this.adminStore.state.isEditing
   }
@@ -116,20 +131,5 @@ export default class ComponentManager {
 
   private get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
-  }
-
-  public selectStackIndex (index: number) {
-    const currentLength = this.currentResourceStack.value.length
-    if (!currentLength) {
-      this.showManager.value = false
-      return
-    }
-    if (index < 0 || index > currentLength - 1) {
-      logger.error(`Cannot select stack index: '${index}' is out of range`)
-      return
-    }
-    // shallow ref, cannot splice - will not trigger reactivity - for some reason here...
-    this.currentResourceStack.value = this.currentResourceStack.value.slice(index)
-    this.showManager.value = true
   }
 }
