@@ -212,7 +212,7 @@ describe('Cwa class test', () => {
   test('Admin is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Admin).toBeCalledWith(stores.admin)
+    expect(Admin).toBeCalledWith(stores.admin, stores.resources)
     expect($cwa.admin).toBe(Admin.mock.instances[0])
   })
 

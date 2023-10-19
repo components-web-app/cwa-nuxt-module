@@ -18,6 +18,7 @@ import {
 import Cwa from '../cwa'
 // todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
+// todo: same issue as above - seems imports from this file
 import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
 import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
@@ -26,6 +27,7 @@ export default class ManageableComponent {
   private currentIri: Ref<string|undefined>|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
   private unwatchCurrentStackItem: undefined|WatchStopHandle
+  private unwatchCurrentIri: undefined|WatchStopHandle
   private focusComponent: undefined|App
   private focusWrapper: HTMLElement|undefined
   private readonly yOffset = 100
@@ -45,26 +47,27 @@ export default class ManageableComponent {
   public init (iri: Ref<string|undefined>) {
     // because we need to be able to call this once resolving an IRI in some cases, if this is called again with a new
     // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
-    this.clear()
+    this.clear(false)
     this.currentIri = iri
-    watch(this.currentIri, this.iriWatchHandler.bind(this), {
-      immediate: true
+    this.unwatchCurrentIri = watch(this.currentIri, this.iriWatchHandler.bind(this), {
+      immediate: true,
+      flush: 'post'
     })
   }
 
-  private iriWatchHandler () {
-    this.clear()
-    if (!this.currentIri?.value) {
+  private iriWatchHandler (newIri: string|undefined) {
+    this.clear(true)
+    if (!newIri) {
       return
     }
     this.isInit = true
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
-    this.$cwa.admin.eventBus.emit('componentMounted', this.currentIri.value)
+    this.$cwa.admin.eventBus.emit('componentMounted', newIri)
   }
 
-  public clear () {
+  public clear (soft: boolean = false) {
     if (!this.isInit) {
       return
     }
@@ -75,7 +78,25 @@ export default class ManageableComponent {
       this.unwatchCurrentStackItem()
       this.unwatchCurrentStackItem = undefined
     }
+    if (!soft) {
+      if (this.unwatchCurrentIri) {
+        this.unwatchCurrentIri()
+        this.unwatchCurrentIri = undefined
+      }
+      this.currentIri && (this.currentIri.value = undefined)
+    }
     this.isInit = false
+  }
+
+  private clearFocusComponent () {
+    if (this.focusComponent) {
+      this.focusComponent.unmount()
+      this.focusComponent = undefined
+    }
+    if (this.focusWrapper) {
+      this.focusWrapper.remove()
+      this.focusWrapper = undefined
+    }
   }
 
   // REFRESHING INITIALISATION
@@ -86,28 +107,20 @@ export default class ManageableComponent {
     }
   }
 
-  private currentStackItemListener (stackItem: ResourceStackItem|null) {
+  private currentStackItemListener (stackItem: ResourceStackItem|undefined) {
     if (!this.currentIri?.value) {
       return
     }
     if (stackItem?.iri !== this.currentIri.value) {
-      if (this.focusComponent) {
-        this.focusComponent.unmount()
-        this.focusComponent = undefined
-      }
-      if (this.focusWrapper) {
-        this.focusWrapper.remove()
-        this.focusWrapper = undefined
-      }
+      this.clearFocusComponent()
       return
     }
-
     if (!stackItem) {
       return
     }
 
     this.focusComponent = createApp(ComponentFocus, {
-      iri: this.currentIri.value,
+      iri: this.currentIri,
       domElements: stackItem.domElements
     })
     this.focusWrapper = document.createElement('div')

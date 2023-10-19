@@ -27,6 +27,7 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 export default class ComponentManager {
   private lastClickTarget: Ref<EventTarget|null> = ref(null)
   private currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
+  public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
 
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore) {
@@ -41,7 +42,26 @@ export default class ComponentManager {
 
   public get currentStackItem () {
     return computed(() => {
-      return (this.lastClickTarget.value || !this.showManager.value) ? null : this.resourceStack.value?.[0] || null
+      if (this.lastClickTarget.value || !this.showManager.value) {
+        return
+      }
+      return this.resourceStack.value?.[0]
+    })
+  }
+
+  public get currentIri () {
+    return computed(() => {
+      if (!this.currentStackItem.value) {
+        return
+      }
+      const stackIri = this.currentStackItem.value.iri
+      if (this.forcePublishedVersion.value === undefined) {
+        return stackIri
+      }
+      if (this.forcePublishedVersion.value) {
+        return this.resourcesStore.findPublishedComponentIri(stackIri)
+      }
+      return this.resourcesStore.findDraftComponentIri(stackIri)
     })
   }
 
@@ -89,14 +109,14 @@ export default class ComponentManager {
     }
 
     // @ts-ignore-next-line : this type has been determined by the above check for isResourceClick, but ts thinks can still be AddToStackWindowEvent
-    this.insertResourceStackItem(event, resourceStackItem)
+    this.insertResourceStackItem(resourceStackItem)
     this.lastClickTarget.value = clickTarget
   }
 
   // todo: test checking and inserting at correct index
-  private insertResourceStackItem (addToStackEvent: AddToStackEvent, resourceStackItem: ResourceStackItem) {
-    const iris = [addToStackEvent.iri]
-    const relatedIri = this.resourcesStore.draftToPublishedIris[addToStackEvent.iri] || this.resourcesStore.publishedToDraftIris[addToStackEvent.iri]
+  private insertResourceStackItem (resourceStackItem: ResourceStackItem) {
+    const iris = [resourceStackItem.iri]
+    const relatedIri = this.resourcesStore.draftToPublishedIris[resourceStackItem.iri] || this.resourcesStore.publishedToDraftIris[resourceStackItem.iri]
     relatedIri && iris.push(relatedIri)
     const insertAtIndex = this.currentResourceStack.value.findIndex((existingStackItem) => {
       const existingItemChildren = existingStackItem.childIris.value

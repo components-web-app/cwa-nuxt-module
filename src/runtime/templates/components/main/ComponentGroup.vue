@@ -36,7 +36,7 @@ import { useCwa, useCwaResourceManageable } from '#imports'
 
 const iri = ref<string|undefined>()
 const $cwa = useCwa()
-const $manager = useCwaResourceManageable(iri, { watch: false })
+const $manager = useCwaResourceManageable(iri)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 

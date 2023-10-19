@@ -138,12 +138,21 @@ defineExpose({
         class="cwa-hidden"
       />
       <div v-if="allTabsMeta.length" ref="managerHolder">
-        <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
-        <div class="cwa-p-4 cwa-bg-dark">
-          <component
-            :is="selectedTab"
-            v-if="selectedTab"
-          />
+        <div class="cwa-flex">
+          <div class="cwa-flex-grow">
+            <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
+            <div class="cwa-p-4 cwa-bg-dark">
+              <component
+                :is="selectedTab"
+                v-if="selectedTab"
+              />
+            </div>
+          </div>
+          <div class="cwa-flex cwa-light cwa-p-4 cwa-items-center cwa-content-center cwa-justify-center">
+            <button class="cwa-text-white cwa-bg-magenta/90 hover:cwa-bg-magenta cwa-py-1 cwa-px-4 cwa-min-w-[100px]">
+              CTA
+            </button>
+          </div>
         </div>
       </div>
     </div>

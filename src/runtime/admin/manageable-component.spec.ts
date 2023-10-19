@@ -1,5 +1,5 @@
 import { describe, test, vi, expect, afterEach } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Mock } from '@vitest/spy'
 import Cwa from '../cwa'
 import * as ResourceUtils from '../resources/resource-utils'
@@ -110,6 +110,27 @@ describe('ManageableComponent Class', () => {
   })
 
   describe('init function', () => {
+    test('init functions are carried out', async () => {
+      const vue = await import('vue')
+      const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => 'unwatchFn')
+      const { instance } = createManageableComponent()
+      vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})
+      vi.spyOn(instance, 'iriWatchHandler').mockImplementationOnce(() => {})
+      const newIri = ref('/new')
+      instance.init(newIri)
+      expect(instance.clear).toHaveBeenCalledWith(false)
+      expect(instance.currentIri).toEqual(newIri)
+      expect(instance.unwatchCurrentIri).toEqual('unwatchFn')
+      expect(watchSpy.mock.lastCall[0]).toEqual(instance.currentIri)
+      expect(Object.create(instance.iriWatchHandler.prototype) instanceof watchSpy.mock.lastCall[1]).toBe(true)
+      expect(watchSpy.mock.lastCall[2]).toEqual({
+        immediate: true,
+        flush: 'post'
+      })
+    })
+  })
+
+  describe('iriWatchHandler function', () => {
     test.each([
       {
         currentIri: '/abc',
@@ -117,48 +138,70 @@ describe('ManageableComponent Class', () => {
       },
       {
         currentIri: undefined,
-        clearCallCount: 0
+        clearCallCount: 1
       }
     ])('If currentIri is $currentIri then the `clear` function is called $clearCallCount times and currentIri is set', ({ currentIri, clearCallCount }) => {
       const { instance, $cwa } = createManageableComponent()
-      instance.currentIri = currentIri
+      instance.currentIri = ref(currentIri)
       vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})
       const listener = vi.fn()
       vi.spyOn(instance, 'componentMountedListener', 'get').mockImplementationOnce(() => listener)
 
-      instance.init('/something')
+      instance.iriWatchHandler('/something')
       expect(instance.clear).toHaveBeenCalledTimes(clearCallCount)
-      expect(instance.currentIri).toEqual('/something')
+      expect(instance.clear).toHaveBeenCalledWith(true)
 
       expect(instance.addClickEventListeners).toHaveBeenCalledTimes(1)
       expect($cwa.admin.eventBus.on).toHaveBeenCalledWith('componentMounted', listener)
-      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', instance.currentIri)
+      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/something')
     })
   })
 
   describe('clear function', () => {
-    test('If there is no currentIri the clear functions will not be executed', () => {
+    test('If there is isInit is false clear functions will be skipped', () => {
       const { instance, $cwa } = createManageableComponent()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
       const domElements = [createDomElement(1)]
       instance.domElements = domElements
+      instance.isInit = false
       instance.clear()
+
       expect($cwa.admin.eventBus.off).not.toHaveBeenCalled()
       expect(instance.removeClickEventListeners).not.toHaveBeenCalled()
       expect(instance.domElements).toEqual(domElements)
     })
-    test('if there is a currentIri clear functions are carried out', () => {
+    test.each([
+      { soft: false },
+      { soft: true }
+    ])('clear functions are carried out', ({ soft }) => {
       const { instance, $cwa } = createManageableComponent()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
-      instance.currentIri = '/abc'
+
+      const unwatchCurrentStackItem = vi.fn()
+      const unwatchCurrentIri = vi.fn()
+      instance.isInit = true
+      instance.currentIri = ref('/abc')
       instance.domElements = [createDomElement(1)]
-      instance.clear()
+      instance.unwatchCurrentStackItem = unwatchCurrentStackItem
+      instance.unwatchCurrentIri = unwatchCurrentIri
+      instance.clear(soft)
 
       expect($cwa.admin.eventBus.off).toHaveBeenCalled()
       expect(instance.removeClickEventListeners).toHaveBeenCalled()
-      expect(instance.currentIri).toBeUndefined()
       expect(instance.domElements.value).toEqual([])
+      expect(unwatchCurrentStackItem).toHaveBeenCalled()
+      expect(instance.unwatchCurrentStackItem).toBeUndefined()
+
+      if (soft) {
+        expect(instance.currentIri.value).toEqual('/abc')
+        expect(unwatchCurrentIri).not.toHaveBeenCalled()
+        expect(instance.unwatchCurrentIri).toBe(unwatchCurrentIri)
+      } else {
+        expect(instance.currentIri.value).toBeUndefined()
+        expect(unwatchCurrentIri).toHaveBeenCalled()
+        expect(instance.unwatchCurrentIri).toBeUndefined()
+      }
     })
   })
 
@@ -238,7 +281,7 @@ describe('ManageableComponent Class', () => {
         return iri.startsWith('/position') ? CwaResourceTypes.COMPONENT_POSITION : CwaResourceTypes.COMPONENT_GROUP
       })
 
-      instance.currentIri = '/group'
+      instance.currentIri = ref('/group')
       expect(instance.childIris.value).toEqual(['/position-1', '/position-1_placeholder', '/position-2', '/position-2_placeholder', '/component', '/position-3', '/position-3_placeholder', '/no-type'])
     })
   })
@@ -331,26 +374,29 @@ describe('ManageableComponent Class', () => {
       const { instance, $cwa } = createManageableComponent()
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
+      const childIris = ['/child']
 
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
       vi.spyOn(instance, 'resourceType', 'get').mockImplementationOnce(() => (resourceType))
       vi.spyOn(instance, 'resourceConfig', 'get').mockImplementationOnce(() => (resourceConfig))
-      vi.spyOn(instance, 'currentResource', 'get').mockImplementationOnce(() => (resource))
+      vi.spyOn(instance, 'currentResource', 'get').mockImplementation(() => (resource))
+      vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => (childIris))
 
       vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockImplementationOnce(() => (['abc']))
 
-      instance.currentIri = '/mock'
+      instance.currentIri = ref('/mock')
 
       instance.clickListener(mockEvent)
 
       expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig, resource })
 
       expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
-        iri: instance.currentIri,
+        iri: instance.currentIri.value,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
         displayName: mockName,
-        managerTabs: ['abc']
+        managerTabs: ['abc'],
+        childIris
       })
     })
   })

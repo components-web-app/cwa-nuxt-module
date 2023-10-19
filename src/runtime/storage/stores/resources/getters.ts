@@ -1,5 +1,5 @@
 import { ComputedRef, computed } from 'vue'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { FetchStatus } from '../fetcher/state'
 import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
@@ -20,6 +20,8 @@ interface PublishableMapping {
 }
 
 export interface CwaResourcesGettersInterface {
+  findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
+  findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
   publishedToDraftIris: ComputedRef<PublishableMapping>
   draftToPublishedIris: ComputedRef<PublishableMapping>
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
@@ -33,19 +35,55 @@ export interface CwaResourcesGettersInterface {
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesGettersInterface {
   const utils = new ResourcesGetterUtils(resourcesState)
 
+  const publishedToDraftIris = computed(() => (
+    resourcesState.current.publishableMapping.reduce((obj, mapping) => {
+      obj[mapping.publishedIri] = mapping.draftIri
+      return obj
+    }, {} as PublishableMapping)
+  ))
+
+  const draftToPublishedIris = computed(() => (
+    resourcesState.current.publishableMapping.reduce((obj, mapping) => {
+      obj[mapping.draftIri] = mapping.publishedIri
+      return obj
+    }, {} as PublishableMapping)
+  ))
+
+  function findIsPublishedByIri (iri: string) {
+    const resource = resourcesState.current.byId?.[iri]
+    if (!resource) {
+      return false
+    }
+    return getPublishedResourceState(resource)
+  }
+
   return {
-    publishedToDraftIris: computed(() => (
-      resourcesState.current.publishableMapping.reduce((obj, mapping) => {
-        obj[mapping.publishedIri] = mapping.draftIri
-        return obj
-      }, {} as PublishableMapping)
-    )),
-    draftToPublishedIris: computed(() => (
-      resourcesState.current.publishableMapping.reduce((obj, mapping) => {
-        obj[mapping.draftIri] = mapping.publishedIri
-        return obj
-      }, {} as PublishableMapping)
-    )),
+    findPublishedComponentIri: computed(() => {
+      return (iri: string) => {
+        const isPublished = findIsPublishedByIri(iri)
+        if (isPublished === undefined) {
+          return
+        }
+        if (isPublished) {
+          return iri
+        }
+        return draftToPublishedIris.value[iri]
+      }
+    }),
+    findDraftComponentIri: computed(() => {
+      return (iri: string) => {
+        const isPublished = findIsPublishedByIri(iri)
+        if (isPublished === undefined) {
+          return
+        }
+        if (!isPublished) {
+          return iri
+        }
+        return publishedToDraftIris.value[iri]
+      }
+    }),
+    publishedToDraftIris,
+    draftToPublishedIris,
     resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],

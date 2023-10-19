@@ -52,8 +52,7 @@ describe('CWA resource manageable composable', () => {
 
     useCwaResourceManageable(mockIri)
 
-    // todo: this will change
-    expect(initSpy).toHaveBeenCalledWith(mockIri.value)
+    expect(initSpy).toHaveBeenCalledWith(mockIri)
   })
 
   test('ManageableComponent should clear when before unmount hook is called', () => {

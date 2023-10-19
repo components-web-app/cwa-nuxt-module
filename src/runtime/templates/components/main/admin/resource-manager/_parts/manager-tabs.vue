@@ -24,8 +24,8 @@ function selectIndex (newIndex: number) {
   selectedIndex.value = newIndex
 }
 
-function resetTabs () {
-  selectedIndex.value = 0
+function resetTabs (newIndex: number = 0) {
+  selectedIndex.value = newIndex
 }
 
 watch([selectedIndex, orderedTabs], ([newIndex]) => {

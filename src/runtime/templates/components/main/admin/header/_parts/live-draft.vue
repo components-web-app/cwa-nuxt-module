@@ -4,13 +4,13 @@ import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 const $cwa = useCwa()
 
-const currentIri = $cwa.admin.componentManager.currentStackItem
+const stackItem = $cwa.admin.componentManager.currentStackItem
 
 const isLive = computed((): undefined|boolean => {
-  if (!currentIri.value) {
+  if (!stackItem.value) {
     return
   }
-  const resource = $cwa.resources.getResource(currentIri.value.iri).value
+  const resource = $cwa.resources.getResource(stackItem.value.iri).value
   if (!resource) {
     return
   }

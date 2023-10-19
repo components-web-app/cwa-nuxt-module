@@ -2,7 +2,7 @@
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 
-const { exposeMeta } = useCwaResourceManagerTab({
+const { exposeMeta, iri } = useCwaResourceManagerTab({
   name: 'Info',
   order: DEFAULT_TAB_ORDER + 1
 })
@@ -12,6 +12,6 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    Info
+    {{ iri }}
   </div>
 </template>
