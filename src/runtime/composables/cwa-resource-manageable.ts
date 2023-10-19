@@ -21,19 +21,15 @@ export const useCwaResourceManageable = (iri: Ref<string|undefined>, ops: Manage
 
   onMounted(() => {
     if (ops.watch) {
-      watch(iri, (newIri) => {
-        if (newIri) {
-          manageableComponent.init(newIri)
-        }
+      watch(iri, () => {
+        manageableComponent.init(iri)
       }, {
         immediate: true,
         flush: 'post'
       })
       return
     }
-    if (iri.value) {
-      manageableComponent.init(iri.value)
-    }
+    manageableComponent.init(iri)
   })
 
   onBeforeUnmount(() => {

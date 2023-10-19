@@ -89,7 +89,7 @@ const managerWatchCallback: WatchCallback<ShallowUnwrapRef<watcherParams>> = ([p
     return
   }
   iri.value = resource.data['@id']
-  iri.value && $manager.manager.init(iri.value)
+  iri.value && $manager.manager.init(iri)
 }
 
 onMounted(() => {
