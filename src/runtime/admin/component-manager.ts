@@ -128,7 +128,8 @@ export default class ComponentManager {
       logger.error(`Cannot select stack index: '${index}' is out of range`)
       return
     }
-    this.currentResourceStack.value.splice(0, index)
+    // shallow ref, cannot splice - will not trigger reactivity - for some reason here...
+    this.currentResourceStack.value = this.currentResourceStack.value.slice(index)
     this.showManager.value = true
   }
 }
