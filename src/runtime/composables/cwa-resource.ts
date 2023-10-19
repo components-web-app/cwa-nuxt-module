@@ -16,7 +16,7 @@ interface CwaResourceUtilsOps {
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
 
-  const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri.value) : undefined
+  const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri) : undefined
 
   if (!manager) {
     onMounted(() => {

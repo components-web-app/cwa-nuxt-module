@@ -1,25 +1,38 @@
-import { getCurrentInstance, onBeforeUnmount, onMounted } from 'vue'
-import logger from 'consola'
+import { getCurrentInstance, onBeforeUnmount, onMounted, watch } from 'vue'
+import { Ref } from 'vue/dist/vue'
 import ManageableComponent from '../admin/manageable-component'
-import { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import { useCwa } from './cwa'
+
+interface ManageableResourceOps {
+  watch: boolean
+}
 
 /**
  * @internal
  * @description Advanced usage - usually this composable will be initialised from useCwaResource where disableManager does not equal true. Primarily separated for the ComponentGroup component
  */
-export const useCwaResourceManageable = (iri?: string) => {
+export const useCwaResourceManageable = (iri: Ref<string|undefined>, ops: ManageableResourceOps = { watch: true }) => {
   const proxy = getCurrentInstance()?.proxy
   if (!proxy) {
-    logger.error('Cannot initialise manager for resource. Instance is not defined')
-    return
+    throw new Error(`Cannot initialise manager for resource. Instance is not defined with iri '${iri.value}'`)
   }
 
   const manageableComponent = new ManageableComponent(proxy, useCwa())
 
   onMounted(() => {
-    if (iri) {
-      manageableComponent.init(iri)
+    if (ops.watch) {
+      watch(iri, (newIri) => {
+        if (newIri) {
+          manageableComponent.init(newIri)
+        }
+      }, {
+        immediate: true,
+        flush: 'post'
+      })
+      return
+    }
+    if (iri.value) {
+      manageableComponent.init(iri.value)
     }
   })
 
@@ -28,10 +41,6 @@ export const useCwaResourceManageable = (iri?: string) => {
   })
 
   return {
-    resourceWatchHandler: (resource: CwaCurrentResourceInterface) => {
-      const iri = resource?.data?.['@id']
-      iri && manageableComponent.init(iri)
-    },
     manager: manageableComponent
   }
 }
