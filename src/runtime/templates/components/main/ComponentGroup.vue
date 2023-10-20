@@ -18,15 +18,25 @@
 // todo: draggable drag and drop reordering
 // todo: merge in a new component position/ component being added
 
-import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  ref,
+  ComputedRef,
+  ShallowUnwrapRef,
+  WatchCallback
+} from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa, useCwaResourceManageable } from '#imports'
 
+const iri = ref<string|undefined>()
 const $cwa = useCwa()
-const $manager = useCwaResourceManageable()
+const $manager = useCwaResourceManageable(iri)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 
@@ -67,27 +77,19 @@ const componentPositions = computed(() => {
   return resource.value?.data?.componentPositions
 })
 
-// perhaps should use onUpdated hook instead... and generalise this
-// todo: test
-watch(() => [componentPositions.value, signedInAndResourceExists.value], (
-  [positions, showPlaceholder], [oldPositions, oldShowPlaceholder]) => {
-  if (positions?.length > 0 && positions?.length === oldPositions?.length) {
-    return
-  }
-  const iri = resource.value?.data?.['@id']
-  if (!!iri && showPlaceholder !== oldShowPlaceholder && resource.value && $manager) {
-    $manager.resourceWatchHandler(resource.value)
-  }
-},
-{
-  flush: 'post'
-}
-)
-
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
 function getResourceKey (positionIri: string) {
   return `ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`
+}
+
+type watcherParams = [ ComputedRef<any>, ComputedRef<boolean>, ComputedRef<CwaCurrentResourceInterface|undefined> ]
+const managerWatchCallback: WatchCallback<ShallowUnwrapRef<watcherParams>> = ([positions, showPlaceholder, resource], [oldPositions, oldShowPlaceholder, _]) => {
+  if (showPlaceholder === oldShowPlaceholder || resource?.data === undefined || (positions?.length > 0 && positions?.length === oldPositions?.length)) {
+    return
+  }
+  iri.value = resource.data['@id']
+  iri.value && $manager.manager.init(iri)
 }
 
 onMounted(() => {
@@ -98,13 +100,16 @@ onMounted(() => {
     allowedComponents: props.allowedComponents
   })
 
-  // initialise the manager when we know what the component group iri is
-  if ($manager) {
-    watch(resource, $manager.resourceWatchHandler, {
-      immediate: true,
-      flush: 'post'
-    })
-  }
+  const sources: watcherParams = [componentPositions, signedInAndResourceExists, resource]
+
+  // perhaps should use onUpdated hook instead... and generalise this
+  // todo: test
+  watch(sources, managerWatchCallback,
+    {
+      flush: 'post',
+      immediate: true
+    }
+  )
 })
 
 onBeforeUnmount(() => {

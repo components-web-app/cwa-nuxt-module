@@ -1,5 +1,6 @@
 import { describe, expect, vi, test } from 'vitest'
 import * as vue from 'vue'
+import { ref } from 'vue'
 import * as cwaComposable from '#cwa/runtime/composables/cwa'
 import * as cwaResourceManageable from '#cwa/runtime/composables/cwa-resource-manageable'
 import { useCwaResource } from '#cwa/runtime/composables/cwa-resource'
@@ -39,27 +40,27 @@ describe('CWA resources composable', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 
-  test('should emit an eventbus event on mounted', () => {
+  test('should emit an eventbus event on mounted if manager is disabled', () => {
     vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
-    const mockIri = 'mock-iri'
+    const mockIri = ref('mock-iri')
 
-    useCwaResource(mockIri)
+    useCwaResource(mockIri, { manager: { disabled: true } })
 
-    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri)
+    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
   })
 
   test('should return object containing function to get resource by iri provided into composable', () => {
     vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
 
-    const mockIri = 'mock-iri'
-    const mockResource = { mock: 'resource' }
+    const mockIri = ref('mock-iri')
+    const mockResource = ref({ mock: 'resource' })
 
     const result = useCwaResource(mockIri)
 
     mockCwa.resources.getResource.mockReturnValueOnce(mockResource)
 
     expect(result.getResource).toBeDefined()
-    expect(result.getResource()).toEqual(mockResource)
-    expect(mockCwa.resources.getResource).toHaveBeenCalledWith(mockIri)
+    expect(result.getResource().value).toEqual(mockResource.value)
+    expect(mockCwa.resources.getResource).toHaveBeenCalledWith(mockIri.value)
   })
 })

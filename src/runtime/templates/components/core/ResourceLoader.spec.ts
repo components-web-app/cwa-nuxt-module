@@ -55,6 +55,7 @@ describe('ResourceLoader', () => {
         })
         expect(wrapper.vm.resourceLoadBuffering).toEqual(false)
       })
+
       test('If the resource does not exist, resourceLoadBuffering should be true and then revert to false after 20ms', () => {
         vi.useFakeTimers()
         const wrapper = createWrapper(undefined)
@@ -105,7 +106,7 @@ describe('ResourceLoader', () => {
               status: CwaResourceApiStatuses.IN_PROGRESS
             }
           },
-          result: true
+          result: false
         },
         {
           resourceLoadBuffering: true,
@@ -118,7 +119,7 @@ describe('ResourceLoader', () => {
         resourceLoadBuffering
       }) => {
         const wrapper = createWrapper(resource)
-        wrapper.vm.resourceLoadBuffering = resourceLoadBuffering
+        wrapper.vm.resourceLoadBuffering = ref(resourceLoadBuffering)
         expect(wrapper.vm.isLoading).toEqual(result)
       })
     })
@@ -264,60 +265,37 @@ describe('ResourceLoader', () => {
   describe('methods', () => {
     describe('fetchResource', () => {
       test('should NOT fetch resource IF ssr flag for api state is false', async () => {
-        const hasError = false
         const resource = { apiState: { ssr: false } }
-        const wrapper = createWrapper({
-          data: { test: true },
-          apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        })
+        const wrapper = createWrapper(resource)
 
-        await wrapper.vm.methods.fetchResource([hasError, resource])
+        await wrapper.vm.methods.fetchResource()
 
         expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
       })
 
       test('should NOT fetch resource IF ssr flag for api state is true AND resource has data', async () => {
-        const hasError = false
         const resource = { apiState: { ssr: true }, data: { mock: true } }
-        const wrapper = createWrapper({
-          data: { test: true },
-          apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        })
+        const wrapper = createWrapper(resource)
 
-        await wrapper.vm.methods.fetchResource([hasError, resource])
+        await wrapper.vm.methods.fetchResource()
 
         expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
       })
 
       test('should NOT fetch resource IF ssr flag for api state is true AND resource has no data AND no silent error', async () => {
-        const hasError = false
-        const resource = { apiState: { ssr: true }, data: null }
-        const wrapper = createWrapper({
-          data: { test: true },
-          apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        })
+        const resource = { apiState: { ssr: true, status: CwaResourceApiStatuses.SUCCESS }, data: null }
+        const wrapper = createWrapper(resource)
 
-        await wrapper.vm.methods.fetchResource([hasError, resource])
+        await wrapper.vm.methods.fetchResource()
 
         expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
       })
 
       test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR', async () => {
-        const hasError = true
-        const resource = { apiState: { ssr: true }, data: null }
-        const wrapper = createWrapper({
-          apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        })
+        const resource = { apiState: { ssr: true, error: { statusCode: 404 }, status: CwaResourceApiStatuses.ERROR }, data: undefined }
+        const wrapper = createWrapper(resource)
 
-        await wrapper.vm.methods.fetchResource([hasError, resource])
+        await wrapper.vm.methods.fetchResource()
 
         expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
       })

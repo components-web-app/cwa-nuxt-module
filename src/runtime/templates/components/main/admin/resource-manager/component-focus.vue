@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ComputedRef, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
+import { computed, ComputedRef, onBeforeUnmount, onMounted, Ref, ref, toRef } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 const props = defineProps<{
-  iri: string
+  iri: Ref<string>
   domElements: ComputedRef<HTMLElement[]>
 }>()
 

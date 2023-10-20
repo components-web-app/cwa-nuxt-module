@@ -256,6 +256,11 @@
     flex-shrink: 0 !important
 }
 
+.cwa-flex-grow {
+
+    flex-grow: 1 !important
+}
+
 .-cwa-translate-x-1\/2 {
 
     --tw-translate-x: -50% !important;
@@ -360,6 +365,11 @@
 .cwa-flex-col {
 
     flex-direction: column !important
+}
+
+.cwa-content-center {
+
+    align-content: center !important
 }
 
 .cwa-items-start {
@@ -519,6 +529,11 @@
     --tw-bg-opacity: 1 !important;
 
     background-color: rgb(227 10 108 / var(--tw-bg-opacity)) !important
+}
+
+.cwa-bg-magenta\/90 {
+
+    background-color: rgb(227 10 108 / 0.9) !important
 }
 
 .cwa-bg-neutral-600 {
@@ -1033,6 +1048,12 @@
     --tw-bg-opacity: 1 !important;
 
     background-color: rgb(28 25 23 / var(--tw-bg-opacity)) !important
+}
+.hover\:cwa-bg-magenta:hover {
+
+    --tw-bg-opacity: 1 !important;
+
+    background-color: rgb(227 10 108 / var(--tw-bg-opacity)) !important
 }
 .focus\:cwa-outline-none:focus {
 

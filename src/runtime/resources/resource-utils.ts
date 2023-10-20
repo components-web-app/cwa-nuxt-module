@@ -14,6 +14,7 @@ export interface CwaResource {
   '@id': string
   '@type': string
   publishedResource?: string
+  draftResource?: string
   uiComponent?: string
   _metadata: {
     persisted: boolean
@@ -53,14 +54,15 @@ export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined
   }
 }
 
-export function getPublishedResourceState (resource: CwaCurrentResourceInterface): undefined|boolean {
+export function getPublishedResourceState (resource: Pick<CwaCurrentResourceInterface, 'data'>): undefined|boolean {
   const publishableMeta = resource.data?._metadata.publishable
   return publishableMeta?.published
 }
 
-export function getPublishedResourceIri (resource: CwaResource): string|null {
-  const publishableMetadata = resource._metadata?.publishable
-  const resourceIri = resource['@id']
+// todo: used in mercure, perhaps we should use the new resource store mapping though? This doesn't require any more fetches to have been made though..
+export function getPublishedResourceIri (resourceData: CwaResource): string|null {
+  const publishableMetadata = resourceData._metadata?.publishable
+  const resourceIri = resourceData['@id']
   // not a publishable resource
   if (!publishableMetadata) {
     return resourceIri
@@ -68,8 +70,10 @@ export function getPublishedResourceIri (resource: CwaResource): string|null {
   if (publishableMetadata.published) {
     return resourceIri
   }
-  return resource.publishedResource || null
+  return resourceData.publishedResource || null
 }
+
+export function getAssociatedPublishableIris () {}
 
 export function isCwaResource (obj: any): obj is CwaResource {
   if (typeof obj !== 'object') {
@@ -100,5 +104,6 @@ export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap =
   [CwaResourceTypes.LAYOUT]: ['componentGroups'],
   [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
   [CwaResourceTypes.COMPONENT_POSITION]: ['component'],
-  [CwaResourceTypes.COMPONENT]: ['componentGroups']
+  // draft will always be fetched by default if exists and auth to do, so we just need to fetch the associated published resource - will only be returned if we have auth
+  [CwaResourceTypes.COMPONENT]: ['componentGroups', 'publishedResource']
 }

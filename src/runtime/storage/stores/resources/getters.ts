@@ -1,5 +1,5 @@
 import { ComputedRef, computed } from 'vue'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import { FetchStatus } from '../fetcher/state'
 import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
@@ -15,7 +15,15 @@ type ResourcesByTypeInterface = {
   [T in CwaResourceTypes]: CwaCurrentResourceInterface[];
 }
 
+interface PublishableMapping {
+  [key: string]: string
+}
+
 export interface CwaResourcesGettersInterface {
+  findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
+  findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
+  publishedToDraftIris: ComputedRef<PublishableMapping>
+  draftToPublishedIris: ComputedRef<PublishableMapping>
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
   currentResourcesApiStateIsPending: ComputedRef<boolean>
@@ -27,7 +35,56 @@ export interface CwaResourcesGettersInterface {
 export default function (resourcesState: CwaResourcesStateInterface): CwaResourcesGettersInterface {
   const utils = new ResourcesGetterUtils(resourcesState)
 
+  const publishedToDraftIris = computed(() => (
+    resourcesState.current.publishableMapping.reduce((obj, mapping) => {
+      obj[mapping.publishedIri] = mapping.draftIri
+      return obj
+    }, {} as PublishableMapping)
+  ))
+
+  const draftToPublishedIris = computed(() => (
+    resourcesState.current.publishableMapping.reduce((obj, mapping) => {
+      obj[mapping.draftIri] = mapping.publishedIri
+      return obj
+    }, {} as PublishableMapping)
+  ))
+
+  function findIsPublishedByIri (iri: string) {
+    const resource = resourcesState.current.byId?.[iri]
+    if (!resource) {
+      return false
+    }
+    const publishedState = getPublishedResourceState(resource)
+    return publishedState === undefined ? true : publishedState
+  }
+
   return {
+    findPublishedComponentIri: computed(() => {
+      return (iri: string) => {
+        const isPublished = findIsPublishedByIri(iri)
+        if (isPublished === undefined) {
+          return
+        }
+        if (isPublished) {
+          return iri
+        }
+        return draftToPublishedIris.value[iri]
+      }
+    }),
+    findDraftComponentIri: computed(() => {
+      return (iri: string) => {
+        const isPublished = findIsPublishedByIri(iri)
+        if (isPublished === undefined) {
+          return
+        }
+        if (!isPublished) {
+          return iri
+        }
+        return publishedToDraftIris.value[iri]
+      }
+    }),
+    publishedToDraftIris,
+    draftToPublishedIris,
     resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],
@@ -85,7 +142,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
           }
 
           // component positions can be dynamic and different depending on the path
-          if (resourceData.data['@type'] === CwaResourceTypes.COMPONENT_POSITION && resourceData.apiState.headers?.path !== fetchStatus.path) {
+          if (resourceData.data?.['@type'] === CwaResourceTypes.COMPONENT_POSITION && resourceData.apiState.headers?.path !== fetchStatus.path) {
             return false
           }
         }

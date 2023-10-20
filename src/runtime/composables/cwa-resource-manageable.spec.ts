@@ -1,6 +1,6 @@
 import { describe, expect, vi, test, beforeEach } from 'vitest'
 import * as vue from 'vue'
-import logger from 'consola'
+import { ref } from 'vue'
 import ManageableComponent from '../admin/manageable-component'
 import * as cwaComposable from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
@@ -18,7 +18,7 @@ vi.mock('../admin/manageable-component', () => {
 
 describe('CWA resource manageable composable', () => {
   const mockCwa = { mock: 'cwa' }
-  const mockIri = 'mock-iri'
+  const mockIri = ref('mock-iri')
 
   beforeEach(() => {
     vi.spyOn(vue, 'onMounted').mockImplementation(fn => fn())
@@ -28,11 +28,7 @@ describe('CWA resource manageable composable', () => {
 
   test('should show message IF current instance does not have a proxy', () => {
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ mock: true })
-    const logSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
-
-    useCwaResourceManageable()
-
-    expect(logSpy).toHaveBeenCalledWith('Cannot initialise manager for resource. Instance is not defined')
+    expect(() => useCwaResourceManageable(mockIri)).toThrow('Cannot initialise manager for resource. Instance is not defined')
   })
 
   test('should create ManageableComponent IF current instance has proxy', () => {
@@ -40,7 +36,7 @@ describe('CWA resource manageable composable', () => {
 
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
 
-    useCwaResourceManageable()
+    useCwaResourceManageable(mockIri)
 
     expect(ManageableComponent).toHaveBeenCalledWith(mockProxy, mockCwa)
   })
@@ -88,28 +84,10 @@ describe('CWA resource manageable composable', () => {
 
     ManageableComponent.mockReturnValueOnce(mockReference)
 
-    const result = useCwaResourceManageable()
+    const result = useCwaResourceManageable(mockIri)
 
     expect(result.manager).toEqual(mockReference)
   })
 
-  test('should return object containing watch handler, which initializes manageable component BASED on iri', () => {
-    const mockProxy = { mock: 'proxy' }
-
-    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
-
-    const mockReference = { init: vi.fn(), clear: vi.fn() }
-
-    ManageableComponent.mockReturnValueOnce(mockReference)
-
-    const { resourceWatchHandler } = useCwaResourceManageable()
-
-    resourceWatchHandler({ data: { '@id': null } })
-
-    expect(mockReference.init).not.toHaveBeenCalled()
-
-    resourceWatchHandler({ data: { '@id': mockIri } })
-
-    expect(mockReference.init).toHaveBeenCalledWith(mockIri)
-  })
+  test.todo('Watch options')
 })

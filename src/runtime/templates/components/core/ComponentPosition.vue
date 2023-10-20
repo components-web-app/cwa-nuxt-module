@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource } from '#imports'
@@ -15,8 +15,16 @@ import { IriProp } from '#cwa/runtime/composables/cwa-resource'
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
 
-const resource = useCwaResource(props.iri).getResource()
+const resource = useCwaResource(toRef(props, 'iri')).getResource()
 const componentIri = computed(() => {
-  return resource.value?.data?.component
+  const iri = resource.value?.data?.component
+  if ($cwa.admin.isEditing) {
+    const selectedEditingIri = $cwa.admin.componentManager.currentStackItem.value?.iri
+    const editDisplayIri = $cwa.resources.findDraftComponentIri(iri).value || iri
+    if (!selectedEditingIri || ![editDisplayIri, iri].includes(selectedEditingIri) || !$cwa.admin.componentManager.forcePublishedVersion.value) {
+      return editDisplayIri
+    }
+  }
+  return $cwa.resources.findPublishedComponentIri(iri).value
 })
 </script>

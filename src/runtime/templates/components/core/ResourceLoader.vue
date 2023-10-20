@@ -1,5 +1,5 @@
 <template>
-  <CwaUtilsAlertWarning v-if="!props.iri">
+  <CwaUtilsAlertWarning v-if="!iri">
     <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
   </CwaUtilsAlertWarning>
   <div v-else-if="isLoading">
@@ -7,26 +7,28 @@
   </div>
   <CwaUtilsAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
     <p v-if="!resource">
-      Resource `{{ props.iri }}` has not been requested
+      Resource `{{ iri }}` has not been requested
     </p>
     <p v-else-if="!resource?.data">
-      No data received for resource `{{ props.iri }}`
+      No data received for resource `{{ iri }}`
     </p>
     <p v-else>
-      The component `{{ resourceUiComponent }}` for resource `{{ props.iri }}` cannot be resolved
+      The component `{{ resourceUiComponent }}` for resource `{{ iri }}` cannot be resolved
     </p>
   </CwaUtilsAlertWarning>
-  <template v-else-if="!hasError">
-    <component v-bind="$attrs" :is="resolvedComponent" :iri="props.iri" />
-  </template>
+  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="iri" />
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import {
+  CwaResourceTypes,
+  getPublishedResourceState,
+  getResourceTypeFromIri
+} from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 
@@ -38,7 +40,7 @@ const props = withDefaults(
   }
 )
 
-const resource = $cwa.resources.getResource(props.iri)
+const resource = computed(() => $cwa.resources.getResource(props.iri).value)
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
@@ -53,10 +55,8 @@ onBeforeMount(() => {
 })
 
 const isLoading = computed(() => {
-  if (resourceLoadBuffering.value) {
-    return true
-  }
-  return !!resource.value && !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  const isLoading = !!resource.value && !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return isLoading || (resource.value === undefined && resourceLoadBuffering.value)
 })
 
 const resourceUiComponent = computed(() => {
@@ -95,16 +95,38 @@ const resolvedComponent = computed(() => {
   return resourceUiComponent.value
 })
 
+const ssrNoDataWithSilentError = computed(() => {
+  return resource.value?.apiState.ssr && resource.value.data === undefined && hasSilentError
+})
+
+const ssrPositionHasPartialData = computed(() => {
+  // error caused by position and component both re-fetching at the same time. We get a scheduler flush issue - 'Cannot read properties of null (reading 'parentNode')'
+  // occurs if the component only has a draft version and on server load, then client-side tries to refresh the component and the position at the same time
+  return resource.value?.apiState.ssr &&
+    $cwa.auth.user &&
+    getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
+    $cwa.resources.isPageTemplate &&
+    !$cwa.resources.isPageDynamic
+})
+
+const refetchPublishedSsrResourceToResolveDraft = computed(() => {
+  if (getResourceTypeFromIri(props.iri) !== CwaResourceTypes.COMPONENT) {
+    return false
+  }
+  // will always have metadata even if not auth saying whether it's published or not
+  const publishableState = getPublishedResourceState(resource.value)
+
+  // if we already fetched a draft then we had permissions, if it was from server, and fetched published, we should re-fetch to check for draft version
+  // the next fetch would simply fetch the draft if it's available as the default response from the API
+  return publishableState === true &&
+    resource.value?.apiState.ssr &&
+    $cwa.auth.user
+})
+
 const methods = {
-  async fetchResource ([hasSilentError, resource]: [boolean, CwaCurrentResourceInterface]) {
-    const ssrNoDataWithSilentError = resource?.apiState.ssr && !resource?.data && hasSilentError
-    const iri = resource?.data?.['@id']
-    const ssrPositionHasPartialData = iri
-      ? (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_POSITION &&
-        resource.apiState.ssr &&
-        $cwa.auth.user)
-      : false
-    if (ssrNoDataWithSilentError || ssrPositionHasPartialData) {
+  async fetchResource () {
+    // todo: test all permutations
+    if (ssrNoDataWithSilentError.value || ssrPositionHasPartialData.value || refetchPublishedSsrResourceToResolveDraft.value) {
       await $cwa.fetchResource({
         path: props.iri
       })
@@ -124,4 +146,5 @@ onMounted(() => {
   })
 })
 
+// TODO - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft
 </script>

@@ -162,6 +162,9 @@ export class Resources {
     if (!type) {
       return
     }
+    if (!fetchStatus?.path) {
+      return
+    }
 
     if (type === CwaResourceTypes.PAGE) {
       return fetchStatus.path
@@ -187,6 +190,9 @@ export class Resources {
       const fetchStatus = this.displayFetchStatus
       const type = this.getFetchStatusType(fetchStatus)
       if (!type) {
+        return
+      }
+      if (!fetchStatus?.path) {
         return
       }
       if (type === CwaResourceTypes.PAGE_DATA) {
@@ -229,6 +235,18 @@ export class Resources {
     })
   }
 
+  public findPublishedComponentIri (iri: string) {
+    return computed(() => {
+      return this.resourcesStore.findPublishedComponentIri(iri)
+    })
+  }
+
+  public findDraftComponentIri (iri: string) {
+    return computed(() => {
+      return this.resourcesStore.findDraftComponentIri(iri)
+    })
+  }
+
   public get isLoading (): ComputedRef<boolean> {
     return computed(() => {
       return !this.fetcherStore.fetchesResolved || !!this.resourceLoadStatus.pending
@@ -248,7 +266,7 @@ export class Resources {
   }
 
   public get isPageTemplate () {
-    return computed(() => !!this.page.value.data?.isTemplate)
+    return computed(() => !!this.page?.value?.data?.isTemplate)
   }
 
   public get isPageDynamic () {
