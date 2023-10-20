@@ -29,9 +29,11 @@ export default class ComponentManager {
   private currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
+  private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
 
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore) {
     this.listenEditModeChange()
+    this.listenCurrentIri()
   }
 
   public get resourceStack () {
@@ -42,10 +44,15 @@ export default class ComponentManager {
 
   public get currentStackItem () {
     return computed(() => {
-      if (this.lastClickTarget.value || !this.showManager.value) {
+      if (!this.showManager.value) {
         return
       }
-      return this.resourceStack.value?.[0]
+      // processing new stack, keep returning previous
+      if (this.lastClickTarget.value) {
+        return this.cachedCurrentStackItem.value
+      }
+      this.cachedCurrentStackItem.value = this.resourceStack.value?.[0]
+      return this.cachedCurrentStackItem.value
     })
   }
 
@@ -134,6 +141,17 @@ export default class ComponentManager {
         // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
         this.showManager.value = false
       }
+    })
+  }
+
+  private listenCurrentIri () {
+    watch(this.currentIri, (newIri, oldIri) => {
+      if (newIri && oldIri) {
+        if ([this.resourcesStore.publishedToDraftIris[oldIri], this.resourcesStore.draftToPublishedIris[oldIri]].includes(newIri)) {
+          return
+        }
+      }
+      this.forcePublishedVersion.value = false
     })
   }
 

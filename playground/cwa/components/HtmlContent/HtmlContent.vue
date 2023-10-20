@@ -7,7 +7,6 @@ import { computed, ref, toRef } from 'vue'
 import { useCwaResource, useHtmlContent, IriProp } from '#imports'
 
 const props = defineProps<IriProp>()
-
 const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
 const resource = getResource()
 defineExpose(exposeMeta)

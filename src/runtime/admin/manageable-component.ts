@@ -114,11 +114,8 @@ export default class ManageableComponent {
     if (!this.currentIri?.value) {
       return
     }
-    if (stackItem?.iri !== this.currentIri.value) {
-      this.clearFocusComponent()
-      return
-    }
-    if (!stackItem) {
+    this.clearFocusComponent()
+    if (!stackItem || stackItem.iri !== this.currentIri.value) {
       return
     }
 
