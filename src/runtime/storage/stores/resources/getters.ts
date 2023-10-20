@@ -54,7 +54,8 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     if (!resource) {
       return false
     }
-    return getPublishedResourceState(resource)
+    const publishedState = getPublishedResourceState(resource)
+    return publishedState === undefined ? true : publishedState
   }
 
   return {

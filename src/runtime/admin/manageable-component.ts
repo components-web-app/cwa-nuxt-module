@@ -83,7 +83,7 @@ export default class ManageableComponent {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
       }
-      this.currentIri && (this.currentIri.value = undefined)
+      // this.currentIri && (this.currentIri.value = undefined)
     }
     this.isInit = false
   }

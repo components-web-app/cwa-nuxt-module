@@ -79,11 +79,6 @@
     margin: 1rem !important
 }
 
-.cwa-m-auto {
-
-    margin: auto !important
-}
-
 .cwa-mx-auto {
 
     margin-left: auto !important;
@@ -536,6 +531,11 @@
     background-color: rgb(227 10 108 / var(--tw-bg-opacity)) !important
 }
 
+.cwa-bg-magenta\/90 {
+
+    background-color: rgb(227 10 108 / 0.9) !important
+}
+
 .cwa-bg-neutral-600 {
 
     --tw-bg-opacity: 1 !important;
@@ -579,25 +579,6 @@
 .cwa-bg-white\/70 {
 
     background-color: rgb(255 255 255 / 0.7) !important
-}
-
-.cwa-bg-orange {
-
-    --tw-bg-opacity: 1 !important;
-
-    background-color: rgb(255 170 0 / var(--tw-bg-opacity)) !important
-}
-
-.cwa-bg-magenta\/90 {
-
-    background-color: rgb(227 10 108 / 0.9) !important
-}
-
-.cwa-bg-blue-600 {
-
-    --tw-bg-opacity: 1 !important;
-
-    background-color: rgb(37 99 235 / var(--tw-bg-opacity)) !important
 }
 
 .cwa-fill-blue-600 {
@@ -713,11 +694,6 @@
 .cwa-text-center {
 
     text-align: center !important
-}
-
-.cwa-align-middle {
-
-    vertical-align: middle !important
 }
 
 .cwa-text-sm {
