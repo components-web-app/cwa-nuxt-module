@@ -36,7 +36,7 @@ defineExpose(exposeMeta)
   <div>
     <CwaUtilsFormToggle v-if="alternateIri" v-model="editLiveVersion" label="Edit live version" />
     <span v-else>
-      {{ editLiveVersion ? 'Live' : 'Draft' }}
+      {{ publishableState === false ? 'Draft' : 'Live' }}
     </span>
   </div>
 </template>
