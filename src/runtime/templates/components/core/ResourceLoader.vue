@@ -55,10 +55,8 @@ onBeforeMount(() => {
 })
 
 const isLoading = computed(() => {
-  if (resourceLoadBuffering.value) {
-    return true
-  }
-  return !!resource.value && !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  const isLoading = !!resource.value && !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return isLoading || (resource.value === undefined && resourceLoadBuffering.value)
 })
 
 const resourceUiComponent = computed(() => {

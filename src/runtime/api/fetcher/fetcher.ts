@@ -98,6 +98,7 @@ export default class Fetcher {
   }
 
   public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave, isPrimary }: FetchResourceEvent): Promise<CwaResource|undefined> {
+    const iri = path.split('?')[0]
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token,
@@ -113,7 +114,7 @@ export default class Fetcher {
     }
 
     const continueToFetchResource = this.fetchStatusManager.startFetchResource({
-      resource: path,
+      resource: iri,
       token: startFetchResult.token
     })
     if (!continueToFetchResource) {
@@ -121,7 +122,7 @@ export default class Fetcher {
     }
 
     const finishFetchResourceEvent = {
-      resource: path,
+      resource: iri,
       token: startFetchResult.token
     }
     let cwaFetchRaw: CwaFetchResponseRaw
@@ -201,13 +202,17 @@ export default class Fetcher {
     const nestedIris = []
     const nestedPropertiesToFetch = resourceTypeToNestedResourceProperties[type]
     for (const prop of nestedPropertiesToFetch) {
-      const propIris = resource[prop]
+      let propIris = resource[prop]
       if (!propIris) {
         continue
       }
       if (Array.isArray(propIris)) {
         nestedIris.push(...propIris)
       } else {
+        // todo test - otherwise client-side auth will get the draft instead
+        if (prop === 'publishedResource') {
+          propIris += '?published=true'
+        }
         nestedIris.push(propIris)
       }
     }
