@@ -106,7 +106,7 @@ describe('ResourceLoader', () => {
               status: CwaResourceApiStatuses.IN_PROGRESS
             }
           },
-          result: true
+          result: false
         },
         {
           resourceLoadBuffering: true,
@@ -119,7 +119,7 @@ describe('ResourceLoader', () => {
         resourceLoadBuffering
       }) => {
         const wrapper = createWrapper(resource)
-        wrapper.vm.resourceLoadBuffering = resourceLoadBuffering
+        wrapper.vm.resourceLoadBuffering = ref(resourceLoadBuffering)
         expect(wrapper.vm.isLoading).toEqual(result)
       })
     })

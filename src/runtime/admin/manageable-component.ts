@@ -83,7 +83,10 @@ export default class ManageableComponent {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
       }
-      // this.currentIri && (this.currentIri.value = undefined)
+      if (this.currentIri) {
+        // must set to undefined and not just update the reactive variable as the reactive is probably a readonly prop
+        this.currentIri = undefined
+      }
     }
     this.isInit = false
   }

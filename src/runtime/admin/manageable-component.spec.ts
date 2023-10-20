@@ -198,7 +198,7 @@ describe('ManageableComponent Class', () => {
         expect(unwatchCurrentIri).not.toHaveBeenCalled()
         expect(instance.unwatchCurrentIri).toBe(unwatchCurrentIri)
       } else {
-        expect(instance.currentIri.value).toBeUndefined()
+        expect(instance.currentIri).toBeUndefined()
         expect(unwatchCurrentIri).toHaveBeenCalled()
         expect(instance.unwatchCurrentIri).toBeUndefined()
       }
