@@ -18,13 +18,15 @@ const props = defineProps<IriProp>()
 const resource = useCwaResource(toRef(props, 'iri')).getResource()
 const componentIri = computed(() => {
   const iri = resource.value?.data?.component
+  const publishedIri = $cwa.resources.findPublishedComponentIri(iri).value
   if ($cwa.admin.isEditing) {
-    const selectedEditingIri = $cwa.admin.componentManager.currentStackItem.value?.iri
-    const editDisplayIri = $cwa.resources.findDraftComponentIri(iri).value || iri
-    if (!selectedEditingIri || ![editDisplayIri, iri].includes(selectedEditingIri) || !$cwa.admin.componentManager.forcePublishedVersion.value) {
-      return editDisplayIri
+    const selectedEditingIri = $cwa.admin.componentManager.currentIri.value
+    const draftIri = $cwa.resources.findDraftComponentIri(iri).value
+    if ([draftIri, publishedIri].includes(selectedEditingIri)) {
+      return selectedEditingIri
     }
+    return draftIri || iri
   }
-  return $cwa.resources.findPublishedComponentIri(iri).value
+  return publishedIri
 })
 </script>
