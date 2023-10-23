@@ -102,8 +102,6 @@ onMounted(() => {
 
   const sources: watcherParams = [componentPositions, signedInAndResourceExists, resource]
 
-  // perhaps should use onUpdated hook instead... and generalise this
-  // todo: test
   watch(sources, managerWatchCallback,
     {
       flush: 'post',

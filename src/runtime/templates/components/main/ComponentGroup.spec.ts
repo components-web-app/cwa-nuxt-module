@@ -23,7 +23,7 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    watch: vi.fn(() => vi.fn)
+    watch: vi.fn(() => {})
   }
 })
 
@@ -387,7 +387,7 @@ describe('ComponentGroup', () => {
       })
       const wrapper = createWrapper()
 
-      const watchCall = vue.watch.mock.calls[0]
+      const watchCall = vue.watch.mock.lastCall
       expect(watchCall[0][0].value).toEqual(wrapper.vm.componentPositions)
       expect(watchCall[0][1].value).toEqual(wrapper.vm.signedInAndResourceExists)
       expect(watchCall[0][2].value).toEqual(wrapper.vm.resource)

@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import * as vue from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -315,8 +316,7 @@ describe('ResourceLoader', () => {
   })
 
   describe('watch', () => {
-    test('should be called with correct callback and options', async () => {
-      const vue = await import('vue')
+    test('should be called with correct callback and options', () => {
       const watchSpy = vue.watch
       const wrapper = createWrapper({
         apiState: {

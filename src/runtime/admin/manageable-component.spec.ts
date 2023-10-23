@@ -1,6 +1,7 @@
 import { describe, test, vi, expect, afterEach } from 'vitest'
 import { computed, ref } from 'vue'
 import { Mock } from '@vitest/spy'
+import * as vue from 'vue'
 import Cwa from '../cwa'
 import * as ResourceUtils from '../resources/resource-utils'
 import { CwaResourceTypes } from '../resources/resource-utils'
@@ -118,8 +119,7 @@ describe('ManageableComponent Class', () => {
   })
 
   describe('init function', () => {
-    test('init functions are carried out', async () => {
-      const vue = await import('vue')
+    test('init functions are carried out', () => {
       const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => 'unwatchFn')
       const { instance } = createManageableComponent()
       vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})

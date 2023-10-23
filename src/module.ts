@@ -12,7 +12,7 @@ import {
   extendPages,
   installModule, resolveAlias, updateTemplates
 } from '@nuxt/kit'
-import { Component, ModuleOptions, NuxtPage } from '@nuxt/schema'
+import { Component, NuxtPage } from '@nuxt/schema'
 import { DefineComponent, GlobalComponents } from 'vue'
 
 export type GlobalComponentNames = keyof GlobalComponents
@@ -28,12 +28,15 @@ export interface CwaResourcesMeta {
   [type:string]: CwaResourceMeta
 }
 
-export interface CwaModuleOptions extends ModuleOptions {
+export interface CwaModuleOptions {
   storeName: string
   pagesDepth?: number,
   apiUrlBrowser?: string
   apiUrl?: string,
   resources?: CwaResourcesMeta
+  tailwind?: {
+    base?: boolean
+  }
 }
 
 function createDefaultCwaPages (
@@ -100,7 +103,7 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // include css - dev can disable the base in options to allow usage of their own tailwind without conflict and duplication
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
-    options.tailwind.base && nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
+    options.tailwind?.base && nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
 
     // include auto-imports for composables
     addImportsDir(resolve('./runtime/composables'))

@@ -56,7 +56,9 @@
   },
   "devDependencies": {
     "@headlessui/vue": "^1.7.16",
+    "@nuxt/kit": "^3.8.0",
     "@nuxt/module-builder": "^0.4.0",
+    "@nuxt/schema": "^3.8.0",
     "@nuxtjs/eslint-config-typescript": "^12.1.0",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@pinia/testing": "^0.0.14",
