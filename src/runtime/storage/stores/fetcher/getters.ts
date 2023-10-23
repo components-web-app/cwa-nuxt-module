@@ -1,5 +1,6 @@
-import { computed, ComputedRef } from 'vue'
-import { CwaFetcherStateInterface, FetchStatus } from './state'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
+import type { CwaFetcherStateInterface, FetchStatus } from './state'
 import { FetcherGetterUtils } from './getter-utils'
 
 export interface CwaFetcherGettersInterface {

@@ -1,8 +1,8 @@
-import { computed, ref, Ref, ShallowRef, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
+import type { Ref, ShallowRef, ComputedRef } from 'vue'
 import { consola as logger } from 'consola'
-import { ComputedRef } from 'vue/dist/vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
-import { ManagerTab } from '#cwa/module'
+import type { ManagerTab } from '#cwa/module'
 import { ResourcesStore } from '#cwa/runtime/storage/stores/resources/resources-store'
 
 interface _ResourceStackItem {

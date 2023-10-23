@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, toRef, watch } from 'vue'
 import ManagerTab from './manager-tab.vue'
-import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
+import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 
 const props = defineProps<{
   tabs: CwaResourceManagerTabOptions[]

@@ -4,7 +4,7 @@ import { useMouse, useWindowScroll } from '@vueuse/core'
 import ManagerTabs from './_parts/manager-tabs.vue'
 import CwaAdminResourceManagerContextMenu from './_parts/cwa-resource-manager-context-menu.vue'
 import { useCwa } from '#imports'
-import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
+import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
 const $cwa = useCwa()

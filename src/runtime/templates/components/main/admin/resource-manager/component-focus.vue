@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ComputedRef, onBeforeUnmount, onMounted, Ref, ref, toRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 

@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
-import { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource, useHtmlContent } from '#imports'
 
 const props = defineProps<IriProp>()

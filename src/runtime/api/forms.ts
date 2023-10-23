@@ -1,4 +1,5 @@
-import { computed, ComputedRef } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 interface ViewVars {
   full_name: string

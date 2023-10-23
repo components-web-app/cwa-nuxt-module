@@ -1,10 +1,12 @@
-import { ComputedRef, watch, WatchStopHandle } from 'vue'
+import { watch } from 'vue'
+import type { ComputedRef, WatchStopHandle } from 'vue'
 import _isEqual from 'lodash/isEqual.js'
 import type { ResourcesManager } from '../../../resources/resources-manager'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '../../../composables/cwa'
 
 const resourceTypeProperty = {

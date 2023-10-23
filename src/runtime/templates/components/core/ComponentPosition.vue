@@ -10,7 +10,7 @@ import { computed, toRef } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource } from '#imports'
-import { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()

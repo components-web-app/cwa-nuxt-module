@@ -1,8 +1,10 @@
-import { computed, ComputedRef } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
-import { FetchStatus } from '../storage/stores/fetcher/state'
+import type { FetchStatus } from '../storage/stores/fetcher/state'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri

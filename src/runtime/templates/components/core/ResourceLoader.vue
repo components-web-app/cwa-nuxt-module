@@ -23,7 +23,7 @@
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
-import { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
+import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
 import {
   CwaResourceTypes,
   getPublishedResourceState,

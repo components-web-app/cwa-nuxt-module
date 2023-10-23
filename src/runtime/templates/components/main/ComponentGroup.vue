@@ -23,7 +23,9 @@ import {
   onMounted,
   onBeforeUnmount,
   watch,
-  ref,
+  ref
+} from 'vue'
+import type {
   ComputedRef,
   ShallowUnwrapRef,
   WatchCallback
@@ -31,7 +33,8 @@ import {
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa, useCwaResourceManageable } from '#imports'
 
 const iri = ref<string|undefined>()

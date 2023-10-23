@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
+import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 
 defineProps<{
   tab: CwaResourceManagerTabOptions

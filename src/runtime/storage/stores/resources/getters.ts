@@ -1,7 +1,9 @@
-import { ComputedRef, computed } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '../../../resources/resource-utils'
-import { FetchStatus } from '../fetcher/state'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import type { FetchStatus } from '../fetcher/state'
+import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
+import { CwaResourceApiStatuses } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
 export interface ResourcesLoadStatusInterface {

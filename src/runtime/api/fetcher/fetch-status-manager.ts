@@ -1,10 +1,11 @@
-import { computed, ComputedRef, watch, watchEffect, WatchStopHandle } from 'vue'
+import { computed, watch, watchEffect } from 'vue'
+import type { ComputedRef, WatchStopHandle } from 'vue'
 import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
-import {
+import type {
   AddFetchResourceEvent,
   FinishFetchEvent, ManifestErrorFetchEvent,
   ManifestSuccessFetchEvent,
@@ -12,10 +13,11 @@ import {
 } from '../../storage/stores/fetcher/actions'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
 import { createCwaResourceError, CwaResourceError } from '../../errors/cwa-resource-error'
-import { CwaResource, isCwaResource } from '../../resources/resource-utils'
+import { isCwaResource } from '../../resources/resource-utils'
+import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
-import { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
-import { FetchStatus } from '#cwa/runtime/storage/stores/fetcher/state'
+import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
+import type { FetchStatus } from '#cwa/runtime/storage/stores/fetcher/state'
 
 export interface FinishFetchResourceEvent {
   resource: string,

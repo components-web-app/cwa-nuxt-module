@@ -1,13 +1,15 @@
 import {
-  App,
-  ComponentPublicInstance,
   computed,
-  ComputedRef,
   createApp,
   markRaw,
   ref,
+  watch
+} from 'vue'
+import type {
+  App,
+  ComponentPublicInstance,
+  ComputedRef,
   Ref,
-  watch,
   WatchStopHandle
 } from 'vue'
 import {
@@ -20,8 +22,8 @@ import Cwa from '../cwa'
 import ManagerTabsResolver from './manager-tabs-resolver'
 // todo: same issue as above - seems imports from this file
 import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
-import { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
-import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
+import type { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
+import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export default class ManageableComponent {
   private currentIri: Ref<string|undefined>|undefined
