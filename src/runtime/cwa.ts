@@ -42,7 +42,7 @@ export default class Cwa {
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
 
-  constructor (nuxtApp: Pick<NuxtApp, '_route'|'$router'|'_middleware'|'cwaResources'>, options: CwaModuleOptions) {
+  constructor (nuxtApp: Pick<NuxtApp, '_route'|'_middleware'|'$router'|'cwaResources'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
