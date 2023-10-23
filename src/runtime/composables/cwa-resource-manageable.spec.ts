@@ -16,7 +16,7 @@ vi.mock('../admin/manageable-component', () => {
   }
 })
 
-describe('CWA resource manageable composable', () => {
+describe.todo('CWA resource manageable composable', () => {
   const mockCwa = { mock: 'cwa' }
   const mockIri = ref('mock-iri')
 

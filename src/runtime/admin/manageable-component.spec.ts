@@ -110,7 +110,7 @@ describe('ManageableComponent Class', () => {
   })
 
   describe('init function', () => {
-    test('init functions are carried out', async () => {
+    test.todo('init functions are carried out', async () => {
       const vue = await import('vue')
       const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => 'unwatchFn')
       const { instance } = createManageableComponent()

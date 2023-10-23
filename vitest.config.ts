@@ -5,7 +5,7 @@ export default defineVitestConfig({
   test: {
     coverage: {
       reportsDirectory: '../coverage',
-      provider: 'c8',
+      provider: 'v8',
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
       all: true

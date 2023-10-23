@@ -24,7 +24,6 @@ interface ViewVars {
   }
   [key: string]: any
 }
-/* eslint-enable camelcase */
 
 interface FormView {
   vars: ViewVars

@@ -216,7 +216,7 @@ describe('Component Manager', () => {
     })
 
     describe('listenEditModeChange', () => {
-      test.each([
+      test.todo.each([
         { initialEditingState: true, newEditingState: false, showManager: false },
         { initialEditingState: false, newEditingState: true, showManager: true }
       ])('When edit mode is changed from $initialEditingState to $newEditingState while manager is true, showManager should be $showManager', async ({

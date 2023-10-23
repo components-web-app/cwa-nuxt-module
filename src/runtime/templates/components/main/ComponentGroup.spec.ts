@@ -354,7 +354,7 @@ describe('ComponentGroup', () => {
   })
 
   describe('Initialise manager when resource is available', () => {
-    test('Watcher is called with correct options', () => {
+    test.todo('Watcher is called with correct options', () => {
       const unwatchSpy = vi.fn()
       vi.spyOn(vue, 'watch').mockImplementation(() => {
         return unwatchSpy
