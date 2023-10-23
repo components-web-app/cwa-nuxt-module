@@ -14,10 +14,12 @@ export default defineNuxtConfig({
     '../src/module',
     '@nuxtjs/tailwindcss',
     '@nuxt/image',
-    '@nuxt/devtools',
     'nuxt-vitest',
     '@vite-pwa/nuxt'
   ],
+  devtools: {
+    enabled: true
+  },
   cwa: {
     apiUrl: API_URL,
     apiUrlBrowser: API_URL_BROWSER,
