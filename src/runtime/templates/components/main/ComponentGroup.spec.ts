@@ -19,6 +19,14 @@ vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   }
 })
 
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    watch: vi.fn(() => vi.fn)
+  }
+})
+
 const mockReference = 'mockReference'
 const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
@@ -354,11 +362,7 @@ describe('ComponentGroup', () => {
   })
 
   describe('Initialise manager when resource is available', () => {
-    test.todo('Watcher is called with correct options', () => {
-      const unwatchSpy = vi.fn()
-      vi.spyOn(vue, 'watch').mockImplementation(() => {
-        return unwatchSpy
-      })
+    test('Watcher is called with correct options', () => {
       const resourceWatchHandler = vi.fn()
       const resolvedResource = {
         data: undefined,

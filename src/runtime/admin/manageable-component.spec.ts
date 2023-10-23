@@ -67,6 +67,14 @@ vi.mock('./manager-tabs-resolver', () => {
   }
 })
 
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    watch: vi.fn()
+  }
+})
+
 interface DummyDom {
   nodeType: 1|2|3
   nextSibling?: DummyDom
@@ -110,7 +118,7 @@ describe('ManageableComponent Class', () => {
   })
 
   describe('init function', () => {
-    test.todo('init functions are carried out', async () => {
+    test('init functions are carried out', async () => {
       const vue = await import('vue')
       const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => 'unwatchFn')
       const { instance } = createManageableComponent()

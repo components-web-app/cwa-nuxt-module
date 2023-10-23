@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import * as vue from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
@@ -12,6 +12,17 @@ vi.mock('../../../resources/resource-utils', async () => {
   return {
     CwaResourceTypes,
     getResourceTypeFromIri: vi.fn()
+  }
+})
+
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    watch: vi.fn((...args) => {
+      const unwatch = mod.watch(...args)
+      return vi.fn(() => unwatch())
+    })
   }
 })
 
@@ -63,6 +74,10 @@ function createSyncWatcher (groupSynchronizer: ComponentGroupUtilSynchronizer, o
 }
 
 describe('Group synchronizer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('should NOT create OR update resource IF loading is in progress', async () => {
     const { resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
 
@@ -211,17 +226,13 @@ describe('Group synchronizer', () => {
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
 
-  test.todo('should stop sync watcher', () => {
-    const unwatchSpy = vi.fn()
-    vi.spyOn(vue, 'watch').mockImplementation(() => {
-      return unwatchSpy
-    })
-
+  test('should stop sync watcher', () => {
     const { groupSynchronizer } = createGroupSynchronizer()
     createSyncWatcher(groupSynchronizer)
 
     groupSynchronizer.stopSyncWatcher()
 
+    const unwatchSpy = vue.watch.mock.results[0].value
     expect(unwatchSpy).toHaveBeenCalled()
   })
 })

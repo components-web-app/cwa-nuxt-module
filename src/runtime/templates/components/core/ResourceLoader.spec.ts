@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
@@ -9,6 +9,14 @@ import * as cwaComposables from '#cwa/runtime/composables/cwa'
 
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
+
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    watch: vi.fn(() => {})
+  }
+})
 
 function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any) {
   // @ts-ignore
@@ -45,6 +53,10 @@ function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any)
 }
 
 describe('ResourceLoader', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('reactive variables', () => {
     describe('resourceLoadBuffering', () => {
       test('If the resource exists, resourceLoadBuffering should be false', () => {
@@ -303,9 +315,9 @@ describe('ResourceLoader', () => {
   })
 
   describe('watch', () => {
-    test.todo('should be called with correct callback and options', async () => {
+    test('should be called with correct callback and options', async () => {
       const vue = await import('vue')
-      const watchSpy = vi.spyOn(vue, 'watch')
+      const watchSpy = vue.watch
       const wrapper = createWrapper({
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS

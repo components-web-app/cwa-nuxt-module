@@ -16,13 +16,20 @@ vi.mock('../admin/manageable-component', () => {
   }
 })
 
-describe.todo('CWA resource manageable composable', () => {
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    onMounted: vi.fn(fn => fn()),
+    onBeforeUnmount: vi.fn(fn => fn())
+  }
+})
+
+describe('CWA resource manageable composable', () => {
   const mockCwa = { mock: 'cwa' }
   const mockIri = ref('mock-iri')
 
   beforeEach(() => {
-    vi.spyOn(vue, 'onMounted').mockImplementation(fn => fn())
-    vi.spyOn(vue, 'onBeforeUnmount').mockImplementation(fn => fn())
     vi.spyOn(cwaComposable, 'useCwa').mockReturnValue(mockCwa)
   })
 

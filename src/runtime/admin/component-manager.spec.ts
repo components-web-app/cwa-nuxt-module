@@ -7,6 +7,14 @@ import ComponentManager from './component-manager'
 //   const actual = importActual()
 // })
 
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    watch: vi.fn((...args) => mod.watch(...args))
+  }
+})
+
 function createComponentManager (mockStore?: any) {
   const mockAdminStore = {
     useStore: () => mockStore || ({
@@ -216,7 +224,7 @@ describe('Component Manager', () => {
     })
 
     describe('listenEditModeChange', () => {
-      test.todo.each([
+      test.each([
         { initialEditingState: true, newEditingState: false, showManager: false },
         { initialEditingState: false, newEditingState: true, showManager: true }
       ])('When edit mode is changed from $initialEditingState to $newEditingState while manager is true, showManager should be $showManager', async ({
@@ -224,7 +232,6 @@ describe('Component Manager', () => {
         newEditingState,
         showManager
       }) => {
-        const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => {})
         const mockStore = { state: reactive({ isEditing: initialEditingState }) }
 
         const { manager } = createComponentManager(mockStore)
@@ -233,7 +240,7 @@ describe('Component Manager', () => {
 
         // const resetStackSpy = vi.spyOn(manager, 'resetStack')
         manager.listenEditModeChange()
-        expect(watchSpy).toHaveBeenCalledOnce()
+        expect(vue.watch).toHaveBeenCalledOnce()
 
         mockStore.state.isEditing = newEditingState
         await nextTick()

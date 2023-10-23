@@ -4,7 +4,15 @@ import * as cwaComposable from '#cwa/runtime/composables/cwa'
 import * as cwaResourceManageable from '#cwa/runtime/composables/cwa-resource-manageable'
 import { useCwaResource } from '#cwa/runtime/composables/cwa-resource'
 
-describe.todo('CWA resources composable', () => {
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    onMounted: vi.fn(fn => fn())
+  }
+})
+
+describe('CWA resources composable', () => {
   const mockCwa = {
     admin: {
       eventBus: {
@@ -18,7 +26,6 @@ describe.todo('CWA resources composable', () => {
   const mockManager = { mock: 'manager' }
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => mockCwa)
-  // vi.spyOn(vue, 'onMounted').mockImplementation(fn => fn())
 
   test('should return an object with manager IF no disabling option is provided', () => {
     const spy = vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
