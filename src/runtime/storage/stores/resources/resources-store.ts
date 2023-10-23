@@ -1,14 +1,17 @@
 import {
   defineStore
 } from 'pinia'
-import {
+import type {
   CwaPiniaStoreDefinitionInterface,
   CwaPiniaStoreInterface,
   CwaStore
 } from '../cwa-store-types'
-import CwaResourcesState, { CwaResourcesStateInterface } from './state'
-import CwaResourcesGetters, { CwaResourcesGettersInterface } from './getters'
-import CwaResourcesActions, { CwaResourcesActionsInterface } from './actions'
+import type { CwaResourcesStateInterface } from './state'
+import type { CwaResourcesGettersInterface } from './getters'
+import type { CwaResourcesActionsInterface } from './actions'
+import CwaResourcesState from './state'
+import CwaResourcesGetters from './getters'
+import CwaResourcesActions from './actions'
 
 /**
  * Interface Definitions

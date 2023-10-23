@@ -1,12 +1,13 @@
 import {
   defineStore
 } from 'pinia'
-import {
+import type {
   CwaPiniaStoreDefinitionInterface,
   CwaPiniaStoreInterface,
   CwaStore
 } from '../cwa-store-types'
-import CwaMercureState, { CwaMercureStateInterface } from './state'
+import type { CwaMercureStateInterface } from './state'
+import CwaMercureState from './state'
 
 /**
  * Interface Definitions

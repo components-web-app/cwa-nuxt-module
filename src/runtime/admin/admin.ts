@@ -1,4 +1,5 @@
-import mitt, { Emitter } from 'mitt'
+import mitt from 'mitt'
+import type { Emitter } from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentManager from './component-manager'

@@ -1,4 +1,4 @@
-import { RouteLocationNormalized, Router } from 'vue-router'
+import type { RouteLocationNormalized, Router } from 'vue-router'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 
 export default class NavigationGuard {

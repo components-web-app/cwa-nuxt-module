@@ -1,4 +1,4 @@
-import { CwaFetcherStateInterface, FetchStatus } from './state'
+import type { CwaFetcherStateInterface, FetchStatus } from './state'
 
 export class FetcherGetterUtils {
   private fetcherState: CwaFetcherStateInterface

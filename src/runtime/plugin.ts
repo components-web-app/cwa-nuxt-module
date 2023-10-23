@@ -1,5 +1,5 @@
 import { addRouteMiddleware, defineNuxtPlugin } from '#app'
-import { NuxtApp } from '#app/nuxt'
+import type { NuxtApp } from '#app/nuxt'
 import CwaRouteMiddleware from '#cwa/runtime/route-middleware'
 import Cwa from '#cwa/runtime/cwa'
 // @ts-ignore

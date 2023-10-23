@@ -1,4 +1,4 @@
-import { CwaAdminStateInterface } from './state'
+import type { CwaAdminStateInterface } from './state'
 
 export interface CwaAdminActionsInterface {
   toggleEdit(isEditing?: boolean): void

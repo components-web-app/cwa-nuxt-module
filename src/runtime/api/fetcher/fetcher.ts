@@ -1,10 +1,12 @@
-import { RouteLocationNormalizedLoaded } from 'vue-router'
-import { FetchResponse } from 'ofetch'
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import type { FetchResponse } from 'ofetch'
 import {
-  CwaResource,
   CwaResourceTypes,
   getResourceTypeFromIri,
   resourceTypeToNestedResourceProperties
+} from '../../resources/resource-utils'
+import type {
+  CwaResource
 } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'

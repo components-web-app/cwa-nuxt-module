@@ -1,4 +1,5 @@
-import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import { CwaResourceApiStatuses } from './state'
+import type { CwaResourcesStateInterface } from './state'
 
 export class ResourcesGetterUtils {
   private readonly resourcesState: CwaResourcesStateInterface

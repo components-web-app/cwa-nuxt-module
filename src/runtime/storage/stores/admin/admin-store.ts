@@ -1,13 +1,15 @@
 import {
   defineStore
 } from 'pinia'
-import {
+import type {
   CwaPiniaStoreDefinitionInterface,
   CwaPiniaStoreInterface,
   CwaStore
 } from '../cwa-store-types'
-import CwaAdminState, { CwaAdminStateInterface } from './state'
-import CwaAdminActions, { CwaAdminActionsInterface } from './actions'
+import type { CwaAdminStateInterface } from './state'
+import CwaAdminState from './state'
+import type { CwaAdminActionsInterface } from './actions'
+import CwaAdminActions from './actions'
 
 /**
  * Interface Definitions

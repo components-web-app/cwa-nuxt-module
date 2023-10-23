@@ -1,5 +1,5 @@
 import { getCurrentInstance, onBeforeUnmount, onMounted } from 'vue'
-import { Ref } from 'vue/dist/vue'
+import type { Ref } from 'vue/dist/vue'
 import ManageableComponent from '../admin/manageable-component'
 import { useCwa } from './cwa'
 

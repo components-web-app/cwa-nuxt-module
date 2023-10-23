@@ -1,4 +1,5 @@
-import { createApp, onBeforeUnmount, onMounted, Ref, watch, WatchStopHandle } from 'vue'
+import { createApp, onBeforeUnmount, onMounted, watch } from 'vue'
+import type { Ref, WatchStopHandle } from 'vue'
 import { hasProtocol } from 'ufo'
 import { NuxtLink } from '#components'
 import { useCwa } from '#cwa/runtime/composables/cwa'

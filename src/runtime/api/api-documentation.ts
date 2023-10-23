@@ -1,9 +1,13 @@
-import { ref, Ref, watch } from 'vue'
+import { ref, watch } from 'vue'
+import type { Ref } from 'vue'
 import logger from 'consola'
 import {
-  ApiDocumentationStore, CwaApiDocumentationStoreInterface
+  ApiDocumentationStore
 } from '../storage/stores/api-documentation/api-documentation-store'
-import { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
+import type {
+  CwaApiDocumentationStoreInterface
+} from '../storage/stores/api-documentation/api-documentation-store'
+import type { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
 import CwaFetch from './fetcher/cwa-fetch'
 
 export default class ApiDocumentation {

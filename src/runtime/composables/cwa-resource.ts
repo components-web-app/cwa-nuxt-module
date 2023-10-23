@@ -1,4 +1,5 @@
-import { computed, onMounted, Ref } from 'vue'
+import { computed, onMounted } from 'vue'
+import type { Ref } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
 

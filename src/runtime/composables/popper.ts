@@ -1,7 +1,8 @@
 // https://github.com/nuxtlabs/ui/blob/dev/src/runtime/composables/usePopper.ts
 import { ref, onMounted, watchEffect } from 'vue'
 import type { Ref } from 'vue'
-import { popperGenerator, defaultModifiers, VirtualElement } from '@popperjs/core/lib/popper-lite'
+import type { VirtualElement } from '@popperjs/core/lib/popper-lite'
+import { popperGenerator, defaultModifiers } from '@popperjs/core/lib/popper-lite'
 import type { Instance } from '@popperjs/core'
 import { omitBy, isUndefined } from 'lodash-es'
 import flip from '@popperjs/core/lib/modifiers/flip'
@@ -9,8 +10,9 @@ import offset from '@popperjs/core/lib/modifiers/offset'
 import preventOverflow from '@popperjs/core/lib/modifiers/preventOverflow'
 import computeStyles from '@popperjs/core/lib/modifiers/computeStyles'
 import eventListeners from '@popperjs/core/lib/modifiers/eventListeners'
-import { MaybeElement, unrefElement } from '@vueuse/core'
-import type { PopperOptions } from '../types'
+import { unrefElement } from '@vueuse/core'
+import type { MaybeElement } from '@vueuse/core'
+import type { PopperOptions } from '../types/popper'
 
 export const createPopper = popperGenerator({
   defaultModifiers: [...defaultModifiers, offset, flip, preventOverflow, computeStyles, eventListeners]

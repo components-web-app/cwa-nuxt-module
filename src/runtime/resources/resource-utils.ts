@@ -1,4 +1,4 @@
-import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
+import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export enum CwaResourceTypes {
   ROUTE = 'ROUTE',

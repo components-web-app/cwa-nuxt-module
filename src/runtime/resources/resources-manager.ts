@@ -1,12 +1,12 @@
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
-import {
+import type {
   DeleteResourceEvent,
   SaveNewResourceEvent,
   SaveResourceEvent
 } from '../storage/stores/resources/actions'
-import { CwaResource } from './resource-utils'
+import type { CwaResource } from './resource-utils'
 
 interface ApiResourceEvent {
   endpoint: string

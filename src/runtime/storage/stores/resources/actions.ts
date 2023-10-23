@@ -1,19 +1,23 @@
 import { showError } from '#app'
+import type {
+  CwaResource
+} from '../../../resources/resource-utils'
 import {
-  CwaResource,
   CwaResourceTypes, getPublishedResourceState,
   getResourceTypeFromIri,
   isCwaResourceSame
 } from '../../../resources/resource-utils'
 import { CwaResourceError } from '../../../errors/cwa-resource-error'
-import { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
-import {
+import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
+import type {
   CwaCurrentResourceInterface,
   CwaResourceApiStateGeneral,
-  CwaResourceApiStatuses,
   CwaResourcesStateInterface
 } from './state'
-import { CwaResourcesGettersInterface } from './getters'
+import {
+  CwaResourceApiStatuses
+} from './state'
+import type { CwaResourcesGettersInterface } from './getters'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }

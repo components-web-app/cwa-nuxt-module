@@ -1,4 +1,4 @@
-import {
+import type {
   _ExtractActionsFromSetupStore,
   _ExtractGettersFromSetupStore,
   _ExtractStateFromSetupStore, Store,

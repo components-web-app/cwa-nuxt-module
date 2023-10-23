@@ -16,7 +16,7 @@ import type { Ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import type { VirtualElement } from '@popperjs/core'
 import { defu } from 'defu'
-import type { PopperOptions } from '../../../runtime/types'
+import type { PopperOptions } from '../../../../runtime/types/popper'
 import { usePopper } from '#imports'
 import { useTransitions } from '#cwa/runtime/composables/transitions'
 

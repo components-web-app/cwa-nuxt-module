@@ -1,8 +1,9 @@
 import { defineAsyncComponent } from 'vue'
-import { CwaResourceMeta, ManagerTab } from '#cwa/module'
-import { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
+import type { CwaResourceMeta, ManagerTab } from '#cwa/module'
+import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#imports'
+import type Cwa from '#cwa/runtime/cwa'
 
 export const DEFAULT_TAB_ORDER = 50
 
