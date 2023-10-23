@@ -12,8 +12,8 @@ import {
   extendPages,
   installModule, resolveAlias, updateTemplates
 } from '@nuxt/kit'
-import { Component, NuxtPage } from '@nuxt/schema'
-import { DefineComponent, GlobalComponents } from 'vue'
+import type { Component, NuxtPage } from '@nuxt/schema'
+import type { DefineComponent, GlobalComponents } from 'vue'
 
 export type GlobalComponentNames = keyof GlobalComponents
 
