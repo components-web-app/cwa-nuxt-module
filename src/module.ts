@@ -171,7 +171,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       addTemplate({
         filename: 'cwa-options.ts',
         getContents: ({ app }) => {
-          return `import { CwaModuleOptions } from '#cwa/module';
+          return `import type { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
 `
         }

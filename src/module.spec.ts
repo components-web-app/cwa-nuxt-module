@@ -159,7 +159,7 @@ describe('CWA module', () => {
         }
       ]
 
-      expect(await getContents({ app: { components } })).toEqual(`import { CwaModuleOptions } from '#cwa/module';
+      expect(await getContents({ app: { components } })).toEqual(`import type { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = {
   "mock": true,
   "foo": "bar",
