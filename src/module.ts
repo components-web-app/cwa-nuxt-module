@@ -18,10 +18,12 @@ import type { DefineComponent, GlobalComponents } from 'vue'
 export type GlobalComponentNames = keyof GlobalComponents
 
 export type ManagerTab = GlobalComponentNames|DefineComponent<{}, {}, any>
+export type ComponentUi = GlobalComponentNames
 
 export interface CwaResourceMeta {
   name?: string,
-  managerTabs?: ManagerTab[]
+  managerTabs?: ManagerTab[],
+  ui?: ComponentUi[]
 }
 
 export interface CwaResourcesMeta {
@@ -139,8 +141,11 @@ export default defineNuxtModule<CwaModuleOptions>({
 
         const resourceType = component.pascalName.replace(/^CwaComponent/, '')
         const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
+        const uiDir = resolveAlias(resolve(path.dirname(component.filePath), 'ui'))
         const managerTabs: GlobalComponentNames[] = []
+        const ui: GlobalComponentNames[] = []
         if (isDirectory(tabsDir)) {
+          // todo: refactor common code
           const tabFiles = Object.keys(componentsByPath).filter(path => path.startsWith(tabsDir))
           tabFiles.forEach((file) => {
             if (componentsByPath[file]) {
@@ -148,12 +153,20 @@ export default defineNuxtModule<CwaModuleOptions>({
               componentsByPath[file].global && managerTabs.push(componentsByPath[file].pascalName)
             }
           })
+          const uiFiles = Object.keys(componentsByPath).filter(path => path.startsWith(uiDir))
+          uiFiles.forEach((file) => {
+            if (componentsByPath[file]) {
+              // @ts-ignore: Unable to resolve that pascalName exists in keyof type
+              componentsByPath[file].global && ui.push(componentsByPath[file].pascalName)
+            }
+          })
         }
 
         defaultResourcesConfig[resourceType] = {
           // auto name with spaces in place of pascal/camel case
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
-          managerTabs
+          managerTabs,
+          ui
         }
       }
       const resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
@@ -217,7 +230,8 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
         return
       }
       const path = resolve(nuxt.options.srcDir, relativePath)
-      if (path.startsWith(userComponentsPath + '/')) {
+      const cwaDirs = [userComponentsPath]
+      if (cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         await updateTemplates({
           filter: template => [
             'cwa-options.ts'

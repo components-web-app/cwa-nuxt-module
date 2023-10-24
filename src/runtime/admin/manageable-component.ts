@@ -263,6 +263,7 @@ export default class ManageableComponent {
       clickTarget: evt.target,
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
+      ui: this.resourceConfig?.ui,
       childIris: this.childIris
     })
   }

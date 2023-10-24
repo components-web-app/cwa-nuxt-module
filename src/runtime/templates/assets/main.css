@@ -772,6 +772,13 @@
     color: rgb(255 255 255 / var(--tw-text-opacity)) !important
 }
 
+.cwa-text-dark {
+
+    --tw-text-opacity: 1 !important;
+
+    color: rgb(28 25 23 / var(--tw-text-opacity)) !important
+}
+
 .cwa-opacity-0 {
 
     opacity: 0 !important

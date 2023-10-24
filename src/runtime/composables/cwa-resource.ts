@@ -14,6 +14,12 @@ interface CwaResourceUtilsOps {
   }
 }
 
+export interface CwaResourceMeta {
+  cwaResource: {
+    name?: string
+  }
+}
+
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
 
@@ -24,15 +30,16 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
       $cwa.admin.eventBus.emit('componentMounted', iri.value)
     })
   }
+  const exposeMeta: CwaResourceMeta = {
+    cwaResource: {
+      name: ops?.name
+    }
+  }
 
   return {
     manager,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
     getResource: () => computed(() => $cwa.resources.getResource(iri.value).value),
-    exposeMeta: {
-      cwaResource: {
-        name: ops?.name
-      }
-    }
+    exposeMeta
   }
 }

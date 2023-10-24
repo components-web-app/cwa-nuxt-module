@@ -2,7 +2,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import type { Ref, ShallowRef, ComputedRef } from 'vue'
 import { consola as logger } from 'consola'
 import { AdminStore } from '../storage/stores/admin/admin-store'
-import type { ManagerTab } from '#cwa/module'
+import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { ResourcesStore } from '#cwa/runtime/storage/stores/resources/resources-store'
 
 interface _ResourceStackItem {
@@ -10,6 +10,7 @@ interface _ResourceStackItem {
   domElements: Ref<HTMLElement[]>
   displayName?: string,
   managerTabs?: ManagerTab[],
+  ui?: ComponentUi[],
   childIris: ComputedRef<string[]>
 }
 
