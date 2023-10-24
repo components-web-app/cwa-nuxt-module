@@ -151,7 +151,7 @@ export default class ComponentManager {
           return
         }
       }
-      this.forcePublishedVersion.value = false
+      this.forcePublishedVersion.value = undefined
     })
   }
 
