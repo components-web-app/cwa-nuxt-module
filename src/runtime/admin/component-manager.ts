@@ -4,6 +4,7 @@ import { consola as logger } from 'consola'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { ResourcesStore } from '#cwa/runtime/storage/stores/resources/resources-store'
+import type { StyleOptions } from '#cwa/runtime/admin/manageable-component'
 
 interface _ResourceStackItem {
   iri: string
@@ -12,6 +13,7 @@ interface _ResourceStackItem {
   managerTabs?: ManagerTab[],
   ui?: ComponentUi[],
   childIris: ComputedRef<string[]>
+  styles?: StyleOptions
 }
 
 // will be used to have additional properties not sent by the initial addToStack event

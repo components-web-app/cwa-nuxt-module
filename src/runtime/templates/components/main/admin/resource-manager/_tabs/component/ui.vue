@@ -30,8 +30,16 @@ defineExpose(exposeMeta)
       <option value="" selected>
         Default
       </option>
-      <option v-for="(meta, componentName) of uiComponentRefs" :key="`select-option-${componentName}`" value="componentName">
+      <option v-for="(meta, componentName) of uiComponentRefs" :key="`select-option-ui-${componentName}`" :value="componentName">
         {{ meta.cwaResource.name || componentName }}
+      </option>
+    </select>
+    <select class="cwa-text-dark">
+      <option value="" selected>
+        Default
+      </option>
+      <option v-for="(styles, styleName) of current?.styles?.classes" :key="`select-option-style-${styleName}`" :value="styles">
+        {{ styleName }}
       </option>
     </select>
   </div>

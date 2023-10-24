@@ -2,6 +2,7 @@ import { computed, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
+import type { StyleOptions } from '#cwa/runtime/admin/manageable-component'
 
 export type IriProp = {
  iri: string
@@ -9,6 +10,7 @@ export type IriProp = {
 
 interface CwaResourceUtilsOps {
   name?: string
+  styles?: StyleOptions,
   manager?: {
     disabled?: boolean
   }
@@ -23,7 +25,11 @@ export interface CwaResourceMeta {
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
 
-  const manager = !ops?.manager?.disabled ? useCwaResourceManageable(iri) : undefined
+  const manager = !ops?.manager?.disabled
+    ? useCwaResourceManageable(iri, {
+      styles: ops?.styles
+    })
+    : undefined
 
   if (!manager) {
     onMounted(() => {
