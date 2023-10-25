@@ -1,37 +1,32 @@
 <script lang="ts" setup>
-import { computed, reactive } from 'vue'
+import { computed, ref } from 'vue'
 import {
   useCwaResourceManagerTab
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
+import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
   order: DEFAULT_TAB_ORDER
 })
-const uiComponentRefs = reactive<{ [key: string]: CwaResourceMeta }>({})
 const current = computed(() => $cwa.admin.componentManager.currentStackItem.value)
+
+const componentMeta = ref<CwaResourceMeta[]>([])
 
 defineExpose(exposeMeta)
 </script>
 
 <template>
   <div>
-    <component
-      :is="uiComponent"
-      v-for="(uiComponent, index) of (current?.ui)"
-      :key="`uiComponentAdmin_${uiComponent}_${index}`"
-      :ref="(el: CwaResourceMeta) => (uiComponentRefs[uiComponent] = el)"
-      :iri="iri"
-      class="cwa-hidden"
-    />
+    <ComponentMetaResolver v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
     <select class="cwa-text-dark">
       <option value="" selected>
         Default
       </option>
-      <option v-for="(meta, componentName) of uiComponentRefs" :key="`select-option-ui-${componentName}`" :value="componentName">
-        {{ meta.cwaResource.name || componentName }}
+      <option v-for="(meta, index) of componentMeta" :key="`select-option-ui-${current?.ui?.[index]}`" :value="current?.ui?.[index]">
+        {{ meta.cwaResource.name || current?.ui?.[index] }}
       </option>
     </select>
     <select class="cwa-text-dark">

@@ -13,7 +13,7 @@ function getOrderValue (meta: CwaResourceManagerTabOptions) {
   return meta.order === undefined ? 0 : meta.order
 }
 const orderedTabs = computed(() => {
-  const tabsWithOriginalSort = []
+  const tabsWithOriginalSort: (CwaResourceManagerTabOptions & { _originalIndex: number })[] = []
   reactiveTabs.value.forEach((tab, index) => {
     tabsWithOriginalSort.push({ ...tab, _originalIndex: index })
   })

@@ -10,6 +10,7 @@ import { useCwaResource, useHtmlContent } from '#imports'
 const props = defineProps<IriProp>()
 const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'), {
   styles: {
+    multiple: true,
     classes: {
       'Big Text': ['text-2xl']
     }
