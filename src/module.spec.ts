@@ -168,6 +168,9 @@ export const options:CwaModuleOptions = {
       "name": "Html Content",
       "managerTabs": [
         "CwaComponentHtmlContentAdminGlobalTab"
+      ],
+      "ui": [
+        "CwaComponentHtmlContentUiAltUi"
       ]
     }
   }

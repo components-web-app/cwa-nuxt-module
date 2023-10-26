@@ -95,7 +95,7 @@ function createManageableComponent ($el?: DummyDom) {
   }
   const $cwa = new Cwa()
   return {
-    instance: new ManageableComponent(component, $cwa),
+    instance: new ManageableComponent(component, $cwa, { styles: { name: ['style'] } }),
     $cwa
   }
 }
@@ -376,7 +376,7 @@ describe('ManageableComponent Class', () => {
 
     test('should add to stack with correct object', () => {
       const resourceType = 'type'
-      const resourceConfig = { managerTabs: ['abc'] }
+      const resourceConfig = { managerTabs: ['abc'], ui: 'ui' }
       const resource = { iri: '/abc' }
 
       const { instance, $cwa } = createManageableComponent()
@@ -386,7 +386,7 @@ describe('ManageableComponent Class', () => {
 
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
       vi.spyOn(instance, 'resourceType', 'get').mockImplementationOnce(() => (resourceType))
-      vi.spyOn(instance, 'resourceConfig', 'get').mockImplementationOnce(() => (resourceConfig))
+      vi.spyOn(instance, 'resourceConfig', 'get').mockImplementation(() => (resourceConfig))
       vi.spyOn(instance, 'currentResource', 'get').mockImplementation(() => (resource))
       vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => (childIris))
 
@@ -404,6 +404,8 @@ describe('ManageableComponent Class', () => {
         clickTarget: mockEvent.target,
         displayName: mockName,
         managerTabs: ['abc'],
+        styles: { name: ['style'] },
+        ui: 'ui',
         childIris
       })
     })

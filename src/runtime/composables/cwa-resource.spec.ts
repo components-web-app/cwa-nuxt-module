@@ -30,10 +30,11 @@ describe('CWA resources composable', () => {
   test('should return an object with manager IF no disabling option is provided', () => {
     const spy = vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
     const mockIri = 'mock-iri'
-    const result = useCwaResource(mockIri)
+    const styles = 'styles'
+    const result = useCwaResource(mockIri, { styles })
 
     expect(result.manager).toEqual(mockManager)
-    expect(spy).toHaveBeenCalledWith(mockIri)
+    expect(spy).toHaveBeenCalledWith(mockIri, { styles })
   })
 
   test('should return an object with manager as undefined IF disabling option is provided', () => {

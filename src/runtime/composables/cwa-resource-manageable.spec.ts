@@ -43,9 +43,10 @@ describe('CWA resource manageable composable', () => {
 
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
 
-    useCwaResourceManageable(mockIri)
+    const ops = { op: 'op' }
+    useCwaResourceManageable(mockIri, ops)
 
-    expect(ManageableComponent).toHaveBeenCalledWith(mockProxy, mockCwa)
+    expect(ManageableComponent).toHaveBeenCalledWith(mockProxy, mockCwa, ops)
   })
 
   test('ManageableComponent should init IF iri is passed', () => {
