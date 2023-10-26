@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
-import { debounce } from 'lodash-es'
+import { debounce, get } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 export const useCwaResourceModel = <T>(iri: string, property: string) => {
   const $cwa = useCwa()
   const resource = $cwa.resources.getResource(iri)
-  const storeValue = computed<T|undefined>(() => resource.value?.[property])
+  const storeValue = computed<T|undefined>(() => (resource.value ? get(resource.value, property) : undefined))
   const localValue = ref<T|undefined>()
   const submitting = ref(false)
   const pendingSubmit = ref(false)
@@ -23,6 +23,10 @@ export const useCwaResourceModel = <T>(iri: string, property: string) => {
       }
     })
     submitting.value = false
+    reset()
+  }
+
+  function reset () {
     newLocalValue.value = undefined
   }
 
@@ -44,6 +48,7 @@ export const useCwaResourceModel = <T>(iri: string, property: string) => {
       submitting,
       isBusy
     },
+    reset,
     model: computed<T|undefined>({
       get () {
         return localValue.value || storeValue.value
