@@ -8,7 +8,14 @@ import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource, useHtmlContent } from '#imports'
 
 const props = defineProps<IriProp>()
-const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'), {
+  styles: {
+    multiple: true,
+    classes: {
+      'Big Text': ['text-2xl']
+    }
+  }
+})
 const resource = getResource()
 defineExpose(exposeMeta)
 

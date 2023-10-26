@@ -25,6 +25,15 @@ import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resourc
 import type { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
+export type StyleOptions = {
+  multiple?: boolean,
+  classes: { [name: string]: string[] }
+}
+
+export type ManageableComponentOps = {
+  styles?: StyleOptions
+}
+
 export default class ManageableComponent {
   private currentIri: Ref<string|undefined>|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
@@ -38,7 +47,8 @@ export default class ManageableComponent {
 
   constructor (
     private readonly component: ComponentPublicInstance,
-    private readonly $cwa: Cwa
+    private readonly $cwa: Cwa,
+    private readonly ops: ManageableComponentOps
   ) {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
@@ -263,6 +273,8 @@ export default class ManageableComponent {
       clickTarget: evt.target,
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
+      ui: this.resourceConfig?.ui,
+      styles: this.ops.styles,
       childIris: this.childIris
     })
   }
