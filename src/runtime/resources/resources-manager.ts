@@ -51,6 +51,7 @@ export class ResourcesManager {
     })
   }
 
+  // @internal - just used in reset-password.ts - should be private and refactored for that use case
   public saveResource (event: SaveResourceEvent|SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
