@@ -15,6 +15,9 @@ const current = computed(() => $cwa.admin.componentManager.currentStackItem.valu
 
 const componentMeta = ref<CwaResourceMeta[]>([])
 
+const disabled = exposeMeta.disabled
+disabled.value = !current.value?.styles?.classes.length && !current.value?.ui?.length
+
 defineExpose(exposeMeta)
 </script>
 

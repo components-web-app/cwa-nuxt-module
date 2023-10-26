@@ -17,7 +17,7 @@ const orderedTabs = computed(() => {
   reactiveTabs.value.forEach((tab, index) => {
     tabsWithOriginalSort.push({ ...tab, _originalIndex: index })
   })
-  return tabsWithOriginalSort.sort((a, b) => (getOrderValue(a) - getOrderValue(b)))
+  return tabsWithOriginalSort.filter(v => !v.disabled).sort((a, b) => (getOrderValue(a) - getOrderValue(b)))
 })
 
 function selectIndex (newIndex: number) {

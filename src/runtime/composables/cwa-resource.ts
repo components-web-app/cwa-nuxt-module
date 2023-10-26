@@ -1,4 +1,4 @@
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, getCurrentInstance } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaResourceManageable } from './cwa-resource-manageable'
@@ -24,8 +24,9 @@ export interface CwaResourceMeta {
 
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
-
-  const manager = !ops?.manager?.disabled
+  const proxy = getCurrentInstance()?.proxy
+  const disableManager = ops?.manager?.disabled || proxy?.$parent?.$parent?.cwaMetaResolver
+  const manager = !disableManager
     ? useCwaResourceManageable(iri, {
       styles: ops?.styles
     })

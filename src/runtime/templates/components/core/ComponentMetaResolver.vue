@@ -19,24 +19,26 @@ const allMeta = computed({
   },
   set (value: any[]) {
     // async components may exist without an initial value
-    emit('update:modelValue', value)
+    emit('update:modelValue', value.filter(v => !!v))
   }
 })
 
 watch(componentsRef, () => {
   allMeta.value = []
 })
+
+defineExpose({
+  cwaMetaResolver: true
+})
 </script>
 
 <template>
-  <div>
-    <component
-      :is="uiComponent"
-      v-for="(uiComponent, index) of components"
-      :key="`resolveComponent_${uiComponent}_${index}`"
-      :ref="(meta: any) => (allMeta[index] = meta)"
-      v-bind="props"
-      class="cwa-hidden"
-    />
-  </div>
+  <component
+    :is="uiComponent"
+    v-for="(uiComponent, index) of components"
+    :key="`resolveComponent_${uiComponent}_${index}`"
+    :ref="(meta: any) => (allMeta[index] = meta)"
+    v-bind="props"
+    class="cwa-hidden"
+  />
 </template>
