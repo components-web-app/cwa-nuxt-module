@@ -11,8 +11,8 @@ interface ResourceModelOps {
 export const useCwaResourceModel = <T>(iri: Ref<string>, property: string, ops?: ResourceModelOps) => {
   const $cwa = useCwa()
   const resource = $cwa.resources.getResource(iri.value)
-  // todo: this may need to change if we are updating a published / draft and need to force with a querystring
-  const endpoint = iri.value
+  const postfix = $cwa.admin.componentManager.forcePublishedVersion === undefined ? '' : ($cwa.admin.componentManager.forcePublishedVersion ? '?published=true' : '?published=false')
+  const endpoint = `${iri.value}${postfix}`
   const storeValue = computed<T|undefined>(() => (resource.value?.data ? get(resource.value.data, property) : undefined))
   const localValue = ref<T|undefined>()
   const submitting = ref(false)
