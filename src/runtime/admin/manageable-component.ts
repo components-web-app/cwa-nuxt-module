@@ -85,6 +85,7 @@ export default class ManageableComponent {
     }
     this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
+    this.clearFocusComponent()
     this.domElements.value = []
     if (this.unwatchCurrentStackItem) {
       this.unwatchCurrentStackItem()

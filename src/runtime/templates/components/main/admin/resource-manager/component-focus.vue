@@ -94,7 +94,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-
 .component-focus {
   outline-color: rgba(0,0,0,.4);
 }
