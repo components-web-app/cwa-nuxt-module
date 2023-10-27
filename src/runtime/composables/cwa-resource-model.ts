@@ -3,7 +3,12 @@ import type { Ref } from 'vue'
 import { debounce, get } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
-export const useCwaResourceModel = <T>(iri: Ref<string>, property: string) => {
+interface ResourceModelOps {
+  longWaitThreshold?: number,
+  debounceTime?: number
+}
+
+export const useCwaResourceModel = <T>(iri: Ref<string>, property: string, ops?: ResourceModelOps) => {
   const $cwa = useCwa()
   const resource = $cwa.resources.getResource(iri.value)
   // todo: this may need to change if we are updating a published / draft and need to force with a querystring
@@ -12,6 +17,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string) => {
   const localValue = ref<T|undefined>()
   const submitting = ref(false)
   const pendingSubmit = ref(false)
+  const isLongWait = ref(false)
+  const longWaitThreshold = ops?.longWaitThreshold || 5000
+  const debounceTime = ops?.debounceTime || 250
   let debounced
 
   const isBusy = computed(() => pendingSubmit.value || submitting.value)
@@ -30,6 +38,11 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string) => {
   }
 
   async function updateResource (newLocalValue: any) {
+    if (!submitting.value && isEqual(storeValue.value, newLocalValue)) {
+      pendingSubmit.value = false
+      reset()
+      return
+    }
     submitting.value = true
     pendingSubmit.value = false
     await $cwa.resourcesManager.updateResource({
@@ -54,16 +67,32 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string) => {
       debounced.cancel()
     }
     pendingSubmit.value = true
-    const waitMs = 250
-    debounced = debounce(() => updateResource(newLocalValue), waitMs)
+    debounced = debounce(() => updateResource(newLocalValue), debounceTime)
     debounced()
+  })
+
+  let longWaitTimeoutFn
+
+  watch(isBusy, (newBusy) => {
+    if (!newBusy) {
+      isLongWait.value = false
+      if (longWaitTimeoutFn) {
+        clearTimeout(longWaitTimeoutFn)
+      }
+      return
+    }
+
+    longWaitTimeoutFn = setTimeout(() => {
+      isLongWait.value = true
+    }, longWaitThreshold)
   })
 
   return {
     states: {
       pendingSubmit,
       submitting,
-      isBusy
+      isBusy,
+      isLongWait
     },
     reset,
     model: computed<T|undefined>({
