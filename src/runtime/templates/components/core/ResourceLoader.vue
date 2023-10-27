@@ -63,7 +63,9 @@ const resourceUiComponent = computed(() => {
   if (!resource.value || !resource.value?.data) {
     return
   }
-  return props.componentPrefix + (resource.value.data.uiComponent || resource.value.data['@type'])
+  const rawName = (resource.value.data.uiComponent || resource.value.data['@type'])
+  const regExp = new RegExp(`^${props.componentPrefix}`)
+  return props.componentPrefix + rawName.replace(regExp, '')
 })
 
 const hasError = computed(() => {

@@ -9,11 +9,11 @@ interface ResourceModelOps {
   debounceTime?: number
 }
 
-export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array, ops?: ResourceModelOps) => {
+export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: string|string[], ops?: ResourceModelOps) => {
   const proxy = getCurrentInstance()?.proxy
   const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
-  const resource = computed(() => $cwa.resources.getResource(iri.value).value)
+  const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
   const applyPostfix = ref(false)
   const postfix = ref('')
 
@@ -28,14 +28,14 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
   })
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
 
-  const localValue = ref<T|undefined>()
+  const localValue = ref<T|undefined|null>()
   const pendingSubmit = ref(false)
   const isLongWait = ref(false)
   const submittingValue = ref<T|undefined>()
 
   const longWaitThreshold = ops?.longWaitThreshold || 5000
   const debounceTime = ops?.debounceTime || 250
-  let debounced
+  let debounced: any
 
   const isBusy = computed(() => pendingSubmit.value || submitting.value)
   const submitting = computed(() => submittingValue.value !== undefined)
@@ -71,7 +71,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
     }
     // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
     if (isNewValueObject) {
-      const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, submitValue)
+      const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, newLocalValue)
       submittingValue.value = newObject[rootProperty.value]
     } else {
       submittingValue.value = newLocalValue
@@ -105,7 +105,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
     debounced()
   })
 
-  let longWaitTimeoutFn
+  let longWaitTimeoutFn: ReturnType<typeof setTimeout>|undefined
 
   watch(isBusy, (newBusy) => {
     if (!newBusy) {
@@ -122,6 +122,10 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
   })
 
   watch($cwa.admin.componentManager.forcePublishedVersion, (forcePublishable) => {
+    if (!resource.value) {
+      applyPostfix.value = false
+      return
+    }
     const publishableState = getPublishedResourceState(resource.value)
     applyPostfix.value = forcePublishable !== undefined && publishableState === true
   }, {
@@ -146,9 +150,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
       isLongWait
     },
     resetValue,
-    model: computed<T|undefined>({
+    model: computed<T|undefined|null>({
       get () {
-        return localValue.value || storeValue.value
+        return localValue.value || storeValue.value || null
       },
       set (value) {
         localValue.value = value

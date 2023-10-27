@@ -75,7 +75,10 @@ export default class ManageableComponent {
     this.isInit = true
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
-    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
+    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
+      immediate: true,
+      flush: 'post'
+    })
     this.$cwa.admin.eventBus.emit('componentMounted', newIri)
   }
 
@@ -85,13 +88,13 @@ export default class ManageableComponent {
     }
     this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
-    this.clearFocusComponent()
     this.domElements.value = []
     if (this.unwatchCurrentStackItem) {
       this.unwatchCurrentStackItem()
       this.unwatchCurrentStackItem = undefined
     }
     if (!soft) {
+      this.clearFocusComponent()
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
@@ -134,9 +137,10 @@ export default class ManageableComponent {
 
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
-      domElements: stackItem.domElements
+      domElements: this.domElements
     })
     this.focusWrapper = document.createElement('div')
+    this.focusWrapper.id = 'focus-wrapper'
     this.focusComponent.mount(this.focusWrapper)
     document.body.appendChild(this.focusWrapper)
 

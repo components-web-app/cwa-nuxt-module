@@ -20,11 +20,11 @@ const { getResource, exposeMeta } = useCwaResource(iriRef, {
 })
 const resource = getResource()
 
-defineExpose(exposeMeta)
-
 const htmlContainer = ref<null|HTMLElement>(null)
 const htmlContent = computed<string>(() => (resource.value.data?.html || '<div></div>'))
 useHtmlContent(htmlContainer)
+
+defineExpose(exposeMeta)
 </script>
 
 <style>

@@ -76,7 +76,7 @@ function updateWindowSize () {
 let unwatchResource
 onMounted(() => {
   window.addEventListener('resize', updateWindowSize, false)
-  unwatchResource = watch(resourceData, updateWindowSize, { deep: true })
+  unwatchResource = watch(resourceData, updateWindowSize, { deep: true, flush: 'post' })
 })
 
 onBeforeUnmount(() => {
