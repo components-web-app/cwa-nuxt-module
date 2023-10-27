@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import { debounce, get } from 'lodash-es'
+import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 interface ResourceModelOps {
@@ -8,16 +8,26 @@ interface ResourceModelOps {
   debounceTime?: number
 }
 
-export const useCwaResourceModel = <T>(iri: Ref<string>, property: string, ops?: ResourceModelOps) => {
+export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array, ops?: ResourceModelOps) => {
   const $cwa = useCwa()
   const resource = $cwa.resources.getResource(iri.value)
   const postfix = $cwa.admin.componentManager.forcePublishedVersion === undefined ? '' : ($cwa.admin.componentManager.forcePublishedVersion ? '?published=true' : '?published=false')
   const endpoint = `${iri.value}${postfix}`
+
   const storeValue = computed<T|undefined>(() => (resource.value?.data ? get(resource.value.data, property) : undefined))
+  const rootProperty = computed(() => {
+    if (Array.isArray(property)) {
+      return property[0]
+    }
+    return property.split('.')[0].split('[')[0]
+  })
+  const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
+
   const localValue = ref<T|undefined>()
   const submitting = ref(false)
   const pendingSubmit = ref(false)
   const isLongWait = ref(false)
+
   const longWaitThreshold = ops?.longWaitThreshold || 5000
   const debounceTime = ops?.debounceTime || 250
   let debounced
@@ -45,10 +55,18 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string, ops?:
     }
     submitting.value = true
     pendingSubmit.value = false
+
+    // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
+    let submitValue = newLocalValue
+    if (isObject(submitValue)) {
+      const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, submitValue)
+      submitValue = newObject[rootProperty.value]
+    }
+
     await $cwa.resourcesManager.updateResource({
       endpoint,
       data: {
-        [property]: newLocalValue
+        [rootProperty.value]: submitValue
       }
     })
     submitting.value = false
