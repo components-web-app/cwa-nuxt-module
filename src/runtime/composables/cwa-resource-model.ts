@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, getCurrentInstance, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -9,6 +9,8 @@ interface ResourceModelOps {
 }
 
 export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array, ops?: ResourceModelOps) => {
+  const proxy = getCurrentInstance()?.proxy
+  const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
   const resource = $cwa.resources.getResource(iri.value)
   const postfix = $cwa.admin.componentManager.forcePublishedVersion === undefined ? '' : ($cwa.admin.componentManager.forcePublishedVersion ? '?published=true' : '?published=false')
@@ -24,9 +26,10 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
 
   const localValue = ref<T|undefined>()
-  const submitting = ref(false)
+  const submitting = computed(() => submittingValue.value !== undefined)
   const pendingSubmit = ref(false)
   const isLongWait = ref(false)
+  const submittingValue = ref<T|undefined>()
 
   const longWaitThreshold = ops?.longWaitThreshold || 5000
   const debounceTime = ops?.debounceTime || 250
@@ -48,28 +51,36 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
   }
 
   async function updateResource (newLocalValue: any) {
+    // consider: another field is updating the same object and the request is not complete, we could overwrite that change with the new change as we are merging objects from the root property
+    // consider: it doesn't matter if THIS field is updated and there is a pending request, we can continue and override that change
+    // consider: it doesn't matter if another request is in progress for a DIFFERENT property, it'll update the store value and this request will not interfere
+    // consider: it is all about the external sync status of a nested object property that we should need to wait for
+    const isNewValueObject = isObject(newLocalValue)
+
+    isNewValueObject && await $cwa.resourcesManager.getWaitForRequestPromise(source, endpoint, rootProperty.value)
+
     if (!submitting.value && isEqual(storeValue.value, newLocalValue)) {
       pendingSubmit.value = false
       reset()
       return
     }
-    submitting.value = true
-    pendingSubmit.value = false
-
     // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
-    let submitValue = newLocalValue
-    if (isObject(submitValue)) {
+    if (isNewValueObject) {
       const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, submitValue)
-      submitValue = newObject[rootProperty.value]
+      submittingValue.value = newObject[rootProperty.value]
+    } else {
+      submittingValue.value = newLocalValue
     }
+    pendingSubmit.value = false
 
     await $cwa.resourcesManager.updateResource({
       endpoint,
       data: {
-        [rootProperty.value]: submitValue
-      }
+        [rootProperty.value]: submittingValue.value
+      },
+      source
     })
-    submitting.value = false
+    submittingValue.value = undefined
     isEqual(localValue.value, newLocalValue) && reset()
   }
 

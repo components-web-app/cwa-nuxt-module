@@ -1,3 +1,4 @@
+import { reactive, watch } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -11,6 +12,7 @@ import type { CwaResource } from './resource-utils'
 interface ApiResourceEvent {
   endpoint: string
   data: any
+  source?: string
 }
 
 interface RequestHeaders extends Record<string, string> {}
@@ -24,6 +26,7 @@ export class ResourcesManager {
   private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
   private fetchStatusManager: FetchStatusManager
+  private requestsInProgress = reactive<{ [id: string]: ApiResourceEvent }>({})
 
   constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager) {
     this.cwaFetch = cwaFetch
@@ -31,24 +34,61 @@ export class ResourcesManager {
     this.fetchStatusManager = fetchStatusManager
   }
 
-  public async createResource (event: ApiResourceEvent) {
-    const resource = await this.cwaFetch.fetch<CwaResource>(
-      event.endpoint,
-      { ...this.requestOptions('POST'), body: event.data }
-    )
-    this.saveResource({
-      resource
+  public getWaitForRequestPromise (source: string, endpoint: string, property: string) {
+    return new Promise((resolve) => {
+      const unwatch = watch(this.requestsInProgress, (newRequests) => {
+        // look for current events processing which are not from the same source, but are for the same resource and property
+        for (const apiResourceEvent of newRequests) {
+          if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && apiResourceEvent.source !== source) {
+            return
+          }
+        }
+        resolve()
+        unwatch()
+      }, {
+        immediate: true
+      })
     })
   }
 
+  public async createResource (event: ApiResourceEvent) {
+    const args = [
+      event.endpoint,
+      { ...this.requestOptions('POST'), body: event.data }
+    ]
+    if (event.source) {
+      this.requestsInProgress[event.source] = args
+    }
+    try {
+      const resource = await this.cwaFetch.fetch<CwaResource>(...args)
+      this.saveResource({
+        resource
+      })
+    } finally {
+      if (event.source) {
+        delete this.requestsInProgress[event.source]
+      }
+    }
+  }
+
   public async updateResource (event: ApiResourceEvent) {
-    const resource = await this.cwaFetch.fetch<CwaResource>(
+    const args = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
-    )
-    this.saveResource({
-      resource
-    })
+    ]
+    if (event.source) {
+      this.requestsInProgress[event.source] = args
+    }
+    try {
+      const resource = await this.cwaFetch.fetch<CwaResource>(...args)
+      this.saveResource({
+        resource
+      })
+    } finally {
+      if (event.source) {
+        delete this.requestsInProgress[event.source]
+      }
+    }
   }
 
   // @internal - just used in reset-password.ts - should be private and refactored for that use case
