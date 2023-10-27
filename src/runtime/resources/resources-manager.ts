@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -32,6 +32,10 @@ export class ResourcesManager {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
     this.fetchStatusManager = fetchStatusManager
+  }
+
+  public get requestCount () {
+    return computed(() => Object.values(this.requestsInProgress).length)
   }
 
   public getWaitForRequestPromise (source: string, endpoint: string, property: string) {

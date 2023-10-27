@@ -37,7 +37,7 @@ const isNavEnabled = computed({
   }
 })
 
-const isLoading = computed(() => false)
+const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
 const highlightTemplatePage = computed(() => {
   return $cwa.resources.isPageTemplate.value && !$cwa.resources.isPageDynamic.value
