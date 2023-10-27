@@ -38,48 +38,40 @@ export class ResourcesManager {
     return computed(() => Object.values(this.requestsInProgress).length)
   }
 
-  public getWaitForRequestPromise (source: string, endpoint: string, property: string) {
+  public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
     return new Promise((resolve) => {
       const unwatch = watch(this.requestsInProgress, (newRequests) => {
         // look for current events processing which are not from the same source, but are for the same resource and property
         for (const apiResourceEvent of newRequests) {
-          if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && apiResourceEvent.source !== source) {
+          if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && (!source || apiResourceEvent.source !== source)) {
             return
           }
         }
-        resolve()
         unwatch()
+        resolve()
       }, {
         immediate: true
       })
     })
   }
 
-  public async createResource (event: ApiResourceEvent) {
+  public createResource (event: ApiResourceEvent) {
     const args = [
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
     ]
-    if (event.source) {
-      this.requestsInProgress[event.source] = args
-    }
-    try {
-      const resource = await this.cwaFetch.fetch<CwaResource>(...args)
-      this.saveResource({
-        resource
-      })
-    } finally {
-      if (event.source) {
-        delete this.requestsInProgress[event.source]
-      }
-    }
+    return this.doResourceRequest(event, args)
   }
 
-  public async updateResource (event: ApiResourceEvent) {
+  public updateResource (event: ApiResourceEvent) {
     const args = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
+    return this.doResourceRequest(event, args)
+  }
+
+  private async doResourceRequest (event: ApiResourceEvent, args: [ string, any ]) {
     if (event.source) {
       this.requestsInProgress[event.source] = args
     }
@@ -88,6 +80,7 @@ export class ResourcesManager {
       this.saveResource({
         resource
       })
+      return resource
     } finally {
       if (event.source) {
         delete this.requestsInProgress[event.source]

@@ -123,10 +123,10 @@ export default class ManageableComponent {
   }
 
   private currentStackItemListener (stackItem: ResourceStackItem|undefined) {
+    this.clearFocusComponent()
     if (!this.currentIri?.value) {
       return
     }
-    this.clearFocusComponent()
     if (!stackItem || stackItem.iri !== this.currentIri.value) {
       return
     }

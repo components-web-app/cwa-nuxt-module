@@ -62,7 +62,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string|array,
 
     // todo: resolve the correct iri for the endpoint we are checking with the applied querystring - should be the same unless we will be creating a new draft in a request perhaps??
     // but then would that matter, because the endpoint would be the same until then... to think about...
-    isNewValueObject && await $cwa.resourcesManager.getWaitForRequestPromise(source, endpoint.value, rootProperty.value)
+    isNewValueObject && await $cwa.resourcesManager.getWaitForRequestPromise(endpoint.value, rootProperty.value, source)
 
     if (!submitting.value && isEqual(storeValue.value, newLocalValue)) {
       pendingSubmit.value = false
