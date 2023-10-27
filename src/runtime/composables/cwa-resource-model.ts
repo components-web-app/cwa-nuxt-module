@@ -16,6 +16,19 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string) => {
 
   const isBusy = computed(() => pendingSubmit.value || submitting.value)
 
+  function isEqual (value1: any, value2: any) {
+    function requiresNormalizing (value: any) {
+      const type = typeof value
+      return value !== undefined && value !== null && (type === 'object' || Array.isArray(value))
+    }
+
+    function getNormalizedValue (value: any): string|null|undefined {
+      return requiresNormalizing(value) ? JSON.stringify(value) : value
+    }
+
+    return getNormalizedValue(value1) === getNormalizedValue(value2)
+  }
+
   async function updateResource (newLocalValue: any) {
     submitting.value = true
     pendingSubmit.value = false
@@ -26,7 +39,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string>, property: string) => {
       }
     })
     submitting.value = false
-    localValue.value === newLocalValue && reset()
+    isEqual(localValue.value, newLocalValue) && reset()
   }
 
   function reset () {
