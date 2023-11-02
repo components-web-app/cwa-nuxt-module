@@ -1,7 +1,7 @@
 import {
   computed,
   createApp,
-  markRaw,
+  markRaw, nextTick,
   ref,
   watch
 } from 'vue'
@@ -67,7 +67,7 @@ export default class ManageableComponent {
     })
   }
 
-  private iriWatchHandler (newIri: string|undefined) {
+  private async iriWatchHandler (newIri: string|undefined) {
     this.clear(true)
     if (!newIri) {
       return
@@ -79,8 +79,8 @@ export default class ManageableComponent {
       flush: 'post'
     })
     this.$cwa.admin.eventBus.emit('componentMounted', newIri)
-    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === this.currentIri?.value) {
-      this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
+    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === newIri) {
+      await nextTick(() => this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null)))
     }
   }
 
@@ -129,7 +129,7 @@ export default class ManageableComponent {
   }
 
   private currentStackItemListener (stackItem: ResourceStackItem|undefined) {
-    this.clearFocusComponent()
+    // this.clearFocusComponent()
     if (!this.currentIri?.value) {
       return
     }

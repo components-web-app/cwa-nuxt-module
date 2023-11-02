@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   useCwaResourceManagerTab
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
@@ -21,6 +21,11 @@ disabled.value = !current.value?.styles?.classes.length && !current.value?.ui?.l
 
 const uiComponentModel = useCwaResourceModel(iri, 'uiComponent')
 const uiClassNamesModel = useCwaResourceModel(iri, 'uiClassNames')
+
+// reset the class names if we are changing the UI
+watch(uiComponentModel.model, () => {
+  uiClassNamesModel.model.value = null
+})
 
 defineExpose(exposeMeta)
 
