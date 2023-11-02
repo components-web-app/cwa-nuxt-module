@@ -13,7 +13,6 @@
         <CwaUtilsFormToggle v-if="$cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
       <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
-        <LiveDraft />
         <CwaUtilsSpinnerTick :is-loading="isLoading" />
       </div>
     </div>
@@ -22,7 +21,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import LiveDraft from './_parts/live-draft.vue'
 import PathSelector from './_parts/path-selector.vue'
 import { useCwa } from '#imports'
 
