@@ -996,11 +996,6 @@
     type: string
 }
 
-.\[id\:string\] {
-
-    id: string
-}
-
 .cwa-dark {
 
     --tw-bg-opacity: 1;

@@ -23,6 +23,8 @@ const uiComponentModel = useCwaResourceModel(iri, 'uiComponent')
 const uiClassNamesModel = useCwaResourceModel(iri, 'uiClassNames')
 
 defineExpose(exposeMeta)
+
+// todo: on UI change, check if matching class value still available and clear if not
 </script>
 
 <template>

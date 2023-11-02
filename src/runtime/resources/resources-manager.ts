@@ -39,18 +39,29 @@ export class ResourcesManager {
   }
 
   public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
-    return new Promise((resolve) => {
-      const unwatch = watch(this.requestsInProgress, (newRequests) => {
+    const hasRequestConflict = () => {
+      if (!this.requestsInProgress.value) {
+        return false
+      }
+      for (const apiResourceEvent of Object.values(this.requestsInProgress.value)) {
+        if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && (!source || apiResourceEvent.source !== source)) {
+          return true
+        }
+      }
+      return false
+    }
+    return new Promise<void>((resolve) => {
+      if (!hasRequestConflict()) {
+        resolve()
+        return
+      }
+      const unwatch = watch(this.requestsInProgress, () => {
         // look for current events processing which are not from the same source, but are for the same resource and property
-        for (const apiResourceEvent of newRequests) {
-          if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && (!source || apiResourceEvent.source !== source)) {
-            return
-          }
+        if (hasRequestConflict()) {
+          return
         }
         unwatch()
         resolve()
-      }, {
-        immediate: true
       })
     })
   }

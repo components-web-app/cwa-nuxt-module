@@ -76,10 +76,12 @@ export default class ManageableComponent {
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
-      immediate: true,
       flush: 'post'
     })
     this.$cwa.admin.eventBus.emit('componentMounted', newIri)
+    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === this.currentIri?.value) {
+      this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
+    }
   }
 
   public clear (soft: boolean = false) {
@@ -140,7 +142,6 @@ export default class ManageableComponent {
       domElements: this.domElements
     })
     this.focusWrapper = document.createElement('div')
-    this.focusWrapper.id = 'focus-wrapper'
     this.focusComponent.mount(this.focusWrapper)
     document.body.appendChild(this.focusWrapper)
 
@@ -272,16 +273,23 @@ export default class ManageableComponent {
       this.$cwa.admin.componentManager.showManager.value = false
     }
 
-    this.$cwa.admin.componentManager.addToStack({
+    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target))
+  }
+
+  private getCurrentStackItem (clickTarget: EventTarget|null) {
+    if (!this.currentResource || !this.currentIri?.value) {
+      throw new Error('Cannot get a currentStackItem when currentResource or currentIri is not defined')
+    }
+    return {
       iri: this.currentIri.value,
       domElements: this.domElements,
-      clickTarget: evt.target,
+      clickTarget,
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
       ui: this.resourceConfig?.ui,
       styles: this.ops.styles,
       childIris: this.childIris
-    })
+    }
   }
 
   private get currentResource () {
