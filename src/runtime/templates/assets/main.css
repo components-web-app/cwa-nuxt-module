@@ -64,6 +64,31 @@
     top: 50% !important
 }
 
+.cwa-top-full {
+
+    top: 100% !important
+}
+
+.cwa-right-full {
+
+    right: 100% !important
+}
+
+.cwa-left-full {
+
+    left: 100% !important
+}
+
+.cwa-right-0 {
+
+    right: 0px !important
+}
+
+.cwa-bottom-full {
+
+    bottom: 100% !important
+}
+
 .cwa-z-20 {
 
     z-index: 20 !important
@@ -72,6 +97,11 @@
 .cwa-z-50 {
 
     z-index: 50 !important
+}
+
+.cwa-z-10 {
+
+    z-index: 10 !important
 }
 
 .cwa-m-4 {
@@ -194,6 +224,16 @@
 .cwa-h-full {
 
     height: 100% !important
+}
+
+.cwa-h-1 {
+
+    height: 0.25rem !important
+}
+
+.cwa-h-2 {
+
+    height: 0.5rem !important
 }
 
 .cwa-min-h-full {
@@ -581,6 +621,43 @@
     background-color: rgb(255 255 255 / 0.7) !important
 }
 
+.cwa-bg-orange {
+
+    --tw-bg-opacity: 1 !important;
+
+    background-color: rgb(255 170 0 / var(--tw-bg-opacity)) !important
+}
+
+.cwa-bg-orange\/\[\.06\] {
+
+    background-color: rgb(255 170 0 / .06) !important
+}
+
+.cwa-bg-orange\/75 {
+
+    background-color: rgb(255 170 0 / 0.75) !important
+}
+
+.cwa-bg-orange\/50 {
+
+    background-color: rgb(255 170 0 / 0.5) !important
+}
+
+.cwa-bg-dark\/75 {
+
+    background-color: rgb(28 25 23 / 0.75) !important
+}
+
+.cwa-bg-dark\/50 {
+
+    background-color: rgb(28 25 23 / 0.5) !important
+}
+
+.cwa-bg-dark\/25 {
+
+    background-color: rgb(28 25 23 / 0.25) !important
+}
+
 .cwa-fill-blue-600 {
 
     fill: #2563eb !important
@@ -594,6 +671,11 @@
 .cwa-stroke-orange {
 
     stroke: #FFAA00 !important
+}
+
+.cwa-stroke-transparent {
+
+    stroke: transparent !important
 }
 
 .cwa-p-2 {
@@ -969,6 +1051,11 @@
 .cwa-duration-300 {
 
     transition-duration: 300ms !important
+}
+
+.cwa-duration-100 {
+
+    transition-duration: 100ms !important
 }
 
 .cwa-ease-in {

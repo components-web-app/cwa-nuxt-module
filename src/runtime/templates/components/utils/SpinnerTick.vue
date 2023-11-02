@@ -5,8 +5,8 @@ import { computed, toRef } from 'vue'
 const props = defineProps<{ isLoading: boolean }>()
 const isLoadingRef = toRef(props, 'isLoading')
 
-const colour = computed(() => {
-  return isLoadingRef.value ? 'cwa-stroke-orange' : 'cwa-stroke-green'
+const circleColor = computed(() => {
+  return isLoadingRef.value ? 'cwa-stroke-orange' : ''
 })
 </script>
 
@@ -24,9 +24,9 @@ const colour = computed(() => {
       cy="50"
       r="46"
       fill="transparent"
-      :class="colour"
+      :class="circleColor"
     />
-    <polyline class="tick" points="25,55 45,70 75,33" fill="transparent" :class="colour" />
+    <polyline class="tick cwa-stroke-green" points="25,55 45,70 75,33" fill="transparent" />
   </svg>
 </template>
 
@@ -34,14 +34,14 @@ const colour = computed(() => {
 .spinner-tick {
   .tick {
     stroke-width: 12;
-    transition: all 1s;
+    transition: all .6s;
   }
 
   .circle {
-    stroke-width: 12;
-    transform-origin: 50px 50px 0;
+    stroke-width: 0;
+    transform-origin: 50% 50% 0;
     transition: all 1s;
-    stroke-dasharray: 500;
+    stroke-dasharray: 314;
   }
 
   &.progress {
@@ -49,9 +49,9 @@ const colour = computed(() => {
       opacity: 0;
     }
     .circle {
+      stroke-width: 12;
       stroke-dasharray: 314;
-      stroke-dashoffset: 1000;
-      animation: spin 3s linear infinite;
+      animation: spin 1.8s linear infinite;
     }
   }
 

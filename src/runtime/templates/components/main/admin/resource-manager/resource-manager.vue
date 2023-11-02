@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
 import { useMouse, useWindowScroll } from '@vueuse/core'
+import ResourceLoadingIndicator
+  from '../_common/resource-loading-indicator.vue'
 import ManagerTabs from './_parts/manager-tabs.vue'
 import CwaAdminResourceManagerContextMenu from './_parts/cwa-resource-manager-context-menu.vue'
 import { useCwa } from '#imports'
@@ -134,6 +136,7 @@ defineExpose({
     <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop @contextmenu.stop>
       <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
       <div v-if="allTabsMeta.length" ref="managerHolder">
+        <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
         <div class="cwa-flex">
           <div class="cwa-flex-grow">
             <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
