@@ -1,7 +1,7 @@
 import {
   computed,
   createApp,
-  markRaw, nextTick,
+  markRaw,
   ref,
   watch
 } from 'vue'
@@ -67,7 +67,7 @@ export default class ManageableComponent {
     })
   }
 
-  private async iriWatchHandler (newIri: string|undefined) {
+  private iriWatchHandler (newIri: string|undefined) {
     this.clear(true)
     if (!newIri) {
       return
@@ -75,13 +75,16 @@ export default class ManageableComponent {
     this.isInit = true
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
+    this.$cwa.admin.eventBus.emit('componentMounted', newIri)
+    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === newIri) {
+      this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
+      // todo: note - for some reason if we setup the watcher first, it is not called if the component being mounted has not already been mounted on the page previously, it is an async load but shouldn't matter...
+      // todo: continue - so we call the listener manually FIRST and it resolves the bug
+      this.currentStackItemListener(this.$cwa.admin.componentManager.currentStackItem.value)
+    }
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
       flush: 'post'
     })
-    this.$cwa.admin.eventBus.emit('componentMounted', newIri)
-    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === newIri) {
-      await nextTick(() => this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null)))
-    }
   }
 
   public clear (soft: boolean = false) {
