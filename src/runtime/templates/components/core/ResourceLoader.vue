@@ -16,7 +16,7 @@
       The component `{{ resourceUiComponent }}` for resource `{{ iri }}` cannot be resolved
     </p>
   </CwaUtilsAlertWarning>
-  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="iri" />
+  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="iri" :class="resourceClassNames" />
 </template>
 
 <script setup lang="ts">
@@ -63,7 +63,19 @@ const resourceUiComponent = computed(() => {
   if (!resource.value || !resource.value?.data) {
     return
   }
-  return props.componentPrefix + (resource.value.data.uiComponent || resource.value.data['@type'])
+  const rawName = (resource.value.data.uiComponent || resource.value.data['@type'])
+  if (!rawName) {
+    return
+  }
+  if (!props.componentPrefix) {
+    return rawName
+  }
+  const regExp = new RegExp(`^${props.componentPrefix}`)
+  return props.componentPrefix + rawName.replace(regExp, '')
+})
+
+const resourceClassNames = computed(() => {
+  return resource.value?.data?.uiClassNames
 })
 
 const hasError = computed(() => {

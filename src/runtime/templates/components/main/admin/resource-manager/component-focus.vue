@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
@@ -9,6 +9,7 @@ const props = defineProps<{
   iri: Ref<string>
   domElements: ComputedRef<HTMLElement[]>
 }>()
+const iri = toRef(props, 'iri')
 
 const windowSize = ref({ width: 0, height: 0 })
 
@@ -48,23 +49,6 @@ const cssStyle = computed(() => {
   }
 })
 
-function updateWindowSize () {
-  windowSize.value = {
-    width: window.innerWidth,
-    height: window.innerHeight
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('resize', updateWindowSize, false)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateWindowSize)
-})
-
-const iri = toRef(props, 'iri')
-
 const borderColor = computed(() => {
   if (!resource.value) {
     return
@@ -79,6 +63,26 @@ const borderColor = computed(() => {
 const resource = computed(() => {
   return $cwa.resources.getResource(iri.value).value
 })
+
+const resourceData = computed(() => resource.value?.data)
+
+function updateWindowSize () {
+  windowSize.value = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+}
+
+let unwatchResource
+onMounted(() => {
+  window.addEventListener('resize', updateWindowSize, false)
+  unwatchResource = watch(resourceData, updateWindowSize, { deep: true, flush: 'post' })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateWindowSize)
+  unwatchResource && unwatchResource()
+})
 </script>
 
 <template>
@@ -90,7 +94,6 @@ const resource = computed(() => {
 </template>
 
 <style>
-
 .component-focus {
   outline-color: rgba(0,0,0,.4);
 }

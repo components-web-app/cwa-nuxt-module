@@ -52,7 +52,9 @@ vi.mock('../cwa', () => {
           emit: vi.fn()
         },
         componentManager: {
-          addToStack: vi.fn()
+          addToStack: vi.fn(),
+          currentStackItem: ref({ iri: '/something' }),
+          replaceCurrentStackItem: vi.fn()
         }
       },
       resources: vi.fn()
@@ -151,6 +153,9 @@ describe('ManageableComponent Class', () => {
     ])('If currentIri is $currentIri then the `clear` function is called $clearCallCount times and currentIri is set', ({ currentIri, clearCallCount }) => {
       const { instance, $cwa } = createManageableComponent()
       instance.currentIri = ref(currentIri)
+      const localStackItem = { iri: '/something', localSomething: 'abc' }
+      vi.spyOn(instance, 'getCurrentStackItem').mockImplementationOnce(() => localStackItem)
+      vi.spyOn(instance, 'currentStackItemListener').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})
       const listener = vi.fn()
@@ -163,6 +168,9 @@ describe('ManageableComponent Class', () => {
       expect(instance.addClickEventListeners).toHaveBeenCalledTimes(1)
       expect($cwa.admin.eventBus.on).toHaveBeenCalledWith('componentMounted', listener)
       expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/something')
+
+      expect($cwa.admin.componentManager.replaceCurrentStackItem).toHaveBeenCalledWith(localStackItem)
+      expect(instance.currentStackItemListener).toHaveBeenCalledWith({ iri: '/something' })
     })
   })
 

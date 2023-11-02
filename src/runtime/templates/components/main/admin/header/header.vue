@@ -10,19 +10,20 @@
         <button class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-py-1 cwa-px-4 cwa-min-w-[100px]" @click="$cwa.admin.toggleEdit()">
           {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
         </button>
-        <CwaUtilsFormToggle v-if="$cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
+        <!-- this will be used when cloning a component only -->
+        <CwaUtilsFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
       <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
-        <LiveDraft />
         <CwaUtilsSpinnerTick :is-loading="isLoading" />
       </div>
     </div>
+    <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import LiveDraft from './_parts/live-draft.vue'
+import ResourceLoadingIndicator from '../_common/resource-loading-indicator.vue'
 import PathSelector from './_parts/path-selector.vue'
 import { useCwa } from '#imports'
 
@@ -37,7 +38,7 @@ const isNavEnabled = computed({
   }
 })
 
-const isLoading = computed(() => false)
+const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
 const highlightTemplatePage = computed(() => {
   return $cwa.resources.isPageTemplate.value && !$cwa.resources.isPageDynamic.value

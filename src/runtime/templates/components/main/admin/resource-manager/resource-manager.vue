@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
 import { useMouse, useWindowScroll } from '@vueuse/core'
+import ResourceLoadingIndicator
+  from '../_common/resource-loading-indicator.vue'
 import ManagerTabs from './_parts/manager-tabs.vue'
 import CwaAdminResourceManagerContextMenu from './_parts/cwa-resource-manager-context-menu.vue'
 import { useCwa } from '#imports'
 import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
+import type { ManagerTab } from '#cwa/module'
 
 const $cwa = useCwa()
 const { x, y } = useMouse()
@@ -20,6 +23,7 @@ const selectedIndex = ref(0)
 const isOpen = ref(false)
 const virtualElement = ref({ getBoundingClientRect: () => ({}) })
 const managerTabs = ref<typeof ManagerTabs|null>(null)
+const currentManagerTabs = ref<ManagerTab[]|undefined>()
 const cachedPosition = { top: 0, left: 0 }
 
 type ContextPosition = {
@@ -77,9 +81,13 @@ const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
 
-watch(current, () => {
+watch(current, (newCurrent, oldCurrent) => {
+  if (newCurrent?.iri === oldCurrent?.iri) {
+    return
+  }
   allTabsMeta.value = []
   managerTabs.value?.resetTabs()
+  currentManagerTabs.value = newCurrent?.managerTabs
 })
 
 onMounted(() => {
@@ -126,8 +134,9 @@ defineExpose({
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
     <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop @contextmenu.stop>
-      <ComponentMetaResolver v-model="allTabsMeta" :components="current?.managerTabs" />
+      <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
       <div v-if="allTabsMeta.length" ref="managerHolder">
+        <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
         <div class="cwa-flex">
           <div class="cwa-flex-grow">
             <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />

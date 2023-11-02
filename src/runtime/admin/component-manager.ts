@@ -123,6 +123,11 @@ export default class ComponentManager {
     this.lastClickTarget.value = clickTarget
   }
 
+  public replaceCurrentStackItem (resourceStackItem: _ResourceStackItem) {
+    // has to be set with the equals otherwise we lose reactivity and not watchers triggered
+    this.currentResourceStack.value = [...this.currentResourceStack.value.slice(0, this.currentResourceStack.value.length - 2), resourceStackItem]
+  }
+
   // todo: test checking and inserting at correct index
   private insertResourceStackItem (resourceStackItem: ResourceStackItem) {
     const iris = [resourceStackItem.iri]

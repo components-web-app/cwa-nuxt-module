@@ -75,8 +75,16 @@ export default class ManageableComponent {
     this.isInit = true
     this.addClickEventListeners()
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
-    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this))
     this.$cwa.admin.eventBus.emit('componentMounted', newIri)
+    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === newIri) {
+      this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
+      // todo: note - for some reason if we setup the watcher first, it is not called if the component being mounted has not already been mounted on the page previously, it is an async load but shouldn't matter...
+      // todo: continue - so we call the listener manually FIRST and it resolves the bug
+      this.currentStackItemListener(this.$cwa.admin.componentManager.currentStackItem.value)
+    }
+    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
+      flush: 'post'
+    })
   }
 
   public clear (soft: boolean = false) {
@@ -91,6 +99,7 @@ export default class ManageableComponent {
       this.unwatchCurrentStackItem = undefined
     }
     if (!soft) {
+      this.clearFocusComponent()
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
@@ -123,17 +132,17 @@ export default class ManageableComponent {
   }
 
   private currentStackItemListener (stackItem: ResourceStackItem|undefined) {
+    this.clearFocusComponent()
     if (!this.currentIri?.value) {
       return
     }
-    this.clearFocusComponent()
     if (!stackItem || stackItem.iri !== this.currentIri.value) {
       return
     }
 
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
-      domElements: stackItem.domElements
+      domElements: this.domElements
     })
     this.focusWrapper = document.createElement('div')
     this.focusComponent.mount(this.focusWrapper)
@@ -267,16 +276,23 @@ export default class ManageableComponent {
       this.$cwa.admin.componentManager.showManager.value = false
     }
 
-    this.$cwa.admin.componentManager.addToStack({
+    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target))
+  }
+
+  private getCurrentStackItem (clickTarget: EventTarget|null) {
+    if (!this.currentResource || !this.currentIri?.value) {
+      throw new Error('Cannot get a currentStackItem when currentResource or currentIri is not defined')
+    }
+    return {
       iri: this.currentIri.value,
       domElements: this.domElements,
-      clickTarget: evt.target,
+      clickTarget,
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
       ui: this.resourceConfig?.ui,
       styles: this.ops.styles,
       childIris: this.childIris
-    })
+    }
   }
 
   private get currentResource () {

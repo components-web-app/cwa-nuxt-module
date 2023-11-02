@@ -1,3 +1,4 @@
+import { computed, reactive, watch } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -11,6 +12,7 @@ import type { CwaResource } from './resource-utils'
 interface ApiResourceEvent {
   endpoint: string
   data: any
+  source?: string
 }
 
 interface RequestHeaders extends Record<string, string> {}
@@ -24,6 +26,7 @@ export class ResourcesManager {
   private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
   private fetchStatusManager: FetchStatusManager
+  private requestsInProgress = reactive<{ [id: string]: ApiResourceEvent }>({})
 
   constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager) {
     this.cwaFetch = cwaFetch
@@ -31,26 +34,72 @@ export class ResourcesManager {
     this.fetchStatusManager = fetchStatusManager
   }
 
-  public async createResource (event: ApiResourceEvent) {
-    const resource = await this.cwaFetch.fetch<CwaResource>(
+  public get requestCount () {
+    return computed(() => Object.values(this.requestsInProgress).length)
+  }
+
+  public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
+    const hasRequestConflict = () => {
+      if (!this.requestsInProgress.value) {
+        return false
+      }
+      for (const apiResourceEvent of Object.values(this.requestsInProgress.value)) {
+        if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && (!source || apiResourceEvent.source !== source)) {
+          return true
+        }
+      }
+      return false
+    }
+    return new Promise<void>((resolve) => {
+      if (!hasRequestConflict()) {
+        resolve()
+        return
+      }
+      const unwatch = watch(this.requestsInProgress, () => {
+        // look for current events processing which are not from the same source, but are for the same resource and property
+        if (hasRequestConflict()) {
+          return
+        }
+        unwatch()
+        resolve()
+      })
+    })
+  }
+
+  public createResource (event: ApiResourceEvent) {
+    const args = [
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
-    )
-    this.saveResource({
-      resource
-    })
+    ]
+    return this.doResourceRequest(event, args)
   }
 
-  public async updateResource (event: ApiResourceEvent) {
-    const resource = await this.cwaFetch.fetch<CwaResource>(
+  public updateResource (event: ApiResourceEvent) {
+    const args = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
-    )
-    this.saveResource({
-      resource
-    })
+    ]
+    return this.doResourceRequest(event, args)
   }
 
+  private async doResourceRequest (event: ApiResourceEvent, args: [ string, any ]) {
+    if (event.source) {
+      this.requestsInProgress[event.source] = args
+    }
+    try {
+      const resource = await this.cwaFetch.fetch<CwaResource>(...args)
+      this.saveResource({
+        resource
+      })
+      return resource
+    } finally {
+      if (event.source) {
+        delete this.requestsInProgress[event.source]
+      }
+    }
+  }
+
+  // @internal - just used in reset-password.ts - should be private and refactored for that use case
   public saveResource (event: SaveResourceEvent|SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }

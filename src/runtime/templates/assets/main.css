@@ -44,6 +44,11 @@
     bottom: 0px !important
 }
 
+.cwa-bottom-full {
+
+    bottom: 100% !important
+}
+
 .cwa-left-0 {
 
     left: 0px !important
@@ -54,6 +59,11 @@
     left: 50% !important
 }
 
+.cwa-right-0 {
+
+    right: 0px !important
+}
+
 .cwa-top-0 {
 
     top: 0px !important
@@ -62,6 +72,16 @@
 .cwa-top-1\/2 {
 
     top: 50% !important
+}
+
+.cwa-top-full {
+
+    top: 100% !important
+}
+
+.cwa-z-10 {
+
+    z-index: 10 !important
 }
 
 .cwa-z-20 {
@@ -159,6 +179,11 @@
 .cwa-h-0\.5 {
 
     height: 0.125rem !important
+}
+
+.cwa-h-1 {
+
+    height: 0.25rem !important
 }
 
 .cwa-h-10 {
@@ -503,6 +528,11 @@
     background-color: rgb(28 25 23 / var(--tw-bg-opacity)) !important
 }
 
+.cwa-bg-dark\/25 {
+
+    background-color: rgb(28 25 23 / 0.25) !important
+}
+
 .cwa-bg-gray-200 {
 
     --tw-bg-opacity: 1 !important;
@@ -555,6 +585,13 @@
     --tw-bg-opacity: 1 !important;
 
     background-color: rgb(23 23 23 / var(--tw-bg-opacity)) !important
+}
+
+.cwa-bg-orange {
+
+    --tw-bg-opacity: 1 !important;
+
+    background-color: rgb(255 170 0 / var(--tw-bg-opacity)) !important
 }
 
 .cwa-bg-red-500 {
