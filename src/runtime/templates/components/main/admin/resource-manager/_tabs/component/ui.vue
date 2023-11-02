@@ -19,8 +19,12 @@ const componentMeta = ref<CwaResourceMeta[]>([])
 const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.classes.length && !current.value?.ui?.length
 
-const uiComponentModel = useCwaResourceModel(iri, 'uiComponent')
-const uiClassNamesModel = useCwaResourceModel(iri, 'uiClassNames')
+const uiComponentModel = useCwaResourceModel(iri, 'uiComponent', {
+  debounceTime: 0
+})
+const uiClassNamesModel = useCwaResourceModel(iri, 'uiClassNames', {
+  debounceTime: 0
+})
 
 // reset the class names if we are changing the UI
 watch(uiComponentModel.model, () => {

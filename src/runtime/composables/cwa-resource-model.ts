@@ -34,7 +34,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   const submittingValue = ref<T|undefined>()
 
   const longWaitThreshold = ops?.longWaitThreshold || 5000
-  const debounceTime = ops?.debounceTime || 250
+  const debounceTime = ops?.debounceTime !== undefined ? ops.debounceTime : 250
   let debounced: any
 
   const isBusy = computed(() => pendingSubmit.value || submitting.value)
