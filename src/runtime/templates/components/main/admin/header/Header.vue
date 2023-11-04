@@ -14,7 +14,7 @@
         <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
       <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
-        <CwaUtilsSpinnerTick :is-loading="isLoading" />
+        <SpinnerTick :is-loading="isLoading" />
       </div>
     </div>
     <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0" />
@@ -26,6 +26,7 @@ import { computed } from 'vue'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import PathSelector from './_parts/PathSelector.vue'
 import { useCwa } from '#imports'
+import SpinnerTick from '#cwa/runtime/templates/components/utils/SpinnerTick.vue'
 
 const $cwa = useCwa()
 
