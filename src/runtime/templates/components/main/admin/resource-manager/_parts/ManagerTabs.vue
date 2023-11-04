@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref, toRef, watch } from 'vue'
-import ManagerTab from './manager-tab.vue'
+import ManagerTab from './ManagerTab.vue'
 import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 
 const props = defineProps<{
@@ -37,7 +37,7 @@ defineExpose({ resetTabs })
 </script>
 
 <template>
-  <div class="cwa-flex cwa-border-b cwa-border-stone-700 cwa-border-dashed">
+  <div class="cwa-flex cwa-space-x-1">
     <ManagerTab
       v-for="(tab, index) of orderedTabs"
       :key="`tab_${index}_${tab.name}`"

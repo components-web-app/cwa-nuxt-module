@@ -69,10 +69,11 @@ export default class ComponentManager {
 
   public get currentIri () {
     return computed(() => {
-      if (!this.currentStackItem.value) {
+      const currentStackItem = this.currentStackItem.value
+      if (!currentStackItem) {
         return
       }
-      const stackIri = this.currentStackItem.value.iri
+      const stackIri = currentStackItem.iri
       if (this.forcePublishedVersion.value === undefined) {
         return stackIri
       }

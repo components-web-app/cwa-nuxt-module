@@ -206,6 +206,11 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
         prefix: 'CwaUtils',
         ignore: ['**/*.spec.{cts,mts,ts}']
       })
+      dirs.unshift({
+        path: join(cwaVueComponentsDir, 'ui'),
+        prefix: 'CwaUi',
+        ignore: ['**/*.spec.{cts,mts,ts}']
+      })
 
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({

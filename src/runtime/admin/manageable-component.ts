@@ -21,7 +21,7 @@ import Cwa from '../cwa'
 // todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
 // todo: same issue as above - seems imports from this file
-import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/component-focus.vue'
+import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
