@@ -7,23 +7,65 @@ import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
+import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
   order: DEFAULT_TAB_ORDER
 })
-const current = computed(() => $cwa.admin.componentManager.currentStackItem.value)
+
+const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
+  debounceTime: 0
+})
+const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
+  debounceTime: 0
+})
 
 const componentMeta = ref<CwaResourceMeta[]>([])
+
+const current = computed(() => $cwa.admin.componentManager.currentStackItem.value)
+
+const uiOptions = computed(() => {
+  const options: SelectOption[] = [{
+    label: 'Default',
+    value: null
+  }]
+  componentMeta.value.forEach((meta, index) => {
+    options.push({
+      label: meta.cwaResource.name || current.value?.ui?.[index] || 'Unknown',
+      value: current.value?.ui?.[index]
+    })
+  })
+  return options
+})
+const classOptions = computed(() => {
+  const options: SelectOption[] = [{
+    label: 'Default',
+    value: null
+  }]
+  const currentClasses = current.value?.styles?.classes
+  if (currentClasses) {
+    for (const [styleName, styles] of Object.entries(currentClasses)) {
+      options.push({
+        label: styleName,
+        value: styles
+      })
+    }
+  }
+  return options
+})
 
 const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.classes.length && !current.value?.ui?.length
 
-const uiComponentModel = useCwaResourceModel(iri, 'uiComponent', {
-  debounceTime: 0
+const uiOption = ref(classOptions.value.find(op => op.value === uiComponentModel.model.value))
+watch(uiOption, (newOp) => {
+  uiComponentModel.model.value = newOp?.value
 })
-const uiClassNamesModel = useCwaResourceModel(iri, 'uiClassNames', {
-  debounceTime: 0
+
+const classOption = ref(classOptions.value.find(op => op.value === uiClassNamesModel.model.value))
+watch(classOption, (newOp) => {
+  uiClassNamesModel.model.value = newOp?.value
 })
 
 // reset the class names if we are changing the UI
@@ -32,28 +74,14 @@ watch(uiComponentModel.model, () => {
 })
 
 defineExpose(exposeMeta)
-
-// todo: on UI change, check if matching class value still available and clear if not
 </script>
 
 <template>
   <div>
+    <div class="cwa-flex cwa-space-x-4">
+      <CwaUiFormSelect v-model="uiOption" :options="uiOptions" />
+      <CwaUiFormSelect v-model="classOption" :options="classOptions" />
+    </div>
     <ComponentMetaResolver v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
-    <select v-model="uiComponentModel.model.value" class="cwa-text-dark">
-      <option :value="null">
-        Default
-      </option>
-      <option v-for="(meta, index) of componentMeta" :key="`select-option-ui-${current?.ui?.[index]}`" :value="current?.ui?.[index]">
-        {{ meta.cwaResource.name || current?.ui?.[index] }}
-      </option>
-    </select>
-    <select v-model="uiClassNamesModel.model.value" class="cwa-text-dark">
-      <option :value="null">
-        Default
-      </option>
-      <option v-for="(styles, styleName) of current?.styles?.classes" :key="`select-option-style-${styleName}`" :value="styles">
-        {{ styleName }}
-      </option>
-    </select>
   </div>
 </template>

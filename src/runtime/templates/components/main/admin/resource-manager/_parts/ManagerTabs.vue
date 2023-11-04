@@ -37,7 +37,7 @@ defineExpose({ resetTabs })
 </script>
 
 <template>
-  <div class="cwa-flex cwa-space-x-1">
+  <div class="cwa-flex cwa-space-x-1 cwa-overflow-hidden cwa-items-center">
     <ManagerTab
       v-for="(tab, index) of orderedTabs"
       :key="`tab_${index}_${tab.name}`"

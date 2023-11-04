@@ -9,6 +9,7 @@ export default {
         100: colors.stone['100'],
         300: colors.stone['300'],
         400: colors.stone['400'],
+        600: colors.stone['600'],
         700: colors.stone['700'],
         900: colors.stone['900']
       },

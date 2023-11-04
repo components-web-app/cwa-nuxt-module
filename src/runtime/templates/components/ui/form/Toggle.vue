@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
+
+const emit = defineEmits(['update:modelValue'])
+defineProps<{
+  label: string,
+  modelValue: boolean
+}>()
+
+function handleSwitchInput (newValue: boolean) {
+  emit('update:modelValue', newValue)
+}
+</script>
+
 <template>
   <SwitchGroup as="div" class="cwa-flex cwa-items-center">
     <Switch
@@ -15,17 +29,3 @@
     </SwitchLabel>
   </SwitchGroup>
 </template>
-
-<script setup lang="ts">
-import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
-
-const emit = defineEmits(['update:modelValue'])
-defineProps<{
-  label: string,
-  modelValue: boolean
-}>()
-
-function handleSwitchInput (newValue: boolean) {
-  emit('update:modelValue', newValue)
-}
-</script>
