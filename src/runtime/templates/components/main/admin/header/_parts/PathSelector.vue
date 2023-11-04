@@ -1,7 +1,7 @@
 <template>
   <div v-if="stackItem && stackSize" ref="pathSelector">
     <div
-      class="cwa-py-2 cwa-px-4 cwa-bg-neutral-800 cwa-border cwa-border-dashed cwa-text-white"
+      class="cwa-py-1.5 cwa-px-3 cwa-bg-neutral-800 cwa-border cwa-border-dashed cwa-text-white"
       :class="[isEnabled ? 'hover:cwa-bg-dark cwa-cursor-pointer' : '']"
       @click="openMenu"
     >
@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import ResourceContextItem from '../../_common/resource-context-item.vue'
+import ResourceContextItem from '../../_common/ResourceContextItem.vue'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useTransitions } from '#cwa/runtime/composables/transitions'
 

@@ -15,6 +15,7 @@ import { computed, ref } from 'vue'
 import { useCwa } from '#imports'
 import { CwaAdminHeader, CwaAdminResourceManager } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
+import type { LayoutKey } from '#build/types/layouts'
 
 const $cwa = useCwa()
 const resourceManager = ref(null)
@@ -23,9 +24,9 @@ function onContextMenu (e: PointerEvent) {
   resourceManager.value && resourceManager.value.onContextMenu(e)
 }
 
-const layoutName = computed(() => {
+const layoutName = computed<LayoutKey>(() => {
   const layoutResource = $cwa.resources.layout.value
-  return layoutResource?.data?.uiComponent || 'cwa-default'
+  return (layoutResource?.data?.uiComponent as LayoutKey) || 'cwa-default'
 })
 
 const showAdmin = computed(() => {

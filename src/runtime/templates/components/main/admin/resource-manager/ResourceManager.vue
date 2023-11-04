@@ -2,9 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
 import { useMouse, useWindowScroll } from '@vueuse/core'
 import ResourceLoadingIndicator
-  from '../_common/resource-loading-indicator.vue'
-import ManagerTabs from './_parts/manager-tabs.vue'
-import CwaAdminResourceManagerContextMenu from './_parts/cwa-resource-manager-context-menu.vue'
+  from '../_common/ResourceLoadingIndicator.vue'
+import ManagerTabs from './_parts/ManagerTabs.vue'
+import CwaAdminResourceManagerContextMenu from './_parts/CwaResourceManagerContextMenu.vue'
 import { useCwa } from '#imports'
 import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
@@ -133,24 +133,31 @@ defineExpose({
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-dark-blur cwa-w-full cwa-text-white" @click.stop @contextmenu.stop>
-      <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
-      <div v-if="allTabsMeta.length" ref="managerHolder">
-        <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
-        <div class="cwa-flex">
-          <div class="cwa-flex-grow">
-            <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
-            <div class="cwa-p-4 cwa-bg-dark">
-              <component
-                :is="selectedTab"
-                v-if="selectedTab"
-              />
+    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop @contextmenu.stop>
+      <div class="cwa-dark-blur">
+        <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
+        <div v-if="allTabsMeta.length" ref="managerHolder">
+          <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
+          <div class="cwa-flex">
+            <div class="cwa-flex-grow">
+              <div class="cwa-flex cwa-items-center cwa-pt-3 cwa-px-4 cwa-space-x-3">
+                <div class="cwa-flex-grow">
+                  <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
+                </div>
+                <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
+                  <CwaUiFormButton color="grey" class="cwa-min-w-[100px]">
+                    CTA
+                  </CwaUiFormButton>
+                </div>
+              </div>
+              <div class="cwa-p-4 cwa-min-h-[74px] cwa-flex cwa-items-center">
+                <component
+                  :is="selectedTab"
+                  v-if="selectedTab"
+                  class="cwa-w-full"
+                />
+              </div>
             </div>
-          </div>
-          <div class="cwa-flex cwa-light cwa-p-4 cwa-items-center cwa-content-center cwa-justify-center">
-            <button class="cwa-text-white cwa-bg-magenta/90 hover:cwa-bg-magenta cwa-py-1 cwa-px-4 cwa-min-w-[100px]">
-              CTA
-            </button>
           </div>
         </div>
       </div>

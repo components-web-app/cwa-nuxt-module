@@ -1,11 +1,11 @@
 <template>
-  <CwaUtilsAlertWarning v-if="!iri">
+  <CwaUiAlertWarning v-if="!iri">
     <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
-  </CwaUtilsAlertWarning>
+  </CwaUiAlertWarning>
   <div v-else-if="isLoading">
-    <CwaUtilsSpinner :show="true" />
+    <Spinner :show="true" />
   </div>
-  <CwaUtilsAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
+  <CwaUiAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
     <p v-if="!resource">
       Resource `{{ iri }}` has not been requested
     </p>
@@ -15,7 +15,7 @@
     <p v-else>
       The component `{{ resourceUiComponent }}` for resource `{{ iri }}` cannot be resolved
     </p>
-  </CwaUtilsAlertWarning>
+  </CwaUiAlertWarning>
   <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="iri" :class="resourceClassNames" />
 </template>
 
@@ -29,6 +29,7 @@ import {
   getPublishedResourceState,
   getResourceTypeFromIri
 } from '#cwa/runtime/resources/resource-utils'
+import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
 const $cwa = useCwa()
 

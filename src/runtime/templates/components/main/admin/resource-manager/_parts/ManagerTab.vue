@@ -7,7 +7,7 @@ defineProps<{
 }>()
 </script>
 <template>
-  <button class="cwa-p-2 cwa-transition" :class="[selected ? 'cwa-bg-dark' : 'cwa-text-stone-300']">
+  <button class="cwa-py-1.5 cwa-px-3 cwa-transition cwa-rounded" :class="[selected ? 'cwa-text-stone-100 cwa-bg-stone-700/80' : 'cwa-text-stone-400 hover:cwa-text-stone-300']">
     {{ tab.name }}
   </button>
 </template>

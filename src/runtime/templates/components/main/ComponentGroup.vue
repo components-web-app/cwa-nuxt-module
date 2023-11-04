@@ -1,6 +1,6 @@
 <template>
   <div v-if="showLoader" class="component-group-placeholder">
-    <CwaUtilsSpinner :show="true" />
+    <Spinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
     <!--CWA_MANAGER_START_GROUP-->
@@ -8,7 +8,7 @@
     <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
-    <CwaUtilsHotSpot screen-reader-action="Add component position" />
+    <HotSpot screen-reader-action="Add component position" />
   </div>
 </template>
 
@@ -36,6 +36,8 @@ import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoade
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa, useCwaResourceManageable } from '#imports'
+import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
 
 const iri = ref<string|undefined>()
 const $cwa = useCwa()

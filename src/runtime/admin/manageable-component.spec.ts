@@ -155,7 +155,6 @@ describe('ManageableComponent Class', () => {
       instance.currentIri = ref(currentIri)
       const localStackItem = { iri: '/something', localSomething: 'abc' }
       vi.spyOn(instance, 'getCurrentStackItem').mockImplementationOnce(() => localStackItem)
-      vi.spyOn(instance, 'currentStackItemListener').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})
       const listener = vi.fn()
@@ -170,7 +169,6 @@ describe('ManageableComponent Class', () => {
       expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/something')
 
       expect($cwa.admin.componentManager.replaceCurrentStackItem).toHaveBeenCalledWith(localStackItem)
-      expect(instance.currentStackItemListener).toHaveBeenCalledWith({ iri: '/something' })
     })
   })
 

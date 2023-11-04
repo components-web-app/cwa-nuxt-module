@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import ResourceContextItem from '../../_common/resource-context-item.vue'
-import ContextMenu from '../../../../utils/context-menu.vue'
+import ResourceContextItem from '../../_common/ResourceContextItem.vue'
+import ContextMenu from '../../../../utils/ContextMenu.vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()

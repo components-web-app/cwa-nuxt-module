@@ -16,32 +16,32 @@ export default class ManagerTabsResolver {
   }
 
   private* getComponentGroupTabs () {
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/component.vue'))
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/position.vue'))
+    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Component.vue'))
+    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Position.vue'))
   }
 
   private* getComponentPositionTabs () {
     if (this.cwa.resources.isPageDynamic.value) {
-      yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/dynamic.vue'))
+      yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Dynamic.vue'))
       return
     }
     if (this.cwa.resources.isPageTemplate.value) {
-      yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/template.vue'))
+      yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Template.vue'))
     }
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/static.vue'))
+    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Static.vue'))
   }
 
   private* getComponentTabs (resource: CwaCurrentResourceInterface) {
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/ui.vue'))
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/order.vue'))
+    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/Ui.vue'))
+    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/Order.vue'))
     if (getPublishedResourceState(resource) !== undefined) {
-      yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/publish.vue'))
+      yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/Publish.vue'))
     }
   }
 
   public resolve (ops: resolveTabsOps) {
     let tabs: ManagerTab[] = [
-      defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/resource-info-tab.vue'))
+      defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/ResourceInfoTab.vue'))
     ]
     if (ops.resourceConfig?.managerTabs) {
       tabs = [...tabs, ...ops.resourceConfig.managerTabs]

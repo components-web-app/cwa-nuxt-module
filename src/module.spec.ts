@@ -263,8 +263,8 @@ export const options:CwaModuleOptions = {
           ignore: ['**/*.spec.{cts,mts,ts}']
         })
         expect(mockDirs).toContainEqual({
-          path: join(mockResolver('./runtime/templates'), 'components', 'utils'),
-          prefix: 'CwaUtils',
+          path: join(mockResolver('./runtime/templates'), 'components', 'ui'),
+          prefix: 'CwaUi',
           ignore: ['**/*.spec.{cts,mts,ts}']
         })
         expect(mockDirs).toContainEqual({
