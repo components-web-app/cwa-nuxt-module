@@ -226,6 +226,11 @@
     height: 100% !important
 }
 
+.cwa-h-20 {
+
+    height: 5rem !important
+}
+
 .cwa-min-h-\[74px\] {
 
     min-height: 74px !important
@@ -1226,6 +1231,15 @@
     .sm\:cwa-leading-6 {
 
         line-height: 1.5rem !important
+    }
+}
+@media (min-width: 768px) {
+
+    .md\:cwa-px-4 {
+
+        padding-left: 1rem !important;
+
+        padding-right: 1rem !important
     }
 }
 @media (min-width: 1024px) {

@@ -145,9 +145,9 @@ defineExpose({
                   <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
                 </div>
                 <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
-                  <button class="cwa-text-white cwa-bg-stone-700/90 hover:cwa-bg-stone-700 cwa-py-1 cwa-px-4 cwa-min-w-[100px]">
+                  <CwaUiFormButton color="grey" class="cwa-min-w-[100px]">
                     CTA
-                  </button>
+                  </CwaUiFormButton>
                 </div>
               </div>
               <div class="cwa-p-4 cwa-min-h-[74px] cwa-flex cwa-items-center">
