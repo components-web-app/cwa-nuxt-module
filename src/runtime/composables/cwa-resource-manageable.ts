@@ -1,4 +1,4 @@
-import { getCurrentInstance, nextTick, onBeforeUnmount, onMounted } from 'vue'
+import { getCurrentInstance, onBeforeUnmount, onMounted } from 'vue'
 import type { Ref } from 'vue/dist/vue'
 import type { ManageableComponentOps } from '../admin/manageable-component'
 import ManageableComponent from '../admin/manageable-component'
@@ -16,10 +16,8 @@ export const useCwaResourceManageable = (iri: Ref<string|undefined>, ops?: Manag
 
   const manageableComponent = new ManageableComponent(proxy, useCwa(), ops || {})
 
-  onMounted(async () => {
-    await nextTick(() => {
-      manageableComponent.init(iri)
-    })
+  onMounted(() => {
+    manageableComponent.init(iri)
   })
 
   onBeforeUnmount(() => {
