@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { isEqual } from 'lodash-es'
 import {
   useCwaResourceManagerTab
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
@@ -58,19 +59,22 @@ const classOptions = computed(() => {
 const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.classes.length && !current.value?.ui?.length
 
-const uiOption = ref(classOptions.value.find(op => op.value === uiComponentModel.model.value))
-watch(uiOption, (newOp) => {
-  uiComponentModel.model.value = newOp?.value
-})
+const uiOption = ref()
+const classOption = ref()
 
-const classOption = ref(classOptions.value.find(op => op.value === uiClassNamesModel.model.value))
-watch(classOption, (newOp) => {
-  uiClassNamesModel.model.value = newOp?.value
-})
+onMounted(() => {
+  uiOption.value = uiOptions.value.find(op => op.value === uiComponentModel.model.value)
+  classOption.value = classOptions.value.find(op => isEqual(op.value, uiClassNamesModel.model.value))
 
-// reset the class names if we are changing the UI
-watch(uiComponentModel.model, () => {
-  uiClassNamesModel.model.value = null
+  watch(uiOption, (newOp) => {
+    uiComponentModel.model.value = newOp?.value
+  })
+  watch(classOption, (newOp) => {
+    uiClassNamesModel.model.value = newOp?.value
+  })
+  watch(uiComponentModel.model, () => {
+    uiClassNamesModel.model.value = null
+  })
 })
 
 defineExpose(exposeMeta)
@@ -78,7 +82,7 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    <div class="cwa-flex cwa-space-x-4">
+    <div class="cwa-flex cwa-space-x-2">
       <CwaUiFormSelect v-model="uiOption" :options="uiOptions" />
       <CwaUiFormSelect v-model="classOption" :options="classOptions" />
     </div>
