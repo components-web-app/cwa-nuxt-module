@@ -32,8 +32,8 @@ onMounted(() => {
     <TransitionGroup name="load-indicator">
       <div v-for="count in currentIndicators" :key="`load-indicator-${count}`" class="cwa-absolute cwa-h-full cwa-bg-orange cwa-top-0 cwa-left-0 cwa-right-0">
         <div class="cwa-shadow-[inset_-20px_0_10px_-10px] cwa-shadow-orange cwa-absolute cwa-right-full cwa-w-[2rem] cwa-h-full" />
-        <div class="cwa-loader-inner-holder cwa-transition cwa-left-0 cwa-right-0 cwa-top-0 cwa-h-full">
-          <div class="cwa-loader-inner-indicator cwa-bg-white/60 cwa-h-full cwa-top-0 cwa-absolute cwa-z-10" />
+        <div class="cwa-loader-inner-holder cwa-transition cwa-duration-300 cwa-left-0 cwa-right-0 cwa-top-0 cwa-h-full">
+          <div class="cwa-loader-inner-indicator cwa-bg-white/70 cwa-h-full cwa-top-0 cwa-absolute cwa-z-10" />
         </div>
       </div>
     </TransitionGroup>
@@ -66,8 +66,8 @@ onMounted(() => {
     left: 0;
     opacity: 0;
   }
-  20%,
-  80% {
+  40%,
+  60% {
     opacity: 1;
   }
   50% {
