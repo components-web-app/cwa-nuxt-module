@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 const props = withDefaults(defineProps<
 {
-  color: 'blue' | 'grey'
+  color?: 'blue' | 'grey' | 'dark'
 }>(), {
   color: 'grey'
 })
@@ -12,12 +12,15 @@ const classNames = computed(() => {
   if (props.color === 'blue') {
     return 'cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600'
   }
+  if (props.color === 'dark') {
+    return 'cwa-text-white cwa-bg-dark/90 hover:cwa-bg-dark'
+  }
   return 'cwa-text-white cwa-bg-stone-700/90 hover:cwa-bg-stone-700'
 })
 </script>
 
 <template>
-  <button class="cwa-py-1.5 cwa-px-2 md:cwa-px-4 cwa-border cwa-border-transparent" :class="classNames">
+  <button class="cwa-py-1.5 cwa-px-2 md:cwa-px-4 cwa-border cwa-border-transparent cwa-transition" :class="classNames">
     <slot />
   </button>
 </template>
