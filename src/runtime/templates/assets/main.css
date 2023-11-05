@@ -586,13 +586,6 @@
     border-color: transparent !important
 }
 
-.\!cwa-border-stone-400 {
-
-    --tw-border-opacity: 1 !important;
-
-    border-color: rgb(168 162 158 / var(--tw-border-opacity)) !important
-}
-
 .cwa-bg-blue-600\/90 {
 
     background-color: rgb(37 99 235 / 0.9) !important
