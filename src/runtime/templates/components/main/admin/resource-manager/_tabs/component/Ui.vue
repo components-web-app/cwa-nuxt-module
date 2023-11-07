@@ -68,12 +68,10 @@ onMounted(() => {
 
   watch(uiOption, (newOp) => {
     uiComponentModel.model.value = newOp?.value
+    uiClassNamesModel.model.value = null
   })
   watch(classOption, (newOp) => {
     uiClassNamesModel.model.value = newOp?.value
-  })
-  watch(uiComponentModel.model, () => {
-    uiClassNamesModel.model.value = null
   })
 })
 
