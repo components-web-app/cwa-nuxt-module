@@ -2,6 +2,7 @@
   <!--CWA_MANAGER_START_POSITION-->
   <ResourceLoader v-if="componentIri" :iri="componentIri" component-prefix="CwaComponent" />
   <ComponentPlaceholder v-else-if="$cwa.admin.isEditing" :iri="iri" />
+  <span v-if="!publishedIri">NOOOOO publishedIri</span>
   <!--CWA_MANAGER_END_POSITION-->
 </template>
 
@@ -16,17 +17,17 @@ const $cwa = useCwa()
 const props = defineProps<IriProp>()
 
 const resource = useCwaResource(toRef(props, 'iri')).getResource()
+const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(resource.value?.data?.component).value)
 const componentIri = computed(() => {
   const iri = resource.value?.data?.component
-  const publishedIri = $cwa.resources.findPublishedComponentIri(iri).value
   if ($cwa.admin.isEditing) {
     const selectedEditingIri = $cwa.admin.componentManager.currentIri.value
     const draftIri = $cwa.resources.findDraftComponentIri(iri).value
-    if (selectedEditingIri && [draftIri, publishedIri].includes(selectedEditingIri)) {
+    if (selectedEditingIri && [draftIri, publishedIri.value].includes(selectedEditingIri)) {
       return selectedEditingIri
     }
     return draftIri || iri
   }
-  return publishedIri
+  return publishedIri.value
 })
 </script>
