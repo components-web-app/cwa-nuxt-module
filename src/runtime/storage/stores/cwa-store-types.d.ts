@@ -1,9 +1,9 @@
 import type {
-  _ExtractActionsFromSetupStore,
-  _ExtractGettersFromSetupStore,
-  _ExtractStateFromSetupStore,
   SetupStoreDefinition,
   Store,
+  StoreActions,
+  StoreGetters,
+  StoreState
 } from 'pinia'
 
 export interface CwaStore {
@@ -11,4 +11,4 @@ export interface CwaStore {
 }
 
 export declare type CwaPiniaStoreDefinitionInterface<N extends string, I> = SetupStoreDefinition<N, I>
-export declare type CwaPiniaStoreInterface<N extends string, I> = Store<N, _ExtractStateFromSetupStore<I>, _ExtractGettersFromSetupStore<I>, _ExtractActionsFromSetupStore<I>>
+export declare type CwaPiniaStoreInterface<N extends string, I> = Store<N, StoreState<I>, StoreGetters<I>, StoreActions<I>>
