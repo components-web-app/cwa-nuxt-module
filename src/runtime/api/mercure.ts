@@ -1,6 +1,7 @@
 import logger from 'consola'
 import { storeToRefs } from 'pinia'
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
+import type { ComputedRef } from 'vue'
 import type { CwaMercureStoreInterface } from '../storage/stores/mercure/mercure-store'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import type { CwaResourcesStoreInterface } from '../storage/stores/resources/resources-store'
@@ -19,20 +20,24 @@ interface MercureMessageInterface {
 export default class Mercure {
   private eventSource?: EventSource
   private lastEventId?: string
-  private mercureStoreDefinition: MercureStore
-  private resourcesStoreDefinition: ResourcesStore
-  private fetcherStoreDefinition: FetcherStore
   private mercureMessageQueue: MercureMessageInterface[] = []
   private fetcher?: Fetcher
+  private requestCount?: ComputedRef<number>
 
-  constructor (mercureStoreDefinition: MercureStore, resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
-    this.mercureStoreDefinition = mercureStoreDefinition
-    this.resourcesStoreDefinition = resourcesStoreDefinition
-    this.fetcherStoreDefinition = fetcherStoreDefinition
+  // eslint-disable-next-line no-useless-constructor
+  constructor (
+    private mercureStoreDefinition: MercureStore,
+    private resourcesStoreDefinition: ResourcesStore,
+    private fetcherStoreDefinition: FetcherStore
+  ) {
   }
 
   public setFetcher (fetcher: Fetcher) {
     this.fetcher = fetcher
+  }
+
+  public setRequestCount (requestCount: ComputedRef<number>) {
+    this.requestCount = requestCount
   }
 
   public setMercureHubFromLinkHeader (linkHeader: string) {
@@ -41,7 +46,7 @@ export default class Mercure {
     }
 
     const matches = linkHeader.match(/<([^>]+)>;\s+rel="mercure".*/)
-    if (!matches || !matches[1]) {
+    if (!matches?.[1]) {
       logger.error('No Mercure rel in link header.')
       return
     }
@@ -87,6 +92,13 @@ export default class Mercure {
     }
   }
 
+  private get requestsInProgress () {
+    const { currentResourcesApiStateIsPending } = storeToRefs(this.resourcesStore)
+    return computed(() => {
+      return (this.requestCount && this.requestCount?.value > 0) || currentResourcesApiStateIsPending.value
+    })
+  }
+
   private handleMercureMessage (event: MessageEvent) {
     const mercureMessage: MercureMessageInterface = {
       event,
@@ -99,12 +111,11 @@ export default class Mercure {
 
     this.addMercureMessageToQueue(mercureMessage)
 
-    const { currentResourcesApiStateIsPending } = storeToRefs(this.resourcesStore)
-    if (!currentResourcesApiStateIsPending.value) {
+    if (!this.requestsInProgress.value) {
       this.processMessageQueue()
     } else {
-      const unwatch = watch(currentResourcesApiStateIsPending, (isPending) => {
-        if (!isPending) {
+      const unwatch = watch(this.requestsInProgress, (inProgress) => {
+        if (!inProgress) {
           this.processMessageQueue()
           unwatch()
         }

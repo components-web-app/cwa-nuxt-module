@@ -73,6 +73,7 @@ export default class Cwa {
     )
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
+    this.mercure.setRequestCount(this.resourcesManager.requestCount)
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
   }
 

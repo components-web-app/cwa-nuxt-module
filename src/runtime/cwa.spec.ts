@@ -43,7 +43,7 @@ vi.mock('./api/fetcher/fetcher', () => {
 })
 
 vi.mock('./api/mercure', () => {
-  const MercureInstance = vi.fn(() => ({ name: 'MERCURE', setFetcher: vi.fn() }))
+  const MercureInstance = vi.fn(() => ({ name: 'MERCURE', setFetcher: vi.fn(), setRequestCount: vi.fn() }))
   return {
     default: MercureInstance
   }
@@ -61,7 +61,11 @@ vi.mock('./api/api-documentation', () => {
 })
 vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
-vi.mock('./resources/resources-manager')
+vi.mock('./resources/resources-manager', () => {
+  return {
+    ResourcesManager: vi.fn(() => ({ requestCount: 999 }))
+  }
+})
 vi.mock('./resources/resources')
 vi.mock('./api/auth', () => {
   return {
@@ -160,6 +164,7 @@ describe('Cwa class test', () => {
     const stores = Storage.mock.results[0].value.stores
     expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
     expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.instances[0])
+    expect(Mercure.mock.results[0].value.setRequestCount).toBeCalledWith(ResourcesManager.mock.results[0].value.requestCount)
   })
 
   test('CwaFetch created to provide a fetch instance with defaults', () => {
@@ -190,7 +195,7 @@ describe('Cwa class test', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0])
-    expect($cwa.resourcesManager).toBe(ResourcesManager.mock.instances[0])
+    expect($cwa.resourcesManager).toBe(ResourcesManager.mock.results[0].value)
   })
 
   test('Auth is initialised and accessible', () => {
