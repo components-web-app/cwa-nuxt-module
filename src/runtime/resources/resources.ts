@@ -276,4 +276,8 @@ export class Resources {
       return this.isPageTemplate.value && !!this.pageDataIri.value
     })
   }
+
+  public get hasNewResources () {
+    return this.resourcesStore.hasNewResources
+  }
 }

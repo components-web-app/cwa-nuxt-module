@@ -136,6 +136,16 @@
     margin-right: 0.5rem !important
 }
 
+.cwa-mt-1 {
+
+    margin-top: 0.25rem !important
+}
+
+.cwa-mt-1\.5 {
+
+    margin-top: 0.375rem !important
+}
+
 .cwa-mt-2 {
 
     margin-top: 0.5rem !important
@@ -144,6 +154,66 @@
 .cwa-mt-8 {
 
     margin-top: 2rem !important
+}
+
+.cwa-mt-4 {
+
+    margin-top: 1rem !important
+}
+
+.-cwa-mb-4 {
+
+    margin-bottom: -1rem !important
+}
+
+.-cwa-mb-1 {
+
+    margin-bottom: -0.25rem !important
+}
+
+.-cwa-mb-2 {
+
+    margin-bottom: -0.5rem !important
+}
+
+.-cwa-ml-1 {
+
+    margin-left: -0.25rem !important
+}
+
+.cwa-ml-1 {
+
+    margin-left: 0.25rem !important
+}
+
+.cwa-ml-4 {
+
+    margin-left: 1rem !important
+}
+
+.cwa-mr-4 {
+
+    margin-right: 1rem !important
+}
+
+.-cwa-mr-1 {
+
+    margin-right: -0.25rem !important
+}
+
+.cwa-mr-1 {
+
+    margin-right: 0.25rem !important
+}
+
+.-cwa-mb-1\.5 {
+
+    margin-bottom: -0.375rem !important
+}
+
+.cwa-mr-1\.5 {
+
+    margin-right: 0.375rem !important
 }
 
 .cwa-box-content {
@@ -281,6 +351,16 @@
     width: 100% !important
 }
 
+.cwa-w-3 {
+
+    width: 0.75rem !important
+}
+
+.cwa-w-8 {
+
+    width: 2rem !important
+}
+
 .cwa-min-w-\[100px\] {
 
     min-width: 100px !important
@@ -353,6 +433,20 @@
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important
 }
 
+.cwa-translate-y-1\/2 {
+
+    --tw-translate-y: 50% !important;
+
+    transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important
+}
+
+.cwa-translate-x-1\/2 {
+
+    --tw-translate-x: 50% !important;
+
+    transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important
+}
+
 .cwa-scale-100 {
 
     --tw-scale-x: 1 !important;
@@ -419,6 +513,11 @@
        -moz-user-select: none !important;
 
             user-select: none !important
+}
+
+.cwa-flex-row {
+
+    flex-direction: row !important
 }
 
 .cwa-flex-col {
@@ -501,6 +600,33 @@
     margin-bottom: calc(1.5rem * var(--tw-space-y-reverse)) !important
 }
 
+.cwa-space-x-1\.5 > :not([hidden]) ~ :not([hidden]) {
+
+    --tw-space-x-reverse: 0 !important;
+
+    margin-right: calc(0.375rem * var(--tw-space-x-reverse)) !important;
+
+    margin-left: calc(0.375rem * calc(1 - var(--tw-space-x-reverse))) !important
+}
+
+.cwa-space-y-1 > :not([hidden]) ~ :not([hidden]) {
+
+    --tw-space-y-reverse: 0 !important;
+
+    margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse))) !important;
+
+    margin-bottom: calc(0.25rem * var(--tw-space-y-reverse)) !important
+}
+
+.cwa-space-y-1\.5 > :not([hidden]) ~ :not([hidden]) {
+
+    --tw-space-y-reverse: 0 !important;
+
+    margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse))) !important;
+
+    margin-bottom: calc(0.375rem * var(--tw-space-y-reverse)) !important
+}
+
 .cwa-overflow-auto {
 
     overflow: auto !important
@@ -525,6 +651,11 @@
     border-radius: 0.25rem !important
 }
 
+.cwa-rounded-3xl {
+
+    border-radius: 1.5rem !important
+}
+
 .cwa-rounded-full {
 
     border-radius: 9999px !important
@@ -533,6 +664,11 @@
 .cwa-rounded-md {
 
     border-radius: 0.375rem !important
+}
+
+.cwa-rounded-lg {
+
+    border-radius: 0.5rem !important
 }
 
 .cwa-border {
@@ -698,6 +834,43 @@
     background-color: rgb(255 255 255 / 0.7) !important
 }
 
+.cwa-bg-light {
+
+    --tw-bg-opacity: 1 !important;
+
+    background-color: rgb(245 245 244 / var(--tw-bg-opacity)) !important
+}
+
+.cwa-bg-light\/80 {
+
+    background-color: rgb(245 245 244 / 0.8) !important
+}
+
+.cwa-bg-light\/90 {
+
+    background-color: rgb(245 245 244 / 0.9) !important
+}
+
+.cwa-bg-magenta\/90 {
+
+    background-color: rgb(227 10 108 / 0.9) !important
+}
+
+.cwa-bg-magenta\/30 {
+
+    background-color: rgb(227 10 108 / 0.3) !important
+}
+
+.cwa-bg-magenta\/50 {
+
+    background-color: rgb(227 10 108 / 0.5) !important
+}
+
+.cwa-bg-magenta\/70 {
+
+    background-color: rgb(227 10 108 / 0.7) !important
+}
+
 .cwa-fill-blue-600 {
 
     fill: #2563eb !important
@@ -721,6 +894,16 @@
 .cwa-p-5 {
 
     padding: 1.25rem !important
+}
+
+.cwa-p-2 {
+
+    padding: 0.5rem !important
+}
+
+.cwa-p-1 {
+
+    padding: 0.25rem !important
 }
 
 .cwa-px-1 {
@@ -814,6 +997,13 @@
     padding-bottom: 2rem !important
 }
 
+.cwa-px-2\.5 {
+
+    padding-left: 0.625rem !important;
+
+    padding-right: 0.625rem !important
+}
+
 .cwa-pb-1 {
 
     padding-bottom: 0.25rem !important
@@ -827,6 +1017,16 @@
 .cwa-pt-3 {
 
     padding-top: 0.75rem !important
+}
+
+.cwa-pb-2 {
+
+    padding-bottom: 0.5rem !important
+}
+
+.cwa-pt-4 {
+
+    padding-top: 1rem !important
 }
 
 .cwa-text-left {
@@ -851,6 +1051,13 @@
     font-size: 1.25rem !important;
 
     line-height: 1.75rem !important
+}
+
+.cwa-text-xs {
+
+    font-size: 0.75rem !important;
+
+    line-height: 1rem !important
 }
 
 .cwa-font-bold {
@@ -915,6 +1122,13 @@
     color: rgb(245 245 244 / var(--tw-text-opacity)) !important
 }
 
+.cwa-text-stone-300 {
+
+    --tw-text-opacity: 1 !important;
+
+    color: rgb(214 211 209 / var(--tw-text-opacity)) !important
+}
+
 .cwa-text-stone-400 {
 
     --tw-text-opacity: 1 !important;
@@ -927,6 +1141,13 @@
     --tw-text-opacity: 1 !important;
 
     color: rgb(255 255 255 / var(--tw-text-opacity)) !important
+}
+
+.cwa-text-dark {
+
+    --tw-text-opacity: 1 !important;
+
+    color: rgb(28 25 23 / var(--tw-text-opacity)) !important
 }
 
 .cwa-opacity-0 {
@@ -942,6 +1163,21 @@
 .cwa-opacity-50 {
 
     opacity: 0.5 !important
+}
+
+.cwa-opacity-25 {
+
+    opacity: 0.25 !important
+}
+
+.cwa-opacity-80 {
+
+    opacity: 0.8 !important
+}
+
+.cwa-opacity-75 {
+
+    opacity: 0.75 !important
 }
 
 .cwa-shadow {
@@ -1254,6 +1490,12 @@
 
     background-color: rgb(68 64 60 / var(--tw-bg-opacity)) !important
 }
+.hover\:cwa-bg-light:hover {
+
+    --tw-bg-opacity: 1 !important;
+
+    background-color: rgb(245 245 244 / var(--tw-bg-opacity)) !important
+}
 .hover\:cwa-text-stone-300:hover {
 
     --tw-text-opacity: 1 !important;
@@ -1265,6 +1507,10 @@
     --tw-text-opacity: 1 !important;
 
     color: rgb(255 255 255 / var(--tw-text-opacity)) !important
+}
+.hover\:cwa-opacity-100:hover {
+
+    opacity: 1 !important
 }
 .hover\:cwa-outline-stone-400:hover {
 

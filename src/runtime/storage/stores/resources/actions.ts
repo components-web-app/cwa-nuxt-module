@@ -160,6 +160,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
   return {
     deleteResource,
     mergeNewResources (): void {
+      console.log('mergeNewResources')
       for (const newId of resourcesState.new.allIds) {
         const newResource = resourcesState.new.byId[newId]
 
@@ -194,10 +195,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // todo: test we save publishable mapping here
         mapPublishableResource(newResource.resource)
       }
-      resourcesState.new = {
-        byId: {},
-        allIds: []
-      }
+      resourcesState.new.allIds = []
+      resourcesState.new.byId = {}
     },
     resetCurrentResources (currentIds?: string[]): void {
       if (currentIds) {

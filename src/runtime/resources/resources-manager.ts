@@ -34,6 +34,10 @@ export class ResourcesManager {
     this.fetchStatusManager = fetchStatusManager
   }
 
+  public mergeNewResources () {
+    return this.resourcesStore.mergeNewResources()
+  }
+
   public get requestCount () {
     return computed(() => Object.values(this.requestsInProgress).length)
   }
