@@ -62,6 +62,8 @@ Temporary Items
 playground/ssl/*
 !playground/ssl/.gitignore
 playground/.env
+src/runtime/templates/assets/main.css
+src/runtime/templates/assets/base.css
 
 # stryker temp files
 .stryker-tmp

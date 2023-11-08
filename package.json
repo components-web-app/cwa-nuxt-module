@@ -21,14 +21,14 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "nuxt-module-build && sleep 0.2 && npm run copy-layer",
+    "prepack": "nuxt-module-build && pnpm run postcss && pnpm run postcss:base && sleep 0.2 && pnpm run copy-layer",
     "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
     "dev": "concurrently --kill-others \"pnpm postcss:watch\" \"pnpm dev:https\"",
     "dev:https": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:start": "nuxi start playground",
-    "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
+    "dev:prepare": "pnpm run postcss && pnpm run postcss:base && nuxt-module-build --stub && nuxi prepare playground",
     "lint": "eslint --ext .ts,.js,.vue .",
     "lint:fix": "eslint --fix --ext .ts,.js,.vue .",
     "test": "vitest --run --reporter=verbose",

@@ -194,10 +194,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // todo: test we save publishable mapping here
         mapPublishableResource(newResource.resource)
       }
-      resourcesState.new = {
-        byId: {},
-        allIds: []
-      }
+      resourcesState.new.allIds = []
+      resourcesState.new.byId = {}
     },
     resetCurrentResources (currentIds?: string[]): void {
       if (currentIds) {

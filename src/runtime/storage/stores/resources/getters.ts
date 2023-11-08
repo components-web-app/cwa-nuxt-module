@@ -22,6 +22,7 @@ interface PublishableMapping {
 }
 
 export interface CwaResourcesGettersInterface {
+  hasNewResources: ComputedRef<boolean>
   findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
   findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
   publishedToDraftIris: ComputedRef<PublishableMapping>
@@ -61,6 +62,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   }
 
   return {
+    hasNewResources: computed(() => resourcesState.new.allIds.length > 0),
     findPublishedComponentIri: computed(() => {
       return (iri: string) => {
         const isPublished = findIsPublishedByIri(iri)
