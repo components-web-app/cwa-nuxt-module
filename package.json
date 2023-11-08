@@ -26,7 +26,7 @@
     "dev": "concurrently --kill-others \"pnpm postcss:watch\" \"pnpm dev:https\"",
     "dev:https": "nuxi dev playground --https",
     "dev:http": "nuxi dev playground",
-    "dev:build": "nuxi build playground",
+    "dev:build": "npm run postcss && npm run postcss:base && nuxi build playground",
     "dev:start": "nuxi start playground",
     "dev:prepare": "nuxt-module-build --stub && nuxi prepare playground",
     "lint": "eslint --ext .ts,.js,.vue .",
