@@ -160,7 +160,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
   return {
     deleteResource,
     mergeNewResources (): void {
-      console.log('mergeNewResources')
       for (const newId of resourcesState.new.allIds) {
         const newResource = resourcesState.new.byId[newId]
 
