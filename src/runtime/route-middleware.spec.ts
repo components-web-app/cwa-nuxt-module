@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { RouteLocationNormalizedLoaded } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'

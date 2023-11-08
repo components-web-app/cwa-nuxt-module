@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach, Mock } from 'vitest'
 import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'

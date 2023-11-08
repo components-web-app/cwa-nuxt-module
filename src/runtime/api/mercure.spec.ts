@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'

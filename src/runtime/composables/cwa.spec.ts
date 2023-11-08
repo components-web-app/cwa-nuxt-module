@@ -1,5 +1,6 @@
+// @vitest-environment nuxt
 import { vi, describe, test, expect } from 'vitest'
-import * as nuxt from '#app'
+import * as nuxt from '#app/nuxt'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 describe('CWA composable', () => {

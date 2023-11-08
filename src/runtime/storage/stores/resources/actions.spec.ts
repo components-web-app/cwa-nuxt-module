@@ -1,3 +1,4 @@
+// @vitest-environment nuxt
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import * as app from '#app'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
