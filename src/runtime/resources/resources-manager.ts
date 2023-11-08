@@ -1,4 +1,5 @@
 import { computed, reactive, watch } from 'vue'
+import type { FetchError } from 'ofetch'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -7,9 +8,10 @@ import type {
   SaveNewResourceEvent,
   SaveResourceEvent
 } from '../storage/stores/resources/actions'
+import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaResource } from './resource-utils'
 
-interface ApiResourceEvent {
+export interface ApiResourceEvent {
   endpoint: string
   data: any
   source?: string
@@ -26,12 +28,14 @@ export class ResourcesManager {
   private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
   private fetchStatusManager: FetchStatusManager
+  private errorStoreDefinition: ErrorStore
   private requestsInProgress = reactive<{ [id: string]: ApiResourceEvent }>({})
 
-  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager) {
+  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager, errorStoreDefinition: ErrorStore) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
     this.fetchStatusManager = fetchStatusManager
+    this.errorStoreDefinition = errorStoreDefinition
   }
 
   public mergeNewResources () {
@@ -96,6 +100,9 @@ export class ResourcesManager {
         resource
       })
       return resource
+    } catch (err) {
+      debugger
+      this.errorStore.error(event, err as FetchError<any>)
     } finally {
       if (event.source) {
         delete this.requestsInProgress[event.source]
@@ -134,5 +141,9 @@ export class ResourcesManager {
 
   private get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
+  }
+
+  private get errorStore () {
+    return this.errorStoreDefinition.useStore()
   }
 }
