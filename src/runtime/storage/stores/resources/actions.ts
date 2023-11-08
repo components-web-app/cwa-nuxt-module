@@ -219,8 +219,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
       resourcesState.current.currentIds = currentIds || []
-      // todo: test
-      resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(mapping => resourcesState.current.currentIds.includes(mapping.publishedIri) || resourcesState.current.currentIds.includes(mapping.draftIri))
+      // do not clear mapping relating to 'current' as this will clear too early loading new pages
+      // other methods keep publishable mapping in sync with the resources we have
     },
     clearResources (): void {
       resourcesState.current.byId = {}
