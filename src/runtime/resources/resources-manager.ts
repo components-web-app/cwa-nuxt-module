@@ -9,8 +9,8 @@ import type {
   SaveResourceEvent
 } from '../storage/stores/resources/actions'
 import type { ErrorStore } from '../storage/stores/error/error-store'
-import type { CwaResource } from './resource-utils'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
+import type { CwaResource } from './resource-utils'
 
 export interface ApiResourceEvent {
   endpoint: string
@@ -18,11 +18,11 @@ export interface ApiResourceEvent {
   source?: string
 }
 
-interface RequestHeaders extends Record<string, string> {}
+interface RequestHeaders extends Record<string, string> { }
 
 interface RequestOptions {
   headers: RequestHeaders
-  method: 'POST'|'PATCH'
+  method: 'POST' | 'PATCH'
 }
 
 export class ResourcesManager {
@@ -91,7 +91,7 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [ string, any ]) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, any]) {
     if (event.source) {
       this.requestsInProgress[event.source] = args
     }
@@ -126,7 +126,7 @@ export class ResourcesManager {
   }
 
   // @internal - just used in reset-password.ts - should be private and refactored for that use case
-  public saveResource (event: SaveResourceEvent|SaveNewResourceEvent) {
+  public saveResource (event: SaveResourceEvent | SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
 
@@ -134,7 +134,7 @@ export class ResourcesManager {
     return this.resourcesStore.deleteResource(event)
   }
 
-  private requestOptions (method: 'POST'|'PATCH'): RequestOptions {
+  private requestOptions (method: 'POST' | 'PATCH'): RequestOptions {
     const headers: {
       accept: string
       path?: string

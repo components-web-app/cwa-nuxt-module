@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createFetchError } from 'ofetch'
-import state, { ErrorType } from './state'
+import state from './state'
 import getters from './getters'
 
 describe('Errors -> error', () => {
