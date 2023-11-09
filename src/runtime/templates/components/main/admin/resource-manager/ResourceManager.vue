@@ -60,8 +60,11 @@ function onContextMenu (e: PointerEvent) {
     isOpen.value = false
     return
   }
+  if (!$cwa.admin.isEditing) {
+    return
+  }
   e.preventDefault()
-  $cwa.admin.isEditing && openContext(pos)
+  openContext(pos)
 }
 
 function clickHandler (e: MouseEvent) {

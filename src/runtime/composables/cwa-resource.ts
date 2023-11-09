@@ -44,6 +44,7 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   }
 
   return {
+    $cwa,
     manager,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
     getResource: () => computed(() => $cwa.resources.getResource(iri.value).value),
