@@ -22,11 +22,11 @@
     <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />
     <OutdatedContentNotice class="cwa-absolute cwa-top-full cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-10" />
   </div>
-  <div v-if="$cwa.resourcesManager.hasErrors" class="cwa-absolute cwa-right-0 cwa-min-w-[300px] cwa-top-30 cwa-dark-blur cwa-z-50">
+  <ul v-if="$cwa.resourcesManager.hasErrors" class="cwa-absolute cwa-right-0 cwa-min-w-[300px] cwa-top-30 cwa-dark-blur cwa-z-50">
     <li v-for="error in $cwa.resourcesManager.errors" :key="error.timestamp" @click="$cwa.resourcesManager.removeError(error.timestamp)">
-      {{ error.detail }}
+      <pre>{{ error }}</pre>
     </li>
-  </div>
+  </ul>
 </template>
 
 <script setup lang="ts">

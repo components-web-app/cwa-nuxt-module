@@ -1,6 +1,6 @@
 <template>
-  <article class="prose prose-stone max-w-none">
-    <TipTapHtmlEditor v-if="showEditor" v-model="resourceModel.model.value" class="html-content" />
+  <article class="prose prose-stone max-w-none min-h-[20px]">
+    <TipTapHtmlEditor v-if="showEditor" ref="editorComponent" v-model="resourceModel.model.value" class="html-content" />
     <div v-else ref="htmlContainer" class="html-content" v-html="htmlContent" />
   </article>
 </template>
@@ -9,9 +9,11 @@
 import { computed, nextTick, ref, toRef, watch } from 'vue'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource, useCwaResourceModel, useHtmlContent } from '#imports'
+import TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
 
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
+const editorComponent = ref<typeof TipTapHtmlEditor|undefined>()
 
 const { getResource, exposeMeta, $cwa, manageable } = useCwaResource(iriRef, {
   styles: {
@@ -32,6 +34,16 @@ const htmlContent = computed<string>(() => (resource.value.data?.html || '<div><
 useHtmlContent(htmlContainer)
 
 const resourceModel = useCwaResourceModel<string>(iriRef, 'html')
+
+watch(editorComponent, async (newValue) => {
+  await nextTick()
+  if (!newValue) {
+    return
+  }
+  newValue.editor.chain().focus('end').run()
+}, {
+  flush: 'post'
+})
 
 watch([showEditor, resourceModel.model], async () => {
   await nextTick()

@@ -56,7 +56,7 @@ import type { Editor } from '@tiptap/core'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
-  modelValue: string|null
+  modelValue: string|null|undefined
 }>()
 
 const emit = defineEmits(['update:modelValue'])
@@ -108,8 +108,12 @@ watch(value, (newValue) => {
     return
   }
 
-  editor.value.commands.setContent(newValue, false)
+  editor.value.commands.setContent(newValue || null, false)
 }, {
   immediate: true
+})
+
+defineExpose({
+  editor
 })
 </script>
