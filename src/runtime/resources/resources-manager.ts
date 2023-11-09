@@ -1,4 +1,5 @@
 import { computed, reactive, watch } from 'vue'
+import type { FetchError } from 'ofetch'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -7,31 +8,35 @@ import type {
   SaveNewResourceEvent,
   SaveResourceEvent
 } from '../storage/stores/resources/actions'
+import type { ErrorStore } from '../storage/stores/error/error-store'
+import type { CwaErrorEvent } from '../storage/stores/error/state'
 import type { CwaResource } from './resource-utils'
 
-interface ApiResourceEvent {
+export interface ApiResourceEvent {
   endpoint: string
   data: any
   source?: string
 }
 
-interface RequestHeaders extends Record<string, string> {}
+interface RequestHeaders extends Record<string, string> { }
 
 interface RequestOptions {
   headers: RequestHeaders
-  method: 'POST'|'PATCH'
+  method: 'POST' | 'PATCH'
 }
 
 export class ResourcesManager {
   private cwaFetch: CwaFetch
   private resourcesStoreDefinition: ResourcesStore
   private fetchStatusManager: FetchStatusManager
+  private errorStoreDefinition: ErrorStore
   private requestsInProgress = reactive<{ [id: string]: ApiResourceEvent }>({})
 
-  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager) {
+  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager, errorStoreDefinition: ErrorStore) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
     this.fetchStatusManager = fetchStatusManager
+    this.errorStoreDefinition = errorStoreDefinition
   }
 
   public mergeNewResources () {
@@ -86,16 +91,21 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [ string, any ]) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, any]) {
     if (event.source) {
       this.requestsInProgress[event.source] = args
     }
+
+    this.errorStore.removeByEndpoint(args[0])
+
     try {
       const resource = await this.cwaFetch.fetch<CwaResource>(...args)
       this.saveResource({
         resource
       })
       return resource
+    } catch (err) {
+      this.errorStore.error(event, err as FetchError<any>)
     } finally {
       if (event.source) {
         delete this.requestsInProgress[event.source]
@@ -103,8 +113,20 @@ export class ResourcesManager {
     }
   }
 
+  public get errors (): CwaErrorEvent[] {
+    return this.errorStore.getErrors
+  }
+
+  public get hasErrors (): boolean {
+    return this.errorStore.hasErrors
+  }
+
+  public removeError (id: number) {
+    this.errorStore.removeById(id)
+  }
+
   // @internal - just used in reset-password.ts - should be private and refactored for that use case
-  public saveResource (event: SaveResourceEvent|SaveNewResourceEvent) {
+  public saveResource (event: SaveResourceEvent | SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
 
@@ -112,7 +134,7 @@ export class ResourcesManager {
     return this.resourcesStore.deleteResource(event)
   }
 
-  private requestOptions (method: 'POST'|'PATCH'): RequestOptions {
+  private requestOptions (method: 'POST' | 'PATCH'): RequestOptions {
     const headers: {
       accept: string
       path?: string
@@ -134,5 +156,9 @@ export class ResourcesManager {
 
   private get resourcesStore () {
     return this.resourcesStoreDefinition.useStore()
+  }
+
+  private get errorStore () {
+    return this.errorStoreDefinition.useStore()
   }
 }
