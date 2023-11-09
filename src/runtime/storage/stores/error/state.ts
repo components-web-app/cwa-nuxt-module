@@ -14,14 +14,23 @@ export enum ErrorType {
   UNKNOWN = 'UNKNOWN',
 }
 
-export interface CwaErrorEvent {
-    event: ApiResourceEvent
-    statusCode: number|undefined
-    type: ErrorType
-    detail: string
-    violations: CwaViolationError[]
-    timestamp: number
+interface CwaBaseErrorEvent {
+  event: ApiResourceEvent
+  detail: string
+  violations: CwaViolationError[]
+  timestamp: number
 }
+
+interface CwaResolvedErrorEvent extends CwaBaseErrorEvent {
+  type: Exclude<ErrorType, ErrorType.NETWORK>
+  statusCode: number
+}
+
+interface CwaNetworkErrorEvent extends CwaBaseErrorEvent {
+  type: ErrorType.NETWORK
+}
+
+export type CwaErrorEvent = CwaNetworkErrorEvent|CwaResolvedErrorEvent
 
 export interface CwaErrorStateInterface {
   byId: {
