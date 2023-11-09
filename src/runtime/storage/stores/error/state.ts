@@ -20,21 +20,21 @@ export interface CwaErrorEvent {
     type: ErrorType
     detail: string
     violations: CwaViolationError[]
-    timestamp: Date
+    timestamp: number
 }
 
 export interface CwaErrorStateInterface {
   byId: {
     [key: number]: CwaErrorEvent
   },
-  lastErrorId: number|null
-  allIds: Array<number>
+  allIds: Array<number>,
+  allEndpoints: Map<string, number>
 }
 
 export default function (): CwaErrorStateInterface {
   return reactive({
     byId: {},
-    lastErrorId: null,
-    allIds: []
+    allIds: [],
+    allEndpoints: new Map()
   })
 }

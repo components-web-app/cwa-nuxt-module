@@ -95,6 +95,9 @@ export class ResourcesManager {
     if (event.source) {
       this.requestsInProgress[event.source] = args
     }
+
+    this.errorStore.removeByEndpoint(args[0])
+
     try {
       const resource = await this.cwaFetch.fetch<CwaResource>(...args)
       this.saveResource({
@@ -110,12 +113,16 @@ export class ResourcesManager {
     }
   }
 
-  public errors (): CwaErrorEvent[] {
+  public get errors (): CwaErrorEvent[] {
     return this.errorStore.getErrors
   }
 
-  public hasErrors (): boolean {
+  public get hasErrors (): boolean {
     return this.errorStore.hasErrors
+  }
+
+  public removeError (id: number) {
+    this.errorStore.removeById(id)
   }
 
   // @internal - just used in reset-password.ts - should be private and refactored for that use case

@@ -5,6 +5,9 @@ import { ErrorType } from './state'
 
 export interface CwaErrorActionsInterface {
   error(event: ApiResourceEvent, error: FetchError): void
+  clear(): void
+  removeById(id: number): void
+  removeByEndpoint(endpoint: string): void
 }
 
 function getErrorType (type: string): ErrorType {
@@ -22,9 +25,10 @@ function getErrorType (type: string): ErrorType {
 
 export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInterface {
   return {
+    // use endpoint to make error be replace
     error (event: ApiResourceEvent, error: FetchError) {
-      const id = errorState.lastErrorId === null ? 0 : errorState.lastErrorId++
-      const err: Partial<CwaErrorEvent> = { event, statusCode: error.statusCode, timestamp: new Date() }
+      const id = new Date().getTime()
+      const err: Partial<CwaErrorEvent> = { event, statusCode: error.statusCode, timestamp: id }
 
       if (error.cause) {
         err.type = getErrorType(error.cause.constructor.name)
@@ -39,9 +43,34 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
         err.detail = error.data
       }
 
-      errorState.lastErrorId = id
       errorState.byId[id] = err as CwaErrorEvent
       errorState.allIds.push(id)
+      errorState.allEndpoints.set(event.endpoint, id)
+    },
+    clear () {
+      errorState.allIds = []
+      errorState.allEndpoints.clear()
+      errorState.byId = {}
+    },
+    removeById (id: number) {
+      const err = errorState.byId[id]
+      if (!err) {
+        return
+      }
+
+      delete errorState.byId[id]
+      errorState.allIds.splice(errorState.allIds.indexOf(id), 1)
+      if (errorState.allEndpoints.has(err.event.endpoint)) {
+        errorState.allEndpoints.delete(err.event.endpoint)
+      }
+    },
+    removeByEndpoint (endpoint: string) {
+      if (!errorState.allEndpoints.has(endpoint)) {
+        return
+      }
+
+      const id = errorState.allEndpoints.get(endpoint)
+      this.removeById(id)
     }
   }
 }
