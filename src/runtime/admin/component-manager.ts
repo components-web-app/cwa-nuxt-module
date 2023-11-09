@@ -49,6 +49,10 @@ export default class ComponentManager {
     })
   }
 
+  public get isPopulating () {
+    return computed(() => !!this.lastClickTarget.value)
+  }
+
   public get currentStackItem () {
     return computed(() => {
       if (!this.showManager.value) {

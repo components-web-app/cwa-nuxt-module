@@ -25,6 +25,7 @@ const virtualElement = ref({ getBoundingClientRect: () => ({}) })
 const managerTabs = ref<typeof ManagerTabs|null>(null)
 const currentManagerTabs = ref<ManagerTab[]|undefined>()
 const cachedPosition = { top: 0, left: 0 }
+let mousedownTarget: null|EventTarget = null
 
 type ContextPosition = {
   top: number
@@ -67,9 +68,21 @@ function onContextMenu (e: PointerEvent) {
   openContext(pos)
 }
 
+function mousedownHandler (e: MouseEvent) {
+  mousedownTarget = e.target
+}
+
 function clickHandler (e: MouseEvent) {
+  // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
+  if (e.target !== mousedownTarget && !$cwa.admin.componentManager.isPopulating.value) {
+    return
+  }
   completeStack(e)
   $cwa.admin.componentManager.selectStackIndex(0)
+}
+
+function contextHandler (e: MouseEvent) {
+  completeStack(e)
 }
 
 function completeStack (e: MouseEvent) {
@@ -94,13 +107,15 @@ watch(current, (newCurrent, oldCurrent) => {
 })
 
 onMounted(() => {
+  window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('click', clickHandler)
-  window.addEventListener('contextmenu', completeStack)
+  window.addEventListener('contextmenu', contextHandler)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('mousedown', mousedownHandler)
   window.removeEventListener('click', clickHandler)
-  window.removeEventListener('contextmenu', completeStack)
+  window.removeEventListener('contextmenu', contextHandler)
 })
 
 const showSpacer = computed(() => {

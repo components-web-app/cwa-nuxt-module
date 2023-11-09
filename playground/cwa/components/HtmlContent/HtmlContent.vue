@@ -6,14 +6,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource, useCwaResourceModel, useHtmlContent } from '#imports'
 
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
 
-const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, {
+const { getResource, exposeMeta, $cwa, manageable } = useCwaResource(iriRef, {
   styles: {
     multiple: true,
     classes: {
@@ -21,14 +21,22 @@ const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, {
     }
   }
 })
+defineExpose(exposeMeta)
+
 const resource = getResource()
 
 const htmlContainer = ref<null|HTMLElement>(null)
-const showEditor = computed(() => $cwa.admin.isEditing)
+const showEditor = computed(() => $cwa.admin.isEditing && $cwa.admin.componentManager.currentIri.value === iriRef.value)
 
 const htmlContent = computed<string>(() => (resource.value.data?.html || '<div></div>'))
 useHtmlContent(htmlContainer)
+
 const resourceModel = useCwaResourceModel<string>(iriRef, 'html')
 
-defineExpose(exposeMeta)
+watch([showEditor, resourceModel.model], async () => {
+  await nextTick()
+  manageable?.manager.updateFocusSize()
+}, {
+  flush: 'post'
+})
 </script>

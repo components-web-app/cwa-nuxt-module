@@ -83,6 +83,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateWindowSize)
   unwatchResource && unwatchResource()
 })
+
+defineExpose({
+  updateWindowSize
+})
 </script>
 
 <template>

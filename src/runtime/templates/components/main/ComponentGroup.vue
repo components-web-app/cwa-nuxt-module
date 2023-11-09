@@ -41,7 +41,7 @@ import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
 
 const iri = ref<string|undefined>()
 const $cwa = useCwa()
-const $manager = useCwaResourceManageable(iri)
+const $manageable = useCwaResourceManageable(iri)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 
@@ -94,7 +94,7 @@ const managerWatchCallback: WatchCallback<ShallowUnwrapRef<watcherParams>> = ([p
     return
   }
   iri.value = resource.data['@id']
-  iri.value && $manager.manager.init(iri)
+  iri.value && $manageable.manager.init(iri)
 }
 
 onMounted(() => {

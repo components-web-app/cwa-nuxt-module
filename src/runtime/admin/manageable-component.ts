@@ -148,6 +148,13 @@ export default class ManageableComponent {
     this.scrollIntoView()
   }
 
+  public updateFocusSize () {
+    if (!this.focusComponent) {
+      return
+    }
+    this.focusComponent._container._vnode.component.exposed.updateWindowSize()
+  }
+
   private scrollIntoView () {
     let element: undefined|HTMLElement
     let elementOutOfView = false
