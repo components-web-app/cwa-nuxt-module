@@ -1,5 +1,5 @@
 <template>
-  <button :class="[...bubbleMenuButtonClasses, editor.isActive(isActiveName, attributes) ? bubbleMenuActiveClasses : null ]" @click="doEditorChain">
+  <button class="px-1.5 py-1 content-center items-center" :class="[editor.isActive(isActiveName, attributes) ? bubbleMenuActiveClasses : null ]" @click="doEditorChain">
     <slot />
   </button>
 </template>
@@ -20,7 +20,6 @@ const props = defineProps<{
   isActiveName: string
 }>()
 
-const bubbleMenuButtonClasses = ['px-1.5 py-0.5']
 const bubbleMenuActiveClasses = ['bg-black text-white']
 
 const attributes = computed(() => {

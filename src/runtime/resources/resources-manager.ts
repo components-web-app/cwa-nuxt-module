@@ -1,5 +1,6 @@
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
+import { set, unset } from 'lodash-es'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -30,13 +31,19 @@ export class ResourcesManager {
   private resourcesStoreDefinition: ResourcesStore
   private fetchStatusManager: FetchStatusManager
   private errorStoreDefinition: ErrorStore
-  private requestsInProgress = reactive<{ [id: string]: ApiResourceEvent }>({})
+  private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, {}] } }>({})
+  private reqCount = ref(0)
 
   constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager, errorStoreDefinition: ErrorStore) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
     this.fetchStatusManager = fetchStatusManager
     this.errorStoreDefinition = errorStoreDefinition
+    watch(this.reqCount, (newValue) => {
+      if (newValue >= 10000) {
+        this.reqCount.value = 0
+      }
+    })
   }
 
   public mergeNewResources () {
@@ -44,7 +51,7 @@ export class ResourcesManager {
   }
 
   public get requestCount () {
-    return computed(() => Object.values(this.requestsInProgress).length)
+    return computed(() => Object.values(this.requestsInProgress).reduce((count, reqs) => count + Object.values(reqs).length, 0))
   }
 
   public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
@@ -52,8 +59,8 @@ export class ResourcesManager {
       if (!this.requestsInProgress.value) {
         return false
       }
-      for (const apiResourceEvent of Object.values(this.requestsInProgress.value)) {
-        if (apiResourceEvent.endpoint === endpoint && apiResourceEvent.data?.[property] && (!source || apiResourceEvent.source !== source)) {
+      for (const req of Object.values(this.requestsInProgress)) {
+        if (req.event.endpoint === endpoint && req.event.data?.[property] && (!source || req.event.source !== source)) {
           return true
         }
       }
@@ -76,7 +83,7 @@ export class ResourcesManager {
   }
 
   public createResource (event: ApiResourceEvent) {
-    const args = [
+    const args: [string, {}] = [
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
     ]
@@ -84,17 +91,17 @@ export class ResourcesManager {
   }
 
   public updateResource (event: ApiResourceEvent) {
-    const args = [
+    const args: [string, {}] = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
     return this.doResourceRequest(event, args)
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, any]) {
-    if (event.source) {
-      this.requestsInProgress[event.source] = args
-    }
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, {}]) {
+    const source = event.source || 'unknown'
+    const id = ++this.reqCount.value
+    set(this.requestsInProgress, [source, id], { event, args })
 
     this.errorStore.removeByEndpoint(args[0])
 
@@ -107,9 +114,7 @@ export class ResourcesManager {
     } catch (err) {
       this.errorStore.error(event, err as FetchError<any>)
     } finally {
-      if (event.source) {
-        delete this.requestsInProgress[event.source]
-      }
+      unset(this.requestsInProgress, [source, id])
     }
   }
 

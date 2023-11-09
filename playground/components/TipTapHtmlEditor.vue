@@ -1,7 +1,7 @@
 <template>
   <div v-if="editor">
     <bubble-menu
-      class="bg-stone-700 text-stone-100 rounded overflow-hidden"
+      class="bg-stone-700 text-stone-100 rounded overflow-hidden text-sm"
       :tippy-options="{ duration: 150, animation: 'fade' }"
       :editor="editor"
       :update-delay="0"
@@ -18,9 +18,6 @@
       </BubbleMenuButton>
       <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleItalic', 'italic')">
         Italic
-      </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleStrike', 'strike')">
-        Strike
       </BubbleMenuButton>
     </bubble-menu>
 
