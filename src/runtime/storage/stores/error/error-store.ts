@@ -9,8 +9,10 @@ import type { CwaErrorStateInterface } from './state'
 import CwaErrorState from './state'
 import type { CwaErrorActionsInterface } from './actions'
 import CwaErrorActions from './actions'
+import CwaErrorGetters from './getters'
+import type { CwaErrorsGettersInterface } from './getters'
 
-export interface CwaErrorInterface extends CwaErrorStateInterface, CwaErrorActionsInterface {}
+export interface CwaErrorInterface extends CwaErrorStateInterface, CwaErrorActionsInterface, CwaErrorsGettersInterface {}
 export interface CwaErrorStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.error`, CwaErrorInterface> {}
 export interface CwaErrorStoreInterface extends CwaPiniaStoreInterface<`${string}.error`, CwaErrorInterface> {}
 
@@ -20,8 +22,10 @@ export class ErrorStore implements CwaStore {
   constructor (storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.error`, () => {
       const errorState = CwaErrorState()
+      const getters = CwaErrorGetters(errorState)
       return {
         ...errorState,
+        ...getters,
         ...CwaErrorActions(errorState)
       }
     })

@@ -10,6 +10,7 @@ import type {
 } from '../storage/stores/resources/actions'
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaResource } from './resource-utils'
+import type { CwaErrorEvent } from '../storage/stores/error/state'
 
 export interface ApiResourceEvent {
   endpoint: string
@@ -101,13 +102,20 @@ export class ResourcesManager {
       })
       return resource
     } catch (err) {
-      debugger
       this.errorStore.error(event, err as FetchError<any>)
     } finally {
       if (event.source) {
         delete this.requestsInProgress[event.source]
       }
     }
+  }
+
+  public errors (): CwaErrorEvent[] {
+    return this.errorStore.getErrors
+  }
+
+  public hasErrors (): boolean {
+    return this.errorStore.hasErrors
   }
 
   // @internal - just used in reset-password.ts - should be private and refactored for that use case

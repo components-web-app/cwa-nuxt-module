@@ -27,14 +27,14 @@ export interface CwaErrorStateInterface {
   byId: {
     [key: number]: CwaErrorEvent
   },
-  lastErrorId: number
+  lastErrorId: number|null
   allIds: Array<number>
 }
 
 export default function (): CwaErrorStateInterface {
   return reactive({
     byId: {},
-    lastErrorId: 0,
+    lastErrorId: null,
     allIds: []
   })
 }

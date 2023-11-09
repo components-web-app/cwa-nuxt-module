@@ -20,10 +20,10 @@ function getErrorType (type: string): ErrorType {
   }
 }
 
-export default function(errorState: CwaErrorStateInterface): CwaErrorActionsInterface {
+export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInterface {
   return {
     error (event: ApiResourceEvent, error: FetchError) {
-      const id = errorState.lastErrorId++
+      const id = errorState.lastErrorId === null ? 0 : errorState.lastErrorId++
       const err: Partial<CwaErrorEvent> = { event, statusCode: error.statusCode, timestamp: new Date() }
 
       if (error.cause) {
@@ -39,6 +39,7 @@ export default function(errorState: CwaErrorStateInterface): CwaErrorActionsInte
         err.detail = error.data
       }
 
+      errorState.lastErrorId = id
       errorState.byId[id] = err as CwaErrorEvent
       errorState.allIds.push(id)
     }
