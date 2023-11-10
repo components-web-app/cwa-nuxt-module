@@ -7,7 +7,7 @@ const $cwa = useCwa()
 </script>
 
 <template>
-  <ul v-if="$cwa.resourcesManager.hasErrors" class="cwa-absolute cwa-right-0 cwa-min-w-[300px] cwa-top-30 cwa-dark-blur cwa-z-50 cwa-max-w-lg cwa-max-h-96 cwa-overflow-auto cwa-p-2 cwa-flex cwa-col cwa-space-y-2">
+  <ul v-if="$cwa.resourcesManager.hasErrors" class="cwa-absolute cwa-right-0 cwa-min-w-[300px] cwa-top-30 cwa-dark-blur cwa-z-50 cwa-max-w-lg cwa-max-h-96 cwa-overflow-auto cwa-p-2 cwa-flex cwa-col cwa-space-y-2" @click.stop>
     <li v-for="error in $cwa.resourcesManager.errors" :key="error.timestamp" class="cwa-bg-stone-700">
       <div class="p-2">
         <ul v-if="error.type === ErrorType.VALIDATION">

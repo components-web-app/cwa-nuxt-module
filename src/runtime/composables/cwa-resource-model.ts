@@ -1,4 +1,4 @@
-import { computed, getCurrentInstance, ref, watchEffect } from 'vue'
+import { computed, getCurrentInstance, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -92,22 +92,22 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     localValue.value = undefined
   }
 
-  watchEffect(() => {
-    if (localValue.value === undefined) {
+  watch(localValue, (newLocalValue) => {
+    if (newLocalValue === undefined) {
       return
     }
     if (debounced) {
       debounced.cancel()
     }
     pendingSubmit.value = true
-    debounced = debounce(() => updateResource(localValue.value), debounceTime)
+    debounced = debounce(() => updateResource(newLocalValue), debounceTime)
     debounced()
   })
 
   let longWaitTimeoutFn: ReturnType<typeof setTimeout>|undefined
 
-  watchEffect(() => {
-    if (!isBusy.value) {
+  watch(isBusy, (newBusy) => {
+    if (!newBusy) {
       isLongWait.value = false
       if (longWaitTimeoutFn) {
         clearTimeout(longWaitTimeoutFn)
@@ -129,12 +129,14 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     applyPostfix.value = $cwa.admin.componentManager.forcePublishedVersion.value !== undefined && publishableState === true
   })
 
-  watchEffect(() => {
-    if (!applyPostfix.value) {
+  watch(applyPostfix, (newApplyPostfix) => {
+    if (!newApplyPostfix) {
       postfix.value = ''
       return
     }
     postfix.value = $cwa.admin.componentManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
+  }, {
+    immediate: true
   })
 
   return {

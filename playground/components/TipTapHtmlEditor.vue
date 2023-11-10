@@ -50,7 +50,7 @@ import {
   EditorContent,
   FloatingMenu
 } from '@tiptap/vue-3'
-import { computed, toRef, watch, watchEffect } from 'vue'
+import { computed, toRef, watch } from 'vue'
 import type { UnionCommands } from '@tiptap/core/src/types'
 import type { Editor } from '@tiptap/core'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
@@ -62,6 +62,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
+// reactive updating of the model
 const value = computed({
   get () {
     return props.modelValue
@@ -71,17 +72,7 @@ const value = computed({
   }
 })
 
-const buttonBubbleMenuProps = computed(() => (call: UnionCommands, isActiveName: string, attributes?: {}) => {
-  return {
-    editor: editor.value as Editor,
-    editorFn: {
-      call,
-      attributes
-    },
-    isActiveName
-  }
-})
-
+// create the editor
 const editor = useEditor({
   content: value.value,
   extensions: [
@@ -97,12 +88,13 @@ const editor = useEditor({
   editable: !props.disabled
 })
 
-watch(value, (newValue) => {
+// match the editor value to the modelValue prop
+watch(value, () => {
   if (!editor.value) {
     return
   }
   // HTML
-  const isSame = editor.value.getHTML() === newValue
+  const isSame = editor.value.getHTML() === value.value
 
   // JSON
   // const isSame = JSON.stringify(this.editor.getJSON()) === JSON.stringify(value)
@@ -110,14 +102,32 @@ watch(value, (newValue) => {
     return
   }
 
-  editor.value.commands.setContent(newValue || null, false)
-}, {
-  immediate: true
+  editor.value.commands.setContent(value.value || null, false)
 })
 
+// Toggle disabled prop and focus when enabled
 const disabledRef = toRef(props, 'disabled')
-watchEffect(() => {
-  editor.value?.setEditable(!disabledRef.value)
+watch(disabledRef, () => {
+  if (!editor.value) {
+    return
+  }
+  const editable = !disabledRef.value
+  editor.value.setEditable(editable)
+  if (editable) {
+    editor.value.chain().focus(null, { scrollIntoView: false }).run()
+  }
+})
+
+// Common menu item props
+const buttonBubbleMenuProps = computed(() => (call: UnionCommands, isActiveName: string, attributes?: {}) => {
+  return {
+    editor: editor.value as Editor,
+    editorFn: {
+      call,
+      attributes
+    },
+    isActiveName
+  }
 })
 
 defineExpose({
