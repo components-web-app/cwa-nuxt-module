@@ -35,7 +35,8 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
         err.detail = (error.cause as Error).message
       } else if (error.data?.['hydra:description']) {
         err.type = getErrorType(error.data['@type'])
-        err.detail = error.data.detail
+        // todo: hydra:description deprecated
+        err.detail = error.data.detail || error.data['hydra:description']
         err.violations = error.data.violations?.map((e: any) => ({ property: e.propertyPath, message: e.message }))
       } else {
         err.type = ErrorType.SERVER

@@ -1,27 +1,56 @@
 <template>
-  <article class="prose prose-stone max-w-none border-4 p-2 border-black">
-    <TipTapHtmlEditor v-if="showQuill" v-model="resourceModel.model.value" class="html-content" />
-    <div v-else ref="htmlContainer" class="html-content" v-html="htmlContent" />
+  <article class="prose prose-stone max-w-none min-h-[20px] bg-gray-900 px-4 pt-4 pb-0 border-2 border-dotted border-stone-200 text-stone-100 prose-headings:text-white prose-a:text-blue-600">
+    <nuxt-img src="/logo.svg" placeholder />
+    <TipTapHtmlEditor v-if="$cwa.admin.isEditing" ref="editorComponent" v-model="resourceModel.model.value" :disabled="disableEditor" />
+    <div v-else ref="htmlContainer" v-html="htmlContent" />
   </article>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef, watch, watchEffect } from 'vue'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource, useCwaResourceModel, useHtmlContent } from '#imports'
+import TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
 
+// Setup the resource
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
+const { getResource, exposeMeta, $cwa, manageable } = useCwaResource(iriRef, {
+  styles: {
+    multiple: true,
+    classes: {
+      'Big Text': ['text-2xl']
+    }
+  }
+})
+defineExpose(exposeMeta)
 
-const { getResource, exposeMeta } = useCwaResource(iriRef)
 const resource = getResource()
 
+// HTML Content composable, converting anchors to nuxt link and link enable/disable with editable status
 const htmlContainer = ref<null|HTMLElement>(null)
-const showQuill = ref(false)
 
 const htmlContent = computed<string>(() => (resource.value.data?.html || '<div></div>'))
 useHtmlContent(htmlContainer)
-const resourceModel = useCwaResourceModel<string>(iriRef, 'html')
 
-defineExpose(exposeMeta)
+// This deals with the HTML editor
+const resourceModel = useCwaResourceModel<string>(iriRef, 'html')
+const editorComponent = ref<typeof TipTapHtmlEditor|undefined>()
+const disableEditor = computed(() => !$cwa.admin.isEditing || $cwa.admin.componentManager.currentIri.value !== iriRef.value)
+
+// instantly update focus when the UI sze changes
+watch([disableEditor, resourceModel.model], async () => {
+  await nextTick()
+  manageable?.manager.updateFocusSize()
+}, {
+  flush: 'post'
+})
+
+// when the editor is enabled, focus it immediately
+watchEffect(async () => {
+  if (editorComponent.value && !disableEditor.value) {
+    await nextTick()
+    editorComponent.value.editor.chain().focus(null, { scrollIntoView: false }).run()
+  }
+})
 </script>
