@@ -50,13 +50,14 @@ import {
   EditorContent,
   FloatingMenu
 } from '@tiptap/vue-3'
-import { computed, watch } from 'vue'
+import { computed, toRef, watch, watchEffect } from 'vue'
 import type { UnionCommands } from '@tiptap/core/src/types'
 import type { Editor } from '@tiptap/core'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
-  modelValue: string|null|undefined
+  modelValue: string|null|undefined,
+  disabled?: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
@@ -92,7 +93,8 @@ const editor = useEditor({
 
     // JSON
     // this.$emit('update:modelValue', this.editor.getJSON())
-  }
+  },
+  editable: !props.disabled
 })
 
 watch(value, (newValue) => {
@@ -111,6 +113,11 @@ watch(value, (newValue) => {
   editor.value.commands.setContent(newValue || null, false)
 }, {
   immediate: true
+})
+
+const disabledRef = toRef(props, 'disabled')
+watchEffect(() => {
+  editor.value?.setEditable(!disabledRef.value)
 })
 
 defineExpose({
