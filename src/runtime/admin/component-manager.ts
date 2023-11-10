@@ -136,8 +136,7 @@ export default class ComponentManager {
 
   public replaceCurrentStackItem (resourceStackItem: ResourceStackItem) {
     // has to be set with the equals otherwise we lose reactivity and not watchers triggered
-    this.currentResourceStack.value.shift()
-    this.currentResourceStack.value.unshift(resourceStackItem)
+    this.currentResourceStack.value.splice(0, 1, resourceStackItem)
     this.replaceCounter.value++
   }
 

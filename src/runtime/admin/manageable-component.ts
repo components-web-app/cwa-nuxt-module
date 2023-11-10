@@ -1,7 +1,7 @@
 import {
   computed,
   createApp,
-  markRaw,
+  markRaw, nextTick,
   ref,
   watch
 } from 'vue'
@@ -79,7 +79,7 @@ export default class ManageableComponent {
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
       flush: 'post'
     })
-    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === newIri) {
+    if (this.$cwa.admin.componentManager.currentIri.value === newIri) {
       this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
     }
   }
@@ -128,7 +128,7 @@ export default class ManageableComponent {
     }
   }
 
-  private currentStackItemListener (stackItem: ResourceStackItem|undefined) {
+  private async currentStackItemListener (stackItem: ResourceStackItem|undefined) {
     this.clearFocusComponent()
     if (!this.currentIri?.value) {
       return
@@ -137,6 +137,8 @@ export default class ManageableComponent {
       return
     }
 
+    // when changing UI component, next tick seems necessary for allowing dom to update first
+    await nextTick()
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
       domElements: this.domElements
@@ -148,6 +150,7 @@ export default class ManageableComponent {
     this.scrollIntoView()
   }
 
+  // external api to manually trigger window size update
   public updateFocusSize () {
     if (!this.focusComponent) {
       return

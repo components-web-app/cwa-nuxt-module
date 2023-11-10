@@ -47,8 +47,8 @@ watch([disableEditor, resourceModel.model], async () => {
 
 // when the editor is enabled, focus it immediately
 watchEffect(async () => {
+  await nextTick()
   if (editorComponent.value && !disableEditor.value) {
-    await nextTick()
     editorComponent.value.editor.chain().focus(null, { scrollIntoView: false }).run()
   }
 })

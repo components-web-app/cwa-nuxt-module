@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import type { ComputedRef, Ref, WatchStopHandle } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
@@ -9,6 +9,7 @@ const props = defineProps<{
   iri: Ref<string>
   domElements: ComputedRef<HTMLElement[]>
 }>()
+const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
 
 const windowSize = ref({ width: 0, height: 0 })
@@ -21,7 +22,7 @@ const position = computed(() => {
     bottom: 0,
     windowSize: windowSize.value
   }
-  for (const domElement of props.domElements.value) {
+  for (const domElement of domElements.value) {
     if (domElement.nodeType !== 1) {
       continue
     }
@@ -73,7 +74,7 @@ function updateWindowSize () {
   }
 }
 
-let unwatchResource
+let unwatchResource: WatchStopHandle|undefined
 onMounted(() => {
   window.addEventListener('resize', updateWindowSize, false)
   unwatchResource = watch(resourceData, updateWindowSize, { deep: true, flush: 'post' })
