@@ -1,4 +1,4 @@
-import { computed, getCurrentInstance, ref, watch } from 'vue'
+import { computed, getCurrentInstance, ref, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -77,7 +77,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       submittingValue.value = newLocalValue
     }
     pendingSubmit.value = false
-
     await $cwa.resourcesManager.updateResource({
       endpoint: endpoint.value,
       data: {
@@ -93,22 +92,22 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     localValue.value = undefined
   }
 
-  watch(localValue, (newLocalValue) => {
-    if (newLocalValue === undefined) {
+  watchEffect(() => {
+    if (localValue.value === undefined) {
       return
     }
     if (debounced) {
       debounced.cancel()
     }
     pendingSubmit.value = true
-    debounced = debounce(() => updateResource(newLocalValue), debounceTime)
+    debounced = debounce(() => updateResource(localValue.value), debounceTime)
     debounced()
   })
 
   let longWaitTimeoutFn: ReturnType<typeof setTimeout>|undefined
 
-  watch(isBusy, (newBusy) => {
-    if (!newBusy) {
+  watchEffect(() => {
+    if (!isBusy.value) {
       isLongWait.value = false
       if (longWaitTimeoutFn) {
         clearTimeout(longWaitTimeoutFn)
@@ -121,25 +120,21 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     }, longWaitThreshold)
   })
 
-  watch($cwa.admin.componentManager.forcePublishedVersion, (forcePublishable) => {
+  watchEffect(() => {
     if (!resource.value) {
       applyPostfix.value = false
       return
     }
     const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = forcePublishable !== undefined && publishableState === true
-  }, {
-    immediate: true
+    applyPostfix.value = $cwa.admin.componentManager.forcePublishedVersion.value !== undefined && publishableState === true
   })
 
-  watch(applyPostfix, (newApplyPostfix) => {
-    if (!newApplyPostfix) {
+  watchEffect(() => {
+    if (!applyPostfix.value) {
       postfix.value = ''
       return
     }
     postfix.value = $cwa.admin.componentManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
-  }, {
-    immediate: true
   })
 
   return {
