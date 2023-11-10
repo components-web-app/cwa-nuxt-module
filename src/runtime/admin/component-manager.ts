@@ -167,7 +167,7 @@ export default class ComponentManager {
   private listenCurrentIri () {
     watch(this.currentIri, (newIri, oldIri) => {
       if (newIri && oldIri) {
-        if ([this.resourcesStore.publishedToDraftIris[oldIri], this.resourcesStore.draftToPublishedIris[oldIri]].includes(newIri)) {
+        if (this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)) {
           return
         }
       }

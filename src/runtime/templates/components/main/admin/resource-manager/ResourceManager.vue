@@ -98,7 +98,7 @@ const showAdmin = computed(() => {
 })
 
 watch(current, (newCurrent, oldCurrent) => {
-  if (newCurrent?.iri === oldCurrent?.iri) {
+  if (oldCurrent && newCurrent && $cwa.resources.isIriPublishableEquivalent(oldCurrent.iri, newCurrent.iri)) {
     return
   }
   allTabsMeta.value = []
