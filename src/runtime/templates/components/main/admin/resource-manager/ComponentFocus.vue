@@ -4,17 +4,29 @@ import type { ComputedRef, Ref, WatchStopHandle } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
-const $cwa = useCwa()
 const props = defineProps<{
   iri: Ref<string>
   domElements: ComputedRef<HTMLElement[]>
 }>()
+const $cwa = useCwa()
+
 const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
-
+const canvas = ref<HTMLCanvasElement|undefined>()
 const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
 
-const position = computed(() => {
+const resource = computed(() => {
+  return $cwa.resources.getResource(iri.value).value
+})
+
+const resourceData = computed(() => resource.value?.data)
+
+const position = computed((): {
+  top: number
+  left: number
+  width: number
+  height: number
+} => {
   const clearCoords = {
     top: 999999999999,
     left: 99999999999,
@@ -22,6 +34,7 @@ const position = computed(() => {
     bottom: 0,
     windowSize: windowSize.value
   }
+
   for (const domElement of domElements.value) {
     if (domElement.nodeType !== 1) {
       continue
@@ -32,21 +45,29 @@ const position = computed(() => {
     clearCoords.right = Math.max(clearCoords.right, domRect.right)
     clearCoords.bottom = Math.max(clearCoords.bottom, domRect.bottom)
   }
+
   const addY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
   clearCoords.top += addY
   clearCoords.bottom += addY
+
   const addX = Math.max(document.body.scrollLeft, document.documentElement.scrollLeft)
   clearCoords.left += addX
   clearCoords.right += addX
-  return clearCoords
+
+  return {
+    top: clearCoords.top,
+    left: clearCoords.left,
+    width: clearCoords.right - clearCoords.left,
+    height: clearCoords.bottom - clearCoords.top
+  }
 })
 
 const cssStyle = computed(() => {
   return {
     top: `${position.value.top}px`,
     left: `${position.value.left}px`,
-    width: `${position.value.right - position.value.left}px`,
-    height: `${position.value.bottom - position.value.top}px`
+    width: `${position.value.width}px`,
+    height: `${position.value.height}px`
   }
 })
 
@@ -61,12 +82,6 @@ const borderColor = computed(() => {
   return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
 
-const resource = computed(() => {
-  return $cwa.resources.getResource(iri.value).value
-})
-
-const resourceData = computed(() => resource.value?.data)
-
 async function updateWindowSize () {
   await nextTick()
   windowSize.value = {
@@ -74,6 +89,38 @@ async function updateWindowSize () {
     height: window.innerHeight,
     timestamp: (new Date()).getTime()
   }
+  drawCanvas()
+}
+
+function drawCanvas () {
+  if (!canvas.value) {
+    return
+  }
+  const ctx = canvas.value.getContext('2d')
+  if (!ctx) {
+    return
+  }
+
+  const offset = 7
+  const width = Math.max(windowSize.value.width, document.body.clientWidth)
+  const height = Math.max(windowSize.value.height, document.body.clientHeight)
+  ctx.reset()
+
+  canvas.value.width = width
+  canvas.value.height = height
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'
+  ctx.beginPath()
+  ctx.rect(0, 0, width, height)
+  drawRoundedRect(ctx, position.value.left - offset, position.value.top - offset, position.value.width + (offset * 2), position.value.height + (offset * 2), 8)
+  ctx.fill()
+}
+
+function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, width:number, height:number, radius:number) {
+  ctx.moveTo(x, y + radius)
+  ctx.arcTo(x, y + height, x + radius, y + height, radius)
+  ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius)
+  ctx.arcTo(x + width, y, x + width - radius, y, radius)
+  ctx.arcTo(x, y, x, y + radius, radius)
 }
 
 let unwatchResource: WatchStopHandle|undefined
@@ -81,11 +128,13 @@ onMounted(() => {
   window.addEventListener('resize', updateWindowSize, false)
   unwatchResource = watch(resourceData, updateWindowSize, { deep: true, flush: 'post' })
   $cwa.admin.eventBus.on('componentMounted', updateWindowSize)
+  watch(canvas, newCanvas => newCanvas && drawCanvas())
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateWindowSize)
   unwatchResource && unwatchResource()
+  $cwa.admin.eventBus.off('componentMounted', updateWindowSize)
 })
 
 defineExpose({
@@ -95,14 +144,7 @@ defineExpose({
 
 <template>
   <client-only>
-    <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-[7px] cwa-outline-[200rem] cwa-rounded" :style="cssStyle">
-      <div :class="[borderColor]" class="cwa-animate-pulse cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
-    </div>
+    <canvas ref="canvas" class="cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
+    <div :class="[borderColor]" :style="cssStyle" class="cwa-animate-pulse cwa-absolute cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
   </client-only>
 </template>
-
-<style>
-.component-focus {
-  outline-color: rgba(0,0,0,.4);
-}
-</style>
