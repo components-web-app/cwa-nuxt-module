@@ -10,6 +10,3 @@
 .cwa-section {
   @apply cwa-p-4;
 }
-.cwa-border {
-  @apply cwa-border-medium cwa-border-solid;
-}

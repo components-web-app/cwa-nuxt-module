@@ -134,3 +134,9 @@ defineExpose({
   editor
 })
 </script>
+
+<style>
+.ProseMirror:focus {
+  outline: none;
+}
+</style>

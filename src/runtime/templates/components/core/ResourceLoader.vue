@@ -16,7 +16,14 @@
       The component `{{ resourceUiComponent }}` for resource `{{ iri }}` cannot be resolved
     </p>
   </CwaUiAlertWarning>
-  <component v-bind="$attrs" :is="resolvedComponent" v-else-if="!hasError" :iri="iri" :class="resourceClassNames" />
+  <component
+    v-bind="$attrs"
+    :is="resolvedComponent"
+    v-else-if="!hasError"
+    ref="resourceComponent"
+    :iri="iri"
+    :class="resourceClassNames"
+  />
 </template>
 
 <script setup lang="ts">
@@ -42,6 +49,7 @@ const props = withDefaults(
 )
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
+const resourceComponent = ref()
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
@@ -157,6 +165,10 @@ onMounted(() => {
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true
   })
+})
+
+defineExpose({
+  resourceComponent
 })
 
 // TODO - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft

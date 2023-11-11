@@ -1,21 +1,28 @@
 <template>
   <!--CWA_MANAGER_START_POSITION-->
-  <ResourceLoader v-if="componentIri" :iri="componentIri" component-prefix="CwaComponent" />
+  <ResourceLoader v-if="componentIri" ref="resourceLoader" :iri="componentIri" :manager="manager" component-prefix="CwaComponent" />
   <ComponentPlaceholder v-else-if="$cwa.admin.isEditing" :iri="iri" />
   <!--CWA_MANAGER_END_POSITION-->
 </template>
 
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, getCurrentInstance, reactive, ref, toRef } from 'vue'
+import { consola } from 'consola'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
-import { useCwa, useCwaResource } from '#imports'
+import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import type ManageableComponent from '#cwa/runtime/admin/manageable-component'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
+const resourceLoader = ref()
+const componentManagerOps = reactive({})
+const componentResourceManager = ref<undefined|{ manager: ManageableComponent }>()
+const iriRef = toRef(props, 'iri')
+const resource = useCwaResource(iriRef).getResource()
+useCwaResourceManageable(iriRef)
 
-const resource = useCwaResource(toRef(props, 'iri')).getResource()
 const componentIri = computed(() => {
   const iri = resource.value?.data?.component
   const publishedIri = $cwa.resources.findPublishedComponentIri(iri).value
@@ -29,4 +36,12 @@ const componentIri = computed(() => {
   }
   return publishedIri
 })
+
+const proxy = getCurrentInstance()?.proxy
+if (proxy) {
+  componentResourceManager.value = useCwaResourceManageable(componentIri, componentManagerOps, proxy)
+} else {
+  consola.error('Could not initialise the manager for a component', componentIri.value)
+}
+const manager = computed(() => componentResourceManager.value?.manager)
 </script>

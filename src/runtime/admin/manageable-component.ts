@@ -1,6 +1,5 @@
 import {
   computed,
-  createApp,
   markRaw, nextTick,
   ref,
   watch
@@ -20,8 +19,6 @@ import {
 import Cwa from '../cwa'
 // todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
-// todo: same issue as above - seems imports from this file
-import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
@@ -32,6 +29,7 @@ export type StyleOptions = {
 
 export type ManageableComponentOps = {
   styles?: StyleOptions
+  disabled?: boolean
 }
 
 export default class ManageableComponent {
@@ -53,6 +51,15 @@ export default class ManageableComponent {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
+    watch(ops, (newOps, oldOps) => {
+      if (newOps.disabled && !oldOps.disabled) {
+        this.clear(false)
+        return
+      }
+      if (!newOps.disabled && oldOps.disabled && this.currentIri) {
+        this.init(this.currentIri)
+      }
+    })
   }
 
   // PUBLIC
@@ -61,6 +68,7 @@ export default class ManageableComponent {
     // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
     this.clear(false)
     this.currentIri = iri
+    this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.unwatchCurrentIri = watch(this.currentIri, this.iriWatchHandler.bind(this), {
       immediate: true,
       flush: 'post'
@@ -74,21 +82,15 @@ export default class ManageableComponent {
     }
     this.isInit = true
     this.addClickEventListeners()
-    this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
-    this.$cwa.admin.eventBus.emit('componentMounted', newIri)
     this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
       flush: 'post'
     })
-    if (this.$cwa.admin.componentManager.currentIri.value === newIri) {
-      this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
-    }
   }
 
   public clear (soft: boolean = false) {
     if (!this.isInit) {
       return
     }
-    this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.domElements.value = []
     if (this.unwatchCurrentStackItem) {
@@ -96,6 +98,7 @@ export default class ManageableComponent {
       this.unwatchCurrentStackItem = undefined
     }
     if (!soft) {
+      this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
       this.clearFocusComponent()
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
@@ -110,19 +113,32 @@ export default class ManageableComponent {
   }
 
   private clearFocusComponent () {
-    if (this.focusComponent) {
-      this.focusComponent.unmount()
-      this.focusComponent = undefined
-    }
-    if (this.focusWrapper) {
-      this.focusWrapper.remove()
-      this.focusWrapper = undefined
-    }
+    // if (this.focusComponent) {
+    //   this.focusComponent.unmount()
+    //   this.focusComponent = undefined
+    // }
+    // if (this.focusWrapper) {
+    //   this.focusWrapper.remove()
+    //   this.focusWrapper = undefined
+    // }
   }
 
   // REFRESHING INITIALISATION
   private componentMountedListener (iri: string) {
-    if (this.childIris.value.includes(iri)) {
+    if (iri === this.currentIri?.value) {
+      this.iriWatchHandler(iri)
+    }
+    const iriIsChild = () => {
+      const iris = [this.$cwa.resources.findPublishedComponentIri(iri), this.$cwa.resources.findDraftComponentIri(iri)].filter(i => !!i.value)
+      for (const iri of iris) {
+        if (this.childIris.value.includes(iri.value)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    if (iriIsChild()) {
       this.removeClickEventListeners()
       this.addClickEventListeners()
     }
@@ -137,15 +153,17 @@ export default class ManageableComponent {
       return
     }
 
-    // when changing UI component, next tick seems necessary for allowing dom to update first
+    // when changing UI component, next tick seems necessary for allowing dom to update first.
+    // e.g. click off a live component, it switched back to a draft, could be taller, need to scroll into view
     await nextTick()
-    this.focusComponent = createApp(ComponentFocus, {
-      iri: this.currentIri,
-      domElements: this.domElements
-    })
-    this.focusWrapper = document.createElement('div')
-    this.focusComponent.mount(this.focusWrapper)
-    document.body.appendChild(this.focusWrapper)
+
+    // this.focusComponent = createApp(ComponentFocus, {
+    //   iri: this.currentIri,
+    //   domElements: this.domElements
+    // })
+    // this.focusWrapper = document.createElement('div')
+    // this.focusComponent.mount(this.focusWrapper) // this could return the public instance we need for updateWindowSize
+    // document.body.appendChild(this.focusWrapper)
 
     this.scrollIntoView()
   }
@@ -279,11 +297,8 @@ export default class ManageableComponent {
     if (!this.currentIri?.value || !this.currentResource) {
       return
     }
-    if (evt.type === 'contextmenu') {
-      this.$cwa.admin.componentManager.showManager.value = false
-    }
 
-    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target))
+    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
   }
 
   private getCurrentStackItem (clickTarget: EventTarget|null) {

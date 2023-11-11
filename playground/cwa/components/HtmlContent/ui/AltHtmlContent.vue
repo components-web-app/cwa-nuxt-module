@@ -16,7 +16,7 @@ import { useCustomHtmlComponent } from '~/composables/useCustomHtmlComponent'
 // Setup the resource
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
-const { getResource, exposeMeta, $cwa, manageable } = useCwaResource(iriRef)
+const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef)
 defineExpose(exposeMeta)
 
 const resource = getResource()
@@ -28,5 +28,6 @@ const htmlContent = computed<string>(() => (resource.value.data?.html || '<div><
 useHtmlContent(htmlContainer)
 
 // This deals with the HTML editor
-const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef, manageable)
+const manager = toRef(props, 'manager')
+const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef, manager)
 </script>

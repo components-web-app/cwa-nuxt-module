@@ -8,13 +8,14 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import { useCustomHtmlComponent, useCwaResource, useHtmlContent } from '#imports'
+import { useCwaResource, useHtmlContent } from '#imports'
 import TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
+import { useCustomHtmlComponent } from '~/composables/useCustomHtmlComponent'
 
 // Setup the resource
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
-const { getResource, exposeMeta, $cwa, manageable } = useCwaResource(iriRef, {
+const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, {
   styles: {
     multiple: true,
     classes: {
@@ -33,5 +34,5 @@ const htmlContent = computed<string>(() => (resource.value.data?.html || '<div><
 useHtmlContent(htmlContainer)
 
 // This deals with the HTML editor
-const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef, manageable)
+const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef, ref())
 </script>

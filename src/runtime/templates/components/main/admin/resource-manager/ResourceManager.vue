@@ -82,11 +82,11 @@ function clickHandler (e: MouseEvent) {
 }
 
 function contextHandler (e: MouseEvent) {
-  completeStack(e)
+  completeStack(e, true)
 }
 
-function completeStack (e: MouseEvent) {
-  $cwa.admin.componentManager.addToStack({ clickTarget: e.target })
+function completeStack (e: MouseEvent, isContext: boolean = false) {
+  $cwa.admin.componentManager.addToStack({ clickTarget: e.target }, isContext)
 }
 
 function selectTab (index: number) {
