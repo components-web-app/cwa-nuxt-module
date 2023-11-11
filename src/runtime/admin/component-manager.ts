@@ -1,10 +1,12 @@
-import { computed, ref, shallowRef, watch } from 'vue'
-import type { Ref, ComputedRef, ShallowRef } from 'vue'
+import { computed, createApp, ref, shallowRef, watch } from 'vue'
+import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
+import type { App } from 'vue/dist/vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
+import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
+import type { StyleOptions } from './manageable-component'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
-import { ResourcesStore } from '#cwa/runtime/storage/stores/resources/resources-store'
-import type { StyleOptions } from '#cwa/runtime/admin/manageable-component'
 
 interface resourceStackItem {
   iri: string
@@ -35,11 +37,15 @@ export default class ComponentManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
   private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
+  private focusComponent: App|undefined
+  private focusWrapper: HTMLElement|undefined
+  private focusProxy: ComponentPublicInstance|undefined
 
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore) {
     this.listenEditModeChange()
     this.listenCurrentIri()
     watch(this.currentStackItem, (currentStackItem) => {
+      this.createFocusComponent()
       this.cachedCurrentStackItem.value = currentStackItem
     })
   }
@@ -167,6 +173,41 @@ export default class ComponentManager {
       return existingItemChildren.some((r: string) => iris.includes(r))
     })
     insertAtIndex === -1 ? stack.value.push(resourceStackItem) : stack.value.splice(insertAtIndex, 0, resourceStackItem)
+  }
+
+  public updateFocusComponentSize () {
+    if (!this.focusProxy) {
+      return
+    }
+    this.focusProxy.updateWindowSize()
+  }
+
+  private createFocusComponent () {
+    this.removeFocusComponent()
+    const stackItem = this.currentStackItem.value
+    if (!this.currentIri || !stackItem) {
+      return
+    }
+    this.focusComponent = createApp(ComponentFocus, {
+      iri: this.currentIri,
+      domElements: stackItem.domElements
+    })
+
+    this.focusWrapper = document.createElement('div')
+    this.focusProxy = this.focusComponent.mount(this.focusWrapper)
+    document.body.appendChild(this.focusWrapper)
+  }
+
+  private removeFocusComponent () {
+    if (this.focusComponent) {
+      this.focusComponent.unmount()
+      this.focusComponent = undefined
+      this.focusProxy = undefined
+    }
+    if (this.focusWrapper) {
+      this.focusWrapper.remove()
+      this.focusWrapper = undefined
+    }
   }
 
   private listenEditModeChange () {

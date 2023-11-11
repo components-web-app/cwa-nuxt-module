@@ -5,7 +5,6 @@ import {
   watch
 } from 'vue'
 import type {
-  App,
   ComponentPublicInstance,
   ComputedRef,
   Ref,
@@ -37,8 +36,6 @@ export default class ManageableComponent {
   private domElements: Ref<HTMLElement[]> = ref([])
   private unwatchCurrentStackItem: undefined|WatchStopHandle
   private unwatchCurrentIri: undefined|WatchStopHandle
-  private focusComponent: undefined|App
-  private focusWrapper: HTMLElement|undefined
   private readonly yOffset = 100
   private tabResolver: ManagerTabsResolver
   private isInit: boolean = false
@@ -99,7 +96,6 @@ export default class ManageableComponent {
     }
     if (!soft) {
       this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
-      this.clearFocusComponent()
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
@@ -110,17 +106,6 @@ export default class ManageableComponent {
       }
     }
     this.isInit = false
-  }
-
-  private clearFocusComponent () {
-    // if (this.focusComponent) {
-    //   this.focusComponent.unmount()
-    //   this.focusComponent = undefined
-    // }
-    // if (this.focusWrapper) {
-    //   this.focusWrapper.remove()
-    //   this.focusWrapper = undefined
-    // }
   }
 
   // REFRESHING INITIALISATION
@@ -145,7 +130,6 @@ export default class ManageableComponent {
   }
 
   private async currentStackItemListener (stackItem: ResourceStackItem|undefined) {
-    this.clearFocusComponent()
     if (!this.currentIri?.value) {
       return
     }
@@ -156,25 +140,16 @@ export default class ManageableComponent {
     // when changing UI component, next tick seems necessary for allowing dom to update first.
     // e.g. click off a live component, it switched back to a draft, could be taller, need to scroll into view
     await nextTick()
-
-    // this.focusComponent = createApp(ComponentFocus, {
-    //   iri: this.currentIri,
-    //   domElements: this.domElements
-    // })
-    // this.focusWrapper = document.createElement('div')
-    // this.focusComponent.mount(this.focusWrapper) // this could return the public instance we need for updateWindowSize
-    // document.body.appendChild(this.focusWrapper)
-
     this.scrollIntoView()
   }
 
   // external api to manually trigger window size update
-  public updateFocusSize () {
-    if (!this.focusComponent) {
-      return
-    }
-    this.focusComponent._container._vnode.component.exposed.updateWindowSize()
-  }
+  // public updateFocusSize () {
+  //   if (!this.focusComponent) {
+  //     return
+  //   }
+  //   this.focusComponent._container._vnode.component.exposed.updateWindowSize()
+  // }
 
   private scrollIntoView () {
     let element: undefined|HTMLElement

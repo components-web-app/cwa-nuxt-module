@@ -1,10 +1,9 @@
 import { computed, nextTick, ref, watch } from 'vue'
-import type ManageableComponent from '#cwa/runtime/admin/manageable-component'
 import type { Ref } from 'vue'
 import { useCwaResourceModel, useCwa } from '#imports'
 import TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
 
-export const useCustomHtmlComponent = (iriRef: Ref<string>, manager: Ref<ManageableComponent|undefined>) => {
+export const useCustomHtmlComponent = (iriRef: Ref<string>) => {
   const $cwa = useCwa()
   const editorComponent = ref<typeof TipTapHtmlEditor|undefined>()
 
@@ -14,7 +13,7 @@ export const useCustomHtmlComponent = (iriRef: Ref<string>, manager: Ref<Managea
   // instantly update focus when the UI sze changes
   watch([disableEditor, resourceModel.model], async () => {
     await nextTick()
-    manager.value?.updateFocusSize()
+    $cwa.admin.componentManager.updateFocusComponentSize()
   }, {
     flush: 'post'
   })

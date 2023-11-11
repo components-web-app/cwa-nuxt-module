@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
 import type { ComputedRef, Ref, WatchStopHandle } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
@@ -12,7 +12,7 @@ const props = defineProps<{
 const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
 
-const windowSize = ref({ width: 0, height: 0 })
+const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
 
 const position = computed(() => {
   const clearCoords = {
@@ -67,10 +67,12 @@ const resource = computed(() => {
 
 const resourceData = computed(() => resource.value?.data)
 
-function updateWindowSize () {
+async function updateWindowSize () {
+  await nextTick()
   windowSize.value = {
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight,
+    timestamp: (new Date()).getTime()
   }
 }
 
@@ -78,6 +80,7 @@ let unwatchResource: WatchStopHandle|undefined
 onMounted(() => {
   window.addEventListener('resize', updateWindowSize, false)
   unwatchResource = watch(resourceData, updateWindowSize, { deep: true, flush: 'post' })
+  $cwa.admin.eventBus.on('componentMounted', updateWindowSize)
 })
 
 onBeforeUnmount(() => {
