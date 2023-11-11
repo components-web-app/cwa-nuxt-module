@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
-import { useMouse, useWindowScroll } from '@vueuse/core'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -12,8 +11,6 @@ import ComponentMetaResolver from '#cwa/runtime/templates/components/core/Compon
 import type { ManagerTab } from '#cwa/module'
 
 const $cwa = useCwa()
-const { x, y } = useMouse()
-const { y: windowY } = useWindowScroll()
 
 const current = $cwa.admin.componentManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
@@ -54,14 +51,11 @@ function openContext ({ top, left }: ContextPosition) {
 
 function onContextMenu (e: PointerEvent) {
   const pos: ContextPosition = {
-    top: unref(y) - unref(windowY),
-    left: unref(x)
+    top: e.clientY,
+    left: e.clientX
   }
-  if (showDefaultContext(pos)) {
+  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.componentManager.isContextPopulating.value) {
     isOpen.value = false
-    return
-  }
-  if (!$cwa.admin.isEditing) {
     return
   }
   e.preventDefault()

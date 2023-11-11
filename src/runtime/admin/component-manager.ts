@@ -66,6 +66,10 @@ export default class ComponentManager {
     return computed(() => !!this.lastClickTarget.value)
   }
 
+  public get isContextPopulating () {
+    return computed(() => !!this.lastContextTarget.value)
+  }
+
   public get currentStackItem () {
     return computed(() => {
       if (!this.showManager.value) {
@@ -188,14 +192,16 @@ export default class ComponentManager {
     if (!this.currentIri || !stackItem) {
       return
     }
+
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
       domElements: stackItem.domElements
     })
 
     this.focusWrapper = document.createElement('div')
-    this.focusProxy = this.focusComponent.mount(this.focusWrapper)
     document.body.appendChild(this.focusWrapper)
+
+    this.focusProxy = this.focusComponent.mount(this.focusWrapper)
   }
 
   private removeFocusComponent () {

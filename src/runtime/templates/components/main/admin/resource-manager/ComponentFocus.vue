@@ -95,7 +95,7 @@ defineExpose({
 
 <template>
   <client-only>
-    <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-[7px] cwa-outline-[99999rem] cwa-rounded" :style="cssStyle">
+    <div class="component-focus cwa-pointer-events-none cwa-absolute cwa-outline cwa-outline-offset-[7px] cwa-outline-[200rem] cwa-rounded" :style="cssStyle">
       <div :class="[borderColor]" class="cwa-animate-pulse cwa-absolute cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
     </div>
   </client-only>
