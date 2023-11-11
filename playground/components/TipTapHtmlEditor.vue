@@ -80,7 +80,7 @@ const editor = useEditor({
   ],
   onUpdate: () => {
     // HTML
-    value.value = editor.value?.getHTML() || ''
+    value.value = editor.value?.isEmpty ? null : editor.value?.getHTML()
 
     // JSON
     // this.$emit('update:modelValue', this.editor.getJSON())

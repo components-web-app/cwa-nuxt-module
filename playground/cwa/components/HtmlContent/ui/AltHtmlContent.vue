@@ -28,6 +28,5 @@ const htmlContent = computed<string>(() => (resource.value.data?.html || '<div><
 useHtmlContent(htmlContainer)
 
 // This deals with the HTML editor
-const manager = toRef(props, 'manager')
-const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef, manager)
+const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef)
 </script>
