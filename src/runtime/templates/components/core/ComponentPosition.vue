@@ -6,18 +6,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, getCurrentInstance, reactive, ref, toRef } from 'vue'
+import { computed, getCurrentInstance, reactive, ref, toRef, watchEffect } from 'vue'
 import { consola } from 'consola'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import type ManageableComponent from '#cwa/runtime/admin/manageable-component'
+import type { ManageableComponentOps } from '#cwa/runtime/admin/manageable-component'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
 const resourceLoader = ref()
-const componentManagerOps = reactive({})
+const componentManagerOps: ManageableComponentOps = reactive({})
 const componentResourceManager = ref<undefined|{ manager: ManageableComponent }>()
 const iriRef = toRef(props, 'iri')
 const resource = useCwaResource(iriRef).getResource()
@@ -35,6 +36,15 @@ const componentIri = computed(() => {
     return draftIri || iri
   }
   return publishedIri
+})
+
+watchEffect(() => {
+  const component = resourceLoader.value?.resourceComponent
+  if (!component) {
+    return
+  }
+  componentManagerOps.styles = component.cwaResource?.styles
+  componentManagerOps.disabled = !!component?.disableManager
 })
 
 const proxy = getCurrentInstance()?.proxy

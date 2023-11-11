@@ -1,5 +1,5 @@
 <template>
-  <article class="prose prose-stone max-w-none min-h-[20px] bg-gray-900 px-4 pt-4 pb-0 border-2 border-dotted border-stone-200 text-stone-100 prose-headings:text-white prose-a:text-blue-600">
+  <article class="prose prose-stone prose-invert max-w-none min-h-[20px] bg-gray-900 px-4 pt-4 pb-0 border-4 border-dotted border-stone-200">
     <nuxt-img src="/logo.svg" placeholder />
     <TipTapHtmlEditor v-if="$cwa.admin.isEditing" ref="editorComponent" v-model="resourceModel.model.value" :disabled="disableEditor" />
     <div v-else ref="htmlContainer" v-html="htmlContent" />

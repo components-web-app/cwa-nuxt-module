@@ -13,7 +13,7 @@ interface resourceStackItem {
   managerTabs?: ManagerTab[],
   ui?: ComponentUi[],
   childIris: ComputedRef<string[]>
-  styles?: StyleOptions
+  styles?: ComputedRef<StyleOptions>
 }
 
 // will be used to have additional properties not sent by the initial addToStack event

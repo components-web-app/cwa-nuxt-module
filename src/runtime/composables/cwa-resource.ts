@@ -20,7 +20,7 @@ export interface CwaResourceMeta {
     name?: string
     styles?: StyleOptions
   },
-  useManager: boolean
+  disableManager: boolean
 }
 
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
@@ -36,7 +36,7 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
       name: ops?.name,
       styles: ops?.styles
     },
-    useManager: !ops?.manager?.disabled && !proxy?.$parent?.$parent?.cwaMetaResolver
+    disableManager: ops?.manager?.disabled || proxy?.$parent?.$parent?.cwaMetaResolver
   }
 
   return {

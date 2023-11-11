@@ -312,7 +312,7 @@ export default class ManageableComponent {
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
       ui: this.resourceConfig?.ui,
-      styles: this.ops.styles,
+      styles: computed(() => this.ops.styles),
       childIris: this.childIris
     }
   }
