@@ -82,13 +82,17 @@ const borderColor = computed(() => {
   return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
 
-async function updateWindowSize () {
-  await nextTick()
+function updateWindowSize () {
   windowSize.value = {
     width: window.innerWidth,
     height: window.innerHeight,
     timestamp: (new Date()).getTime()
   }
+}
+
+async function redraw () {
+  await nextTick()
+  updateWindowSize()
   drawCanvas()
 }
 
@@ -123,22 +127,20 @@ function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, wid
   ctx.arcTo(x, y, x, y + radius, radius)
 }
 
-let unwatchResource: WatchStopHandle|undefined
 onMounted(() => {
-  window.addEventListener('resize', updateWindowSize, false)
-  unwatchResource = watch(resourceData, updateWindowSize, { deep: true, flush: 'post' })
-  $cwa.admin.eventBus.on('componentMounted', updateWindowSize)
-  watch(canvas, newCanvas => newCanvas && drawCanvas())
+  $cwa.admin.eventBus.on('componentMounted', redraw)
+  window.addEventListener('resize', redraw, false)
+  watch(resourceData, redraw, { deep: true, flush: 'post' })
+  watch(canvas, newCanvas => newCanvas && redraw())
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateWindowSize)
-  unwatchResource && unwatchResource()
-  $cwa.admin.eventBus.off('componentMounted', updateWindowSize)
+  window.removeEventListener('resize', redraw)
+  $cwa.admin.eventBus.off('componentMounted', redraw)
 })
 
 defineExpose({
-  updateWindowSize
+  redraw
 })
 </script>
 

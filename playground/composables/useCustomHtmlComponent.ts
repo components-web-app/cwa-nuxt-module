@@ -13,7 +13,7 @@ export const useCustomHtmlComponent = (iriRef: Ref<string>) => {
   // instantly update focus when the UI sze changes
   watch([disableEditor, resourceModel.model], async () => {
     await nextTick()
-    $cwa.admin.componentManager.updateFocusComponentSize()
+    $cwa.admin.componentManager.redrawFocus()
   }, {
     flush: 'post'
   })

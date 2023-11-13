@@ -1,4 +1,4 @@
-import { computed, onMounted, getCurrentInstance } from 'vue'
+import { computed, onMounted, getCurrentInstance, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from './cwa'
 import type { StyleOptions } from '#cwa/runtime/admin/manageable-component'

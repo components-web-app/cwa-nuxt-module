@@ -1,4 +1,4 @@
-import { computed, createApp, ref, shallowRef, watch } from 'vue'
+import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
@@ -45,9 +45,10 @@ export default class ComponentManager {
     this.listenEditModeChange()
     this.listenCurrentIri()
     watch(this.currentStackItem, (currentStackItem) => {
-      this.createFocusComponent()
       this.cachedCurrentStackItem.value = currentStackItem
+      this.createFocusComponent()
     })
+    watch(this.showManager, newValue => !newValue && this.removeFocusComponent)
   }
 
   public get contextStack () {
@@ -110,6 +111,7 @@ export default class ComponentManager {
     }
     this.lastClickTarget.value = null
     this.currentResourceStack.value = []
+    this.removeFocusComponent()
   }
 
   public selectStackIndex (index: number, fromContext?: boolean) {
@@ -179,11 +181,11 @@ export default class ComponentManager {
     insertAtIndex === -1 ? stack.value.push(resourceStackItem) : stack.value.splice(insertAtIndex, 0, resourceStackItem)
   }
 
-  public updateFocusComponentSize () {
+  public redrawFocus () {
     if (!this.focusProxy) {
       return
     }
-    this.focusProxy.updateWindowSize()
+    this.focusProxy.redraw()
   }
 
   private createFocusComponent () {
