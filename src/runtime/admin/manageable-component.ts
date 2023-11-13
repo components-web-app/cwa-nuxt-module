@@ -16,7 +16,8 @@ import {
   resourceTypeToNestedResourceProperties
 } from '../resources/resource-utils'
 import Cwa from '../cwa'
-// todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
+// if you get error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES
+// appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
