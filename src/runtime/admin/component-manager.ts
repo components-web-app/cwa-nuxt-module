@@ -30,13 +30,14 @@ interface AddToStackEvent extends resourceStackItem, AddToStackWindowEvent {
 }
 
 export default class ComponentManager {
+  public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
+  public readonly showManager: Ref<boolean> = ref(false)
   private readonly lastClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
-  public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
-  public readonly showManager: Ref<boolean> = ref(false)
   private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
+  private readonly resourceManagerState = ref({} as Record<string, any>)
   private focusComponent: App|undefined
   private focusWrapper: HTMLElement|undefined
   private focusProxy: ComponentPublicInstance|undefined
@@ -49,6 +50,14 @@ export default class ComponentManager {
       this.createFocusComponent()
     })
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
+  }
+
+  public getState (prop: string) {
+    return this.resourceManagerState.value[prop]
+  }
+
+  public setState (prop: string, value: any) {
+    Object.assign(this.resourceManagerState.value, { [prop]: value })
   }
 
   public get contextStack () {
@@ -247,6 +256,7 @@ export default class ComponentManager {
 
   private resetResourceManagerVars () {
     this.forcePublishedVersion.value = undefined
+    this.resourceManagerState.value = {}
   }
 
   private isItemAlreadyInStack (iri: string, isContext?: boolean): boolean {
