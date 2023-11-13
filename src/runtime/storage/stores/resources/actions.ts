@@ -275,10 +275,20 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
     },
     saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
+      const clearExistingNewResource = () => {
+        // todo: test we clear off any pending new resources awaiting merge
+        const allIdsIndex = resourcesState.new.allIds.indexOf(iri)
+        if (allIdsIndex !== -1) {
+          resourcesState.new.allIds.splice(allIdsIndex, 1)
+          delete resourcesState.new.byId[iri]
+        }
+      }
+
       const iri = event.resource['@id']
       if (event.isNew) {
         const existingResource = resourcesState.current.byId[iri]
         if (existingResource?.data && isCwaResourceSame(existingResource.data, event.resource)) {
+          clearExistingNewResource()
           return
         }
         resourcesState.new.byId[iri] = {
@@ -298,6 +308,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       })
 
       data.data = event.resource
+
+      clearExistingNewResource()
 
       // todo: test we save publishable mapping here
       mapPublishableResource(event.resource)
