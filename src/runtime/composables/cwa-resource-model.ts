@@ -85,7 +85,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       source
     })
     submittingValue.value = undefined
-    isEqual(localValue.value, newLocalValue) && resetValue()
+    isEqual(storeValue.value, submittingValue.value) && resetValue()
   }
 
   function resetValue () {

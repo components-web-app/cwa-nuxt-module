@@ -44,6 +44,7 @@
 
 <script lang="ts" setup>
 import { StarterKit } from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
 import {
   BubbleMenu,
   useEditor,
@@ -76,7 +77,11 @@ const value = computed({
 const editor = useEditor({
   content: value.value,
   extensions: [
-    StarterKit
+    StarterKit,
+    Placeholder.configure({
+      placeholder: 'Write something …',
+      emptyEditorClass: 'is-editor-empty text-inherit opacity-50'
+    })
   ],
   onUpdate: () => {
     // HTML

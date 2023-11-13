@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-[data-placeholder]::after {
+[data-placeholder='true']::after {
     content: " ";
     box-shadow: 0 0 50px 9px rgba(254,254,254);
     position: absolute;
