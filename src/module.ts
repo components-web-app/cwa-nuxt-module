@@ -139,29 +139,27 @@ export default defineNuxtModule<CwaModuleOptions>({
           }
         }
 
-        const resourceType = component.pascalName.replace(/^CwaComponent/, '')
-        const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
-        const uiDir = resolveAlias(resolve(path.dirname(component.filePath), 'ui'))
-        const managerTabs: GlobalComponentNames[] = []
-        const ui: GlobalComponentNames[] = []
-        if (isDirectory(tabsDir)) {
-          // todo: refactor common code
-          const tabFiles = Object.keys(componentsByPath).filter(path => path.startsWith(tabsDir))
-          tabFiles.forEach((file) => {
-            if (componentsByPath[file]) {
-              // @ts-ignore: Unable to resolve that pascalName exists in keyof type
-              componentsByPath[file].global && managerTabs.push(componentsByPath[file].pascalName)
-            }
-          })
-          const uiFiles = Object.keys(componentsByPath).filter(path => path.startsWith(uiDir))
-          uiFiles.forEach((file) => {
-            if (componentsByPath[file]) {
-              // @ts-ignore: Unable to resolve that pascalName exists in keyof type
-              componentsByPath[file].global && ui.push(componentsByPath[file].pascalName)
-            }
-          })
+        const resolveComponentNames = (dirPath: string) => {
+          const componentNames = []
+          if (isDirectory(dirPath)) {
+            const componentFilePaths = Object.keys(componentsByPath).filter(path => path.startsWith(dirPath))
+            componentFilePaths.forEach((filePath) => {
+              if (componentsByPath[filePath]) {
+                // @ts-ignore: Unable to resolve that pascalName exists in keyof type
+                componentsByPath[filePath].global && componentNames.push(componentsByPath[filePath].pascalName)
+              }
+            })
+          }
+          return componentNames
         }
 
+        const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
+        const managerTabs: GlobalComponentNames[] = resolveComponentNames(tabsDir)
+
+        const uiDir = resolveAlias(resolve(path.dirname(component.filePath), 'ui'))
+        const ui: GlobalComponentNames[] = resolveComponentNames(uiDir)
+
+        const resourceType = component.pascalName.replace(/^CwaComponent/, '')
         defaultResourcesConfig[resourceType] = {
           // auto name with spaces in place of pascal/camel case
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
