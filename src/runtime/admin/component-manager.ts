@@ -1,4 +1,4 @@
-import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, createApp, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
@@ -48,7 +48,7 @@ export default class ComponentManager {
       this.cachedCurrentStackItem.value = currentStackItem
       this.createFocusComponent()
     })
-    watch(this.showManager, newValue => !newValue && this.removeFocusComponent)
+    watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
   }
 
   public get contextStack () {
@@ -111,10 +111,12 @@ export default class ComponentManager {
     }
     this.lastClickTarget.value = null
     this.currentResourceStack.value = []
-    this.removeFocusComponent()
   }
 
   public selectStackIndex (index: number, fromContext?: boolean) {
+    if (!this.isEditing) {
+      return
+    }
     const fromStack = fromContext ? this.contextResourceStack : this.currentResourceStack
     const currentLength = fromStack.value.length
     if (!currentLength) {
@@ -133,6 +135,18 @@ export default class ComponentManager {
   }
 
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent, isContext?: boolean) {
+    // stack will not have been reset
+
+    const lastTarget = isContext ? this.lastContextTarget : this.lastClickTarget
+    // we are starting a new stack - last click before was a window or has been reset
+    if (!lastTarget.value) {
+      this.resetStack(isContext)
+      // clear the context menu on click
+      if (!isContext) {
+        this.resetStack(true)
+      }
+    }
+
     if (!this.isEditing) {
       return
     }
@@ -142,17 +156,6 @@ export default class ComponentManager {
 
     if (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri, isContext) && this.lastClickTarget.value) {
       return
-    }
-
-    const lastTarget = isContext ? this.lastContextTarget : this.lastClickTarget
-
-    // we are starting a new stack - last click before was a window or has been reset
-    if (!lastTarget.value) {
-      this.resetStack(isContext)
-      // clear the context menu on click
-      if (!isContext) {
-        this.resetStack(true)
-      }
     }
 
     // the last click target is not a resource and finished the chain
@@ -208,13 +211,15 @@ export default class ComponentManager {
 
   private removeFocusComponent () {
     if (this.focusComponent) {
-      this.focusComponent.unmount()
+      const toUnmount = this.focusComponent
       this.focusComponent = undefined
       this.focusProxy = undefined
+      toUnmount.unmount()
     }
     if (this.focusWrapper) {
-      this.focusWrapper.remove()
+      const toRemove = this.focusWrapper
       this.focusWrapper = undefined
+      toRemove.remove()
     }
   }
 

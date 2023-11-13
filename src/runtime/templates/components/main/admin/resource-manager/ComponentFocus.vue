@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
-import type { ComputedRef, Ref, WatchStopHandle } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
