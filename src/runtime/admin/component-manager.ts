@@ -1,4 +1,4 @@
-import { computed, createApp, ref, shallowRef, watch } from 'vue'
+import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
@@ -38,6 +38,7 @@ export default class ComponentManager {
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
   private readonly resourceManagerState = ref({} as Record<string, any>)
+  private readonly yOffset = 100
   private focusComponent: App|undefined
   private focusWrapper: HTMLElement|undefined
   private focusProxy: ComponentPublicInstance|undefined
@@ -45,8 +46,10 @@ export default class ComponentManager {
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore) {
     this.listenEditModeChange()
     this.listenCurrentIri()
-    watch(this.currentStackItem, (currentStackItem) => {
+    watch(this.currentStackItem, async (currentStackItem) => {
       this.cachedCurrentStackItem.value = currentStackItem
+      await nextTick()
+      this.scrollIntoView()
       this.createFocusComponent()
     })
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
@@ -197,6 +200,7 @@ export default class ComponentManager {
     if (!this.focusProxy) {
       return
     }
+    // @ts-ignore-next-line
     this.focusProxy.redraw()
   }
 
@@ -230,6 +234,42 @@ export default class ComponentManager {
       this.focusWrapper = undefined
       toRemove.remove()
     }
+  }
+
+  private scrollIntoView () {
+    let element: undefined|HTMLElement
+    let elementOutOfView = false
+    const stackItem = this.currentStackItem.value
+    if (!stackItem) {
+      return
+    }
+
+    for (const elCandidate of stackItem.domElements.value) {
+      if (elCandidate.nodeType === Node.ELEMENT_NODE) {
+        if (!element) {
+          element = elCandidate
+        }
+
+        if (this.isElementOutsideViewport(element)) {
+          elementOutOfView = true
+        }
+        if (elementOutOfView && element) {
+          break
+        }
+      }
+    }
+
+    if (!element || !elementOutOfView) {
+      return
+    }
+    const y = element.getBoundingClientRect().top + window.scrollY - this.yOffset
+    window.scrollTo({ top: y, behavior: 'smooth' })
+  }
+
+  private isElementOutsideViewport (el: HTMLElement) {
+    const { top, left, bottom, right } = el.getBoundingClientRect()
+    const { innerHeight, innerWidth } = window
+    return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
   }
 
   private listenEditModeChange () {

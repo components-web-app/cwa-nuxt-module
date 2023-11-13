@@ -1,6 +1,6 @@
 import {
   computed,
-  markRaw, nextTick,
+  markRaw,
   ref,
   watch
 } from 'vue'
@@ -18,7 +18,6 @@ import {
 import Cwa from '../cwa'
 // todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
-import type { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export type StyleOptions = {
@@ -34,11 +33,9 @@ export type ManageableComponentOps = {
 export default class ManageableComponent {
   private currentIri: Ref<string|undefined>|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
-  private unwatchCurrentStackItem: undefined|WatchStopHandle
   private unwatchCurrentIri: undefined|WatchStopHandle
-  private readonly yOffset = 100
   private tabResolver: ManagerTabsResolver
-  private isInit: boolean = false
+  private isIriInit: boolean = false
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -66,34 +63,27 @@ export default class ManageableComponent {
     this.clear(false)
     this.currentIri = iri
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
-    this.unwatchCurrentIri = watch(this.currentIri, this.iriWatchHandler.bind(this), {
+    this.unwatchCurrentIri = watch(this.currentIri, this.initNewIri.bind(this), {
       immediate: true,
       flush: 'post'
     })
   }
 
-  private iriWatchHandler (newIri: string|undefined) {
+  private initNewIri (iri: string|undefined) {
     this.clear(true)
-    if (!newIri) {
+    if (!iri) {
       return
     }
-    this.isInit = true
+    this.isIriInit = true
     this.addClickEventListeners()
-    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
-      flush: 'post'
-    })
   }
 
   public clear (soft: boolean = false) {
-    if (!this.isInit) {
+    if (!this.isIriInit) {
       return
     }
     this.removeClickEventListeners()
     this.domElements.value = []
-    if (this.unwatchCurrentStackItem) {
-      this.unwatchCurrentStackItem()
-      this.unwatchCurrentStackItem = undefined
-    }
     if (!soft) {
       this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
       if (this.unwatchCurrentIri) {
@@ -105,18 +95,18 @@ export default class ManageableComponent {
         this.currentIri = undefined
       }
     }
-    this.isInit = false
+    this.isIriInit = false
   }
 
   // REFRESHING INITIALISATION
   private componentMountedListener (iri: string) {
     if (iri === this.currentIri?.value) {
-      this.iriWatchHandler(iri)
+      this.initNewIri(iri)
     }
     const iriIsChild = () => {
       const iris = [this.$cwa.resources.findPublishedComponentIri(iri), this.$cwa.resources.findDraftComponentIri(iri)].filter(i => !!i.value)
       for (const iri of iris) {
-        if (this.childIris.value.includes(iri.value)) {
+        if (iri.value && this.childIris.value.includes(iri.value)) {
           return true
         }
       }
@@ -127,60 +117,6 @@ export default class ManageableComponent {
       this.removeClickEventListeners()
       this.addClickEventListeners()
     }
-  }
-
-  private async currentStackItemListener (stackItem: ResourceStackItem|undefined) {
-    if (!this.currentIri?.value) {
-      return
-    }
-    if (!stackItem || stackItem.iri !== this.currentIri.value) {
-      return
-    }
-
-    // when changing UI component, next tick seems necessary for allowing dom to update first.
-    // e.g. click off a live component, it switched back to a draft, could be taller, need to scroll into view
-    await nextTick()
-    this.scrollIntoView()
-  }
-
-  // external api to manually trigger window size update
-  // public updateFocusSize () {
-  //   if (!this.focusComponent) {
-  //     return
-  //   }
-  //   this.focusComponent._container._vnode.component.exposed.updateWindowSize()
-  // }
-
-  private scrollIntoView () {
-    let element: undefined|HTMLElement
-    let elementOutOfView = false
-
-    for (const elCandidate of this.domElements.value) {
-      if (elCandidate.nodeType === Node.ELEMENT_NODE) {
-        if (!element) {
-          element = elCandidate
-        }
-
-        if (this.isElementOutsideViewport(element)) {
-          elementOutOfView = true
-        }
-        if (elementOutOfView && element) {
-          break
-        }
-      }
-    }
-
-    if (!element || !elementOutOfView) {
-      return
-    }
-    const y = element.getBoundingClientRect().top + window.scrollY - this.yOffset
-    window.scrollTo({ top: y, behavior: 'smooth' })
-  }
-
-  private isElementOutsideViewport (el: HTMLElement) {
-    const { top, left, bottom, right } = el.getBoundingClientRect()
-    const { innerHeight, innerWidth } = window
-    return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
   }
 
   // COMPUTED FOR REFRESHING
