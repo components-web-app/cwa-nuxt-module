@@ -44,15 +44,17 @@ export default class ComponentManager {
   private focusProxy: ComponentPublicInstance|undefined
 
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore) {
-    this.listenEditModeChange()
-    this.listenCurrentIri()
-    watch(this.currentStackItem, async (currentStackItem) => {
-      this.cachedCurrentStackItem.value = currentStackItem
-      await nextTick()
-      this.scrollIntoView()
-      this.createFocusComponent()
-    })
+    watch(this.isEditing, this.listenEditModeChange.bind(this))
+    watch(this.currentIri, this.listenCurrentIri.bind(this))
+    watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
+  }
+
+  private async handleCurrentStackItemChange (currentStackItem: ResourceStackItem|undefined) {
+    this.cachedCurrentStackItem.value = currentStackItem
+    await nextTick()
+    this.scrollIntoView()
+    this.createFocusComponent()
   }
 
   public getState (prop: string) {
@@ -270,26 +272,22 @@ export default class ComponentManager {
     return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
   }
 
-  private listenEditModeChange () {
-    watch(() => this.isEditing, (isEditing) => {
-      if (!isEditing) {
-        // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
-        this.showManager.value = false
-        // can clear the context menu stack though
-        this.resetStack(true)
-      }
-    })
+  private listenEditModeChange (isEditing: boolean) {
+    if (!isEditing) {
+      // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
+      this.showManager.value = false
+      // can clear the context menu stack though
+      this.resetStack(true)
+    }
   }
 
-  private listenCurrentIri () {
-    watch(this.currentIri, (newIri, oldIri) => {
-      if (newIri && oldIri) {
-        if (this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)) {
-          return
-        }
+  private listenCurrentIri (newIri: string|undefined, oldIri: string|undefined) {
+    if (newIri && oldIri) {
+      if (this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)) {
+        return
       }
-      this.resetResourceManagerVars()
-    })
+    }
+    this.resetResourceManagerVars()
   }
 
   private resetResourceManagerVars () {

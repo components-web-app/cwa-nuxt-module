@@ -30,7 +30,8 @@ vi.mock('./storage/storage', () => {
         fetcher: vi.fn(),
         mercure: vi.fn(),
         admin: vi.fn(),
-        auth: vi.fn()
+        auth: vi.fn(),
+        error: vi.fn()
       }
     }))
   }
@@ -194,7 +195,7 @@ describe('Cwa class test', () => {
   test('ResourcesManager is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0])
+    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0], stores.error)
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.results[0].value)
   })
 

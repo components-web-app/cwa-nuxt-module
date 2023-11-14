@@ -27,24 +27,19 @@ describe('CWA resources composable', () => {
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => mockCwa)
 
-  test('should return an object with manager IF no disabling option is provided', () => {
-    const spy = vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
+  test('should return an object for exposing vars', () => {
     const mockIri = 'mock-iri'
     const styles = 'styles'
-    const result = useCwaResource(mockIri, { styles })
+    const name = 'boogieman'
+    const result = useCwaResource(mockIri, { styles, name, manager: { disabled: true } })
 
-    expect(result.manager).toEqual(mockManager)
-    expect(spy).toHaveBeenCalledWith(mockIri, { styles })
-  })
-
-  test('should return an object with manager as undefined IF disabling option is provided', () => {
-    const spy = vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
-    const mockIri = 'mock-iri'
-    const result = useCwaResource(mockIri, { manager: { disabled: true } })
-
-    expect(result).toHaveProperty('manager')
-    expect(result.manager).toBeUndefined()
-    expect(spy).not.toHaveBeenCalled()
+    expect(result.exposeMeta).toEqual({
+      cwaResource: {
+        name,
+        styles
+      },
+      disableManager: true
+    })
   })
 
   test('should emit an eventbus event on mounted if manager is disabled', () => {

@@ -11,6 +11,7 @@ describe('Errors -> error', () => {
   })
 
   test('has errors', () => {
+    errorsState.allIds = ['0']
     expect(errorsGetters.hasErrors.value).toBe(true)
   })
 

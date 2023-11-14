@@ -4,6 +4,7 @@ import { shallowMount } from '@vue/test-utils'
 import { ref } from 'vue'
 import * as cwaComposable from '../../../composables/cwa'
 import * as cwaResourceComposables from '../../../composables/cwa-resource'
+import * as cwaResourceManageableComposable from '../../../composables/cwa-resource-manageable'
 import ComponentPosition from './ComponentPosition.vue'
 
 const mockComponentIri = 'test'
@@ -13,6 +14,7 @@ function createWrapper () {
   vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
     getResource: vi.fn(() => ref({ data: { component: mockComponentIri, '@id': '/position-iri' } }))
   }))
+  vi.spyOn(cwaResourceManageableComposable, 'useCwaResourceManageable').mockImplementation(() => ({}))
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     admin: {
