@@ -44,7 +44,7 @@ export default class ComponentManager {
   private focusProxy: ComponentPublicInstance|undefined
 
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore) {
-    watch(this.isEditing, this.listenEditModeChange.bind(this))
+    watch(() => this.isEditing, this.listenEditModeChange.bind(this))
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
