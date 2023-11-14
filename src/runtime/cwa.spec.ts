@@ -18,7 +18,7 @@ import Auth from './api/auth'
 
 vi.mock('#app/composables/cookie.js', () => {
   return {
-    useCookie: vi.fn(name => name)
+    useCookie: vi.fn((...args) => ([...args]))
   }
 })
 
@@ -204,8 +204,6 @@ describe('Cwa class test', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
 
-    expect(useCookie).toHaveBeenCalledWith('cwa_auth', { sameSite: 'strict' })
-
     expect(Auth).toBeCalledWith(
       CwaFetch.mock.instances[0],
       Mercure.mock.results[0].value,
@@ -214,7 +212,7 @@ describe('Cwa class test', () => {
       stores.auth,
       stores.resources,
       stores.fetcher,
-      'cwa_auth'
+      ['cwa_auth', { sameSite: 'strict' }]
     )
     expect($cwa.auth).toBe(Auth.mock.instances[0])
   })
