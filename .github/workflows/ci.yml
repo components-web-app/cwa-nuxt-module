@@ -59,7 +59,7 @@ jobs:
           if [ "$COVERAGE" = '1' ]; then
             pnpm run test:coverage
           else
-            pnpm run test
+            pnpm run test --reporter=hanging-process
           fi
         env:
           CI: true
