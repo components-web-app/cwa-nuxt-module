@@ -1,6 +1,5 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { useCookie } from '#app/composables/cookie.js'
 import type { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
