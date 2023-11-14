@@ -127,16 +127,28 @@ function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, wid
   ctx.arcTo(x, y, x, y + radius, radius)
 }
 
+let redrawInterval: number|undefined
 onMounted(() => {
   $cwa.admin.eventBus.on('componentMounted', redraw)
   window.addEventListener('resize', redraw, false)
   watch(resourceData, redraw, { deep: true, flush: 'post' })
   watch(canvas, newCanvas => newCanvas && redraw())
+
+  // fallbacks for if an image needs a short time to appear, or CLS
+  setTimeout(() => {
+    redraw()
+  }, 50)
+
+  // Periodic checks
+  redrawInterval = window.setInterval(() => {
+    redraw()
+  }, 5000)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', redraw)
   $cwa.admin.eventBus.off('componentMounted', redraw)
+  redrawInterval && window.clearInterval(redrawInterval)
 })
 
 defineExpose({
