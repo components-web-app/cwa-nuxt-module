@@ -10,7 +10,7 @@
     <Transition v-bind="transitions.context">
       <div v-if="isOpen" class="cwa-absolute cwa-top-0 cwa-left-1/2 -cwa-translate-x-1/2 cwa-min-w-full cwa-box-content cwa-inline-block" :style="{ marginTop: marginTop, transformOrigin: tOrig }">
         <div class="cwa-relative cwa-bg-dark cwa-inline-block">
-          <resource-context-item :index="stackSize - 1" :root-width="selectorWidth" @click="index => selectResource(index)" />
+          <resource-context-item :index="stackSize - 1" :root-width="selectorWidth" :use-current-stack="true" @click="index => selectResource(index)" />
         </div>
       </div>
     </Transition>

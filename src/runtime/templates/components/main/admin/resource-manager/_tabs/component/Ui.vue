@@ -44,7 +44,7 @@ const classOptions = computed(() => {
     label: 'Default',
     value: null
   }]
-  const currentClasses = current.value?.styles?.classes
+  const currentClasses = current.value?.styles?.value?.classes
   if (currentClasses) {
     for (const [styleName, styles] of Object.entries(currentClasses)) {
       options.push({
@@ -57,7 +57,7 @@ const classOptions = computed(() => {
 })
 
 const disabled = exposeMeta.disabled
-disabled.value = !current.value?.styles?.classes.length && !current.value?.ui?.length
+disabled.value = !current.value?.styles?.value?.classes.length && !current.value?.ui?.length
 
 const uiOption = ref()
 const classOption = ref()
@@ -69,6 +69,7 @@ onMounted(() => {
   watch(uiOption, (newOp) => {
     uiComponentModel.model.value = newOp?.value
     uiClassNamesModel.model.value = null
+    classOption.value = null
   })
   watch(classOption, (newOp) => {
     uiClassNamesModel.model.value = newOp?.value

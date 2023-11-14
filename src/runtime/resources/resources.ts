@@ -30,6 +30,14 @@ export class Resources {
     return this.resourcesStore.current.currentIds
   }
 
+  public isIriPublishableEquivalent (oldIri: string, newIri: string) {
+    return this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)
+  }
+
+  public findAllPublishableIris (iri: string) {
+    return this.resourcesStore.findAllPublishableIris(iri)
+  }
+
   public getResource (id: string) {
     return computed(() => this.resourcesStore.current.byId?.[id])
   }

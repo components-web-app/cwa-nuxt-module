@@ -66,6 +66,5 @@ export default {
   plugins: [
     require('@tailwindcss/forms')
   ],
-  prefix: 'cwa-',
-  important: true
+  prefix: 'cwa-'
 } as Config

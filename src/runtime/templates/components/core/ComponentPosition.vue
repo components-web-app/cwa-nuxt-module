@@ -1,21 +1,26 @@
 <template>
   <!--CWA_MANAGER_START_POSITION-->
-  <ResourceLoader v-if="componentIri" :iri="componentIri" component-prefix="CwaComponent" />
+  <ResourceLoader v-if="componentIri" ref="resourceLoader" :iri="componentIri" component-prefix="CwaComponent" />
   <ComponentPlaceholder v-else-if="$cwa.admin.isEditing" :iri="iri" />
   <!--CWA_MANAGER_END_POSITION-->
 </template>
 
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, reactive, ref, toRef, watchEffect } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
-import { useCwa, useCwaResource } from '#imports'
+import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import type { ManageableComponentOps } from '#cwa/runtime/admin/manageable-component'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
+const resourceLoader = ref()
+const componentManagerOps: ManageableComponentOps = reactive({})
+const iriRef = toRef(props, 'iri')
+const resource = useCwaResource(iriRef).getResource()
+useCwaResourceManageable(iriRef)
 
-const resource = useCwaResource(toRef(props, 'iri')).getResource()
 const componentIri = computed(() => {
   const iri = resource.value?.data?.component
   const publishedIri = $cwa.resources.findPublishedComponentIri(iri).value
@@ -29,4 +34,14 @@ const componentIri = computed(() => {
   }
   return publishedIri
 })
+
+watchEffect(() => {
+  const component = resourceLoader.value?.resourceComponent
+  if (!component) {
+    return
+  }
+  componentManagerOps.styles = component.cwaResource?.styles
+  componentManagerOps.disabled = !!component?.disableManager
+})
+useCwaResourceManageable(componentIri, componentManagerOps)
 </script>

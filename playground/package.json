@@ -4,9 +4,14 @@
   "devDependencies": {
     "@headlessui/vue": "^1.7.13",
     "@nuxtjs/tailwindcss": "^6.8.0",
+    "@tailwindcss/typography": "^0.5.10",
     "@vite-pwa/nuxt": "^0.0.9"
   },
   "dependencies": {
-    "@nuxt/image": "1.0.0-rc.3"
+    "@nuxt/image": "1.0.0-rc.3",
+    "@tiptap/extension-placeholder": "^2.1.12",
+    "@tiptap/pm": "^2.1.12",
+    "@tiptap/starter-kit": "^2.1.12",
+    "@tiptap/vue-3": "^2.1.12"
   }
 }

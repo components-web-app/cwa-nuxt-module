@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
-import { useMouse, useWindowScroll } from '@vueuse/core'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -12,8 +11,6 @@ import ComponentMetaResolver from '#cwa/runtime/templates/components/core/Compon
 import type { ManagerTab } from '#cwa/module'
 
 const $cwa = useCwa()
-const { x, y } = useMouse()
-const { y: windowY } = useWindowScroll()
 
 const current = $cwa.admin.componentManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
@@ -25,6 +22,7 @@ const virtualElement = ref({ getBoundingClientRect: () => ({}) })
 const managerTabs = ref<typeof ManagerTabs|null>(null)
 const currentManagerTabs = ref<ManagerTab[]|undefined>()
 const cachedPosition = { top: 0, left: 0 }
+let mousedownTarget: null|EventTarget = null
 
 type ContextPosition = {
   top: number
@@ -53,24 +51,36 @@ function openContext ({ top, left }: ContextPosition) {
 
 function onContextMenu (e: PointerEvent) {
   const pos: ContextPosition = {
-    top: unref(y) - unref(windowY),
-    left: unref(x)
+    top: e.clientY,
+    left: e.clientX
   }
-  if (showDefaultContext(pos)) {
+  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.componentManager.isContextPopulating.value) {
     isOpen.value = false
     return
   }
   e.preventDefault()
-  $cwa.admin.isEditing && openContext(pos)
+  openContext(pos)
+}
+
+function mousedownHandler (e: MouseEvent) {
+  mousedownTarget = e.target
 }
 
 function clickHandler (e: MouseEvent) {
+  // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
+  if (e.target !== mousedownTarget && !$cwa.admin.componentManager.isPopulating.value) {
+    return
+  }
   completeStack(e)
   $cwa.admin.componentManager.selectStackIndex(0)
 }
 
-function completeStack (e: MouseEvent) {
-  $cwa.admin.componentManager.addToStack({ clickTarget: e.target })
+function contextHandler (e: MouseEvent) {
+  completeStack(e, true)
+}
+
+function completeStack (e: MouseEvent, isContext: boolean = false) {
+  $cwa.admin.componentManager.addToStack({ clickTarget: e.target }, isContext)
 }
 
 function selectTab (index: number) {
@@ -82,7 +92,7 @@ const showAdmin = computed(() => {
 })
 
 watch(current, (newCurrent, oldCurrent) => {
-  if (newCurrent?.iri === oldCurrent?.iri) {
+  if (oldCurrent && newCurrent && $cwa.resources.isIriPublishableEquivalent(oldCurrent.iri, newCurrent.iri)) {
     return
   }
   allTabsMeta.value = []
@@ -91,13 +101,15 @@ watch(current, (newCurrent, oldCurrent) => {
 })
 
 onMounted(() => {
+  window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('click', clickHandler)
-  window.addEventListener('contextmenu', completeStack)
+  window.addEventListener('contextmenu', contextHandler)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('mousedown', mousedownHandler)
   window.removeEventListener('click', clickHandler)
-  window.removeEventListener('contextmenu', completeStack)
+  window.removeEventListener('contextmenu', contextHandler)
 })
 
 const showSpacer = computed(() => {

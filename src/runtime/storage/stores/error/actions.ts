@@ -1,6 +1,6 @@
 import type { FetchError } from 'ofetch'
 import type { ApiResourceEvent } from '../../../resources/resources-manager'
-import type { CwaErrorStateInterface, CwaErrorEvent } from './state'
+import type { CwaErrorEvent, CwaErrorStateInterface } from './state'
 import { ErrorType } from './state'
 
 export interface CwaErrorActionsInterface {
@@ -28,19 +28,23 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
     // use endpoint to make error be replace
     error (event: ApiResourceEvent, error: FetchError) {
       const id = new Date().getTime()
-      const err: Partial<CwaErrorEvent> = { event, statusCode: error.statusCode, timestamp: id }
+      const err: Partial<CwaErrorEvent> = { event, timestamp: id }
 
       if (error.cause) {
         err.type = getErrorType(error.cause.constructor.name)
         err.detail = (error.cause as Error).message
       } else if (error.data?.['hydra:description']) {
         err.type = getErrorType(error.data['@type'])
-        // TODO: use `detail` once we have the problem+json?
-        err.detail = error.data['hydra:description']
+        // todo: hydra:description deprecated
+        err.detail = error.data.detail || error.data['hydra:description']
         err.violations = error.data.violations?.map((e: any) => ({ property: e.propertyPath, message: e.message }))
       } else {
         err.type = ErrorType.SERVER
         err.detail = error.data
+      }
+
+      if (err.type === ErrorType.SERVER || err.type === ErrorType.VALIDATION || err.type === ErrorType.UNKNOWN) {
+        err.statusCode = error.statusCode
       }
 
       errorState.byId[id] = err as CwaErrorEvent
@@ -70,7 +74,7 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
       }
 
       const id = errorState.allEndpoints.get(endpoint)
-      this.removeById(id)
+      id && this.removeById(id)
     }
   }
 }

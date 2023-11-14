@@ -15,6 +15,14 @@ function createResourcesManager () {
       return resourcesStoreActions
     }
   }
+  const errorStoreActions = {
+    removeByEndpoint: vi.fn()
+  }
+  const mockErrorsStore = {
+    useStore () {
+      return errorStoreActions
+    }
+  }
   const mockFetchPath = {
     value: ''
   }
@@ -28,7 +36,8 @@ function createResourcesManager () {
     // @ts-ignore
     mockCwaFetch,
     mockResourcesStore,
-    mockFetchManager
+    mockFetchManager,
+    mockErrorsStore
   )
 
   return {
@@ -36,7 +45,8 @@ function createResourcesManager () {
     cwaFetch: mockCwaFetch,
     fetchPath: mockFetchPath,
     resourceStore: mockResourcesStore,
-    resourcesStoreActions
+    resourcesStoreActions,
+    errorStoreActions
   }
 }
 

@@ -1,12 +1,10 @@
 import {
   computed,
-  createApp,
   markRaw,
   ref,
   watch
 } from 'vue'
 import type {
-  App,
   ComponentPublicInstance,
   ComputedRef,
   Ref,
@@ -18,11 +16,9 @@ import {
   resourceTypeToNestedResourceProperties
 } from '../resources/resource-utils'
 import Cwa from '../cwa'
-// todo: error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES - appears chromium bug with self-signed cert
+// if you get error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES
+// appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
-// todo: same issue as above - seems imports from this file
-import ComponentFocus from '#cwa/runtime/templates/components/main/admin/resource-manager/ComponentFocus.vue'
-import type { ResourceStackItem } from '#cwa/runtime/admin/component-manager'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 
 export type StyleOptions = {
@@ -32,18 +28,15 @@ export type StyleOptions = {
 
 export type ManageableComponentOps = {
   styles?: StyleOptions
+  disabled?: boolean
 }
 
 export default class ManageableComponent {
   private currentIri: Ref<string|undefined>|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
-  private unwatchCurrentStackItem: undefined|WatchStopHandle
   private unwatchCurrentIri: undefined|WatchStopHandle
-  private focusComponent: undefined|App
-  private focusWrapper: HTMLElement|undefined
-  private readonly yOffset = 100
   private tabResolver: ManagerTabsResolver
-  private isInit: boolean = false
+  private isIriInit: boolean = false
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -53,6 +46,15 @@ export default class ManageableComponent {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
+    watch(ops, (newOps, oldOps) => {
+      if (newOps.disabled && !oldOps.disabled) {
+        this.clear(false)
+        return
+      }
+      if (!newOps.disabled && oldOps.disabled && this.currentIri) {
+        this.init(this.currentIri)
+      }
+    })
   }
 
   // PUBLIC
@@ -61,42 +63,30 @@ export default class ManageableComponent {
     // IRI, we should destroy what we need to for the old iri which is no longer relevant for this component instance
     this.clear(false)
     this.currentIri = iri
-    this.unwatchCurrentIri = watch(this.currentIri, this.iriWatchHandler.bind(this), {
+    this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
+    this.unwatchCurrentIri = watch(this.currentIri, this.initNewIri.bind(this), {
       immediate: true,
       flush: 'post'
     })
   }
 
-  private iriWatchHandler (newIri: string|undefined) {
+  private initNewIri (iri: string|undefined) {
     this.clear(true)
-    if (!newIri) {
+    if (!iri) {
       return
     }
-    this.isInit = true
+    this.isIriInit = true
     this.addClickEventListeners()
-    this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
-    this.$cwa.admin.eventBus.emit('componentMounted', newIri)
-    this.unwatchCurrentStackItem = watch(this.$cwa.admin.componentManager.currentStackItem, this.currentStackItemListener.bind(this), {
-      flush: 'post'
-    })
-    if (this.$cwa.admin.componentManager.currentStackItem.value?.iri === newIri) {
-      this.$cwa.admin.componentManager.replaceCurrentStackItem(this.getCurrentStackItem(null))
-    }
   }
 
   public clear (soft: boolean = false) {
-    if (!this.isInit) {
+    if (!this.isIriInit) {
       return
     }
-    this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
     this.removeClickEventListeners()
     this.domElements.value = []
-    if (this.unwatchCurrentStackItem) {
-      this.unwatchCurrentStackItem()
-      this.unwatchCurrentStackItem = undefined
-    }
     if (!soft) {
-      this.clearFocusComponent()
+      this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
@@ -106,78 +96,28 @@ export default class ManageableComponent {
         this.currentIri = undefined
       }
     }
-    this.isInit = false
-  }
-
-  private clearFocusComponent () {
-    if (this.focusComponent) {
-      this.focusComponent.unmount()
-      this.focusComponent = undefined
-    }
-    if (this.focusWrapper) {
-      this.focusWrapper.remove()
-      this.focusWrapper = undefined
-    }
+    this.isIriInit = false
   }
 
   // REFRESHING INITIALISATION
   private componentMountedListener (iri: string) {
-    if (this.childIris.value.includes(iri)) {
+    if (iri === this.currentIri?.value) {
+      this.initNewIri(iri)
+    }
+    const iris = this.$cwa.resources.findAllPublishableIris(iri)
+    const iriIsChild = () => {
+      for (const iri of iris) {
+        if (this.childIris.value.includes(iri)) {
+          return true
+        }
+      }
+      return false
+    }
+
+    if (iriIsChild()) {
       this.removeClickEventListeners()
       this.addClickEventListeners()
     }
-  }
-
-  private currentStackItemListener (stackItem: ResourceStackItem|undefined) {
-    this.clearFocusComponent()
-    if (!this.currentIri?.value) {
-      return
-    }
-    if (!stackItem || stackItem.iri !== this.currentIri.value) {
-      return
-    }
-
-    this.focusComponent = createApp(ComponentFocus, {
-      iri: this.currentIri,
-      domElements: this.domElements
-    })
-    this.focusWrapper = document.createElement('div')
-    this.focusComponent.mount(this.focusWrapper)
-    document.body.appendChild(this.focusWrapper)
-
-    this.scrollIntoView()
-  }
-
-  private scrollIntoView () {
-    let element: undefined|HTMLElement
-    let elementOutOfView = false
-
-    for (const elCandidate of this.domElements.value) {
-      if (elCandidate.nodeType === Node.ELEMENT_NODE) {
-        if (!element) {
-          element = elCandidate
-        }
-
-        if (this.isElementOutsideViewport(element)) {
-          elementOutOfView = true
-        }
-        if (elementOutOfView && element) {
-          break
-        }
-      }
-    }
-
-    if (!element || !elementOutOfView) {
-      return
-    }
-    const y = element.getBoundingClientRect().top + window.scrollY - this.yOffset
-    window.scrollTo({ top: y, behavior: 'smooth' })
-  }
-
-  private isElementOutsideViewport (el: HTMLElement) {
-    const { top, left, bottom, right } = el.getBoundingClientRect()
-    const { innerHeight, innerWidth } = window
-    return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
   }
 
   // COMPUTED FOR REFRESHING
@@ -195,7 +135,7 @@ export default class ManageableComponent {
         }
         // we don't have a real IRI for a placeholder - placeholders only currently used for positions
         // todo: test
-        if (type === CwaResourceTypes.COMPONENT_POSITION) {
+        if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
           nested.push(`${iri}_placeholder`)
         }
         const properties = resourceTypeToNestedResourceProperties[type]
@@ -269,11 +209,8 @@ export default class ManageableComponent {
     if (!this.currentIri?.value || !this.currentResource) {
       return
     }
-    if (evt.type === 'contextmenu') {
-      this.$cwa.admin.componentManager.showManager.value = false
-    }
 
-    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target))
+    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
   }
 
   private getCurrentStackItem (clickTarget: EventTarget|null) {
@@ -287,7 +224,7 @@ export default class ManageableComponent {
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
       ui: this.resourceConfig?.ui,
-      styles: this.ops.styles,
+      styles: computed(() => this.ops.styles),
       childIris: this.childIris
     }
   }

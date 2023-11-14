@@ -21,12 +21,9 @@ export interface CwaStores {
 }
 
 export class Storage {
-  private readonly storeName: string
   public readonly stores: CwaStores
 
   constructor (storeName: string) {
-    this.storeName = storeName
-
     this.stores = {
       resources: new ResourcesStore(storeName),
       fetcher: new FetcherStore(storeName),

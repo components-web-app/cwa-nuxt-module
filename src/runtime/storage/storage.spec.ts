@@ -1,12 +1,13 @@
 import { describe, vi, test, expect } from 'vitest'
-import { SpyFn } from 'tinyspy'
+import type { SpyFn } from 'tinyspy'
 import { Storage } from './storage'
 import { MercureStore } from './stores/mercure/mercure-store'
 import { ResourcesStore } from './stores/resources/resources-store'
 import { FetcherStore } from './stores/fetcher/fetcher-store'
 import { ApiDocumentationStore } from './stores/api-documentation/api-documentation-store'
 import { AuthStore } from './stores/auth/auth-store'
-import { AdminStore } from '#cwa/runtime/storage/stores/admin/admin-store'
+import { AdminStore } from './stores/admin/admin-store'
+import { ErrorStore } from './stores/error/error-store'
 
 type TestStore = { name: string }
 type StoreMock = SpyFn<[], TestStore>
@@ -44,9 +45,15 @@ vi.mock('./stores/admin/admin-store', () => {
   }
 })
 
+vi.mock('./stores/error/error-store', () => {
+  return {
+    ErrorStore: vi.fn<[], TestStore>(() => ({ name: 'ErrorStore' }))
+  }
+})
+
 describe('Storage is initialised properly', () => {
-  const storeName = 'mystore'
   test('Stores are initialised', () => {
+    const storeName = 'mystore'
     const storage = new Storage(storeName)
 
     // @ts-ignore
@@ -61,12 +68,15 @@ describe('Storage is initialised properly', () => {
     const authStoreMock:StoreMock = AuthStore
     // @ts-ignore
     const adminStoreMock:StoreMock = AdminStore
+    // @ts-ignore
+    const errorStoreMock:StoreMock = ErrorStore
 
     expect(resourcesStoreMock).toBeCalledWith(storeName)
     expect(fetcherStoreMock).toBeCalledWith(storeName)
     expect(mercureStoreMock).toBeCalledWith(storeName)
     expect(apiDocumentationStoreMock).toBeCalledWith(storeName)
     expect(authStoreMock).toBeCalledWith(storeName)
+    expect(errorStoreMock).toBeCalledWith(storeName)
 
     expect(storage.stores).toStrictEqual({
       resources: resourcesStoreMock.mock.results[0].value,
@@ -74,7 +84,8 @@ describe('Storage is initialised properly', () => {
       mercure: mercureStoreMock.mock.results[0].value,
       apiDocumentation: apiDocumentationStoreMock.mock.results[0].value,
       auth: authStoreMock.mock.results[0].value,
-      admin: adminStoreMock.mock.results[0].value
+      admin: adminStoreMock.mock.results[0].value,
+      error: errorStoreMock.mock.results[0].value
     })
   })
 })

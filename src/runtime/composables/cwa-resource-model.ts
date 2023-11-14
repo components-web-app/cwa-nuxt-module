@@ -1,4 +1,4 @@
-import { computed, getCurrentInstance, ref, watch } from 'vue'
+import { computed, getCurrentInstance, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -77,7 +77,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       submittingValue.value = newLocalValue
     }
     pendingSubmit.value = false
-
     await $cwa.resourcesManager.updateResource({
       endpoint: endpoint.value,
       data: {
@@ -86,7 +85,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       source
     })
     submittingValue.value = undefined
-    isEqual(localValue.value, newLocalValue) && resetValue()
+    isEqual(storeValue.value, submittingValue.value) && resetValue()
   }
 
   function resetValue () {
@@ -121,15 +120,13 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     }, longWaitThreshold)
   })
 
-  watch($cwa.admin.componentManager.forcePublishedVersion, (forcePublishable) => {
+  watchEffect(() => {
     if (!resource.value) {
       applyPostfix.value = false
       return
     }
     const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = forcePublishable !== undefined && publishableState === true
-  }, {
-    immediate: true
+    applyPostfix.value = $cwa.admin.componentManager.forcePublishedVersion.value !== undefined && publishableState === true
   })
 
   watch(applyPostfix, (newApplyPostfix) => {

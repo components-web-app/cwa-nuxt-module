@@ -27,6 +27,8 @@ export interface CwaResourcesGettersInterface {
   findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
   publishedToDraftIris: ComputedRef<PublishableMapping>
   draftToPublishedIris: ComputedRef<PublishableMapping>
+  isIriPublishableEquivalent: ComputedRef<(oldIri: string, newIri: string) => boolean>
+  findAllPublishableIris: ComputedRef<(iri: string) => string[]>
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
   totalResourcesPending: ComputedRef<number>
   currentResourcesApiStateIsPending: ComputedRef<boolean>
@@ -89,6 +91,19 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     }),
     publishedToDraftIris,
     draftToPublishedIris,
+    isIriPublishableEquivalent: computed(() => {
+      return (oldIri: string, newIri: string) => {
+        return [publishedToDraftIris.value[oldIri], draftToPublishedIris.value[oldIri]].includes(newIri)
+      }
+    }),
+    findAllPublishableIris: computed(() => {
+      return (iri: string) => {
+        const iris = [iri]
+        const relatedIri = draftToPublishedIris.value[iri] || publishedToDraftIris.value[iri]
+        relatedIri && iris.push(relatedIri)
+        return iris
+      }
+    }),
     resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],

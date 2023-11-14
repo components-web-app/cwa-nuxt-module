@@ -4,7 +4,7 @@ import type { ApiResourceEvent } from '../../../resources/resources-manager'
 
 export interface CwaViolationError {
   message: string
-  propertyPath: string
+  property: string
 }
 
 export enum ErrorType {
@@ -14,14 +14,24 @@ export enum ErrorType {
   UNKNOWN = 'UNKNOWN',
 }
 
-export interface CwaErrorEvent {
-    event: ApiResourceEvent
-    statusCode: number|undefined
-    type: ErrorType
-    detail: string
-    violations: CwaViolationError[]
-    timestamp: number
+interface CwaBaseErrorEvent {
+  event: ApiResourceEvent
+  detail: string
+  violations: CwaViolationError[]
+  timestamp: number
 }
+
+interface CwaResolvedErrorEvent extends CwaBaseErrorEvent {
+  type: Exclude<ErrorType, ErrorType.NETWORK>
+  statusCode: number
+}
+
+interface CwaNetworkErrorEvent extends CwaBaseErrorEvent {
+  type: ErrorType.NETWORK
+  statusCode: undefined
+}
+
+export type CwaErrorEvent = CwaNetworkErrorEvent|CwaResolvedErrorEvent
 
 export interface CwaErrorStateInterface {
   byId: {
