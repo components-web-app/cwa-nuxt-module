@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Enable corepack and PNPM
         run: |
@@ -89,9 +89,12 @@ jobs:
     if: github.ref == 'refs/heads/nuxt3'
     needs: [test]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ latest ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Enable corepack and PNPM
         run: |
@@ -128,7 +131,7 @@ jobs:
 #    container: cypress/included:10.11.0
 #    steps:
 #      - name: Checkout
-#        uses: actions/checkout@v3
+#        uses: actions/checkout@v4
 #      - name: Install SASS dependencies
 #        run: |
 #          apt-get update
