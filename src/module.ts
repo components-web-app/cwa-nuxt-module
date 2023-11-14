@@ -140,7 +140,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         }
 
         const resolveComponentNames = (dirPath: string) => {
-          const componentNames = []
+          const componentNames: GlobalComponentNames[] = []
           if (isDirectory(dirPath)) {
             const componentFilePaths = Object.keys(componentsByPath).filter(path => path.startsWith(dirPath))
             componentFilePaths.forEach((filePath) => {
