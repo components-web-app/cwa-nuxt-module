@@ -137,12 +137,18 @@ onMounted(() => {
   // fallbacks for if an image needs a short time to appear, or CLS
   setTimeout(() => {
     redraw()
-  }, 50)
+  }, 10)
+  setTimeout(() => {
+    redraw()
+  }, 100)
+  setTimeout(() => {
+    redraw()
+  }, 250)
 
   // Periodic checks
   redrawInterval = window.setInterval(() => {
     redraw()
-  }, 5000)
+  }, 1000)
 })
 
 onBeforeUnmount(() => {
