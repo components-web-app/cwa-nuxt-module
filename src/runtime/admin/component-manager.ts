@@ -183,9 +183,7 @@ export default class ComponentManager {
   // todo: test checking and inserting at correct index
   private insertResourceStackItem (resourceStackItem: ResourceStackItem, isContext?: boolean) {
     const stack = isContext ? this.contextResourceStack : this.currentResourceStack
-    const iris = [resourceStackItem.iri]
-    const relatedIri = this.resourcesStore.draftToPublishedIris[resourceStackItem.iri] || this.resourcesStore.publishedToDraftIris[resourceStackItem.iri]
-    relatedIri && iris.push(relatedIri)
+    const iris = this.resourcesStore.findAllPublishableIris(resourceStackItem.iri)
     const insertAtIndex = stack.value.findIndex((existingStackItem) => {
       const existingItemChildren = existingStackItem.childIris.value
       if (!existingItemChildren) {

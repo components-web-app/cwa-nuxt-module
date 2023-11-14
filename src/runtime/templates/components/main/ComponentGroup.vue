@@ -8,7 +8,7 @@
     <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
-    <HotSpot screen-reader-action="Add component position" />
+    <HotSpot screen-reader-action="Add component position" :iri="iri" />
   </div>
 </template>
 
@@ -21,27 +21,19 @@
 import {
   computed,
   onMounted,
-  onBeforeUnmount,
-  watch,
-  ref
-} from 'vue'
-import type {
-  ComputedRef,
-  ShallowUnwrapRef,
-  WatchCallback
+  onBeforeUnmount
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa, useCwaResourceManageable } from '#imports'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
 
-const iri = ref<string|undefined>()
+const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
-const $manageable = useCwaResourceManageable(iri)
+useCwaResourceManageable(iri)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 
@@ -88,15 +80,6 @@ function getResourceKey (positionIri: string) {
   return `ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`
 }
 
-type watcherParams = [ ComputedRef<any>, ComputedRef<boolean>, ComputedRef<CwaCurrentResourceInterface|undefined> ]
-const managerWatchCallback: WatchCallback<ShallowUnwrapRef<watcherParams>> = ([positions, showPlaceholder, resource], [oldPositions, oldShowPlaceholder, _]) => {
-  if (showPlaceholder === oldShowPlaceholder || resource?.data === undefined || (positions?.length > 0 && positions?.length === oldPositions?.length)) {
-    return
-  }
-  iri.value = resource.data['@id']
-  iri.value && $manageable.manager.init(iri)
-}
-
 onMounted(() => {
   componentGroupSynchronizer.createSyncWatcher({
     resource,
@@ -104,15 +87,6 @@ onMounted(() => {
     fullReference,
     allowedComponents: props.allowedComponents
   })
-
-  const sources: watcherParams = [componentPositions, signedInAndResourceExists, resource]
-
-  watch(sources, managerWatchCallback,
-    {
-      flush: 'post',
-      immediate: true
-    }
-  )
 })
 
 onBeforeUnmount(() => {

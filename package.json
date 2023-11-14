@@ -45,7 +45,7 @@
     "@nuxtjs/color-mode": "^3.3.0",
     "@pinia/nuxt": "^0.4.11",
     "@popperjs/core": "^2.11.8",
-    "@vueuse/core": "^10.6.0",
+    "@vueuse/core": "^10.6.1",
     "consola": "^3.2.3",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",

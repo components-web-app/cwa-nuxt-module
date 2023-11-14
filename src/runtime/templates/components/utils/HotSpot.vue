@@ -1,8 +1,19 @@
 <script setup lang="ts">
-withDefaults(defineProps<{
-  screenReaderAction?: text
+import { onMounted } from 'vue'
+import { useCwa } from '#cwa/runtime/composables/cwa'
+
+const props = withDefaults(defineProps<{
+  screenReaderAction?: string
+  iri?: string
 }>(), {
   screenReaderAction: 'Hot Spot Button'
+})
+
+const $cwa = useCwa()
+onMounted(() => {
+  if (props.iri) {
+    $cwa.admin.eventBus.emit('componentMounted', props.iri + '_placeholder')
+  }
 })
 </script>
 

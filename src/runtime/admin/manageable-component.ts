@@ -104,10 +104,10 @@ export default class ManageableComponent {
     if (iri === this.currentIri?.value) {
       this.initNewIri(iri)
     }
+    const iris = this.$cwa.resources.findAllPublishableIris(iri)
     const iriIsChild = () => {
-      const iris = [this.$cwa.resources.findPublishedComponentIri(iri), this.$cwa.resources.findDraftComponentIri(iri)].filter(i => !!i.value)
       for (const iri of iris) {
-        if (iri.value && this.childIris.value.includes(iri.value)) {
+        if (this.childIris.value.includes(iri)) {
           return true
         }
       }
@@ -135,7 +135,7 @@ export default class ManageableComponent {
         }
         // we don't have a real IRI for a placeholder - placeholders only currently used for positions
         // todo: test
-        if (type === CwaResourceTypes.COMPONENT_POSITION) {
+        if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
           nested.push(`${iri}_placeholder`)
         }
         const properties = resourceTypeToNestedResourceProperties[type]
