@@ -66,6 +66,8 @@ function createWrapper ({
     }
   })
 
+  // vi.spyOn(cwaResourceManageableComposables, 'useCwaResourceManageable').mockImplementation
+
   return mount(ComponentGroup, {
     props: {
       reference,
@@ -369,7 +371,7 @@ describe('ComponentGroup', () => {
         data: undefined,
         apiState: {}
       }
-      vi.spyOn(cwaResourceManageableComposables, 'useCwaResourceManageable').mockImplementationOnce(() => {
+      vi.spyOn(cwaResourceManageableComposables, 'useCwaResourceManageable').mockImplementation(() => {
         return {
           resourceWatchHandler
         }
