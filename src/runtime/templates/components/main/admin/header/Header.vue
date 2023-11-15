@@ -20,7 +20,6 @@
       </div>
     </div>
     <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />
-    <OutdatedContentNotice class="cwa-absolute cwa-top-full cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-10" />
   </div>
   <RequestErrors />
 </template>
@@ -30,7 +29,6 @@ import { computed, onMounted, ref } from 'vue'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
-import OutdatedContentNotice from './_parts/OutdatedContentNotice.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
 import { useCwa } from '#imports'
 
