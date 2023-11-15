@@ -57,7 +57,7 @@ jobs:
         run: |
           mkdir -p coverage
           if [ "$COVERAGE" = '1' ]; then
-            pnpm run test:coverage
+            pnpm run test:coverage --reporter=hanging-process
           else
             pnpm run test --reporter=hanging-process
           fi
