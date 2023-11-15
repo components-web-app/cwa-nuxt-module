@@ -34,6 +34,7 @@ interface ResetPasswordEvent {
 
 export default class Auth {
   private loading: Ref<boolean>
+  private hasCheckedMeEndpointForInit = false
 
   public constructor (
     private readonly cwaFetch: CwaFetch,
@@ -125,8 +126,8 @@ export default class Auth {
   }
 
   public async init () {
-    // even if /me endpoint is 401 we can get a mercure auth cookie
-    if (!this.user) {
+    if (!this.hasCheckedMeEndpointForInit || (this.signedIn.value && !this.user)) {
+      this.hasCheckedMeEndpointForInit = true
       await this.refreshUser()
     }
   }
