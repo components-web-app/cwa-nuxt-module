@@ -11,12 +11,12 @@ export const useLogin = () => {
     password: ''
   })
 
-  const error = ref(null)
+  const error = ref()
   const submitting = ref(false)
 
   async function signIn () {
     submitting.value = true
-    error.value = null
+    error.value = undefined
     const user = await $cwa.auth.signIn(credentials)
     if (user instanceof FetchError) {
       error.value = user.data?.message || user.statusMessage

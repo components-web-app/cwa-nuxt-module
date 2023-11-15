@@ -20,7 +20,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     return navigateTo(adminRouteGuard)
   }
 
-  if (to.meta.cwa === false) {
+  if (to.meta.cwa !== true) {
     nuxtApp.$cwa.clearPrimaryFetch()
     return
   }

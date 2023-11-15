@@ -4,7 +4,11 @@
 
 <script setup lang="ts">
 import ResourceLoader from './components/core/ResourceLoader.vue'
-import { useCwa } from '#imports'
+import { definePageMeta, useCwa } from '#imports'
 
 const $cwa = useCwa()
+
+definePageMeta({
+  cwa: true
+})
 </script>
