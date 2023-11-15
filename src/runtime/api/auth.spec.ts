@@ -317,6 +317,7 @@ describe('Auth', () => {
       cookie.value = '0'
 
       const refreshSpy = vi.spyOn(auth, 'refreshUser')
+      auth.hasCheckedMeEndpointForInit = true
 
       await auth.init()
 
@@ -331,6 +332,7 @@ describe('Auth', () => {
       const refreshSpy = vi.spyOn(auth, 'refreshUser')
 
       authStore.useStore().data.user = { name: 'test' }
+      auth.hasCheckedMeEndpointForInit = true
 
       await auth.init()
 
@@ -346,6 +348,7 @@ describe('Auth', () => {
 
       // @ts-ignore
       authStore.useStore().data.user = undefined
+      auth.hasCheckedMeEndpointForInit = true
 
       await auth.init()
 
