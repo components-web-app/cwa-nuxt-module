@@ -125,7 +125,8 @@ export default class Auth {
   }
 
   public async init () {
-    if (this.signedIn.value && !this.user) {
+    // even if /me endpoint is 401 we can get a mercure auth cookie
+    if (!this.user) {
       await this.refreshUser()
     }
   }
