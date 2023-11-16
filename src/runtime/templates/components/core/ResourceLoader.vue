@@ -1,22 +1,14 @@
 <template>
-  <CwaUiAlertWarning v-if="!iri">
-    <p>No IRI has been passed as a property to the `ResourceLoader` component</p>
-  </CwaUiAlertWarning>
-  <div v-else-if="isLoading">
+  <div v-if="isLoading">
     <Spinner :show="true" />
   </div>
-  <CwaUiAlertWarning v-else-if="resource?.data && ((!resolvedComponent && !hasError) || (hasError && !hasSilentError))">
-    <p v-if="!resource">
-      Resource `{{ iri }}` has not been requested
-    </p>
-    <p v-else>
-      The component `{{ resourceUiComponent }}` for resource `{{ iri }}` cannot be resolved
-    </p>
+  <CwaUiAlertWarning v-else-if="warningPlaceholder">
+    <p>{{ warningPlaceholder }}</p>
   </CwaUiAlertWarning>
   <component
     v-bind="$attrs"
     :is="resolvedComponent"
-    v-else-if="!hasError && resource?.data"
+    v-else-if="!!resource?.data"
     ref="resourceComponent"
     :iri="iri"
     :class="resourceClassNames"
@@ -26,7 +18,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
 import { useNuxtApp } from '#app'
-import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { CwaResourceApiStateError, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
 import {
@@ -64,8 +56,24 @@ onBeforeMount(() => {
 })
 
 const isLoading = computed(() => {
+  if (!props.iri) {
+    return false
+  }
   const isLoading = !!resource.value && !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
   return isLoading || (resource.value === undefined && resourceLoadBuffering.value)
+})
+
+const warningPlaceholder = computed((): string|undefined => {
+  if (!props.iri) {
+    return 'No IRI has been passed as a property to the `ResourceLoader` component'
+  }
+  if (!resource.value) {
+    return `Resource '${props.iri}' has not been requested`
+  }
+  if (resourceUiComponent.value && !resolvedComponent.value) {
+    return `The component '${resourceUiComponent.value}' for resource '${props.iri}' cannot be resolved`
+  }
+  return undefined
 })
 
 const resourceUiComponent = computed(() => {
@@ -92,10 +100,11 @@ const hasError = computed(() => {
 })
 
 const hasSilentError = computed<boolean>(() => {
-  if (!resource.value || resource.value.apiState.status !== CwaResourceApiStatuses.ERROR) {
+  if (!hasError.value) {
     return false
   }
-  const statusCode = resource.value?.apiState?.error?.statusCode
+  const state = resource.value?.apiState as CwaResourceApiStateError
+  const statusCode = state.error?.statusCode
   return !!(statusCode && statusCode >= 400 && statusCode < 500)
 })
 
