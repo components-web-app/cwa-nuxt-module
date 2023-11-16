@@ -1,7 +1,7 @@
 import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { useRoute } from '#app'
+import { useNuxtApp, useRoute } from '#app'
 import type { CookieRef } from '#app'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
@@ -118,6 +118,7 @@ export default class Auth {
       if (!(error instanceof FetchError)) {
         throw error
       }
+
       await this.clearSession()
       return error
     } finally {
@@ -184,6 +185,21 @@ export default class Auth {
     this.authStore.data.user = undefined
     this.authCookie.value = '0'
     this.admin.toggleEdit(false)
+
+    // Hacky fix... we don't want to use useRoute in the clearSession when processing middleware
+    const isProcessingMiddleware = () => {
+      try {
+        if (useNuxtApp()._processingMiddleware) {
+          return true
+        }
+      } catch {
+        return true
+      }
+      return false
+    }
+    if (isProcessingMiddleware()) {
+      return
+    }
     this.mercure.init(true)
     this.resourcesStore.clearResources()
     this.fetcherStore.clearFetches()

@@ -20,21 +20,9 @@ exports[`ResourceLoader > snapshots > should match snapshot IF global component 
 />
 `;
 
-exports[`ResourceLoader > snapshots > should match snapshot IF resource data is not resolved 1`] = `
-<warning-stub>
-  <p>
-     No data received for resource \`testIri\` 
-  </p>
-</warning-stub>
-`;
+exports[`ResourceLoader > snapshots > should match snapshot IF resource data is not resolved 1`] = `<!--v-if-->`;
 
-exports[`ResourceLoader > snapshots > should match snapshot IF resource does not exist after loading 1`] = `
-<warning-stub>
-  <p>
-     Resource \`testIri\` has not been requested 
-  </p>
-</warning-stub>
-`;
+exports[`ResourceLoader > snapshots > should match snapshot IF resource does not exist after loading 1`] = `<!--v-if-->`;
 
 exports[`ResourceLoader > snapshots > should match snapshot IF resource is loading 1`] = `
 <div>

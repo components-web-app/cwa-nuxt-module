@@ -5,12 +5,9 @@
   <div v-else-if="isLoading">
     <Spinner :show="true" />
   </div>
-  <CwaUiAlertWarning v-else-if="(!resolvedComponent && !hasError) || (hasError && !hasSilentError)">
+  <CwaUiAlertWarning v-else-if="resource?.data && ((!resolvedComponent && !hasError) || (hasError && !hasSilentError))">
     <p v-if="!resource">
       Resource `{{ iri }}` has not been requested
-    </p>
-    <p v-else-if="!resource?.data">
-      No data received for resource `{{ iri }}`
     </p>
     <p v-else>
       The component `{{ resourceUiComponent }}` for resource `{{ iri }}` cannot be resolved
@@ -19,7 +16,7 @@
   <component
     v-bind="$attrs"
     :is="resolvedComponent"
-    v-else-if="!hasError"
+    v-else-if="!hasError && resource?.data"
     ref="resourceComponent"
     :iri="iri"
     :class="resourceClassNames"
@@ -28,6 +25,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
+import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
@@ -39,6 +37,7 @@ import {
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
 const $cwa = useCwa()
+const { payload: { prerenderedAt } } = useNuxtApp()
 
 const props = withDefaults(
   defineProps<IriProp & { componentPrefix?: string, uiComponent?: any }>(),
@@ -50,6 +49,7 @@ const props = withDefaults(
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
 const resourceComponent = ref()
+const isPrerendered = ref(!!prerenderedAt)
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
@@ -147,7 +147,13 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
 const methods = {
   async fetchResource () {
     // todo: test all permutations
-    if (ssrNoDataWithSilentError.value || ssrPositionHasPartialData.value || refetchPublishedSsrResourceToResolveDraft.value) {
+    if (
+      ssrNoDataWithSilentError.value ||
+      ssrPositionHasPartialData.value ||
+      refetchPublishedSsrResourceToResolveDraft.value ||
+      isPrerendered.value
+    ) {
+      isPrerendered.value = false
       await $cwa.fetchResource({
         path: props.iri
       })
