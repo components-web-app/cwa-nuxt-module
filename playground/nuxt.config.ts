@@ -57,7 +57,7 @@ export default defineNuxtConfig({
     }
   },
   routeRules: {
-    '/': { prerender: true },
+    // '/': { prerender: true },
     '/**': { isr: true }
   },
   pwa: {
@@ -86,14 +86,14 @@ export default defineNuxtConfig({
       ]
     },
     workbox: {
-      navigateFallback: '/',
+      navigateFallback: null,
       globPatterns: ['**/*.{js,css,html,png,svg,ico}']
     },
     client: {
-      installPrompt: true,
+      installPrompt: true
       // you don't need to include this: only for testing purposes
       // if enabling periodic sync for update use 1 hour or so (periodicSyncForUpdates: 3600)
-      periodicSyncForUpdates: 20
+      // periodicSyncForUpdates: 20
     },
     devOptions: {
       enabled: true,

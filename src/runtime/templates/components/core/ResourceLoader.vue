@@ -18,7 +18,8 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
 import { useNuxtApp } from '#app'
-import { CwaResourceApiStateError, CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
+import type { CwaResourceApiStateError } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
 import {
