@@ -78,10 +78,11 @@ const warningPlaceholder = computed((): string|undefined => {
 })
 
 const resourceUiComponent = computed(() => {
-  if (!resource.value || !resource.value?.data) {
+  const data = resource.value?.data
+  if (!data) {
     return
   }
-  const rawName = (resource.value.data.uiComponent || resource.value.data['@type'])
+  const rawName = (data.uiComponent || data['@type'])
   if (!rawName) {
     return
   }
@@ -127,7 +128,7 @@ const resolvedComponent = computed(() => {
 })
 
 const ssrNoDataWithSilentError = computed(() => {
-  return resource.value?.apiState.ssr && resource.value.data === undefined && hasSilentError
+  return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError
 })
 
 const ssrPositionHasPartialData = computed(() => {

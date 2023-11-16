@@ -5,7 +5,9 @@
     "@headlessui/vue": "^1.7.13",
     "@nuxtjs/tailwindcss": "^6.8.0",
     "@tailwindcss/typography": "^0.5.10",
-    "@vite-pwa/nuxt": "^0.2.3"
+    "@vite-pwa/nuxt": "^0.2.3",
+    "typescript": "^5.2.2",
+    "vue-tsc": "^1.8.22"
   },
   "dependencies": {
     "@nuxt/image": "1.0.0-rc.3",

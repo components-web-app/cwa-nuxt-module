@@ -7,6 +7,15 @@ const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
 const { resolve } = createResolver(import.meta.url)
 
 export default defineNuxtConfig({
+  app: {
+    head: {
+      titleTemplate: '%s - CWA Playground',
+      charset: 'utf-8',
+      htmlAttrs: {
+        lang: 'en-GB'
+      }
+    }
+  },
   extends: [
     '../src/layer'
   ],
@@ -102,4 +111,7 @@ export default defineNuxtConfig({
       type: 'module'
     }
   }
+  // typescript: {
+  //   typeCheck: 'build'
+  // }
 })
