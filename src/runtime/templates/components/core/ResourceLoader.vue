@@ -31,6 +31,7 @@ import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
 const $cwa = useCwa()
 const { payload: { prerenderedAt } } = useNuxtApp()
+const instance = getCurrentInstance()
 
 const props = withDefaults(
   defineProps<IriProp & { componentPrefix?: string, uiComponent?: any }>(),
@@ -114,8 +115,6 @@ const resolvedComponent = computed(() => {
   if (props.uiComponent) {
     return props.uiComponent
   }
-
-  const instance = getCurrentInstance()
   if (
     typeof instance?.appContext.components !== 'object' ||
     !resourceUiComponent.value ||

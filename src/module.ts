@@ -38,13 +38,15 @@ export interface CwaModuleOptions {
   resources?: CwaResourcesMeta
   tailwind?: {
     base?: boolean
-  }
+  },
+  layoutName?: string
 }
 
 function createDefaultCwaPages (
   pages: NuxtPage[],
   pageComponentFilePath: string,
-  maxDepth: number
+  maxDepth: number,
+  layout?: string|undefined
 ) {
   function create (currentDepth = 0) {
     const page: NuxtPage = {
@@ -52,7 +54,7 @@ function createDefaultCwaPages (
       path: `:cwaPage${currentDepth}*`,
       file: pageComponentFilePath,
       meta: {
-        layout: 'cwa-root-layout'
+        layout: layout || 'cwa-root-layout'
       }
     }
     if (currentDepth === 0) {
@@ -115,7 +117,7 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
-      createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3)
+      createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3, options.layoutName)
     })
 
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
@@ -211,6 +213,13 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
       })
 
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
+      dirs.unshift({
+        path: join(nuxt.options.srcDir, 'cwa', 'layouts'),
+        prefix: 'CwaLayout',
+        global: true,
+        ignore: ['**/*.spec.{cts,mts,ts}']
+      })
+
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
         prefix: 'CwaPage',
