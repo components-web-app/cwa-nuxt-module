@@ -141,12 +141,9 @@ export class ResourcesManager {
 
   private requestOptions (method: 'POST' | 'PATCH'): RequestOptions {
     const headers: {
-      accept: string
       path?: string
       'Content-Type'?: string
-    } = {
-      accept: 'application/ld+json,application/json'
-    }
+    } = {}
     if (this.fetchStatusManager.primaryFetchPath) {
       headers.path = this.fetchStatusManager.primaryFetchPath
     }
