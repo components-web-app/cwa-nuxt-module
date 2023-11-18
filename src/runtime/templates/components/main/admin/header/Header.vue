@@ -19,6 +19,7 @@
         <SpinnerTick :is-loading="isLoading" />
       </div>
     </div>
+    <OutdatedContentNotice class="cwa-absolute cwa-top-full cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-20" />
     <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />
   </div>
   <RequestErrors />
@@ -31,6 +32,7 @@ import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
 import { useCwa } from '#imports'
+import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 
 const $cwa = useCwa()
 

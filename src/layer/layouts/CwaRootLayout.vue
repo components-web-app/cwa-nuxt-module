@@ -2,7 +2,7 @@
   <div id="cwa-root-layout" @contextmenu="onContextMenu">
     <ClientOnly>
       <CwaAdminHeader v-if="showAdmin" />
-      <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-10" />
+      <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50" />
     </ClientOnly>
     <component :is="resolvedComponent" v-if="resolvedComponent">
       <slot />
