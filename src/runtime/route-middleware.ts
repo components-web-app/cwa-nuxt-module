@@ -80,6 +80,8 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     return
   }
 
+  nuxtApp.$cwa.prerendered.value = !!nuxtApp.payload.prerenderedAt
+
   // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
   const resource = await nuxtApp.$cwa.fetchRoute(to)
   return handleRouteRedirect(resource)

@@ -17,7 +17,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
-import { useNuxtApp } from '#app'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import type { CwaResourceApiStateError } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
@@ -30,7 +29,6 @@ import {
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
 const $cwa = useCwa()
-const { payload: { prerenderedAt } } = useNuxtApp()
 const instance = getCurrentInstance()
 
 const props = withDefaults(
@@ -43,7 +41,7 @@ const props = withDefaults(
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
 const resourceComponent = ref()
-const isPrerendered = ref(!!prerenderedAt)
+const isPrerenderedData = ref($cwa.prerendered.value)
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
@@ -161,9 +159,9 @@ const methods = {
       ssrNoDataWithSilentError.value ||
       ssrPositionHasPartialData.value ||
       refetchPublishedSsrResourceToResolveDraft.value ||
-      isPrerendered.value
+      isPrerenderedData.value
     ) {
-      isPrerendered.value = false
+      isPrerenderedData.value = false
       await $cwa.fetchResource({
         path: props.iri
       })
