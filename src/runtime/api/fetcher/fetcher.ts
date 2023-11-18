@@ -290,9 +290,6 @@ export default class Fetcher {
     if (preload) {
       requestHeaders.preload = preload.join(',')
     }
-    if (this.signedIn?.value === true) {
-      requestHeaders.cache = 'no-store'
-    }
     return requestHeaders
   }
 
