@@ -39,7 +39,7 @@ vi.mock('./storage/storage', () => {
 
 vi.mock('./api/fetcher/fetcher', () => {
   return {
-    default: vi.fn()
+    default: vi.fn(() => ({ setSignedIn: vi.fn() }))
   }
 })
 
@@ -70,7 +70,7 @@ vi.mock('./resources/resources-manager', () => {
 vi.mock('./resources/resources')
 vi.mock('./api/auth', () => {
   return {
-    default: vi.fn()
+    default: vi.fn(() => ({ signedIn: 'am-i-signed-in?' }))
   }
 })
 vi.mock('./api/forms')
@@ -152,7 +152,7 @@ describe('Cwa class test', () => {
   test('ApiDocumentation is setup and proxy method works', async () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(ApiDocumentation).toBeCalledWith(CwaFetch.mock.instances[0], stores.apiDocumentation)
+    expect(ApiDocumentation).toBeCalledWith(CwaFetch.mock.results[0].value, stores.apiDocumentation)
 
     expect(await $cwa.getApiDocumentation(true)).toBe('refresh:true')
     expect(await $cwa.getApiDocumentation(false)).toBe('refresh:false')
@@ -164,7 +164,7 @@ describe('Cwa class test', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
-    expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.instances[0])
+    expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.results[0].value)
     expect(Mercure.mock.results[0].value.setRequestCount).toBeCalledWith(ResourcesManager.mock.results[0].value.requestCount)
   })
 
@@ -182,20 +182,21 @@ describe('Cwa class test', () => {
   test('Fetcher is initialised', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.instances[0], FetchStatusManager.mock.instances[0], { path }, stores.resources)
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, { path }, stores.resources)
+    expect(Fetcher.mock.results[0].value.setSignedIn).toBeCalledWith(Auth.mock.results[0].value.signedIn)
   })
 
   test('Resources is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Resources).toBeCalledWith(stores.resources, stores.fetcher)
-    expect($cwa.resources).toBe(Resources.mock.instances[0])
+    expect($cwa.resources).toBe(Resources.mock.results[0].value)
   })
 
   test('ResourcesManager is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.instances[0], stores.resources, FetchStatusManager.mock.instances[0], stores.error)
+    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.results[0].value, stores.resources, FetchStatusManager.mock.results[0].value, stores.error)
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.results[0].value)
   })
 
@@ -204,23 +205,23 @@ describe('Cwa class test', () => {
     const stores = Storage.mock.results[0].value.stores
 
     expect(Auth).toBeCalledWith(
-      CwaFetch.mock.instances[0],
+      CwaFetch.mock.results[0].value,
       Mercure.mock.results[0].value,
-      Fetcher.mock.instances[0],
-      Admin.mock.instances[0],
+      Fetcher.mock.results[0].value,
+      Admin.mock.results[0].value,
       stores.auth,
       stores.resources,
       stores.fetcher,
       ['cwa_auth', { sameSite: 'strict' }]
     )
-    expect($cwa.auth).toBe(Auth.mock.instances[0])
+    expect($cwa.auth).toBe(Auth.mock.results[0].value)
   })
 
   test('Admin is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Admin).toBeCalledWith(stores.admin, stores.resources)
-    expect($cwa.admin).toBe(Admin.mock.instances[0])
+    expect($cwa.admin).toBe(Admin.mock.results[0].value)
   })
 
   test('Admin navigation guard is initialised', () => {

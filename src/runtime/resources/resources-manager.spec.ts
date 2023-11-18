@@ -69,7 +69,8 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
         method: 'POST',
         headers: {
-          accept: 'application/ld+json,application/json'
+          accept: 'application/ld+json,application/json',
+          'content-type': 'application/ld+json'
         },
         body: mockPayload.data
       })
@@ -97,7 +98,8 @@ describe('Resources manager', () => {
         method: 'POST',
         headers: {
           path: 'primary-path',
-          accept: 'application/ld+json,application/json'
+          accept: 'application/ld+json,application/json',
+          'content-type': 'application/ld+json'
         },
         body: mockPayload.data
       })
@@ -125,7 +127,7 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/merge-patch+json',
+          'content-type': 'application/merge-patch+json',
           accept: 'application/ld+json,application/json'
         },
         body: mockPayload.data
@@ -176,7 +178,8 @@ describe('Resources manager', () => {
       expect(resourcesManager.requestOptions('POST')).toEqual({
         method: 'POST',
         headers: {
-          accept: 'application/ld+json,application/json'
+          accept: 'application/ld+json,application/json',
+          'content-type': 'application/ld+json'
         }
       })
     })
@@ -187,7 +190,7 @@ describe('Resources manager', () => {
       expect(resourcesManager.requestOptions('PATCH')).toEqual({
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/merge-patch+json',
+          'content-type': 'application/merge-patch+json',
           accept: 'application/ld+json,application/json'
         }
       })
@@ -201,7 +204,7 @@ describe('Resources manager', () => {
       expect(resourcesManager.requestOptions('PATCH')).toEqual({
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/merge-patch+json',
+          'content-type': 'application/merge-patch+json',
           accept: 'application/ld+json,application/json',
           path: '/test'
         }

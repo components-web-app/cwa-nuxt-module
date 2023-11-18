@@ -141,13 +141,16 @@ export class ResourcesManager {
 
   private requestOptions (method: 'POST' | 'PATCH'): RequestOptions {
     const headers: {
+      accept: string
       path?: string
-      'Content-Type'?: string
-    } = {}
+      'content-type'?: string
+    } = {
+      accept: 'application/ld+json,application/json'
+    }
     if (this.fetchStatusManager.primaryFetchPath) {
       headers.path = this.fetchStatusManager.primaryFetchPath
     }
-    headers['Content-Type'] = method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json'
+    headers['content-type'] = method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json'
     return {
       method,
       headers
