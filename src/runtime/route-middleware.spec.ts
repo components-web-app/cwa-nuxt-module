@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
 import * as nuxt from '#app'
+import { ref } from 'vue'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
 import type { RouteLocationRaw } from '#vue-router'
@@ -48,12 +49,14 @@ describe('Test route middleware', () => {
   const initClientSide = vi.fn()
   const adminNavigationGuardFn = vi.fn((): boolean|RouteLocationRaw => true)
   const clearPrimaryFetch = vi.fn()
+  const prerendered = ref<boolean>()
 
   beforeAll(() => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch }
+        payload: { prerenderedAt: undefined },
+        $cwa: { prerendered, fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch }
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -151,7 +154,8 @@ describe('Test route middleware', () => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
+        payload: {},
+        $cwa: { prerendered, fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {

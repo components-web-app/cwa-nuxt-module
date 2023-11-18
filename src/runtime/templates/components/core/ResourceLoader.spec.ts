@@ -31,7 +31,8 @@ function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any)
     fetchResource: vi.fn(),
     resources: {
       getResource: vi.fn(() => ref(resource))
-    }
+    },
+    prerendered: ref()
   }))
 
   return mount(ResourceLoader, {
