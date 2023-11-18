@@ -150,9 +150,7 @@ export class ResourcesManager {
     if (this.fetchStatusManager.primaryFetchPath) {
       headers.path = this.fetchStatusManager.primaryFetchPath
     }
-    if (method === 'PATCH') {
-      headers['Content-Type'] = 'application/merge-patch+json'
-    }
+    headers['Content-Type'] = method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json'
     return {
       method,
       headers
