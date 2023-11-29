@@ -49,14 +49,14 @@ describe('Test route middleware', () => {
   const initClientSide = vi.fn()
   const adminNavigationGuardFn = vi.fn((): boolean|RouteLocationRaw => true)
   const clearPrimaryFetch = vi.fn()
-  const prerendered = ref<boolean>()
+  const renderedAt = ref<number|undefined>()
 
   beforeAll(() => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        payload: { prerenderedAt: undefined },
-        $cwa: { prerendered, fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch }
+        payload: { renderedAt: undefined },
+        $cwa: { isOutdatedRender: false, renderedAt, fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch }
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -155,7 +155,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
-        $cwa: { prerendered, fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
+        $cwa: { renderedAt, fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -174,7 +174,7 @@ describe('Test route middleware', () => {
     // @ts-ignore
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
+        $cwa: { renderedAt, fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn }
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
