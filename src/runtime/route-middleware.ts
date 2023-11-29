@@ -58,6 +58,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (isClient) {
+    nuxtApp.$cwa.renderedAt.value = undefined
     await nuxtApp.$cwa.initClientSide()
 
     // skip on first client side run as server-side will have completed
@@ -80,7 +81,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     return
   }
 
-  nuxtApp.$cwa.prerendered.value = !!nuxtApp.payload.prerenderedAt
+  nuxtApp.$cwa.renderedAt.value = (new Date()).getTime()
 
   // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
   const resource = await nuxtApp.$cwa.fetchRoute(to)

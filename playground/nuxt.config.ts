@@ -45,6 +45,7 @@ export default defineNuxtConfig({
     }
   },
   typescript: {
+    // typeCheck: 'build',
     tsConfig: {
       include: [
         '../src'
@@ -111,7 +112,4 @@ export default defineNuxtConfig({
       type: 'module'
     }
   }
-  // typescript: {
-  //   typeCheck: 'build'
-  // }
 })

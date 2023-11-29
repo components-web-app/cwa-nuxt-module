@@ -42,7 +42,7 @@ export default class Cwa {
 
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
-  public readonly prerendered = ref<boolean>()
+  public readonly renderedAt = ref<number|undefined>()
 
   constructor (nuxtApp: Pick<NuxtApp, '_route'|'_middleware'|'$router'|'cwaResources'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
@@ -108,7 +108,6 @@ export default class Cwa {
 
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved
   public async initClientSide () {
-    this.prerendered.value = false
     await this.auth.init()
     this.mercure.init()
   }
@@ -120,5 +119,13 @@ export default class Cwa {
   // @internal
   public setResourceMeta (meta: CwaResourcesMeta) {
     this.options.resources = meta
+  }
+
+  public get isOutdatedRender () {
+    const ssrRenderedAtTime = this.renderedAt.value
+    if (!ssrRenderedAtTime) {
+      return
+    }
+    return (new Date()).getTime() - ssrRenderedAtTime > 5
   }
 }

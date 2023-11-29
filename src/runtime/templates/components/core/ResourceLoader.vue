@@ -41,7 +41,7 @@ const props = withDefaults(
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
 const resourceComponent = ref()
-const isPrerenderedData = ref($cwa.prerendered.value)
+const dataOutdated = ref($cwa.isOutdatedRender)
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
@@ -159,9 +159,9 @@ const methods = {
       ssrNoDataWithSilentError.value ||
       ssrPositionHasPartialData.value ||
       refetchPublishedSsrResourceToResolveDraft.value ||
-      isPrerenderedData.value
+      dataOutdated.value
     ) {
-      isPrerenderedData.value = false
+      dataOutdated.value = undefined
       await $cwa.fetchResource({
         path: props.iri
       })
