@@ -1,10 +1,12 @@
 // @vitest-environment nuxt
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
 import * as app from '#app'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import * as ResourceUtils from '../../../resources/resource-utils'
-import actions, { CwaResourcesActionsInterface } from './actions'
-import state, { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import type { CwaResourcesActionsInterface } from './actions'
+import actions from './actions'
+import type { CwaResourcesStateInterface } from './state'
+import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
 
 vi.mock('../../../resources/resource-utils', async () => {
@@ -160,6 +162,16 @@ describe('Resources -> mergeNewResources', () => {
   const resourcesGetters = getters(resourcesState)
   const resourcesActions = actions(resourcesState, resourcesGetters)
 
+  beforeEach(() => {
+    vi.useFakeTimers()
+    const date = new Date(2000, 1, 1, 13)
+    vi.setSystemTime(date)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   test('An empty resource will be deleted on merge', () => {
     resourcesState.new.byId = {
       '/to-delete': {
@@ -220,7 +232,8 @@ describe('Resources -> mergeNewResources', () => {
         status: CwaResourceApiStatuses.SUCCESS,
         headers: {
           path: 'any'
-        }
+        },
+        fetchedAt: 949410000000
       },
       data: {
         '@id': '/to-add',
@@ -255,13 +268,18 @@ describe('Resources -> mergeNewResources', () => {
     resourcesState.new.allIds = ['/resource']
     resourcesState.current.allIds = ['/resource']
     resourcesState.current.currentIds = ['/resource']
+
+    const date = new Date(2004, 1, 1, 13)
+    vi.setSystemTime(date)
+
     resourcesActions.mergeNewResources()
     expect(resourcesState.current.byId['/resource']).toStrictEqual({
       apiState: {
         status: CwaResourceApiStatuses.SUCCESS,
         headers: {
           path: 'any'
-        }
+        },
+        fetchedAt: 1075640400000
       },
       data: {
         '@id': '/resource',
@@ -278,10 +296,20 @@ describe('Resources -> mergeNewResources', () => {
   })
 })
 
-describe('We can reset current resources', () => {
+describe('Resources -> resetCurrentResources', () => {
   const resourcesState = state()
   const resourcesGetters = getters(resourcesState)
   const resourcesActions = actions(resourcesState, resourcesGetters)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    const date = new Date(2000, 1, 1, 13)
+    vi.setSystemTime(date)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   test('We can reset current resources', () => {
     resourcesState.new.byId = {
@@ -352,7 +380,8 @@ describe('We can reset current resources', () => {
     expect(resourcesState.current.byId.inProgress.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.SUCCESS,
       headers: { path: '1' },
-      ssr: undefined
+      ssr: undefined,
+      fetchedAt: 949410000000
     })
   })
 

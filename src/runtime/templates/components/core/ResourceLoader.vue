@@ -41,7 +41,6 @@ const props = withDefaults(
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
 const resourceComponent = ref()
-const dataOutdated = ref($cwa.isOutdatedRender)
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
@@ -152,19 +151,31 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
     $cwa.auth.user
 })
 
+const outdatedResource = computed(() => {
+  if (resource.value?.apiState.status !== CwaResourceApiStatuses.SUCCESS) {
+    return
+  }
+  return (new Date()).getTime() - resource.value?.apiState.fetchedAt > 5
+})
+
+async function doFetchResource () {
+  await $cwa.fetchResource({
+    path: props.iri
+  })
+}
+
 const methods = {
   async fetchResource () {
+    if (isLoading.value) {
+      return
+    }
     // todo: test all permutations
     if (
       ssrNoDataWithSilentError.value ||
       ssrPositionHasPartialData.value ||
-      refetchPublishedSsrResourceToResolveDraft.value ||
-      dataOutdated.value
+      refetchPublishedSsrResourceToResolveDraft.value
     ) {
-      dataOutdated.value = undefined
-      await $cwa.fetchResource({
-        path: props.iri
-      })
+      await doFetchResource()
     }
 
     // once we have a resource we need to make sure we have loaded the published as well if it is a draft, and the draft
@@ -174,6 +185,8 @@ const methods = {
 }
 
 onMounted(() => {
+  outdatedResource.value && doFetchResource()
+
   // if has a silent error, we are client-side and last attempt was not while logged in
   // todo: if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {

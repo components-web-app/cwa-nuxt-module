@@ -179,7 +179,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             status: CwaResourceApiStatuses.SUCCESS,
             headers: {
               path: newResource.path
-            }
+            },
+            fetchedAt: (new Date()).getTime()
           },
           data: newResource.resource
         }
@@ -209,7 +210,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             resourcesState.current.byId[currentId].apiState = {
               status: CwaResourceApiStatuses.SUCCESS,
               headers: currentState.headers,
-              ssr: currentState.ssr
+              ssr: currentState.ssr,
+              fetchedAt: currentState.status === CwaResourceApiStatuses.SUCCESS ? currentState.fetchedAt : (new Date()).getTime()
             }
           }
         }
@@ -241,7 +243,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           status: CwaResourceApiStatuses.SUCCESS,
           headers: event.headers,
           // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
-          ssr: process.server
+          ssr: process.server,
+          fetchedAt: (new Date()).getTime()
         }
 
         return
@@ -267,7 +270,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       data.apiState = {
         status: CwaResourceApiStatuses.ERROR,
         error: error?.asObject,
-        ssr: process.server
+        ssr: process.server,
+        fetchedAt: (new Date()).getTime()
       }
 
       if (showErrorPage && error) {

@@ -1,7 +1,6 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useCookie } from '#app/composables/cookie.js'
 import type { NuxtApp } from '#app/nuxt'
-import { ref } from 'vue'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
 import type { FetchResourceEvent } from './api/fetcher/fetcher'
@@ -42,7 +41,6 @@ export default class Cwa {
 
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
-  public readonly renderedAt = ref<number|undefined>()
 
   constructor (nuxtApp: Pick<NuxtApp, '_route'|'_middleware'|'$router'|'cwaResources'>, options: CwaModuleOptions) {
     const { isClient } = useProcess()
@@ -119,13 +117,5 @@ export default class Cwa {
   // @internal
   public setResourceMeta (meta: CwaResourcesMeta) {
     this.options.resources = meta
-  }
-
-  public get isOutdatedRender () {
-    const ssrRenderedAtTime = this.renderedAt.value
-    if (!ssrRenderedAtTime) {
-      return
-    }
-    return (new Date()).getTime() - ssrRenderedAtTime > 5
   }
 }

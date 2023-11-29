@@ -20,12 +20,14 @@ export interface CwaResourceApiStateGeneral extends SsrApiState {
 
 export interface CwaResourceApiStateError extends SsrApiState {
   status: CwaResourceApiStatuses.ERROR,
-  error?: CwaResourceErrorObject
+  error?: CwaResourceErrorObject,
+  fetchedAt: number
 }
 
 export interface CwaResourceApiStateSuccess extends SsrApiState {
   status: CwaResourceApiStatuses.SUCCESS,
-  headers: CwaFetchRequestHeaders
+  headers: CwaFetchRequestHeaders,
+  fetchedAt: number
 }
 
 declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess
