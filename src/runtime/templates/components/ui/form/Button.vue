@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import { defu } from 'defu'
 import {
   Popover,
@@ -10,6 +10,7 @@ import type { PopperOptions } from '#cwa/runtime/types/popper'
 import { usePopper } from '#cwa/runtime/composables/popper'
 import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
 import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
+const slots = useSlots()
 
 export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 
@@ -43,8 +44,12 @@ const buttonColorClassNames = computed(() => {
   return 'cwa-text-white cwa-bg-stone-700/90 hover:cwa-bg-stone-700 cwa-border-transparent'
 })
 
+const buttonBaseClass = computed(() => {
+  return `${buttonColorClassNames.value} cwa-py-1.5 cwa-px-2 md:cwa-px-4 cwa-border cwa-transition`
+})
+
 const buttonClassNames = computed(() => {
-  const baseClass = `cwa-py-1.5 cwa-px-2 md:cwa-px-4 cwa-border cwa-transition cwa-flex-grow ${props.buttonClass}`
+  const baseClass = `cwa-flex-grow ${buttonBaseClass.value} ${props.buttonClass}`
   return `${baseClass} ${buttonColorClassNames.value}`
 })
 
@@ -73,11 +78,12 @@ const [trigger, container] = usePopper(popperOps.value)
 
 <template>
   <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1 relative">
-    <button :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
+    <button v-if="slots.default" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
       <slot />
     </button>
     <template v-if="hasOptions">
-      <PopoverButton ref="trigger" :class="buttonColorClassNames" class="cwa-px-4 cwa-relative">
+      <PopoverButton ref="trigger" :class="buttonBaseClass" class="cwa-relative">
+        &nbsp;
         <span :class="topDotClassName" />
         <span :class="middleDotClassName" />
         <span :class="bottomDotClassName" />

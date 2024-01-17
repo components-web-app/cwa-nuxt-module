@@ -164,7 +164,7 @@ defineExpose({
                 <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
                   <CwaUiFormButton
                     color="grey"
-                    class="cwa-min-w-[150px]"
+                    button-class="cwa-min-w-[100px]"
                     :options="[
                       [
                         { label: 'Option 1', value: 'abc' },
@@ -174,7 +174,7 @@ defineExpose({
                     ]"
                     @click="handleManagerCtaClick"
                   >
-                    Quick Link
+                    CTA Button
                   </CwaUiFormButton>
                 </div>
               </div>
