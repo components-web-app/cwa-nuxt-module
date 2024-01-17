@@ -17,7 +17,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import consola from 'consola'
+import { consola } from 'consola'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 import {
