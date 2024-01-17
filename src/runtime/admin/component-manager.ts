@@ -33,7 +33,6 @@ export default class ComponentManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
-  private readonly populatedByInitialIri: Ref<string|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
@@ -119,7 +118,6 @@ export default class ComponentManager {
   }
 
   public resetStack (isContext?: boolean) {
-    this.populatedByInitialIri.value = null
     if (isContext) {
       this.lastContextTarget.value = null
       this.contextResourceStack.value = []
@@ -161,7 +159,7 @@ export default class ComponentManager {
     // we are starting a new stack - last click before was a window or has been reset
     if (!currentTarget.value) {
       // If the first item being added to stack is the same IRI as the first item populated into the current stack, cancel, do not repopulate the same stack
-      if (!isContext && isResourceClick && resourceStackItem.iri === this.populatedByInitialIri.value) {
+      if (!isContext && isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri, false)) {
         currentTarget.value = clickTarget
         return
       }
@@ -188,9 +186,6 @@ export default class ComponentManager {
     }
 
     this.insertResourceStackItem(resourceStackItem as ResourceStackItem, isContext)
-    if (!isContext && !this.populatedByInitialIri.value) {
-      this.populatedByInitialIri.value = resourceStackItem.iri
-    }
     currentTarget.value = clickTarget
   }
 
