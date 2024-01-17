@@ -151,6 +151,7 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
     $cwa.auth.user
 })
 
+// With ISR when the page is loaded it could be cached, this should trigger on front-end still and can send a request to update/check the component from the API again
 const outdatedResource = computed(() => {
   if (resource.value?.apiState.status !== CwaResourceApiStatuses.SUCCESS) {
     return
@@ -169,7 +170,7 @@ const methods = {
     if (isLoading.value) {
       return
     }
-    // todo: test all permutations
+    // todo: test all possibilities
     if (
       ssrNoDataWithSilentError.value ||
       ssrPositionHasPartialData.value ||
@@ -188,7 +189,7 @@ onMounted(() => {
   outdatedResource.value && doFetchResource()
 
   // if has a silent error, we are client-side and last attempt was not while logged in
-  // todo: if resource is publishable, published and request was a server-side request, refresh with a client-side request
+  // todo: NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true
   })
@@ -198,5 +199,5 @@ defineExpose({
   resourceComponent
 })
 
-// TODO - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft
+// TODO - NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft
 </script>
