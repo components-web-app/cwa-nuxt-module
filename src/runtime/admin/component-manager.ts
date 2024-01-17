@@ -32,7 +32,8 @@ interface AddToStackEvent extends resourceStackItem, AddToStackWindowEvent {
 export default class ComponentManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
-  private readonly lastClickTarget: Ref<EventTarget|null> = ref(null)
+  private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
+  private readonly populatedByInitialIri: Ref<string|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
@@ -73,12 +74,12 @@ export default class ComponentManager {
 
   public get resourceStack () {
     return computed(() => {
-      return this.lastClickTarget.value ? [] : this.currentResourceStack.value
+      return this.currentClickTarget.value ? [] : this.currentResourceStack.value
     })
   }
 
   public get isPopulating () {
-    return computed(() => !!this.lastClickTarget.value)
+    return computed(() => !!this.currentClickTarget.value)
   }
 
   public get isContextPopulating () {
@@ -91,12 +92,12 @@ export default class ComponentManager {
         return
       }
       // processing new stack, keep returning previous
-      if (this.lastClickTarget.value) {
+      if (this.currentClickTarget.value) {
         return this.cachedCurrentStackItem.value
       }
       // currentResourceStack is a shallowRef and an array, unless the length changes, it basically doesn't trigger for
       // this computed variable to update. this is an issue when replacing the stack item
-      return this.lastClickTarget.value ? undefined : this.currentResourceStack.value[0]
+      return this.currentClickTarget.value ? undefined : this.currentResourceStack.value[0]
     })
   }
 
@@ -123,7 +124,8 @@ export default class ComponentManager {
       this.contextResourceStack.value = []
       return
     }
-    this.lastClickTarget.value = null
+    this.populatedByInitialIri.value = null
+    this.currentClickTarget.value = null
     this.currentResourceStack.value = []
   }
 
@@ -151,9 +153,19 @@ export default class ComponentManager {
   public addToStack (event: AddToStackEvent|AddToStackWindowEvent, isContext?: boolean) {
     // stack will not have been reset
 
-    const lastTarget = isContext ? this.lastContextTarget : this.lastClickTarget
+    const currentTarget = isContext ? this.lastContextTarget : this.currentClickTarget
+
+    const { clickTarget, ...resourceStackItem } = event
+    const isResourceClick = ('iri' in resourceStackItem)
+
     // we are starting a new stack - last click before was a window or has been reset
-    if (!lastTarget.value) {
+    if (!currentTarget.value) {
+      // If the first item being added to stack is the same IRI as the first item populated into the current stack, cancel, do not repopulate the same stack
+      if (isResourceClick && resourceStackItem.iri === this.populatedByInitialIri.value) {
+        currentTarget.value = clickTarget
+        return
+      }
+
       this.resetStack(isContext)
       // clear the context menu on click
       if (!isContext) {
@@ -165,21 +177,21 @@ export default class ComponentManager {
       return
     }
 
-    const { clickTarget, ...resourceStackItem } = event
-    const isResourceClick = ('iri' in resourceStackItem)
-
-    if (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri, isContext) && this.lastClickTarget.value) {
+    if (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri, isContext) && currentTarget.value) {
       return
     }
 
     // the last click target is not a resource and finished the chain
     if (!isResourceClick) {
-      lastTarget.value = null
+      currentTarget.value = null
       return
     }
 
     this.insertResourceStackItem(resourceStackItem as ResourceStackItem, isContext)
-    lastTarget.value = clickTarget
+    if (!this.populatedByInitialIri.value) {
+      this.populatedByInitialIri.value = resourceStackItem.iri
+    }
+    currentTarget.value = clickTarget
   }
 
   // todo: test checking and inserting at correct index
