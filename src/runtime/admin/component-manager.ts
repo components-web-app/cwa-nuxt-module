@@ -161,7 +161,7 @@ export default class ComponentManager {
     // we are starting a new stack - last click before was a window or has been reset
     if (!currentTarget.value) {
       // If the first item being added to stack is the same IRI as the first item populated into the current stack, cancel, do not repopulate the same stack
-      if (isResourceClick && resourceStackItem.iri === this.populatedByInitialIri.value) {
+      if (!isContext && isResourceClick && resourceStackItem.iri === this.populatedByInitialIri.value) {
         currentTarget.value = clickTarget
         return
       }
@@ -188,7 +188,7 @@ export default class ComponentManager {
     }
 
     this.insertResourceStackItem(resourceStackItem as ResourceStackItem, isContext)
-    if (!this.populatedByInitialIri.value) {
+    if (!isContext && !this.populatedByInitialIri.value) {
       this.populatedByInitialIri.value = resourceStackItem.iri
     }
     currentTarget.value = clickTarget
