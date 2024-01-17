@@ -39,11 +39,9 @@ const props = withDefaults(defineProps<{
   modelValue: boolean
   virtualElement: any
   popper?: PopperOptions
-  ui?: Partial<typeof ui>
 }>(), {
   modelValue: false,
-  popper: {},
-  ui: () => ({})
+  popper: undefined
 })
 
 const emit = defineEmits(['update:modelValue', 'close'])

@@ -1,18 +1,35 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { defu } from 'defu'
+import {
+  Popover,
+  PopoverButton,
+  PopoverPanel
+} from '@headlessui/vue'
+import type { PopperOptions } from '#cwa/runtime/types/popper'
+import { usePopper } from '#cwa/runtime/composables/popper'
+
+type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
+
+export interface ButtonOption {
+  label: string,
+  value: ModelValue
+}
 
 const props = withDefaults(defineProps<
 {
   color?: 'blue' | 'grey' | 'dark',
   buttonClass?: string,
-  options?: string[]
+  options?: ButtonOption[],
+  popper?: PopperOptions
 }>(), {
   color: 'grey',
   buttonClass: undefined,
-  options: undefined
+  options: undefined,
+  popper: undefined
 })
 
-const emit = defineEmits<{(e: 'click', value?: number): void}>()
+const emit = defineEmits<{(e: 'click', value?: ModelValue): void}>()
 
 const buttonColorClassNames = computed(() => {
   if (props.color === 'blue') {
@@ -33,31 +50,34 @@ const hasOptions = computed(() => {
   return props.options?.length
 })
 
+// dot classes
 const dotClassName = ['cwa-w-[0.3rem]', 'cwa-h-[0.3rem]', 'cwa-rounded-full', 'cwa-bg-white', 'cwa-absolute', 'cwa-left-1/2', '-cwa-translate-x-1/2']
+const middleDotClassName = [...dotClassName, 'cwa-top-1/2 -cwa-translate-y-1/2']
+const topDotClassName = [...dotClassName, 'cwa-top-2']
+const bottomDotClassName = [...dotClassName, 'cwa-bottom-2']
 
-const middleDotClassName = computed(() => {
-  return [...dotClassName, 'cwa-top-1/2 -cwa-translate-y-1/2']
-})
-
-const topDotClassName = computed(() => {
-  return [...dotClassName, 'cwa-top-2']
-})
-
-const bottomDotClassName = computed(() => {
-  return [...dotClassName, 'cwa-bottom-2']
-})
-
+const enforcedOps: PopperOptions = {
+  placement: 'top-start',
+  offsetDistance: 0
+}
+const popperOps = computed<PopperOptions>(() => defu({}, props.popper, enforcedOps))
+const [trigger, container] = usePopper(popperOps.value)
 </script>
 
 <template>
-  <div class="cwa-flex cwa-space-x-1">
-    <button :class="buttonClassNames" @click.prevent.stop="emit('click')">
+  <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1 relative">
+    <button :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
       <slot />
     </button>
-    <button v-if="hasOptions" :class="buttonColorClassNames" class="cwa-px-4 cwa-relative">
-      <span :class="topDotClassName" />
-      <span :class="middleDotClassName" />
-      <span :class="bottomDotClassName" />
-    </button>
-  </div>
+    <template v-if="hasOptions">
+      <PopoverButton ref="trigger" :class="buttonColorClassNames" class="cwa-px-4 cwa-relative">
+        <span :class="topDotClassName" />
+        <span :class="middleDotClassName" />
+        <span :class="bottomDotClassName" />
+      </PopoverButton>
+      <PopoverPanel ref="container" class="cwa-absolute cwa-min-w-[220px] cwa-w-full cwa-max-w-[300px] cwa-bg-stone-700 p-4">
+        OPTIONS IN HERE
+      </PopoverPanel>
+    </template>
+  </Popover>
 </template>
