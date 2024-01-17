@@ -45,7 +45,7 @@ const buttonColorClassNames = computed(() => {
 })
 
 const buttonBaseClass = computed(() => {
-  return `${buttonColorClassNames.value} cwa-py-1.5 cwa-px-2 md:cwa-px-4 cwa-border cwa-transition`
+  return `${buttonColorClassNames.value} cwa-py-1.5 cwa-px-3 md:cwa-px-4 cwa-border cwa-transition`
 })
 
 const buttonClassNames = computed(() => {
@@ -77,7 +77,7 @@ const [trigger, container] = usePopper(popperOps.value)
 </script>
 
 <template>
-  <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1 relative">
+  <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1.5 relative">
     <button v-if="slots.default" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
       <slot />
     </button>
