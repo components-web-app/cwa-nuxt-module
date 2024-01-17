@@ -157,8 +157,12 @@ defineExpose({
                   <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
                 </div>
                 <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
-                  <CwaUiFormButton color="grey" class="cwa-min-w-[100px]">
-                    CTA
+                  <CwaUiFormButton
+                    color="grey"
+                    class="cwa-min-w-[150px]"
+                    :options="['Option 1', 'Option 2']"
+                  >
+                    Quick Link
                   </CwaUiFormButton>
                 </div>
               </div>
