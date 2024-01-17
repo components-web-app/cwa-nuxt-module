@@ -2,13 +2,7 @@
   <CwaUiFormButton
     color="grey"
     button-class="cwa-min-w-[100px]"
-    :options="[
-      [
-        { label: 'Option 1', value: 'abc' },
-        { label: 'Option 2', value: 'def' }
-      ],
-      { label: 'Clone', value: 'clone' }
-    ]"
+    :options="buttonOptions"
     @click="handleManagerCtaClick"
   >
     {{ buttonLabel }}
@@ -19,7 +13,7 @@
 import { computed } from 'vue'
 import { consola } from 'consola'
 import { useCwa } from '#cwa/runtime/composables/cwa'
-import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
+import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 import {
   CwaResourceTypes,
   getPublishedResourceState,
@@ -46,6 +40,28 @@ const buttonLabel = computed<'Publish'|undefined>(() => {
     return
   }
   return 'Publish'
+})
+
+const buttonOptions = computed(() => {
+  const ops: (ButtonOption|ButtonOption[])[] = []
+
+  if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
+    ops.push([
+      { label: 'Add Before', value: 'add-before' },
+      { label: 'Add After', value: 'add-after' }
+    ])
+  } else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
+    ops.push([
+      { label: 'Add to Start', value: 'add-before' },
+      { label: 'Add to End', value: 'add-after' }
+    ])
+  }
+
+  if (resourceType.value === CwaResourceTypes.COMPONENT) {
+    ops.push({ label: 'Clone', value: 'clone' })
+  }
+
+  return ops
 })
 
 function handleDefaultClick () {

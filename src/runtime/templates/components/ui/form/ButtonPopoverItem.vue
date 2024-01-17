@@ -8,7 +8,7 @@ defineProps<{
 }>()
 </script>
 <template>
-  <button class="cwa-block cwa-w-full cwa-py-2 cwa-px-4 hover:cwa-bg-dark cwa-text-left cwa-transition" @click.prevent.stop="emit('click', option.value)">
+  <button class="cwa-block cwa-w-full cwa-py-2 cwa-px-5 hover:cwa-bg-dark cwa-text-left cwa-transition" @click.prevent.stop="emit('click', option.value)">
     {{ option.label }}
   </button>
 </template>
