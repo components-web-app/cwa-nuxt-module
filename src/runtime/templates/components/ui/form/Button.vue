@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, useSlots } from 'vue'
+import { computed, useSlots, Comment, Text } from 'vue'
+import type { VNode, Slot } from 'vue'
 import { defu } from 'defu'
 import {
   Popover,
@@ -62,6 +63,26 @@ function handleOptionClick (value: ModelValue, close: () => void) {
   emit('click', value)
 }
 
+function hasSlotContent (slot: Slot|undefined, slotProps = {}): boolean {
+  if (!slot) { return false }
+
+  return slot(slotProps).some((vnode: VNode) => {
+    if (vnode.type === Comment) { return false }
+
+    if (Array.isArray(vnode.children) && !vnode.children.length) { return false }
+
+    return (
+      vnode.type !== Text ||
+      (typeof vnode.children === 'string' && vnode.children.trim() !== '')
+    )
+  })
+}
+
+const showButton = computed(() => {
+  const slotContent = slots.default?.(props)
+  return hasSlotContent(slots.default, slotContent)
+})
+
 // dot classes
 const dotClassName = ['cwa-w-[0.3rem]', 'cwa-h-[0.3rem]', 'cwa-rounded-full', 'cwa-bg-white', 'cwa-absolute', 'cwa-left-1/2', '-cwa-translate-x-1/2']
 const middleDotClassName = [...dotClassName, 'cwa-top-1/2 -cwa-translate-y-1/2']
@@ -78,7 +99,7 @@ const [trigger, container] = usePopper(popperOps.value)
 
 <template>
   <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1.5 relative">
-    <button v-if="slots.default" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
+    <button v-if="showButton" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
       <slot />
     </button>
     <template v-if="hasOptions">

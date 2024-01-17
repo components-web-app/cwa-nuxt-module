@@ -19,7 +19,7 @@ import { useCwaResource, useHtmlContent } from '#imports'
 import TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
 import { useCustomHtmlComponent } from '~/composables/useCustomHtmlComponent'
 
-// Setup the resource
+// Set up the resource
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
 const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, {

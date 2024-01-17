@@ -9,11 +9,11 @@ import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import type { ManagerTab } from '#cwa/module'
-import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
+import ResourceManagerCtaButton
+  from '#cwa/runtime/templates/components/main/admin/resource-manager/ResourceManagerCtaButton.vue'
 
 const $cwa = useCwa()
-
-const current = $cwa.admin.componentManager.currentStackItem
+const currentStackItem = $cwa.admin.componentManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
@@ -92,7 +92,7 @@ const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
 
-watch(current, (newCurrent, oldCurrent) => {
+watch(currentStackItem, (newCurrent, oldCurrent) => {
   if (oldCurrent && newCurrent && $cwa.resources.isIriPublishableEquivalent(oldCurrent.iri, newCurrent.iri)) {
     return
   }
@@ -114,15 +114,15 @@ onBeforeUnmount(() => {
 })
 
 const showSpacer = computed(() => {
-  return $cwa.admin.componentManager.showManager.value && current
+  return $cwa.admin.componentManager.showManager.value && currentStackItem
 })
 
 const selectedTab = computed(() => {
-  return current.value?.managerTabs?.[selectedIndex.value]
+  return currentStackItem.value?.managerTabs?.[selectedIndex.value]
 })
 
-watch([spacer, managerHolder, current, selectedIndex, allTabsMeta], () => {
-  if (!spacer.value || !managerHolder.value || !current.value) {
+watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () => {
+  if (!spacer.value || !managerHolder.value || !currentStackItem.value) {
     return
   }
   const newHeight = managerHolder.value.clientHeight
@@ -130,10 +130,6 @@ watch([spacer, managerHolder, current, selectedIndex, allTabsMeta], () => {
 }, {
   flush: 'post'
 })
-
-function handleManagerCtaClick (value?: ModelValue) {
-  console.log('clicked', value)
-}
 
 defineExpose({
   onContextMenu
@@ -162,20 +158,7 @@ defineExpose({
                   <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
                 </div>
                 <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
-                  <CwaUiFormButton
-                    color="grey"
-                    button-class="cwa-min-w-[100px]"
-                    :options="[
-                      [
-                        { label: 'Option 1', value: 'abc' },
-                        { label: 'Option 2', value: 'def' }
-                      ],
-                      { label: 'Clone', value: 'clone' }
-                    ]"
-                    @click="handleManagerCtaClick"
-                  >
-                    CTA Button
-                  </CwaUiFormButton>
+                  <ResourceManagerCtaButton />
                 </div>
               </div>
               <div class="cwa-p-4 cwa-min-h-[74px] cwa-flex cwa-items-center">
