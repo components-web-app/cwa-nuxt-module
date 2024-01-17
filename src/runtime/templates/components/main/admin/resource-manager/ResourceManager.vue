@@ -9,6 +9,7 @@ import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import type { ManagerTab } from '#cwa/module'
+import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
 const $cwa = useCwa()
 
@@ -130,6 +131,10 @@ watch([spacer, managerHolder, current, selectedIndex, allTabsMeta], () => {
   flush: 'post'
 })
 
+function handleManagerCtaClick (value?: ModelValue) {
+  console.log('clicked', value)
+}
+
 defineExpose({
   onContextMenu
 })
@@ -160,7 +165,14 @@ defineExpose({
                   <CwaUiFormButton
                     color="grey"
                     class="cwa-min-w-[150px]"
-                    :options="['Option 1', 'Option 2']"
+                    :options="[
+                      [
+                        { label: 'Option 1', value: 'abc' },
+                        { label: 'Option 2', value: 'def' }
+                      ],
+                      { label: 'Clone', value: 'clone' }
+                    ]"
+                    @click="handleManagerCtaClick"
                   >
                     Quick Link
                   </CwaUiFormButton>

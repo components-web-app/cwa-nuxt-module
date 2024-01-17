@@ -8,8 +8,10 @@ import {
 } from '@headlessui/vue'
 import type { PopperOptions } from '#cwa/runtime/types/popper'
 import { usePopper } from '#cwa/runtime/composables/popper'
+import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
+import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
 
-type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
+export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 
 export interface ButtonOption {
   label: string,
@@ -20,7 +22,7 @@ const props = withDefaults(defineProps<
 {
   color?: 'blue' | 'grey' | 'dark',
   buttonClass?: string,
-  options?: ButtonOption[],
+  options?:(ButtonOption|ButtonOption[])[],
   popper?: PopperOptions
 }>(), {
   color: 'grey',
@@ -50,6 +52,11 @@ const hasOptions = computed(() => {
   return props.options?.length
 })
 
+function handleOptionClick (value: ModelValue, close: () => void) {
+  close()
+  emit('click', value)
+}
+
 // dot classes
 const dotClassName = ['cwa-w-[0.3rem]', 'cwa-h-[0.3rem]', 'cwa-rounded-full', 'cwa-bg-white', 'cwa-absolute', 'cwa-left-1/2', '-cwa-translate-x-1/2']
 const middleDotClassName = [...dotClassName, 'cwa-top-1/2 -cwa-translate-y-1/2']
@@ -75,8 +82,11 @@ const [trigger, container] = usePopper(popperOps.value)
         <span :class="middleDotClassName" />
         <span :class="bottomDotClassName" />
       </PopoverButton>
-      <PopoverPanel ref="container" class="cwa-absolute cwa-min-w-[220px] cwa-w-full cwa-max-w-[300px] cwa-bg-stone-700 p-4">
-        OPTIONS IN HERE
+      <PopoverPanel v-slot="{ close }" ref="container" class="cwa-absolute cwa-min-w-[220px] cwa-w-full cwa-max-w-[300px] cwa-bg-stone-700">
+        <div v-for="(option, index) of options" :key="`popover-group-option-${index}`">
+          <ButtonPopoverGroup v-if="Array.isArray(option)" :options="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
+          <ButtonPopoverItem v-else :option="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
+        </div>
       </PopoverPanel>
     </template>
   </Popover>
