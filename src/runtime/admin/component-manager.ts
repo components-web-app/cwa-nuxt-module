@@ -119,12 +119,12 @@ export default class ComponentManager {
   }
 
   public resetStack (isContext?: boolean) {
+    this.populatedByInitialIri.value = null
     if (isContext) {
       this.lastContextTarget.value = null
       this.contextResourceStack.value = []
       return
     }
-    this.populatedByInitialIri.value = null
     this.currentClickTarget.value = null
     this.currentResourceStack.value = []
   }
