@@ -5,7 +5,7 @@ import * as vue from 'vue'
 import Cwa from '../cwa'
 import * as ResourceUtils from '../resources/resource-utils'
 import { CwaResourceTypes } from '../resources/resource-utils'
-import ManageableComponent from './manageable-component'
+import ManageableResource from './manageable-resource'
 import * as ManagerTabsResolver from '#cwa/runtime/admin/manager-tabs-resolver'
 
 const Node = {
@@ -51,7 +51,7 @@ vi.mock('../cwa', () => {
           off: vi.fn(),
           emit: vi.fn()
         },
-        componentManager: {
+        resourceManager: {
           addToStack: vi.fn(),
           currentStackItem: ref({ iri: '/something' })
         }
@@ -92,29 +92,29 @@ function createDomElement (nodeType: 1|2|3): DummyDom {
   }
 }
 
-function createManageableComponent ($el?: DummyDom) {
+function createManageableResource ($el?: DummyDom) {
   const component = {
     $el: $el || createDomElement(1)
   }
   const $cwa = new Cwa()
   return {
-    instance: new ManageableComponent(component, $cwa, { styles: { name: ['style'] } }),
+    instance: new ManageableResource(component, $cwa, { styles: { name: ['style'] } }),
     $cwa
   }
 }
 
-describe('ManageableComponent Class', () => {
+describe('ManageableResource Class', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('ManagerTabsResolver is initialised with correct parameters', () => {
-    createManageableComponent()
+    createManageableResource()
     expect(ManagerTabsResolver.default).toHaveBeenCalled()
   })
 
   test('componentMountedListener is bound to `this`', () => {
-    const { instance } = createManageableComponent()
+    const { instance } = createManageableResource()
     // eslint-disable-next-line no-prototype-builtins
     expect(instance.componentMountedListener.hasOwnProperty('prototype')).toEqual(false)
     // eslint-disable-next-line no-prototype-builtins
@@ -123,7 +123,7 @@ describe('ManageableComponent Class', () => {
 
   describe('init function', () => {
     test('init functions are carried out', () => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => 'unwatchFn')
       vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'initNewIri').mockImplementationOnce(() => {})
@@ -154,7 +154,7 @@ describe('ManageableComponent Class', () => {
         clearCallCount: 1
       }
     ])('If currentIri is $currentIri then the `clear` function is called $clearCallCount times and currentIri is set', ({ currentIri, clearCallCount }) => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       instance.currentIri = ref(currentIri)
       const localStackItem = { iri: '/something', localSomething: 'abc' }
       vi.spyOn(instance, 'getCurrentStackItem').mockImplementationOnce(() => localStackItem)
@@ -173,7 +173,7 @@ describe('ManageableComponent Class', () => {
 
   describe('clear function', () => {
     test('If there is isIriInit is false clear functions will be skipped', () => {
-      const { instance, $cwa } = createManageableComponent()
+      const { instance, $cwa } = createManageableResource()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
       const domElements = [createDomElement(1)]
       instance.domElements = domElements
@@ -188,7 +188,7 @@ describe('ManageableComponent Class', () => {
       { soft: false },
       { soft: true }
     ])('clear functions are carried out', ({ soft }) => {
-      const { instance, $cwa } = createManageableComponent()
+      const { instance, $cwa } = createManageableResource()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
 
       const unwatchCurrentIri = vi.fn()
@@ -221,7 +221,7 @@ describe('ManageableComponent Class', () => {
       { iri: '/child', childIris: ['/child', '/another-child'], callCount: 1 },
       { iri: '/no-exist', childIris: ['/eeeerie'], callCount: 0 }
     ])('If iri passed is $iri with childIris as $childIris then functions should be called $callCount times', ({ iri, childIris, callCount }) => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => computed(() => childIris))
@@ -236,12 +236,12 @@ describe('ManageableComponent Class', () => {
 
   describe('childIris getter fn', () => {
     test('If there is no currentIri, and empty array is returned', () => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       expect(instance.childIris.value).toEqual([])
     })
 
     test('A flat array of children is returned recursively', () => {
-      const { instance, $cwa } = createManageableComponent()
+      const { instance, $cwa } = createManageableResource()
       const getResource = vi.fn((iri: string) => {
         return computed(() => {
           let obj = { '@id': iri }
@@ -299,20 +299,20 @@ describe('ManageableComponent Class', () => {
 
   describe('getAllEls function', () => {
     test('If the component does not have a root element return an empty array', () => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       instance.component.$el = undefined
       const elementsArray = instance.getAllEls()
       expect(elementsArray).toEqual([])
     })
 
     test('If the component root element is a nodeType of 1 then return the element in the array (it is a singular div etc. and not a comment/text)', () => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       const elementsArray = instance.getAllEls()
       expect(elementsArray).toEqual([instance.component.$el])
     })
 
     test('An array is returned of all siblings that do not have a nodeType of 3', () => {
-      const { instance } = createManageableComponent()
+      const { instance } = createManageableResource()
       const rootElement = createDomElement(Node.ATTRIBUTE_NODE)
       rootElement.nextSibling = createDomElement(Node.TEXT_NODE)
       rootElement.nextSibling.nextSibling = createDomElement(Node.ELEMENT_NODE)
@@ -330,7 +330,7 @@ describe('ManageableComponent Class', () => {
   })
 
   test('addClickEventListeners function', () => {
-    const { instance } = createManageableComponent()
+    const { instance } = createManageableResource()
     const els = [
       {
         addEventListener: vi.fn()
@@ -350,7 +350,7 @@ describe('ManageableComponent Class', () => {
   })
 
   test('removeClickEventListeners function', () => {
-    const { instance } = createManageableComponent()
+    const { instance } = createManageableResource()
     const els = [
       {
         removeEventListener: vi.fn()
@@ -368,13 +368,13 @@ describe('ManageableComponent Class', () => {
 
   describe('clickListener', () => {
     test('should do nothing IF current iri is not set', () => {
-      const { instance, $cwa } = createManageableComponent()
+      const { instance, $cwa } = createManageableResource()
 
       instance.currentIri = null
 
       instance.clickListener({})
 
-      expect($cwa.admin.componentManager.addToStack).not.toHaveBeenCalled()
+      expect($cwa.admin.resourceManager.addToStack).not.toHaveBeenCalled()
     })
 
     test('should add to stack with correct object', () => {
@@ -382,7 +382,7 @@ describe('ManageableComponent Class', () => {
       const resourceConfig = { managerTabs: ['abc'], ui: 'ui' }
       const resource = { iri: '/abc' }
 
-      const { instance, $cwa } = createManageableComponent()
+      const { instance, $cwa } = createManageableResource()
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
       const childIris = ['/child']
@@ -403,7 +403,7 @@ describe('ManageableComponent Class', () => {
 
       expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig, resource })
 
-      expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
+      expect($cwa.admin.resourceManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri.value,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
@@ -422,7 +422,7 @@ describe('ManageableComponent Class', () => {
 
   describe.todo('displayName getter', () => {
     test.todo('should add to stack with computed displayName', () => {
-      const { instance, $cwa } = createManageableComponent()
+      const { instance, $cwa } = createManageableResource()
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
 
@@ -430,7 +430,7 @@ describe('ManageableComponent Class', () => {
 
       instance.clickListener(mockEvent)
 
-      expect($cwa.admin.componentManager.addToStack).toHaveBeenCalledWith({
+      expect($cwa.admin.resourceManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,

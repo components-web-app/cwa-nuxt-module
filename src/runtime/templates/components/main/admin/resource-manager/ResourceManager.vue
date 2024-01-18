@@ -9,10 +9,13 @@ import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import type { ManagerTab } from '#cwa/module'
+import ResourceManagerCtaButton
+  from '#cwa/runtime/templates/components/main/admin/resource-manager/ResourceManagerCtaButton.vue'
+import AddComponentDialog
+  from '#cwa/runtime/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 
 const $cwa = useCwa()
-
-const current = $cwa.admin.componentManager.currentStackItem
+const currentStackItem = $cwa.admin.resourceManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
@@ -54,7 +57,7 @@ function onContextMenu (e: PointerEvent) {
     top: e.clientY,
     left: e.clientX
   }
-  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.componentManager.isContextPopulating.value) {
+  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.resourceManager.isContextPopulating.value) {
     isOpen.value = false
     return
   }
@@ -68,11 +71,11 @@ function mousedownHandler (e: MouseEvent) {
 
 function clickHandler (e: MouseEvent) {
   // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
-  if (e.target !== mousedownTarget && !$cwa.admin.componentManager.isPopulating.value) {
+  if (e.target !== mousedownTarget && !$cwa.admin.resourceManager.isPopulating.value) {
     return
   }
   completeStack(e)
-  $cwa.admin.componentManager.selectStackIndex(0)
+  $cwa.admin.resourceManager.selectStackIndex(0)
 }
 
 function contextHandler (e: MouseEvent) {
@@ -80,7 +83,7 @@ function contextHandler (e: MouseEvent) {
 }
 
 function completeStack (e: MouseEvent, isContext: boolean = false) {
-  $cwa.admin.componentManager.addToStack({ clickTarget: e.target }, isContext)
+  $cwa.admin.resourceManager.addToStack({ clickTarget: e.target }, isContext)
 }
 
 function selectTab (index: number) {
@@ -91,7 +94,7 @@ const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
 
-watch(current, (newCurrent, oldCurrent) => {
+watch(currentStackItem, (newCurrent, oldCurrent) => {
   if (oldCurrent && newCurrent && $cwa.resources.isIriPublishableEquivalent(oldCurrent.iri, newCurrent.iri)) {
     return
   }
@@ -113,15 +116,15 @@ onBeforeUnmount(() => {
 })
 
 const showSpacer = computed(() => {
-  return $cwa.admin.componentManager.showManager.value && current
+  return $cwa.admin.resourceManager.showManager.value && currentStackItem
 })
 
 const selectedTab = computed(() => {
-  return current.value?.managerTabs?.[selectedIndex.value]
+  return currentStackItem.value?.managerTabs?.[selectedIndex.value]
 })
 
-watch([spacer, managerHolder, current, selectedIndex, allTabsMeta], () => {
-  if (!spacer.value || !managerHolder.value || !current.value) {
+watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () => {
+  if (!spacer.value || !managerHolder.value || !currentStackItem.value) {
     return
   }
   const newHeight = managerHolder.value.clientHeight
@@ -145,7 +148,7 @@ defineExpose({
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop @contextmenu.stop>
+    <div v-if="$cwa.admin.resourceManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop @contextmenu.stop>
       <div class="cwa-dark-blur">
         <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
         <div v-if="allTabsMeta.length" ref="managerHolder">
@@ -157,9 +160,7 @@ defineExpose({
                   <ManagerTabs ref="managerTabs" :tabs="allTabsMeta" @click="selectTab" />
                 </div>
                 <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
-                  <CwaUiFormButton color="grey" class="cwa-min-w-[100px]">
-                    CTA
-                  </CwaUiFormButton>
+                  <ResourceManagerCtaButton />
                 </div>
               </div>
               <div class="cwa-p-4 cwa-min-h-[74px] cwa-flex cwa-items-center">
@@ -176,4 +177,5 @@ defineExpose({
     </div>
   </Transition>
   <CwaAdminResourceManagerContextMenu v-if="showAdmin" v-model="isOpen" :virtual-element="virtualElement" />
+  <AddComponentDialog />
 </template>

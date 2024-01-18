@@ -14,7 +14,7 @@ interface CwaResourceManagerTabMeta extends Pick<CwaResourceManagerTabOptions, '
 
 export const useCwaResourceManagerTab = (options: CwaResourceManagerTabOptions) => {
   const $cwa = useCwa()
-  const iri = $cwa.admin.componentManager.currentIri
+  const iri = $cwa.admin.resourceManager.currentIri
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
   const exposeMeta: CwaResourceManagerTabMeta = {
     name: options.name,

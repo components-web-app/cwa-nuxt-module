@@ -1,11 +1,11 @@
 import { describe, expect, vi, test, beforeEach } from 'vitest'
 import * as vue from 'vue'
 import { ref } from 'vue'
-import ManageableComponent from '../admin/manageable-component'
+import ManageableResource from '../admin/manageable-resource'
 import * as cwaComposable from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 
-vi.mock('../admin/manageable-component', () => {
+vi.mock('../admin/manageable-resource', () => {
   return {
     default: vi.fn(() => {
       return {
@@ -38,7 +38,7 @@ describe('CWA resource manageable composable', () => {
     expect(() => useCwaResourceManageable(mockIri)).toThrow('Cannot initialise manager for resource. Instance is not defined')
   })
 
-  test('should create ManageableComponent IF current instance has proxy', () => {
+  test('should create ManageableResource IF current instance has proxy', () => {
     const mockProxy = { mock: 'proxy' }
 
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
@@ -46,24 +46,24 @@ describe('CWA resource manageable composable', () => {
     const ops = { op: 'op' }
     useCwaResourceManageable(mockIri, ops)
 
-    expect(ManageableComponent).toHaveBeenCalledWith(mockProxy, mockCwa, ops)
+    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops)
   })
 
-  test('ManageableComponent should init IF iri is passed', () => {
+  test('ManageableResource should init IF iri is passed', () => {
     const mockProxy = { mock: 'proxy' }
 
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
 
     const initSpy = vi.fn()
 
-    ManageableComponent.mockReturnValueOnce({ init: initSpy, clear: vi.fn() })
+    ManageableResource.mockReturnValueOnce({ init: initSpy, clear: vi.fn() })
 
     useCwaResourceManageable(mockIri)
 
     expect(initSpy).toHaveBeenCalledWith(mockIri)
   })
 
-  test('ManageableComponent should clear when before unmount hook is called', () => {
+  test('ManageableResource should clear when before unmount hook is called', () => {
     const mockProxy = { mock: 'proxy' }
     let hookCallback = null
 
@@ -72,7 +72,7 @@ describe('CWA resource manageable composable', () => {
 
     const clearSpy = vi.fn()
 
-    ManageableComponent.mockReturnValueOnce({ init: vi.fn(), clear: clearSpy })
+    ManageableResource.mockReturnValueOnce({ init: vi.fn(), clear: clearSpy })
 
     useCwaResourceManageable(mockIri)
 
@@ -90,7 +90,7 @@ describe('CWA resource manageable composable', () => {
 
     const mockReference = { init: vi.fn(), clear: vi.fn() }
 
-    ManageableComponent.mockReturnValueOnce(mockReference)
+    ManageableResource.mockReturnValueOnce(mockReference)
 
     const result = useCwaResourceManageable(mockIri)
 

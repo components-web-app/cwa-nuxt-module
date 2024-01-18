@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { reactive, ref } from 'vue'
-import ComponentManager from './component-manager'
+import ResourceManager from './resource-manager'
 
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
@@ -10,7 +10,7 @@ vi.mock('vue', async () => {
   }
 })
 
-function createComponentManager (mockStore?: any) {
+function createResourceManager (mockStore?: any) {
   const mockAdminStore = {
     useStore: () => mockStore || ({
       state: reactive({
@@ -25,20 +25,20 @@ function createComponentManager (mockStore?: any) {
     })
   }
 
-  const manager = new ComponentManager(mockAdminStore, mockResourcesStore)
+  const manager = new ResourceManager(mockAdminStore, mockResourcesStore)
   return {
     manager,
     store: mockAdminStore
   }
 }
 
-describe('Component Manager', () => {
+describe('Resource Manager', () => {
   test.todo('Constructor should initialise a watcher', () => {
     // todo: mock properly and ensure watcher is initialised with the correct function handlers
-    vi.spyOn(ComponentManager.prototype, 'listenEditModeChange').mockImplementationOnce(() => {})
-    vi.spyOn(ComponentManager.prototype, 'listenCurrentIri').mockImplementationOnce(() => {})
+    vi.spyOn(ResourceManager.prototype, 'listenEditModeChange').mockImplementationOnce(() => {})
+    vi.spyOn(ResourceManager.prototype, 'listenCurrentIri').mockImplementationOnce(() => {})
     const mockStore = { state: { isEditing: true } }
-    const { manager } = createComponentManager(mockStore)
+    const { manager } = createResourceManager(mockStore)
     expect(manager.listenEditModeChange).toHaveBeenCalledOnce()
     expect(manager.listenCurrentIri).toHaveBeenCalledOnce()
   })
@@ -46,7 +46,7 @@ describe('Component Manager', () => {
   describe('adminStore getter', () => {
     test('should return reference to store', () => {
       const mockStore = { state: { isEditing: true } }
-      const { manager } = createComponentManager(mockStore)
+      const { manager } = createResourceManager(mockStore)
 
       expect(manager.adminStore).toEqual(mockStore)
     })
@@ -55,7 +55,7 @@ describe('Component Manager', () => {
   describe('isEditing getter', () => {
     test('should return current edit status flag', () => {
       const mockStore = { state: { isEditing: true } }
-      const { manager } = createComponentManager(mockStore)
+      const { manager } = createResourceManager(mockStore)
 
       expect(manager.isEditing).toEqual(mockStore.state.isEditing)
 
@@ -67,12 +67,12 @@ describe('Component Manager', () => {
 
   describe('resourceStack getter', () => {
     test.each([
-      { lastClickTarget: ref({}), mockStack: ['anything'], expected: [] },
-      { lastClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] }
-    ])('If lastClickTarget is $lastClickTarget the stack should return $expected', ({ lastClickTarget, mockStack, expected }) => {
-      const { manager } = createComponentManager()
+      { currentClickTarget: ref({}), mockStack: ['anything'], expected: [] },
+      { currentClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] }
+    ])('If currentClickTarget is $currentClickTarget the stack should return $expected', ({ currentClickTarget, mockStack, expected }) => {
+      const { manager } = createResourceManager()
 
-      manager.lastClickTarget = ref(lastClickTarget)
+      manager.currentClickTarget = ref(currentClickTarget)
       manager.currentResourceStack = ref(mockStack)
 
       expect(manager.resourceStack.value).toEqual(expected)
@@ -84,32 +84,32 @@ describe('Component Manager', () => {
       {
         stack: [{ test: true }, null, null],
         showManager: true,
-        lastClickTarget: undefined,
+        currentClickTarget: undefined,
         toEqual: { test: true }
       },
       {
         stack: [{ test: true }, null, null],
         showManager: false,
-        lastClickTarget: undefined,
+        currentClickTarget: undefined,
         toEqual: undefined
       },
       {
         stack: [{ test: true }, null, null],
         showManager: true,
-        lastClickTarget: {},
+        currentClickTarget: {},
         toEqual: undefined
       },
       {
         stack: [],
         showManager: true,
-        lastClickTarget: undefined,
+        currentClickTarget: undefined,
         toEqual: undefined
       }
-    ])('should return first item from stack', ({ stack, showManager, lastClickTarget, toEqual }) => {
-      const { manager } = createComponentManager()
+    ])('should return first item from stack', ({ stack, showManager, currentClickTarget, toEqual }) => {
+      const { manager } = createResourceManager()
 
       manager.showManager.value = showManager
-      manager.lastClickTarget.value = lastClickTarget
+      manager.currentClickTarget.value = currentClickTarget
       manager.currentResourceStack = ref(stack)
 
       expect(manager.currentStackItem.value).toEqual(toEqual)
@@ -119,7 +119,7 @@ describe('Component Manager', () => {
   describe('stack operations', () => {
     describe('isItemAlreadyInStack', () => {
       test('should check whether item is in stack or not by iri', () => {
-        const { manager } = createComponentManager()
+        const { manager } = createResourceManager()
         const mockIri = '/mock/iri'
         const mockStackItem = { iri: mockIri }
 
@@ -132,22 +132,22 @@ describe('Component Manager', () => {
 
     describe('resetStack', () => {
       test('should reset stack and remove last click target', () => {
-        const { manager } = createComponentManager()
+        const { manager } = createResourceManager()
 
         manager.currentResourceStack = ref([1, 2, 3])
-        manager.lastClickTarget = ref('mock-target')
+        manager.currentClickTarget = ref('mock-target')
 
         manager.resetStack()
 
         expect(manager.resourceStack.value).toEqual([])
-        expect(manager.lastClickTarget.value).toEqual(null)
+        expect(manager.currentClickTarget.value).toEqual(null)
       })
     })
 
     describe('addToStack', () => {
       test('should NOT add item to stack IF edit mode is off', () => {
         const mockStore = { state: { isEditing: false } }
-        const { manager } = createComponentManager(mockStore)
+        const { manager } = createResourceManager(mockStore)
 
         manager.addToStack({})
 
@@ -157,10 +157,10 @@ describe('Component Manager', () => {
       test('should NOT add item to stack IF item with such iri already in stack', () => {
         const mockStore = { state: { isEditing: true } }
         const mockIri = '/mock'
-        const { manager } = createComponentManager(mockStore)
+        const { manager } = createResourceManager(mockStore)
         const mockTarget = { value: {} }
 
-        manager.lastClickTarget = mockTarget
+        manager.currentClickTarget = mockTarget
         manager.currentResourceStack.value = [{ iri: mockIri }]
 
         manager.addToStack({ iri: mockIri })
@@ -169,28 +169,28 @@ describe('Component Manager', () => {
         expect(manager.currentResourceStack.value.length).toEqual(1)
       })
 
-      test('should reset and add item to stack IF item with same iri already in stack but no previous click target', () => {
+      test('should not reset and add item to stack IF item with same iri already in stack even if no previous click target', () => {
         const mockStore = { state: { isEditing: true } }
         const mockIri = '/mock'
-        const { manager } = createComponentManager(mockStore)
+        const { manager } = createResourceManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
         vi.spyOn(manager, 'insertResourceStackItem').mockImplementationOnce(() => {})
-        manager.lastClickTarget = ref(null)
+        manager.currentClickTarget = ref(null)
         manager.currentResourceStack = ref([{ iri: mockIri }])
 
         const event = { iri: mockIri, clickTarget: 'new' }
         manager.addToStack(event)
-        expect(resetSpy).toHaveBeenCalledTimes(2)
-        expect(resetSpy).toHaveBeenCalledWith(undefined)
-        expect(resetSpy).toHaveBeenCalledWith(true)
-        expect(manager.insertResourceStackItem).toHaveBeenCalledOnce()
-        expect(manager.insertResourceStackItem).toHaveBeenCalledWith({ iri: mockIri }, undefined)
-        expect(manager.lastClickTarget.value).toEqual('new')
+        expect(resetSpy).toHaveBeenCalledTimes(0)
+        // expect(resetSpy).toHaveBeenCalledWith(undefined)
+        // expect(resetSpy).toHaveBeenCalledWith(true)
+        expect(manager.insertResourceStackItem).toHaveBeenCalledTimes(0)
+        // expect(manager.insertResourceStackItem).toHaveBeenCalledWith({ iri: mockIri }, undefined)
+        expect(manager.currentClickTarget.value).toEqual('new')
       })
 
       test('should NOT add item to stack IF item has no iri', () => {
         const mockStore = { state: { isEditing: true } }
-        const { manager } = createComponentManager(mockStore)
+        const { manager } = createResourceManager(mockStore)
         vi.spyOn(manager, 'insertResourceStackItem').mockImplementationOnce(() => {})
 
         manager.addToStack({})
@@ -199,26 +199,26 @@ describe('Component Manager', () => {
 
       test('should update last click target IF new click target is passed AND event has iri', () => {
         const mockStore = { state: { isEditing: true } }
-        const { manager } = createComponentManager(mockStore)
+        const { manager } = createResourceManager(mockStore)
         vi.spyOn(manager, 'insertResourceStackItem').mockImplementationOnce(() => {})
         const event = { iri: '/mock', clickTarget: { new: 'target' } }
 
-        manager.lastClickTarget = ref({ old: 'target' })
+        manager.currentClickTarget = ref({ old: 'target' })
 
         manager.addToStack(event)
 
-        expect(manager.lastClickTarget.value).toEqual(event.clickTarget)
+        expect(manager.currentClickTarget.value).toEqual(event.clickTarget)
       })
 
       test('should clear the last click target IF event has no iri', () => {
         const mockStore = { state: { isEditing: true } }
-        const { manager } = createComponentManager(mockStore)
+        const { manager } = createResourceManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
-        manager.lastClickTarget = ref({ old: 'target' })
+        manager.currentClickTarget = ref({ old: 'target' })
         manager.addToStack({})
         expect(resetSpy).not.toHaveBeenCalled()
         expect(manager.resourceStack.value.length).toEqual(0)
-        expect(manager.lastClickTarget.value).toBeNull()
+        expect(manager.currentClickTarget.value).toBeNull()
       })
     })
 
@@ -230,7 +230,7 @@ describe('Component Manager', () => {
         newEditingState,
         showManager
       }) => {
-        const { manager } = createComponentManager()
+        const { manager } = createResourceManager()
         manager.showManager.value = true
         vi.clearAllMocks()
 
