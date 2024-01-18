@@ -1,6 +1,6 @@
 <template>
   <DialogBox v-model="open" title="Add Component" :buttons="buttons">
-    <pre>{{ availableComponents }}</pre>
+    <pre>{{ displayData }}</pre>
   </DialogBox>
 </template>
 
@@ -11,7 +11,13 @@ import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 
-const availableComponents = ref()
+interface DisplayDataI {
+  addAfter: boolean
+  targetIri: string
+  availableResources: string[]
+}
+
+const displayData = ref<DisplayDataI>()
 
 const open = computed({
   get () {
@@ -39,18 +45,32 @@ const buttons = computed<ActionButton[]>(() => {
   ]
 })
 
-function populateAvailableComponents () {
-  availableComponents.value = $cwa.admin.resourceManager.addResourceTriggered.value?.targetIri
+function findAvailableResources (targetIri: string) {
+  return [targetIri]
+}
+
+function populateAvailableResources () {
+  const event = $cwa.admin.resourceManager.addResourceTriggered.value
+  if (!event) {
+    return
+  }
+
+  displayData.value = {
+    addAfter: event.addAfter,
+    targetIri: event.targetIri,
+    availableResources: findAvailableResources(event.targetIri)
+  }
 }
 
 function handleAdd () {
   open.value = false
 }
 
+// We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display
 watch(open, (isOpen) => {
   if (!isOpen) {
     return
   }
-  populateAvailableComponents()
+  populateAvailableResources()
 })
 </script>
