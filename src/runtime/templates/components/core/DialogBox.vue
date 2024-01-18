@@ -62,7 +62,7 @@ export interface ActionButton {
   callbackFn?: () => void
 }
 
-const isOpen = defineModel({ default: false })
+const isOpen = defineModel<boolean>({ default: false })
 
 withDefaults(defineProps<{
   title: string,

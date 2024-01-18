@@ -11,7 +11,6 @@ import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/
 const open = ref(true)
 
 function handleAdd () {
-  console.log('handleAdd')
   open.value = false
 }
 
