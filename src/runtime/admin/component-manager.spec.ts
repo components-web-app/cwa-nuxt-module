@@ -67,12 +67,12 @@ describe('Component Manager', () => {
 
   describe('resourceStack getter', () => {
     test.each([
-      { lastClickTarget: ref({}), mockStack: ['anything'], expected: [] },
-      { lastClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] }
-    ])('If lastClickTarget is $lastClickTarget the stack should return $expected', ({ lastClickTarget, mockStack, expected }) => {
+      { currentClickTarget: ref({}), mockStack: ['anything'], expected: [] },
+      { currentClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] }
+    ])('If currentClickTarget is $currentClickTarget the stack should return $expected', ({ currentClickTarget, mockStack, expected }) => {
       const { manager } = createComponentManager()
 
-      manager.lastClickTarget = ref(lastClickTarget)
+      manager.currentClickTarget = ref(currentClickTarget)
       manager.currentResourceStack = ref(mockStack)
 
       expect(manager.resourceStack.value).toEqual(expected)
@@ -84,32 +84,32 @@ describe('Component Manager', () => {
       {
         stack: [{ test: true }, null, null],
         showManager: true,
-        lastClickTarget: undefined,
+        currentClickTarget: undefined,
         toEqual: { test: true }
       },
       {
         stack: [{ test: true }, null, null],
         showManager: false,
-        lastClickTarget: undefined,
+        currentClickTarget: undefined,
         toEqual: undefined
       },
       {
         stack: [{ test: true }, null, null],
         showManager: true,
-        lastClickTarget: {},
+        currentClickTarget: {},
         toEqual: undefined
       },
       {
         stack: [],
         showManager: true,
-        lastClickTarget: undefined,
+        currentClickTarget: undefined,
         toEqual: undefined
       }
-    ])('should return first item from stack', ({ stack, showManager, lastClickTarget, toEqual }) => {
+    ])('should return first item from stack', ({ stack, showManager, currentClickTarget, toEqual }) => {
       const { manager } = createComponentManager()
 
       manager.showManager.value = showManager
-      manager.lastClickTarget.value = lastClickTarget
+      manager.currentClickTarget.value = currentClickTarget
       manager.currentResourceStack = ref(stack)
 
       expect(manager.currentStackItem.value).toEqual(toEqual)
@@ -135,12 +135,12 @@ describe('Component Manager', () => {
         const { manager } = createComponentManager()
 
         manager.currentResourceStack = ref([1, 2, 3])
-        manager.lastClickTarget = ref('mock-target')
+        manager.currentClickTarget = ref('mock-target')
 
         manager.resetStack()
 
         expect(manager.resourceStack.value).toEqual([])
-        expect(manager.lastClickTarget.value).toEqual(null)
+        expect(manager.currentClickTarget.value).toEqual(null)
       })
     })
 
@@ -160,7 +160,7 @@ describe('Component Manager', () => {
         const { manager } = createComponentManager(mockStore)
         const mockTarget = { value: {} }
 
-        manager.lastClickTarget = mockTarget
+        manager.currentClickTarget = mockTarget
         manager.currentResourceStack.value = [{ iri: mockIri }]
 
         manager.addToStack({ iri: mockIri })
@@ -169,23 +169,23 @@ describe('Component Manager', () => {
         expect(manager.currentResourceStack.value.length).toEqual(1)
       })
 
-      test('should reset and add item to stack IF item with same iri already in stack but no previous click target', () => {
+      test('should not reset and add item to stack IF item with same iri already in stack even if no previous click target', () => {
         const mockStore = { state: { isEditing: true } }
         const mockIri = '/mock'
         const { manager } = createComponentManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
         vi.spyOn(manager, 'insertResourceStackItem').mockImplementationOnce(() => {})
-        manager.lastClickTarget = ref(null)
+        manager.currentClickTarget = ref(null)
         manager.currentResourceStack = ref([{ iri: mockIri }])
 
         const event = { iri: mockIri, clickTarget: 'new' }
         manager.addToStack(event)
-        expect(resetSpy).toHaveBeenCalledTimes(2)
-        expect(resetSpy).toHaveBeenCalledWith(undefined)
-        expect(resetSpy).toHaveBeenCalledWith(true)
-        expect(manager.insertResourceStackItem).toHaveBeenCalledOnce()
-        expect(manager.insertResourceStackItem).toHaveBeenCalledWith({ iri: mockIri }, undefined)
-        expect(manager.lastClickTarget.value).toEqual('new')
+        expect(resetSpy).toHaveBeenCalledTimes(0)
+        // expect(resetSpy).toHaveBeenCalledWith(undefined)
+        // expect(resetSpy).toHaveBeenCalledWith(true)
+        expect(manager.insertResourceStackItem).toHaveBeenCalledTimes(0)
+        // expect(manager.insertResourceStackItem).toHaveBeenCalledWith({ iri: mockIri }, undefined)
+        expect(manager.currentClickTarget.value).toEqual('new')
       })
 
       test('should NOT add item to stack IF item has no iri', () => {
@@ -203,22 +203,22 @@ describe('Component Manager', () => {
         vi.spyOn(manager, 'insertResourceStackItem').mockImplementationOnce(() => {})
         const event = { iri: '/mock', clickTarget: { new: 'target' } }
 
-        manager.lastClickTarget = ref({ old: 'target' })
+        manager.currentClickTarget = ref({ old: 'target' })
 
         manager.addToStack(event)
 
-        expect(manager.lastClickTarget.value).toEqual(event.clickTarget)
+        expect(manager.currentClickTarget.value).toEqual(event.clickTarget)
       })
 
       test('should clear the last click target IF event has no iri', () => {
         const mockStore = { state: { isEditing: true } }
         const { manager } = createComponentManager(mockStore)
         const resetSpy = vi.spyOn(manager, 'resetStack')
-        manager.lastClickTarget = ref({ old: 'target' })
+        manager.currentClickTarget = ref({ old: 'target' })
         manager.addToStack({})
         expect(resetSpy).not.toHaveBeenCalled()
         expect(manager.resourceStack.value.length).toEqual(0)
-        expect(manager.lastClickTarget.value).toBeNull()
+        expect(manager.currentClickTarget.value).toBeNull()
       })
     })
 
