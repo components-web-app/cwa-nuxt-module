@@ -11,6 +11,7 @@ import ComponentMetaResolver from '#cwa/runtime/templates/components/core/Compon
 import type { ManagerTab } from '#cwa/module'
 import ResourceManagerCtaButton
   from '#cwa/runtime/templates/components/main/admin/resource-manager/ResourceManagerCtaButton.vue'
+import DialogBox from '#cwa/runtime/templates/components/core/DialogBox.vue'
 
 const $cwa = useCwa()
 const currentStackItem = $cwa.admin.componentManager.currentStackItem
@@ -175,4 +176,5 @@ defineExpose({
     </div>
   </Transition>
   <CwaAdminResourceManagerContextMenu v-if="showAdmin" v-model="isOpen" :virtual-element="virtualElement" />
+  <DialogBox />
 </template>
