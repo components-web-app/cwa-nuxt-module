@@ -20,9 +20,11 @@ export interface ButtonOption {
   value: ModelValue
 }
 
+export type ButtonColor = 'blue' | 'grey' | 'dark'
+
 const props = withDefaults(defineProps<
 {
-  color?: 'blue' | 'grey' | 'dark',
+  color?: ButtonColor,
   buttonClass?: string,
   options?:(ButtonOption|ButtonOption[])[],
   popper?: PopperOptions

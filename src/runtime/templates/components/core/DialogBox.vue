@@ -37,11 +37,8 @@
               </div>
               <div class="cwa-px-6 cwa-mt-8 sm:cwa-flex sm:cwa-flex-row-reverse cwa-space-y-2 sm:cwa-space-y-0 sm:cwa-space-x-6 sm:cwa-space-x-reverse">
                 <slot name="buttons">
-                  <CwaUiFormButton color="blue" button-class="cwa-min-w-[120px]" @click="setIsOpen(false)">
-                    OK
-                  </CwaUiFormButton>
-                  <CwaUiFormButton color="grey" @click="setIsOpen(false)">
-                    Cancel
+                  <CwaUiFormButton v-for="button of buttons" :key="`dialog-button-${button.label}`" :color="button.color" :button-class="button.buttonClass" @click="button?.callbackFn ? button.callbackFn() : setIsOpen(false)">
+                    {{ button.label }}
                   </CwaUiFormButton>
                 </slot>
               </div>
@@ -56,16 +53,37 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
+import type { ButtonColor } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
-const isOpen = defineModel({ default: true })
+export interface ActionButton {
+  label: string
+  color: ButtonColor
+  buttonClass?: string
+  callbackFn?: () => void
+}
+
+const isOpen = defineModel({ default: false })
 
 withDefaults(defineProps<{
-  title: string
+  title: string,
+  buttons: ActionButton[]
 }>(), {
+  title: '',
+  buttons: () => ([
+    {
+      color: 'blue',
+      buttonClass: 'cwa-min-w-[120px]',
+      label: 'Done'
+    },
+    {
+      color: 'grey',
+      label: 'Cancel'
+    }
+  ])
 })
 
-function setIsOpen (value: boolean) {
-  isOpen.value = value
+function setIsOpen (value?: boolean) {
+  isOpen.value = !!value
 }
 
 const panelClassName = computed(() => {
