@@ -20,9 +20,9 @@
             enter="cwa-ease-out cwa-duration-300"
             enter-from="cwa-opacity-0 cwa-translate-y-4 sm:cwa-translate-y-0 sm:cwa-scale-95"
             enter-to="cwa-opacity-100 cwa-translate-y-0 sm:cwa-scale-100"
-            leave="cwa-ease-in cwa-duration-200"
-            leave-from="cwa-opacity-100 cwa-translate-y-0 sm:cwa-scale-100"
-            leave-to="cwa-opacity-0 cwa-translate-y-4 sm:cwa-translate-y-0 sm:cwa-scale-95"
+            leave="cwa-duration-0"
+            leave-from="cwa-opacity-100"
+            leave-to="cwa-opacity-0"
           >
             <DialogPanel :class="panelClassName">
               <div class="sm:cwa-flex sm:cwa-items-start">

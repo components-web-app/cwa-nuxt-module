@@ -1,18 +1,28 @@
 <template>
   <DialogBox v-model="open" title="Add Component" :buttons="buttons">
-    <p>Content Here</p>
+    <pre>{{ availableComponents }}</pre>
   </DialogBox>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
+import { useCwa } from '#imports'
 
-const open = ref(true)
+const $cwa = useCwa()
 
-function handleAdd () {
-  open.value = false
-}
+const availableComponents = ref()
+
+const open = computed({
+  get () {
+    return !!$cwa.admin.resourceManager.addResourceTriggered.value
+  },
+  set (value: boolean) {
+    if (!value) {
+      $cwa.admin.resourceManager.addResourceTriggered.value = undefined
+    }
+  }
+})
 
 const buttons = computed<ActionButton[]>(() => {
   return [
@@ -27,5 +37,20 @@ const buttons = computed<ActionButton[]>(() => {
       color: 'grey'
     }
   ]
+})
+
+function populateAvailableComponents () {
+  availableComponents.value = $cwa.admin.resourceManager.addResourceTriggered.value?.targetIri
+}
+
+function handleAdd () {
+  open.value = false
+}
+
+watch(open, (isOpen) => {
+  if (!isOpen) {
+    return
+  }
+  populateAvailableComponents()
 })
 </script>

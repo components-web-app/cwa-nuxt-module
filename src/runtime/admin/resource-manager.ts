@@ -29,9 +29,16 @@ interface AddToStackWindowEvent {
 interface AddToStackEvent extends resourceStackItem, AddToStackWindowEvent {
 }
 
+export interface AddResourceEvent {
+  addAfter: boolean
+  targetIri: string
+  resource?: string
+}
+
 export default class ResourceManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
+  public readonly addResourceTriggered: Ref<undefined|AddResourceEvent> = ref()
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)

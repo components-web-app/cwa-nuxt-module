@@ -73,10 +73,21 @@ function handleDefaultClick () {
   }
 }
 
+function handleAddEvent (value: 'add-before'|'add-after') {
+  const addAfter = value === 'add-after'
+  $cwa.admin.resourceManager.addResourceTriggered.value = {
+    addAfter,
+    targetIri: currentIri.value
+  }
+}
+
 function handleManagerCtaClick (value?: ModelValue) {
   if (!value) {
     handleDefaultClick()
     return
+  }
+  if (value.startsWith('add-')) {
+    handleAddEvent(value)
   }
   consola.log('clicked', value)
 }
