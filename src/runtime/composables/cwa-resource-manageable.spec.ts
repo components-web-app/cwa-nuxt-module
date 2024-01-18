@@ -5,7 +5,7 @@ import ManageableResource from '../admin/manageable-resource'
 import * as cwaComposable from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 
-vi.mock('../admin/manageable-component', () => {
+vi.mock('../admin/manageable-resource', () => {
   return {
     default: vi.fn(() => {
       return {

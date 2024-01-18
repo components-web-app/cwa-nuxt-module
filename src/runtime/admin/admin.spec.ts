@@ -6,7 +6,7 @@ import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import Admin from './admin'
 import ResourceManager from './resource-manager'
 
-vi.mock('./component-manager', () => {
+vi.mock('./resource-manager', () => {
   return {
     default: vi.fn()
   }
