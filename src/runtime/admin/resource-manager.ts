@@ -5,7 +5,7 @@ import type { App } from 'vue/dist/vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
-import type { StyleOptions } from './manageable-component'
+import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
 
 interface resourceStackItem {
@@ -29,7 +29,7 @@ interface AddToStackWindowEvent {
 interface AddToStackEvent extends resourceStackItem, AddToStackWindowEvent {
 }
 
-export default class ComponentManager {
+export default class ResourceManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)

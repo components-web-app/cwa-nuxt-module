@@ -1,30 +1,30 @@
 import { getCurrentInstance, onBeforeUnmount, onMounted, reactive } from 'vue'
 import type { ComponentPublicInstance, Ref } from 'vue'
-import type { ManageableComponentOps } from '../admin/manageable-component'
-import ManageableComponent from '../admin/manageable-component'
+import type { ManageableResourceOps } from '../admin/manageable-resource'
+import ManageableResource from '../admin/manageable-resource'
 import { useCwa } from './cwa'
 
 /**
  * @internal
  * @description Advanced usage - usually this composable will be initialised from useCwaResource where disableManager does not equal true. Primarily separated for the ComponentGroup component
  */
-export const useCwaResourceManageable = (iri: Ref<string|undefined>, ops?: ManageableComponentOps, proxy?: ComponentPublicInstance) => {
+export const useCwaResourceManageable = (iri: Ref<string|undefined>, ops?: ManageableResourceOps, proxy?: ComponentPublicInstance) => {
   const useProxy = proxy || getCurrentInstance()?.proxy
   if (!useProxy) {
     throw new Error(`Cannot initialise manager for resource. Instance is not defined with iri '${iri.value}'`)
   }
 
-  const manageableComponent = new ManageableComponent(useProxy, useCwa(), ops || reactive({}))
+  const manageableResource = new ManageableResource(useProxy, useCwa(), ops || reactive({}))
 
   onMounted(() => {
-    manageableComponent.init(iri)
+    manageableResource.init(iri)
   })
 
   onBeforeUnmount(() => {
-    manageableComponent.clear()
+    manageableResource.clear()
   })
 
   return {
-    manager: manageableComponent
+    manager: manageableResource
   }
 }

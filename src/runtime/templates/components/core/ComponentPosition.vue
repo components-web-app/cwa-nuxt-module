@@ -11,12 +11,12 @@ import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import type { ManageableComponentOps } from '#cwa/runtime/admin/manageable-component'
+import type { ManageableResourceOps } from '#cwa/runtime/admin/manageable-resource'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
 const resourceLoader = ref()
-const componentManagerOps: ManageableComponentOps = reactive({})
+const resourceManagerOps: ManageableResourceOps = reactive({})
 const iriRef = toRef(props, 'iri')
 const resource = useCwaResource(iriRef).getResource()
 useCwaResourceManageable(iriRef)
@@ -25,7 +25,7 @@ const componentIri = computed(() => {
   const iri = resource.value?.data?.component
   const publishedIri = $cwa.resources.findPublishedComponentIri(iri).value
   if ($cwa.admin.isEditing) {
-    const selectedEditingIri = $cwa.admin.componentManager.currentIri.value
+    const selectedEditingIri = $cwa.admin.resourceManager.currentIri.value
     const draftIri = $cwa.resources.findDraftComponentIri(iri).value
     if (selectedEditingIri && [draftIri, publishedIri].includes(selectedEditingIri)) {
       return selectedEditingIri
@@ -40,8 +40,8 @@ watchEffect(() => {
   if (!component) {
     return
   }
-  componentManagerOps.styles = component.cwaResource?.styles
-  componentManagerOps.disabled = !!component?.disableManager
+  resourceManagerOps.styles = component.cwaResource?.styles
+  resourceManagerOps.disabled = !!component?.disableManager
 })
-useCwaResourceManageable(componentIri, componentManagerOps)
+useCwaResourceManageable(componentIri, resourceManagerOps)
 </script>

@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue'])
 
-const stackSize = computed(() => $cwa.admin.componentManager.contextStack.value.length)
+const stackSize = computed(() => $cwa.admin.resourceManager.contextStack.value.length)
 
 const isOpen = computed({
   get () {
@@ -25,7 +25,7 @@ const isOpen = computed({
 })
 
 function selectResource (index: number) {
-  $cwa.admin.componentManager.selectStackIndex(index, true)
+  $cwa.admin.resourceManager.selectStackIndex(index, true)
   isOpen.value = false
 }
 </script>

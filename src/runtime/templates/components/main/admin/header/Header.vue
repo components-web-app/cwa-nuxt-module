@@ -6,7 +6,7 @@
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
           {{ $cwa.resources.page.value.data.reference }}
         </CwaUiFormButton>
-        <path-selector v-else-if="$cwa.admin.componentManager.showManager.value" />
+        <path-selector v-else-if="$cwa.admin.resourceManager.showManager.value" />
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
         <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" @click="$cwa.admin.toggleEdit()">

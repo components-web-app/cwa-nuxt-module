@@ -21,7 +21,7 @@ import {
 } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
-const currentIri = $cwa.admin.componentManager.currentIri
+const currentIri = $cwa.admin.resourceManager.currentIri
 
 const resourceType = computed(() => {
   return getResourceTypeFromIri(currentIri.value)

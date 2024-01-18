@@ -15,7 +15,7 @@ import AddComponentDialog
   from '#cwa/runtime/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 
 const $cwa = useCwa()
-const currentStackItem = $cwa.admin.componentManager.currentStackItem
+const currentStackItem = $cwa.admin.resourceManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
@@ -57,7 +57,7 @@ function onContextMenu (e: PointerEvent) {
     top: e.clientY,
     left: e.clientX
   }
-  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.componentManager.isContextPopulating.value) {
+  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.resourceManager.isContextPopulating.value) {
     isOpen.value = false
     return
   }
@@ -71,11 +71,11 @@ function mousedownHandler (e: MouseEvent) {
 
 function clickHandler (e: MouseEvent) {
   // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
-  if (e.target !== mousedownTarget && !$cwa.admin.componentManager.isPopulating.value) {
+  if (e.target !== mousedownTarget && !$cwa.admin.resourceManager.isPopulating.value) {
     return
   }
   completeStack(e)
-  $cwa.admin.componentManager.selectStackIndex(0)
+  $cwa.admin.resourceManager.selectStackIndex(0)
 }
 
 function contextHandler (e: MouseEvent) {
@@ -83,7 +83,7 @@ function contextHandler (e: MouseEvent) {
 }
 
 function completeStack (e: MouseEvent, isContext: boolean = false) {
-  $cwa.admin.componentManager.addToStack({ clickTarget: e.target }, isContext)
+  $cwa.admin.resourceManager.addToStack({ clickTarget: e.target }, isContext)
 }
 
 function selectTab (index: number) {
@@ -116,7 +116,7 @@ onBeforeUnmount(() => {
 })
 
 const showSpacer = computed(() => {
-  return $cwa.admin.componentManager.showManager.value && currentStackItem
+  return $cwa.admin.resourceManager.showManager.value && currentStackItem
 })
 
 const selectedTab = computed(() => {
@@ -148,7 +148,7 @@ defineExpose({
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.componentManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop @contextmenu.stop>
+    <div v-if="$cwa.admin.resourceManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop @contextmenu.stop>
       <div class="cwa-dark-blur">
         <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
         <div v-if="allTabsMeta.length" ref="managerHolder">

@@ -26,12 +26,12 @@ export type StyleOptions = {
   classes: { [name: string]: string[] }
 }
 
-export type ManageableComponentOps = {
+export type ManageableResourceOps = {
   styles?: StyleOptions
   disabled?: boolean
 }
 
-export default class ManageableComponent {
+export default class ManageableResource {
   private currentIri: Ref<string|undefined>|undefined
   private domElements: Ref<HTMLElement[]> = ref([])
   private unwatchCurrentIri: undefined|WatchStopHandle
@@ -41,7 +41,7 @@ export default class ManageableComponent {
   constructor (
     private readonly component: ComponentPublicInstance,
     private readonly $cwa: Cwa,
-    private readonly ops: ManageableComponentOps
+    private readonly ops: ManageableResourceOps
   ) {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
@@ -210,7 +210,7 @@ export default class ManageableComponent {
       return
     }
 
-    this.$cwa.admin.componentManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
+    this.$cwa.admin.resourceManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
   }
 
   private getCurrentStackItem (clickTarget: EventTarget|null) {
