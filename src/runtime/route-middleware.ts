@@ -12,7 +12,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()
 
-  // When vitest environment is nuxt using nuxt-vitest this has started to be run for some reason...
+  // When vitest environment is nuxt using @nuxt/test-utils this has started to be run for some reason...
   if (nuxtApp._appConfig?.nuxt?.buildId === 'test') {
     return
   }

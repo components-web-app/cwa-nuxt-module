@@ -11,6 +11,7 @@ export default {
         400: colors.stone['400'],
         600: colors.stone['600'],
         700: colors.stone['700'],
+        800: colors.stone['800'],
         900: colors.stone['900']
       },
       blue: {

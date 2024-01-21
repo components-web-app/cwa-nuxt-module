@@ -1,4 +1,4 @@
-// @vitest-environment nuxt
+// @vitest-environment happy-dom
 import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
 import * as app from '#app'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'

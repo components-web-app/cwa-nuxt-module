@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import logger from 'consola'
@@ -15,8 +15,6 @@ import * as processComposables from '../composables/process'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
 
-vi.mock('consola')
-vi.mock('../resources/resource-utils')
 vi.mock('./fetcher/fetcher')
 
 const EventSource = vi.fn(() => ({
@@ -56,12 +54,17 @@ describe('Mercure -> setMercureHubFromLinkHeader', () => {
   const validLinkHeader = '<https://some-domain/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation",<https://localhost:8443/.well-known/mercure>; rel="mercure"'
   const invalidLinkHeader = '<https://some-domain/docs.jsonld>; rel="http://INVALID", (INVALID); rel="mercure"'
 
+  beforeAll(() => {
+    logger.wrapAll()
+  })
+
   beforeEach(() => {
+    vi.clearAllMocks()
     const pinia = createTestingPinia({
       createSpy: vi.fn
     })
     setActivePinia(pinia)
-    vi.clearAllMocks()
+    logger.mockTypes(() => vi.fn())
   })
 
   test('The link header is parsed and set correctly', () => {

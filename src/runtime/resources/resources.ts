@@ -275,13 +275,19 @@ export class Resources {
     return this.resourcesStoreDefinition.useStore()
   }
 
-  public get isPageTemplate () {
+  public get usesPageTemplate () {
     return computed(() => !!this.page?.value?.data?.isTemplate)
   }
 
-  public get isPageDynamic () {
+  public get isDataPage () {
     return computed(() => {
-      return this.isPageTemplate.value && !!this.pageDataIri.value
+      return this.usesPageTemplate.value && !!this.pageDataIri.value
+    })
+  }
+
+  public get isDynamicPage () {
+    return computed(() => {
+      return this.usesPageTemplate.value && !this.pageDataIri.value
     })
   }
 

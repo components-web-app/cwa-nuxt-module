@@ -133,8 +133,8 @@ const ssrPositionHasPartialData = computed(() => {
   return resource.value?.apiState.ssr &&
     $cwa.auth.user &&
     getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
-    $cwa.resources.isPageTemplate &&
-    !$cwa.resources.isPageDynamic
+    $cwa.resources.usesPageTemplate &&
+    !$cwa.resources.isDataPage
 })
 
 const refetchPublishedSsrResourceToResolveDraft = computed(() => {
@@ -152,14 +152,17 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
 })
 
 // With ISR when the page is loaded it could be cached, this should trigger on front-end still and can send a request to update/check the component from the API again
-const outdatedResource = computed(() => {
-  if (resource.value?.apiState.status !== CwaResourceApiStatuses.SUCCESS) {
+const isOutdated = computed(() => {
+  const apiState = resource.value?.apiState
+  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.fetchedAt) {
     return
   }
-  return (new Date()).getTime() - resource.value?.apiState.fetchedAt > 5
+  const nowTime = (new Date()).getTime()
+  const timeDifference = nowTime - resource.value?.apiState.fetchedAt
+  return timeDifference > 5000
 })
 
-async function doFetchResource () {
+async function clientFetchResource () {
   await $cwa.fetchResource({
     path: props.iri
   })
@@ -176,7 +179,7 @@ const methods = {
       ssrPositionHasPartialData.value ||
       refetchPublishedSsrResourceToResolveDraft.value
     ) {
-      await doFetchResource()
+      await clientFetchResource()
     }
 
     // once we have a resource we need to make sure we have loaded the published as well if it is a draft, and the draft
@@ -186,7 +189,7 @@ const methods = {
 }
 
 onMounted(() => {
-  outdatedResource.value && doFetchResource()
+  isOutdated.value && clientFetchResource()
 
   // if has a silent error, we are client-side and last attempt was not while logged in
   // todo: NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING if resource is publishable, published and request was a server-side request, refresh with a client-side request

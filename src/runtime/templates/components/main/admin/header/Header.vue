@@ -1,10 +1,10 @@
 <template>
   <div ref="spacer" />
-  <div ref="header" class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-50 cwa-w-full cwa-h-18 cwa-top-0 cwa-dark-blur" :class="[highlightClass]" @click.stop @contextmenu.stop>
+  <div ref="header" class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-50 cwa-w-full cwa-h-18 cwa-top-0 cwa-dark-blur" :class="[highlightClass]" @click.stop>
     <div class="cwa-flex cwa-justify-between cwa-items-center">
       <div class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
-          {{ $cwa.resources.page.value.data.reference }}
+          {{ $cwa.resources.page.value.data?.reference }}
         </CwaUiFormButton>
         <path-selector v-else-if="$cwa.admin.resourceManager.showManager.value" />
       </div>
@@ -50,11 +50,8 @@ const isNavEnabled = computed({
 
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
-const highlightTemplatePage = computed(() => {
-  return $cwa.resources.isPageTemplate.value && !$cwa.resources.isPageDynamic.value
-})
 const highlightClass = computed(() => {
-  if (!highlightTemplatePage.value) {
+  if (!$cwa.resources.isDynamicPage.value) {
     return
   }
   return 'cwa-shadow-orange-bottom'

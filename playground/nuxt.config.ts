@@ -23,7 +23,7 @@ export default defineNuxtConfig({
     '../src/module',
     '@nuxtjs/tailwindcss',
     '@nuxt/image',
-    'nuxt-vitest',
+    '@nuxt/test-utils/module',
     '@vite-pwa/nuxt'
   ],
   devtools: {
@@ -34,10 +34,15 @@ export default defineNuxtConfig({
     apiUrlBrowser: API_URL_BROWSER,
     resources: {
       NavigationLink: {
-        name: 'Link'
+        name: 'Link',
+        description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>'
       },
       HtmlContent: {
-        name: 'Body Text'
+        name: 'Body Text',
+        description: '<p>Easily create a body of text with the ability to style and format the content using themes in-keeping with your website.</p>'
+      },
+      Image: {
+        instantAdd: true
       }
     },
     tailwind: {
@@ -59,6 +64,7 @@ export default defineNuxtConfig({
   tailwindcss: {
     config: {
       content: [
+        resolve('nuxt.config.ts'),
         resolve('cwa/**/*.{js,vue,ts}')
       ],
       plugins: [

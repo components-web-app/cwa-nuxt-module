@@ -52,7 +52,7 @@ function openContext ({ top, left }: ContextPosition) {
   isOpen.value = true
 }
 
-function onContextMenu (e: PointerEvent) {
+function contextMenuHandler (e: MouseEvent, type: 'page'|'layout') {
   const pos: ContextPosition = {
     top: e.clientY,
     left: e.clientX
@@ -62,27 +62,32 @@ function onContextMenu (e: PointerEvent) {
     return
   }
   e.preventDefault()
+  completeStack(e, type, true)
   openContext(pos)
+}
+
+function closeContextMenu (e: MouseEvent) {
+  isOpen.value = false
+  completeStack(e, undefined, true)
 }
 
 function mousedownHandler (e: MouseEvent) {
   mousedownTarget = e.target
 }
 
-function clickHandler (e: MouseEvent) {
+function clickHandler (e: MouseEvent, type: 'page'|'layout') {
   // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
   if (e.target !== mousedownTarget && !$cwa.admin.resourceManager.isPopulating.value) {
     return
   }
-  completeStack(e)
+  completeStack(e, type)
   $cwa.admin.resourceManager.selectStackIndex(0)
 }
 
-function contextHandler (e: MouseEvent) {
-  completeStack(e, true)
-}
-
-function completeStack (e: MouseEvent, isContext: boolean = false) {
+function completeStack (e: MouseEvent, type: undefined|'page'|'layout', isContext: boolean = false) {
+  if (type) {
+    $cwa.admin.resourceManager.isLayoutStack.value = type === 'layout'
+  }
   $cwa.admin.resourceManager.addToStack({ clickTarget: e.target }, isContext)
 }
 
@@ -105,14 +110,10 @@ watch(currentStackItem, (newCurrent, oldCurrent) => {
 
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
-  window.addEventListener('click', clickHandler)
-  window.addEventListener('contextmenu', contextHandler)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('mousedown', mousedownHandler)
-  window.removeEventListener('click', clickHandler)
-  window.removeEventListener('contextmenu', contextHandler)
 })
 
 const showSpacer = computed(() => {
@@ -134,7 +135,9 @@ watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () 
 })
 
 defineExpose({
-  onContextMenu
+  clickHandler,
+  contextMenuHandler,
+  closeContextMenu
 })
 </script>
 
@@ -148,7 +151,7 @@ defineExpose({
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.resourceManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop @contextmenu.stop>
+    <div v-if="$cwa.admin.resourceManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
       <div class="cwa-dark-blur">
         <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
         <div v-if="allTabsMeta.length" ref="managerHolder">

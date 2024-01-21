@@ -2,11 +2,14 @@ import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 
 interface resourceStackItem {
   iri: string
@@ -32,15 +35,22 @@ interface AddToStackEvent extends resourceStackItem, AddToStackWindowEvent {
 export interface AddResourceEvent {
   addAfter: boolean
   targetIri: string
+  closest: {
+    position?: string
+    group: string
+  }
   resource?: string
 }
 
 export default class ResourceManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
-  public readonly addResourceTriggered: Ref<undefined|AddResourceEvent> = ref()
+  public readonly isLayoutStack: Ref<boolean> = ref(false)
+  private readonly _isEditingLayout: Ref<boolean> = ref(false)
+  private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
+  private readonly previousResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
@@ -62,6 +72,71 @@ export default class ResourceManager {
     await nextTick()
     this.scrollIntoView()
     this.createFocusComponent()
+  }
+
+  public initAddResource (targetIri: string, addAfter: boolean) {
+    type BaseEvent = {
+      targetIri: string
+      addAfter: boolean
+    }
+    const initEvent: BaseEvent = {
+      targetIri,
+      addAfter
+    }
+
+    const findClosestResourceByType = (type: CwaResourceTypes): string => {
+      const stack = this.resourceStack.value
+      for (const stackItem of stack) {
+        if (getResourceTypeFromIri(stackItem.iri) === type) {
+          return stackItem.iri
+        }
+      }
+      throw new Error(`Could not find a resource with type '${type}' in the stack`)
+    }
+
+    const findClosestPosition = (event: BaseEvent): string|undefined => {
+      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
+        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
+      }
+      return findPositionFromGroupEvent(event)
+    }
+
+    const findPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
+      const resource = this.resourcesStore.current.byId?.[event.targetIri]
+      const positions = resource?.data?.componentPositions
+      if (!positions || !positions.length) {
+        return
+      }
+      if (event.addAfter) {
+        return positions[positions.length - 1]
+      } else {
+        return positions[0]
+      }
+    }
+
+    const closestPosition = findClosestPosition(initEvent)
+    const closestGroup = findClosestResourceByType(CwaResourceTypes.COMPONENT_GROUP)
+
+    this._addResourceEvent.value = {
+      targetIri,
+      addAfter,
+      closest: {
+        position: closestPosition,
+        group: closestGroup
+      }
+    }
+  }
+
+  public clearAddResource () {
+    this._addResourceEvent.value = undefined
+  }
+
+  public get isEditingLayout () {
+    return this._isEditingLayout
+  }
+
+  public get addResourceEvent () {
+    return this._addResourceEvent
   }
 
   public getState (prop: string) {
@@ -130,11 +205,12 @@ export default class ResourceManager {
       this.contextResourceStack.value = []
       return
     }
+    this.previousResourceStack.value = this.currentResourceStack.value
     this.currentClickTarget.value = null
     this.currentResourceStack.value = []
   }
 
-  public selectStackIndex (index: number, fromContext?: boolean) {
+  public async selectStackIndex (index: number, fromContext?: boolean) {
     if (!this.isEditing) {
       return
     }
@@ -148,6 +224,24 @@ export default class ResourceManager {
       logger.error(`Cannot select stack index: '${index}' is out of range`)
       return
     }
+
+    if (this._isEditingLayout.value !== this.isLayoutStack.value) {
+      // @ts-ignore-next-line
+      const dialog = createConfirmDialog(ConfirmDialog)
+      const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and start editing the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` })
+      if (isCanceled) {
+        if (fromContext) {
+          // can prevent the context stack from becoming the currentResourceStack easily here
+          this.resetStack(true)
+        } else {
+          this.currentResourceStack.value = this.previousResourceStack.value
+        }
+        this.isLayoutStack.value = this._isEditingLayout.value
+        return
+      }
+      this._isEditingLayout.value = this.isLayoutStack.value
+    }
+
     this.currentResourceStack.value = fromStack.value.slice(index)
     this.showManager.value = true
     if (fromContext) {
@@ -186,6 +280,7 @@ export default class ResourceManager {
       return
     }
 
+    // COMPLETE STACK
     // the last click target is not a resource and finished the chain
     if (!isResourceClick) {
       currentTarget.value = null

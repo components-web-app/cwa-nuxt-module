@@ -10,6 +10,7 @@ import type {
   Ref,
   WatchStopHandle
 } from 'vue'
+import { consola } from 'consola'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri,
@@ -130,6 +131,10 @@ export default class ManageableResource {
         const nested = []
         const resource = this.$cwa.resources.getResource(iri)
         const type = getResourceTypeFromIri(iri)
+        if (!resource.value) {
+          consola.warn(`Could not get children for '${iri}' - Resource not found`)
+          return []
+        }
         if (!type) {
           return []
         }
