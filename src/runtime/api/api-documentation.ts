@@ -1,14 +1,21 @@
-import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
+import { ref, watch } from 'vue'
 import logger from 'consola'
-import {
-  ApiDocumentationStore
-} from '../storage/stores/api-documentation/api-documentation-store'
-import type {
-  CwaApiDocumentationStoreInterface
-} from '../storage/stores/api-documentation/api-documentation-store'
+import type { CwaApiDocumentationStoreInterface } from '../storage/stores/api-documentation/api-documentation-store'
+import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
 import type { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
 import CwaFetch from './fetcher/cwa-fetch'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+
+interface ApiDocumentationComponentMetadata {
+  resourceName: string
+  endpoint: string
+  isPublishable: boolean
+}
+
+export interface ApiDocumentationComponentMetadataCollection {
+  [key: string]: ApiDocumentationComponentMetadata
+}
 
 export default class ApiDocumentation {
   private readonly cwaFetch: CwaFetch
@@ -58,6 +65,44 @@ export default class ApiDocumentation {
 
     logger.debug('Fetching API Documentation')
     return await this.fetchAllApiDocumentation(this.docsPath)
+  }
+
+  public async getComponentMetadata (refresh = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+    const apiDocumentation = await this.getApiDocumentation(refresh)
+    const docs = apiDocumentation?.docs
+    const entrypoint = apiDocumentation?.entrypoint
+    if (!docs || !entrypoint) {
+      return
+    }
+
+    // Discover all properties for a resource that are available - perhaps overkill as so far we just need to know if publishable
+    const properties = docs['hydra:supportedClass'].reduce(
+      (obj, supportedClass) => {
+        obj[supportedClass['rdfs:label']] = supportedClass['hydra:supportedProperty'].map(supportedProperty => supportedProperty['hydra:title'])
+        return obj
+      },
+      {} as { [key: string]: string[] }
+    )
+
+    const metadata: ApiDocumentationComponentMetadataCollection = {}
+
+    for (const [key, endpoint] of Object.entries(entrypoint) as string[][]) {
+      if (getResourceTypeFromIri(endpoint) === CwaResourceTypes.COMPONENT) {
+        const resourceName = key[0].toUpperCase() + key.slice(1)
+        // should check whether we have configured a front-end component for this API resource
+        // if (!getUiComponent(resourceName)) {
+        //   continue
+        // }
+        const isPublishable = properties?.[resourceName].includes('publishedAt') || false
+        metadata[resourceName] = {
+          resourceName,
+          endpoint,
+          isPublishable
+        }
+      }
+    }
+
+    return metadata
   }
 
   private reRunGetApiDocumentationWhenReady (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {

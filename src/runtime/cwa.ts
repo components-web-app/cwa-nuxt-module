@@ -6,7 +6,7 @@ import { Storage } from './storage/storage'
 import type { FetchResourceEvent } from './api/fetcher/fetcher'
 import Fetcher from './api/fetcher/fetcher'
 import Mercure from './api/mercure'
-import ApiDocumentation from './api/api-documentation'
+import ApiDocumentation, { type ApiDocumentationComponentMetadataCollection } from './api/api-documentation'
 import type { CwaApiDocumentationDataInterface } from './storage/stores/api-documentation/state'
 import CwaFetch from './api/fetcher/cwa-fetch'
 import FetchStatusManager from './api/fetcher/fetch-status-manager'
@@ -89,6 +89,10 @@ export default class Cwa {
   // API Documentation service is private, exposing only function required by applications
   public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
     return await this.apiDocumentation.getApiDocumentation(refresh)
+  }
+
+  public async getComponentMetadata (refresh = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+    return await this.apiDocumentation.getComponentMetadata(refresh)
   }
 
   // fetcher is private, exposing the only function required by applications

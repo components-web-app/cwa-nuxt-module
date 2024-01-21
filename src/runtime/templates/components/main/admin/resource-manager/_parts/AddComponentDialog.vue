@@ -1,6 +1,7 @@
 <template>
   <DialogBox v-model="open" title="Add Component" :buttons="buttons">
-    <pre>{{ displayData }}</pre>
+    <Spinner v-if="loadingComponents" :show="true" />
+    <pre v-else>{{ displayData }}</pre>
   </DialogBox>
 </template>
 
@@ -10,13 +11,16 @@ import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/
 import { useCwa } from '#imports'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-manager'
+import type { ApiDocumentationComponentMetadataCollection } from '#cwa/runtime/api/api-documentation'
+import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
 const $cwa = useCwa()
+const loadingComponents = ref(true)
 
 interface DisplayDataI {
   addAfter: boolean
   targetIri: string
-  availableResources: string[]
+  availableComponents?: ApiDocumentationComponentMetadataCollection
   closestPosition?: string
   closestGroup?: string
   allowedComponents?: string[]
@@ -51,21 +55,20 @@ const buttons = computed<ActionButton[]>(() => {
   ]
 })
 
-function findAvailableResources (targetIri: string, allowedComponents: undefined|string[]) {
-  let availableResources: string[] = []
-  const allComponents = [targetIri]
-  if (allowedComponents) {
-    availableResources = [...allowedComponents]
-  } else {
-    availableResources = allComponents
+async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+  const apiComponents = await $cwa.getComponentMetadata()
+  if (!allowedComponents || !apiComponents) {
+    return apiComponents
   }
-
-  // todo: work out if a position could be added
-
-  return availableResources
+  const asEntries = Object
+    .entries(apiComponents)
+    .filter(
+      ([_, value]) => (allowedComponents.includes(value.endpoint))
+    )
+  return Object.fromEntries(asEntries)
 }
 
-function createDisplayData (): undefined|DisplayDataI {
+async function createDisplayData (): Promise<undefined|DisplayDataI> {
   const event = $cwa.admin.resourceManager.addResourceTriggered.value
   if (!event) {
     return
@@ -84,7 +87,7 @@ function createDisplayData (): undefined|DisplayDataI {
   return {
     addAfter: event.addAfter,
     targetIri: event.targetIri,
-    availableResources: findAvailableResources(event.targetIri, allowedComponents),
+    availableComponents: await findAvailableComponents(allowedComponents),
     closestPosition,
     closestGroup,
     allowedComponents
@@ -121,10 +124,11 @@ function findClosesResourceByType (type: CwaResourceTypes): string|undefined {
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display
-watch(open, (isOpen: boolean) => {
+watch(open, async (isOpen: boolean) => {
   if (!isOpen) {
     return
   }
-  displayData.value = createDisplayData()
+  displayData.value = await createDisplayData()
+  loadingComponents.value = false
 })
 </script>
