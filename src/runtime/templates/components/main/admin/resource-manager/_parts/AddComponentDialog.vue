@@ -24,8 +24,7 @@ interface ComponentMetadataCollection {
 }
 
 interface DisplayDataI {
-  addAfter: boolean
-  targetIri: string
+  event: AddResourceEvent
   availableComponents?: ComponentMetadataCollection
   closestPosition?: string
   closestGroup?: string
@@ -88,8 +87,7 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
   const availableComponents = await findAvailableComponents(allowedComponents)
 
   return {
-    addAfter: event.addAfter,
-    targetIri: event.targetIri,
+    event,
     availableComponents,
     closestPosition,
     closestGroup
