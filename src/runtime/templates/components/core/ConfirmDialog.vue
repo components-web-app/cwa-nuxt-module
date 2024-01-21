@@ -17,7 +17,7 @@ function completeDialog (eventName: 'confirm'|'cancel') {
   open.value = false
   setTimeout(() => {
     emit(eventName)
-  }, 500)
+  }, 250)
 }
 
 const buttons = computed<ActionButton[]>(() => {
