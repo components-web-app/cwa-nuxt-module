@@ -23,7 +23,7 @@ export default defineNuxtConfig({
     '../src/module',
     '@nuxtjs/tailwindcss',
     '@nuxt/image',
-    'nuxt-vitest',
+    '@nuxt/test-utils/module',
     '@vite-pwa/nuxt'
   ],
   devtools: {
