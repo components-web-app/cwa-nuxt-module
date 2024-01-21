@@ -69,7 +69,7 @@ export default class ResourceManager {
     this.createFocusComponent()
   }
 
-  public addResource (targetIri: string, addAfter: boolean) {
+  public initAddResource (targetIri: string, addAfter: boolean) {
     type BaseEvent = {
       targetIri: string
       addAfter: boolean

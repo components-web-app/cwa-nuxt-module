@@ -78,7 +78,7 @@ function handleAddEvent (value: 'add-before'|'add-after') {
     return
   }
   const addAfter = value === 'add-after'
-  $cwa.admin.resourceManager.addResource(currentIri.value, addAfter)
+  $cwa.admin.resourceManager.initAddResource(currentIri.value, addAfter)
 }
 
 function handleManagerCtaClick (value?: ModelValue) {
