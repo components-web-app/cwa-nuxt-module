@@ -1,5 +1,4 @@
-// @vitest-environment nuxt
-// todo: SOMETHING in this test file intermittently causes hanging in CI testing, async does not complete? All tests pass though...
+// @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
