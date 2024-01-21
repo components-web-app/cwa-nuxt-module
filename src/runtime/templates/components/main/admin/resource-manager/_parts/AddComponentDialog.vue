@@ -51,8 +51,18 @@ const buttons = computed<ActionButton[]>(() => {
   ]
 })
 
-function findAvailableResources (targetIri: string) {
-  return [targetIri]
+function findAvailableResources (targetIri: string, allowedComponents: undefined|string[]) {
+  let availableResources: string[] = []
+  const allComponents = [targetIri]
+  if (allowedComponents) {
+    availableResources = [...allowedComponents]
+  } else {
+    availableResources = allComponents
+  }
+
+  // todo: work out if a position could be added
+
+  return availableResources
 }
 
 function createDisplayData (): undefined|DisplayDataI {
@@ -69,14 +79,15 @@ function createDisplayData (): undefined|DisplayDataI {
   }
 
   const closestGroup = findClosesResourceByType(CwaResourceTypes.COMPONENT_GROUP)
+  const allowedComponents = closestGroup ? findAllowedComponents(closestGroup) : undefined
 
   return {
     addAfter: event.addAfter,
     targetIri: event.targetIri,
-    availableResources: findAvailableResources(event.targetIri),
+    availableResources: findAvailableResources(event.targetIri, allowedComponents),
     closestPosition,
     closestGroup,
-    allowedComponents: closestGroup ? findAllowedComponents(closestGroup) : undefined
+    allowedComponents
   }
 }
 
