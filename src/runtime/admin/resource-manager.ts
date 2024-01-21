@@ -48,6 +48,7 @@ export default class ResourceManager {
   private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
+  private readonly previousResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
@@ -202,6 +203,7 @@ export default class ResourceManager {
       this.contextResourceStack.value = []
       return
     }
+    this.previousResourceStack.value = this.currentResourceStack.value
     this.currentClickTarget.value = null
     this.currentResourceStack.value = []
   }
@@ -220,8 +222,23 @@ export default class ResourceManager {
       logger.error(`Cannot select stack index: '${index}' is out of range`)
       return
     }
+
+    if (this._isEditingLayout.value !== this.isLayoutStack.value) {
+      // Todo: a nicer confirmation dialog
+      if (!window.confirm('Are you sure?')) {
+        if (fromContext) {
+          // can prevent the context stack from becoming the currentResourceStack easily here
+          this.resetStack(true)
+        } else {
+          this.currentResourceStack.value = this.previousResourceStack.value
+        }
+        this.isLayoutStack.value = this._isEditingLayout.value
+        return
+      }
+      this._isEditingLayout.value = this.isLayoutStack.value
+    }
+
     this.currentResourceStack.value = fromStack.value.slice(index)
-    this._isEditingLayout.value = this.isLayoutStack.value
     this.showManager.value = true
     if (fromContext) {
       this.resetStack(true)
@@ -259,6 +276,7 @@ export default class ResourceManager {
       return
     }
 
+    // COMPLETE STACK
     // the last click target is not a resource and finished the chain
     if (!isResourceClick) {
       currentTarget.value = null
