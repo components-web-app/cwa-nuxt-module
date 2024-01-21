@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const canvas = ref<HTMLCanvasElement|undefined>()
@@ -66,9 +66,6 @@ function drawCanvas () {
   const width = Math.max(windowSize.value.width, document.body.clientWidth)
   const height = Math.max(windowSize.value.height, document.body.clientHeight)
   ctx.reset()
-  if (!$cwa.admin.isEditing) {
-    return
-  }
 
   canvas.value.width = width
   canvas.value.height = height
@@ -84,41 +81,44 @@ function drawCanvas () {
 }
 
 function drawPageFocus (ctx: CanvasRenderingContext2D) {
+  const [layoutRect] = getBoundingRect()
+  const pageCoords = getPageCoords()
   ctx.moveTo(0, 0)
-  ctx.lineTo(layoutRect.value.width, 0)
-  ctx.lineTo(layoutRect.value.width, pageCoords.value.top + pageCoords.value.height)
-  ctx.lineTo(pageCoords.value.left + pageCoords.value.width, pageCoords.value.top + pageCoords.value.height)
-  ctx.lineTo(pageCoords.value.left + pageCoords.value.width, pageCoords.value.top)
-  ctx.lineTo(pageCoords.value.left, pageCoords.value.top)
-  ctx.lineTo(pageCoords.value.left, pageCoords.value.top + pageCoords.value.height)
-  ctx.lineTo(layoutRect.value.width, pageCoords.value.top + pageCoords.value.height)
-  ctx.lineTo(layoutRect.value.width, layoutRect.value.height)
-  ctx.lineTo(0, layoutRect.value.height)
+  ctx.lineTo(layoutRect.width, 0)
+  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top)
+  ctx.lineTo(pageCoords.left, pageCoords.top)
+  ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
+  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(layoutRect.width, layoutRect.height)
+  ctx.lineTo(0, layoutRect.height)
 }
 
 function drawLayoutFocus (ctx: CanvasRenderingContext2D) {
-  ctx.moveTo(pageCoords.value.left, pageCoords.value.top)
-  ctx.lineTo(pageCoords.value.left + pageCoords.value.width, pageCoords.value.top)
-  ctx.lineTo(pageCoords.value.left + pageCoords.value.width, pageCoords.value.top + pageCoords.value.height)
-  ctx.lineTo(pageCoords.value.left, pageCoords.value.top + pageCoords.value.height)
+  const pageCoords = getPageCoords()
+  ctx.moveTo(pageCoords.left, pageCoords.top)
+  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top)
+  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
 }
 
-const layoutRect = computed(() => {
-  return props.layout.getBoundingClientRect()
-})
+function getBoundingRect () {
+  return [
+    props.layout.getBoundingClientRect(),
+    props.page.getBoundingClientRect()
+  ]
+}
 
-const pageRect = computed(() => {
-  return props.page.getBoundingClientRect()
-})
-
-const pageCoords = computed(() => {
+const getPageCoords = () => {
+  const [layoutRect, pageRect] = getBoundingRect()
   return {
-    top: pageRect.value.top - layoutRect.value.top,
-    left: pageRect.value.left - layoutRect.value.left,
-    width: pageRect.value.width,
-    height: pageRect.value.height
+    top: pageRect.top - layoutRect.top,
+    left: pageRect.left - layoutRect.left,
+    width: pageRect.width,
+    height: pageRect.height
   }
-})
+}
 
 let redrawInterval: number|undefined
 onMounted(() => {
