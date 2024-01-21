@@ -50,11 +50,8 @@ const isNavEnabled = computed({
 
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
-const highlightTemplatePage = computed(() => {
-  return $cwa.resources.isPageTemplate.value && !$cwa.resources.isPageDynamic.value
-})
 const highlightClass = computed(() => {
-  if (!highlightTemplatePage.value) {
+  if (!$cwa.resources.isDynamicPage.value) {
     return
   }
   return 'cwa-shadow-orange-bottom'

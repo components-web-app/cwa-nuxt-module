@@ -21,11 +21,11 @@ export default class ManagerTabsResolver {
   }
 
   private* getComponentPositionTabs () {
-    if (this.cwa.resources.isPageDynamic.value) {
+    if (this.cwa.resources.isDataPage.value) {
       yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Dynamic.vue'))
       return
     }
-    if (this.cwa.resources.isPageTemplate.value) {
+    if (this.cwa.resources.usesPageTemplate.value) {
       yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Template.vue'))
     }
     yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Static.vue'))
