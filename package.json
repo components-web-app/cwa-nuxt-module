@@ -53,7 +53,8 @@
     "nuxt": "^3.9.3",
     "pinia": "^2.1.7",
     "uuid": "^9.0.1",
-    "vue": "^3.4.15"
+    "vue": "^3.4.15",
+    "vuejs-confirm-dialog": "^0.5.1"
   },
   "devDependencies": {
     "@headlessui/vue": "^1.7.17",

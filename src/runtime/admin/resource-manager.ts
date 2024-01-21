@@ -2,12 +2,14 @@ import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 
 interface resourceStackItem {
   iri: string
@@ -208,7 +210,7 @@ export default class ResourceManager {
     this.currentResourceStack.value = []
   }
 
-  public selectStackIndex (index: number, fromContext?: boolean) {
+  public async selectStackIndex (index: number, fromContext?: boolean) {
     if (!this.isEditing) {
       return
     }
@@ -224,8 +226,10 @@ export default class ResourceManager {
     }
 
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
-      // Todo: a nicer confirmation dialog
-      if (!window.confirm('Are you sure?')) {
+      // @ts-ignore-next-line
+      const dialog = createConfirmDialog(ConfirmDialog)
+      const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and start editing the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` })
+      if (isCanceled) {
         if (fromContext) {
           // can prevent the context stack from becoming the currentResourceStack easily here
           this.resetStack(true)

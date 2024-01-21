@@ -12,12 +12,14 @@
     <ClientOnly>
       <CwaAdminResourceManager ref="resourceManager" />
       <LayoutPageOverlay v-if="$cwa.admin.isEditing" :page="page" :layout="rootLayout" />
+      <DialogsWrapper />
     </clientonly>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance } from 'vue'
+import { DialogsWrapper } from 'vuejs-confirm-dialog'
 import { useCwa } from '#imports'
 import { CwaAdminHeader, CwaAdminResourceManager } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
