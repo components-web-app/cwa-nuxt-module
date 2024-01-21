@@ -23,7 +23,7 @@
           </button>
         </div>
         <div class="cwa-flex-grow cwa-w-8/12">
-          <div class="cwa-mb-6" v-html="resourceDescription" />
+          <div class="cwa-mb-6 cwa-space-y-4" v-html="resourceDescription" />
           <template v-if="selectedComponent === 'position'">
             <p>[ADD INPUT FOR SELECTING THE COMPONENT DATA REFERENCE]</p>
           </template>
