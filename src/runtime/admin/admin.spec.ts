@@ -1,5 +1,5 @@
-// @vitest-environment nuxt
-import { describe, expect, test, vi, beforeEach, Mock } from 'vitest'
+// @vitest-environment happy-dom
+import { describe, expect, test, vi, beforeEach, type Mock } from 'vitest'
 import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -35,14 +35,17 @@ vi.mock('mitt', () => {
 function createAdmin () {
   return new Admin(new AdminStore('storeName'), new ResourcesStore('storeName'))
 }
+
 describe('Admin class', () => {
-  let admin = null
+  let admin: Admin|null = null
 
   beforeEach(() => {
     vi.clearAllMocks()
-    admin = createAdmin()
+    admin = null
   })
+
   test('toggleEdit', () => {
+    admin = createAdmin()
     const toggleSpy = vi.fn()
 
     admin.adminStoreDefinition.useStore = () => ({
@@ -57,6 +60,7 @@ describe('Admin class', () => {
     expect(toggleSpy).toHaveBeenCalledWith(true)
   })
   test('setNavigationGuardDisabled', () => {
+    admin = createAdmin()
     const mockState = {
       isEditing: 'isEdit',
       navigationGuardDisabled: 'ngs'
@@ -71,12 +75,15 @@ describe('Admin class', () => {
     expect(mockState.navigationGuardDisabled).toBe(false)
   })
   test('navigationGuardDisabled getter', () => {
+    admin = createAdmin()
     expect(admin.navigationGuardDisabled).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.navigationGuardDisabled)
   })
   test('isEditing getter', () => {
+    admin = createAdmin()
     expect(admin.isEditing).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.isEditing)
   })
   test('adminStore getter', () => {
+    admin = createAdmin()
     const mockStore = {
       toggleEdit: vi.fn(),
       state: {}
