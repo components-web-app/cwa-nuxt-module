@@ -1,11 +1,13 @@
 <template>
-  <div id="cwa-root-layout" @contextmenu="onContextMenu">
+  <div id="cwa-root-layout" @contextmenu="closeContextMenu">
     <ClientOnly>
       <CwaAdminHeader v-if="showAdmin" />
       <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50" />
     </ClientOnly>
-    <component :is="resolvedComponent" v-if="resolvedComponent">
-      <slot />
+    <component :is="resolvedComponent" v-if="resolvedComponent" @click.stop="onLayoutClick" @contextmenu.stop="onLayoutContextMenu">
+      <div @click.stop="onPageClick" @contextmenu.stop="onPageContextMenu">
+        <slot />
+      </div>
     </component>
     <ClientOnly>
       <CwaAdminResourceManager ref="resourceManager" />
@@ -25,8 +27,28 @@ const $cwa = useCwa()
 const resourceManager = ref<null|InstanceType<typeof CwaAdminResourceManager>>(null)
 const instance = getCurrentInstance()
 
-function onContextMenu (e: MouseEvent) {
-  resourceManager.value && resourceManager.value.onContextMenu(e)
+function callResourceManagerHandler (handler: 'contextMenuHandler'|'clickHandler', e: MouseEvent, type: 'layout'|'page') {
+  resourceManager.value && resourceManager.value[handler](e, type)
+}
+
+function closeContextMenu (e: MouseEvent) {
+  resourceManager.value && resourceManager.value.closeContextMenu(e)
+}
+
+function onLayoutContextMenu (e: MouseEvent) {
+  callResourceManagerHandler('contextMenuHandler', e, 'layout')
+}
+
+function onPageContextMenu (e: MouseEvent) {
+  callResourceManagerHandler('contextMenuHandler', e, 'page')
+}
+
+function onPageClick (e: MouseEvent) {
+  callResourceManagerHandler('clickHandler', e, 'page')
+}
+
+function onLayoutClick (e: MouseEvent) {
+  callResourceManagerHandler('clickHandler', e, 'layout')
 }
 
 const layoutResource = computed(() => {

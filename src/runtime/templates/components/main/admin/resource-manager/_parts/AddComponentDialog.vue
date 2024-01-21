@@ -83,8 +83,7 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
 
   const allowedComponents = findAllowedComponents(event.closest.group)
   const availableComponents = await findAvailableComponents(allowedComponents)
-  // todo: do not enable if we are adding to the layout!!
-  const enableDynamicPosition = $cwa.resources.isDynamicPage.value
+  const enableDynamicPosition = !$cwa.admin.resourceManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
 
   return {
     event,

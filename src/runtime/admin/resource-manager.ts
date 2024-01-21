@@ -43,6 +43,8 @@ export interface AddResourceEvent {
 export default class ResourceManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
+  public readonly isLayoutStack: Ref<boolean> = ref(false)
+  private readonly _isEditingLayout: Ref<boolean> = ref(false)
   private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
@@ -124,6 +126,10 @@ export default class ResourceManager {
 
   public clearAddResource () {
     this._addResourceEvent.value = undefined
+  }
+
+  public get isEditingLayout () {
+    return this._isEditingLayout
   }
 
   public get addResourceEvent () {
@@ -215,6 +221,7 @@ export default class ResourceManager {
       return
     }
     this.currentResourceStack.value = fromStack.value.slice(index)
+    this._isEditingLayout.value = this.isLayoutStack.value
     this.showManager.value = true
     if (fromContext) {
       this.resetStack(true)
