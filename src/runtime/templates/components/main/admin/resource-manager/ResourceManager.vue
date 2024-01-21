@@ -52,7 +52,7 @@ function openContext ({ top, left }: ContextPosition) {
   isOpen.value = true
 }
 
-function onContextMenu (e: PointerEvent) {
+function onContextMenu (e: MouseEvent) {
   const pos: ContextPosition = {
     top: e.clientY,
     left: e.clientX

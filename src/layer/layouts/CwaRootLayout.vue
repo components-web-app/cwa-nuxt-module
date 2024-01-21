@@ -22,7 +22,7 @@ import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/
 import type { GlobalComponentNames } from '#cwa/module'
 
 const $cwa = useCwa()
-const resourceManager = ref(null)
+const resourceManager = ref<null|InstanceType<typeof CwaAdminResourceManager>>(null)
 const instance = getCurrentInstance()
 
 function onContextMenu (e: MouseEvent) {
