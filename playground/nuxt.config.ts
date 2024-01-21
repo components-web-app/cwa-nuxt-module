@@ -40,6 +40,9 @@ export default defineNuxtConfig({
       HtmlContent: {
         name: 'Body Text',
         description: '<p>Easily create a body of text with the ability to style and format the content using themes in-keeping with your website.</p>'
+      },
+      Image: {
+        instantAdd: true
       }
     },
     tailwind: {

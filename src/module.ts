@@ -23,6 +23,7 @@ export type ComponentUi = GlobalComponentNames
 export interface CwaResourceMeta {
   name?: string,
   description?: string,
+  instantAdd?: boolean,
   managerTabs?: ManagerTab[],
   ui?: ComponentUi[]
 }

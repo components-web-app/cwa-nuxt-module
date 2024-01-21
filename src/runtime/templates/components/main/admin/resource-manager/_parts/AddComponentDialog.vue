@@ -82,9 +82,10 @@ const open = computed({
 })
 
 const buttons = computed<ActionButton[]>(() => {
+  const instantAdd = selectedComponent.value === 'position' || selectedResourceMeta.value?.instantAdd
   return [
     {
-      label: 'Add',
+      label: instantAdd ? 'Add' : 'Insert',
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
       callbackFn: handleAdd,
@@ -121,14 +122,21 @@ async function findAvailableComponents (allowedComponents: undefined|string[]): 
   return Object.fromEntries(mapped)
 }
 
-const selectedResourceDescription = computed(() => {
+const selectedResourceMeta = computed(() => {
   if (!selectedComponent.value) {
     return
   }
   if (selectedComponent.value === 'position') {
-    return $cwa.resourcesConfig?.ComponentPosition?.description
+    return $cwa.resourcesConfig?.ComponentPosition
   }
-  return $cwa.resourcesConfig?.[selectedComponent.value]?.description
+  return $cwa.resourcesConfig?.[selectedComponent.value]
+})
+
+const selectedResourceDescription = computed(() => {
+  if (!selectedResourceMeta.value) {
+    return
+  }
+  return selectedResourceMeta.value?.description
 })
 
 const resourceDescription = computed(() => {
