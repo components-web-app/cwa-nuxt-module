@@ -17,13 +17,18 @@ import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 const $cwa = useCwa()
 const loadingComponents = ref(true)
 
+interface ComponentMetadataCollection {
+  [key: string]: {
+    apiMetadata: ApiDocumentationComponentMetadataCollection
+  }
+}
+
 interface DisplayDataI {
   addAfter: boolean
   targetIri: string
-  availableComponents?: ApiDocumentationComponentMetadataCollection
+  availableComponents?: ComponentMetadataCollection
   closestPosition?: string
   closestGroup?: string
-  allowedComponents?: string[]
 }
 
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
@@ -55,17 +60,20 @@ const buttons = computed<ActionButton[]>(() => {
   ]
 })
 
-async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<undefined|ComponentMetadataCollection> {
   const apiComponents = await $cwa.getComponentMetadata()
-  if (!allowedComponents || !apiComponents) {
+  if (!apiComponents) {
     return apiComponents
   }
-  const asEntries = Object
-    .entries(apiComponents)
-    .filter(
+
+  const asEntries = Object.entries(apiComponents)
+  const filtered = allowedComponents
+    ? asEntries.filter(
       ([_, value]) => (allowedComponents.includes(value.endpoint))
     )
-  return Object.fromEntries(asEntries)
+    : asEntries
+  const mapped = filtered.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig?.[name] }]))
+  return Object.fromEntries(mapped)
 }
 
 async function createDisplayData (): Promise<undefined|DisplayDataI> {
@@ -89,8 +97,7 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
     targetIri: event.targetIri,
     availableComponents: await findAvailableComponents(allowedComponents),
     closestPosition,
-    closestGroup,
-    allowedComponents
+    closestGroup
   }
 }
 
