@@ -14,16 +14,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, getCurrentInstance } from 'vue'
 import { useCwa } from '#imports'
 import { CwaAdminHeader, CwaAdminResourceManager } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/module'
-import DefaultLayout from '#cwa/runtime/templates/components/main/DefaultLayout.vue'
 
 const $cwa = useCwa()
 const resourceManager = ref(null)
+const instance = getCurrentInstance()
 
 function onContextMenu (e: MouseEvent) {
   resourceManager.value && resourceManager.value.onContextMenu(e)
@@ -34,16 +34,16 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || DefaultLayout
+  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || 'CwaDefaultLayout'
 })
 
 const resolvedComponent = computed(() => {
   // todo: add checks to ensure component exists - otherwise output a warning and/or default
-  // issue changing pages the components seem to go undefined for a moment...
-  // const instance = getCurrentInstance()
-  // console.log(instance?.appContext.components)
-  if (!layoutUiComponent.value) {
-    return DefaultLayout
+  if (
+    typeof instance?.appContext.components !== 'object' ||
+      !layoutUiComponent.value
+  ) {
+    return 'CwaDefaultLayout'
   }
   return layoutUiComponent.value
 })
