@@ -7,6 +7,7 @@ import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 
 interface resourceStackItem {
   iri: string
@@ -32,13 +33,17 @@ interface AddToStackEvent extends resourceStackItem, AddToStackWindowEvent {
 export interface AddResourceEvent {
   addAfter: boolean
   targetIri: string
+  closest: {
+    position?: string
+    group: string
+  }
   resource?: string
 }
 
 export default class ResourceManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
-  public readonly addResourceTriggered: Ref<undefined|AddResourceEvent> = ref()
+  private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
@@ -62,6 +67,67 @@ export default class ResourceManager {
     await nextTick()
     this.scrollIntoView()
     this.createFocusComponent()
+  }
+
+  public addResource (targetIri: string, addAfter: boolean) {
+    type BaseEvent = {
+      targetIri: string
+      addAfter: boolean
+    }
+    const initEvent: BaseEvent = {
+      targetIri,
+      addAfter
+    }
+
+    const findClosestResourceByType = (type: CwaResourceTypes): string => {
+      const stack = this.resourceStack.value
+      for (const stackItem of stack) {
+        if (getResourceTypeFromIri(stackItem.iri) === type) {
+          return stackItem.iri
+        }
+      }
+      throw new Error(`Could not find a resource with type '${type}' in the stack`)
+    }
+
+    const findClosestPosition = (event: BaseEvent): string|undefined => {
+      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
+        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
+      }
+      return findPositionFromGroupEvent(event)
+    }
+
+    const findPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
+      const resource = this.resourcesStore.current.byId?.[event.targetIri]
+      const positions = resource?.data?.componentPositions
+      if (!positions || !positions.length) {
+        return
+      }
+      if (event.addAfter) {
+        return positions[positions.length - 1]
+      } else {
+        return positions[0]
+      }
+    }
+
+    const closestPosition = findClosestPosition(initEvent)
+    const closestGroup = findClosestResourceByType(CwaResourceTypes.COMPONENT_GROUP)
+
+    this._addResourceEvent.value = {
+      targetIri,
+      addAfter,
+      closest: {
+        position: closestPosition,
+        group: closestGroup
+      }
+    }
+  }
+
+  public clearAddResource () {
+    this._addResourceEvent.value = undefined
+  }
+
+  public get addResourceEvent () {
+    return this._addResourceEvent
   }
 
   public getState (prop: string) {

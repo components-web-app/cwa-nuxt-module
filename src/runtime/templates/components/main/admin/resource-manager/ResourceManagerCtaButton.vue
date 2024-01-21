@@ -24,11 +24,11 @@ const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceManager.currentIri
 
 const resourceType = computed(() => {
-  return getResourceTypeFromIri(currentIri.value)
+  return currentIri.value ? getResourceTypeFromIri(currentIri.value) : undefined
 })
 
 const buttonLabel = computed<'Publish'|undefined>(() => {
-  if (resourceType.value !== CwaResourceTypes.COMPONENT) {
+  if (resourceType.value !== CwaResourceTypes.COMPONENT || !currentIri.value) {
     return
   }
   const resource = $cwa.resources.getResource(currentIri.value).value
@@ -74,11 +74,11 @@ function handleDefaultClick () {
 }
 
 function handleAddEvent (value: 'add-before'|'add-after') {
-  const addAfter = value === 'add-after'
-  $cwa.admin.resourceManager.addResourceTriggered.value = {
-    addAfter,
-    targetIri: currentIri.value
+  if (!currentIri.value) {
+    return
   }
+  const addAfter = value === 'add-after'
+  $cwa.admin.resourceManager.addResource(currentIri.value, addAfter)
 }
 
 function handleManagerCtaClick (value?: ModelValue) {
@@ -86,8 +86,9 @@ function handleManagerCtaClick (value?: ModelValue) {
     handleDefaultClick()
     return
   }
-  if (value.startsWith('add-')) {
-    handleAddEvent(value)
+  if (typeof value === 'string' && ['add-before', 'add-after'].includes(value)) {
+    handleAddEvent(value as 'add-before'|'add-after')
+    return
   }
   consola.log('clicked', value)
 }

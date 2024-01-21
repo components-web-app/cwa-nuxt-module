@@ -9,7 +9,6 @@
 import { computed, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-manager'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/runtime/api/api-documentation'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
@@ -33,13 +32,15 @@ interface DisplayDataI {
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
 const displayData = ref<DisplayDataI>()
 
+const addResourceEvent = computed(() => $cwa.admin.resourceManager.addResourceEvent.value)
+
 const open = computed({
   get () {
-    return !!$cwa.admin.resourceManager.addResourceTriggered.value
+    return !!addResourceEvent.value
   },
   set (value: boolean) {
     if (!value) {
-      $cwa.admin.resourceManager.addResourceTriggered.value = undefined
+      $cwa.admin.resourceManager.clearAddResource()
     }
   }
 })
@@ -76,54 +77,22 @@ async function findAvailableComponents (allowedComponents: undefined|string[]): 
 }
 
 async function createDisplayData (): Promise<undefined|DisplayDataI> {
-  const event = $cwa.admin.resourceManager.addResourceTriggered.value
+  const event = addResourceEvent.value
   if (!event) {
     return
   }
 
-  const closestPosition = findClosestPosition(event)
-  const closestGroup = findClosestResourceByType(CwaResourceTypes.COMPONENT_GROUP)
-  const allowedComponents = closestGroup ? findAllowedComponents(closestGroup) : undefined
+  const allowedComponents = findAllowedComponents(event.closest.group)
   const availableComponents = await findAvailableComponents(allowedComponents)
 
   return {
     event,
-    availableComponents,
-    closestPosition,
-    closestGroup
+    availableComponents
   }
 }
 
 function findAllowedComponents (groupIri: string): undefined|string[] {
   return $cwa.resources.getResource(groupIri).value?.data?.allowedComponents
-}
-
-function findClosestResourceByType (type: CwaResourceTypes): string|undefined {
-  const stack = $cwa.admin.resourceManager.resourceStack.value
-  for (const stackItem of stack) {
-    if (getResourceTypeFromIri(stackItem.iri) === type) {
-      return stackItem.iri
-    }
-  }
-}
-
-function findClosestPosition (event: AddResourceEvent): string|undefined {
-  if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
-    return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
-  }
-  return findPositionFromGroupEvent(event)
-}
-
-function findPositionFromGroupEvent (event: AddResourceEvent): string|undefined {
-  const positions = $cwa.resources.getResource(event.targetIri).value?.data?.componentPositions
-  if (!positions || !positions.length) {
-    return
-  }
-  if (event.addAfter) {
-    return positions[positions.length - 1]
-  } else {
-    return positions[0]
-  }
 }
 
 function handleAdd () {
