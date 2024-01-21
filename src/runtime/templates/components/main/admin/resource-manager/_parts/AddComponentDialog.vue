@@ -1,7 +1,18 @@
 <template>
   <DialogBox v-model="open" title="Add Component" :buttons="buttons">
     <Spinner v-if="loadingComponents" :show="true" />
-    <pre v-else>{{ displayData }}</pre>
+    <template v-else-if="displayData">
+      <div class="cwa-flex cwa-space-x-4">
+        <div class="cwa-flex cwa-flex-col cwa-w-[30%] cwa-space-y-3 cwa-min-h-64">
+          <button v-for="(component, name) of displayData.availableComponents" :key="`add-${name}`" class="w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white cwa-bg-stone-700 cwa-opacity-70 hover:cwa-opacity-100 cwa-transition">
+            {{ getComponentName(component) }}
+          </button>
+        </div>
+        <div class="cwa-flex-grow">
+          SELECTED ITEM HERE
+        </div>
+      </div>
+    </template>
   </DialogBox>
 </template>
 
@@ -10,16 +21,22 @@ import { computed, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-manager'
-import type { ApiDocumentationComponentMetadataCollection } from '#cwa/runtime/api/api-documentation'
+import type {
+  ApiDocumentationComponentMetadataCollection
+} from '#cwa/runtime/api/api-documentation'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import type { CwaResourceMeta } from '#cwa/module'
 
 const $cwa = useCwa()
 const loadingComponents = ref(true)
 
+interface MergedComponentMetadata {
+  apiMetadata: ApiDocumentationComponentMetadataCollection
+  config: CwaResourceMeta
+}
+
 interface ComponentMetadataCollection {
-  [key: string]: {
-    apiMetadata: ApiDocumentationComponentMetadataCollection
-  }
+  [key: string]: MergedComponentMetadata
 }
 
 interface DisplayDataI {
@@ -58,6 +75,10 @@ const buttons = computed<ActionButton[]>(() => {
     }
   ]
 })
+
+function getComponentName (metadata: MergedComponentMetadata) {
+  return metadata.config.name || metadata.apiMetadata.resourceName
+}
 
 async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<ComponentMetadataCollection> {
   const apiComponents = await $cwa.getComponentMetadata()

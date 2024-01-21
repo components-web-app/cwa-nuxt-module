@@ -7,7 +7,7 @@ import type { CwaApiDocumentationDataInterface } from '../storage/stores/api-doc
 import CwaFetch from './fetcher/cwa-fetch'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 
-interface ApiDocumentationComponentMetadata {
+export interface ApiDocumentationComponentMetadata {
   resourceName: string
   endpoint: string
   isPublishable: boolean

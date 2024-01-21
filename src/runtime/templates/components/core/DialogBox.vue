@@ -27,15 +27,15 @@
             <DialogPanel :class="panelClassName">
               <div class="sm:cwa-flex sm:cwa-items-start">
                 <div class="w-full">
-                  <DialogTitle as="h3" class="cwa-text-xl sm:cwa-text-4xl cwa-font-normal cwa-border-b cwa-px-6 cwa-pb-4 cwa-border-stone-600 cwa-mb-4">
+                  <DialogTitle as="h3" class="cwa-text-xl sm:cwa-text-4xl cwa-font-normal cwa-border-b cwa-border-stone-600 cwa-px-6 cwa-pb-4  cwa-dark-blur cwa-pt-5">
                     {{ title }}
                   </DialogTitle>
-                  <div class="cwa-mt-2 cwa-px-6">
+                  <div class="cwa-px-6 cwa-py-6 cwa-bg-dark">
                     <slot />
                   </div>
                 </div>
               </div>
-              <div class="cwa-px-6 cwa-mt-8 sm:cwa-flex sm:cwa-flex-row-reverse cwa-space-y-2 sm:cwa-space-y-0 sm:cwa-space-x-6 sm:cwa-space-x-reverse">
+              <div class="cwa-px-6 cwa-py-5 sm:cwa-flex sm:cwa-flex-row-reverse cwa-space-y-2 sm:cwa-space-y-0 sm:cwa-space-x-6 sm:cwa-space-x-reverse cwa-dark-blur cwa-border-t cwa-border-stone-600">
                 <slot name="buttons">
                   <CwaUiFormButton v-for="button of buttons" :key="`dialog-button-${button.label}`" :color="button.color" :button-class="button.buttonClass" @click="button?.callbackFn ? button.callbackFn() : setIsOpen(false)">
                     {{ button.label }}
@@ -87,6 +87,6 @@ function setIsOpen (value?: boolean) {
 }
 
 const panelClassName = computed(() => {
-  return 'cwa-relative cwa-transform cwa-overflow-hidden cwa-rounded-lg cwa-bg-dark cwa-text-white cwa-pb-4 cwa-pt-5 cwa-text-left cwa-shadow-xl cwa-transition-all sm:cwa-my-8 sm:cwa-w-full sm:cwa-max-w-3xl'
+  return 'cwa-relative cwa-transform cwa-overflow-hidden cwa-rounded-xl cwa-text-white cwa-text-left cwa-shadow-xl cwa-transition-all sm:cwa-my-8 sm:cwa-w-full sm:cwa-max-w-3xl'
 })
 </script>
