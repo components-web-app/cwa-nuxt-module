@@ -73,8 +73,6 @@ export function getPublishedResourceIri (resourceData: CwaResource): string|null
   return resourceData.publishedResource || null
 }
 
-export function getAssociatedPublishableIris () {}
-
 export function isCwaResource (obj: any): obj is CwaResource {
   if (typeof obj !== 'object') {
     return false
