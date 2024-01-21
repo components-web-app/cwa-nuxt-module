@@ -64,6 +64,7 @@ export default defineNuxtConfig({
   tailwindcss: {
     config: {
       content: [
+        resolve('nuxt.config.ts'),
         resolve('cwa/**/*.{js,vue,ts}')
       ],
       plugins: [

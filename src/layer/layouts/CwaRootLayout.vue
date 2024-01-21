@@ -1,16 +1,17 @@
 <template>
-  <div id="cwa-root-layout" @contextmenu="closeContextMenu">
+  <div id="cwa-root-layout" ref="rootLayout" class="cwa-relative cwa-h-full" @contextmenu="closeContextMenu">
     <ClientOnly>
       <CwaAdminHeader v-if="showAdmin" />
       <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50" />
     </ClientOnly>
-    <component :is="resolvedComponent" v-if="resolvedComponent" @click.stop="onLayoutClick" @contextmenu.stop="onLayoutContextMenu">
-      <div @click.stop="onPageClick" @contextmenu.stop="onPageContextMenu">
+    <component :is="resolvedComponent" v-if="resolvedComponent" class="cwa-relative" @click.stop="onLayoutClick" @contextmenu.stop="onLayoutContextMenu">
+      <div ref="page" @click.stop="onPageClick" @contextmenu.stop="onPageContextMenu">
         <slot />
       </div>
     </component>
     <ClientOnly>
       <CwaAdminResourceManager ref="resourceManager" />
+      <LayoutPageOverlay v-if="$cwa.admin.isEditing" :page="page" :layout="rootLayout" />
     </clientonly>
   </div>
 </template>
@@ -22,9 +23,12 @@ import { CwaAdminHeader, CwaAdminResourceManager } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/module'
+import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 
 const $cwa = useCwa()
 const resourceManager = ref<null|InstanceType<typeof CwaAdminResourceManager>>(null)
+const page = ref<null|HTMLDivElement>(null)
+const rootLayout = ref<null|HTMLDivElement>(null)
 const instance = getCurrentInstance()
 
 function callResourceManagerHandler (handler: 'contextMenuHandler'|'clickHandler', e: MouseEvent, type: 'layout'|'page') {
