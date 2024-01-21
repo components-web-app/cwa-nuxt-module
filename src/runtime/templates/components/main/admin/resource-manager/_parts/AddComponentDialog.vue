@@ -24,9 +24,8 @@ interface ComponentMetadataCollection {
 
 interface DisplayDataI {
   event: AddResourceEvent
-  availableComponents?: ComponentMetadataCollection
-  closestPosition?: string
-  closestGroup?: string
+  availableComponents: ComponentMetadataCollection
+  enableDynamicPosition: boolean
 }
 
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
@@ -60,10 +59,10 @@ const buttons = computed<ActionButton[]>(() => {
   ]
 })
 
-async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<undefined|ComponentMetadataCollection> {
+async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<ComponentMetadataCollection> {
   const apiComponents = await $cwa.getComponentMetadata()
   if (!apiComponents) {
-    return apiComponents
+    throw new Error('Could not retrieve component metadata from the API')
   }
 
   const asEntries = Object.entries(apiComponents)
@@ -84,10 +83,13 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
 
   const allowedComponents = findAllowedComponents(event.closest.group)
   const availableComponents = await findAvailableComponents(allowedComponents)
+  // todo: do not enable if we are adding to the layout!!
+  const enableDynamicPosition = $cwa.resources.isDynamicPage.value
 
   return {
     event,
-    availableComponents
+    availableComponents,
+    enableDynamicPosition
   }
 }
 
