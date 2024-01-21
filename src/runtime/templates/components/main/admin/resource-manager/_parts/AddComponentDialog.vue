@@ -13,14 +13,15 @@
           >
             {{ getComponentName(component) }}
           </button>
-          <button
-            v-if="displayData.enableDynamicPosition"
-            :class="buttonClass"
-            :aria-selected="selectedComponent === 'position'"
-            @click="selectComponent('position')"
-          >
-            Dynamic Position
-          </button>
+          <div v-if="displayData.enableDynamicPosition" class="cwa-p-2 cwa-bg-blue-600/30 cwa-rounded-lg">
+            <button
+              :class="buttonClass"
+              :aria-selected="selectedComponent === 'position'"
+              @click="selectComponent('position')"
+            >
+              Dynamic Position
+            </button>
+          </div>
         </div>
         <div class="cwa-flex-grow cwa-w-8/12">
           <div class="cwa-mb-6 cwa-space-y-4" v-html="resourceDescription" />
@@ -47,7 +48,7 @@ import type { CwaResourceMeta } from '#cwa/module'
 const $cwa = useCwa()
 const loadingComponents = ref(true)
 
-const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white cwa-bg-stone-700 cwa-opacity-70 hover:cwa-opacity-100 aria-selected:cwa-opacity-100 cwa-transition'
+const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadataCollection
