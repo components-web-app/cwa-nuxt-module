@@ -82,34 +82,41 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
     return
   }
 
-  let closestPosition: string|undefined
-  if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
-    closestPosition = findClosesResourceByType(CwaResourceTypes.COMPONENT_POSITION)
-  } else {
-    closestPosition = findPositionFromGroupEvent(event)
-  }
-
-  const closestGroup = findClosesResourceByType(CwaResourceTypes.COMPONENT_GROUP)
+  const closestPosition = findClosestPosition(event)
+  const closestGroup = findClosestResourceByType(CwaResourceTypes.COMPONENT_GROUP)
   const allowedComponents = closestGroup ? findAllowedComponents(closestGroup) : undefined
+  const availableComponents = await findAvailableComponents(allowedComponents)
 
   return {
     addAfter: event.addAfter,
     targetIri: event.targetIri,
-    availableComponents: await findAvailableComponents(allowedComponents),
+    availableComponents,
     closestPosition,
     closestGroup
   }
-}
-
-function handleAdd () {
-  open.value = false
 }
 
 function findAllowedComponents (groupIri: string): undefined|string[] {
   return $cwa.resources.getResource(groupIri).value?.data?.allowedComponents
 }
 
-function findPositionFromGroupEvent (event: AddResourceEvent) {
+function findClosestResourceByType (type: CwaResourceTypes): string|undefined {
+  const stack = $cwa.admin.resourceManager.resourceStack.value
+  for (const stackItem of stack) {
+    if (getResourceTypeFromIri(stackItem.iri) === type) {
+      return stackItem.iri
+    }
+  }
+}
+
+function findClosestPosition (event: AddResourceEvent): string|undefined {
+  if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
+    return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
+  }
+  return findPositionFromGroupEvent(event)
+}
+
+function findPositionFromGroupEvent (event: AddResourceEvent): string|undefined {
   const positions = $cwa.resources.getResource(event.targetIri).value?.data?.componentPositions
   if (!positions || !positions.length) {
     return
@@ -121,13 +128,8 @@ function findPositionFromGroupEvent (event: AddResourceEvent) {
   }
 }
 
-function findClosesResourceByType (type: CwaResourceTypes): string|undefined {
-  const stack = $cwa.admin.resourceManager.resourceStack.value
-  for (const stackItem of stack) {
-    if (getResourceTypeFromIri(stackItem.iri) === type) {
-      return stackItem.iri
-    }
-  }
+function handleAdd () {
+  open.value = false
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display
