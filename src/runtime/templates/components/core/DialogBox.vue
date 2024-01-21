@@ -37,7 +37,14 @@
               </div>
               <div class="cwa-px-6 cwa-py-5 sm:cwa-flex sm:cwa-flex-row-reverse cwa-space-y-2 sm:cwa-space-y-0 sm:cwa-space-x-6 sm:cwa-space-x-reverse cwa-dark-blur cwa-border-t cwa-border-stone-600">
                 <slot name="buttons">
-                  <CwaUiFormButton v-for="button of buttons" :key="`dialog-button-${button.label}`" :color="button.color" :button-class="button.buttonClass" @click="button?.callbackFn ? button.callbackFn() : setIsOpen(false)">
+                  <CwaUiFormButton
+                    v-for="button of buttons"
+                    :key="`dialog-button-${button.label}`"
+                    :color="button.color"
+                    :button-class="button.buttonClass"
+                    :disabled="!!button.disabled"
+                    @click="!button.disabled && (button?.callbackFn ? button.callbackFn() : setIsOpen(false))"
+                  >
                     {{ button.label }}
                   </CwaUiFormButton>
                 </slot>
@@ -60,6 +67,7 @@ export interface ActionButton {
   color: ButtonColor
   buttonClass?: string
   callbackFn?: () => void
+  disabled?: boolean
 }
 
 const isOpen = defineModel<boolean>({ default: false })

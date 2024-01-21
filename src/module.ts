@@ -22,6 +22,7 @@ export type ComponentUi = GlobalComponentNames
 
 export interface CwaResourceMeta {
   name?: string,
+  description?: string,
   managerTabs?: ManagerTab[],
   ui?: ComponentUi[]
 }
@@ -83,7 +84,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     storeName: 'cwa',
     resources: {
       ComponentPosition: {
-        name: 'Position'
+        name: 'Position',
+        description: '<p>Dynamic positions can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You can select the reference from the data page to load into this position below.</p>'
       },
       ComponentGroup: {
         name: 'Group'

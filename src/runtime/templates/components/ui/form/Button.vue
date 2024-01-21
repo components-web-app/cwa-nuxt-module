@@ -28,11 +28,13 @@ const props = withDefaults(defineProps<
   buttonClass?: string,
   options?:(ButtonOption|ButtonOption[])[],
   popper?: PopperOptions
+  disabled?: boolean
 }>(), {
   color: 'grey',
   buttonClass: undefined,
   options: undefined,
-  popper: undefined
+  popper: undefined,
+  disabled: false
 })
 
 const emit = defineEmits<{(e: 'click', value?: ModelValue): void}>()
@@ -48,7 +50,7 @@ const buttonColorClassNames = computed(() => {
 })
 
 const buttonBaseClass = computed(() => {
-  return `${buttonColorClassNames.value} cwa-py-1.5 cwa-px-3 md:cwa-px-4 cwa-border cwa-transition`
+  return `${buttonColorClassNames.value} cwa-py-1.5 cwa-px-3 md:cwa-px-4 cwa-border cwa-transition disabled:cwa-pointer-events-none disabled:cwa-opacity-70 disabled:cwa-saturate-[.4]`
 })
 
 const buttonClassNames = computed(() => {
@@ -101,11 +103,11 @@ const [trigger, container] = usePopper(popperOps.value)
 
 <template>
   <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1.5 relative">
-    <button v-if="showButton" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="open" @click.prevent.stop="emit('click')">
+    <button v-if="showButton" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="disabled || open" @click.prevent.stop="emit('click')">
       <slot />
     </button>
     <template v-if="hasOptions">
-      <PopoverButton ref="trigger" :class="buttonBaseClass" class="cwa-relative">
+      <PopoverButton ref="trigger" :class="buttonBaseClass" class="cwa-relative" :disabled="disabled">
         &nbsp;
         <span :class="topDotClassName" />
         <span :class="middleDotClassName" />

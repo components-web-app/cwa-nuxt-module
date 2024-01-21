@@ -3,13 +3,30 @@
     <Spinner v-if="loadingComponents" :show="true" />
     <template v-else-if="displayData">
       <div class="cwa-flex cwa-space-x-4">
-        <div class="cwa-flex cwa-flex-col cwa-w-[30%] cwa-space-y-3 cwa-min-h-64">
-          <button v-for="(component, name) of displayData.availableComponents" :key="`add-${name}`" class="w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white cwa-bg-stone-700 cwa-opacity-70 hover:cwa-opacity-100 cwa-transition">
+        <div class="cwa-flex cwa-flex-col cwa-w-4/12 cwa-space-y-3 cwa-min-h-64">
+          <button
+            v-for="(component, name) of displayData.availableComponents"
+            :key="`add-${name}`"
+            :class="buttonClass"
+            :aria-selected="selectedComponent === name"
+            @click="selectComponent(name as string)"
+          >
             {{ getComponentName(component) }}
           </button>
+          <button
+            v-if="displayData.enableDynamicPosition"
+            :class="buttonClass"
+            :aria-selected="selectedComponent === 'position'"
+            @click="selectComponent('position')"
+          >
+            Dynamic Position
+          </button>
         </div>
-        <div class="cwa-flex-grow">
-          SELECTED ITEM HERE
+        <div class="cwa-flex-grow cwa-w-8/12">
+          <div class="cwa-mb-6" v-html="resourceDescription" />
+          <template v-if="selectedComponent === 'position'">
+            <p>[ADD INPUT FOR SELECTING THE COMPONENT DATA REFERENCE]</p>
+          </template>
         </div>
       </div>
     </template>
@@ -30,6 +47,8 @@ import type { CwaResourceMeta } from '#cwa/module'
 const $cwa = useCwa()
 const loadingComponents = ref(true)
 
+const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white cwa-bg-stone-700 cwa-opacity-70 hover:cwa-opacity-100 aria-selected:cwa-opacity-100 cwa-transition'
+
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadataCollection
   config: CwaResourceMeta
@@ -47,6 +66,7 @@ interface DisplayDataI {
 
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
 const displayData = ref<DisplayDataI>()
+const selectedComponent = ref<string|undefined>()
 
 const addResourceEvent = computed(() => $cwa.admin.resourceManager.addResourceEvent.value)
 
@@ -67,7 +87,8 @@ const buttons = computed<ActionButton[]>(() => {
       label: 'Add',
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
-      callbackFn: handleAdd
+      callbackFn: handleAdd,
+      disabled: !selectedComponent.value
     },
     {
       label: 'Cancel',
@@ -78,6 +99,10 @@ const buttons = computed<ActionButton[]>(() => {
 
 function getComponentName (metadata: MergedComponentMetadata) {
   return metadata.config.name || metadata.apiMetadata.resourceName
+}
+
+function selectComponent (name?: string) {
+  selectedComponent.value = name
 }
 
 async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<ComponentMetadataCollection> {
@@ -95,6 +120,20 @@ async function findAvailableComponents (allowedComponents: undefined|string[]): 
   const mapped = filtered.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig?.[name] }]))
   return Object.fromEntries(mapped)
 }
+
+const selectedResourceDescription = computed(() => {
+  if (!selectedComponent.value) {
+    return
+  }
+  if (selectedComponent.value === 'position') {
+    return $cwa.resourcesConfig?.ComponentPosition?.description
+  }
+  return $cwa.resourcesConfig?.[selectedComponent.value]?.description
+})
+
+const resourceDescription = computed(() => {
+  return selectedResourceDescription.value || (selectedComponent.value ? '<p>No Description</p>' : '<p>Please select a resource to add</p>')
+})
 
 async function createDisplayData (): Promise<undefined|DisplayDataI> {
   const event = addResourceEvent.value
@@ -126,6 +165,7 @@ watch(open, async (isOpen: boolean) => {
   if (!isOpen) {
     return
   }
+  selectComponent()
   displayData.value = await createDisplayData()
   loadingComponents.value = false
 })
