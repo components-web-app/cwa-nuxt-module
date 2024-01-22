@@ -54,7 +54,7 @@ const highlightClass = computed(() => {
   if (!$cwa.resources.isDynamicPage.value) {
     return
   }
-  return 'cwa-shadow-orange-bottom'
+  return 'before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5 before:cwa-bg-yellow'
 })
 
 onMounted(() => {

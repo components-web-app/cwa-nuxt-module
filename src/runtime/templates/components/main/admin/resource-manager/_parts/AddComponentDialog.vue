@@ -13,9 +13,10 @@
           >
             {{ getComponentName(component) }}
           </button>
-          <div v-if="displayData.enableDynamicPosition" class="cwa-p-2 cwa-bg-blue-600/30 cwa-rounded-lg">
+          <div v-if="displayData.enableDynamicPosition">
             <button
               :class="buttonClass"
+              class="cwa-border-yellow cwa-border-2"
               :aria-selected="selectedComponent === 'position'"
               @click="selectComponent('position')"
             >
@@ -48,7 +49,7 @@ import type { CwaResourceMeta } from '#cwa/module'
 const $cwa = useCwa()
 const loadingComponents = ref(true)
 
-const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50'
+const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50 hover:cwa-border-opacity-100 aria-selected:cwa-border-opacity-100'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadataCollection

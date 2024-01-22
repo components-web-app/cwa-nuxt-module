@@ -226,18 +226,26 @@ export default class ResourceManager {
     }
 
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
+      let cachedNewStack: ResourceStackItem[]|undefined
+      if (!fromContext) {
+        cachedNewStack = this.currentResourceStack.value
+        this.currentResourceStack.value = this.previousResourceStack.value
+      }
+
       // @ts-ignore-next-line
       const dialog = createConfirmDialog(ConfirmDialog)
-      const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and start editing the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` })
+      const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` })
       if (isCanceled) {
         if (fromContext) {
           // can prevent the context stack from becoming the currentResourceStack easily here
           this.resetStack(true)
-        } else {
-          this.currentResourceStack.value = this.previousResourceStack.value
         }
         this.isLayoutStack.value = this._isEditingLayout.value
         return
+      }
+
+      if (cachedNewStack) {
+        this.currentResourceStack.value = cachedNewStack
       }
       this._isEditingLayout.value = this.isLayoutStack.value
     }

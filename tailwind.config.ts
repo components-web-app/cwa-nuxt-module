@@ -37,6 +37,7 @@ export default {
       orange: '#FFAA00',
       magenta: '#e30a6c',
       green: '#9CDD05',
+      yellow: '#fee600',
       red: {
         500: colors.red['500']
       }
