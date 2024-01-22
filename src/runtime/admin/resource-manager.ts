@@ -395,6 +395,8 @@ export default class ResourceManager {
       this.showManager.value = false
       // can clear the context menu stack though
       this.resetStack(true)
+      // reset to edit page again next time
+      this._isEditingLayout.value = false
     }
   }
 
