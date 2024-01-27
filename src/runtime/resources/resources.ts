@@ -9,6 +9,7 @@ import {
   CwaResourceTypes,
   getResourceTypeFromIri
 } from './resource-utils'
+import type ResourceManager from '#cwa/runtime/admin/resource-manager'
 
 interface PageLoadStatus {
   resources: (string|undefined)[]
@@ -18,12 +19,8 @@ interface PageLoadStatus {
 }
 
 export class Resources {
-  private resourcesStoreDefinition: ResourcesStore
-  private fetcherStoreDefinition: FetcherStore
-
-  constructor (resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
-    this.resourcesStoreDefinition = resourcesStoreDefinition
-    this.fetcherStoreDefinition = fetcherStoreDefinition
+  // eslint-disable-next-line no-useless-constructor
+  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore, private readonly resourceManager: ResourceManager) {
   }
 
   public get currentIds () {
@@ -39,7 +36,41 @@ export class Resources {
   }
 
   public getResource (id: string) {
-    return computed(() => this.resourcesStore.current.byId?.[id])
+    return computed(() => {
+      if (id.endsWith('__new__')) {
+        const addingResource = this.resourceManager.addResourceEvent.value?.resource
+        if (!addingResource) {
+          return
+        }
+        const fullAddingResource = {
+          apiState: {
+            status: undefined
+          },
+          data: addingResource
+        }
+        if (id.startsWith('/_/component_positions/')) {
+          if (addingResource['@type'] === 'ComponentPosition') {
+            return fullAddingResource
+          }
+          const ghostPosition: CwaCurrentResourceInterface = {
+            apiState: {
+              status: undefined
+            },
+            data: {
+              '@id': id,
+              '@type': 'ComponentPosition',
+              component: addingResource['@id'],
+              _metadata: {
+                persisted: false
+              }
+            }
+          }
+          return ghostPosition
+        }
+        return fullAddingResource
+      }
+      return this.resourcesStore.current.byId?.[id]
+    })
   }
 
   public getComponentGroupByReference (reference: string) {
@@ -51,7 +82,10 @@ export class Resources {
 
   public get currentResources () {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
-      obj[id] = this.getResource(id).value
+      const idResource = this.getResource(id).value
+      if (idResource) {
+        obj[id] = idResource
+      }
       return obj
     }, {} as {
       [key: string]: CwaCurrentResourceInterface
@@ -67,7 +101,7 @@ export class Resources {
         const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
         if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
           const pageResource = this.getResource(pageIri).value
-          if (pageResource.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+          if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
             return fetchingStatus
           }
         }
@@ -180,6 +214,9 @@ export class Resources {
       return fetchStatus.path
     }
     const successResource = this.getResource(fetchStatus.path).value
+    if (!successResource) {
+      return
+    }
     switch (type) {
       case CwaResourceTypes.PAGE_DATA: {
         return successResource.data?.page
@@ -188,7 +225,7 @@ export class Resources {
         const pageData = successResource.data?.pageData
         if (pageData) {
           const pageDataResource = this.getResource(pageData).value
-          return pageDataResource.data?.page
+          return pageDataResource?.data?.page
         }
         return successResource.data?.page
       }
@@ -209,7 +246,7 @@ export class Resources {
         return fetchStatus.path
       }
       const successResource = this.getResource(fetchStatus.path).value
-      return type === CwaResourceTypes.ROUTE ? successResource.data?.pageData : undefined
+      return type === CwaResourceTypes.ROUTE ? successResource?.data?.pageData : undefined
     })
   }
 

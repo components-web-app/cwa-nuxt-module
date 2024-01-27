@@ -17,16 +17,16 @@
             <button
               :class="buttonClass"
               class="cwa-border-yellow cwa-border-2"
-              :aria-selected="selectedComponent === 'position'"
-              @click="selectComponent('position')"
+              :aria-selected="selectedComponent === 'ComponentPosition'"
+              @click="selectComponent('ComponentPosition')"
             >
-              Dynamic Position
+              Dynamic
             </button>
           </div>
         </div>
         <div class="cwa-flex-grow cwa-w-8/12">
           <div class="cwa-mb-6 cwa-space-y-4" v-html="resourceDescription" />
-          <template v-if="selectedComponent === 'position'">
+          <template v-if="selectedComponent === 'ComponentPosition'">
             <p>[ADD INPUT FOR SELECTING THE COMPONENT DATA REFERENCE]</p>
           </template>
         </div>
@@ -74,7 +74,7 @@ const addResourceEvent = computed(() => $cwa.admin.resourceManager.addResourceEv
 
 const open = computed({
   get () {
-    return !!addResourceEvent.value
+    return !!addResourceEvent.value && !addResourceEvent.value.resource
   },
   set (value: boolean) {
     if (!value) {
@@ -128,9 +128,6 @@ const selectedResourceMeta = computed(() => {
   if (!selectedComponent.value) {
     return
   }
-  if (selectedComponent.value === 'position') {
-    return $cwa.resourcesConfig?.ComponentPosition
-  }
   return $cwa.resourcesConfig?.[selectedComponent.value]
 })
 
@@ -167,7 +164,7 @@ function findAllowedComponents (groupIri: string): undefined|string[] {
 }
 
 function handleAdd () {
-  open.value = false
+  $cwa.admin.resourceManager.setAddResourceEventResource(selectedComponent.value)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

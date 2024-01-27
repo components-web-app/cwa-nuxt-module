@@ -70,14 +70,49 @@ const showLoader = computed(() => {
   return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
+const addingEvent = computed(() => {
+  return $cwa.admin.resourceManager.addResourceEvent.value
+})
+
+const hasAddingPosition = computed(() => {
+  return addingEvent.value?.closest.group === iri.value
+})
+
 const componentPositions = computed(() => {
-  return resource.value?.data?.componentPositions
+  const savedPositions: string[] = resource.value?.data?.componentPositions
+  const addingResource = addingEvent.value?.resource
+  if (!addingResource || !hasAddingPosition.value) {
+    return savedPositions
+  }
+
+  const position = '/_/component_positions/__new__'
+
+  const closestPosition = addingEvent.value.closest.position
+  if (closestPosition) {
+    const positionIndex = savedPositions.findIndex(i => (i === closestPosition))
+    const newPositions = [
+      ...savedPositions
+    ]
+    newPositions.splice(addingEvent.value?.addAfter ? positionIndex + 1 : positionIndex, 0, position)
+    return newPositions
+  }
+  // just adding to start or end of the group
+  if (addingEvent.value?.addAfter) {
+    return [
+      ...savedPositions,
+      position
+    ]
+  }
+  return [
+    position,
+    ...savedPositions
+  ]
 })
 
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
 function getResourceKey (positionIri: string) {
-  return `ResourceLoaderGroupPosition_${resource.value?.data?.['@id']}_${positionIri}`
+  return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
 onMounted(() => {

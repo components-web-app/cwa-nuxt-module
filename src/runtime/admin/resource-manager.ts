@@ -8,7 +8,7 @@ import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { type CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 
 interface resourceStackItem {
@@ -39,7 +39,7 @@ export interface AddResourceEvent {
     position?: string
     group: string
   }
-  resource?: string
+  resource?: CwaResource
 }
 
 export default class ResourceManager {
@@ -123,6 +123,19 @@ export default class ResourceManager {
       closest: {
         position: closestPosition,
         group: closestGroup
+      }
+    }
+  }
+
+  public setAddResourceEventResource (resourceType: string) {
+    if (!this._addResourceEvent.value) {
+      return
+    }
+    this._addResourceEvent.value.resource = {
+      '@id': '__new__',
+      '@type': resourceType,
+      _metadata: {
+        persisted: false
       }
     }
   }

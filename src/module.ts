@@ -86,7 +86,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     resources: {
       ComponentPosition: {
         name: 'Position',
-        description: '<p>Dynamic positions can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You can select the reference from the data page to load into this position below.</p>'
+        description: '<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You can select the reference from the data page to load into this position below.</p>'
       },
       ComponentGroup: {
         name: 'Group'
