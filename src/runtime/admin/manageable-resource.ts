@@ -199,6 +199,12 @@ export default class ManageableResource {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)
     }
+    // Once click event listeners are added, if this is a new resource, select it
+    if (this.domElements.value.length && this.currentIri?.value === '__new__') {
+      const firstDomElement = this.domElements.value[0]
+      const clickEvent = new Event('click', { bubbles: true })
+      firstDomElement.dispatchEvent(clickEvent)
+    }
   }
 
   private removeClickEventListeners () {

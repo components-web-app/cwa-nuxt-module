@@ -1,4 +1,4 @@
-import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, createApp, nextTick, reactive, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
@@ -131,13 +131,13 @@ export default class ResourceManager {
     if (!this._addResourceEvent.value) {
       return
     }
-    this._addResourceEvent.value.resource = {
+    this._addResourceEvent.value.resource = reactive({
       '@id': '__new__',
       '@type': resourceType,
       _metadata: {
         persisted: false
       }
-    }
+    })
   }
 
   public clearAddResource () {
