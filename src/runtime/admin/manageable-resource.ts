@@ -102,6 +102,7 @@ export default class ManageableResource {
 
   // REFRESHING INITIALISATION
   private componentMountedListener (iri: string) {
+    // todo: detect if mounted component is a new component within children...
     if (iri === this.currentIri?.value) {
       this.initNewIri(iri)
     }

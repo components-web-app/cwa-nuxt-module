@@ -223,6 +223,30 @@ export default class ResourceManager {
     this.currentResourceStack.value = []
   }
 
+  private async confirmStackChange (alertData : { title: string, content: string }, fromContext?: boolean) {
+    let cachedNewStack: ResourceStackItem[]|undefined
+    if (!fromContext) {
+      cachedNewStack = this.currentResourceStack.value
+      this.currentResourceStack.value = this.previousResourceStack.value
+    }
+
+    // @ts-ignore-next-line
+    const dialog = createConfirmDialog(ConfirmDialog)
+    const { isCanceled } = await dialog.reveal(alertData)
+    if (isCanceled) {
+      if (fromContext) {
+        // can prevent the context stack from becoming the currentResourceStack easily here
+        this.resetStack(true)
+      }
+      return false
+    }
+
+    if (cachedNewStack) {
+      this.currentResourceStack.value = cachedNewStack
+    }
+    return true
+  }
+
   public async selectStackIndex (index: number, fromContext?: boolean) {
     if (!this.isEditing) {
       return
@@ -239,26 +263,10 @@ export default class ResourceManager {
     }
 
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
-      let cachedNewStack: ResourceStackItem[]|undefined
-      if (!fromContext) {
-        cachedNewStack = this.currentResourceStack.value
-        this.currentResourceStack.value = this.previousResourceStack.value
-      }
-
-      // @ts-ignore-next-line
-      const dialog = createConfirmDialog(ConfirmDialog)
-      const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` })
-      if (isCanceled) {
-        if (fromContext) {
-          // can prevent the context stack from becoming the currentResourceStack easily here
-          this.resetStack(true)
-        }
+      const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` }, fromContext)
+      if (!confirmed) {
         this.isLayoutStack.value = this._isEditingLayout.value
         return
-      }
-
-      if (cachedNewStack) {
-        this.currentResourceStack.value = cachedNewStack
       }
       this._isEditingLayout.value = this.isLayoutStack.value
     }
