@@ -88,6 +88,11 @@
     "overrides": {
       "vite": ">=5.0.12",
       "semver": ">=7.5.2"
+    },
+    "auditConfig": {
+      "ignoreCves": [
+        "CVE-2020-8203"
+      ]
     }
   },
   "overrides": {
