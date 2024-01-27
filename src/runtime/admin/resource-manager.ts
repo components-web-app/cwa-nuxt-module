@@ -218,6 +218,7 @@ export default class ResourceManager {
       this.contextResourceStack.value = []
       return
     }
+
     this.previousResourceStack.value = this.currentResourceStack.value
     this.currentClickTarget.value = null
     this.currentResourceStack.value = []
@@ -253,6 +254,16 @@ export default class ResourceManager {
     }
     const fromStack = fromContext ? this.contextResourceStack : this.currentResourceStack
     const currentLength = fromStack.value.length
+
+    const previousStackWasForNewResource = this.previousResourceStack.value?.[0]?.iri === '__new__'
+    if (previousStackWasForNewResource) {
+      const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' }, fromContext)
+      if (!confirmed) {
+        return
+      }
+      this.clearAddResource()
+    }
+
     if (!currentLength) {
       this.showManager.value = false
       return
@@ -269,15 +280,6 @@ export default class ResourceManager {
         return
       }
       this._isEditingLayout.value = this.isLayoutStack.value
-    }
-
-    const previousStackWasForNewResource = this.previousResourceStack.value?.[0]?.iri === '__new__'
-    if (previousStackWasForNewResource) {
-      const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' }, fromContext)
-      if (!confirmed) {
-        return
-      }
-      this.clearAddResource()
     }
 
     this.currentResourceStack.value = fromStack.value.slice(index)
@@ -322,6 +324,10 @@ export default class ResourceManager {
     // the last click target is not a resource and finished the chain
     if (!isResourceClick) {
       currentTarget.value = null
+      if (this.currentResourceStack.value.length === 0) {
+        // so we can alert a user if they were editing a new item and discard it
+        this.selectStackIndex(0, isContext)
+      }
       return
     }
 
