@@ -271,6 +271,15 @@ export default class ResourceManager {
       this._isEditingLayout.value = this.isLayoutStack.value
     }
 
+    const previousStackWasForNewResource = this.previousResourceStack.value?.[0]?.iri === '__new__'
+    if (previousStackWasForNewResource) {
+      const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' }, fromContext)
+      if (!confirmed) {
+        return
+      }
+      this.clearAddResource()
+    }
+
     this.currentResourceStack.value = fromStack.value.slice(index)
     this.showManager.value = true
     if (fromContext) {
