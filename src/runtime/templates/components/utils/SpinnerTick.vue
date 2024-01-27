@@ -2,10 +2,14 @@
 // Based on. Credit https://codepen.io/splitti/pen/jLZjgx
 import { computed, toRef } from 'vue'
 
-const props = defineProps<{ isLoading: boolean }>()
+const props = defineProps<{ isLoading: boolean, isPending?: boolean }>()
 const isLoadingRef = toRef(props, 'isLoading')
+const isPendingRef = toRef(props, 'isPending')
 
 const circleColor = computed(() => {
+  if (isPendingRef.value) {
+    return 'cwa-stroke-orange cwa-fill-orange'
+  }
   return isLoadingRef.value ? 'cwa-stroke-orange' : ''
 })
 </script>
@@ -16,13 +20,13 @@ const circleColor = computed(() => {
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 100 100"
     xml:space="preserve"
-    :class="[ isLoadingRef ? 'progress' : 'ready' ]"
+    :class="[ isLoadingRef ? 'progress' : (isPendingRef ? 'pending' : 'ready') ]"
   >
     <circle
       class="circle"
       cx="50"
       cy="50"
-      r="46"
+      r="44"
       fill="transparent"
       :class="circleColor"
     />
@@ -62,6 +66,29 @@ const circleColor = computed(() => {
     .circle {
       stroke-dashoffset: 66;
     }
+  }
+
+  &.pending {
+    .tick {
+      opacity: 0;
+    }
+    .circle {
+      stroke-width: 12;
+      stroke-dasharray: 314;
+      animation: pulse 2.8s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
   }
 }
 

@@ -5,7 +5,7 @@ import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
 const props = defineProps<{
-  iri: Ref<string>
+  iri: Ref<string|undefined>
   domElements: ComputedRef<HTMLElement[]>
 }>()
 const $cwa = useCwa()
@@ -16,6 +16,9 @@ const canvas = ref<HTMLCanvasElement|undefined>()
 const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
 
 const resource = computed(() => {
+  if (!iri.value) {
+    return
+  }
   return $cwa.resources.getResource(iri.value).value
 })
 
@@ -79,7 +82,7 @@ const borderColor = computed(() => {
   if (publishedState !== undefined) {
     return publishedState ? 'cwa-outline-green' : 'cwa-outline-orange'
   }
-  return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
+  return iri.value?.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
 
 function updateWindowSize () {
