@@ -27,7 +27,8 @@ import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/component
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa, useCwaResourceManageable } from '#imports'
+import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
 

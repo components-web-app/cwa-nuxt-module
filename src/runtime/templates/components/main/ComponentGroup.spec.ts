@@ -2,6 +2,7 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import * as vue from 'vue'
+import { ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -48,7 +49,7 @@ function createWrapper ({
   location?: string;
   allowedComponents?: string[];
   signedIn?: boolean;
-  isEditing: boolean;
+  isEditing?: boolean;
 } = {}) {
   // @ts-ignore
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
@@ -62,7 +63,12 @@ function createWrapper ({
         createResource: vi.fn(),
         updateResource: vi.fn()
       },
-      admin: { isEditing }
+      admin: {
+        isEditing,
+        resourceManager: {
+          addResourceEvent: ref()
+        }
+      }
     }
   })
 
