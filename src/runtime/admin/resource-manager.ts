@@ -248,21 +248,26 @@ export default class ResourceManager {
     return true
   }
 
+  // private async discardNewResource (isCurrent?: boolean) {
+  //   const stack = isCurrent ? this.currentResourceStack.value : this.previousResourceStack.value
+  //   const previousStackWasForNewResource = stack?.[0]?.iri === '__new__'
+  //   if (previousStackWasForNewResource) {
+  //     const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' }, fromContext)
+  //     if (!confirmed) {
+  //       return false
+  //     }
+  //     this.clearAddResource()
+  //     return true
+  //   }
+  //   return true
+  // }
+
   public async selectStackIndex (index: number, fromContext?: boolean) {
     if (!this.isEditing) {
       return
     }
     const fromStack = fromContext ? this.contextResourceStack : this.currentResourceStack
     const currentLength = fromStack.value.length
-
-    const previousStackWasForNewResource = this.previousResourceStack.value?.[0]?.iri === '__new__'
-    if (previousStackWasForNewResource) {
-      const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' }, fromContext)
-      if (!confirmed) {
-        return
-      }
-      this.clearAddResource()
-    }
 
     if (!currentLength) {
       this.showManager.value = false
@@ -327,6 +332,7 @@ export default class ResourceManager {
       if (this.currentResourceStack.value.length === 0) {
         // so we can alert a user if they were editing a new item and discard it
         this.selectStackIndex(0, isContext)
+        this.previousResourceStack.value = []
       }
       return
     }
