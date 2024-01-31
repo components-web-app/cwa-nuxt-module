@@ -20,7 +20,7 @@ const circleColor = computed(() => {
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 100 100"
     xml:space="preserve"
-    :class="[ isLoadingRef ? 'progress' : (isPendingRef ? 'pending' : 'ready') ]"
+    :class="[ isPendingRef ? 'pending' : (isLoadingRef ? 'progress' : 'ready') ]"
   >
     <circle
       class="circle"
