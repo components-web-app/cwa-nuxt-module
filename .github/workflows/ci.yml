@@ -3,8 +3,7 @@ name: ci
 on:
   push:
     branches:
-      - '**'
-      - '!main'
+      - 'nuxt3'
   pull_request:
     branches-ignore:
       - main
