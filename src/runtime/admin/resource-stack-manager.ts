@@ -131,11 +131,11 @@ export default class ResourceStackManager {
     }
   }
 
-  public setAddResourceEventResource (resourceType: string) {
+  public setAddResourceEventResource (resourceType: string, isPublishable: boolean) {
     if (!this._addResourceEvent.value) {
       return
     }
-    this.resourcesStore.initNewResource(resourceType)
+    this.resourcesStore.initNewResource(resourceType, isPublishable)
   }
 
   public clearAddResource () {
@@ -346,7 +346,6 @@ export default class ResourceStackManager {
     currentTarget.value = clickTarget
   }
 
-  // todo: test checking and inserting at correct index
   private insertResourceStackItem (resourceStackItem: ResourceStackItem, isContext?: boolean) {
     const stack = isContext ? this.contextResourceStack : this.currentResourceStack
     const iris = this.resourcesStore.findAllPublishableIris(resourceStackItem.iri)

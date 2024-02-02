@@ -17,6 +17,9 @@ export interface CwaResource {
   draftResource?: string
   uiComponent?: string
   _metadata: {
+    adding?: {
+      isPublishable: boolean
+    }
     persisted: boolean
     publishable?: {
       published: boolean

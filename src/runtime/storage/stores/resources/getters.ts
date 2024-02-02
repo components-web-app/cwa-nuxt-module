@@ -95,7 +95,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
                 '@type': 'ComponentPosition',
                 component: addingResource['@id'],
                 _metadata: {
-                  adding: true,
+                  adding: {
+                    isPublishable: false
+                  },
                   persisted: false
                 }
               }

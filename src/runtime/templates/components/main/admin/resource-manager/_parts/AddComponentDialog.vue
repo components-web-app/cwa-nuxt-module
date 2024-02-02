@@ -164,7 +164,14 @@ function findAllowedComponents (groupIri: string): undefined|string[] {
 }
 
 function handleAdd () {
-  selectedComponent.value && $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value)
+  if (!selectedComponent.value) {
+    return
+  }
+  const meta = displayData.value?.availableComponents[selectedComponent.value]
+  if (!meta) {
+    return
+  }
+  $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.isPublishable)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display
