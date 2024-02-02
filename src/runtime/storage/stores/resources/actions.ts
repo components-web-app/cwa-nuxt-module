@@ -165,7 +165,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         '@type': resourceType,
         _metadata: {
           adding: {
-            isPublishable
+            isPublishable: !!isPublishable
           },
           persisted: false
         }

@@ -94,11 +94,20 @@ function handleDefaultClick () {
   }
   if (buttonLabel.value === 'Publish') {
     consola.log('DO PUBLISH')
+    return
   }
 
-  if (buttonLabel.value === 'Add' || buttonLabel.value === 'Add Draft') {
-    consola.log('Add or Add Draft')
+  if (buttonLabel.value === 'Add') {
+    addResourceAction()
+    return
   }
+  if (buttonLabel.value === 'Add Draft') {
+    addResourceAction(false)
+  }
+}
+
+function addResourceAction (publish?: boolean) {
+  consola.log('addResourceAction', publish)
 }
 
 function handleAddEvent (value: 'add-before'|'add-after') {
@@ -127,7 +136,7 @@ async function handleManagerCtaClick (value?: ModelValue) {
     }
 
     if (['add-publish'].includes(value)) {
-      consola.log('Add and PUBLISH', value)
+      addResourceAction(true)
     }
   }
 }

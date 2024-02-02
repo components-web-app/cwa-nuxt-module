@@ -41,7 +41,7 @@ import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/
 import { useCwa } from '#imports'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import type {
-  ApiDocumentationComponentMetadataCollection
+  ApiDocumentationComponentMetadata
 } from '#cwa/runtime/api/api-documentation'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import type { CwaResourceMeta } from '#cwa/module'
@@ -52,7 +52,7 @@ const loadingComponents = ref(true)
 const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50 hover:cwa-border-opacity-100 aria-selected:cwa-border-opacity-100'
 
 interface MergedComponentMetadata {
-  apiMetadata: ApiDocumentationComponentMetadataCollection
+  apiMetadata: ApiDocumentationComponentMetadata
   config: CwaResourceMeta
 }
 

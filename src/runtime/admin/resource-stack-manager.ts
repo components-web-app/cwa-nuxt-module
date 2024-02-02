@@ -131,7 +131,7 @@ export default class ResourceStackManager {
     }
   }
 
-  public setAddResourceEventResource (resourceType: string, isPublishable: boolean) {
+  public setAddResourceEventResource (resourceType: string, isPublishable?: boolean) {
     if (!this._addResourceEvent.value) {
       return
     }
