@@ -12,6 +12,7 @@ import type {
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import type { CwaResource } from './resource-utils'
+import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 export interface ApiResourceEvent {
   endpoint: string
@@ -95,12 +96,21 @@ export class ResourcesManager {
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
+
+    if (event.endpoint === NEW_RESOURCE_IRI) {
+      // todo: patch the new temp adding resource
+      // this.resourcesStore
+      // console.log(event, args)
+      return
+    }
+
     return this.doResourceRequest(event, args)
   }
 
   private async doResourceRequest (event: ApiResourceEvent, args: [string, {}]) {
     const source = event.source || 'unknown'
     const id = ++this.reqCount.value
+
     set(this.requestsInProgress, [source, id], { event, args })
 
     this.errorStore.removeByEndpoint(args[0])

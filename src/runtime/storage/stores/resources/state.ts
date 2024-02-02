@@ -1,7 +1,9 @@
-import { reactive } from 'vue'
+import { reactive, type Ref, ref } from 'vue'
 import type { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
 import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
 import type { CwaResource } from '../../../resources/resource-utils'
+
+export const NEW_RESOURCE_IRI = '__new__'
 
 export enum CwaResourceApiStatuses {
   ERROR = -1,
@@ -60,6 +62,7 @@ export interface CwaResourcesStateInterface {
     },
     allIds: Array<string>
   }
+  adding: Ref<CwaResource|undefined>
 }
 
 export default function (): CwaResourcesStateInterface {
@@ -73,6 +76,7 @@ export default function (): CwaResourcesStateInterface {
     new: reactive({
       byId: {},
       allIds: []
-    })
+    }),
+    adding: ref(undefined)
   }
 }

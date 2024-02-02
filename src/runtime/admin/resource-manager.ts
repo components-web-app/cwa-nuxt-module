@@ -1,15 +1,17 @@
-import { computed, createApp, nextTick, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ComponentPublicInstance, Ref, ComputedRef, ShallowRef } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import { storeToRefs } from 'pinia'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
-import { type CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
+import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 interface resourceStackItem {
   iri: string
@@ -39,7 +41,6 @@ export interface AddResourceEvent {
     position?: string
     group: string
   }
-  resource?: CwaResource
 }
 
 export default class ResourceManager {
@@ -131,25 +132,29 @@ export default class ResourceManager {
     if (!this._addResourceEvent.value) {
       return
     }
-    this._addResourceEvent.value.resource = reactive({
-      '@id': '__new__',
+    const { adding } = storeToRefs(this.resourcesStore)
+    adding.value = {
+      '@id': NEW_RESOURCE_IRI,
       '@type': resourceType,
       _metadata: {
+        adding: true,
         persisted: false
       }
-    })
+    }
   }
 
   public clearAddResource () {
     this._addResourceEvent.value = undefined
-  }
-
-  public get isEditingLayout () {
-    return this._isEditingLayout
+    const { adding } = storeToRefs(this.resourcesStore)
+    adding.value = undefined
   }
 
   public get addResourceEvent () {
     return this._addResourceEvent
+  }
+
+  public get isEditingLayout () {
+    return this._isEditingLayout
   }
 
   public getState (prop: string) {

@@ -16,7 +16,7 @@
         <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
       <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
-        <SpinnerTick :is-loading="isLoading" :is-pending="!!$cwa.admin.resourceManager.addResourceEvent.value?.resource" />
+        <SpinnerTick :is-loading="isLoading" :is-pending="!!$cwa.resources.newResource.value" />
       </div>
     </div>
     <OutdatedContentNotice class="cwa-absolute cwa-top-full cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-20" />

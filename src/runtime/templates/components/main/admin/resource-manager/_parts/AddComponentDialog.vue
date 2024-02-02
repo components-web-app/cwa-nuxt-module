@@ -74,7 +74,7 @@ const addResourceEvent = computed(() => $cwa.admin.resourceManager.addResourceEv
 
 const open = computed({
   get () {
-    return !!addResourceEvent.value && !addResourceEvent.value.resource
+    return !!addResourceEvent.value && !$cwa.resources.newResource.value
   },
   set (value: boolean) {
     if (!value) {
@@ -164,7 +164,7 @@ function findAllowedComponents (groupIri: string): undefined|string[] {
 }
 
 function handleAdd () {
-  $cwa.admin.resourceManager.setAddResourceEventResource(selectedComponent.value)
+  selectedComponent.value && $cwa.admin.resourceManager.setAddResourceEventResource(selectedComponent.value)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

@@ -1,9 +1,13 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import {
+  CwaResourceTypes,
+  getPublishedResourceState,
+  getResourceTypeFromIri
+} from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
 import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
-import { CwaResourceApiStatuses } from './state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
 export interface ResourcesLoadStatusInterface {
@@ -22,6 +26,7 @@ interface PublishableMapping {
 }
 
 export interface CwaResourcesGettersInterface {
+  getResource: ComputedRef<(iri: string) => CwaCurrentResourceInterface | undefined>,
   hasNewResources: ComputedRef<boolean>
   findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
   findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
@@ -64,6 +69,44 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   }
 
   return {
+    getResource: computed(() => {
+      return (id: string) => {
+        if (id.endsWith(NEW_RESOURCE_IRI)) {
+          const addingResource = resourcesState.adding.value
+          if (!addingResource) {
+            return
+          }
+          const fullAddingResource = {
+            apiState: {
+              status: undefined
+            },
+            data: addingResource
+          }
+          if (id.startsWith('/_/component_positions/')) {
+            if (addingResource['@type'] === 'ComponentPosition') {
+              return fullAddingResource
+            }
+            const ghostPosition: CwaCurrentResourceInterface = {
+              apiState: {
+                status: undefined
+              },
+              data: {
+                '@id': id,
+                '@type': 'ComponentPosition',
+                component: addingResource['@id'],
+                _metadata: {
+                  adding: true,
+                  persisted: false
+                }
+              }
+            }
+            return ghostPosition
+          }
+          return fullAddingResource
+        }
+        return resourcesState.current.byId?.[id]
+      }
+    }),
     hasNewResources: computed(() => resourcesState.new.allIds.length > 0),
     findPublishedComponentIri: computed(() => {
       return (iri: string) => {

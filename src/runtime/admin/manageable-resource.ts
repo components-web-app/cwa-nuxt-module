@@ -21,6 +21,7 @@ import Cwa from '../cwa'
 // appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
+import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 export type StyleOptions = {
   multiple?: boolean,
@@ -201,7 +202,7 @@ export default class ManageableResource {
       el.addEventListener('contextmenu', this.clickListener, false)
     }
     // Once click event listeners are added, if this is a new resource, select it
-    if (this.domElements.value.length && this.currentIri?.value === '__new__') {
+    if (this.domElements.value.length && this.currentIri?.value === NEW_RESOURCE_IRI) {
       const firstDomElement = this.domElements.value[0]
       const clickEvent = new Event('click', { bubbles: true })
       firstDomElement.dispatchEvent(clickEvent)

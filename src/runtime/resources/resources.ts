@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type { FetchStatus } from '../storage/stores/fetcher/state'
@@ -37,40 +37,12 @@ export class Resources {
 
   public getResource (id: string) {
     return computed(() => {
-      if (id.endsWith('__new__')) {
-        const addingResource = this.resourceManager.addResourceEvent.value?.resource
-        if (!addingResource) {
-          return
-        }
-        const fullAddingResource = {
-          apiState: {
-            status: undefined
-          },
-          data: addingResource
-        }
-        if (id.startsWith('/_/component_positions/')) {
-          if (addingResource['@type'] === 'ComponentPosition') {
-            return fullAddingResource
-          }
-          const ghostPosition: CwaCurrentResourceInterface = {
-            apiState: {
-              status: undefined
-            },
-            data: {
-              '@id': id,
-              '@type': 'ComponentPosition',
-              component: addingResource['@id'],
-              _metadata: {
-                persisted: false
-              }
-            }
-          }
-          return ghostPosition
-        }
-        return fullAddingResource
-      }
-      return this.resourcesStore.current.byId?.[id]
+      return this.resourcesStore.getResource(id)
     })
+  }
+
+  public get newResource () {
+    return computed(() => this.resourcesStore.getResource(NEW_RESOURCE_IRI))
   }
 
   public getComponentGroupByReference (reference: string) {

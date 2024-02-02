@@ -26,7 +26,7 @@ import {
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
@@ -81,12 +81,12 @@ const hasAddingPosition = computed(() => {
 
 const componentPositions = computed(() => {
   const savedPositions: string[] = resource.value?.data?.componentPositions
-  const addingResource = addingEvent.value?.resource
-  if (!addingResource || !hasAddingPosition.value) {
+  const addingResource = $cwa.resources.newResource.value
+  if (!addingResource || !hasAddingPosition.value || !addingEvent.value) {
     return savedPositions
   }
 
-  const position = '/_/component_positions/__new__'
+  const position = '/_/component_positions/' + NEW_RESOURCE_IRI
 
   const closestPosition = addingEvent.value.closest.position
   if (closestPosition) {
