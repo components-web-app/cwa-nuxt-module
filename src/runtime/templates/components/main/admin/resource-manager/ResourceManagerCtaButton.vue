@@ -21,7 +21,7 @@ import {
 } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
-const currentIri = $cwa.admin.resourceManager.currentIri
+const currentIri = $cwa.admin.resourceStackManager.currentIri
 
 const resourceType = computed(() => {
   return currentIri.value ? getResourceTypeFromIri(currentIri.value) : undefined
@@ -78,7 +78,7 @@ function handleAddEvent (value: 'add-before'|'add-after') {
     return
   }
   const addAfter = value === 'add-after'
-  $cwa.admin.resourceManager.initAddResource(currentIri.value, addAfter)
+  $cwa.admin.resourceStackManager.initAddResource(currentIri.value, addAfter)
 }
 
 function handleManagerCtaClick (value?: ModelValue) {

@@ -374,7 +374,7 @@ describe('ManageableResource Class', () => {
 
       instance.clickListener({})
 
-      expect($cwa.admin.resourceManager.addToStack).not.toHaveBeenCalled()
+      expect($cwa.admin.resourceStackManager.addToStack).not.toHaveBeenCalled()
     })
 
     test('should add to stack with correct object', () => {
@@ -403,7 +403,7 @@ describe('ManageableResource Class', () => {
 
       expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig, resource })
 
-      expect($cwa.admin.resourceManager.addToStack).toHaveBeenCalledWith({
+      expect($cwa.admin.resourceStackManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri.value,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
@@ -430,7 +430,7 @@ describe('ManageableResource Class', () => {
 
       instance.clickListener(mockEvent)
 
-      expect($cwa.admin.resourceManager.addToStack).toHaveBeenCalledWith({
+      expect($cwa.admin.resourceStackManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,

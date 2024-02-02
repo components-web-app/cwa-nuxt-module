@@ -9,7 +9,7 @@ import {
   CwaResourceTypes,
   getResourceTypeFromIri
 } from './resource-utils'
-import type ResourceManager from '#cwa/runtime/admin/resource-manager'
+import type ResourceStackManager from '#cwa/runtime/admin/resource-stack-manager'
 
 interface PageLoadStatus {
   resources: (string|undefined)[]
@@ -20,7 +20,7 @@ interface PageLoadStatus {
 
 export class Resources {
   // eslint-disable-next-line no-useless-constructor
-  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore, private readonly resourceManager: ResourceManager) {
+  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore, private readonly resourceManager: ResourceStackManager) {
   }
 
   public get currentIds () {

@@ -24,7 +24,7 @@ const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
 
 const componentMeta = ref<CwaResourceMeta[]>([])
 
-const current = computed(() => $cwa.admin.resourceManager.currentStackItem.value)
+const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
 const uiOptions = computed(() => {
   const options: SelectOption[] = [{

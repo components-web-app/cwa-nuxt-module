@@ -126,7 +126,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       return
     }
     const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = $cwa.admin.resourceManager.forcePublishedVersion.value !== undefined && publishableState === true
+    applyPostfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value !== undefined && publishableState === true
   })
 
   watch(applyPostfix, (newApplyPostfix) => {
@@ -134,7 +134,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       postfix.value = ''
       return
     }
-    postfix.value = $cwa.admin.resourceManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
+    postfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
   }, {
     immediate: true
   })

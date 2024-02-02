@@ -39,7 +39,7 @@
 import { computed, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
-import type { AddResourceEvent } from '#cwa/runtime/admin/resource-manager'
+import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import type {
   ApiDocumentationComponentMetadataCollection
 } from '#cwa/runtime/api/api-documentation'
@@ -70,7 +70,7 @@ interface DisplayDataI {
 const displayData = ref<DisplayDataI>()
 const selectedComponent = ref<string|undefined>()
 
-const addResourceEvent = computed(() => $cwa.admin.resourceManager.addResourceEvent.value)
+const addResourceEvent = computed(() => $cwa.admin.resourceStackManager.addResourceEvent.value)
 
 const open = computed({
   get () {
@@ -78,7 +78,7 @@ const open = computed({
   },
   set (value: boolean) {
     if (!value) {
-      $cwa.admin.resourceManager.clearAddResource()
+      $cwa.admin.resourceStackManager.clearAddResource()
     }
   }
 })
@@ -150,7 +150,7 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
 
   const allowedComponents = findAllowedComponents(event.closest.group)
   const availableComponents = await findAvailableComponents(allowedComponents)
-  const enableDynamicPosition = !$cwa.admin.resourceManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
+  const enableDynamicPosition = !$cwa.admin.resourceStackManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
 
   return {
     event,
@@ -164,7 +164,7 @@ function findAllowedComponents (groupIri: string): undefined|string[] {
 }
 
 function handleAdd () {
-  selectedComponent.value && $cwa.admin.resourceManager.setAddResourceEventResource(selectedComponent.value)
+  selectedComponent.value && $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

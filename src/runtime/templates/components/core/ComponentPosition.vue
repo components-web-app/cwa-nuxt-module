@@ -25,7 +25,7 @@ const componentIri = computed(() => {
   const iri = resource.value?.data?.component
   const publishedIri = $cwa.resources.findPublishedComponentIri(iri).value
   if ($cwa.admin.isEditing) {
-    const selectedEditingIri = $cwa.admin.resourceManager.currentIri.value
+    const selectedEditingIri = $cwa.admin.resourceStackManager.currentIri.value
     const draftIri = $cwa.resources.findDraftComponentIri(iri).value
     if (selectedEditingIri && [draftIri, publishedIri].includes(selectedEditingIri)) {
       return selectedEditingIri

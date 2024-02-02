@@ -72,7 +72,7 @@ const showLoader = computed(() => {
 })
 
 const addingEvent = computed(() => {
-  return $cwa.admin.resourceManager.addResourceEvent.value
+  return $cwa.admin.resourceStackManager.addResourceEvent.value
 })
 
 const hasAddingPosition = computed(() => {

@@ -72,7 +72,7 @@ function drawCanvas () {
   const hatchCanvas = getHatchCanvas()
   ctx.fillStyle = hatchCanvas ? (ctx.createPattern(hatchCanvas, 'repeat') || 'rgba(0,0,0,0.4)') : 'rgba(0,0,0,0.4)'
   ctx.beginPath()
-  if ($cwa.admin.resourceManager.isEditingLayout.value) {
+  if ($cwa.admin.resourceStackManager.isEditingLayout.value) {
     drawLayoutFocus(ctx)
   } else {
     drawPageFocus(ctx)
@@ -125,7 +125,7 @@ onMounted(() => {
   $cwa.admin.eventBus.on('componentMounted', redraw)
   window.addEventListener('resize', redraw, false)
   watch(canvas, newCanvas => newCanvas && redraw())
-  watch($cwa.admin.resourceManager.isEditingLayout, () => (redraw()))
+  watch($cwa.admin.resourceStackManager.isEditingLayout, () => (redraw()))
 
   // fallbacks for if an image needs a short time to appear, or CLS
   setTimeout(() => {

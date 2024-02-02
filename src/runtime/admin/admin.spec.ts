@@ -4,7 +4,7 @@ import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import Admin from './admin'
-import ResourceManager from './resource-manager'
+import ResourceStackManager from './resource-stack-manager'
 
 vi.mock('./resource-manager', () => {
   return {
@@ -107,6 +107,6 @@ describe('Admin class', () => {
   test('should have component manager created', () => {
     admin = createAdmin()
 
-    expect(ResourceManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition, admin.resourcesStoreDefinition)
+    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition, admin.resourcesStoreDefinition)
   })
 })

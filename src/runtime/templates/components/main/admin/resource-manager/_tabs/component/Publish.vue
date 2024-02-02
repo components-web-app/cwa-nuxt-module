@@ -26,7 +26,7 @@ const alternateIri = computed(() => {
 // todo: selecting the live version when toggled, not highlighting... why?
 // todo: resetting forcePublishedVersion if the next selected item is not one of the 2 draft.published resources
 watch(editLiveVersion, (isEditLive) => {
-  $cwa.admin.resourceManager.forcePublishedVersion.value = isEditLive
+  $cwa.admin.resourceStackManager.forcePublishedVersion.value = isEditLive
 })
 
 defineExpose(exposeMeta)

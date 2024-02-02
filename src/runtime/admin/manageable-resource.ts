@@ -223,7 +223,7 @@ export default class ManageableResource {
       return
     }
 
-    this.$cwa.admin.resourceManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
+    this.$cwa.admin.resourceStackManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
   }
 
   private getCurrentStackItem (clickTarget: EventTarget|null) {

@@ -5,10 +5,10 @@ export const useCwaResourceManagerStateModel = <T>(property: string) => {
   const $cwa = useCwa()
   return computed<T>({
     get () {
-      return !!$cwa.admin.resourceManager.getState(property)
+      return !!$cwa.admin.resourceStackManager.getState(property)
     },
     set (newValue) {
-      $cwa.admin.resourceManager.setState(property, newValue)
+      $cwa.admin.resourceStackManager.setState(property, newValue)
     }
   })
 }

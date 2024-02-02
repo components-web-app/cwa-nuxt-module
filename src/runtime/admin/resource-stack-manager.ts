@@ -42,7 +42,7 @@ export interface AddResourceEvent {
   }
 }
 
-export default class ResourceManager {
+export default class ResourceStackManager {
   public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
   public readonly isLayoutStack: Ref<boolean> = ref(false)
