@@ -1,6 +1,9 @@
 import { computed, reactive, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
+import { storeToRefs } from 'pinia'
+import _mergeWith from 'lodash/mergeWith'
+import _isArray from 'lodash/isArray'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -98,9 +101,15 @@ export class ResourcesManager {
     ]
 
     if (event.endpoint === NEW_RESOURCE_IRI) {
-      // todo: patch the new temp adding resource
-      // this.resourcesStore
-      // console.log(event, args)
+      const { adding } = storeToRefs(this.resourcesStore)
+      if (!adding.value) {
+        return
+      }
+      adding.value = _mergeWith(adding.value, event.data, (a, b) => {
+        if (_isArray(a)) {
+          return b.concat(a)
+        }
+      })
       return
     }
 

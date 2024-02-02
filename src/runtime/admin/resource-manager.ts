@@ -75,7 +75,7 @@ export default class ResourceManager {
     this.createFocusComponent()
   }
 
-  public initAddResource (targetIri: string, addAfter: boolean) {
+  public async initAddResource (targetIri: string, addAfter: boolean) {
     type BaseEvent = {
       targetIri: string
       addAfter: boolean
@@ -117,6 +117,10 @@ export default class ResourceManager {
 
     const closestPosition = findClosestPosition(initEvent)
     const closestGroup = findClosestResourceByType(CwaResourceTypes.COMPONENT_GROUP)
+
+    if (!await this.confirmDiscardAddingResource()) {
+      return
+    }
 
     this._addResourceEvent.value = {
       targetIri,
@@ -253,19 +257,24 @@ export default class ResourceManager {
     return true
   }
 
-  // private async discardNewResource (isCurrent?: boolean) {
-  //   const stack = isCurrent ? this.currentResourceStack.value : this.previousResourceStack.value
-  //   const previousStackWasForNewResource = stack?.[0]?.iri === '__new__'
-  //   if (previousStackWasForNewResource) {
-  //     const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' }, fromContext)
-  //     if (!confirmed) {
-  //       return false
-  //     }
-  //     this.clearAddResource()
-  //     return true
-  //   }
-  //   return true
-  // }
+  public async confirmDiscardAddingResource () {
+    if (!this._addResourceEvent.value) {
+      return true
+    }
+    const alertData = {
+      title: 'Discard new resource?',
+      content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>'
+    }
+    // @ts-ignore-next-line
+    const dialog = createConfirmDialog(ConfirmDialog)
+    const { isCanceled } = await dialog.reveal(alertData)
+
+    if (isCanceled) {
+      return false
+    }
+    this.clearAddResource()
+    return true
+  }
 
   public async selectStackIndex (index: number, fromContext?: boolean) {
     if (!this.isEditing) {
