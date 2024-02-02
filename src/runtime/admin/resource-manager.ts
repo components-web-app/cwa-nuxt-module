@@ -11,7 +11,6 @@ import type { StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
-import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 interface resourceStackItem {
   iri: string
@@ -136,15 +135,7 @@ export default class ResourceManager {
     if (!this._addResourceEvent.value) {
       return
     }
-    const { adding } = storeToRefs(this.resourcesStore)
-    adding.value = {
-      '@id': NEW_RESOURCE_IRI,
-      '@type': resourceType,
-      _metadata: {
-        adding: true,
-        persisted: false
-      }
-    }
+    this.resourcesStore.initNewResource(resourceType)
   }
 
   public clearAddResource () {
