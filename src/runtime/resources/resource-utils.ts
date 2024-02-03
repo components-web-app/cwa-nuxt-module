@@ -18,6 +18,7 @@ export interface CwaResource {
   uiComponent?: string
   _metadata: {
     adding?: {
+      endpoint: string
       isPublishable: boolean
     }
     persisted: boolean

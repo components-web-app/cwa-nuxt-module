@@ -12,14 +12,17 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { consola } from 'consola'
+import { DateTime } from 'luxon'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 import {
+  type CwaResource,
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri
 } from '#cwa/runtime/resources/resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
+import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 
 const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceStackManager.currentIri
@@ -106,8 +109,61 @@ function handleDefaultClick () {
   }
 }
 
-function addResourceAction (publish?: boolean) {
-  consola.log('addResourceAction', publish)
+function createNewComponentPositionData (addEvent: AddResourceEvent) {
+  const getPosition = () => {
+    if (addEvent.closest.position) {
+      return $cwa.resources.getResource(addEvent.closest.position).value
+    }
+    const groupResource = $cwa.resources.getResource(addEvent.closest.group).value
+    if (!groupResource) {
+      return
+    }
+    const allPositions = groupResource.data?.componentPositions
+    if (!allPositions?.length) {
+      return
+    }
+    return addEvent.addAfter ? allPositions[allPositions.length - 1] : allPositions[0]
+  }
+
+  const componentPosition: { componentGroup: string, sortValue: number } = {
+    componentGroup: addEvent.closest.group,
+    sortValue: 0
+  }
+  const positionResource = getPosition()
+  if (positionResource) {
+    const currentSortValue = positionResource.data?.sortValue
+    if (currentSortValue !== undefined) {
+      componentPosition.sortValue = addEvent.addAfter ? currentSortValue + 1 : currentSortValue
+    }
+  }
+  return componentPosition
+}
+
+async function addResourceAction (publish?: boolean) {
+  const addEvent = $cwa.admin.resourceStackManager.addResourceEvent.value
+  if (!addEvent) {
+    return
+  }
+  const newResource = $cwa.resources.newResource.value
+  const data = newResource?.data
+  if (!data?._metadata?.adding) {
+    return
+  }
+
+  if (data['@type'] !== 'ComponentPosition') {
+    data.componentPositions = [createNewComponentPositionData(addEvent)]
+  }
+
+  if (publish !== undefined) {
+    data.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
+  }
+
+  const postData: CwaResource & { '@id': undefined, '@type': undefined } = { ...data, '@id': undefined, '@type': undefined }
+
+  await $cwa.resourcesManager.createResource({
+    endpoint: data._metadata.adding.endpoint,
+    data: postData
+  })
 }
 
 function handleAddEvent (value: 'add-before'|'add-after') {

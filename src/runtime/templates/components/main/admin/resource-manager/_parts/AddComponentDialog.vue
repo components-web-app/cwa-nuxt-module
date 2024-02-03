@@ -171,7 +171,7 @@ function handleAdd () {
   if (!meta) {
     return
   }
-  $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.isPublishable)
+  $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

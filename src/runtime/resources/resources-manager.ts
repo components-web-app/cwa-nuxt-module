@@ -16,18 +16,26 @@ import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import type { CwaResource } from './resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
+import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
 
-export interface ApiResourceEvent {
+interface DeleteApiResourceEvent {
   endpoint: string
+  requestCompleteFn?: (resource?: CwaResource) => void|Promise<void>
+  refreshEndpoints?: string[]
+}
+
+interface DataApiResourceEvent extends DeleteApiResourceEvent {
   data: any
   source?: string
 }
+
+export type ApiResourceEvent = DataApiResourceEvent|DeleteApiResourceEvent
 
 interface RequestHeaders extends Record<string, string> { }
 
 interface RequestOptions {
   headers: RequestHeaders
-  method: 'POST' | 'PATCH'
+  method: 'POST' | 'PATCH' | 'DELETE'
 }
 
 export class ResourcesManager {
@@ -38,7 +46,13 @@ export class ResourcesManager {
   private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, {}] } }>({})
   private reqCount = ref(0)
 
-  constructor (cwaFetch: CwaFetch, resourcesStoreDefinition: ResourcesStore, fetchStatusManager: FetchStatusManager, errorStoreDefinition: ErrorStore) {
+  constructor (
+    cwaFetch: CwaFetch,
+    resourcesStoreDefinition: ResourcesStore,
+    fetchStatusManager: FetchStatusManager,
+    errorStoreDefinition: ErrorStore,
+    private fetcher: Fetcher
+  ) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
     this.fetchStatusManager = fetchStatusManager
@@ -64,7 +78,10 @@ export class ResourcesManager {
         return false
       }
       for (const req of Object.values(this.requestsInProgress)) {
-        if (req.event.endpoint === endpoint && req.event.data?.[property] && (!source || req.event.source !== source)) {
+        if (req.event.endpoint === endpoint) {
+          if ('data' in req.event) {
+            return req.event.data?.[property] && (!source || req.event.source !== source)
+          }
           return true
         }
       }
@@ -86,7 +103,7 @@ export class ResourcesManager {
     })
   }
 
-  public createResource (event: ApiResourceEvent) {
+  public createResource (event: DataApiResourceEvent) {
     const args: [string, {}] = [
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
@@ -94,7 +111,19 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  public updateResource (event: ApiResourceEvent) {
+  public deleteResource (event: ApiResourceEvent) {
+    const args: [string, {}] = [
+      event.endpoint,
+      { ...this.requestOptions('DELETE') }
+    ]
+    return this.doResourceRequest(event, args)
+  }
+
+  public removeResource (event: DeleteResourceEvent) {
+    return this.resourcesStore.deleteResource(event)
+  }
+
+  public updateResource (event: DataApiResourceEvent) {
     const args: [string, {}] = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
@@ -117,7 +146,7 @@ export class ResourcesManager {
   }
 
   private async doResourceRequest (event: ApiResourceEvent, args: [string, {}]) {
-    const source = event.source || 'unknown'
+    const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
 
     set(this.requestsInProgress, [source, id], { event, args })
@@ -126,11 +155,28 @@ export class ResourcesManager {
 
     try {
       const resource = await this.cwaFetch.fetch<CwaResource>(...args)
-      this.saveResource({
-        resource
-      })
+      if (event.refreshEndpoints) {
+        const fetchBathEvent = {
+          paths: event.refreshEndpoints,
+          shallowFetch: true
+        }
+        await this.fetcher.fetchBatch(fetchBathEvent)
+      }
+      if (event.requestCompleteFn) {
+        await event.requestCompleteFn(resource)
+      }
+      if ('data' in event) {
+        this.saveResource({
+          resource
+        })
+      } else {
+        this.removeResource({
+          resource: event.endpoint
+        })
+      }
       return resource
     } catch (err) {
+      console.log(err)
       this.errorStore.error(event, err as FetchError<any>)
     } finally {
       unset(this.requestsInProgress, [source, id])
@@ -154,11 +200,7 @@ export class ResourcesManager {
     return this.resourcesStore.saveResource(event)
   }
 
-  public deleteResource (event: DeleteResourceEvent) {
-    return this.resourcesStore.deleteResource(event)
-  }
-
-  private requestOptions (method: 'POST' | 'PATCH'): RequestOptions {
+  private requestOptions (method: 'POST' | 'PATCH' | 'DELETE'): RequestOptions {
     const headers: {
       accept: string
       path?: string

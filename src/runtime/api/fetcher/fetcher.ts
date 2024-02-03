@@ -52,6 +52,7 @@ interface FetchBatchEvent {
   paths: string[]
   token?: string
   noSave?: boolean
+  shallowFetch?: boolean
 }
 
 interface FetchNestedResourcesEvent {
@@ -228,11 +229,11 @@ export default class Fetcher {
     return this.fetchBatch({ paths: nestedIris, token, noSave })
   }
 
-  private fetchBatch ({ paths, token, noSave }: FetchBatchEvent): Promise<(CwaResource|undefined)[]> {
+  public fetchBatch ({ paths, token, noSave, shallowFetch }: FetchBatchEvent): Promise<(CwaResource|undefined)[]> {
     const promises = []
     for (const path of paths) {
       const pathPromise: Promise<(CwaResource|undefined)> = new Promise((resolve) => {
-        this.fetchResource({ path, token, noSave })
+        this.fetchResource({ path, token, noSave, shallowFetch })
           .then((resource: CwaResource|undefined) => {
             resolve(resource)
           })

@@ -78,6 +78,9 @@ const borderColor = computed(() => {
   if (!resource.value) {
     return
   }
+  if (resource.value.data?._metadata.adding) {
+    return 'cwa-outline-orange'
+  }
   const publishedState = getPublishedResourceState(resource.value)
   if (publishedState !== undefined) {
     return publishedState ? 'cwa-outline-green' : 'cwa-outline-orange'
