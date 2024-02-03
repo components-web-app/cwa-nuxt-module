@@ -141,6 +141,9 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
   if (getResourceTypeFromIri(props.iri) !== CwaResourceTypes.COMPONENT) {
     return false
   }
+  if (!resource.value) {
+    return
+  }
   // will always have metadata even if not auth saying whether it's published or not
   const publishableState = getPublishedResourceState(resource.value)
 
@@ -158,7 +161,7 @@ const isOutdated = computed(() => {
     return
   }
   const nowTime = (new Date()).getTime()
-  const timeDifference = nowTime - resource.value?.apiState.fetchedAt
+  const timeDifference = nowTime - apiState.fetchedAt
   return timeDifference > 5000
 })
 

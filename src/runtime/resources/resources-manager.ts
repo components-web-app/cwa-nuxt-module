@@ -36,6 +36,7 @@ interface RequestHeaders extends Record<string, string> { }
 interface RequestOptions {
   headers: RequestHeaders
   method: 'POST' | 'PATCH' | 'DELETE'
+  body?: any
 }
 
 export class ResourcesManager {
@@ -104,7 +105,7 @@ export class ResourcesManager {
   }
 
   public createResource (event: DataApiResourceEvent) {
-    const args: [string, {}] = [
+    const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data }
     ]
@@ -112,7 +113,7 @@ export class ResourcesManager {
   }
 
   public deleteResource (event: ApiResourceEvent) {
-    const args: [string, {}] = [
+    const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('DELETE') }
     ]
@@ -124,7 +125,7 @@ export class ResourcesManager {
   }
 
   public updateResource (event: DataApiResourceEvent) {
-    const args: [string, {}] = [
+    const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
@@ -145,7 +146,7 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, {}]) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions]) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
 
@@ -155,15 +156,23 @@ export class ResourcesManager {
 
     try {
       const resource = await this.cwaFetch.fetch<CwaResource>(...args)
-      if (event.refreshEndpoints) {
+      const refreshEndpoints = event.refreshEndpoints || []
+      if (args[1].method === 'POST') {
+        // if we create a resource and have also created component position(s), we need to fetch those now
+        if (resource.componentPositions) {
+          refreshEndpoints.push(...resource.componentPositions)
+        }
+        // component groups should be added by the calling api
+      }
+      if (refreshEndpoints.length) {
         const fetchBathEvent = {
-          paths: event.refreshEndpoints,
+          paths: refreshEndpoints,
           shallowFetch: true
         }
         await this.fetcher.fetchBatch(fetchBathEvent)
       }
       if (event.requestCompleteFn) {
-        await event.requestCompleteFn(resource)
+        await event.requestCompleteFn(resource as CwaResource|undefined)
       }
       if ('data' in event) {
         this.saveResource({
@@ -176,7 +185,6 @@ export class ResourcesManager {
       }
       return resource
     } catch (err) {
-      console.log(err)
       this.errorStore.error(event, err as FetchError<any>)
     } finally {
       unset(this.requestsInProgress, [source, id])

@@ -185,7 +185,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         for (const resource of fetchStatus.resources) {
           const resourceData = resourcesState.current.byId[resource]
           if (!resourceData) {
-            throw new Error(`The resource '${resource}' does not exist.`)
+            // the resource that was fetched previously may have now been deleted and removed from the store.
+            continue
+            // throw new Error(`The resource '${resource}' does not exist.`)
           }
 
           // Some errored results still class as successful. In fact, only server errors are really unsuccessful and would warrant a re-fetch
