@@ -3,7 +3,7 @@ import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 
 const { exposeMeta } = useCwaResourceManagerTab({
-  name: 'Static Component',
+  name: 'Template Component',
   order: DEFAULT_TAB_ORDER
 })
 
@@ -12,6 +12,6 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    Static Component
+    Position for dynamic page, add the fallback component option? + page data variable setting
   </div>
 </template>
