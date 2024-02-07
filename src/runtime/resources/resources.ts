@@ -153,6 +153,18 @@ export class Resources {
     })
   }
 
+  public isPageDataResource (iri: Ref<string|undefined>) {
+    return computed(() => {
+      if (!this.pageData?.value?.data || !iri.value) {
+        return false
+      }
+      if (getResourceTypeFromIri(iri.value) !== CwaResourceTypes.COMPONENT) {
+        return false
+      }
+      return Object.values(this.pageData.value.data).includes(iri.value)
+    })
+  }
+
   private getFetchStatusType (fetchStatus?: FetchStatus): undefined|string {
     if (!fetchStatus) {
       return

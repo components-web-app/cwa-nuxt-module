@@ -31,12 +31,17 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     $cwa.admin.eventBus.emit('componentMounted', iri.value)
   })
 
+  const defaultDisabled =
+    ops?.manager?.disabled !== undefined
+      ? ops.manager.disabled
+      : ($cwa.resources.isDataPage.value && !$cwa.resources.isPageDataResource(iri).value)
+
   const exposeMeta: CwaResourceMeta = {
     cwaResource: {
       name: ops?.name,
       styles: ops?.styles
     },
-    disableManager: ops?.manager?.disabled || proxy?.$parent?.$parent?.cwaMetaResolver
+    disableManager: defaultDisabled || proxy?.$parent?.$parent?.cwaMetaResolver
   }
 
   return {

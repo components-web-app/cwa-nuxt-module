@@ -212,7 +212,7 @@ export default class ManageableResource {
   // This will be called by the click event listener in context of this, and can be removed as well.
   // if we define with a name and call that, the `this` context will be the clicked dom element
   private clickListener (evt: MouseEvent) {
-    if (!this.currentIri?.value || !this.currentResource) {
+    if (!this.currentIri?.value || !this.currentResource || this.ops.value.disabled === true) {
       return
     }
 

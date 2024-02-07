@@ -3,7 +3,7 @@ import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 
 const { exposeMeta } = useCwaResourceManagerTab({
-  name: 'Dynamic Component',
+  name: 'Data Placeholder',
   order: DEFAULT_TAB_ORDER
 })
 

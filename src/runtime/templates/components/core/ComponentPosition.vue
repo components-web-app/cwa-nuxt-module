@@ -43,5 +43,6 @@ watchEffect(() => {
   resourceManagerOps.value.styles = component.cwaResource?.styles
   resourceManagerOps.value.disabled = !!component?.disableManager
 })
+
 useCwaResourceManageable(componentIri, resourceManagerOps)
 </script>
