@@ -1,4 +1,4 @@
-import { getCurrentInstance, onBeforeUnmount, onMounted, reactive } from 'vue'
+import { getCurrentInstance, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ComponentPublicInstance, Ref } from 'vue'
 import type { ManageableResourceOps } from '../admin/manageable-resource'
 import ManageableResource from '../admin/manageable-resource'
@@ -14,7 +14,7 @@ export const useCwaResourceManageable = (iri: Ref<string|undefined>, ops?: Manag
     throw new Error(`Cannot initialise manager for resource. Instance is not defined with iri '${iri.value}'`)
   }
 
-  const manageableResource = new ManageableResource(useProxy, useCwa(), ops || reactive({}))
+  const manageableResource = new ManageableResource(useProxy, useCwa(), ops || ref({}))
 
   onMounted(() => {
     manageableResource.init(iri)

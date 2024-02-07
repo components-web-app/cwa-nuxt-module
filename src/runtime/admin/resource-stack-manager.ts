@@ -7,7 +7,7 @@ import { storeToRefs } from 'pinia'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
-import type { StyleOptions } from './manageable-resource'
+import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
@@ -20,6 +20,7 @@ interface resourceStackItem {
   ui?: ComponentUi[],
   childIris: ComputedRef<string[]>
   styles?: ComputedRef<StyleOptions>
+  resourceOps?: ManageableResourceOps
 }
 
 // will be used to have additional properties not sent by the initial addToStack event
@@ -162,13 +163,13 @@ export default class ResourceStackManager {
 
   public get contextStack () {
     return computed(() => {
-      return this.lastContextTarget.value ? [] : this.contextResourceStack.value
+      return this.lastContextTarget.value ? [] : this.contextResourceStack.value.filter(i => !i.resourceOps?.value.disabled)
     })
   }
 
   public get resourceStack () {
     return computed(() => {
-      return this.currentClickTarget.value ? [] : this.currentResourceStack.value
+      return this.currentClickTarget.value ? [] : this.currentResourceStack.value.filter(i => !i.resourceOps?.value.disabled)
     })
   }
 
@@ -299,7 +300,7 @@ export default class ResourceStackManager {
     }
   }
 
-  public addToStack (event: AddToStackEvent|AddToStackWindowEvent, isContext?: boolean) {
+  public addToStack (event: AddToStackEvent|AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
     // stack will not have been reset
 
     const currentTarget = isContext ? this.lastContextTarget : this.currentClickTarget
@@ -341,6 +342,8 @@ export default class ResourceStackManager {
       }
       return
     }
+
+    resourceStackItem.resourceOps = resourceOps
 
     this.insertResourceStackItem(resourceStackItem as ResourceStackItem, isContext)
     currentTarget.value = clickTarget

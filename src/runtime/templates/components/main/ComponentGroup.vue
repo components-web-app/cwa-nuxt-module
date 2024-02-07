@@ -34,7 +34,15 @@ import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
 
 const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
-useCwaResourceManageable(iri)
+const manageableOps = computed(() => {
+  const disabled =
+    $cwa.resources.isDataPage.value &&
+    !$cwa.admin.resourceStackManager.isEditingLayout.value
+  return {
+    disabled
+  }
+})
+useCwaResourceManageable(iri, manageableOps)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
 

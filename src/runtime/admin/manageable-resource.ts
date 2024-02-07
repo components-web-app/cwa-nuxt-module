@@ -28,10 +28,10 @@ export type StyleOptions = {
   classes: { [name: string]: string[] }
 }
 
-export type ManageableResourceOps = {
+export type ManageableResourceOps = Ref<{
   styles?: StyleOptions
   disabled?: boolean
-}
+}>
 
 export default class ManageableResource {
   private currentIri: Ref<string|undefined>|undefined
@@ -48,15 +48,6 @@ export default class ManageableResource {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
-    watch(ops, (newOps, oldOps) => {
-      if (newOps.disabled && !oldOps.disabled) {
-        this.clear(false)
-        return
-      }
-      if (!newOps.disabled && oldOps.disabled && this.currentIri) {
-        this.init(this.currentIri)
-      }
-    })
   }
 
   // PUBLIC
@@ -97,6 +88,8 @@ export default class ManageableResource {
         // must set to undefined and not just update the reactive variable as the reactive is probably a readonly prop
         this.currentIri = undefined
       }
+
+      // todo: remove from current stack is was already added and now is disabled
     }
     this.isIriInit = false
   }
@@ -223,7 +216,7 @@ export default class ManageableResource {
       return
     }
 
-    this.$cwa.admin.resourceStackManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
+    this.$cwa.admin.resourceStackManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu', this.ops)
   }
 
   private getCurrentStackItem (clickTarget: EventTarget|null) {
@@ -237,7 +230,7 @@ export default class ManageableResource {
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
       ui: this.resourceConfig?.ui,
-      styles: computed(() => this.ops.styles),
+      styles: computed(() => this.ops.value.styles),
       childIris: this.childIris
     }
   }

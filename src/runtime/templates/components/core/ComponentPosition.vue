@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, toRef, watchEffect } from 'vue'
+import { computed, ref, toRef, watchEffect } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
@@ -16,7 +16,7 @@ import type { ManageableResourceOps } from '#cwa/runtime/admin/manageable-resour
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
 const resourceLoader = ref()
-const resourceManagerOps: ManageableResourceOps = reactive({})
+const resourceManagerOps: ManageableResourceOps = ref({})
 const iriRef = toRef(props, 'iri')
 const resource = useCwaResource(iriRef).getResource()
 useCwaResourceManageable(iriRef)
@@ -40,8 +40,8 @@ watchEffect(() => {
   if (!component) {
     return
   }
-  resourceManagerOps.styles = component.cwaResource?.styles
-  resourceManagerOps.disabled = !!component?.disableManager
+  resourceManagerOps.value.styles = component.cwaResource?.styles
+  resourceManagerOps.value.disabled = !!component?.disableManager
 })
 useCwaResourceManageable(componentIri, resourceManagerOps)
 </script>

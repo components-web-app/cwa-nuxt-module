@@ -7,7 +7,11 @@ const $cwa = useCwa()
 const props = defineProps<{ index: number, rootWidth?: number, useCurrentStack?: boolean }>()
 defineEmits(['click'])
 
-const stack = computed(() => props.useCurrentStack ? $cwa.admin.resourceStackManager.resourceStack.value : $cwa.admin.resourceStackManager.contextStack.value)
+const stack = computed(() => {
+  return props.useCurrentStack
+    ? $cwa.admin.resourceStackManager.resourceStack.value
+    : $cwa.admin.resourceStackManager.contextStack.value
+})
 
 const stackItem = computed(() => {
   return stack.value[props.index]
