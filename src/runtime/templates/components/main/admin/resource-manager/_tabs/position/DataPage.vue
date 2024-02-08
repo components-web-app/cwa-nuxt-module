@@ -55,8 +55,8 @@ function selectComponent () {
           Add Component ( Todo )
         </CwaUiFormButton>
       </div>
-      <div>
-        {{ resource?.data?._metadata.staticComponent ? 'Edit' : 'Add' }} fallback component?
+      <div class="cwa-text-sm">
+        <span class="cwa-text-stone-400">Edit this position or fallback component?</span>
         <a href="#" @click.prevent="goToTemplate">
           Go to page dynamic page
         </a>

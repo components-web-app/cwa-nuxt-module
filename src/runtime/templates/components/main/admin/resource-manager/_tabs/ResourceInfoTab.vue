@@ -44,7 +44,7 @@ const isDeleteEnabled = computed(() => {
   if (!iri.value) {
     return false
   }
-  return !$cwa.resources.isDataPage || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
+  return !$cwa.resources.isDataPage.value || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
 })
 </script>
 
