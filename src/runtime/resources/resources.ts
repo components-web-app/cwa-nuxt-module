@@ -1,5 +1,4 @@
-import { computed } from 'vue'
-import type { ComputedRef } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
@@ -9,7 +8,6 @@ import {
   CwaResourceTypes,
   getResourceTypeFromIri
 } from './resource-utils'
-import type ResourceStackManager from '#cwa/runtime/admin/resource-stack-manager'
 
 interface PageLoadStatus {
   resources: (string|undefined)[]
@@ -20,7 +18,7 @@ interface PageLoadStatus {
 
 export class Resources {
   // eslint-disable-next-line no-useless-constructor
-  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore, private readonly resourceManager: ResourceStackManager) {
+  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore) {
   }
 
   public get currentIds () {
@@ -153,15 +151,15 @@ export class Resources {
     })
   }
 
-  public isPageDataResource (iri: Ref<string|undefined>) {
+  public isPageDataResource (iri: string) {
     return computed(() => {
-      if (!this.pageData?.value?.data || !iri.value) {
+      if (!this.pageData?.value?.data || !iri) {
         return false
       }
-      if (getResourceTypeFromIri(iri.value) !== CwaResourceTypes.COMPONENT) {
+      if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
         return false
       }
-      return Object.values(this.pageData.value.data).includes(iri.value)
+      return Object.values(this.pageData.value.data).includes(iri)
     })
   }
 

@@ -54,13 +54,13 @@ export default class Cwa {
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
     this.storage = new Storage(this.options.storeName)
-    this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher)
-    this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher, this.admin.resourceStackManager)
+    this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
+    this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources)
     this.auth = new Auth(
       this.cwaFetch,
       this.mercure,

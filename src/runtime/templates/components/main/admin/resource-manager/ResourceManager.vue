@@ -85,10 +85,7 @@ function clickHandler (e: MouseEvent, type: 'page'|'layout') {
 }
 
 function completeStack (e: MouseEvent, type: undefined|'page'|'layout', isContext: boolean = false) {
-  if (type) {
-    $cwa.admin.resourceStackManager.isLayoutStack.value = type === 'layout'
-  }
-  $cwa.admin.resourceStackManager.addToStack({ clickTarget: e.target }, isContext)
+  $cwa.admin.resourceStackManager.completeStack({ clickTarget: e.target }, isContext, type)
 }
 
 function selectTab (index: number) {

@@ -131,10 +131,9 @@ const ssrPositionHasPartialData = computed(() => {
   // error caused by position and component both re-fetching at the same time. We get a scheduler flush issue - 'Cannot read properties of null (reading 'parentNode')'
   // occurs if the component only has a draft version and on server load, then client-side tries to refresh the component and the position at the same time
   return resource.value?.apiState.ssr &&
-    $cwa.auth.user &&
+    !!$cwa.auth.user &&
     getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
-    $cwa.resources.usesPageTemplate &&
-    !$cwa.resources.isDataPage
+    $cwa.resources.isDynamicPage.value
 })
 
 const refetchPublishedSsrResourceToResolveDraft = computed(() => {
