@@ -26,6 +26,9 @@ export default class Admin {
   }
 
   public toggleEdit (editing?: boolean): void {
+    if (editing === false || (editing === undefined && this.isEditing)) {
+      this.resourceStackManager.completeStack({ clickTarget: window }, false)
+    }
     this.adminStore.toggleEdit(editing)
   }
 
