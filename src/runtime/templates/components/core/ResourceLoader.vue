@@ -133,7 +133,7 @@ const ssrPositionHasPartialData = computed(() => {
   return resource.value?.apiState.ssr &&
     !!$cwa.auth.user &&
     getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
-    $cwa.resources.isDynamicPage.value
+    $cwa.resources.usesPageTemplate.value
 })
 
 const refetchPublishedSsrResourceToResolveDraft = computed(() => {

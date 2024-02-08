@@ -20,7 +20,7 @@ interface _ResourceStackItem {
   managerTabs?: ManagerTab[],
   ui?: ComponentUi[],
   childIris: ComputedRef<string[]>
-  styles?: ComputedRef<StyleOptions>
+  styles?: ComputedRef<StyleOptions|undefined>
   resourceOps?: ManageableResourceOps
 }
 

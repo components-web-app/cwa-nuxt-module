@@ -31,12 +31,15 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     $cwa.admin.eventBus.emit('componentMounted', iri.value)
   })
 
+  // @ts-ignore-next-line
+  const disableManager = ops?.manager?.disabled || proxy?.$parent?.$parent?.cwaMetaResolver
+
   const exposeMeta: CwaResourceMeta = {
     cwaResource: {
       name: ops?.name,
       styles: ops?.styles
     },
-    disableManager: ops?.manager?.disabled || proxy?.$parent?.$parent?.cwaMetaResolver
+    disableManager
   }
 
   return {

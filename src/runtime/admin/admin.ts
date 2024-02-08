@@ -6,6 +6,7 @@ import { Resources } from '#cwa/runtime/resources/resources'
 
 type Events = {
   componentMounted: string
+  selectResource: string
 }
 
 export default class Admin {

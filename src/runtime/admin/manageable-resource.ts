@@ -47,6 +47,7 @@ export default class ManageableResource {
   ) {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
+    this.selectResourceListener = this.selectResourceListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
   }
 
@@ -57,6 +58,7 @@ export default class ManageableResource {
     this.clear(false)
     this.currentIri = iri
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
+    this.$cwa.admin.eventBus.on('selectResource', this.selectResourceListener)
     this.unwatchCurrentIri = watch(this.currentIri, this.initNewIri.bind(this), {
       immediate: true,
       flush: 'post'
@@ -80,6 +82,7 @@ export default class ManageableResource {
     this.domElements.value = []
     if (!soft) {
       this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
+      this.$cwa.admin.eventBus.off('selectResource', this.selectResourceListener)
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
@@ -113,6 +116,12 @@ export default class ManageableResource {
     if (iriIsChild()) {
       this.removeClickEventListeners()
       this.addClickEventListeners()
+    }
+  }
+
+  private selectResourceListener (iri: string) {
+    if (iri === this.currentIri?.value) {
+      this.triggerClick()
     }
   }
 
@@ -196,10 +205,14 @@ export default class ManageableResource {
     }
     // Once click event listeners are added, if this is a new resource, select it
     if (this.domElements.value.length && this.currentIri?.value === NEW_RESOURCE_IRI) {
-      const firstDomElement = this.domElements.value[0]
-      const clickEvent = new Event('click', { bubbles: true })
-      firstDomElement.dispatchEvent(clickEvent)
+      this.triggerClick()
     }
+  }
+
+  private triggerClick () {
+    const firstDomElement = this.domElements.value[0]
+    const clickEvent = new Event('click', { bubbles: true })
+    firstDomElement.dispatchEvent(clickEvent)
   }
 
   private removeClickEventListeners () {
