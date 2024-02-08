@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 
@@ -39,6 +39,13 @@ async function handleDelete () {
   $cwa.admin.toggleEdit(false)
   disableButton.value = false
 }
+
+const isDeleteEnabled = computed(() => {
+  if (!iri.value) {
+    return false
+  }
+  return !$cwa.resources.isDataPage || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
+})
 </script>
 
 <template>
@@ -46,7 +53,7 @@ async function handleDelete () {
     <div class="cwa-text-sm">
       {{ iri }}
     </div>
-    <div>
+    <div v-if="isDeleteEnabled">
       <CwaUiFormButton
         color="grey"
         button-class="cwa-min-w-[100px]"

@@ -367,7 +367,7 @@ export default class ResourceStackManager {
     }
   }
 
-  private isComponentGroupDisabled (iri: string): boolean {
+  public isComponentGroupDisabled (iri: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP) {
       return false
     }
@@ -375,7 +375,7 @@ export default class ResourceStackManager {
     return this.resources.isDataPage.value && !this.isLayoutStack.value
   }
 
-  private isComponentDisabled (iri: string): boolean {
+  public isComponentDisabled (iri: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
       return false
     }
