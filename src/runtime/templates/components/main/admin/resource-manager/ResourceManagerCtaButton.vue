@@ -71,16 +71,30 @@ const buttonOptions = computed(() => {
     return ops
   }
 
-  if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
-    ops.push([
-      { label: 'Add Before', value: 'add-before' },
-      { label: 'Add After', value: 'add-after' }
-    ])
-  } else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
-    ops.push([
-      { label: 'Add to Start', value: 'add-before' },
-      { label: 'Add to End', value: 'add-after' }
-    ])
+  if (!$cwa.resources.isDataPage.value || $cwa.admin.resourceStackManager.isEditingLayout.value) {
+    if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
+      ops.push([
+        {
+          label: 'Add Before',
+          value: 'add-before'
+        },
+        {
+          label: 'Add After',
+          value: 'add-after'
+        }
+      ])
+    } else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
+      ops.push([
+        {
+          label: 'Add to Start',
+          value: 'add-before'
+        },
+        {
+          label: 'Add to End',
+          value: 'add-after'
+        }
+      ])
+    }
   }
 
   if (resourceType.value === CwaResourceTypes.COMPONENT) {

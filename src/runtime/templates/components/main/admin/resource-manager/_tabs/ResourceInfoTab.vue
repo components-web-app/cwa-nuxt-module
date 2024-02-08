@@ -32,8 +32,8 @@ async function handleDelete () {
     endpoint: iri.value,
     refreshEndpoints: componentGroups,
     requestCompleteFn () {
-      $cwa.admin.resourceStackManager.addToStack({ clickTarget: window }, false)
-      $cwa.admin.resourceStackManager.selectStackIndex(0)
+      $cwa.admin.resourceStackManager.completeStack({ clickTarget: window }, false)
+      $cwa.admin.resourceStackManager.selectStackIndex(0, false)
     }
   })
   $cwa.admin.toggleEdit(false)

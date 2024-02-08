@@ -24,8 +24,8 @@ import {
   onBeforeUnmount
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
-import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition'
-import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader'
+import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
+import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'

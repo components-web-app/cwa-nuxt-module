@@ -7,7 +7,7 @@ import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model
 import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 
 const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
-  name: 'Dynamic Position',
+  name: 'Dynamic Component',
   order: DEFAULT_TAB_ORDER
 })
 
