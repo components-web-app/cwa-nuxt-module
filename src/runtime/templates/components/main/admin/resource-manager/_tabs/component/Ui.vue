@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { isEqual } from 'lodash-es'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import {
   useCwaResourceManagerTab
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
@@ -39,6 +38,7 @@ const uiOptions = computed(() => {
   })
   return options
 })
+
 const classOptions = computed(() => {
   const options: SelectOption[] = [{
     label: 'Default',
@@ -59,20 +59,15 @@ const classOptions = computed(() => {
 const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.value?.classes.length && !current.value?.ui?.length
 
-const uiOption = ref()
-const classOption = ref()
-
 onMounted(() => {
-  uiOption.value = uiOptions.value.find(op => op.value === uiComponentModel.model.value)
-  classOption.value = classOptions.value.find(op => isEqual(op.value, uiClassNamesModel.model.value))
-
-  watch(uiOption, (newOp) => {
-    uiComponentModel.model.value = newOp?.value
+  watch(uiComponentModel.select.model, () => {
     uiClassNamesModel.model.value = null
-    classOption.value = null
+    uiClassNamesModel.select.model.value = null
   })
-  watch(classOption, (newOp) => {
-    uiClassNamesModel.model.value = newOp?.value
+
+  watchEffect(() => {
+    uiComponentModel.select.options.value = uiOptions.value
+    uiClassNamesModel.select.options.value = classOptions.value
   })
 })
 
@@ -82,8 +77,8 @@ defineExpose(exposeMeta)
 <template>
   <div>
     <div class="cwa-flex cwa-space-x-2">
-      <CwaUiFormSelect v-model="uiOption" :options="uiOptions" />
-      <CwaUiFormSelect v-model="classOption" :options="classOptions" />
+      <CwaUiFormSelect v-model="uiComponentModel.select.model" :options="uiComponentModel.select.options.value" />
+      <CwaUiFormSelect v-model="uiClassNamesModel.select.model" :options="uiClassNamesModel.select.options.value" />
     </div>
     <ComponentMetaResolver v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
   </div>

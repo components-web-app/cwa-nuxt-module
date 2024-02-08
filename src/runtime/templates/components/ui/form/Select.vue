@@ -43,7 +43,7 @@ const ops = {
   }
 }
 
-const selectedOption = computed(() => props.options.find(i => isEqual(i, props.modelValue)) || props.options[0])
+const selectedOption = computed(() => props.options.find(i => isEqual(i, props.modelValue)) || props.options[0] || { label: '', value: null })
 const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper as PopperOptions))
 const [trigger, container] = usePopper(popperOps.value)
 
@@ -56,7 +56,7 @@ const [trigger, container] = usePopper(popperOps.value)
         ref="trigger"
         class="cwa-relative cwa-py-2 cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-dark-blur cwa-border-0 cwa-outline-dotted cwa-outline-1 cwa-outline-stone-700 hover:cwa-outline-stone-400 focus-visible:cwa-ring-2 focus-visible:cwa-ring-stone-600"
       >
-        <span class="cwa-block cwa-truncate">{{ selectedOption.label }}</span>
+        <span class="cwa-block cwa-truncate">{{ selectedOption?.label }}</span>
       </ListboxButton>
       <ListboxOptions
         ref="container"
