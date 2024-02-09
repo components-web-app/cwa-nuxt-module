@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, toRef, watch } from 'vue'
+import { computed, ref, toRef, watchEffect } from 'vue'
 import ManagerTab from './ManagerTab.vue'
 import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 
@@ -28,11 +28,13 @@ function resetTabs (newIndex: number = 0) {
   selectedIndex.value = newIndex
 }
 
-watch([selectedIndex, orderedTabs], ([newIndex]) => {
-  emit('click', orderedTabs.value[newIndex]._originalIndex)
+const emit = defineEmits<{(e: 'click', index: number): void }>()
+
+watchEffect(() => {
+  const newIndex = orderedTabs.value[selectedIndex.value || 0]?._originalIndex || 0
+  emit('click', newIndex)
 })
 
-const emit = defineEmits<{(e: 'click', index: number): void }>()
 defineExpose({ resetTabs })
 </script>
 
