@@ -3,7 +3,6 @@ import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
-import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 
 interface ResourceModelOps {
   longWaitThreshold?: number,
@@ -142,25 +141,15 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
 
   const model = computed<T|undefined|null>({
     get () {
-      return localValue.value || storeValue.value || null
+      if (localValue.value !== undefined) {
+        return localValue.value
+      }
+      return storeValue.value || null
     },
     set (value) {
       localValue.value = value
     }
   })
-
-  const select = (() => {
-    const selectModel = ref()
-    const options = ref<SelectOption[]>([])
-    selectModel.value = options.value.find(op => isEqual(op.value, model.value))
-    watch(selectModel, (newOp) => {
-      model.value = newOp?.value
-    })
-    return {
-      model: selectModel,
-      options
-    }
-  })()
 
   return {
     states: {
@@ -170,7 +159,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       isLongWait
     },
     resetValue,
-    model,
-    select
+    model
   }
 }

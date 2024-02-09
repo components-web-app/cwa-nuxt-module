@@ -43,7 +43,9 @@ const ops = {
   }
 }
 
-const selectedOption = computed(() => props.options.find(i => isEqual(i, props.modelValue)) || props.options[0] || { label: '', value: null })
+const selectedOption = computed(() => {
+  return props.options.find(({ value }) => isEqual(value, props.modelValue)) || props.options[0] || null
+})
 const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper as PopperOptions))
 const [trigger, container] = usePopper(popperOps.value)
 
@@ -67,7 +69,7 @@ const [trigger, container] = usePopper(popperOps.value)
           v-slot="{ active, selected }"
           :key="option.label"
           as="template"
-          :value="option"
+          :value="option.value"
           :disabled="option.disabled"
         >
           <li

@@ -8,6 +8,7 @@ import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
 import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
+import { useCwaSelect } from '#cwa/runtime/composables/cwa-select'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
@@ -20,6 +21,8 @@ const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
 const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
   debounceTime: 0
 })
+const uiSelect = useCwaSelect(uiComponentModel.model)
+const classNamesSelect = useCwaSelect(uiClassNamesModel.model)
 
 const componentMeta = ref<CwaResourceMeta[]>([])
 
@@ -60,14 +63,14 @@ const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.value?.classes.length && !current.value?.ui?.length
 
 onMounted(() => {
-  watch(uiComponentModel.select.model, () => {
+  watch(uiSelect.model, () => {
     uiClassNamesModel.model.value = null
-    uiClassNamesModel.select.model.value = null
+    classNamesSelect.model.value = undefined
   })
 
   watchEffect(() => {
-    uiComponentModel.select.options.value = uiOptions.value
-    uiClassNamesModel.select.options.value = classOptions.value
+    uiSelect.options.value = uiOptions.value
+    classNamesSelect.options.value = classOptions.value
   })
 })
 
@@ -77,8 +80,8 @@ defineExpose(exposeMeta)
 <template>
   <div>
     <div class="cwa-flex cwa-space-x-2">
-      <CwaUiFormSelect v-model="uiComponentModel.select.model" :options="uiComponentModel.select.options.value" />
-      <CwaUiFormSelect v-model="uiClassNamesModel.select.model" :options="uiClassNamesModel.select.options.value" />
+      <CwaUiFormSelect v-model="uiSelect.model.value" :options="uiSelect.options.value" />
+      <CwaUiFormSelect v-model="classNamesSelect.model.value" :options="classNamesSelect.options.value" />
     </div>
     <ComponentMetaResolver v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
   </div>
