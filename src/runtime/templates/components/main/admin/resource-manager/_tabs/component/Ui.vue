@@ -64,7 +64,7 @@ disabled.value = !current.value?.styles?.value?.classes.length && !current.value
 
 onMounted(() => {
   watch(uiSelect.model, () => {
-    uiClassNamesModel.model.value = null
+    uiClassNamesModel.model.value = undefined
     classNamesSelect.model.value = undefined
   })
 

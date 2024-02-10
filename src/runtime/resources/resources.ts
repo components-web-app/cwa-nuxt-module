@@ -159,7 +159,13 @@ export class Resources {
       if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
         return false
       }
-      return Object.values(this.pageData.value.data).includes(iri)
+      const allIris = this.findAllPublishableIris(iri)
+      for (const iri of allIris) {
+        if (Object.values(this.pageData.value.data).includes(iri)) {
+          return true
+        }
+      }
+      return false
     })
   }
 

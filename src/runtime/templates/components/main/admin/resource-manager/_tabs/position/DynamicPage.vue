@@ -16,13 +16,16 @@ const { model } = useCwaResourceModel<string>(iri, 'pageDataProperty', {
 })
 const select = useCwaSelect(model)
 
-const defaultOp = {
-  label: 'None',
-  value: null
-}
+select.options.value = [{
+  label: 'Loading...',
+  value: undefined
+}]
 
 async function loadOps () {
-  const newOptions: SelectOption[] = [defaultOp]
+  const newOptions: SelectOption[] = [{
+    label: 'None',
+    value: null
+  }]
   const docs = await $cwa.getApiDocumentation()
   const pageDataMeta = docs?.pageDataMetadata?.['hydra:member']
   if (pageDataMeta) {

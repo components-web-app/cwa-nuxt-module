@@ -91,15 +91,12 @@ export default class ManageableResource {
         // must set to undefined and not just update the reactive variable as the reactive is probably a readonly prop
         this.currentIri = undefined
       }
-
-      // todo: remove from current stack is was already added and now is disabled
     }
     this.isIriInit = false
   }
 
   // REFRESHING INITIALISATION
   private componentMountedListener (iri: string) {
-    // todo: detect if mounted component is a new component within children...
     if (iri === this.currentIri?.value) {
       this.initNewIri(iri)
     }
@@ -143,7 +140,6 @@ export default class ManageableResource {
           return []
         }
         // we don't have a real IRI for a placeholder - placeholders only currently used for positions
-        // todo: test
         if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
           nested.push(`${iri}_placeholder`)
         }
