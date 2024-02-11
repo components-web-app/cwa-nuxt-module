@@ -44,7 +44,7 @@ interface InitResourceEvent {
 }
 
 export interface CwaResourcesActionsInterface {
-  initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean): void
+  initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean): void
   resetCurrentResources (currentIds?: string[]): void
   clearResources (): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
@@ -159,12 +159,13 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
   }
 
   return {
-    initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean): void {
+    initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean): void {
       resourcesState.adding.value = {
         '@id': NEW_RESOURCE_IRI,
         '@type': resourceType,
         _metadata: {
           adding: {
+            instantAdd: !!instantAdd,
             endpoint,
             isPublishable: !!isPublishable
           },

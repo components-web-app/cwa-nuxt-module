@@ -83,11 +83,12 @@ const open = computed({
   }
 })
 
+const instantAdd = computed(() => (selectedComponent.value === 'position' || selectedResourceMeta.value?.instantAdd))
+
 const buttons = computed<ActionButton[]>(() => {
-  const instantAdd = selectedComponent.value === 'position' || selectedResourceMeta.value?.instantAdd
   return [
     {
-      label: instantAdd ? 'Add' : 'Insert',
+      label: instantAdd.value ? 'Add' : 'Insert',
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
       callbackFn: handleAdd,
@@ -171,7 +172,7 @@ function handleAdd () {
   if (!meta) {
     return
   }
-  $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable)
+  $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

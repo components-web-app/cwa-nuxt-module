@@ -133,11 +133,11 @@ export default class ResourceStackManager {
     }
   }
 
-  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable?: boolean) {
+  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean) {
     if (!this._addResourceEvent.value) {
       return
     }
-    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable)
+    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd)
   }
 
   public clearAddResource () {

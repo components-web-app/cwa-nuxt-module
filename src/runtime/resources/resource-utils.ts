@@ -18,6 +18,7 @@ export interface CwaResource {
   uiComponent?: string
   _metadata: {
     adding?: {
+      instantAdd: boolean
       endpoint: string
       isPublishable: boolean
     }
