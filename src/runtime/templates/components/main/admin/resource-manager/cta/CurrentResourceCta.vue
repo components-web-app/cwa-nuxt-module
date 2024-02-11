@@ -89,7 +89,7 @@ function handleManagerCtaClick (value?: ModelValue) {
   if (typeof value === 'string') {
     if (['add-before', 'add-after'].includes(value)) {
       const addAfter = value === 'add-after'
-      $cwa.admin.resourceStackManager.initAddResource(props.currentIri, addAfter)
+      $cwa.resourcesManager.initAddResource(props.currentIri, addAfter, $cwa.admin.resourceStackManager.resourceStack.value)
     }
 
     if (value === 'clone') {

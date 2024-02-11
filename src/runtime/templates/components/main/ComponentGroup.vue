@@ -73,7 +73,7 @@ const showLoader = computed(() => {
 })
 
 const addingEvent = computed(() => {
-  return $cwa.admin.resourceStackManager.addResourceEvent.value
+  return $cwa.resourcesManager.addResourceEvent.value
 })
 
 const hasAddingPosition = computed(() => {
@@ -82,8 +82,8 @@ const hasAddingPosition = computed(() => {
 
 const componentPositions = computed(() => {
   const savedPositions: string[] = resource.value?.data?.componentPositions
-  const addingResource = $cwa.resources.newResource.value
-  if (!addingResource || !hasAddingPosition.value || !addingEvent.value) {
+  const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
+  if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value) {
     return savedPositions
   }
 

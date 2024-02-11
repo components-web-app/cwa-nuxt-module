@@ -1,5 +1,5 @@
 <template>
-  <DialogBox v-model="open" title="Add Component" :buttons="buttons">
+  <DialogBox v-model="open" title="Add Component" :buttons="buttons" :is-loading="dialogLoading">
     <Spinner v-if="loadingComponents" :show="true" />
     <template v-else-if="displayData">
       <div class="cwa-flex cwa-space-x-4">
@@ -70,25 +70,37 @@ interface DisplayDataI {
 const displayData = ref<DisplayDataI>()
 const selectedComponent = ref<string|undefined>()
 
-const addResourceEvent = computed(() => $cwa.admin.resourceStackManager.addResourceEvent.value)
+const addResourceEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
+
+const isInstantAddResourceSaved = computed(() => {
+  return !!$cwa.resources.newResource.value?.data?._metadata.adding?.instantAdd
+})
+const dialogLoading = ref(false)
+
+watch(isInstantAddResourceSaved, (newlySaved) => {
+  if (!newlySaved) {
+    return
+  }
+  dialogLoading.value = true
+})
 
 const open = computed({
   get () {
-    return !!addResourceEvent.value && !$cwa.resources.newResource.value
+    return !!addResourceEvent.value && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
   },
   set (value: boolean) {
     if (!value) {
-      $cwa.admin.resourceStackManager.clearAddResource()
+      $cwa.resourcesManager.clearAddResource()
     }
   }
 })
 
-const instantAdd = computed(() => (selectedComponent.value === 'position' || selectedResourceMeta.value?.instantAdd))
+const instantAdd = computed(() => (selectedComponent.value === 'position' || !!selectedResourceMeta.value?.instantAdd))
 
 const buttons = computed<ActionButton[]>(() => {
   return [
     {
-      label: instantAdd.value ? 'Add' : 'Insert',
+      label: instantAdd.value ? 'Add Now' : 'Insert',
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
       callbackFn: handleAdd,
@@ -172,7 +184,7 @@ function handleAdd () {
   if (!meta) {
     return
   }
-  $cwa.admin.resourceStackManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value)
+  $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

@@ -159,15 +159,15 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
   }
 
   return {
-    initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean): void {
+    initNewResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean): void {
       resourcesState.adding.value = {
         '@id': NEW_RESOURCE_IRI,
         '@type': resourceType,
         _metadata: {
           adding: {
-            instantAdd: !!instantAdd,
+            instantAdd,
             endpoint,
-            isPublishable: !!isPublishable
+            isPublishable
           },
           persisted: false
         }

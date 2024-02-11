@@ -3,7 +3,6 @@ import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { consola as logger } from 'consola'
 import type { App } from 'vue/dist/vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import { storeToRefs } from 'pinia'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
@@ -49,7 +48,6 @@ export default class ResourceStackManager {
   public readonly showManager: Ref<boolean> = ref(false)
   private readonly isLayoutStack: Ref<boolean> = ref(false)
   private readonly _isEditingLayout: Ref<boolean> = ref(false)
-  private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
   private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly previousResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
@@ -74,80 +72,6 @@ export default class ResourceStackManager {
     await nextTick()
     this.scrollIntoView()
     this.createFocusComponent()
-  }
-
-  public async initAddResource (targetIri: string, addAfter: boolean) {
-    type BaseEvent = {
-      targetIri: string
-      addAfter: boolean
-    }
-    const initEvent: BaseEvent = {
-      targetIri,
-      addAfter
-    }
-
-    const findClosestResourceByType = (type: CwaResourceTypes): string => {
-      const stack = this.resourceStack.value
-      for (const stackItem of stack) {
-        if (getResourceTypeFromIri(stackItem.iri) === type) {
-          return stackItem.iri
-        }
-      }
-      throw new Error(`Could not find a resource with type '${type}' in the stack`)
-    }
-
-    const findClosestPosition = (event: BaseEvent): string|undefined => {
-      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
-        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
-      }
-      return findPositionFromGroupEvent(event)
-    }
-
-    const findPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
-      const resource = this.resourcesStore.current.byId?.[event.targetIri]
-      const positions = resource?.data?.componentPositions
-      if (!positions || !positions.length) {
-        return
-      }
-      if (event.addAfter) {
-        return positions[positions.length - 1]
-      } else {
-        return positions[0]
-      }
-    }
-
-    const closestPosition = findClosestPosition(initEvent)
-    const closestGroup = findClosestResourceByType(CwaResourceTypes.COMPONENT_GROUP)
-
-    if (!await this.confirmDiscardAddingResource()) {
-      return
-    }
-
-    this._addResourceEvent.value = {
-      targetIri,
-      addAfter,
-      closest: {
-        position: closestPosition,
-        group: closestGroup
-      }
-    }
-  }
-
-  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean) {
-    if (!this._addResourceEvent.value) {
-      return
-    }
-    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd)
-  }
-
-  public clearAddResource () {
-    this._addResourceEvent.value = undefined
-    const { adding } = storeToRefs(this.resourcesStore)
-    adding.value = undefined
-  }
-
-  public get addResourceEvent () {
-    return this._addResourceEvent
   }
 
   public get isEditingLayout () {
@@ -247,25 +171,6 @@ export default class ResourceStackManager {
     if (cachedNewStack) {
       this.currentResourceStack.value = cachedNewStack
     }
-    return true
-  }
-
-  public async confirmDiscardAddingResource () {
-    if (!this._addResourceEvent.value) {
-      return true
-    }
-    const alertData = {
-      title: 'Discard new resource?',
-      content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>'
-    }
-    // @ts-ignore-next-line
-    const dialog = createConfirmDialog(ConfirmDialog)
-    const { isCanceled } = await dialog.reveal(alertData)
-
-    if (isCanceled) {
-      return false
-    }
-    this.clearAddResource()
     return true
   }
 

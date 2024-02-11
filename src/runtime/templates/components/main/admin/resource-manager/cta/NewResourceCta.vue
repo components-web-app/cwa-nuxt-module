@@ -29,7 +29,7 @@ const buttonOptions = computed(() => {
   return ops
 })
 
-const addEvent = computed(() => $cwa.admin.resourceStackManager.addResourceEvent.value)
+const addEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
 
 const groupResource = computed(() => {
   if (!addEvent.value) {
@@ -127,7 +127,7 @@ async function addResourceAction (publish?: boolean) {
     data: postData,
     refreshEndpoints,
     requestCompleteFn () {
-      $cwa.admin.resourceStackManager.clearAddResource()
+      $cwa.resourcesManager.clearAddResource()
     }
   })
 }
@@ -139,7 +139,7 @@ async function handleManagerCtaClick (value?: ModelValue) {
   }
 
   if (value === 'add-discard') {
-    await $cwa.admin.resourceStackManager.confirmDiscardAddingResource()
+    await $cwa.resourcesManager.confirmDiscardAddingResource()
     return
   }
 
