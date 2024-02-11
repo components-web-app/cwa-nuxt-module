@@ -10,7 +10,7 @@ import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import type { ManagerTab } from '#cwa/module'
 import ResourceManagerCtaButton
-  from '#cwa/runtime/templates/components/main/admin/resource-manager/ResourceManagerCtaButton.vue'
+  from '#cwa/runtime/templates/components/main/admin/resource-manager/cta/ResourceManagerCtaButton.vue'
 import AddComponentDialog
   from '#cwa/runtime/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 
