@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
@@ -77,11 +77,21 @@ const isInstantAddResourceSaved = computed(() => {
 })
 const dialogLoading = ref(false)
 
-watch(isInstantAddResourceSaved, (newlySaved) => {
+watch(isInstantAddResourceSaved, async (newlySaved) => {
   if (!newlySaved) {
     return
   }
   dialogLoading.value = true
+  try {
+    const newResource = await $cwa.resourcesManager.addResourceAction()
+    if (newResource) {
+      await nextTick(() => {
+        $cwa.admin.eventBus.emit('selectResource', newResource['@id'])
+      })
+    }
+  } finally {
+    dialogLoading.value = false
+  }
 })
 
 const open = computed({

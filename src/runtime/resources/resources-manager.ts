@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import _mergeWith from 'lodash/mergeWith'
 import _isArray from 'lodash/isArray'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import { DateTime } from 'luxon'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -321,6 +322,118 @@ export class ResourcesManager {
     }
     this.clearAddResource()
     return true
+  }
+
+  addResourceAction (publish?: boolean) {
+    const addEvent = this._addResourceEvent.value
+    if (!addEvent) {
+      throw new Error('Cannot add resource. No addResource event is present')
+    }
+    const resource = this.resourcesStore.getResource(NEW_RESOURCE_IRI)
+    const data = resource?.data
+    if (!data) {
+      throw new Error('Cannot add resource. No new resource exists in the store')
+    }
+    const addingMeta = resource.data?._metadata.adding
+    if (!addingMeta) {
+      throw new Error('Cannot add resource. There was no adding metadata on the new resource in the store.')
+    }
+
+    const refreshEndpoints = [addEvent.closest.group]
+
+    const positionIri = this.getDissectPositionIri()
+
+    // If we are not adding a position, we will create the component with a position at the same time
+    if (data['@type'] !== 'ComponentPosition') {
+      data.componentPositions = [this.createNewComponentPosition(positionIri)]
+    }
+
+    refreshEndpoints.push(...this.getRefreshPositions(positionIri))
+
+    if (publish !== undefined) {
+      data.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
+    }
+
+    const postData: Omit<CwaResource, '@id'|'@type'> = { ...data, '@id': undefined, '@type': undefined }
+
+    return this.createResource({
+      endpoint: addingMeta.endpoint,
+      data: postData,
+      refreshEndpoints,
+      requestCompleteFn: () => {
+        this.clearAddResource()
+      }
+    })
+  }
+
+  private getRefreshPositions (positionIri?: string): string[] {
+    const refreshPositions: string[] = []
+    if (!positionIri) {
+      return refreshPositions
+    }
+    const groupPositions = this.groupResourcePositions
+    if (groupPositions) {
+      const currentPositions: string[] | undefined = groupPositions
+      if (currentPositions) {
+        const index = currentPositions.indexOf(positionIri)
+        if (index !== -1) {
+          const positionsAfterInsert = groupPositions.slice(index)
+          if (positionsAfterInsert && positionsAfterInsert.length) {
+            refreshPositions.push(...positionsAfterInsert)
+          }
+        }
+      }
+    }
+    return refreshPositions
+  }
+
+  private createNewComponentPosition (positionIri?: string) {
+    const addEvent = this._addResourceEvent.value
+    if (!addEvent) {
+      throw new Error('Cannot create a new component position. There is no adding event')
+    }
+    const positionResource = positionIri ? this.resourcesStore.getResource(positionIri) : undefined
+    const componentPosition: { componentGroup: string, sortValue: number } = {
+      componentGroup: addEvent.closest.group,
+      sortValue: 0
+    }
+    if (positionResource) {
+      const currentSortValue = positionResource.data?.sortValue
+      if (currentSortValue !== undefined) {
+        componentPosition.sortValue = addEvent.addAfter ? currentSortValue + 1 : currentSortValue
+      }
+    }
+    return componentPosition
+  }
+
+  private get groupResource () {
+    if (!this._addResourceEvent.value) {
+      return
+    }
+    return this.resourcesStore.getResource(this._addResourceEvent.value.closest.group)
+  }
+
+  private get groupResourcePositions () {
+    if (!this.groupResource) {
+      return
+    }
+    return this.groupResource.data?.componentPositions
+  }
+
+  private getDissectPositionIri () {
+    if (!this._addResourceEvent.value) {
+      return
+    }
+    if (this._addResourceEvent.value.closest.position) {
+      return this._addResourceEvent.value.closest.position
+    }
+    if (!this.groupResource) {
+      return
+    }
+    if (!this.groupResourcePositions?.length) {
+      return
+    }
+    return this._addResourceEvent.value.addAfter ? this.groupResourcePositions.value[this.groupResourcePositions.value.length - 1] : this.groupResourcePositions.value[0]
   }
 
   private get resourcesStore () {
