@@ -81,7 +81,7 @@ function clickHandler (e: MouseEvent, type: 'page'|'layout') {
     return
   }
   completeStack(e, type)
-  $cwa.admin.resourceStackManager.selectStackIndex(0)
+  $cwa.admin.resourceStackManager.selectStackIndex(0, false)
 }
 
 function completeStack (e: MouseEvent, type: undefined|'page'|'layout', isContext: boolean = false) {
@@ -150,7 +150,7 @@ defineExpose({
   >
     <div v-if="$cwa.admin.resourceStackManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
       <div class="cwa-dark-blur">
-        <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
+        <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" :props="{ iri: $cwa.admin.resourceStackManager.currentIri }" />
         <div v-if="allTabsMeta.length" ref="managerHolder">
           <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
           <div class="cwa-flex">

@@ -8,7 +8,7 @@
   <component
     v-bind="$attrs"
     :is="resolvedComponent"
-    v-else-if="!!resource?.data"
+    v-else-if="!!resource?.data && iri"
     ref="resourceComponent"
     :iri="iri"
     :class="resourceClassNames"

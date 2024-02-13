@@ -17,11 +17,17 @@ import type {
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import type { CwaResource } from './resource-utils'
-import { CwaResourceTypes, getResourceTypeFromIri } from './resource-utils'
+import {
+  CwaResourceTypes,
+  getPublishedResourceIri,
+  getPublishedResourceState,
+  getResourceTypeFromIri
+} from './resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/runtime/admin/resource-stack-manager'
+import Admin from '#cwa/runtime/admin/admin'
 
 interface DeleteApiResourceEvent {
   endpoint: string
@@ -58,7 +64,8 @@ export class ResourcesManager {
     resourcesStoreDefinition: ResourcesStore,
     fetchStatusManager: FetchStatusManager,
     errorStoreDefinition: ErrorStore,
-    private fetcher: Fetcher
+    private readonly fetcher: Fetcher,
+    private readonly admin: Admin
   ) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
@@ -149,10 +156,48 @@ export class ResourcesManager {
       return
     }
 
-    return this.doResourceRequest(event, args)
+    const currentResource = this.resourcesStore.getResource(event.endpoint)?.data
+    const currentIsDraft = getPublishedResourceState({ data: currentResource }) === false
+    let isPublishing = false
+    let existingLiveIri: string|null = null
+
+    // if we are publishing, then we are adding positions to refresh as well. Could possibly bypass this and adjust locally manually.
+    if (currentIsDraft) {
+      isPublishing = event.data.publishedAt <= DateTime.local().toUTC().toISO()
+      if (isPublishing) {
+        existingLiveIri = currentResource ? getPublishedResourceIri(currentResource) : null
+        const currentLiveResource = existingLiveIri ? this.resourcesStore.getResource(existingLiveIri)?.data : undefined
+        // if we are publishing a resource, we can refresh all the components positions as well
+        if (currentLiveResource) {
+          // publishing a new resource here
+          const updatingResourcePositions = currentLiveResource.componentPositions
+          if (updatingResourcePositions) {
+            const existingRefreshEndpoints = event.refreshEndpoints || []
+            event.refreshEndpoints = [...existingRefreshEndpoints, ...updatingResourcePositions]
+          }
+        }
+      }
+    }
+
+    const postRequestFn = (resource: CwaResource|undefined) => {
+      // if we have just published a resource, remove the old draft and turn off edit mode
+      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== event.endpoint) {
+        this.admin.toggleEdit(false)
+        this.removeResource({ resource: event.endpoint })
+        return
+      }
+
+      // if we have just done an update that creates a new draft, we need to select the draft
+      const responseId = resource?.['@id']
+      if (responseId && responseId !== event.endpoint) {
+        this.admin.resourceStackManager.forcePublishedVersion.value = false
+      }
+    }
+
+    return this.doResourceRequest(event, args, postRequestFn)
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions]) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
 
@@ -176,6 +221,9 @@ export class ResourcesManager {
           shallowFetch: true
         }
         await this.fetcher.fetchBatch(fetchBathEvent)
+      }
+      if (postRequestFn) {
+        await postRequestFn(resource as CwaResource|undefined)
       }
       if (event.requestCompleteFn) {
         await event.requestCompleteFn(resource as CwaResource|undefined)

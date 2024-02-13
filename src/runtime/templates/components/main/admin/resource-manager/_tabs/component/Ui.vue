@@ -24,7 +24,7 @@ const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
 const uiSelect = useCwaSelect(uiComponentModel.model)
 const classNamesSelect = useCwaSelect(uiClassNamesModel.model)
 
-const componentMeta = ref<CwaResourceMeta[]>([])
+const componentMeta = ref<(CwaResourceMeta|null)[]>([])
 
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
@@ -34,8 +34,9 @@ const uiOptions = computed(() => {
     value: null
   }]
   componentMeta.value.forEach((meta, index) => {
+    // it seems meta can be null when re-mounting the meta resolver when changing to a draft from live (editing)
     options.push({
-      label: meta.cwaResource.name || current.value?.ui?.[index] || 'Unknown',
+      label: meta?.cwaResource.name || current.value?.ui?.[index] || 'Unknown',
       value: current.value?.ui?.[index]
     })
   })
@@ -83,6 +84,6 @@ defineExpose(exposeMeta)
       <CwaUiFormSelect v-model="uiSelect.model.value" :options="uiSelect.options.value" />
       <CwaUiFormSelect v-model="classNamesSelect.model.value" :options="classNamesSelect.options.value" />
     </div>
-    <ComponentMetaResolver v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
+    <ComponentMetaResolver v-if="iri" v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
   </div>
 </template>
