@@ -5,10 +5,10 @@ import {
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
-import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
 import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 import { useCwaSelect } from '#cwa/runtime/composables/cwa-select'
+import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataResolver'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
@@ -76,6 +76,21 @@ onMounted(() => {
 })
 
 defineExpose(exposeMeta)
+
+const components = computed(() => {
+  return current.value?.ui
+})
+
+const resolverProps = computed(() => {
+  return {
+    iri: iri.value
+  }
+})
+useDataResolver(componentMeta, {
+  components,
+  props: resolverProps
+})
+
 </script>
 
 <template>
@@ -84,6 +99,5 @@ defineExpose(exposeMeta)
       <CwaUiFormSelect v-model="uiSelect.model.value" :options="uiSelect.options.value" />
       <CwaUiFormSelect v-model="classNamesSelect.model.value" :options="classNamesSelect.options.value" />
     </div>
-    <ComponentMetaResolver v-if="iri" v-model="componentMeta" :components="current?.ui" :props="{ iri }" />
   </div>
 </template>

@@ -59,6 +59,8 @@ export default class ResourceStackManager {
   private focusComponent: App|undefined
   private focusWrapper: HTMLElement|undefined
   private focusProxy: ComponentPublicInstance|undefined
+  private _currentStackItem: ComputedRef<undefined | ResourceStackItem>|undefined
+  private _currentIri: ComputedRef<string|undefined>|undefined
 
   constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
     watch(() => this.isEditing, this.listenEditModeChange.bind(this))
@@ -107,35 +109,41 @@ export default class ResourceStackManager {
   }
 
   public get currentStackItem () {
-    return computed(() => {
-      if (!this.showManager.value) {
-        return
-      }
-      // processing new stack, keep returning previous
-      if (this.currentClickTarget.value) {
-        return this.cachedCurrentStackItem.value
-      }
-      // currentResourceStack is a shallowRef and an array, unless the length changes, it basically doesn't trigger for
-      // this computed variable to update. this is an issue when replacing the stack item
-      return this.currentClickTarget.value ? undefined : this.currentResourceStack.value[0]
-    })
+    if (!this._currentStackItem) {
+      this._currentStackItem = computed(() => {
+        if (!this.showManager.value) {
+          return
+        }
+        // processing new stack, keep returning previous
+        if (this.currentClickTarget.value) {
+          return this.cachedCurrentStackItem.value
+        }
+        // currentResourceStack is a shallowRef and an array, unless the length changes, it basically doesn't trigger for
+        // this computed variable to update. this is an issue when replacing the stack item
+        return this.currentClickTarget.value ? undefined : this.currentResourceStack.value[0]
+      })
+    }
+    return this._currentStackItem
   }
 
   public get currentIri () {
-    return computed(() => {
-      const currentStackItem = this.currentStackItem.value
-      if (!currentStackItem) {
-        return
-      }
-      const stackIri = currentStackItem.iri
-      if (this.forcePublishedVersion.value === undefined) {
-        return stackIri
-      }
-      if (this.forcePublishedVersion.value) {
-        return this.resourcesStore.findPublishedComponentIri(stackIri)
-      }
-      return this.resourcesStore.findDraftComponentIri(stackIri)
-    })
+    if (!this._currentIri) {
+      this._currentIri = computed(() => {
+        const currentStackItem = this.currentStackItem.value
+        if (!currentStackItem) {
+          return
+        }
+        const stackIri = currentStackItem.iri
+        if (this.forcePublishedVersion.value === undefined) {
+          return stackIri
+        }
+        if (this.forcePublishedVersion.value) {
+          return this.resourcesStore.findPublishedComponentIri(stackIri)
+        }
+        return this.resourcesStore.findDraftComponentIri(stackIri)
+      })
+    }
+    return this._currentIri
   }
 
   public resetStack (isContext?: boolean) {

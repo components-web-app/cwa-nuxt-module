@@ -7,12 +7,12 @@ import CwaAdminResourceManagerContextMenu from './_parts/CwaResourceManagerConte
 import { useCwa } from '#imports'
 import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
-import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import type { ManagerTab } from '#cwa/module'
 import ResourceManagerCtaButton
   from '#cwa/runtime/templates/components/main/admin/resource-manager/cta/ResourceManagerCtaButton.vue'
 import AddComponentDialog
   from '#cwa/runtime/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
+import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataResolver'
 
 const $cwa = useCwa()
 const currentStackItem = $cwa.admin.resourceStackManager.currentStackItem
@@ -131,6 +131,16 @@ watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () 
   flush: 'post'
 })
 
+const resolverProps = computed(() => {
+  return {
+    iri: currentStackItem.value?.iri
+  }
+})
+useDataResolver(allTabsMeta, {
+  components: currentManagerTabs,
+  props: resolverProps
+})
+
 defineExpose({
   clickHandler,
   contextMenuHandler,
@@ -150,7 +160,6 @@ defineExpose({
   >
     <div v-if="$cwa.admin.resourceStackManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
       <div class="cwa-dark-blur">
-        <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" :props="{ iri: $cwa.admin.resourceStackManager.currentIri }" />
         <div v-if="allTabsMeta.length" ref="managerHolder">
           <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
           <div class="cwa-flex">
