@@ -9,7 +9,7 @@
         <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
-        <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" @click="$cwa.admin.toggleEdit()">
+        <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" :loading="$cwa.resources.isLoading.value" @click="$cwa.admin.toggleEdit()">
           {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
         </CwaUiFormButton>
         <!-- this will be used when cloning a component only -->
