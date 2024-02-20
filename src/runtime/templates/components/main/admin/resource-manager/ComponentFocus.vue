@@ -33,8 +33,8 @@ const position = computed((): {
   const clearCoords = {
     top: 999999999999,
     left: 99999999999,
-    right: 0,
-    bottom: 0,
+    width: 0,
+    height: 0,
     windowSize: windowSize.value
   }
 
@@ -45,23 +45,21 @@ const position = computed((): {
     const domRect = domElement.getBoundingClientRect()
     clearCoords.top = Math.min(clearCoords.top, domRect.top)
     clearCoords.left = Math.min(clearCoords.left, domRect.left)
-    clearCoords.right = Math.max(clearCoords.right, domRect.right)
-    clearCoords.bottom = Math.max(clearCoords.bottom, domRect.bottom)
+    clearCoords.width = Math.max(clearCoords.width, domRect.width)
+    clearCoords.height = Math.max(clearCoords.height, domRect.height)
   }
 
   const addY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
   clearCoords.top += addY
-  clearCoords.bottom += addY
 
   const addX = Math.max(document.body.scrollLeft, document.documentElement.scrollLeft)
   clearCoords.left += addX
-  clearCoords.right += addX
 
   return {
     top: clearCoords.top,
     left: clearCoords.left,
-    width: clearCoords.right - clearCoords.left,
-    height: clearCoords.bottom - clearCoords.top
+    width: clearCoords.width,
+    height: clearCoords.height
   }
 })
 
