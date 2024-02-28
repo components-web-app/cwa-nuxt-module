@@ -96,7 +96,8 @@ describe('API Documentation getApiDocumentation functionality', () => {
 
   const apiDocsObject = {
     docs: 'response from https://some-domain/docs.jsonld',
-    entrypoint: 'response from /'
+    entrypoint: 'response from /',
+    pageDataMetadata: 'response from /_/page_data_metadatas'
   }
   beforeAll(() => {
     const pinia = createTestingPinia({

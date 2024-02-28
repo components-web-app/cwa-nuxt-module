@@ -51,7 +51,7 @@ vi.mock('../cwa', () => {
           off: vi.fn(),
           emit: vi.fn()
         },
-        resourceManager: {
+        resourceStackManager: {
           addToStack: vi.fn(),
           currentStackItem: ref({ iri: '/something' })
         }
@@ -98,7 +98,7 @@ function createManageableResource ($el?: DummyDom) {
   }
   const $cwa = new Cwa()
   return {
-    instance: new ManageableResource(component, $cwa, { styles: { name: ['style'] } }),
+    instance: new ManageableResource(component, $cwa, ref({ styles: { name: ['style'] } })),
     $cwa
   }
 }
@@ -412,7 +412,7 @@ describe('ManageableResource Class', () => {
         ui: 'ui',
         styles,
         childIris
-      }, false)
+      }, false, instance.ops)
     })
   })
 
