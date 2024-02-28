@@ -2,7 +2,7 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import * as vue from 'vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
@@ -33,7 +33,8 @@ const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
 const mockCwaResources = {
   getResource: vi.fn().mockImplementation(() => vue.computed(() => { return undefined })),
-  getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference')
+  getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference'),
+  newResource: vi.fn().mockImplementation(() => computed(() => undefined))
 }
 
 function createWrapper ({

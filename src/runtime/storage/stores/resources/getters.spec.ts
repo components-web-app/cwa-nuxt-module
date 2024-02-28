@@ -195,7 +195,7 @@ describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
     expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(false)
   })
 
-  test('Throws an error if the resource does not exist in the resources store', () => {
+  test('Return true if the resource does not exist in the resources store', () => {
     const currentFetch: FetchStatus = {
       path: '/success-resource',
       isPrimary: true,
@@ -214,9 +214,7 @@ describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
         }
       }
     }
-    expect(() => {
-      return getterFns.isFetchStatusResourcesResolved.value(currentFetch)
-    }).toThrowError('The resource \'does-not-exist\' does not exist')
+    expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toEqual(true)
   })
 
   test('Returns false if a resource in the fetch chain is-errored', () => {

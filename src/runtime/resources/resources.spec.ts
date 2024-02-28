@@ -7,11 +7,13 @@ import * as utils from '#cwa/runtime/resources/resource-utils'
 function createResources () {
   const mockResourcesStore = {
     useStore () {
+      const current = {
+        currentIds: [] as string[],
+        byId: {}
+      }
       return {
-        current: {
-          currentIds: [] as string[],
-          byId: {}
-        }
+        current,
+        getResource: vi.fn(id => current.byId[id])
       }
     }
   }
@@ -57,13 +59,15 @@ describe('Resources', () => {
       const mockId = 'mockedId'
       const mockResource = { test: true }
 
+      const current = {
+        byId: {
+          [mockId]: mockResource
+        },
+        currentIds: []
+      }
       resourcesStore.useStore = () => ({
-        current: {
-          byId: {
-            [mockId]: mockResource
-          },
-          currentIds: []
-        }
+        current,
+        getResource: vi.fn(id => current.byId[id])
       })
 
       expect(resources.getResource(mockId).value).toEqual(mockResource)
@@ -77,7 +81,8 @@ describe('Resources', () => {
         current: {
           byId: {},
           currentIds: []
-        }
+        },
+        getResource: vi.fn(() => undefined)
       })
 
       expect(resources.getResource(mockId).value).toBeUndefined()
@@ -91,15 +96,17 @@ describe('Resources', () => {
       const resourceB = { id: 'b', otherData: {} }
       const resourceC = { id: 'c', otherData: {} }
 
+      const current = {
+        byId: {
+          a: resourceA,
+          b: resourceB,
+          c: resourceC
+        },
+        currentIds: ['a', 'b', 'c']
+      }
       resourcesStore.useStore = () => ({
-        current: {
-          byId: {
-            a: resourceA,
-            b: resourceB,
-            c: resourceC
-          },
-          currentIds: ['a', 'b', 'c']
-        }
+        current,
+        getResource: vi.fn(id => current.byId[id])
       })
 
       expect(resources.currentResources).toEqual({
