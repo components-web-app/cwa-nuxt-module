@@ -3,6 +3,7 @@ import { describe, expect, test, vi, beforeEach, type Mock } from 'vitest'
 import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { Resources } from '../resources/resources'
 import Admin from './admin'
 import ResourceStackManager from './resource-stack-manager'
 
@@ -11,6 +12,9 @@ vi.mock('./resource-manager', () => {
     default: vi.fn()
   }
 })
+
+vi.mock('../resources/resources')
+vi.mock('./resource-stack-manager')
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
@@ -33,7 +37,7 @@ vi.mock('mitt', () => {
 })
 
 function createAdmin () {
-  return new Admin(new AdminStore('storeName'), new ResourcesStore('storeName'))
+  return new Admin(new AdminStore('storeName'), new ResourcesStore('storeName'), new Resources())
 }
 
 describe('Admin class', () => {
@@ -107,6 +111,6 @@ describe('Admin class', () => {
   test('should have component manager created', () => {
     admin = createAdmin()
 
-    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition, admin.resourcesStoreDefinition)
+    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition, admin.resourcesStoreDefinition, Resources.mock.results[0].value)
   })
 })

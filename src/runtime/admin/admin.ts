@@ -1,8 +1,8 @@
 import mitt, { type Emitter } from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { Resources } from '../resources/resources'
 import ResourceStackManager from './resource-stack-manager'
-import { Resources } from '#cwa/runtime/resources/resources'
 
 type Events = {
   componentMounted: string

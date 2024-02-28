@@ -192,14 +192,14 @@ describe('Cwa class test', () => {
   test('Resources is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Resources).toBeCalledWith(stores.resources, stores.fetcher, $cwa.admin.resourceStackManager)
+    expect(Resources).toBeCalledWith(stores.resources, stores.fetcher)
     expect($cwa.resources).toBe(Resources.mock.results[0].value)
   })
 
   test('ResourcesManager is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.results[0].value, stores.resources, FetchStatusManager.mock.results[0].value, stores.error)
+    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.results[0].value, stores.resources, FetchStatusManager.mock.results[0].value, stores.error, Fetcher.mock.results[0].value, Admin.mock.results[0].value)
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.results[0].value)
   })
 
@@ -223,7 +223,7 @@ describe('Cwa class test', () => {
   test('Admin is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Admin).toBeCalledWith(stores.admin, stores.resources)
+    expect(Admin).toBeCalledWith(stores.admin, stores.resources, Resources.mock.results[0].value)
     expect($cwa.admin).toBe(Admin.mock.results[0].value)
   })
 
