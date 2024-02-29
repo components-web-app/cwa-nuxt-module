@@ -59,7 +59,6 @@
   },
   "devDependencies": {
     "@headlessui/vue": "^1.7.19",
-    "@heroicons/vue": "^2.1.1",
     "@nuxt/kit": "^3.10.3",
     "@nuxt/module-builder": "^0.4.0",
     "@nuxt/schema": "^3.10.3",

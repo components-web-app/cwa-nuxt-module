@@ -8,7 +8,7 @@
         <div class="cwa-ml-4 cwa-flex cwa-flex-shrink-0">
           <button type="button" class="cwa-inline-flex cwa-rounded-md cwa-text-stone-400 hover:cwa-text-white cwa-transition" @click="$emit('clear')">
             <span class="cwa-sr-only">Close</span>
-            <XMarkIcon class="cwa-h-5 cwa-w-5" aria-hidden="true" />
+            <CwaUiIconXMarkIcon class="cwa-h-5 cwa-w-5" aria-hidden="true" />
           </button>
         </div>
         <svg
@@ -32,7 +32,6 @@
 </template>
 
 <script setup lang="ts">
-import { XMarkIcon } from '@heroicons/vue/20/solid'
 import { onMounted, ref } from 'vue'
 
 const emitTimeout = ref<undefined|ReturnType<typeof setTimeout>>()
