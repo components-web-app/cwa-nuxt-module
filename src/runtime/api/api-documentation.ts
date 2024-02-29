@@ -3,7 +3,9 @@ import { ref, watch } from 'vue'
 import logger from 'consola'
 import type { CwaApiDocumentationStoreInterface } from '../storage/stores/api-documentation/api-documentation-store'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
-import type { CwaApiDocumentationDataInterface } from '../storage/stores/api-documentation/state'
+import type {
+  CwaApiDocumentationDataInterface
+} from '../storage/stores/api-documentation/state'
 import CwaFetch from './fetcher/cwa-fetch'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 
@@ -136,12 +138,14 @@ export default class ApiDocumentation {
     }
     this.apiDocPromise = Promise.all([
       this.doRequest('/'),
-      this.doRequest(docsPath)
+      this.doRequest(docsPath),
+      this.doRequest('/_/page_data_metadatas')
     ]).then((responses) => {
       this.store.$patch({
         apiDocumentation: {
           entrypoint: responses[0],
-          docs: responses[1]
+          docs: responses[1],
+          pageDataMetadata: responses[2]
         }
       })
       logger.debug('New API Documentation Saved')

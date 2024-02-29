@@ -1,6 +1,6 @@
 <template>
-  <nuxt-link :to="resource.data.url" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900">
-    {{ resource.data.label }}
+  <nuxt-link :to="resource?.data?.url || '#'" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900 no-underline">
+    {{ resource?.data?.label || 'No Link Label' }}
   </nuxt-link>
 </template>
 
@@ -11,5 +11,7 @@ import { useCwaResource } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const resource = useCwaResource(toRef(props, 'iri')).getResource()
+const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+const resource = getResource()
+defineExpose(exposeMeta)
 </script>

@@ -6,17 +6,17 @@
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
           {{ $cwa.resources.page.value.data?.reference }}
         </CwaUiFormButton>
-        <path-selector v-else-if="$cwa.admin.resourceManager.showManager.value" />
+        <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
-        <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" @click="$cwa.admin.toggleEdit()">
+        <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" :loading="$cwa.resources.isLoading.value" @click="$cwa.admin.toggleEdit()">
           {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
         </CwaUiFormButton>
         <!-- this will be used when cloning a component only -->
         <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
       <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
-        <SpinnerTick :is-loading="isLoading" />
+        <SpinnerTick :is-loading="isLoading" :is-pending="!!$cwa.resources.newResource.value" />
       </div>
     </div>
     <OutdatedContentNotice class="cwa-absolute cwa-top-full cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-20" />
@@ -54,7 +54,7 @@ const highlightClass = computed(() => {
   if (!$cwa.resources.isDynamicPage.value) {
     return
   }
-  return 'cwa-shadow-orange-bottom'
+  return 'before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5 before:cwa-bg-yellow'
 })
 
 onMounted(() => {

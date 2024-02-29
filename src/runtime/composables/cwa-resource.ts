@@ -1,4 +1,4 @@
-import { computed, onMounted, getCurrentInstance } from 'vue'
+import { computed, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from './cwa'
 import type { StyleOptions } from '#cwa/runtime/admin/manageable-resource'
@@ -25,18 +25,20 @@ export interface CwaResourceMeta {
 
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
-  const proxy = getCurrentInstance()?.proxy
 
   onMounted(() => {
     $cwa.admin.eventBus.emit('componentMounted', iri.value)
   })
+
+  // @ts-ignore-next-line
+  const disableManager = !!ops?.manager?.disabled
 
   const exposeMeta: CwaResourceMeta = {
     cwaResource: {
       name: ops?.name,
       styles: ops?.styles
     },
-    disableManager: ops?.manager?.disabled || proxy?.$parent?.$parent?.cwaMetaResolver
+    disableManager
   }
 
   return {

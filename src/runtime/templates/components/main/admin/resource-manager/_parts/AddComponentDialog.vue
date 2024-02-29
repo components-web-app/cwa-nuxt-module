@@ -1,5 +1,5 @@
 <template>
-  <DialogBox v-model="open" title="Add Component" :buttons="buttons">
+  <DialogBox v-model="open" title="Add Component" :buttons="buttons" :is-loading="dialogLoading">
     <Spinner v-if="loadingComponents" :show="true" />
     <template v-else-if="displayData">
       <div class="cwa-flex cwa-space-x-4">
@@ -13,19 +13,20 @@
           >
             {{ getComponentName(component) }}
           </button>
-          <div v-if="displayData.enableDynamicPosition" class="cwa-p-2 cwa-bg-blue-600/30 cwa-rounded-lg">
+          <div v-if="displayData.enableDynamicPosition">
             <button
               :class="buttonClass"
-              :aria-selected="selectedComponent === 'position'"
-              @click="selectComponent('position')"
+              class="cwa-border-yellow cwa-border-2"
+              :aria-selected="selectedComponent === 'ComponentPosition'"
+              @click="selectComponent('ComponentPosition')"
             >
-              Dynamic Position
+              Dynamic
             </button>
           </div>
         </div>
         <div class="cwa-flex-grow cwa-w-8/12">
           <div class="cwa-mb-6 cwa-space-y-4" v-html="resourceDescription" />
-          <template v-if="selectedComponent === 'position'">
+          <template v-if="selectedComponent === 'ComponentPosition'">
             <p>[ADD INPUT FOR SELECTING THE COMPONENT DATA REFERENCE]</p>
           </template>
         </div>
@@ -35,12 +36,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
-import type { AddResourceEvent } from '#cwa/runtime/admin/resource-manager'
+import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import type {
-  ApiDocumentationComponentMetadataCollection
+  ApiDocumentationComponentMetadata
 } from '#cwa/runtime/api/api-documentation'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import type { CwaResourceMeta } from '#cwa/module'
@@ -48,10 +49,10 @@ import type { CwaResourceMeta } from '#cwa/module'
 const $cwa = useCwa()
 const loadingComponents = ref(true)
 
-const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50'
+const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50 hover:cwa-border-opacity-100 aria-selected:cwa-border-opacity-100'
 
 interface MergedComponentMetadata {
-  apiMetadata: ApiDocumentationComponentMetadataCollection
+  apiMetadata: ApiDocumentationComponentMetadata
   config: CwaResourceMeta
 }
 
@@ -69,24 +70,47 @@ interface DisplayDataI {
 const displayData = ref<DisplayDataI>()
 const selectedComponent = ref<string|undefined>()
 
-const addResourceEvent = computed(() => $cwa.admin.resourceManager.addResourceEvent.value)
+const addResourceEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
+
+const isInstantAddResourceSaved = computed(() => {
+  return !!$cwa.resources.newResource.value?.data?._metadata.adding?.instantAdd
+})
+const dialogLoading = ref(false)
+
+watch(isInstantAddResourceSaved, async (newlySaved) => {
+  if (!newlySaved) {
+    return
+  }
+  dialogLoading.value = true
+  try {
+    const newResource = await $cwa.resourcesManager.addResourceAction()
+    if (newResource) {
+      await nextTick(() => {
+        $cwa.admin.eventBus.emit('selectResource', newResource['@id'])
+      })
+    }
+  } finally {
+    dialogLoading.value = false
+  }
+})
 
 const open = computed({
   get () {
-    return !!addResourceEvent.value
+    return !!addResourceEvent.value && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
   },
   set (value: boolean) {
     if (!value) {
-      $cwa.admin.resourceManager.clearAddResource()
+      $cwa.resourcesManager.clearAddResource()
     }
   }
 })
 
+const instantAdd = computed(() => (selectedComponent.value === 'position' || !!selectedResourceMeta.value?.instantAdd))
+
 const buttons = computed<ActionButton[]>(() => {
-  const instantAdd = selectedComponent.value === 'position' || selectedResourceMeta.value?.instantAdd
   return [
     {
-      label: instantAdd ? 'Add' : 'Insert',
+      label: instantAdd.value ? 'Add Now' : 'Insert',
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
       callbackFn: handleAdd,
@@ -127,9 +151,6 @@ const selectedResourceMeta = computed(() => {
   if (!selectedComponent.value) {
     return
   }
-  if (selectedComponent.value === 'position') {
-    return $cwa.resourcesConfig?.ComponentPosition
-  }
   return $cwa.resourcesConfig?.[selectedComponent.value]
 })
 
@@ -152,7 +173,7 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
 
   const allowedComponents = findAllowedComponents(event.closest.group)
   const availableComponents = await findAvailableComponents(allowedComponents)
-  const enableDynamicPosition = !$cwa.admin.resourceManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
+  const enableDynamicPosition = !$cwa.admin.resourceStackManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
 
   return {
     event,
@@ -166,7 +187,14 @@ function findAllowedComponents (groupIri: string): undefined|string[] {
 }
 
 function handleAdd () {
-  open.value = false
+  if (!selectedComponent.value) {
+    return
+  }
+  const meta = displayData.value?.availableComponents[selectedComponent.value]
+  if (!meta) {
+    return
+  }
+  $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value)
 }
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display

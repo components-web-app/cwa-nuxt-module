@@ -2,7 +2,7 @@
 
 exports[`LoginPage > snapshots > should match snapshot IF form has errors 1`] = `
 <div
-  class="cwa-flex cwa-min-h-full cwa-flex-col cwa-justify-center cwa-py-12 sm:cwa-px-6 lg:cwa-px-8"
+  class="cwa-flex cwa-min-h-full cwa-flex-col cwa-justify-center cwa-py-12 sm:cwa-px-6 lg:cwa-px-8 cwa-bg-dark"
 >
   <div
     class="sm:cwa-mx-auto sm:cwa-w-full sm:cwa-max-w-md"
@@ -47,7 +47,7 @@ exports[`LoginPage > snapshots > should match snapshot IF form has errors 1`] = 
 
 exports[`LoginPage > snapshots > should match snapshot IF form is submitting 1`] = `
 <div
-  class="cwa-flex cwa-min-h-full cwa-flex-col cwa-justify-center cwa-py-12 sm:cwa-px-6 lg:cwa-px-8"
+  class="cwa-flex cwa-min-h-full cwa-flex-col cwa-justify-center cwa-py-12 sm:cwa-px-6 lg:cwa-px-8 cwa-bg-dark"
 >
   <div
     class="sm:cwa-mx-auto sm:cwa-w-full sm:cwa-max-w-md"

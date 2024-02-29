@@ -1,6 +1,6 @@
 import { describe, vi, test, expect } from 'vitest'
 import { ResourcesManager } from './resources-manager'
-import { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import { type CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 function createResourcesManager () {
   const mockCwaFetch = {
@@ -8,7 +8,8 @@ function createResourcesManager () {
   }
   const resourcesStoreActions = {
     saveResource: vi.fn(),
-    deleteResource: vi.fn()
+    deleteResource: vi.fn(),
+    getResource: vi.fn()
   }
   const mockResourcesStore = {
     useStore () {
@@ -160,12 +161,12 @@ describe('Resources manager', () => {
     })
   })
 
-  describe('deleteResource', () => {
-    test('should delete resource', () => {
+  describe('removeResource', () => {
+    test('should remove a resource', () => {
       const { resourcesManager, resourcesStoreActions } = createResourcesManager()
       const mockDeleteEvent = { resource: 'test' }
 
-      resourcesManager.deleteResource(mockDeleteEvent)
+      resourcesManager.removeResource(mockDeleteEvent)
 
       expect(resourcesStoreActions.deleteResource).toHaveBeenCalledWith(mockDeleteEvent)
     })

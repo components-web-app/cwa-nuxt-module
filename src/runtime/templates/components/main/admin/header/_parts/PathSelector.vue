@@ -30,7 +30,7 @@ const transitions = useTransitions()
 const isOpen = ref(false)
 const pathSelector = ref(null)
 
-const stackSize = computed(() => $cwa.admin.resourceManager.resourceStack.value.length)
+const stackSize = computed(() => $cwa.admin.resourceStackManager.resourceStack.value.length)
 const spacingStackSize = computed(() => stackSize.value - 1)
 const tOrig = computed(() => {
   if (!pathSelector.value) {
@@ -47,7 +47,7 @@ const marginTop = computed(() => {
   return spacingStackSize.value ? `calc(0px - ${spacingStackSize.value}px - ${spacingStackSize.value * 0.25}rem)` : 0
 })
 const stackItem = computed(() => {
-  return $cwa.admin.resourceManager.resourceStack.value[0]
+  return $cwa.admin.resourceStackManager.resourceStack.value[0]
 })
 const selectorWidth = computed(() => {
   // reactive to display name changing
@@ -55,7 +55,7 @@ const selectorWidth = computed(() => {
 })
 
 function selectResource (index: number) {
-  $cwa.admin.resourceManager.selectStackIndex(index)
+  $cwa.admin.resourceStackManager.selectStackIndex(index)
   isOpen.value = false
 }
 

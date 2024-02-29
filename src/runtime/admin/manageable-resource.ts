@@ -21,16 +21,17 @@ import Cwa from '../cwa'
 // appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
+import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 export type StyleOptions = {
   multiple?: boolean,
   classes: { [name: string]: string[] }
 }
 
-export type ManageableResourceOps = {
+export type ManageableResourceOps = Ref<{
   styles?: StyleOptions
   disabled?: boolean
-}
+}>
 
 export default class ManageableResource {
   private currentIri: Ref<string|undefined>|undefined
@@ -46,16 +47,8 @@ export default class ManageableResource {
   ) {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
+    this.selectResourceListener = this.selectResourceListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
-    watch(ops, (newOps, oldOps) => {
-      if (newOps.disabled && !oldOps.disabled) {
-        this.clear(false)
-        return
-      }
-      if (!newOps.disabled && oldOps.disabled && this.currentIri) {
-        this.init(this.currentIri)
-      }
-    })
   }
 
   // PUBLIC
@@ -65,6 +58,7 @@ export default class ManageableResource {
     this.clear(false)
     this.currentIri = iri
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
+    this.$cwa.admin.eventBus.on('selectResource', this.selectResourceListener)
     this.unwatchCurrentIri = watch(this.currentIri, this.initNewIri.bind(this), {
       immediate: true,
       flush: 'post'
@@ -88,6 +82,7 @@ export default class ManageableResource {
     this.domElements.value = []
     if (!soft) {
       this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
+      this.$cwa.admin.eventBus.off('selectResource', this.selectResourceListener)
       if (this.unwatchCurrentIri) {
         this.unwatchCurrentIri()
         this.unwatchCurrentIri = undefined
@@ -121,6 +116,12 @@ export default class ManageableResource {
     }
   }
 
+  private selectResourceListener (iri: string) {
+    if (iri === this.currentIri?.value) {
+      this.triggerClick()
+    }
+  }
+
   // COMPUTED FOR REFRESHING
   private get childIris (): ComputedRef<string[]> {
     return computed(() => {
@@ -139,7 +140,6 @@ export default class ManageableResource {
           return []
         }
         // we don't have a real IRI for a placeholder - placeholders only currently used for positions
-        // todo: test
         if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
           nested.push(`${iri}_placeholder`)
         }
@@ -199,6 +199,16 @@ export default class ManageableResource {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)
     }
+    // Once click event listeners are added, if this is a new resource, select it
+    if (this.domElements.value.length && this.currentIri?.value === NEW_RESOURCE_IRI) {
+      this.triggerClick()
+    }
+  }
+
+  private triggerClick () {
+    const firstDomElement = this.domElements.value[0]
+    const clickEvent = new Event('click', { bubbles: true })
+    firstDomElement.dispatchEvent(clickEvent)
   }
 
   private removeClickEventListeners () {
@@ -211,11 +221,11 @@ export default class ManageableResource {
   // This will be called by the click event listener in context of this, and can be removed as well.
   // if we define with a name and call that, the `this` context will be the clicked dom element
   private clickListener (evt: MouseEvent) {
-    if (!this.currentIri?.value || !this.currentResource) {
+    if (!this.currentIri?.value || !this.currentResource || this.ops.value.disabled === true) {
       return
     }
 
-    this.$cwa.admin.resourceManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu')
+    this.$cwa.admin.resourceStackManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu', this.ops)
   }
 
   private getCurrentStackItem (clickTarget: EventTarget|null) {
@@ -229,7 +239,7 @@ export default class ManageableResource {
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
       ui: this.resourceConfig?.ui,
-      styles: computed(() => this.ops.styles),
+      styles: computed(() => this.ops.value.styles),
       childIris: this.childIris
     }
   }

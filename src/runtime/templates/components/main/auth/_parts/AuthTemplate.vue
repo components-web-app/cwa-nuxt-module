@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-flex cwa-min-h-full cwa-flex-col cwa-justify-center cwa-py-12 sm:cwa-px-6 lg:cwa-px-8">
+  <div class="cwa-flex cwa-min-h-full cwa-flex-col cwa-justify-center cwa-py-12 sm:cwa-px-6 lg:cwa-px-8 cwa-bg-dark">
     <div class="sm:cwa-mx-auto sm:cwa-w-full sm:cwa-max-w-md">
       <CwaLogo class="cwa-mx-auto cwa-h-12 cwa-w-auto cwa-text-neutral-400" />
     </div>

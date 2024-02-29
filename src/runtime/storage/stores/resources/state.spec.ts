@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import state from './state'
 
 describe('Resources State context', () => {
@@ -15,7 +15,8 @@ describe('Resources State context', () => {
       new: reactive({
         byId: {},
         allIds: []
-      })
+      }),
+      adding: ref(undefined)
     })
   })
 })

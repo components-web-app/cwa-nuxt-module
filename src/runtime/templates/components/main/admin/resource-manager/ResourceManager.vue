@@ -7,15 +7,15 @@ import CwaAdminResourceManagerContextMenu from './_parts/CwaResourceManagerConte
 import { useCwa } from '#imports'
 import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
-import ComponentMetaResolver from '#cwa/runtime/templates/components/core/ComponentMetaResolver.vue'
 import type { ManagerTab } from '#cwa/module'
 import ResourceManagerCtaButton
-  from '#cwa/runtime/templates/components/main/admin/resource-manager/ResourceManagerCtaButton.vue'
+  from '#cwa/runtime/templates/components/main/admin/resource-manager/cta/ResourceManagerCtaButton.vue'
 import AddComponentDialog
   from '#cwa/runtime/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
+import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataResolver'
 
 const $cwa = useCwa()
-const currentStackItem = $cwa.admin.resourceManager.currentStackItem
+const currentStackItem = $cwa.admin.resourceStackManager.currentStackItem
 const spacer = ref<HTMLElement|null>(null)
 const managerHolder = ref<HTMLElement|null>(null)
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
@@ -57,7 +57,7 @@ function contextMenuHandler (e: MouseEvent, type: 'page'|'layout') {
     top: e.clientY,
     left: e.clientX
   }
-  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.resourceManager.isContextPopulating.value) {
+  if (showDefaultContext(pos) || !$cwa.admin.isEditing || !$cwa.admin.resourceStackManager.isContextPopulating.value) {
     isOpen.value = false
     return
   }
@@ -77,18 +77,15 @@ function mousedownHandler (e: MouseEvent) {
 
 function clickHandler (e: MouseEvent, type: 'page'|'layout') {
   // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
-  if (e.target !== mousedownTarget && !$cwa.admin.resourceManager.isPopulating.value) {
+  if (e.target !== mousedownTarget && !$cwa.admin.resourceStackManager.isPopulating.value) {
     return
   }
   completeStack(e, type)
-  $cwa.admin.resourceManager.selectStackIndex(0)
+  $cwa.admin.resourceStackManager.selectStackIndex(0, false)
 }
 
 function completeStack (e: MouseEvent, type: undefined|'page'|'layout', isContext: boolean = false) {
-  if (type) {
-    $cwa.admin.resourceManager.isLayoutStack.value = type === 'layout'
-  }
-  $cwa.admin.resourceManager.addToStack({ clickTarget: e.target }, isContext)
+  $cwa.admin.resourceStackManager.completeStack({ clickTarget: e.target }, isContext, type)
 }
 
 function selectTab (index: number) {
@@ -117,7 +114,7 @@ onBeforeUnmount(() => {
 })
 
 const showSpacer = computed(() => {
-  return $cwa.admin.resourceManager.showManager.value && currentStackItem
+  return $cwa.admin.resourceStackManager.showManager.value && currentStackItem
 })
 
 const selectedTab = computed(() => {
@@ -132,6 +129,16 @@ watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () 
   spacer.value.style.height = `${newHeight}px`
 }, {
   flush: 'post'
+})
+
+const resolverProps = computed(() => {
+  return {
+    iri: currentStackItem.value?.iri
+  }
+})
+useDataResolver(allTabsMeta, {
+  components: currentManagerTabs,
+  props: resolverProps
 })
 
 defineExpose({
@@ -151,9 +158,8 @@ defineExpose({
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.resourceManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
+    <div v-if="$cwa.admin.resourceStackManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
       <div class="cwa-dark-blur">
-        <ComponentMetaResolver v-model="allTabsMeta" :components="currentManagerTabs" />
         <div v-if="allTabsMeta.length" ref="managerHolder">
           <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
           <div class="cwa-flex">

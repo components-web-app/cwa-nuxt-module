@@ -8,7 +8,7 @@
   <component
     v-bind="$attrs"
     :is="resolvedComponent"
-    v-else-if="!!resource?.data"
+    v-else-if="!!resource?.data && iri"
     ref="resourceComponent"
     :iri="iri"
     :class="resourceClassNames"
@@ -131,15 +131,17 @@ const ssrPositionHasPartialData = computed(() => {
   // error caused by position and component both re-fetching at the same time. We get a scheduler flush issue - 'Cannot read properties of null (reading 'parentNode')'
   // occurs if the component only has a draft version and on server load, then client-side tries to refresh the component and the position at the same time
   return resource.value?.apiState.ssr &&
-    $cwa.auth.user &&
+    !!$cwa.auth.user &&
     getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
-    $cwa.resources.usesPageTemplate &&
-    !$cwa.resources.isDataPage
+    $cwa.resources.usesPageTemplate.value
 })
 
 const refetchPublishedSsrResourceToResolveDraft = computed(() => {
   if (getResourceTypeFromIri(props.iri) !== CwaResourceTypes.COMPONENT) {
     return false
+  }
+  if (!resource.value) {
+    return
   }
   // will always have metadata even if not auth saying whether it's published or not
   const publishableState = getPublishedResourceState(resource.value)
@@ -158,7 +160,7 @@ const isOutdated = computed(() => {
     return
   }
   const nowTime = (new Date()).getTime()
-  const timeDifference = nowTime - resource.value?.apiState.fetchedAt
+  const timeDifference = nowTime - apiState.fetchedAt
   return timeDifference > 5000
 })
 

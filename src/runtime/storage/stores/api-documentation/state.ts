@@ -47,6 +47,18 @@ export interface CwaApiDocumentationDataInterface {
       version: string
     }
   }
+  pageDataMetadata?: {
+    '@context': {
+      '@vocab': string,
+      hydra: string,
+      properties: 'PageDataMetadata/properties'
+    },
+    '@id': '/_/page_data_metadatas',
+    '@type': 'hydra:Collection',
+    'hydra:member': {
+      properties: { property: string, componentShortName: string, '@id': string, '@type': 'PageDataPropertyMetadata' }[]
+    }[]
+  }
 }
 
 export interface CwaApiDocumentationStateInterface {

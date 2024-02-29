@@ -73,7 +73,11 @@ vi.mock('./api/auth', () => {
   }
 })
 vi.mock('./api/forms')
-vi.mock('./admin/admin')
+vi.mock('./admin/admin', () => {
+  return {
+    default: vi.fn(() => ({ resourceManager: 'resourceManagerMockAsString' }))
+  }
+})
 vi.mock('./admin/navigation-guard', () => {
   return {
     default: vi.fn(() => ({
@@ -195,7 +199,7 @@ describe('Cwa class test', () => {
   test('ResourcesManager is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.results[0].value, stores.resources, FetchStatusManager.mock.results[0].value, stores.error)
+    expect(ResourcesManager).toBeCalledWith(CwaFetch.mock.results[0].value, stores.resources, FetchStatusManager.mock.results[0].value, stores.error, Fetcher.mock.results[0].value, Admin.mock.results[0].value)
     expect($cwa.resourcesManager).toBe(ResourcesManager.mock.results[0].value)
   })
 
@@ -219,7 +223,7 @@ describe('Cwa class test', () => {
   test('Admin is initialised and accessible', () => {
     const $cwa = createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Admin).toBeCalledWith(stores.admin, stores.resources)
+    expect(Admin).toBeCalledWith(stores.admin, stores.resources, Resources.mock.results[0].value)
     expect($cwa.admin).toBe(Admin.mock.results[0].value)
   })
 

@@ -84,8 +84,8 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       },
       source
     })
-    submittingValue.value = undefined
     isEqual(storeValue.value, submittingValue.value) && resetValue()
+    submittingValue.value = undefined
   }
 
   function resetValue () {
@@ -126,7 +126,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       return
     }
     const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = $cwa.admin.resourceManager.forcePublishedVersion.value !== undefined && publishableState === true
+    applyPostfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value !== undefined && publishableState === true
   })
 
   watch(applyPostfix, (newApplyPostfix) => {
@@ -134,9 +134,21 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       postfix.value = ''
       return
     }
-    postfix.value = $cwa.admin.resourceManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
+    postfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
   }, {
     immediate: true
+  })
+
+  const model = computed<T|undefined|null>({
+    get () {
+      if (localValue.value !== undefined) {
+        return localValue.value
+      }
+      return storeValue.value || null
+    },
+    set (value) {
+      localValue.value = value
+    }
   })
 
   return {
@@ -147,13 +159,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       isLongWait
     },
     resetValue,
-    model: computed<T|undefined|null>({
-      get () {
-        return localValue.value || storeValue.value || null
-      },
-      set (value) {
-        localValue.value = value
-      }
-    })
+    model
   }
 }

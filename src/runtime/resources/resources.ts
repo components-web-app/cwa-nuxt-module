@@ -1,7 +1,6 @@
-import { computed } from 'vue'
-import type { ComputedRef } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type { FetchStatus } from '../storage/stores/fetcher/state'
@@ -18,12 +17,8 @@ interface PageLoadStatus {
 }
 
 export class Resources {
-  private resourcesStoreDefinition: ResourcesStore
-  private fetcherStoreDefinition: FetcherStore
-
-  constructor (resourcesStoreDefinition: ResourcesStore, fetcherStoreDefinition: FetcherStore) {
-    this.resourcesStoreDefinition = resourcesStoreDefinition
-    this.fetcherStoreDefinition = fetcherStoreDefinition
+  // eslint-disable-next-line no-useless-constructor
+  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore) {
   }
 
   public get currentIds () {
@@ -39,7 +34,13 @@ export class Resources {
   }
 
   public getResource (id: string) {
-    return computed(() => this.resourcesStore.current.byId?.[id])
+    return computed(() => {
+      return this.resourcesStore.getResource(id)
+    })
+  }
+
+  public get newResource () {
+    return computed(() => this.resourcesStore.getResource(NEW_RESOURCE_IRI))
   }
 
   public getComponentGroupByReference (reference: string) {
@@ -51,7 +52,10 @@ export class Resources {
 
   public get currentResources () {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
-      obj[id] = this.getResource(id).value
+      const idResource = this.getResource(id).value
+      if (idResource) {
+        obj[id] = idResource
+      }
       return obj
     }, {} as {
       [key: string]: CwaCurrentResourceInterface
@@ -67,7 +71,7 @@ export class Resources {
         const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
         if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
           const pageResource = this.getResource(pageIri).value
-          if (pageResource.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+          if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
             return fetchingStatus
           }
         }
@@ -147,6 +151,24 @@ export class Resources {
     })
   }
 
+  public isPageDataResource (iri: string) {
+    return computed(() => {
+      if (!this.pageData?.value?.data || !iri) {
+        return false
+      }
+      if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
+        return false
+      }
+      const allIris = this.findAllPublishableIris(iri)
+      for (const iri of allIris) {
+        if (Object.values(this.pageData.value.data).includes(iri)) {
+          return true
+        }
+      }
+      return false
+    })
+  }
+
   private getFetchStatusType (fetchStatus?: FetchStatus): undefined|string {
     if (!fetchStatus) {
       return
@@ -180,6 +202,9 @@ export class Resources {
       return fetchStatus.path
     }
     const successResource = this.getResource(fetchStatus.path).value
+    if (!successResource) {
+      return
+    }
     switch (type) {
       case CwaResourceTypes.PAGE_DATA: {
         return successResource.data?.page
@@ -188,7 +213,7 @@ export class Resources {
         const pageData = successResource.data?.pageData
         if (pageData) {
           const pageDataResource = this.getResource(pageData).value
-          return pageDataResource.data?.page
+          return pageDataResource?.data?.page
         }
         return successResource.data?.page
       }
@@ -209,7 +234,7 @@ export class Resources {
         return fetchStatus.path
       }
       const successResource = this.getResource(fetchStatus.path).value
-      return type === CwaResourceTypes.ROUTE ? successResource.data?.pageData : undefined
+      return type === CwaResourceTypes.ROUTE ? successResource?.data?.pageData : undefined
     })
   }
 

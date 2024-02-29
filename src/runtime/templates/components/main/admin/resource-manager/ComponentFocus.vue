@@ -5,7 +5,7 @@ import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
 const props = defineProps<{
-  iri: Ref<string>
+  iri: Ref<string|undefined>
   domElements: ComputedRef<HTMLElement[]>
 }>()
 const $cwa = useCwa()
@@ -16,6 +16,9 @@ const canvas = ref<HTMLCanvasElement|undefined>()
 const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
 
 const resource = computed(() => {
+  if (!iri.value) {
+    return
+  }
   return $cwa.resources.getResource(iri.value).value
 })
 
@@ -30,8 +33,8 @@ const position = computed((): {
   const clearCoords = {
     top: 999999999999,
     left: 99999999999,
-    right: 0,
-    bottom: 0,
+    width: 0,
+    height: 0,
     windowSize: windowSize.value
   }
 
@@ -42,23 +45,21 @@ const position = computed((): {
     const domRect = domElement.getBoundingClientRect()
     clearCoords.top = Math.min(clearCoords.top, domRect.top)
     clearCoords.left = Math.min(clearCoords.left, domRect.left)
-    clearCoords.right = Math.max(clearCoords.right, domRect.right)
-    clearCoords.bottom = Math.max(clearCoords.bottom, domRect.bottom)
+    clearCoords.width = Math.max(clearCoords.width, domRect.width)
+    clearCoords.height = Math.max(clearCoords.height, domRect.height)
   }
 
   const addY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
   clearCoords.top += addY
-  clearCoords.bottom += addY
 
   const addX = Math.max(document.body.scrollLeft, document.documentElement.scrollLeft)
   clearCoords.left += addX
-  clearCoords.right += addX
 
   return {
     top: clearCoords.top,
     left: clearCoords.left,
-    width: clearCoords.right - clearCoords.left,
-    height: clearCoords.bottom - clearCoords.top
+    width: clearCoords.width,
+    height: clearCoords.height
   }
 })
 
@@ -75,11 +76,14 @@ const borderColor = computed(() => {
   if (!resource.value) {
     return
   }
+  if (resource.value.data?._metadata.adding) {
+    return 'cwa-outline-orange'
+  }
   const publishedState = getPublishedResourceState(resource.value)
   if (publishedState !== undefined) {
     return publishedState ? 'cwa-outline-green' : 'cwa-outline-orange'
   }
-  return iri.value.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
+  return iri.value?.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
 
 function updateWindowSize () {

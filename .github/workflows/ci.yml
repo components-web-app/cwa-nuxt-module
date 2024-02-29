@@ -3,8 +3,7 @@ name: ci
 on:
   push:
     branches:
-      - '**'
-      - '!main'
+      - 'nuxt3'
   pull_request:
     branches-ignore:
       - main
@@ -57,9 +56,9 @@ jobs:
         run: |
           mkdir -p coverage
           if [ "$COVERAGE" = '1' ]; then
-            pnpm run test:coverage --reporter=hanging-process
+            pnpm run test:coverage
           else
-            pnpm run test --reporter=hanging-process
+            pnpm run test
           fi
         env:
           CI: true

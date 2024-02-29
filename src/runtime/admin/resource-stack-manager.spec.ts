@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { reactive, ref } from 'vue'
-import ResourceManager from './resource-manager'
+import ResourceStackManager from './resource-stack-manager'
 
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
@@ -25,7 +25,7 @@ function createResourceManager (mockStore?: any) {
     })
   }
 
-  const manager = new ResourceManager(mockAdminStore, mockResourcesStore)
+  const manager = new ResourceStackManager(mockAdminStore, mockResourcesStore)
   return {
     manager,
     store: mockAdminStore
@@ -35,8 +35,8 @@ function createResourceManager (mockStore?: any) {
 describe('Resource Manager', () => {
   test.todo('Constructor should initialise a watcher', () => {
     // todo: mock properly and ensure watcher is initialised with the correct function handlers
-    vi.spyOn(ResourceManager.prototype, 'listenEditModeChange').mockImplementationOnce(() => {})
-    vi.spyOn(ResourceManager.prototype, 'listenCurrentIri').mockImplementationOnce(() => {})
+    vi.spyOn(ResourceStackManager.prototype, 'listenEditModeChange').mockImplementationOnce(() => {})
+    vi.spyOn(ResourceStackManager.prototype, 'listenCurrentIri').mockImplementationOnce(() => {})
     const mockStore = { state: { isEditing: true } }
     const { manager } = createResourceManager(mockStore)
     expect(manager.listenEditModeChange).toHaveBeenCalledOnce()

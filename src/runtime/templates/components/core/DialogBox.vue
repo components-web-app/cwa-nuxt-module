@@ -42,7 +42,7 @@
                     :key="`dialog-button-${button.label}`"
                     :color="button.color"
                     :button-class="button.buttonClass"
-                    :disabled="!!button.disabled"
+                    :disabled="!!button.disabled || isLoading"
                     @click="!button.disabled && (button?.callbackFn ? button.callbackFn() : setIsOpen(false))"
                   >
                     {{ button.label }}
@@ -74,7 +74,8 @@ const isOpen = defineModel<boolean>({ default: false })
 
 withDefaults(defineProps<{
   title: string,
-  buttons: ActionButton[]
+  buttons: ActionButton[],
+  isLoading?: boolean
 }>(), {
   title: '',
   buttons: () => ([
@@ -87,7 +88,8 @@ withDefaults(defineProps<{
       color: 'grey',
       label: 'Cancel'
     }
-  ])
+  ]),
+  isLoading: false
 })
 
 function setIsOpen (value?: boolean) {

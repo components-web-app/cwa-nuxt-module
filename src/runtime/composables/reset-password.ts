@@ -28,7 +28,7 @@ export const useResetPassword = () => {
     }
   })
 
-  $cwa.forms.getFormViewErrors(submittedFormIri.value, 'password_update[plainPassword][first]')
+  submittedFormIri.value && $cwa.forms.getFormViewErrors(submittedFormIri.value, 'password_update[plainPassword][first]')
 
   function getStringFromParam (paramName: string): string {
     const paramValue = route.params[paramName]
@@ -55,7 +55,7 @@ export const useResetPassword = () => {
     }
     const previousFormIri = submittedFormIri.value
     if (previousFormIri) {
-      $cwa.resourcesManager.deleteResource({ resource: previousFormIri })
+      $cwa.resourcesManager.removeResource({ resource: previousFormIri })
       submittedFormIri.value = null
     }
     submitting.value = true
