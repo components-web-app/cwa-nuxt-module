@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { navigateTo } from '#app'
 import { computed } from 'vue'
+import { navigateTo } from '#app'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 

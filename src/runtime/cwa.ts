@@ -1,6 +1,6 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
-import { useCookie } from '#app/composables/cookie.js'
 import type { NuxtApp } from '#app/nuxt'
+import { useCookie } from '#app/composables/cookie.js'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
 import type { FetchResourceEvent } from './api/fetcher/fetcher'
