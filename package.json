@@ -21,7 +21,8 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "nuxt-module-build && pnpm run postcss && pnpm run postcss:base && sleep 0.2 && pnpm run copy-layer",
+    "build": "nuxt-module-build && pnpm run postcss && pnpm run postcss:base && sleep 0.2 && pnpm run copy-layer",
+    "prepack": "pnpm build",
     "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
     "dev": "concurrently --kill-others \"pnpm postcss:watch\" \"pnpm dev:https\"",
     "dev:https": "nuxi dev playground --https",
@@ -78,7 +79,9 @@
     "concurrently": "^8.2.2",
     "copyfiles": "^2.4.1",
     "eslint": "^8.57.0",
+    "globby": "^14.0.1",
     "happy-dom": "^12.10.3",
+    "pathe": "^1.1.2",
     "playwright-core": "^1.42.0",
     "postcss-cli": "^10.1.0",
     "typescript": "^5.3.3",

@@ -52,7 +52,7 @@ describe('CWA module', () => {
       expect(meta).toEqual({
         name: '@cwa/nuxt3',
         configKey: 'cwa',
-        compatibility: { nuxt: '^3.0.0' }
+        compatibility: { nuxt: '^3.6.5', bridge: false }
       })
     })
 

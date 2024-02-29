@@ -72,7 +72,8 @@ export default defineNuxtConfig({
         resolve('cwa/**/*.{js,vue,ts}')
       ],
       plugins: [
-        require('@tailwindcss/forms')
+        require('@tailwindcss/forms'),
+        require('@tailwindcss/typography')
       ]
     }
   },

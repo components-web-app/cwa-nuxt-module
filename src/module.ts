@@ -78,7 +78,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     name: '@cwa/nuxt3',
     configKey: 'cwa',
     compatibility: {
-      nuxt: '^3.0.0'
+      nuxt: '^3.6.5',
+      bridge: false
     }
   },
   defaults: {
