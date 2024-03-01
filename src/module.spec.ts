@@ -50,7 +50,7 @@ describe('CWA module', () => {
       const [{ meta }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
       expect(meta).toEqual({
-        name: '@cwa/nuxt3',
+        name: '@cwa/nuxt',
         configKey: 'cwa',
         compatibility: { nuxt: '^3.6.5', bridge: false }
       })

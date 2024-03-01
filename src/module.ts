@@ -75,7 +75,7 @@ function createDefaultCwaPages (
 
 export default defineNuxtModule<CwaModuleOptions>({
   meta: {
-    name: '@cwa/nuxt3',
+    name: '@cwa/nuxt',
     configKey: 'cwa',
     compatibility: {
       nuxt: '^3.6.5',
