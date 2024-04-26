@@ -49,10 +49,14 @@ const selectedOption = computed(() => {
 const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper as PopperOptions))
 const [trigger, container] = usePopper(popperOps.value)
 
+function compareOptions (a: ModelValue, b: ModelValue) {
+  return isEqual(a, b)
+}
+
 </script>
 
 <template>
-  <Listbox v-model="value">
+  <Listbox v-model="value" :by="compareOptions">
     <div class="cwa-relative cwa-inline-flex">
       <ListboxButton
         ref="trigger"
@@ -66,8 +70,8 @@ const [trigger, container] = usePopper(popperOps.value)
       >
         <ListboxOption
           v-for="option in options"
-          v-slot="{ active, selected }"
           :key="option.label"
+          v-slot="{ active, selected }"
           as="template"
           :value="option.value"
           :disabled="option.disabled"
