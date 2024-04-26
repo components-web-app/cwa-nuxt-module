@@ -50,6 +50,9 @@ const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.poppe
 const [trigger, container] = usePopper(popperOps.value)
 
 function compareOptions (a: ModelValue, b: ModelValue) {
+  if (a === undefined && b === null) {
+    return true
+  }
   return isEqual(a, b)
 }
 

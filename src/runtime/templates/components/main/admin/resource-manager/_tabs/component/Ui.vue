@@ -21,6 +21,7 @@ const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
 const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
   debounceTime: 0
 })
+
 const uiSelect = useCwaSelect(uiComponentModel.model)
 const classNamesSelect = useCwaSelect(uiClassNamesModel.model)
 
@@ -65,8 +66,8 @@ disabled.value = !current.value?.styles?.value?.classes.length && !current.value
 
 onMounted(() => {
   watch(uiSelect.model, () => {
-    uiClassNamesModel.model.value = undefined
-    classNamesSelect.model.value = undefined
+    uiClassNamesModel.model.value = null
+    classNamesSelect.model.value = null
   })
 
   watchEffect(() => {
