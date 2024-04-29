@@ -125,7 +125,22 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  public deleteResource (event: ApiResourceEvent) {
+  private async confirmDelete () {
+    const alertData = {
+      title: 'Delete this resource?',
+      content: '<p>Are you sure you want to permanently delete this resource?</p>'
+    }
+    // @ts-ignore-next-line
+    const dialog = createConfirmDialog(ConfirmDialog)
+    const { isCanceled } = await dialog.reveal(alertData)
+
+    return !isCanceled
+  }
+
+  public async deleteResource (event: ApiResourceEvent) {
+    if (!await this.confirmDelete()) {
+      return false
+    }
     const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('DELETE') }

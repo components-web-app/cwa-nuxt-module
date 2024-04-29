@@ -17,7 +17,7 @@ async function handleDelete () {
     return
   }
   disableButton.value = true
-  await $cwa.resourcesManager.deleteResource({
+  const result = await $cwa.resourcesManager.deleteResource({
     endpoint: iri.value,
     refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(iri.value),
     requestCompleteFn () {
@@ -27,7 +27,9 @@ async function handleDelete () {
       // $cwa.admin.resourceStackManager.selectStackIndex(0, false)
     }
   })
-  $cwa.admin.toggleEdit(false)
+  if (result !== false) {
+    $cwa.admin.toggleEdit(false)
+  }
   disableButton.value = false
 }
 

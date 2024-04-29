@@ -21,6 +21,12 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   if (adminRouteGuard === false) {
     return abortNavigation()
   }
+
+  const discardAddingSuccess = await nuxtApp.$cwa.resourcesManager.confirmDiscardAddingResource()
+  if (!discardAddingSuccess) {
+    return abortNavigation()
+  }
+
   if (adminRouteGuard !== true) {
     return navigateTo(adminRouteGuard)
   }
