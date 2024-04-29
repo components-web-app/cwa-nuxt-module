@@ -4,7 +4,8 @@ import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Sel
 import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
 export const useCwaSelect = (model: Ref<ModelValue>, ops: SelectOption[] = []) => {
-  const selectModel = model // ref<ModelValue>(model.value)
+  // use a new model - prevent updating the model and immediately triggering updates
+  const selectModel = ref<ModelValue>(model.value)
   const options = ref<SelectOption[]>(ops)
   watch(options, (newOptions) => {
     const selectOption = newOptions.find((op) => {
@@ -17,9 +18,9 @@ export const useCwaSelect = (model: Ref<ModelValue>, ops: SelectOption[] = []) =
       model.value = selectModel.value
     }
   })
-  // watch(model, (newModelValue) => {
-  //   selectModel.value = newModelValue
-  // })
+  watch(model, (newModelValue) => {
+    selectModel.value = newModelValue
+  })
   return {
     model: selectModel,
     options
