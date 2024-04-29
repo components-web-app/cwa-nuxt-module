@@ -61,7 +61,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     const isNewValueObject = isObject(newLocalValue)
 
     // todo: resolve the correct iri for the endpoint we are checking with the applied querystring - should be the same unless we will be creating a new draft in a request perhaps??
-    // but then would that matter, because the endpoint would be the same until then... to think about...
+    // todo: but then would that matter, because the endpoint would be the same until then... to think about...
     isNewValueObject && await $cwa.resourcesManager.getWaitForRequestPromise(endpoint.value, rootProperty.value, source)
 
     if (!submitting.value && isEqual(storeValue.value, newLocalValue)) {
@@ -84,7 +84,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       },
       source
     })
-    isEqual(storeValue.value, submittingValue.value) && resetValue()
+    isEqual(storeValue.value, submittingValue.value) && isEqual(storeValue.value, localValue.value) && resetValue()
     submittingValue.value = undefined
   }
 

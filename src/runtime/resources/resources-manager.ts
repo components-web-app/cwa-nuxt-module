@@ -138,12 +138,13 @@ export class ResourcesManager {
   }
 
   public updateResource (event: DataApiResourceEvent) {
+    const iri = event.endpoint.split('?')[0]
     const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
 
-    if (event.endpoint === NEW_RESOURCE_IRI) {
+    if (iri === NEW_RESOURCE_IRI) {
       const { adding } = storeToRefs(this.resourcesStore)
       if (!adding.value) {
         return
@@ -156,7 +157,7 @@ export class ResourcesManager {
       return
     }
 
-    const currentResource = this.resourcesStore.getResource(event.endpoint)?.data
+    const currentResource = this.resourcesStore.getResource(iri)?.data
     const currentIsDraft = getPublishedResourceState({ data: currentResource }) === false
     let isPublishing = false
     let existingLiveIri: string|null = null
@@ -179,27 +180,29 @@ export class ResourcesManager {
       }
     }
 
-    const postRequestFn = (resource: CwaResource|undefined) => {
+    const postRequestFn = () => {
       // if we have just published a resource, remove the old draft and turn off edit mode
-      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== event.endpoint) {
+      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri) {
         this.admin.toggleEdit(false)
         this.removeResource({ resource: event.endpoint })
-        return
       }
+    }
 
+    const postStorageFn = (resource: CwaResource|undefined) => {
       // if we have just done an update that creates a new draft, we need to select the draft
       const responseId = resource?.['@id']
-      if (responseId && responseId !== event.endpoint) {
+      if (responseId && responseId !== iri) {
         this.admin.resourceStackManager.forcePublishedVersion.value = false
       }
     }
 
-    return this.doResourceRequest(event, args, postRequestFn)
+    return this.doResourceRequest(event, args, postRequestFn, postStorageFn)
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>, postStorageFn?: (resource?: CwaResource) => void|Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
+    const iri = event.endpoint.split('?')[0]
 
     set(this.requestsInProgress, [source, id], { event, args })
 
@@ -234,8 +237,11 @@ export class ResourcesManager {
         })
       } else {
         this.removeResource({
-          resource: event.endpoint
+          resource: iri
         })
+      }
+      if (postStorageFn) {
+        await postStorageFn(resource as CwaResource|undefined)
       }
       return resource
     } catch (err) {
