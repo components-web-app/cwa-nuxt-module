@@ -21,8 +21,10 @@ async function handleDelete () {
     endpoint: iri.value,
     refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(iri.value),
     requestCompleteFn () {
-      $cwa.admin.resourceStackManager.completeStack({ clickTarget: window }, false)
-      $cwa.admin.resourceStackManager.selectStackIndex(0, false)
+      // deselect the component and close resources manager - not sure why this was needed, on delete it would end up triggering the resource to be submitted to the API again when deleting a draft and a live is available...
+      /// rm disappears as expected when these lines are removed.
+      // $cwa.admin.resourceStackManager.completeStack({ clickTarget: window }, false)
+      // $cwa.admin.resourceStackManager.selectStackIndex(0, false)
     }
   })
   $cwa.admin.toggleEdit(false)
