@@ -5,6 +5,8 @@ on:
     branches:
       - 'nuxt3'
   pull_request:
+    branches:
+      - '*'
     branches-ignore:
       - main
 
