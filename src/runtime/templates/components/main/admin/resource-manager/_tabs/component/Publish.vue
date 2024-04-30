@@ -28,6 +28,9 @@ const alternateIri = computed(() => {
 watch(editLiveVersion, (isEditLive) => {
   $cwa.admin.resourceStackManager.forcePublishedVersion.value = isEditLive
 })
+watch(iri, () => {
+  editLiveVersion.value = publishableState.value || false
+})
 
 defineExpose(exposeMeta)
 </script>
