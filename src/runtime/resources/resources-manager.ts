@@ -208,7 +208,8 @@ export class ResourcesManager {
     // if we have just done an update that creates a new draft, we need to select the draft
     const responseId = resource?.['@id']
     if (responseId && responseId !== iri) {
-      this.admin.resourceStackManager.forcePublishedVersion.value = false
+      // show a draft if draft is created - also unset if we have just published so we are not trying to view a draft
+      this.admin.resourceStackManager.forcePublishedVersion.value = isPublishing ? undefined : false
     }
 
     return resource

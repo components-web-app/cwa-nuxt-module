@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -96,23 +96,6 @@ const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
 
-watch(currentStackItem, (newCurrent, oldCurrent) => {
-  if (oldCurrent && newCurrent && $cwa.resources.isIriPublishableEquivalent(oldCurrent.iri, newCurrent.iri)) {
-    return
-  }
-  allTabsMeta.value = []
-  managerTabs.value?.resetTabs()
-  currentManagerTabs.value = newCurrent?.managerTabs
-})
-
-onMounted(() => {
-  window.addEventListener('mousedown', mousedownHandler)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('mousedown', mousedownHandler)
-})
-
 const showSpacer = computed(() => {
   return $cwa.admin.resourceStackManager.showManager.value && currentStackItem
 })
@@ -138,7 +121,23 @@ const resolverProps = computed(() => {
 })
 useDataResolver(allTabsMeta, {
   components: currentManagerTabs,
-  props: resolverProps
+  props: resolverProps,
+  propsValidator: (props: typeof resolverProps.value) => {
+    return !!props.iri
+  }
+})
+
+watch(currentStackItem, (newCurrent, oldCurrent) => {
+  if (oldCurrent && newCurrent && $cwa.resources.isIriPublishableEquivalent(oldCurrent.iri, newCurrent.iri)) {
+    return
+  }
+  allTabsMeta.value = []
+  managerTabs.value?.resetTabs()
+  currentManagerTabs.value = newCurrent?.managerTabs
+})
+
+onMounted(() => {
+  window.addEventListener('mousedown', mousedownHandler)
 })
 
 defineExpose({

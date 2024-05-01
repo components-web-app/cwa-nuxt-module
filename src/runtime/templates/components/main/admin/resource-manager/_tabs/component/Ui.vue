@@ -64,6 +64,22 @@ const classOptions = computed(() => {
 const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.value?.classes.length && !current.value?.ui?.length
 
+const components = computed(() => {
+  return current.value?.ui
+})
+
+const resolverProps = computed(() => {
+  return {
+    iri: iri.value
+  }
+})
+useDataResolver(componentMeta, {
+  components,
+  props: resolverProps,
+  propsValidator: (props: typeof resolverProps.value) => {
+    return !!props.iri
+  }
+})
 onMounted(() => {
   watch(uiSelect.model, () => {
     uiClassNamesModel.model.value = null
@@ -77,20 +93,6 @@ onMounted(() => {
 })
 
 defineExpose(exposeMeta)
-
-const components = computed(() => {
-  return current.value?.ui
-})
-
-const resolverProps = computed(() => {
-  return {
-    iri: iri.value
-  }
-})
-useDataResolver(componentMeta, {
-  components,
-  props: resolverProps
-})
 
 </script>
 
