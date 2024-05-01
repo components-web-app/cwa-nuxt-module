@@ -97,21 +97,28 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           break
         }
 
-        // if it is a component, the position will also be deleted in an auto-cascade on the server if the position is not dynamic, we should replicate locally and delete the position
-        const componentPositions = resource.data.componentPositions
-        for (const positionIri of componentPositions) {
-          const positionResource = resourcesState.current.byId[positionIri]
-          if (!positionResource.data) {
-            continue
-          }
-          if (positionResource.data.pageDataProperty) {
-            positionResource.data.component = undefined
-          } else {
-            deleteResource({
-              resource: positionIri
-            })
+        const isLiveAndHasDraft =
+          resourcesGetters.findPublishedComponentIri.value(event.resource) === event.resource &&
+          resourcesGetters.findDraftComponentIri.value(event.resource) !== undefined
+
+        // if it is a component, the position will also be deleted in an auto-cascade on the server if the position is not dynamic OR there is not a draft, we should replicate locally and delete the position
+        if (!isLiveAndHasDraft) {
+          const componentPositions = resource.data.componentPositions
+          for (const positionIri of componentPositions) {
+            const positionResource = resourcesState.current.byId[positionIri]
+            if (!positionResource.data) {
+              continue
+            }
+            if (positionResource.data.pageDataProperty) {
+              positionResource.data.component = undefined
+            } else {
+              deleteResource({
+                resource: positionIri
+              })
+            }
           }
         }
+
         clearPublishableMapping(event.resource)
         break
       }

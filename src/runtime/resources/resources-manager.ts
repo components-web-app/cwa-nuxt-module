@@ -250,7 +250,15 @@ export class ResourcesManager {
           paths: refreshEndpoints,
           shallowFetch: true
         }
-        await this.fetcher.fetchBatch(fetchBathEvent)
+        try {
+          await this.fetcher.fetchBatch(fetchBathEvent)
+        } catch (err) {
+          // issues refreshing endpoints which are no longer found can be common
+          const fetchError = err as FetchError<any>
+          if (fetchError?.statusCode !== 404) {
+            throw err
+          }
+        }
       }
       if (postRequestFn) {
         await postRequestFn(resource as CwaResource|undefined)

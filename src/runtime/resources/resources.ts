@@ -5,7 +5,7 @@ import type { CwaCurrentResourceInterface } from '../storage/stores/resources/st
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type { FetchStatus } from '../storage/stores/fetcher/state'
 import {
-  CwaResourceTypes, getPublishedResourceState,
+  CwaResourceTypes,
   getResourceTypeFromIri
 } from './resource-utils'
 
@@ -283,14 +283,6 @@ export class Resources {
   }
 
   public getRefreshEndpointsForDelete (iri:string): string[] {
-    // if the component is draft, the componentPositions will be empty if there is a live.
-    // however the component position will be outputting the draft IRI, so when we delete
-    // we will no longer show the live component without updating the component position.
-    const resource = this.getResource(iri).value?.data
-
-    // live will delete the position - so only need to refresh for drafts or we will get a 404 when we try to refresh
-    const refreshPositionsBecauseIsADraft = getPublishedResourceState({ data: resource }) === false
-
     const refreshEndpoints: string[] = []
     const allIris = this.resourcesStore.findAllPublishableIris(iri)
     for (const checkIri of allIris) {
@@ -300,7 +292,7 @@ export class Resources {
         continue
       }
       // refresh all positions.
-      refreshPositionsBecauseIsADraft && refreshEndpoints.push(...componentPositions)
+      refreshEndpoints.push(...componentPositions)
 
       // and related groups as position may have a delete cascade
       for (const posIri of componentPositions) {
