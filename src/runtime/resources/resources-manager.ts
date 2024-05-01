@@ -137,12 +137,22 @@ export class ResourcesManager {
     return !isCanceled
   }
 
+  private getEndpointForIri (iri: string) {
+    const resource = this.resourcesStore.getResource(iri)?.data
+    if (!resource) {
+      return iri
+    }
+    const isDraft = getPublishedResourceState({ data: resource }) === false
+    const postfix = isDraft ? '?published=false' : '?published=true'
+    return `${iri}${postfix}`
+  }
+
   public async deleteResource (event: ApiResourceEvent) {
     if (!await this.confirmDelete()) {
       return false
     }
     const args: [string, RequestOptions] = [
-      event.endpoint,
+      this.getEndpointForIri(event.endpoint),
       { ...this.requestOptions('DELETE') }
     ]
     return this.doResourceRequest(event, args)
@@ -154,6 +164,8 @@ export class ResourcesManager {
 
   public async updateResource (event: DataApiResourceEvent) {
     const iri = event.endpoint.split('?')[0]
+    const currentResource = this.resourcesStore.getResource(iri)?.data
+
     const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
@@ -172,7 +184,6 @@ export class ResourcesManager {
       return
     }
 
-    const currentResource = this.resourcesStore.getResource(iri)?.data
     const currentIsDraft = getPublishedResourceState({ data: currentResource }) === false
     let isPublishing = false
     let existingLiveIri: string|null = null
