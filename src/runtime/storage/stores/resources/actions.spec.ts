@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
+import * as app from '#app'
 import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
 import * as ResourceUtils from '../../../resources/resource-utils'
 import type { CwaResourcesActionsInterface } from './actions'
@@ -7,7 +8,6 @@ import actions from './actions'
 import type { CwaResourcesStateInterface } from './state'
 import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
-import * as app from '#app'
 
 vi.mock('../../../resources/resource-utils', async () => {
   const actual = await vi.importActual<any>('../../../resources/resource-utils')
