@@ -41,13 +41,22 @@ describe('CWA resources composable', () => {
     })
   })
 
-  test('should emit an eventbus event on mounted if manager is disabled', () => {
+  test.each([
+    {
+      disabled: true,
+      eventName: 'componentMounted'
+    },
+    {
+      disabled: false,
+      eventName: 'manageableComponentMounted'
+    }
+  ])('should emit correct eventbus event on mounted if manager is disabled', ({ disabled, eventName }) => {
     vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
     const mockIri = ref('mock-iri')
 
-    useCwaResource(mockIri, { manager: { disabled: true } })
+    useCwaResource(mockIri, { manager: { disabled } })
 
-    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('manageableComponentMounted', mockIri.value)
+    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith(eventName, mockIri.value)
   })
 
   test('should return object containing function to get resource by iri provided into composable', () => {

@@ -167,6 +167,7 @@ describe('ManageableResource Class', () => {
       vi.spyOn(instance, 'componentMountedListener', 'get').mockImplementationOnce(() => listener)
 
       instance.initNewIri('/something')
+
       expect(instance.clear).toHaveBeenCalledTimes(clearCallCount)
       expect(instance.clear).toHaveBeenCalledWith(true)
 

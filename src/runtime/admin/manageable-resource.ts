@@ -67,10 +67,10 @@ export default class ManageableResource {
 
   private _initNewIri (iri: string|undefined) {
     this.clear(true)
+    this.isIriInit = true
     if (!iri) {
       return
     }
-    this.isIriInit = true
     this.addClickEventListeners()
   }
 
