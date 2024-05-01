@@ -13,6 +13,7 @@ vi.mock('vue', async () => {
 })
 
 describe('CWA resources composable', () => {
+  const mockManager = { mock: 'manager' }
   const mockCwa = {
     admin: {
       eventBus: {
@@ -23,8 +24,6 @@ describe('CWA resources composable', () => {
       getResource: vi.fn()
     }
   }
-  const mockManager = { mock: 'manager' }
-
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => mockCwa)
 
   test('should return an object for exposing vars', () => {
@@ -48,7 +47,7 @@ describe('CWA resources composable', () => {
 
     useCwaResource(mockIri, { manager: { disabled: true } })
 
-    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
+    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('manageableComponentMounted', mockIri.value)
   })
 
   test('should return object containing function to get resource by iri provided into composable', () => {

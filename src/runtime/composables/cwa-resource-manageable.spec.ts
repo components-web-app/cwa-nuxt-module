@@ -26,8 +26,15 @@ vi.mock('vue', async () => {
 })
 
 describe('CWA resource manageable composable', () => {
-  const mockCwa = { mock: 'cwa' }
   const mockIri = ref('mock-iri')
+  const mockCwa = {
+    admin: {
+      eventBus: {
+        emit: vi.fn(),
+        on: vi.fn()
+      }
+    }
+  }
 
   beforeEach(() => {
     vi.spyOn(cwaComposable, 'useCwa').mockReturnValue(mockCwa)
