@@ -92,7 +92,8 @@
   "pnpm": {
     "overrides": {
       "vite": ">=5.0.12",
-      "semver": ">=7.5.2"
+      "semver": ">=7.5.2",
+      "ufo": ">=1.5"
     },
     "auditConfig": {
       "ignoreCves": [
@@ -102,7 +103,8 @@
   },
   "overrides": {
     "vite": ">=5.1.7",
-    "semver": ">=7.5.2"
+    "semver": ">=7.5.2",
+    "ufo": ">=1.5"
   },
   "engines": {
     "pnpm": ">=8.11.0"

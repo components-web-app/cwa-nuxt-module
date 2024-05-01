@@ -3,8 +3,8 @@
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#app'
 import ResourceLoader from './components/core/ResourceLoader.vue'
+import { useHead } from '#app'
 import { definePageMeta, useCwa } from '#imports'
 
 const $cwa = useCwa()

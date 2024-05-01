@@ -1,8 +1,6 @@
 import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import type { CookieRef } from '#app'
-import { useNuxtApp, useRoute } from '#app'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -10,6 +8,8 @@ import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import CwaFetch from './fetcher/cwa-fetch'
 import Mercure from './mercure'
 import Fetcher from './fetcher/fetcher'
+import { useNuxtApp, useRoute } from '#app'
+import type { CookieRef } from '#app'
 import Admin from '#cwa/runtime/admin/admin'
 
 interface Credentials {
