@@ -1,13 +1,7 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import InputField from './InputField.vue'
-
-vi.mock('uuid', () => ({
-  v4 () {
-    return 'this-is-unique-string'
-  }
-}))
 
 interface InputMeta {
   name: string;
