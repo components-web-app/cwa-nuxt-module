@@ -1,4 +1,4 @@
-import { computed, reactive, type Ref, ref, watch } from 'vue'
+import { computed, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
 import { storeToRefs } from 'pinia'
@@ -359,6 +359,9 @@ export class ResourcesManager {
       return
     }
     this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd)
+    nextTick(() => {
+      this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
+    })
   }
 
   public clearAddResource () {

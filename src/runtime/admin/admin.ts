@@ -5,6 +5,7 @@ import { Resources } from '../resources/resources'
 import ResourceStackManager from './resource-stack-manager'
 
 type Events = {
+  manageableComponentMounted: string
   componentMounted: string
   selectResource: string
 }

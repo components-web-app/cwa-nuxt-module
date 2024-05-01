@@ -176,7 +176,6 @@ const methods = {
     if (isLoading.value) {
       return
     }
-    // todo: test all possibilities
     if (
       ssrNoDataWithSilentError.value ||
       ssrPositionHasPartialData.value ||

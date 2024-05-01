@@ -83,30 +83,34 @@ const hasAddingPosition = computed(() => {
 const componentPositions = computed(() => {
   const savedPositions: string[] = resource.value?.data?.componentPositions
   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
-  if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value) {
+  if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value || !$cwa.admin.isEditing) {
     return savedPositions
   }
 
-  const position = '/_/component_positions/' + NEW_RESOURCE_IRI
-
+  const placeholderNewPosition = '/_/component_positions/' + NEW_RESOURCE_IRI
   const closestPosition = addingEvent.value.closest.position
+
+  // add new position within the current positions
   if (closestPosition) {
     const positionIndex = savedPositions.findIndex(i => (i === closestPosition))
     const newPositions = [
       ...savedPositions
     ]
-    newPositions.splice(addingEvent.value?.addAfter ? positionIndex + 1 : positionIndex, 0, position)
+    const startIndex = addingEvent.value?.addAfter ? positionIndex + 1 : positionIndex
+    newPositions.splice(startIndex, 0, placeholderNewPosition)
     return newPositions
   }
-  // just adding to start or end of the group
+
+  // add new position to end
   if (addingEvent.value?.addAfter) {
     return [
       ...savedPositions,
-      position
+      placeholderNewPosition
     ]
   }
+  // add new position to start
   return [
-    position,
+    placeholderNewPosition,
     ...savedPositions
   ]
 })
