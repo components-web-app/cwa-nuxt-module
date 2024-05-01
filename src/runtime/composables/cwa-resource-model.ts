@@ -28,17 +28,31 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   })
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
 
-  const localValue = ref<T|undefined|null>()
+  const localValueWithIri = ref<{ [iri: string]: T|null|undefined }>({})
+  const localValue = computed({
+    get () {
+      if (!iri.value) {
+        return undefined
+      }
+      return localValueWithIri.value[iri.value]
+    },
+    set (newValue: T|null|undefined) {
+      if (!iri.value) {
+        return
+      }
+      localValueWithIri.value[iri.value] = newValue
+    }
+  })
+
   const pendingSubmit = ref(false)
   const isLongWait = ref(false)
-  const submittingValue = ref<T|undefined>()
 
   const longWaitThreshold = ops?.longWaitThreshold || 5000
   const debounceTime = ops?.debounceTime !== undefined ? ops.debounceTime : 250
   let debounced: any
 
   const isBusy = computed(() => pendingSubmit.value || submitting.value)
-  const submitting = computed(() => submittingValue.value !== undefined)
+  const submitting = ref(false)
 
   function isEqual (value1: any, value2: any) {
     function requiresNormalizing (value: any) {
@@ -54,6 +68,11 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   }
 
   async function updateResource (newLocalValue: any) {
+    const submittingIri = iri.value
+    if (!submittingIri) {
+      return
+    }
+
     // consider: another field is updating the same object and the request is not complete, we could overwrite that change with the new change as we are merging objects from the root property
     // consider: it doesn't matter if THIS field is updated and there is a pending request, we can continue and override that change
     // consider: it doesn't matter if another request is in progress for a DIFFERENT property, it'll update the store value and this request will not interfere
@@ -69,27 +88,45 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       resetValue()
       return
     }
+
+    submitting.value = true
+    let submittingValue
     // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
     if (isNewValueObject) {
       const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, newLocalValue)
-      submittingValue.value = newObject[rootProperty.value]
+      submittingValue = newObject[rootProperty.value]
     } else {
-      submittingValue.value = newLocalValue
+      submittingValue = newLocalValue
     }
+
     pendingSubmit.value = false
-    await $cwa.resourcesManager.updateResource({
+    const newResource = await $cwa.resourcesManager.updateResource({
       endpoint: endpoint.value,
       data: {
-        [rootProperty.value]: submittingValue.value
+        [rootProperty.value]: submittingValue
       },
       source
     })
-    isEqual(storeValue.value, submittingValue.value) && isEqual(storeValue.value, localValue.value) && resetValue()
-    submittingValue.value = undefined
+
+    // todo: check on when second request made before initial is complete
+    const newIriReturned = newResource?.['@id'] && newResource['@id'] !== submittingIri
+    if (newIriReturned) {
+      localValueWithIri.value[newResource['@id']] = localValueWithIri.value[submittingIri]
+      resetValue(submittingIri)
+    }
+
+    // we want to make sure the value is in sync with the store if we are not updating, which means resetting the locally stored variable
+    // sequence of updating is:
+    // local var > debounce > submitting var > store value
+    isEqual(storeValue.value, submittingValue) && isEqual(storeValue.value, localValue.value) && resetValue()
   }
 
-  function resetValue () {
-    localValue.value = undefined
+  function resetValue (resetIri?: string) {
+    const useIri = resetIri || iri.value
+    if (!useIri) {
+      return
+    }
+    localValueWithIri.value[useIri] = undefined
   }
 
   watch(localValue, (newLocalValue) => {
