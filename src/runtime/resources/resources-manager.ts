@@ -1,4 +1,4 @@
-import { computed, nextTick, reactive, type Ref, ref, watch } from 'vue'
+import { computed, ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
 import { storeToRefs } from 'pinia'
@@ -58,6 +58,7 @@ export class ResourcesManager {
   private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, {}] } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
+  private _requestCount: ComputedRef<number>
 
   constructor (
     cwaFetch: CwaFetch,
@@ -83,7 +84,11 @@ export class ResourcesManager {
   }
 
   public get requestCount () {
-    return computed(() => Object.values(this.requestsInProgress).reduce((count, reqs) => count + Object.values(reqs).length, 0))
+    if (this._requestCount) {
+      return this._requestCount
+    }
+    this._requestCount = computed(() => Object.values(this.requestsInProgress).reduce((count, reqs) => count + Object.values(reqs).length, 0))
+    return this._requestCount
   }
 
   public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
@@ -236,6 +241,7 @@ export class ResourcesManager {
     this.errorStore.removeByEndpoint(args[0])
 
     try {
+      // not a fetch - is a post patch or delete so do not use fetcher
       const resource = await this.cwaFetch.fetch<CwaResource>(...args)
       const refreshEndpoints = event.refreshEndpoints || []
       if (args[1].method === 'POST') {

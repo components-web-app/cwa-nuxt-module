@@ -11,6 +11,7 @@ import { getPublishedResourceIri, CwaResourceTypes } from '../resources/resource
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import Fetcher from './fetcher/fetcher'
 import { useProcess } from '#cwa/runtime/composables/process'
+import type { ResourcesManager } from '#cwa/runtime/resources/resources-manager'
 
 interface MercureMessageInterface {
   event: MessageEvent,
@@ -23,6 +24,7 @@ export default class Mercure {
   private mercureMessageQueue: MercureMessageInterface[] = []
   private fetcher?: Fetcher
   private requestCount?: ComputedRef<number>
+  private resourcesManager?: ResourcesManager
 
   // eslint-disable-next-line no-useless-constructor
   constructor (
