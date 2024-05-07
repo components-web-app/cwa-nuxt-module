@@ -93,6 +93,11 @@ export function isCwaResourceSame (resource1: CwaResource, resource2: CwaResourc
     delete newObj.modifiedAt
     // remove metadata, can include things specific to the resource such as published timestamps
     delete newObj._metadata
+    if (getResourceTypeFromIri(newObj['@id']) === CwaResourceTypes.COMPONENT) {
+      // remove componentPositions back-reference. If deleting a live resource when a draft is available, we'll receive an
+      // update and the draft will now have a component position it didn't have before but is not necessary to know
+      delete newObj.componentPositions
+    }
     // remove null values
     Object.keys(newObj).forEach(k => newObj[k] === null && delete newObj[k])
     return JSON.stringify(newObj)

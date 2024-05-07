@@ -1,4 +1,4 @@
-import { computed, getCurrentInstance, ref, watch, watchEffect } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -51,8 +51,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   const debounceTime = ops?.debounceTime !== undefined ? ops.debounceTime : 250
   let debounced: any
 
-  const isBusy = computed(() => pendingSubmit.value || submitting.value)
-  const submitting = ref(false)
+  const isBusy = computed(() => pendingSubmit.value || isSubmitting.value)
+  const isSubmitting = ref(false)
+  const lastSubmittedValueInProgress = ref()
 
   function isEqual (value1: any, value2: any) {
     function requiresNormalizing (value: any) {
@@ -79,17 +80,29 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     // consider: it is all about the external sync status of a nested object property that we should need to wait for
     const isNewValueObject = isObject(newLocalValue)
 
-    // todo: resolve the correct iri for the endpoint we are checking with the applied querystring - should be the same unless we will be creating a new draft in a request perhaps??
-    // todo: but then would that matter, because the endpoint would be the same until then... to think about...
+    // todo: resolve the correct iri for the endpoint we are checking with the applied querystring -
+    //  should be the same unless we will be creating a new draft in a request perhaps??
+    //  ...but then would that matter, because the endpoint would be the same until then... to think about...
     isNewValueObject && await $cwa.resourcesManager.getWaitForRequestPromise(endpoint.value, rootProperty.value, source)
 
-    if (!submitting.value && isEqual(storeValue.value, newLocalValue)) {
+    // if we are already submitting this value, just skip - we shouldn't really get here
+    // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
+    if (
+      resource.value === undefined ||
+      (isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
+    ) {
+      return
+    }
+
+    // if we are submitting already, then we will already be updating the store value in a moment,
+    // so the equality check would be invalid
+    if (!isSubmitting.value && isEqual(storeValue.value, newLocalValue)) {
       pendingSubmit.value = false
       resetValue()
       return
     }
 
-    submitting.value = true
+    isSubmitting.value = true
     let submittingValue
     // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
     if (isNewValueObject) {
@@ -98,6 +111,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     } else {
       submittingValue = newLocalValue
     }
+    lastSubmittedValueInProgress.value = submittingValue
 
     pendingSubmit.value = false
     const newResource = await $cwa.resourcesManager.updateResource({
@@ -129,7 +143,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     localValueWithIri.value[useIri] = undefined
   }
 
-  watch(localValue, (newLocalValue) => {
+  const unwatchLocalValue = watch(localValue, (newLocalValue) => {
     if (newLocalValue === undefined) {
       return
     }
@@ -143,7 +157,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
 
   let longWaitTimeoutFn: ReturnType<typeof setTimeout>|undefined
 
-  watch(isBusy, (newBusy) => {
+  const unwatchIsBusy = watch(isBusy, (newBusy) => {
     if (!newBusy) {
       isLongWait.value = false
       if (longWaitTimeoutFn) {
@@ -157,7 +171,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     }, longWaitThreshold)
   })
 
-  watchEffect(() => {
+  const unwatchEffect = watchEffect(() => {
     if (!resource.value) {
       applyPostfix.value = false
       return
@@ -166,7 +180,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     applyPostfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value !== undefined && publishableState === true
   })
 
-  watch(applyPostfix, (newApplyPostfix) => {
+  const unwatchApplyPostfix = watch(applyPostfix, (newApplyPostfix) => {
     if (!newApplyPostfix) {
       postfix.value = ''
       return
@@ -181,6 +195,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       if (localValue.value !== undefined) {
         return localValue.value
       }
+      // when deleted, the store value is updating to undefined, then this model getter is null
       return storeValue.value || null
     },
     set (value) {
@@ -188,10 +203,17 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     }
   })
 
+  onBeforeUnmount(() => {
+    unwatchLocalValue()
+    unwatchIsBusy()
+    unwatchEffect()
+    unwatchApplyPostfix()
+  })
+
   return {
     states: {
       pendingSubmit,
-      submitting,
+      submitting: isSubmitting,
       isBusy,
       isLongWait
     },

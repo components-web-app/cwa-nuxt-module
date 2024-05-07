@@ -1,4 +1,4 @@
-import { computed, ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
+import { computed, type ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
 import { storeToRefs } from 'pinia'
@@ -58,7 +58,7 @@ export class ResourcesManager {
   private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, {}] } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
-  private _requestCount: ComputedRef<number>
+  private _requestCount?: ComputedRef<number>
 
   constructor (
     cwaFetch: CwaFetch,
