@@ -21,6 +21,7 @@ const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
 const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
   debounceTime: 0
 })
+
 const uiSelect = useCwaSelect(uiComponentModel.model)
 const classNamesSelect = useCwaSelect(uiClassNamesModel.model)
 
@@ -63,20 +64,6 @@ const classOptions = computed(() => {
 const disabled = exposeMeta.disabled
 disabled.value = !current.value?.styles?.value?.classes.length && !current.value?.ui?.length
 
-onMounted(() => {
-  watch(uiSelect.model, () => {
-    uiClassNamesModel.model.value = undefined
-    classNamesSelect.model.value = undefined
-  })
-
-  watchEffect(() => {
-    uiSelect.options.value = uiOptions.value
-    classNamesSelect.options.value = classOptions.value
-  })
-})
-
-defineExpose(exposeMeta)
-
 const components = computed(() => {
   return current.value?.ui
 })
@@ -88,8 +75,24 @@ const resolverProps = computed(() => {
 })
 useDataResolver(componentMeta, {
   components,
-  props: resolverProps
+  props: resolverProps,
+  propsValidator: (props: typeof resolverProps.value) => {
+    return !!props.iri
+  }
 })
+onMounted(() => {
+  watch(uiSelect.model, () => {
+    uiClassNamesModel.model.value = null
+    classNamesSelect.model.value = null
+  })
+
+  watchEffect(() => {
+    uiSelect.options.value = uiOptions.value
+    classNamesSelect.options.value = classOptions.value
+  })
+})
+
+defineExpose(exposeMeta)
 
 </script>
 

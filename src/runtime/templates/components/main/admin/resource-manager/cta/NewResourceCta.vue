@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { consola } from 'consola'
 import { type CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
@@ -13,6 +14,7 @@ const $cwa = useCwa()
 
 const addingMeta = computed(() => props.resource?._metadata.adding)
 const isPublishable = computed(() => addingMeta.value?.isPublishable)
+const isAdding = ref(false)
 
 const buttonLabel = computed<'Add Draft'|'Add'>(() => {
   return isPublishable.value ? 'Add Draft' : 'Add'
@@ -28,8 +30,14 @@ const buttonOptions = computed(() => {
 })
 
 async function addResourceAction (publish?: boolean) {
-  // todo: disable button during action
-  await $cwa.resourcesManager.addResourceAction(publish)
+  isAdding.value = true
+  try {
+    await $cwa.resourcesManager.addResourceAction(publish)
+    $cwa.admin.toggleEdit(false)
+  } catch (e) {
+    consola.error(e)
+  }
+  isAdding.value = false
 }
 
 async function handleManagerCtaClick (value?: ModelValue) {
@@ -40,6 +48,7 @@ async function handleManagerCtaClick (value?: ModelValue) {
 
   if (value === 'add-discard') {
     await $cwa.resourcesManager.confirmDiscardAddingResource()
+    $cwa.admin.toggleEdit(false)
     return
   }
 
@@ -54,6 +63,7 @@ async function handleManagerCtaClick (value?: ModelValue) {
     color="grey"
     button-class="cwa-min-w-[100px]"
     :options="buttonOptions"
+    :disabled="isAdding"
     @click="handleManagerCtaClick"
   >
     {{ buttonLabel }}

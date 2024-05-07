@@ -1,4 +1,4 @@
-import { computed, reactive, type Ref, ref, watch } from 'vue'
+import { computed, type ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
 import { storeToRefs } from 'pinia'
@@ -58,6 +58,7 @@ export class ResourcesManager {
   private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, {}] } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
+  private _requestCount?: ComputedRef<number>
 
   constructor (
     cwaFetch: CwaFetch,
@@ -83,7 +84,11 @@ export class ResourcesManager {
   }
 
   public get requestCount () {
-    return computed(() => Object.values(this.requestsInProgress).reduce((count, reqs) => count + Object.values(reqs).length, 0))
+    if (this._requestCount) {
+      return this._requestCount
+    }
+    this._requestCount = computed(() => Object.values(this.requestsInProgress).reduce((count, reqs) => count + Object.values(reqs).length, 0))
+    return this._requestCount
   }
 
   public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
@@ -125,9 +130,34 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  public deleteResource (event: ApiResourceEvent) {
+  private async confirmDelete () {
+    const alertData = {
+      title: 'Delete this resource?',
+      content: '<p>Are you sure you want to permanently delete this resource?</p>'
+    }
+    // @ts-ignore-next-line
+    const dialog = createConfirmDialog(ConfirmDialog)
+    const { isCanceled } = await dialog.reveal(alertData)
+
+    return !isCanceled
+  }
+
+  private getEndpointForIri (iri: string) {
+    const resource = this.resourcesStore.getResource(iri)?.data
+    if (!resource) {
+      return iri
+    }
+    const isDraft = getPublishedResourceState({ data: resource }) === false
+    const postfix = isDraft ? '?published=false' : '?published=true'
+    return `${iri}${postfix}`
+  }
+
+  public async deleteResource (event: ApiResourceEvent) {
+    if (!await this.confirmDelete()) {
+      return false
+    }
     const args: [string, RequestOptions] = [
-      event.endpoint,
+      this.getEndpointForIri(event.endpoint),
       { ...this.requestOptions('DELETE') }
     ]
     return this.doResourceRequest(event, args)
@@ -137,13 +167,16 @@ export class ResourcesManager {
     return this.resourcesStore.deleteResource(event)
   }
 
-  public updateResource (event: DataApiResourceEvent) {
+  public async updateResource (event: DataApiResourceEvent) {
+    const iri = event.endpoint.split('?')[0]
+    const currentResource = this.resourcesStore.getResource(iri)?.data
+
     const args: [string, RequestOptions] = [
       event.endpoint,
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
 
-    if (event.endpoint === NEW_RESOURCE_IRI) {
+    if (iri === NEW_RESOURCE_IRI) {
       const { adding } = storeToRefs(this.resourcesStore)
       if (!adding.value) {
         return
@@ -156,7 +189,6 @@ export class ResourcesManager {
       return
     }
 
-    const currentResource = this.resourcesStore.getResource(event.endpoint)?.data
     const currentIsDraft = getPublishedResourceState({ data: currentResource }) === false
     let isPublishing = false
     let existingLiveIri: string|null = null
@@ -179,33 +211,37 @@ export class ResourcesManager {
       }
     }
 
-    const postRequestFn = (resource: CwaResource|undefined) => {
+    const postRequestFn = () => {
       // if we have just published a resource, remove the old draft and turn off edit mode
-      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== event.endpoint) {
+      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri) {
         this.admin.toggleEdit(false)
         this.removeResource({ resource: event.endpoint })
-        return
-      }
-
-      // if we have just done an update that creates a new draft, we need to select the draft
-      const responseId = resource?.['@id']
-      if (responseId && responseId !== event.endpoint) {
-        this.admin.resourceStackManager.forcePublishedVersion.value = false
       }
     }
 
-    return this.doResourceRequest(event, args, postRequestFn)
+    const resource = await this.doResourceRequest(event, args, postRequestFn)
+
+    // if we have just done an update that creates a new draft, we need to select the draft
+    const responseId = resource?.['@id']
+    if (responseId && responseId !== iri) {
+      // show a draft if draft is created - also unset if we have just published so we are not trying to view a draft
+      this.admin.resourceStackManager.forcePublishedVersion.value = isPublishing ? undefined : false
+    }
+
+    return resource
   }
 
   private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
+    const iri = event.endpoint.split('?')[0]
 
     set(this.requestsInProgress, [source, id], { event, args })
 
     this.errorStore.removeByEndpoint(args[0])
 
     try {
+      // not a fetch - is a post patch or delete so do not use fetcher
       const resource = await this.cwaFetch.fetch<CwaResource>(...args)
       const refreshEndpoints = event.refreshEndpoints || []
       if (args[1].method === 'POST') {
@@ -220,7 +256,15 @@ export class ResourcesManager {
           paths: refreshEndpoints,
           shallowFetch: true
         }
-        await this.fetcher.fetchBatch(fetchBathEvent)
+        try {
+          await this.fetcher.fetchBatch(fetchBathEvent)
+        } catch (err) {
+          // issues refreshing endpoints which are no longer found can be common
+          const fetchError = err as FetchError<any>
+          if (fetchError?.statusCode !== 404) {
+            throw err
+          }
+        }
       }
       if (postRequestFn) {
         await postRequestFn(resource as CwaResource|undefined)
@@ -234,7 +278,7 @@ export class ResourcesManager {
         })
       } else {
         this.removeResource({
-          resource: event.endpoint
+          resource: iri
         })
       }
       return resource
@@ -341,6 +385,9 @@ export class ResourcesManager {
       return
     }
     this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd)
+    nextTick(() => {
+      this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
+    })
   }
 
   public clearAddResource () {

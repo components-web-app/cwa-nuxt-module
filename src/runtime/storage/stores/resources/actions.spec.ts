@@ -121,7 +121,8 @@ describe('Resources -> deleteResource', () => {
           componentPositions: [
             '/_/component_positions/static',
             '/_/component_positions/dynamic'
-          ]
+          ],
+          _metadata: {}
         }
       },
       '/_/component_positions/static': {

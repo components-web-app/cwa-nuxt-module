@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { DateTime } from 'luxon'
 import {
   type CwaResource,
@@ -16,6 +16,8 @@ const props = defineProps<{
 }>()
 
 const $cwa = useCwa()
+
+const publishing = ref(false)
 
 const publishedState = computed(() => {
   if (!props.currentIri || !props.resource) {
@@ -72,12 +74,14 @@ const buttonOptions = computed(() => {
 })
 
 async function publishResource () {
+  publishing.value = true
   await $cwa.resourcesManager.updateResource({
     endpoint: props.currentIri,
     data: {
       publishedAt: DateTime.local().toUTC().toISO()
     }
   })
+  publishing.value = false
 }
 
 function handleManagerCtaClick (value?: ModelValue) {
@@ -104,6 +108,7 @@ function handleManagerCtaClick (value?: ModelValue) {
     color="grey"
     button-class="cwa-min-w-[100px]"
     :options="buttonOptions"
+    :disabled="publishing"
     @click="handleManagerCtaClick"
   >
     {{ buttonLabel }}

@@ -4,7 +4,7 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
 <div>
   <label
     class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
-    for="this-is-unique-string"
+    for="5a79934212ac9d6514f7c998f8d1558bbf75a92d"
   >
     Login
   </label>
@@ -14,7 +14,7 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
     <input
       autocomplete="login"
       class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
-      id="this-is-unique-string"
+      id="5a79934212ac9d6514f7c998f8d1558bbf75a92d"
       name="login"
       type="text"
     />
@@ -40,7 +40,7 @@ exports[`InputField > snapshots > should match snapshot IF input is marked as re
 <div>
   <label
     class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
-    for="this-is-unique-string"
+    for="c3a335b771d649e59f7bd414f8737a391ff5e271"
   >
     Login
   </label>
@@ -50,7 +50,7 @@ exports[`InputField > snapshots > should match snapshot IF input is marked as re
     <input
       autocomplete="login"
       class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
-      id="this-is-unique-string"
+      id="c3a335b771d649e59f7bd414f8737a391ff5e271"
       name="login"
       required=""
       type="text"
@@ -64,7 +64,7 @@ exports[`InputField > snapshots > should match snapshot IF input is of type pass
 <div>
   <label
     class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
-    for="this-is-unique-string"
+    for="ac3cdb342f7d015da525e6e7c8e81ce0d7bbf3b3"
   >
     Password
   </label>
@@ -74,7 +74,7 @@ exports[`InputField > snapshots > should match snapshot IF input is of type pass
     <input
       autocomplete="password"
       class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
-      id="this-is-unique-string"
+      id="ac3cdb342f7d015da525e6e7c8e81ce0d7bbf3b3"
       name="password"
       type="password"
     />
@@ -87,7 +87,7 @@ exports[`InputField > snapshots > should match snapshot with passed content 1`] 
 <div>
   <label
     class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
-    for="this-is-unique-string"
+    for="009628b43238338220f2c2af55217d73c7163999"
   >
     Login
   </label>
@@ -97,7 +97,7 @@ exports[`InputField > snapshots > should match snapshot with passed content 1`] 
     <input
       autocomplete="login"
       class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
-      id="this-is-unique-string"
+      id="009628b43238338220f2c2af55217d73c7163999"
       name="login"
       type="text"
     />

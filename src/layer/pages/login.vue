@@ -20,6 +20,7 @@ definePageMeta({
 })
 
 useHead({
+  title: 'Login',
   bodyAttrs: {
     class: 'cwa-h-full'
   },

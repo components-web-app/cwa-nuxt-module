@@ -58,6 +58,9 @@ vi.mock('../cwa', () => {
       },
       resources: {
         findAllPublishableIris: vi.fn(iri => ([iri]))
+      },
+      resourcesManager: {
+        addResourceEvent: ref()
       }
     }))
   }
@@ -126,7 +129,7 @@ describe('ManageableResource Class', () => {
       const { instance } = createManageableResource()
       const watchSpy = vi.spyOn(vue, 'watch').mockImplementationOnce(() => 'unwatchFn')
       vi.spyOn(instance, 'clear').mockImplementationOnce(() => {})
-      vi.spyOn(instance, 'initNewIri').mockImplementationOnce(() => {})
+      vi.spyOn(instance, '_initNewIri').mockImplementationOnce(() => {})
       const newIri = ref('/new')
 
       instance.init(newIri)
@@ -135,7 +138,7 @@ describe('ManageableResource Class', () => {
       expect(instance.currentIri).toEqual(newIri)
       expect(instance.unwatchCurrentIri).toEqual('unwatchFn')
       expect(watchSpy.mock.lastCall[0]).toEqual(instance.currentIri)
-      expect(Object.create(instance.initNewIri.prototype) instanceof watchSpy.mock.lastCall[1]).toBe(true)
+      expect(Object.create(instance._initNewIri.prototype) instanceof watchSpy.mock.lastCall[1]).toBe(true)
       expect(watchSpy.mock.lastCall[2]).toEqual({
         immediate: true,
         flush: 'post'
@@ -153,7 +156,7 @@ describe('ManageableResource Class', () => {
         currentIri: undefined,
         clearCallCount: 1
       }
-    ])('If currentIri is $currentIri then the `clear` function is called $clearCallCount times and currentIri is set', ({ currentIri, clearCallCount }) => {
+    ])('If currentIri is `$currentIri` then the "clear" function is called `$clearCallCount` times and currentIri is set', ({ currentIri, clearCallCount }) => {
       const { instance } = createManageableResource()
       instance.currentIri = ref(currentIri)
       const localStackItem = { iri: '/something', localSomething: 'abc' }
@@ -164,10 +167,11 @@ describe('ManageableResource Class', () => {
       vi.spyOn(instance, 'componentMountedListener', 'get').mockImplementationOnce(() => listener)
 
       instance.initNewIri('/something')
+
       expect(instance.clear).toHaveBeenCalledTimes(clearCallCount)
       expect(instance.clear).toHaveBeenCalledWith(true)
 
-      expect(instance.addClickEventListeners).toHaveBeenCalledTimes(1)
+      expect(instance.addClickEventListeners).toHaveBeenCalledTimes(currentIri === undefined ? 0 : 1)
     })
   })
 
@@ -288,6 +292,9 @@ describe('ManageableResource Class', () => {
       vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {
         if (iri === '/no-type') {
           return undefined
+        }
+        if (iri === '/component') {
+          return CwaResourceTypes.COMPONENT
         }
         return iri.startsWith('/position') ? CwaResourceTypes.COMPONENT_POSITION : CwaResourceTypes.COMPONENT_GROUP
       })

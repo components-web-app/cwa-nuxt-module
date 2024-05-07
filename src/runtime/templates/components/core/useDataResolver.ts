@@ -2,7 +2,7 @@ import {
   createApp,
   type defineAsyncComponent,
   defineComponent,
-  h,
+  h, onBeforeUnmount, onMounted,
   ref,
   type Ref,
   watch,
@@ -14,6 +14,7 @@ import type { ManagerTab } from '#cwa/module.js'
 interface Options {
   components: Ref<ManagerTab[]|undefined>
   props: Ref<any>
+  propsValidator?: (props: any) => boolean
 }
 
 export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops: Options) => {
@@ -67,15 +68,14 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
   )
 
   const resolvedWatchers = ref<WatchStopHandle[]>([])
-
-  watch([ops.components, ops.props], () => {
+  const handleInputChange = () => {
     for (const unwatch of resolvedWatchers.value) {
       unwatch()
     }
     resolvedWatchers.value = []
     allMeta.value = new Array(ops.components.value?.length || 0)
 
-    if (!ops.components.value) {
+    if (!ops.components.value || (ops.propsValidator && !ops.propsValidator(ops.props.value))) {
       return
     }
 
@@ -105,7 +105,34 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
       })
       resolvedWatchers.value.push(unwatch)
     }
-  }, {
-    immediate: true
+  }
+
+  let stopPrimaryWatch: WatchStopHandle|undefined
+  const startDataResolver = () => {
+    if (!stopPrimaryWatch) {
+      allMeta.value = []
+      stopPrimaryWatch = watch([ops.components, ops.props], handleInputChange, {
+        immediate: true
+      })
+    }
+  }
+
+  const stopDataResolver = () => {
+    if (stopPrimaryWatch) {
+      stopPrimaryWatch()
+    }
+  }
+
+  onMounted(() => {
+    startDataResolver()
   })
+
+  onBeforeUnmount(() => {
+    stopDataResolver()
+  })
+
+  return {
+    startDataResolver,
+    stopDataResolver
+  }
 }

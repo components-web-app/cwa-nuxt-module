@@ -52,8 +52,8 @@ import {
   FloatingMenu
 } from '@tiptap/vue-3'
 import { computed, toRef, watch } from 'vue'
-import type { UnionCommands } from '@tiptap/core/src/types'
 import type { Editor } from '@tiptap/core'
+import type { UnionCommands } from '@tiptap/core/src/types'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
@@ -94,12 +94,12 @@ const editor = useEditor({
 })
 
 // match the editor value to the modelValue prop
-watch(value, () => {
+watch(value, (newValue) => {
   if (!editor.value) {
     return
   }
   // HTML
-  const isSame = editor.value.getHTML() === value.value
+  const isSame = editor.value.getHTML() === newValue
 
   // JSON
   // const isSame = JSON.stringify(this.editor.getJSON()) === JSON.stringify(value)
@@ -107,7 +107,7 @@ watch(value, () => {
     return
   }
 
-  editor.value.commands.setContent(value.value || null, false)
+  editor.value.commands.setContent(newValue || null, false)
 })
 
 // Toggle disabled prop and focus when enabled

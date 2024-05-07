@@ -17,8 +17,6 @@ import {
   resourceTypeToNestedResourceProperties
 } from '../resources/resource-utils'
 import Cwa from '../cwa'
-// if you get error GET https://localhost:3000/_nuxt/@fs/[PATH]/cwa-nuxt-3-module/src/runtime/admin/manager-tabs-resolver.ts net::ERR_TOO_MANY_RETRIES
-// appears chromium bug with self-signed cert
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
 import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
@@ -39,6 +37,7 @@ export default class ManageableResource {
   private unwatchCurrentIri: undefined|WatchStopHandle
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
+  private childIrisComputed: ComputedRef<string[]>|undefined
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -59,19 +58,24 @@ export default class ManageableResource {
     this.currentIri = iri
     this.$cwa.admin.eventBus.on('componentMounted', this.componentMountedListener)
     this.$cwa.admin.eventBus.on('selectResource', this.selectResourceListener)
-    this.unwatchCurrentIri = watch(this.currentIri, this.initNewIri.bind(this), {
+    // we need to fire this right away to initialise the click handlers before the manageable resource emits a mounted event so this is the first click event rto fire imn the stack
+    this.unwatchCurrentIri = watch(this.currentIri, this._initNewIri.bind(this), {
       immediate: true,
       flush: 'post'
     })
   }
 
-  private initNewIri (iri: string|undefined) {
+  private _initNewIri (iri: string|undefined) {
     this.clear(true)
+    this.isIriInit = true
     if (!iri) {
       return
     }
-    this.isIriInit = true
     this.addClickEventListeners()
+  }
+
+  public initNewIri () {
+    this._initNewIri(this.currentIri?.value)
   }
 
   public clear (soft: boolean = false) {
@@ -80,6 +84,7 @@ export default class ManageableResource {
     }
     this.removeClickEventListeners()
     this.domElements.value = []
+
     if (!soft) {
       this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
       this.$cwa.admin.eventBus.off('selectResource', this.selectResourceListener)
@@ -92,25 +97,32 @@ export default class ManageableResource {
         this.currentIri = undefined
       }
     }
+
     this.isIriInit = false
   }
 
   // REFRESHING INITIALISATION
   private componentMountedListener (iri: string) {
-    if (iri === this.currentIri?.value) {
-      this.initNewIri(iri)
+    // to avoid firing the initialisation in the wrong order, where the component needs to be the first click event fired in the stack, we skip here and let the manageable composable call the initialisation of the click handler before emitting the componentMounted event
+    if (this.currentIri?.value === iri) {
+      return
     }
+
+    // is the component that was just mounted a child of this one?
     const iris = this.$cwa.resources.findAllPublishableIris(iri)
+    const childIris = this.childIris.value
     const iriIsChild = () => {
       for (const iri of iris) {
-        if (this.childIris.value.includes(iri)) {
+        if (childIris.includes(iri)) {
           return true
         }
       }
       return false
     }
 
-    if (iriIsChild()) {
+    // the child will have to have a click handler added for this (parent) resource
+    const isNewlyMountedIriAChild = iriIsChild()
+    if (isNewlyMountedIriAChild) {
       this.removeClickEventListeners()
       this.addClickEventListeners()
     }
@@ -124,10 +136,17 @@ export default class ManageableResource {
 
   // COMPUTED FOR REFRESHING
   private get childIris (): ComputedRef<string[]> {
-    return computed(() => {
-      if (!this.currentIri?.value) {
+    if (this.childIrisComputed) {
+      return this.childIrisComputed
+    }
+
+    this.childIrisComputed = computed(() => {
+      const currentIri = this.currentIri?.value
+      if (!currentIri) {
         return []
       }
+      const addResourceData = this.$cwa.resourcesManager.addResourceEvent.value
+
       const getChildren = (iri: string): string[] => {
         const nested = []
         const resource = this.$cwa.resources.getResource(iri)
@@ -139,6 +158,7 @@ export default class ManageableResource {
         if (!type) {
           return []
         }
+
         // we don't have a real IRI for a placeholder - placeholders only currently used for positions
         if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
           nested.push(`${iri}_placeholder`)
@@ -146,11 +166,21 @@ export default class ManageableResource {
         const properties = resourceTypeToNestedResourceProperties[type]
 
         for (const prop of properties) {
-          const children = resource.value.data?.[prop]
-          if (!children || !Array.isArray(children)) {
-            children && nested.push(children)
+          let children: string|string[] = resource.value.data?.[prop]
+          if (!children) {
             continue
           }
+          if (Array.isArray(children)) {
+            // do not modify the original array in the object
+            children = [...children]
+          } else {
+            children = [children]
+          }
+
+          if (addResourceData?.closest.group === iri) {
+            children.push(`/_/component_positions/${NEW_RESOURCE_IRI}`)
+          }
+
           for (const child of children) {
             nested.push(child)
             nested.push(...getChildren(child))
@@ -160,8 +190,9 @@ export default class ManageableResource {
         return nested
       }
 
-      return getChildren(this.currentIri.value)
+      return getChildren(currentIri)
     })
+    return this.childIrisComputed
   }
 
   // GET DOM ELEMENTS TO ADD CLICK EVENTS TO
@@ -198,10 +229,6 @@ export default class ManageableResource {
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)
-    }
-    // Once click event listeners are added, if this is a new resource, select it
-    if (this.domElements.value.length && this.currentIri?.value === NEW_RESOURCE_IRI) {
-      this.triggerClick()
     }
   }
 

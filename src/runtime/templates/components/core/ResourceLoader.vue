@@ -156,7 +156,8 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
 // With ISR when the page is loaded it could be cached, this should trigger on front-end still and can send a request to update/check the component from the API again
 const isOutdated = computed(() => {
   const apiState = resource.value?.apiState
-  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.fetchedAt) {
+  // if we have fetched successfully already and have a timestamp for when that was, or it was loaded client-side already
+  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.fetchedAt || !apiState.ssr) {
     return
   }
   const nowTime = (new Date()).getTime()
@@ -175,7 +176,6 @@ const methods = {
     if (isLoading.value) {
       return
     }
-    // todo: test all possibilities
     if (
       ssrNoDataWithSilentError.value ||
       ssrPositionHasPartialData.value ||

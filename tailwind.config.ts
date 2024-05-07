@@ -69,4 +69,4 @@ export default {
     require('@tailwindcss/forms')
   ],
   prefix: 'cwa-'
-} as Config
+} satisfies Config

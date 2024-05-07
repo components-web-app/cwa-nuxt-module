@@ -1,7 +1,6 @@
-import type { ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
+import type { ComponentPublicInstance, ComputedRef, Ref, ShallowRef, App } from 'vue'
 import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { consola as logger } from 'consola'
-import type { App } from 'vue/dist/vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -120,7 +119,7 @@ export default class ResourceStackManager {
         }
         // currentResourceStack is a shallowRef and an array, unless the length changes, it basically doesn't trigger for
         // this computed variable to update. this is an issue when replacing the stack item
-        return this.currentClickTarget.value ? undefined : this.currentResourceStack.value[0]
+        return this.currentResourceStack.value[0]
       })
     }
     return this._currentStackItem
@@ -340,7 +339,7 @@ export default class ResourceStackManager {
   private createFocusComponent () {
     this.removeFocusComponent()
     const stackItem = this.currentStackItem.value
-    if (!this.currentIri || !stackItem) {
+    if (!this.currentIri.value || !stackItem) {
       return
     }
 

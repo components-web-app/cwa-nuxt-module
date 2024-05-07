@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload test artifacts
         if: matrix.coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: vitest-logs-unit${{ matrix.node }}
           path: ./coverage
@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload coverage results to Codecov
         if: matrix.coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           name: vitest-node-${{ matrix.node }}
           flags: vitest

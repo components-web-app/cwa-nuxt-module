@@ -3,9 +3,10 @@ import { isEqual } from 'lodash-es'
 import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
-export const useCwaSelect = (model: Ref<ModelValue>) => {
-  const selectModel = ref<ModelValue>()
-  const options = ref<SelectOption[]>([])
+export const useCwaSelect = (model: Ref<ModelValue>, ops: SelectOption[] = []) => {
+  // use a new model - prevent updating the model and immediately triggering updates
+  const selectModel = ref<ModelValue>(model.value)
+  const options = ref<SelectOption[]>(ops)
   watch(options, (newOptions) => {
     const selectOption = newOptions.find((op) => {
       return isEqual(op.value, model.value)
