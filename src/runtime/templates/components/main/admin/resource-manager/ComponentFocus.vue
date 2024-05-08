@@ -45,8 +45,8 @@ const position = computed((): {
     const domRect = domElement.getBoundingClientRect()
     clearCoords.top = Math.min(clearCoords.top, domRect.top)
     clearCoords.left = Math.min(clearCoords.left, domRect.left)
-    clearCoords.width = Math.max(clearCoords.width, domRect.width)
-    clearCoords.height = Math.max(clearCoords.height, domRect.height)
+    clearCoords.width = Math.max(clearCoords.width, domRect.right - clearCoords.left)
+    clearCoords.height = Math.max(clearCoords.height, domRect.bottom - clearCoords.top)
   }
 
   const addY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
@@ -133,7 +133,7 @@ function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, wid
 
 let redrawInterval: number|undefined
 onMounted(() => {
-  $cwa.admin.eventBus.on('componentMounted', redraw)
+  $cwa.admin.eventBus.on('manageableComponentMounted', redraw)
   window.addEventListener('resize', redraw, false)
   watch(resourceData, redraw, { deep: true, flush: 'post' })
   watch(canvas, newCanvas => newCanvas && redraw())
@@ -157,7 +157,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', redraw)
-  $cwa.admin.eventBus.off('componentMounted', redraw)
+  $cwa.admin.eventBus.off('manageableComponentMounted', redraw)
   redrawInterval && window.clearInterval(redrawInterval)
 })
 
