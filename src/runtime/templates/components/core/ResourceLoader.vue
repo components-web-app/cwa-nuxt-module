@@ -108,6 +108,7 @@ const hasSilentError = computed<boolean>(() => {
   return !!(statusCode && statusCode >= 400 && statusCode < 500)
 })
 
+// todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
 const resolvedComponent = computed(() => {
   if (props.uiComponent) {
     return props.uiComponent

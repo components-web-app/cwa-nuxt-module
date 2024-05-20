@@ -14,9 +14,9 @@ definePageMeta({
 })
 
 useHead({
-  title: () => $cwa.resources.pageData?.value.data?.title || $cwa.resources.page?.value.data?.title,
+  title: () => $cwa.resources.pageData?.value?.data?.title || $cwa.resources.page?.value?.data?.title,
   meta: [
-    { name: 'description', content: () => $cwa.resources.pageData?.value.data?.metaDescription || $cwa.resources.page?.value.data?.metaDescription }
+    { name: 'description', content: () => $cwa.resources.pageData?.value?.data?.metaDescription || $cwa.resources.page?.value?.data?.metaDescription }
   ]
 })
 </script>

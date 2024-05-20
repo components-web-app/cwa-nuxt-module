@@ -216,6 +216,8 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
         ignore: ['**/*.spec.{cts,mts,ts}']
       })
 
+      // todo: https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
+      // todo: components do not need to be global and can be imported using import.meta.glob("~/components/modal/*.vue"); to reduce bundle size
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'layouts'),

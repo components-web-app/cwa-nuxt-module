@@ -67,6 +67,7 @@ const layoutUiComponent = computed<GlobalComponentNames>(() => {
   return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || 'CwaDefaultLayout'
 })
 
+// todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
 const resolvedComponent = computed(() => {
   // todo: add checks to ensure component exists - otherwise output a warning and/or default
   if (
