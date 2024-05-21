@@ -15,6 +15,8 @@ const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   order: DEFAULT_TAB_ORDER
 })
 
+const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
+
 const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
   debounceTime: 0
 })
@@ -81,7 +83,10 @@ useDataResolver(componentMeta, {
   }
 })
 onMounted(() => {
-  watch(uiSelect.model, () => {
+  // trying to update ui class names too early, as the result may be a different IRI and sending in another
+  // request before database is updated can result in sql error
+  // when watching uiSelect.model
+  watch(() => resource.value?.data?.uiComponent, () => {
     uiClassNamesModel.model.value = null
     classNamesSelect.model.value = null
   })
