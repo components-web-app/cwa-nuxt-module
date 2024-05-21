@@ -33,7 +33,7 @@ async function addResourceAction (publish?: boolean) {
   isAdding.value = true
   try {
     await $cwa.resourcesManager.addResourceAction(publish)
-    $cwa.admin.toggleEdit(false)
+    $cwa.admin.emptyStack()
   } catch (e) {
     consola.error(e)
   }

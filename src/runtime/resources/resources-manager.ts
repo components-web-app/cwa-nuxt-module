@@ -214,7 +214,7 @@ export class ResourcesManager {
     const postRequestFn = () => {
       // if we have just published a resource, remove the old draft and turn off edit mode
       if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri) {
-        this.admin.toggleEdit(false)
+        this.admin.emptyStack()
         this.removeResource({ resource: event.endpoint })
       }
     }

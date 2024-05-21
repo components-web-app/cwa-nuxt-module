@@ -27,9 +27,13 @@ export default class Admin {
     return this.stackManagerInstance
   }
 
+  public emptyStack () {
+    this.resourceStackManager.completeStack({ clickTarget: window }, false)
+  }
+
   public toggleEdit (editing?: boolean): void {
     if (editing === false || (editing === undefined && this.isEditing)) {
-      this.resourceStackManager.completeStack({ clickTarget: window }, false)
+      this.emptyStack()
     }
     this.adminStore.toggleEdit(editing)
   }
