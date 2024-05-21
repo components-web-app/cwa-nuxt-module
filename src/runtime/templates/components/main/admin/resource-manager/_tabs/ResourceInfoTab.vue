@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
+import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 const { exposeMeta, iri, $cwa } = useCwaResourceManagerTab({
   name: 'Info',
@@ -16,6 +17,11 @@ async function handleDelete () {
   if (!iri.value) {
     return
   }
+  if (isAddingNew.value) {
+    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.toggleEdit(false)
+    return
+  }
+
   disableButton.value = true
   const result = await $cwa.resourcesManager.deleteResource({
     endpoint: iri.value,
@@ -33,12 +39,16 @@ const isDeleteEnabled = computed(() => {
   }
   return !$cwa.resources.isDataPage.value || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
 })
+
+const isAddingNew = computed(() => {
+  return iri.value === NEW_RESOURCE_IRI
+})
 </script>
 
 <template>
   <div class="cwa-flex cwa-space-x-4 cwa-items-center">
     <div class="cwa-text-sm">
-      {{ iri }}
+      {{ isAddingNew ? '[New Resource]' : iri }}
     </div>
     <div v-if="isDeleteEnabled">
       <CwaUiFormButton
@@ -47,7 +57,7 @@ const isDeleteEnabled = computed(() => {
         :disabled="disableButton"
         @click="handleDelete"
       >
-        Delete
+        {{ isAddingNew ? 'Discard' : 'Delete' }}
       </CwaUiFormButton>
     </div>
   </div>

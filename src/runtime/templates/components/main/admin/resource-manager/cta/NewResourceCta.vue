@@ -47,8 +47,7 @@ async function handleManagerCtaClick (value?: ModelValue) {
   }
 
   if (value === 'add-discard') {
-    await $cwa.resourcesManager.confirmDiscardAddingResource()
-    $cwa.admin.toggleEdit(false)
+    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.toggleEdit(false)
     return
   }
 
