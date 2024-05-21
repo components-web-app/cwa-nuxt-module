@@ -109,12 +109,13 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
 
   let stopPrimaryWatch: WatchStopHandle|undefined
   const startDataResolver = () => {
-    if (!stopPrimaryWatch) {
-      allMeta.value = []
-      stopPrimaryWatch = watch([ops.components, ops.props], handleInputChange, {
-        immediate: true
-      })
+    if (stopPrimaryWatch) {
+      return
     }
+    allMeta.value = []
+    stopPrimaryWatch = watch([ops.components, ops.props], handleInputChange, {
+      immediate: true
+    })
   }
 
   const stopDataResolver = () => {

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import { watchOnce } from '@vueuse/core'
 import {
   useCwaResourceManagerTab
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
@@ -15,7 +16,7 @@ const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   order: DEFAULT_TAB_ORDER
 })
 
-const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
+const savedUiComponent = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data?.uiComponent : undefined)
 
 const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
   debounceTime: 0
@@ -75,20 +76,26 @@ const resolverProps = computed(() => {
     iri: iri.value
   }
 })
-useDataResolver(componentMeta, {
+
+const { startDataResolver } = useDataResolver(componentMeta, {
   components,
   props: resolverProps,
   propsValidator: (props: typeof resolverProps.value) => {
     return !!props.iri
   }
 })
+// seem to need to start here for these to be consistent
+startDataResolver()
+
 onMounted(() => {
   // trying to update ui class names too early, as the result may be a different IRI and sending in another
   // request before database is updated can result in sql error
   // when watching uiSelect.model
-  watch(() => resource.value?.data?.uiComponent, () => {
-    uiClassNamesModel.model.value = null
-    classNamesSelect.model.value = null
+  watch(uiSelect.model, () => {
+    watchOnce(savedUiComponent, () => {
+      uiClassNamesModel.model.value = null
+      classNamesSelect.model.value = null
+    })
   })
 
   watchEffect(() => {
