@@ -69,7 +69,7 @@ export default class ApiDocumentation {
     return await this.fetchAllApiDocumentation(this.docsPath)
   }
 
-  public async getComponentMetadata (refresh = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+  public async getComponentMetadata (refresh = false, includePosition = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
     const apiDocumentation = await this.getApiDocumentation(refresh)
     const docs = apiDocumentation?.docs
     const entrypoint = apiDocumentation?.entrypoint
@@ -87,9 +87,14 @@ export default class ApiDocumentation {
     )
 
     const metadata: ApiDocumentationComponentMetadataCollection = {}
+    const typeCheckArray = [CwaResourceTypes.COMPONENT]
+    if (includePosition) {
+      typeCheckArray.push(CwaResourceTypes.COMPONENT_POSITION)
+    }
 
     for (const [key, endpoint] of Object.entries(entrypoint) as string[][]) {
-      if (getResourceTypeFromIri(endpoint) === CwaResourceTypes.COMPONENT) {
+      const rType = getResourceTypeFromIri(endpoint)
+      if (rType && typeCheckArray.includes(rType)) {
         const resourceName = key[0].toUpperCase() + key.slice(1)
         // should check whether we have configured a front-end component for this API resource
         // if (!getUiComponent(resourceName)) {

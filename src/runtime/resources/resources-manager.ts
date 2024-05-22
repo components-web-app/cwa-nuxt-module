@@ -380,14 +380,18 @@ export class ResourcesManager {
     }
   }
 
-  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean) {
+  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }) {
     if (!this._addResourceEvent.value) {
       return
     }
-    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd)
+    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd, defaultData)
     nextTick(() => {
-      this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
+      !instantAdd && this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
     })
+  }
+
+  public clearAddResourceEventResource () {
+    this.resourcesStore.resetNewResource()
   }
 
   public clearAddResource () {

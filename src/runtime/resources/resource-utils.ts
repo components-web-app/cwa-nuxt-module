@@ -53,7 +53,7 @@ const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
 export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined {
   for (const type of Object.values(CwaResourceTypes)) {
     const prefix: string = resourceTypeToIriPrefix[type]
-    if (iri.startsWith(prefix)) {
+    if (iri.startsWith(prefix) || iri === prefix.slice(0, -1)) {
       return type
     }
   }

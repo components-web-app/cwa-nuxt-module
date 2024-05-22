@@ -18,7 +18,7 @@ async function handleDelete () {
     return
   }
   if (isAddingNew.value) {
-    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.toggleEdit(false)
+    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.emptyStack()
     return
   }
 
@@ -28,7 +28,7 @@ async function handleDelete () {
     refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(iri.value)
   })
   if (result !== false) {
-    $cwa.admin.toggleEdit(false)
+    $cwa.admin.emptyStack()
   }
   disableButton.value = false
 }

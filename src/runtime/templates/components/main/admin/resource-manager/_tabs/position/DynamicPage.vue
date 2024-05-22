@@ -3,14 +3,17 @@ import { onMounted } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
-import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 import { useCwaSelect } from '#cwa/runtime/composables/cwa-select'
+import {
+  useDynamicPositionSelectOptions
+} from '#cwa/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 
 const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
   name: 'Dynamic Component',
   order: DEFAULT_TAB_ORDER
 })
 
+const { getOptions } = useDynamicPositionSelectOptions($cwa)
 const { model } = useCwaResourceModel<string>(iri, 'pageDataProperty', {
   debounceTime: 0
 })
@@ -20,24 +23,12 @@ select.options.value = [{
   label: 'Loading...',
   value: undefined
 }]
-
 async function loadOps () {
-  const newOptions: SelectOption[] = [{
-    label: 'None',
-    value: null
-  }]
-  const docs = await $cwa.getApiDocumentation()
-  const pageDataMeta = docs?.pageDataMetadata?.['hydra:member']
-  if (pageDataMeta) {
-    for (const { properties } of pageDataMeta) {
-      newOptions.push(...properties.map(({ property }) => ({ label: property, value: property })))
-    }
-  }
-  select.options.value = newOptions
+  select.options.value = await getOptions()
 }
 
-onMounted(async () => {
-  await loadOps()
+onMounted(() => {
+  loadOps()
 })
 
 defineExpose(exposeMeta)
