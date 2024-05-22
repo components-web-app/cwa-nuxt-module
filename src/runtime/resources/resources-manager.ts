@@ -324,23 +324,24 @@ export class ResourcesManager {
     }
   }
 
-  public async initAddResource (targetIri: string, addAfter: boolean, resourceStack: ResourceStackItem[]) {
+  public async initAddResource (targetIri: string, addAfter: null|boolean, resourceStack: ResourceStackItem[], pageDataProperty?: string) {
     type BaseEvent = {
       targetIri: string
-      addAfter: boolean
+      addAfter: null|boolean
     }
     const initEvent: BaseEvent = {
       targetIri,
       addAfter
     }
 
-    const findClosestResourceByType = (type: CwaResourceTypes): string => {
+    const findClosestResourceByType = (type: CwaResourceTypes): string|undefined => {
       for (const stackItem of resourceStack) {
         if (getResourceTypeFromIri(stackItem.iri) === type) {
           return stackItem.iri
         }
       }
-      throw new Error(`Could not find a resource with type '${type}' in the stack`)
+      // group not in a stack on dynamic data page and not needed if adding into a position
+      // throw new Error(`Could not find a resource with type '${type}' in the stack`)
     }
 
     const findClosestPosition = (event: BaseEvent): string|undefined => {
@@ -356,9 +357,9 @@ export class ResourcesManager {
       if (!positions || !positions.length) {
         return
       }
-      if (event.addAfter) {
+      if (event.addAfter === true) {
         return positions[positions.length - 1]
-      } else {
+      } else if (event.addAfter === false) {
         return positions[0]
       }
     }
@@ -376,16 +377,17 @@ export class ResourcesManager {
       closest: {
         position: closestPosition,
         group: closestGroup
-      }
+      },
+      pageDataProperty
     }
   }
 
-  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }) {
+  public async setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }) {
     if (!this._addResourceEvent.value) {
       return
     }
     this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd, defaultData)
-    nextTick(() => {
+    await nextTick(() => {
       !instantAdd && this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
     })
   }
@@ -438,22 +440,26 @@ export class ResourcesManager {
       throw new Error('Cannot add resource. There was no adding metadata on the new resource in the store.')
     }
 
-    const refreshEndpoints = [addEvent.closest.group]
+    const refreshEndpoints = []
 
-    const positionIri = this.getDissectPositionIri()
+    if (addEvent.addAfter !== null) {
+      addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
+      const positionIri = this.getDissectPositionIri()
 
-    // If we are not adding a position, we will create the component with a position at the same time
-    if (data['@type'] === 'ComponentPosition') {
-      const newDefaultPositionData = this.createNewComponentPosition(positionIri)
-      data.componentGroup = newDefaultPositionData.componentGroup
-      data.sortValue = newDefaultPositionData.sortValue
-    } else if (!data.componentPositions) {
-      // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
-      data.componentPositions = [this.createNewComponentPosition(positionIri)]
+      // If we are not adding a position, we will create the component with a position at the same time
+      if (data['@type'] === 'ComponentPosition') {
+        const newDefaultPositionData = this.createNewComponentPosition(positionIri)
+        data.componentGroup = newDefaultPositionData.componentGroup
+        data.sortValue = newDefaultPositionData.sortValue
+      } else if (!data.componentPositions) {
+        // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
+        data.componentPositions = [this.createNewComponentPosition(positionIri)]
+      }
+      // if we are adding into an existing position no need to refresh
+      refreshEndpoints.push(...this.getRefreshPositions(positionIri))
+    } else {
+      // todo: we are not adding before or after, so we are adding into something, a position or page data, the targetIri
     }
-
-    // if we are adding into an existing position no need to refresh
-    refreshEndpoints.push(...this.getRefreshPositions(positionIri))
 
     if (publish !== undefined) {
       data.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
@@ -494,8 +500,8 @@ export class ResourcesManager {
 
   private createNewComponentPosition (positionIri?: string) {
     const addEvent = this._addResourceEvent.value
-    if (!addEvent) {
-      throw new Error('Cannot create a new component position. There is no adding event')
+    if (!addEvent || !addEvent.closest.group) {
+      throw new Error('Cannot create a new component position. There is no adding event or no group assigned')
     }
     const positionResource = positionIri ? this.resourcesStore.getResource(positionIri) : undefined
     const componentPosition: { componentGroup: string, sortValue: number } = {
@@ -512,7 +518,7 @@ export class ResourcesManager {
   }
 
   private get groupResource () {
-    if (!this._addResourceEvent.value) {
+    if (!this._addResourceEvent.value || !this._addResourceEvent.value.closest.group) {
       return
     }
     return this.resourcesStore.getResource(this._addResourceEvent.value.closest.group)

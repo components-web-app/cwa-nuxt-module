@@ -22,7 +22,14 @@ const iriRef = toRef(props, 'iri')
 const resource = useCwaResource(iriRef).getResource()
 useCwaResourceManageable(iriRef)
 
+const addingEvent = computed(() => {
+  return $cwa.resourcesManager.addResourceEvent.value
+})
+
 const componentIri = computed(() => {
+  if (addingEvent.value?.targetIri === props.iri && addingEvent.value?.addAfter === null) {
+    return NEW_RESOURCE_IRI
+  }
   const iri = resource.value?.data?.component
   if (iri === NEW_RESOURCE_IRI) {
     return iri

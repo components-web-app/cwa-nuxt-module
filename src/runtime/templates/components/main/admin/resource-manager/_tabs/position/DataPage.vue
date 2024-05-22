@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { navigateTo } from '#app'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 
-const { exposeMeta, resource, $cwa } = useCwaResourceManagerTab({
+const loadingDynamicMetadata = ref(false)
+
+const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Data Placeholder',
   order: DEFAULT_TAB_ORDER
 })
@@ -43,17 +45,52 @@ const availablePropsToComponentNames = computed<{ [prop:string]: string }>(() =>
   ) || {}
 })
 
-const dynamicComponentName = computed(() => {
+const componentName = computed<string|undefined>(() => {
   const positionPropertyConfigured = resource.value?.data?.pageDataProperty
   if (!positionPropertyConfigured) {
     return
   }
-  const componentName = availablePropsToComponentNames.value?.[positionPropertyConfigured]
-  if (!componentName) {
+  return availablePropsToComponentNames.value?.[positionPropertyConfigured]
+})
+
+const resourceConfig = computed(() => {
+  if (!componentName.value) {
     return
   }
-  return $cwa.resourcesConfig[componentName]?.name || componentName
+  return $cwa.resourcesConfig[componentName.value]
 })
+
+const dynamicComponentName = computed(() => {
+  return resourceConfig.value?.name || componentName.value
+})
+
+const instantAdd = computed(() => (!!resourceConfig.value?.instantAdd))
+
+async function getApiMetadata () {
+  if (!componentName.value) {
+    throw new Error('Cannot get API Metadata when componentName is not set')
+  }
+  const apiComponents = await $cwa.getComponentMetadata(false, false)
+  if (!apiComponents) {
+    throw new Error('Could not retrieve component metadata from the API')
+  }
+  return apiComponents[componentName.value]
+}
+
+async function addDynamicComponent () {
+  loadingDynamicMetadata.value = true
+  try {
+    const apiMetadata = await getApiMetadata()
+    if (!componentName.value || !apiMetadata || !iri.value) {
+      return
+    }
+    await $cwa.resourcesManager.initAddResource(iri.value, null, $cwa.admin.resourceStackManager.resourceStack.value)
+    // need to add the addResourceEvent
+    await $cwa.resourcesManager.setAddResourceEventResource(componentName.value, apiMetadata.endpoint, apiMetadata.isPublishable, instantAdd.value)
+  } finally {
+    loadingDynamicMetadata.value = false
+  }
+}
 
 function selectComponent () {
   const componentIri = resource.value?.data?.component
@@ -76,7 +113,8 @@ function selectComponent () {
         </CwaUiFormButton>
         <CwaUiFormButton
           v-else-if="dynamicComponentName"
-          :disabled="true"
+          :disabled="loadingDynamicMetadata"
+          @click="addDynamicComponent"
         >
           Add {{ dynamicComponentName }}
         </CwaUiFormButton>

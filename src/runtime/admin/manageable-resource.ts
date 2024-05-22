@@ -37,7 +37,7 @@ export default class ManageableResource {
   private unwatchCurrentIri: undefined|WatchStopHandle
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
-  private childIrisComputed: ComputedRef<string[]>|undefined
+  private childIrisRef: Ref<string[]>|undefined
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -135,12 +135,14 @@ export default class ManageableResource {
   }
 
   // COMPUTED FOR REFRESHING
-  private get childIris (): ComputedRef<string[]> {
-    if (this.childIrisComputed) {
-      return this.childIrisComputed
+  private get childIris (): Ref<string[]> {
+    if (this.childIrisRef) {
+      return this.childIrisRef
     }
 
-    this.childIrisComputed = computed(() => {
+    const watchRefs: (Ref|ComputedRef)[] = [this.$cwa.resourcesManager.addResourceEvent]
+
+    const getChildren = () => {
       const currentIri = this.currentIri?.value
       if (!currentIri) {
         return []
@@ -148,21 +150,36 @@ export default class ManageableResource {
       const addResourceData = this.$cwa.resourcesManager.addResourceEvent.value
 
       const getChildren = (iri: string): string[] => {
-        const nested = []
+        const nested: string[] = []
+        if (iri === NEW_RESOURCE_IRI) {
+          return nested
+        }
         const resource = this.$cwa.resources.getResource(iri)
+        watchRefs.push(resource)
         const type = getResourceTypeFromIri(iri)
         if (!resource.value) {
           consola.warn(`Could not get children for '${iri}' - Resource not found`)
-          return []
+          return nested
         }
         if (!type) {
-          return []
+          return nested
         }
 
         // we don't have a real IRI for a placeholder - placeholders only currently used for positions
         if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
           nested.push(`${iri}_placeholder`)
         }
+
+        if (addResourceData && addResourceData.closest.position === iri && addResourceData.targetIri === iri && addResourceData.addAfter === null) {
+          nested.push(NEW_RESOURCE_IRI)
+        }
+
+        if (addResourceData?.closest.group === iri) {
+          const child = `/_/component_positions/${NEW_RESOURCE_IRI}`
+          nested.push(child)
+          nested.push(...getChildren(child))
+        }
+
         const properties = resourceTypeToNestedResourceProperties[type]
 
         for (const prop of properties) {
@@ -170,15 +187,12 @@ export default class ManageableResource {
           if (!children) {
             continue
           }
+
           if (Array.isArray(children)) {
             // do not modify the original array in the object
             children = [...children]
           } else {
             children = [children]
-          }
-
-          if (addResourceData?.closest.group === iri) {
-            children.push(`/_/component_positions/${NEW_RESOURCE_IRI}`)
           }
 
           for (const child of children) {
@@ -191,8 +205,19 @@ export default class ManageableResource {
       }
 
       return getChildren(currentIri)
+    }
+
+    this.childIrisRef = ref(getChildren())
+
+    watch(watchRefs, () => {
+      if (!this.childIrisRef) {
+        return
+      }
+      this.childIrisRef.value = getChildren()
+    }, {
+      immediate: true
     })
-    return this.childIrisComputed
+    return this.childIrisRef
   }
 
   // GET DOM ELEMENTS TO ADD CLICK EVENTS TO

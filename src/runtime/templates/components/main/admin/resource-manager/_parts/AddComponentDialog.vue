@@ -90,7 +90,8 @@ const isInstantAddResourceSaved = computed(() => {
 
 const open = computed({
   get () {
-    return !!addResourceEvent.value && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
+    // the event will not have a group in the stack if we are on a dynamic data page, but we may be adding a component pre-configured which will not require this dialog
+    return !!addResourceEvent.value && !!addResourceEvent.value?.closest.group && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
   },
   set (value: boolean) {
     if (!value) {
@@ -99,7 +100,7 @@ const open = computed({
   }
 })
 
-const instantAdd = computed(() => (selectedComponent.value === 'position' || !!selectedResourceMeta.value?.instantAdd))
+const instantAdd = computed(() => (!!selectedResourceMeta.value?.instantAdd))
 
 const buttons = computed<ActionButton[]>(() => {
   return [

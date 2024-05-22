@@ -17,7 +17,7 @@ interface _ResourceStackItem {
   displayName?: string,
   managerTabs?: ManagerTab[],
   ui?: ComponentUi[],
-  childIris: ComputedRef<string[]>
+  childIris: Ref<string[]>
   styles?: ComputedRef<StyleOptions|undefined>
   resourceOps?: ManageableResourceOps
 }
@@ -34,12 +34,13 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 }
 
 export interface AddResourceEvent {
-  addAfter: boolean
+  addAfter: boolean|null
   targetIri: string
   closest: {
     position?: string
-    group: string
+    group?: string
   }
+  pageDataProperty?: string
 }
 
 export default class ResourceStackManager {
@@ -316,8 +317,10 @@ export default class ResourceStackManager {
   }
 
   private insertResourceStackItem (resourceStackItem: ResourceStackItem, isContext?: boolean) {
+    // the deepest nested resource should be earliest index e.g. 0 = component (child of 1 = position (child of 2 = group))
     const stack = this.getCurrentStack(!!isContext)
     const iris = this.resourcesStore.findAllPublishableIris(resourceStackItem.iri)
+
     const insertAtIndex = stack.value.findIndex((existingStackItem) => {
       const existingItemChildren = existingStackItem.childIris.value
       if (!existingItemChildren) {
