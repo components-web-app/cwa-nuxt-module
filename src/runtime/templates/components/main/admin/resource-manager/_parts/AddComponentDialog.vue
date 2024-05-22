@@ -164,7 +164,6 @@ const defaultComponentData = computed<{ [key: string]: any }>(() => {
     return {}
   }
   return {
-    componentGroup: displayData.value?.event.closest.group,
     pageDataProperty: dynamicPropertySelect.model.value
   }
 })

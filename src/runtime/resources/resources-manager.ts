@@ -445,6 +445,10 @@ export class ResourcesManager {
     // If we are not adding a position, we will create the component with a position at the same time
     if (data['@type'] !== 'ComponentPosition') {
       data.componentPositions = [this.createNewComponentPosition(positionIri)]
+    } else {
+      const newDefaultPositionData = this.createNewComponentPosition(positionIri)
+      data.componentGroup = newDefaultPositionData.componentGroup
+      data.sortValue = newDefaultPositionData.sortValue
     }
 
     refreshEndpoints.push(...this.getRefreshPositions(positionIri))
