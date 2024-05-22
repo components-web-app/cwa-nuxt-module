@@ -29,6 +29,32 @@ const hasDynamicComponent = computed(() => {
   return resource.value?.data?.component !== resource.value?.data?._metadata.staticComponent
 })
 
+const availablePropsToComponentNames = computed<{ [prop:string]: string }>(() => {
+  const pageData = $cwa.resources.pageData?.value
+  if (!pageData) {
+    return {}
+  }
+  return pageData?.data?._metadata.pageDataMetadata.properties.reduce(
+    (obj: { [prop:string]: string }, item: { property: string, componentShortName: string }) => {
+      obj[item.property] = item.componentShortName
+      return obj
+    },
+    {}
+  ) || {}
+})
+
+const dynamicComponentName = computed(() => {
+  const positionPropertyConfigured = resource.value?.data?.pageDataProperty
+  if (!positionPropertyConfigured) {
+    return
+  }
+  const componentName = availablePropsToComponentNames.value?.[positionPropertyConfigured]
+  if (!componentName) {
+    return
+  }
+  return $cwa.resourcesConfig[componentName]?.name || componentName
+})
+
 function selectComponent () {
   const componentIri = resource.value?.data?.component
   if (!componentIri) {
@@ -49,10 +75,10 @@ function selectComponent () {
           Select Component
         </CwaUiFormButton>
         <CwaUiFormButton
-          v-else
+          v-else-if="dynamicComponentName"
           :disabled="true"
         >
-          Add Component ( Todo )
+          Add {{ dynamicComponentName }}
         </CwaUiFormButton>
       </div>
       <div class="cwa-text-sm">

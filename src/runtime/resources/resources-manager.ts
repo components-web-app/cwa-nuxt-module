@@ -443,14 +443,16 @@ export class ResourcesManager {
     const positionIri = this.getDissectPositionIri()
 
     // If we are not adding a position, we will create the component with a position at the same time
-    if (data['@type'] !== 'ComponentPosition') {
-      data.componentPositions = [this.createNewComponentPosition(positionIri)]
-    } else {
+    if (data['@type'] === 'ComponentPosition') {
       const newDefaultPositionData = this.createNewComponentPosition(positionIri)
       data.componentGroup = newDefaultPositionData.componentGroup
       data.sortValue = newDefaultPositionData.sortValue
+    } else if (!data.componentPositions) {
+      // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
+      data.componentPositions = [this.createNewComponentPosition(positionIri)]
     }
 
+    // if we are adding into an existing position no need to refresh
     refreshEndpoints.push(...this.getRefreshPositions(positionIri))
 
     if (publish !== undefined) {
