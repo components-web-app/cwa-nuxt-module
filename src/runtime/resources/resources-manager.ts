@@ -29,6 +29,7 @@ import type { Resources } from '#cwa/runtime/resources/resources'
 interface DeleteApiResourceEvent {
   endpoint: string
   requestCompleteFn?: (resource?: CwaResource) => void|Promise<void>
+  saveCompleteFn?: (resource?: CwaResource) => void|Promise<void>
   refreshEndpoints?: string[]
 }
 
@@ -209,15 +210,23 @@ export class ResourcesManager {
       }
     }
 
+    const isPublishingAndOverwritingPreviousLiveResource = isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri
+
     const postRequestFn = () => {
       // if we have just published a resource, remove the old draft and turn off edit mode
-      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri) {
+      if (isPublishingAndOverwritingPreviousLiveResource) {
         this.admin.emptyStack()
+      }
+    }
+
+    const postSaveFn = () => {
+      // if we have just published a resource, remove the old draft and turn off edit mode
+      if (isPublishingAndOverwritingPreviousLiveResource) {
         this.removeResource({ resource: event.endpoint })
       }
     }
 
-    const resource = await this.doResourceRequest(event, args, postRequestFn)
+    const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn)
 
     // if we have just done an update that creates a new draft, we need to select the draft
     const responseId = resource?.['@id']
@@ -229,7 +238,7 @@ export class ResourcesManager {
     return resource
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>, postSaveFn?: (resource?: CwaResource) => void|Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
     const iri = event.endpoint.split('?')[0]
@@ -278,6 +287,14 @@ export class ResourcesManager {
         this.removeResource({
           resource: iri
         })
+      }
+      // required if we need to update the store further before we process mercure requests again, but need the new resource to be up to date in data as well.
+      // implemented to ensure we remove old drafts when a new live has been overwritten
+      if (postSaveFn) {
+        await postSaveFn(resource as CwaResource|undefined)
+      }
+      if (event.saveCompleteFn) {
+        await event.saveCompleteFn(resource as CwaResource|undefined)
       }
       return resource
     } catch (err) {
