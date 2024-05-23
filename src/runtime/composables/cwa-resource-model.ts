@@ -91,6 +91,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       resource.value === undefined ||
       (isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
     ) {
+      resetValue()
       return
     }
 
@@ -218,6 +219,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       isLongWait
     },
     resetValue,
-    model
+    model,
+    localValueWithIri
   }
 }

@@ -1,6 +1,6 @@
 <template>
   <TransitionRoot as="template" :show="isOpen">
-    <Dialog as="div" class="cwa-relative cwa-z-50" @close="setIsOpen">
+    <Dialog as="div" class="cwa-relative cwa-z-dialog" @close="setIsOpen">
       <TransitionChild
         as="template"
         enter="cwa-ease-out cwa-duration-300"

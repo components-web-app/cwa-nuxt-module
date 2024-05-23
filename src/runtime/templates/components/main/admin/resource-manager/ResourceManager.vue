@@ -157,7 +157,7 @@ defineExpose({
     leave-active-class="cwa-duration-200 cwa-ease-in"
     leave-to-class="cwa-transform cwa-translate-y-full"
   >
-    <div v-if="$cwa.admin.resourceStackManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-50 cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
+    <div v-if="$cwa.admin.resourceStackManager.showManager.value" class="fixed cwa-bottom-0 cwa-z-manager cwa-w-full cwa-text-white cwa-bg-dark/70" @click.stop>
       <div class="cwa-dark-blur">
         <div v-if="allTabsMeta.length" ref="managerHolder">
           <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />

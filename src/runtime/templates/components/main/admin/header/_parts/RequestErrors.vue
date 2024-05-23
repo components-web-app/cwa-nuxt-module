@@ -11,7 +11,7 @@ function removeError (timestamp: number) {
 </script>
 
 <template>
-  <div aria-live="assertive" class="cwa-pointer-events-none cwa-fixed cwa-inset-0 cwa-flex cwa-items-end cwa-pt-20 cwa-pb-4 cwa-py-6 sm:cwa-px-4 sm:cwa-items-start cwa-z-50">
+  <div aria-live="assertive" class="cwa-pointer-events-none cwa-fixed cwa-inset-0 cwa-flex cwa-items-end cwa-pt-20 cwa-pb-4 cwa-py-6 sm:cwa-px-4 sm:cwa-items-start cwa-z-notifications">
     <TransitionGroup
       tag="ul"
       class="cwa-list-none cwa-flex cwa-w-full cwa-flex-col cwa-items-center cwa-space-y-4 sm:cwa-items-end"

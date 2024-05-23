@@ -1,4 +1,4 @@
-import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { useCookie } from '#app/composables/cookie.js'
 import type { NuxtApp } from '#app/nuxt'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
@@ -60,7 +60,7 @@ export default class Cwa {
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, nuxtApp._route, this.storage.stores.resources)
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources)
-    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher, this.admin)
+    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher, this.admin, this.resources)
     this.auth = new Auth(
       this.cwaFetch,
       this.mercure,
@@ -75,7 +75,7 @@ export default class Cwa {
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)
-    this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
+    this.adminNavGuard = new NavigationGuard(nuxtApp.$router as Router, this.storage.stores.admin)
   }
 
   public get adminNavigationGuardFn () {
@@ -91,8 +91,8 @@ export default class Cwa {
     return await this.apiDocumentation.getApiDocumentation(refresh)
   }
 
-  public async getComponentMetadata (refresh = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
-    return await this.apiDocumentation.getComponentMetadata(refresh)
+  public async getComponentMetadata (refresh = false, includePosition = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+    return await this.apiDocumentation.getComponentMetadata(refresh, includePosition)
   }
 
   // fetcher is private, exposing the only function required by applications

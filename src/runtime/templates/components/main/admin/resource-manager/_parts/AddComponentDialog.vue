@@ -5,7 +5,7 @@
       <div class="cwa-flex cwa-space-x-4">
         <div class="cwa-flex cwa-flex-col cwa-w-4/12 cwa-space-y-3 cwa-min-h-64">
           <button
-            v-for="(component, name) of displayData.availableComponents"
+            v-for="(component, name) of displayData.displayAvailableComponents"
             :key="`add-${name}`"
             :class="buttonClass"
             :aria-selected="selectedComponent === name"
@@ -27,7 +27,7 @@
         <div class="cwa-flex-grow cwa-w-8/12">
           <div class="cwa-mb-6 cwa-space-y-4" v-html="resourceDescription" />
           <template v-if="selectedComponent === 'ComponentPosition'">
-            <p>[ADD INPUT FOR SELECTING THE COMPONENT DATA REFERENCE]</p>
+            <CwaUiFormSelect v-model="dynamicPropertySelect.model.value" :options="dynamicPropertySelect.options.value" />
           </template>
         </div>
       </div>
@@ -36,20 +36,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
-import { useCwa } from '#imports'
+import { useCwa, useCwaSelect } from '#imports'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import type {
   ApiDocumentationComponentMetadata
 } from '#cwa/runtime/api/api-documentation'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import type { CwaResourceMeta } from '#cwa/module'
-
-const $cwa = useCwa()
-const loadingComponents = ref(true)
-
-const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50 hover:cwa-border-opacity-100 aria-selected:cwa-border-opacity-100'
+import {
+  useDynamicPositionSelectOptions
+} from '#cwa/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadata
@@ -63,40 +61,37 @@ interface ComponentMetadataCollection {
 interface DisplayDataI {
   event: AddResourceEvent
   availableComponents: ComponentMetadataCollection
+  displayAvailableComponents: ComponentMetadataCollection
   enableDynamicPosition: boolean
 }
+const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50 hover:cwa-border-opacity-100 aria-selected:cwa-border-opacity-100'
 
+const $cwa = useCwa()
+const { getOptions } = useDynamicPositionSelectOptions($cwa)
+
+const loadingComponents = ref(true)
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
 const displayData = ref<DisplayDataI>()
 const selectedComponent = ref<string|undefined>()
-
-const addResourceEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
-
-const isInstantAddResourceSaved = computed(() => {
-  return !!$cwa.resources.newResource.value?.data?._metadata.adding?.instantAdd
-})
 const dialogLoading = ref(false)
 
-watch(isInstantAddResourceSaved, async (newlySaved) => {
-  if (!newlySaved) {
-    return
-  }
-  dialogLoading.value = true
-  try {
-    const newResource = await $cwa.resourcesManager.addResourceAction()
-    if (newResource) {
-      await nextTick(() => {
-        $cwa.admin.eventBus.emit('selectResource', newResource['@id'])
-      })
-    }
-  } finally {
-    dialogLoading.value = false
-  }
+const dynamicPositionPropertyModel = ref<string|undefined>()
+
+const dynamicPropertySelect = useCwaSelect(dynamicPositionPropertyModel)
+dynamicPropertySelect.options.value = [{
+  label: 'Loading...',
+  value: undefined
+}]
+
+const addResourceEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
+const isInstantAddResourceSaved = computed(() => {
+  return !!$cwa.resources.newResource.value?.data?._metadata.adding?.instantAdd
 })
 
 const open = computed({
   get () {
-    return !!addResourceEvent.value && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
+    // the event will not have a group in the stack if we are on a dynamic data page, but we may be adding a component pre-configured which will not require this dialog
+    return !!addResourceEvent.value && !!addResourceEvent.value?.closest.group && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
   },
   set (value: boolean) {
     if (!value) {
@@ -105,7 +100,7 @@ const open = computed({
   }
 })
 
-const instantAdd = computed(() => (selectedComponent.value === 'position' || !!selectedResourceMeta.value?.instantAdd))
+const instantAdd = computed(() => (!!selectedResourceMeta.value?.instantAdd))
 
 const buttons = computed<ActionButton[]>(() => {
   return [
@@ -131,8 +126,8 @@ function selectComponent (name?: string) {
   selectedComponent.value = name
 }
 
-async function findAvailableComponents (allowedComponents: undefined|string[]): Promise<ComponentMetadataCollection> {
-  const apiComponents = await $cwa.getComponentMetadata()
+async function findAvailableComponents (allowedComponents: undefined|string[], includePosition = false): Promise<ComponentMetadataCollection> {
+  const apiComponents = await $cwa.getComponentMetadata(false, includePosition)
   if (!apiComponents) {
     throw new Error('Could not retrieve component metadata from the API')
   }
@@ -165,6 +160,15 @@ const resourceDescription = computed(() => {
   return selectedResourceDescription.value || (selectedComponent.value ? '<p>No Description</p>' : '<p>Please select a resource to add</p>')
 })
 
+const defaultComponentData = computed<{ [key: string]: any }>(() => {
+  if (selectedComponent.value !== 'ComponentPosition') {
+    return {}
+  }
+  return {
+    pageDataProperty: dynamicPropertySelect.model.value
+  }
+})
+
 async function createDisplayData (): Promise<undefined|DisplayDataI> {
   const event = addResourceEvent.value
   if (!event) {
@@ -172,13 +176,16 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
   }
 
   const allowedComponents = findAllowedComponents(event.closest.group)
-  const availableComponents = await findAvailableComponents(allowedComponents)
   const enableDynamicPosition = !$cwa.admin.resourceStackManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
+  const availableComponents = await findAvailableComponents(allowedComponents, enableDynamicPosition)
+  const displayAvailableComponents = { ...availableComponents }
+  delete displayAvailableComponents.ComponentPosition
 
   return {
     event,
     availableComponents,
-    enableDynamicPosition
+    enableDynamicPosition,
+    displayAvailableComponents
   }
 }
 
@@ -194,8 +201,34 @@ function handleAdd () {
   if (!meta) {
     return
   }
-  $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value)
+  $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value, defaultComponentData.value)
 }
+async function loadOps () {
+  dynamicPropertySelect.options.value = await getOptions()
+}
+
+onMounted(() => {
+  loadOps()
+})
+
+watch(isInstantAddResourceSaved, async (newlySaved) => {
+  if (!newlySaved) {
+    return
+  }
+  dialogLoading.value = true
+  try {
+    const newResource = await $cwa.resourcesManager.addResourceAction()
+
+    if (newResource) {
+      await nextTick(() => {
+        $cwa.admin.eventBus.emit('selectResource', newResource['@id'])
+      })
+    }
+  } finally {
+    $cwa.resourcesManager.clearAddResourceEventResource()
+    dialogLoading.value = false
+  }
+})
 
 // We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display
 watch(open, async (isOpen: boolean) => {
@@ -206,4 +239,5 @@ watch(open, async (isOpen: boolean) => {
   displayData.value = await createDisplayData()
   loadingComponents.value = false
 })
+
 </script>

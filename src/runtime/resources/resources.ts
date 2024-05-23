@@ -284,14 +284,20 @@ export class Resources {
 
   public getRefreshEndpointsForDelete (iri:string): string[] {
     const refreshEndpoints: string[] = []
+
+    // todo: this is very eager, is there a better way to know if the component is in page data?
+    if (this.pageDataIri.value) {
+      refreshEndpoints.push(this.pageDataIri.value)
+    }
+
     const allIris = this.resourcesStore.findAllPublishableIris(iri)
+
     for (const checkIri of allIris) {
-      const resource = this.getResource(checkIri).value
-      const componentPositions = resource?.data?.componentPositions
+      const componentPositions = this.resourcesStore.current.positionsByComponent[checkIri]
       if (!componentPositions) {
         continue
       }
-      // refresh all positions.
+      // refresh all positions. this only includes backwards relations though and not if component added as page data
       refreshEndpoints.push(...componentPositions)
 
       // and related groups as position may have a delete cascade

@@ -62,6 +62,11 @@ export default {
       },
       opacity: {
         85: '.85'
+      },
+      zIndex: {
+        manager: '101',
+        dialog: '102',
+        notifications: '103'
       }
     }
   },

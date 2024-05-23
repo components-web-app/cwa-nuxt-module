@@ -21,7 +21,11 @@ function createWrapper () {
       isEditing: false
     },
     resources: {
-      findPublishedComponentIri: vi.fn(() => ref(mockComponentIri))
+      findPublishedComponentIri: vi.fn(() => ref(mockComponentIri)),
+      getResource: vi.fn(() => undefined)
+    },
+    resourcesManager: {
+      addResourceEvent: ref(undefined)
     }
   }))
 

@@ -18,7 +18,7 @@ async function handleDelete () {
     return
   }
   if (isAddingNew.value) {
-    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.toggleEdit(false)
+    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.emptyStack()
     return
   }
 
@@ -28,7 +28,7 @@ async function handleDelete () {
     refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(iri.value)
   })
   if (result !== false) {
-    $cwa.admin.toggleEdit(false)
+    $cwa.admin.emptyStack()
   }
   disableButton.value = false
 }
@@ -37,7 +37,7 @@ const isDeleteEnabled = computed(() => {
   if (!iri.value) {
     return false
   }
-  return !$cwa.resources.isDataPage.value || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
+  return isAddingNew.value || !$cwa.resources.isDataPage.value || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
 })
 
 const isAddingNew = computed(() => {

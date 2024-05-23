@@ -83,7 +83,7 @@ const hasAddingPosition = computed(() => {
 const componentPositions = computed(() => {
   const savedPositions: string[] = resource.value?.data?.componentPositions
   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
-  if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value || !$cwa.admin.isEditing) {
+  if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value || addingEvent.value?.addAfter === null || !$cwa.admin.isEditing) {
     return savedPositions
   }
 

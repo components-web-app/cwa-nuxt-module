@@ -7,7 +7,7 @@ import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import type { CwaResourcesStoreInterface } from '../storage/stores/resources/resources-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { CwaResource } from '../resources/resource-utils'
-import { getPublishedResourceIri, CwaResourceTypes } from '../resources/resource-utils'
+import { getPublishedResourceIri } from '../resources/resource-utils'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import Fetcher from './fetcher/fetcher'
 import { useProcess } from '#cwa/runtime/composables/process'
@@ -174,7 +174,7 @@ export default class Mercure {
       }
 
       const isDelete = Object.keys(message.data).length === 1 && message.data['@id']
-      if (!isDelete && message.data['@type'] === CwaResourceTypes.COMPONENT_POSITION) {
+      if (!isDelete && message.data['@type'] === 'ComponentPosition') {
         toFetch.push(message.data['@id'])
         continue
       }

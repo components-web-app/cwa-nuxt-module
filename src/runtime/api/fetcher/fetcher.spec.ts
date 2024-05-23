@@ -6,7 +6,7 @@ import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { CwaResource, CwaResourceTypes } from '../../resources/resource-utils'
+import { type CwaResource, CwaResourceTypes } from '../../resources/resource-utils'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import Fetcher from './fetcher'
 import CwaFetch from './cwa-fetch'
@@ -261,7 +261,7 @@ describe('Fetcher -> fetchResource', () => {
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
 
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false })
+    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false, onlyIfNoExist: false })
     expect(fetcher.fetchNestedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
     expect(result).toStrictEqual({ some: 'resource' })
   })
@@ -325,7 +325,7 @@ describe('Fetcher -> fetchResource', () => {
         '@id': '/some-resource'
       }
     })
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true })
+    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true, onlyIfNoExist: false })
   })
 
   test('if shallowFetch is passed, nested resources should not be fetched', async () => {

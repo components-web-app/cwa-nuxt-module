@@ -9,15 +9,11 @@ import { DateTime } from 'luxon'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
-import type {
-  DeleteResourceEvent,
-  SaveNewResourceEvent,
-  SaveResourceEvent
-} from '../storage/stores/resources/actions'
+import type { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } from '../storage/stores/resources/actions'
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
-import type { CwaResource } from './resource-utils'
 import {
+  type CwaResource,
   CwaResourceTypes,
   getPublishedResourceIri,
   getPublishedResourceState,
@@ -28,10 +24,12 @@ import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/runtime/admin/resource-stack-manager'
 import Admin from '#cwa/runtime/admin/admin'
+import type { Resources } from '#cwa/runtime/resources/resources'
 
 interface DeleteApiResourceEvent {
   endpoint: string
   requestCompleteFn?: (resource?: CwaResource) => void|Promise<void>
+  saveCompleteFn?: (resource?: CwaResource) => void|Promise<void>
   refreshEndpoints?: string[]
 }
 
@@ -66,7 +64,8 @@ export class ResourcesManager {
     fetchStatusManager: FetchStatusManager,
     errorStoreDefinition: ErrorStore,
     private readonly fetcher: Fetcher,
-    private readonly admin: Admin
+    private readonly admin: Admin,
+    private readonly resources: Resources
   ) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
@@ -211,15 +210,23 @@ export class ResourcesManager {
       }
     }
 
+    const isPublishingAndOverwritingPreviousLiveResource = isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri
+
     const postRequestFn = () => {
       // if we have just published a resource, remove the old draft and turn off edit mode
-      if (isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri) {
+      if (isPublishingAndOverwritingPreviousLiveResource) {
         this.admin.emptyStack()
+      }
+    }
+
+    const postSaveFn = () => {
+      // if we have just published a resource, remove the old draft and turn off edit mode
+      if (isPublishingAndOverwritingPreviousLiveResource) {
         this.removeResource({ resource: event.endpoint })
       }
     }
 
-    const resource = await this.doResourceRequest(event, args, postRequestFn)
+    const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn)
 
     // if we have just done an update that creates a new draft, we need to select the draft
     const responseId = resource?.['@id']
@@ -231,7 +238,7 @@ export class ResourcesManager {
     return resource
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>) {
+  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>, postSaveFn?: (resource?: CwaResource) => void|Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
     const iri = event.endpoint.split('?')[0]
@@ -252,9 +259,9 @@ export class ResourcesManager {
         // component groups should be added by the calling api
       }
       if (refreshEndpoints.length) {
-        const fetchBathEvent = {
+        const fetchBathEvent: { paths: string[], shallowFetch: 'noexist' } = {
           paths: refreshEndpoints,
-          shallowFetch: true
+          shallowFetch: 'noexist'
         }
         try {
           await this.fetcher.fetchBatch(fetchBathEvent)
@@ -280,6 +287,14 @@ export class ResourcesManager {
         this.removeResource({
           resource: iri
         })
+      }
+      // required if we need to update the store further before we process mercure requests again, but need the new resource to be up to date in data as well.
+      // implemented to ensure we remove old drafts when a new live has been overwritten
+      if (postSaveFn) {
+        await postSaveFn(resource as CwaResource|undefined)
+      }
+      if (event.saveCompleteFn) {
+        await event.saveCompleteFn(resource as CwaResource|undefined)
       }
       return resource
     } catch (err) {
@@ -324,23 +339,24 @@ export class ResourcesManager {
     }
   }
 
-  public async initAddResource (targetIri: string, addAfter: boolean, resourceStack: ResourceStackItem[]) {
+  public async initAddResource (targetIri: string, addAfter: null|boolean, resourceStack: ResourceStackItem[], pageDataProperty?: string) {
     type BaseEvent = {
       targetIri: string
-      addAfter: boolean
+      addAfter: null|boolean
     }
     const initEvent: BaseEvent = {
       targetIri,
       addAfter
     }
 
-    const findClosestResourceByType = (type: CwaResourceTypes): string => {
+    const findClosestResourceByType = (type: CwaResourceTypes): string|undefined => {
       for (const stackItem of resourceStack) {
         if (getResourceTypeFromIri(stackItem.iri) === type) {
           return stackItem.iri
         }
       }
-      throw new Error(`Could not find a resource with type '${type}' in the stack`)
+      // group not in a stack on dynamic data page and not needed if adding into a position
+      // throw new Error(`Could not find a resource with type '${type}' in the stack`)
     }
 
     const findClosestPosition = (event: BaseEvent): string|undefined => {
@@ -356,9 +372,9 @@ export class ResourcesManager {
       if (!positions || !positions.length) {
         return
       }
-      if (event.addAfter) {
+      if (event.addAfter === true) {
         return positions[positions.length - 1]
-      } else {
+      } else if (event.addAfter === false) {
         return positions[0]
       }
     }
@@ -376,18 +392,23 @@ export class ResourcesManager {
       closest: {
         position: closestPosition,
         group: closestGroup
-      }
+      },
+      pageDataProperty
     }
   }
 
-  public setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean) {
+  public async setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }) {
     if (!this._addResourceEvent.value) {
       return
     }
-    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd)
-    nextTick(() => {
-      this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
+    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd, defaultData)
+    await nextTick(() => {
+      !instantAdd && this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
     })
+  }
+
+  public clearAddResourceEventResource () {
+    this.resourcesStore.resetNewResource()
   }
 
   public clearAddResource () {
@@ -419,7 +440,7 @@ export class ResourcesManager {
     return true
   }
 
-  addResourceAction (publish?: boolean) {
+  async addResourceAction (publish?: boolean) {
     const addEvent = this._addResourceEvent.value
     if (!addEvent) {
       throw new Error('Cannot add resource. No addResource event is present')
@@ -434,16 +455,31 @@ export class ResourcesManager {
       throw new Error('Cannot add resource. There was no adding metadata on the new resource in the store.')
     }
 
-    const refreshEndpoints = [addEvent.closest.group]
+    const refreshEndpoints = []
 
-    const positionIri = this.getDissectPositionIri()
+    if (addEvent.addAfter !== null) {
+      addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
+      const positionIri = this.getDissectPositionIri()
 
-    // If we are not adding a position, we will create the component with a position at the same time
-    if (data['@type'] !== 'ComponentPosition') {
-      data.componentPositions = [this.createNewComponentPosition(positionIri)]
+      // If we are not adding a position, we will create the component with a position at the same time
+      const newDefaultPositionData = this.createNewComponentPosition(positionIri)
+      if (data['@type'] === 'ComponentPosition') {
+        data.componentGroup = newDefaultPositionData.componentGroup
+        data.sortValue = newDefaultPositionData.sortValue
+      } else if (!data.componentPositions) {
+        // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
+        data.componentPositions = [newDefaultPositionData]
+      }
+      // if we are adding into an existing position no need to refresh
+      refreshEndpoints.push(...this.getRefreshPositions(positionIri))
+    } else if (!addEvent.pageDataProperty) {
+      const addingToIri = addEvent.targetIri
+      if (getResourceTypeFromIri(addingToIri) !== CwaResourceTypes.COMPONENT_POSITION) {
+        throw new Error('Cannot add to arbitrary IRIs. Only to component positions.')
+      }
+      // todo: update the component position, component property
+      data.componentPositions = [addingToIri]
     }
-
-    refreshEndpoints.push(...this.getRefreshPositions(positionIri))
 
     if (publish !== undefined) {
       data.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
@@ -451,7 +487,11 @@ export class ResourcesManager {
 
     const postData: Omit<CwaResource, '@id'|'@type'> = { ...data, '@id': undefined, '@type': undefined }
 
-    return this.createResource({
+    const requestCompleteFn = () => {
+      this.clearAddResource()
+    }
+
+    const newResource = await this.createResource({
       endpoint: addingMeta.endpoint,
       data: postData,
       refreshEndpoints,
@@ -459,6 +499,17 @@ export class ResourcesManager {
         this.clearAddResource()
       }
     })
+
+    if (newResource && addEvent.pageDataProperty) {
+      await this.updateResource({
+        endpoint: this.resources.pageDataIri.value,
+        data: { [addEvent.pageDataProperty]: newResource['@id'] },
+        refreshEndpoints: [addEvent.targetIri],
+        requestCompleteFn
+      })
+    }
+
+    return newResource
   }
 
   private getRefreshPositions (positionIri?: string): string[] {
@@ -484,8 +535,8 @@ export class ResourcesManager {
 
   private createNewComponentPosition (positionIri?: string) {
     const addEvent = this._addResourceEvent.value
-    if (!addEvent) {
-      throw new Error('Cannot create a new component position. There is no adding event')
+    if (!addEvent || !addEvent.closest.group) {
+      throw new Error('Cannot create a new component position. There is no adding event or no group assigned')
     }
     const positionResource = positionIri ? this.resourcesStore.getResource(positionIri) : undefined
     const componentPosition: { componentGroup: string, sortValue: number } = {
@@ -502,7 +553,7 @@ export class ResourcesManager {
   }
 
   private get groupResource () {
-    if (!this._addResourceEvent.value) {
+    if (!this._addResourceEvent.value || !this._addResourceEvent.value.closest.group) {
       return
     }
     return this.resourcesStore.getResource(this._addResourceEvent.value.closest.group)
