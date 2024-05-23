@@ -27,6 +27,13 @@ async function loadOps () {
   select.options.value = await getOptions()
 }
 
+async function addFallbackComponent () {
+  if (!iri.value) {
+    return
+  }
+  await $cwa.resourcesManager.initAddResource(iri.value, null, $cwa.admin.resourceStackManager.resourceStack.value)
+}
+
 onMounted(() => {
   loadOps()
 })
@@ -39,8 +46,8 @@ defineExpose(exposeMeta)
     <div class="cwa-flex cwa-space-x-4 cwa-items-center">
       <CwaUiFormSelect v-model="select.model.value" :options="select.options.value" />
       <div v-if="!resource?.data?.component">
-        <CwaUiFormButton :disabled="true">
-          Add Fallback Component (to do)
+        <CwaUiFormButton @click="addFallbackComponent">
+          Add Fallback Component
         </CwaUiFormButton>
       </div>
     </div>

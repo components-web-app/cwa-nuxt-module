@@ -27,7 +27,8 @@ const addingEvent = computed(() => {
 })
 
 const componentIri = computed(() => {
-  if (addingEvent.value?.targetIri === props.iri && addingEvent.value?.addAfter === null) {
+  const newResource = $cwa.resources.getResource(NEW_RESOURCE_IRI)
+  if (addingEvent.value?.targetIri === props.iri && addingEvent.value?.addAfter === null && newResource.value) {
     return NEW_RESOURCE_IRI
   }
   const iri = resource.value?.data?.component
