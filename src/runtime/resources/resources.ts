@@ -291,9 +291,9 @@ export class Resources {
     }
 
     const allIris = this.resourcesStore.findAllPublishableIris(iri)
+
     for (const checkIri of allIris) {
-      const resource = this.getResource(checkIri).value
-      const componentPositions = resource?.data?.componentPositions
+      const componentPositions = this.resourcesStore.current.positionsByComponent[checkIri]
       if (!componentPositions) {
         continue
       }

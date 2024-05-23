@@ -108,12 +108,12 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             if (!positionResource?.data) {
               continue
             }
-            if (positionResource.data.pageDataProperty) {
-              delete positionResource.data.component
-            } else {
+            if (!positionResource.data.pageDataProperty) {
               deleteResource({
                 resource: positionIri
               })
+            } else if (positionResource.data.component === event.resource) {
+              delete positionResource.data.component
             }
           }
         }
