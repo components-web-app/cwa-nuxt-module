@@ -21,7 +21,7 @@ export interface FetchResourceEvent {
   token?: string
   manifestPath?: string
   preload?: string[]
-  shallowFetch?: boolean
+  shallowFetch?: boolean|'noexist'
   noSave?: boolean
   isPrimary?: boolean
 }
@@ -52,13 +52,14 @@ interface FetchBatchEvent {
   paths: string[]
   token?: string
   noSave?: boolean
-  shallowFetch?: boolean
+  shallowFetch?: boolean|'noexist'
 }
 
 interface FetchNestedResourcesEvent {
   resource: CwaResource
   token: string
   noSave: boolean
+  onlyIfNoExist?: boolean
 }
 
 export default class Fetcher {
@@ -163,8 +164,8 @@ export default class Fetcher {
 
     if (doRedirect) {
       this.fetchStatusManager.abortFetch(startFetchResult.token)
-    } else if (!shallowFetch && resource) {
-      await this.fetchNestedResources({ resource, token: startFetchResult.token, noSave: !!noSave })
+    } else if (resource && shallowFetch !== true) {
+      await this.fetchNestedResources({ resource, token: startFetchResult.token, noSave: !!noSave, onlyIfNoExist: shallowFetch === 'noexist' })
     }
 
     if (!token) {
@@ -202,7 +203,7 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources ({ resource, token, noSave }: FetchNestedResourcesEvent): undefined|Promise<(CwaResource|undefined)[]> {
+  private fetchNestedResources ({ resource, token, noSave, onlyIfNoExist }: FetchNestedResourcesEvent): undefined|Promise<(CwaResource|undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
@@ -223,6 +224,13 @@ export default class Fetcher {
           propIris += '?published=true'
         }
         nestedIris.push(propIris)
+      }
+    }
+
+    if (onlyIfNoExist) {
+      nestedIris.filter(iri => !this.resourcesStore.current.currentIds.includes(iri))
+      if (!nestedIris.length) {
+        return
       }
     }
 

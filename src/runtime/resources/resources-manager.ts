@@ -259,9 +259,9 @@ export class ResourcesManager {
         // component groups should be added by the calling api
       }
       if (refreshEndpoints.length) {
-        const fetchBathEvent = {
+        const fetchBathEvent: { paths: string[], shallowFetch: 'noexist' } = {
           paths: refreshEndpoints,
-          shallowFetch: true
+          shallowFetch: 'noexist'
         }
         try {
           await this.fetcher.fetchBatch(fetchBathEvent)
