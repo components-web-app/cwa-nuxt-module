@@ -9,7 +9,6 @@ import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
 import * as ResourceUtils from '../resources/resource-utils'
-import { CwaResourceTypes } from '../resources/resource-utils'
 import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import * as processComposables from '../composables/process'
 import Mercure from './mercure'
@@ -576,7 +575,7 @@ describe('Mercure -> collectResourceActions', () => {
         event: new MessageEvent('final-event-id'),
         data: {
           '@id': 'id-position',
-          '@type': CwaResourceTypes.COMPONENT_POSITION,
+          '@type': 'ComponentPosition',
           key: 'value'
         }
       }

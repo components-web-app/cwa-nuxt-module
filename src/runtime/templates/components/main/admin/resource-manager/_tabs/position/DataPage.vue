@@ -45,12 +45,15 @@ const availablePropsToComponentNames = computed<{ [prop:string]: string }>(() =>
   ) || {}
 })
 
+const pageDataProperty = computed(() => {
+  return resource.value?.data?.pageDataProperty
+})
+
 const componentName = computed<string|undefined>(() => {
-  const positionPropertyConfigured = resource.value?.data?.pageDataProperty
-  if (!positionPropertyConfigured) {
+  if (!pageDataProperty.value) {
     return
   }
-  return availablePropsToComponentNames.value?.[positionPropertyConfigured]
+  return availablePropsToComponentNames.value?.[pageDataProperty.value]
 })
 
 const resourceConfig = computed(() => {
@@ -81,10 +84,10 @@ async function addDynamicComponent () {
   loadingDynamicMetadata.value = true
   try {
     const apiMetadata = await getApiMetadata()
-    if (!componentName.value || !apiMetadata || !iri.value) {
+    if (!componentName.value || !apiMetadata || !iri.value || !pageDataProperty.value) {
       return
     }
-    await $cwa.resourcesManager.initAddResource(iri.value, null, $cwa.admin.resourceStackManager.resourceStack.value)
+    await $cwa.resourcesManager.initAddResource(iri.value, null, $cwa.admin.resourceStackManager.resourceStack.value, pageDataProperty.value)
     // need to add the addResourceEvent
     await $cwa.resourcesManager.setAddResourceEventResource(componentName.value, apiMetadata.endpoint, apiMetadata.isPublishable, instantAdd.value)
   } finally {

@@ -22,6 +22,9 @@ function createWrapper () {
     },
     resources: {
       findPublishedComponentIri: vi.fn(() => ref(mockComponentIri))
+    },
+    resourcesManager: {
+      addResourceEvent: ref(undefined)
     }
   }))
 

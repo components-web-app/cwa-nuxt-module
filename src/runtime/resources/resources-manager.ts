@@ -9,15 +9,11 @@ import { DateTime } from 'luxon'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import FetchStatusManager from '../api/fetcher/fetch-status-manager'
-import type {
-  DeleteResourceEvent,
-  SaveNewResourceEvent,
-  SaveResourceEvent
-} from '../storage/stores/resources/actions'
+import type { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } from '../storage/stores/resources/actions'
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
-import type { CwaResource } from './resource-utils'
 import {
+  type CwaResource,
   CwaResourceTypes,
   getPublishedResourceIri,
   getPublishedResourceState,
@@ -28,6 +24,7 @@ import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/runtime/admin/resource-stack-manager'
 import Admin from '#cwa/runtime/admin/admin'
+import type { Resources } from '#cwa/runtime/resources/resources'
 
 interface DeleteApiResourceEvent {
   endpoint: string
@@ -66,7 +63,8 @@ export class ResourcesManager {
     fetchStatusManager: FetchStatusManager,
     errorStoreDefinition: ErrorStore,
     private readonly fetcher: Fetcher,
-    private readonly admin: Admin
+    private readonly admin: Admin,
+    private readonly resources: Resources
   ) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
@@ -425,7 +423,7 @@ export class ResourcesManager {
     return true
   }
 
-  addResourceAction (publish?: boolean) {
+  async addResourceAction (publish?: boolean) {
     const addEvent = this._addResourceEvent.value
     if (!addEvent) {
       throw new Error('Cannot add resource. No addResource event is present')
@@ -447,18 +445,23 @@ export class ResourcesManager {
       const positionIri = this.getDissectPositionIri()
 
       // If we are not adding a position, we will create the component with a position at the same time
+      const newDefaultPositionData = this.createNewComponentPosition(positionIri)
       if (data['@type'] === 'ComponentPosition') {
-        const newDefaultPositionData = this.createNewComponentPosition(positionIri)
         data.componentGroup = newDefaultPositionData.componentGroup
         data.sortValue = newDefaultPositionData.sortValue
       } else if (!data.componentPositions) {
         // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
-        data.componentPositions = [this.createNewComponentPosition(positionIri)]
+        data.componentPositions = [newDefaultPositionData]
       }
       // if we are adding into an existing position no need to refresh
       refreshEndpoints.push(...this.getRefreshPositions(positionIri))
-    } else {
-      // todo: we are not adding before or after, so we are adding into something, a position or page data, the targetIri
+    } else if (!addEvent.pageDataProperty) {
+      const addingToIri = addEvent.targetIri
+      if (getResourceTypeFromIri(addingToIri) !== CwaResourceTypes.COMPONENT_POSITION) {
+        throw new Error('Cannot add to arbitrary IRIs. Only to component positions.')
+      }
+      // todo: update the component position, component property
+      data.componentPositions = [addingToIri]
     }
 
     if (publish !== undefined) {
@@ -467,7 +470,11 @@ export class ResourcesManager {
 
     const postData: Omit<CwaResource, '@id'|'@type'> = { ...data, '@id': undefined, '@type': undefined }
 
-    return this.createResource({
+    const requestCompleteFn = () => {
+      this.clearAddResource()
+    }
+
+    const newResource = await this.createResource({
       endpoint: addingMeta.endpoint,
       data: postData,
       refreshEndpoints,
@@ -475,6 +482,17 @@ export class ResourcesManager {
         this.clearAddResource()
       }
     })
+
+    if (newResource && addEvent.pageDataProperty) {
+      await this.updateResource({
+        endpoint: this.resources.pageDataIri.value,
+        data: { [addEvent.pageDataProperty]: newResource['@id'] },
+        refreshEndpoints: [addEvent.targetIri],
+        requestCompleteFn
+      })
+    }
+
+    return newResource
   }
 
   private getRefreshPositions (positionIri?: string): string[] {

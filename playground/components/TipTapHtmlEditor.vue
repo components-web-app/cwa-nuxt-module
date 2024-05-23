@@ -144,4 +144,7 @@ defineExpose({
 .ProseMirror:focus {
   outline: none;
 }
+.ProseMirror {
+  white-space: pre-wrap !important;
+}
 </style>

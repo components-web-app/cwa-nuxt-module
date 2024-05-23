@@ -91,6 +91,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             componentPositions.splice(positionIndex, 1)
           }
         }
+        clearPositionToComponentMapping(event.resource)
         break
       }
       case CwaResourceTypes.COMPONENT: {
@@ -98,20 +99,17 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           break
         }
 
-        const isLiveAndHasDraft =
-          resourcesGetters.findPublishedComponentIri.value(event.resource) === event.resource &&
-          resourcesGetters.findDraftComponentIri.value(event.resource) !== undefined
+        const hasAlternativeVersion = resourcesGetters.findAllPublishableIris.value(event.resource).length > 1
 
-        // if it is a component, the position will also be deleted in an auto-cascade on the server if the position is not dynamic OR there is not a draft, we should replicate locally and delete the position
-        if (!isLiveAndHasDraft) {
-          const componentPositions = resource.data.componentPositions
-          for (const positionIri of componentPositions) {
+        if (!hasAlternativeVersion) {
+          const mappedPositions = [...(resource.data.componentPositions || []), ...(resourcesState.current.positionsByComponent[event.resource] || [])]
+          for (const positionIri of mappedPositions) {
             const positionResource = resourcesState.current.byId[positionIri]
-            if (!positionResource.data) {
+            if (!positionResource?.data) {
               continue
             }
             if (positionResource.data.pageDataProperty) {
-              positionResource.data.component = undefined
+              delete positionResource.data.component
             } else {
               deleteResource({
                 resource: positionIri
@@ -121,6 +119,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         }
 
         clearPublishableMapping(event.resource)
+        clearPositionToComponentMapping(event.resource)
         break
       }
     }
@@ -170,6 +169,31 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     })
   }
 
+  function mapPositionToComponent (resource: CwaResource) {
+    if (!resource['@id'] || getResourceTypeFromIri(resource['@id']) !== CwaResourceTypes.COMPONENT_POSITION || !resource.component) {
+      return
+    }
+    const existingPositions = resourcesState.current.positionsByComponent[resource.component] || []
+    !existingPositions.includes(resource['@id']) && existingPositions.push(resource['@id'])
+    resourcesState.current.positionsByComponent[resource.component] = existingPositions
+  }
+
+  function clearPositionToComponentMapping (iri: string) {
+    const resourceType = getResourceTypeFromIri(iri)
+    if (resourceType === CwaResourceTypes.COMPONENT_POSITION) {
+      const entries = Object.entries(resourcesState.current.positionsByComponent)
+      for (const [componentIri, positionIris] of entries) {
+        resourcesState.current.positionsByComponent[componentIri] = positionIris.filter(pIri => (iri !== pIri))
+      }
+      return
+    }
+    if (resourceType === CwaResourceTypes.COMPONENT) {
+      if (resourcesState.current.positionsByComponent[iri]) {
+        delete resourcesState.current.positionsByComponent[iri]
+      }
+    }
+  }
+
   return {
     resetNewResource (): void {
       resourcesState.adding.value = undefined
@@ -199,8 +223,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           deleteResource({
             resource: newId
           })
-          // todo: test we save publishable mapping here
+          // todo: test we clear publishable mapping here
           clearPublishableMapping(newId)
+          clearPositionToComponentMapping(newId)
           continue
         }
 
@@ -259,6 +284,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.current.currentIds = []
       // todo: test mapping clears
       resourcesState.current.publishableMapping = []
+      resourcesState.current.positionsByComponent = {}
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
@@ -348,6 +374,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       // todo: test we save publishable mapping here
       mapPublishableResource(event.resource)
+      mapPositionToComponent(event.resource)
     }
   }
 }
