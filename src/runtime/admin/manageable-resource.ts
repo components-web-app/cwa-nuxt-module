@@ -111,12 +111,6 @@ export default class ManageableResource {
     // is the component that was just mounted a child of this one?
     const iris = this.$cwa.resources.findAllPublishableIris(iri)
     const childIris = this.childIris.value
-    if (this.currentIri?.value === '/_/component_positions/8d181e92-214b-4f25-9028-da35cc4596cb') {
-      console.log('listened to mounted iri', iris)
-      console.log(this.currentIri.value, 'childIris', childIris)
-      console.log(this.currentResource?.data)
-    }
-
     const iriIsChild = () => {
       for (const iri of iris) {
         if (childIris.includes(iri)) {
@@ -220,9 +214,6 @@ export default class ManageableResource {
         return
       }
       this.childIrisRef.value = getChildren()
-      if (this.currentIri?.value === '/_/component_positions/8d181e92-214b-4f25-9028-da35cc4596cb') {
-        console.log('updated children for position', this.childIrisRef.value)
-      }
     }, {
       immediate: true
     })
