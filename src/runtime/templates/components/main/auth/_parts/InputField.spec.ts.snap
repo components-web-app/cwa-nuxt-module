@@ -17,6 +17,7 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
       id="5a79934212ac9d6514f7c998f8d1558bbf75a92d"
       name="login"
       type="text"
+      value=""
     />
     <div>
       
@@ -54,6 +55,7 @@ exports[`InputField > snapshots > should match snapshot IF input is marked as re
       name="login"
       required=""
       type="text"
+      value=""
     />
     <!--v-if-->
   </div>
@@ -77,6 +79,7 @@ exports[`InputField > snapshots > should match snapshot IF input is of type pass
       id="ac3cdb342f7d015da525e6e7c8e81ce0d7bbf3b3"
       name="password"
       type="password"
+      value=""
     />
     <!--v-if-->
   </div>
@@ -100,6 +103,7 @@ exports[`InputField > snapshots > should match snapshot with passed content 1`] 
       id="009628b43238338220f2c2af55217d73c7163999"
       name="login"
       type="text"
+      value=""
     />
     <!--v-if-->
   </div>
