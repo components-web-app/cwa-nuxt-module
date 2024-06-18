@@ -4,7 +4,7 @@
   </div>
   <template v-else-if="componentPositions?.length">
     <!--CWA_MANAGER_START_GROUP-->
-    <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
+    <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" :class="{ 'cwa-is-reordering': groupIsReordering }" />
     <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
@@ -31,6 +31,7 @@ import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 
 const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
@@ -38,6 +39,22 @@ const $cwa = useCwa()
 useCwaResourceManageable(iri)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
+
+const groupIsReordering = computed(() => {
+  if (!iri.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
+    return false
+  }
+  // look for the earliest component group and if this is the deepest nested one, we enable reordering
+  const currentStack = $cwa.admin.resourceStackManager.resourceStack.value
+  for (const stackItem of currentStack) {
+    const stackItemIri = stackItem.iri
+    const resourceType = getResourceTypeFromIri(stackItemIri)
+    if (resourceType === CwaResourceTypes.COMPONENT_GROUP) {
+      return stackItemIri === iri.value
+    }
+  }
+  return false
+})
 
 const fullReference = computed(() => {
   const locationResource = $cwa.resources.getResource(props.location)

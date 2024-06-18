@@ -125,8 +125,8 @@ describe('Resource Manager', () => {
 
         manager.resourceStack.value.push(mockStackItem)
 
-        expect(manager.isItemAlreadyInStack(mockIri)).toEqual(true)
-        expect(manager.isItemAlreadyInStack('/random')).toEqual(false)
+        expect(manager.isResourceInStack(mockIri)).toEqual(true)
+        expect(manager.isResourceInStack('/random')).toEqual(false)
       })
     })
 
