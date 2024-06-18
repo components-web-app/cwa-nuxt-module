@@ -11,7 +11,7 @@
     </component>
     <ClientOnly>
       <CwaAdminResourceManager ref="resourceManager" />
-      <LayoutPageOverlay v-if="$cwa.admin.isEditing" :page="page" :layout="rootLayout" />
+      <LayoutPageOverlay v-if="$cwa.admin.isEditing && page && rootLayout" :page="page" :layout="rootLayout" />
       <teleport to="body">
         <DialogsWrapper />
       </teleport>

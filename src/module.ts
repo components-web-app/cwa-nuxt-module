@@ -56,6 +56,7 @@ function createDefaultCwaPages (
       path: `:cwaPage${currentDepth}*`,
       file: pageComponentFilePath,
       meta: {
+        cwa: true,
         layout: layout || 'cwa-root-layout'
       }
     }

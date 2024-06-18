@@ -299,25 +299,25 @@ export const options:CwaModuleOptions = {
         {
           name: 'cwaPage0',
           path: '/:cwaPage0*',
-          meta: { layout: 'cwa-root-layout' },
+          meta: { cwa: true, layout: 'cwa-root-layout' },
           file: mockResolver('./runtime/templates'),
           children: [
             {
               name: 'cwaPage1',
               path: ':cwaPage1*',
-              meta: { layout: 'cwa-root-layout' },
+              meta: { cwa: true, layout: 'cwa-root-layout' },
               file: mockResolver('./runtime/templates'),
               children: [
                 {
                   name: 'cwaPage2',
                   path: ':cwaPage2*',
-                  meta: { layout: 'cwa-root-layout' },
+                  meta: { cwa: true, layout: 'cwa-root-layout' },
                   file: mockResolver('./runtime/templates'),
                   children: [
                     {
                       name: 'cwaPage3',
                       path: ':cwaPage3*',
-                      meta: { layout: 'cwa-root-layout' },
+                      meta: { cwa: true, layout: 'cwa-root-layout' },
                       file: mockResolver('./runtime/templates')
                     }
                   ]
