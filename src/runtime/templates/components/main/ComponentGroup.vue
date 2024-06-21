@@ -15,9 +15,6 @@
 <script setup lang="ts">
 // Comments around the resource loaders is to allow component groups not to need to be wrapped in a dev and so we know when one cg ends
 
-// todo: draggable drag and drop reordering
-// todo: merge in a new component position/ component being added
-
 import {
   computed,
   onMounted,
