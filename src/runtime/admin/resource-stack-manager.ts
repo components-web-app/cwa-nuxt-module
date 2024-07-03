@@ -352,6 +352,7 @@ export default class ResourceStackManager {
     })
 
     this.focusWrapper = document.createElement('div')
+    this.focusWrapper.className = 'cwa-absolute cwa-z-100'
     document.body.appendChild(this.focusWrapper)
 
     this.focusProxy = this.focusComponent.mount(this.focusWrapper)

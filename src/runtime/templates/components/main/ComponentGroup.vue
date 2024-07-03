@@ -4,7 +4,13 @@
   </div>
   <template v-else-if="componentPositions?.length">
     <!--CWA_MANAGER_START_GROUP-->
-    <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" :class="{ 'cwa-is-reordering': groupIsReordering }" />
+    <ResourceLoader
+      v-for="positionIri of componentPositions"
+      :key="getResourceKey(positionIri)"
+      :iri="positionIri"
+      :ui-component="ComponentPosition"
+      :class="nestedClasses"
+    />
     <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
@@ -51,6 +57,13 @@ const groupIsReordering = computed(() => {
     }
   }
   return false
+})
+
+const nestedClasses = computed(() => {
+  if (!groupIsReordering.value) {
+    return
+  }
+  return ['cwa-relative', 'cwa-z-dialog', 'cwa-is-reordering']
 })
 
 const fullReference = computed(() => {

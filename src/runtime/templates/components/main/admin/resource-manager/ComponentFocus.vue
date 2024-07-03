@@ -168,7 +168,7 @@ defineExpose({
 
 <template>
   <client-only>
-    <canvas ref="canvas" class="cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
+    <canvas ref="canvas" class="cwa-z-100 cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
     <div :class="[borderColor]" :style="cssStyle" class="cwa-animate-pulse cwa-absolute cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
   </client-only>
 </template>

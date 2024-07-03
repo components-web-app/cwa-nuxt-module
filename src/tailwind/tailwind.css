@@ -10,3 +10,9 @@
 .cwa-section {
   @apply cwa-p-4;
 }
+.cwa-is-reordering {
+  @apply cwa-relative;
+}
+.cwa-is-reordering:before {
+  @apply cwa-content-[''] cwa-absolute cwa-top-0 cwa-left-0 cwa-right-0 cwa-bottom-0 cwa-outline-2 cwa-outline-dashed cwa-outline-blue-600 cwa-outline-offset-4;
+}
