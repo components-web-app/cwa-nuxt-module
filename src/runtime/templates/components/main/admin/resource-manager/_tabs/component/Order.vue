@@ -13,6 +13,6 @@ const reordering = createComputedState<boolean>('reordering', false)
 
 <template>
   <div>
-    <CwaUiFormToggle v-model="reordering" label="Enable reordering" />
+    <CwaUiFormToggle v-if="reordering!==undefined" v-model="reordering" label="Enable reordering" />
   </div>
 </template>

@@ -23,7 +23,7 @@ export const useCwaResourceManagerTab = (options: CwaResourceManagerTabOptions) 
   }
 
   function createComputedState<T = any> (propName: string, initialValue?: T) {
-    initialValue && $cwa.admin.resourceStackManager.getState(propName) === undefined && $cwa.admin.resourceStackManager.setState(propName, initialValue)
+    initialValue !== undefined && $cwa.admin.resourceStackManager.getState(propName) === undefined && $cwa.admin.resourceStackManager.setState(propName, initialValue)
     return computed({
       get (): T {
         return $cwa.admin.resourceStackManager.getState(propName)
