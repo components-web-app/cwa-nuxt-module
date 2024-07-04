@@ -37,10 +37,10 @@ function movePosition (location: 'next'|'previous') {
 }
 
 function moveUp () {
-  movePosition('next')
+  movePosition('previous')
 }
 function moveDown () {
-  movePosition('previous')
+  movePosition('next')
 }
 </script>
 

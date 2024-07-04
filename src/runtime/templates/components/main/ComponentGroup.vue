@@ -36,6 +36,7 @@ import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
+import type { ReorderEvent } from '#cwa/runtime/admin/admin'
 
 type PositionSortValues = {
   [iri: string]: {
@@ -196,6 +197,55 @@ function getSortValue (positionIri: string) {
   return storeSortValue === undefined ? '?' : storeSortValue
 }
 
+function handleReorderEvent (event: ReorderEvent) {
+  if (!groupIsReordering.value || !orderedComponentPositions.value || !positionSortValues.value) {
+    return
+  }
+
+  const currentIndex = orderedComponentPositions.value.indexOf(event.positionIri)
+  if (currentIndex === -1) {
+    return
+  }
+  const newIndex = event.location === 'next' ? currentIndex + 1 : (event.location === 'previous' ? currentIndex - 1 : event.location)
+
+  const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
+    const startIndex = fromIndex < 0 ? array.length + fromIndex : fromIndex
+
+    if (startIndex >= 0 && startIndex < array.length) {
+      const endIndex = toIndex < 0 ? array.length + toIndex : toIndex
+
+      const [item] = array.splice(fromIndex, 1)
+      array.splice(endIndex, 0, item)
+    }
+  }
+  const positionCopy = [...orderedComponentPositions.value]
+  moveElement(positionCopy, currentIndex, newIndex)
+  for (const [index, iri] of positionCopy.entries()) {
+    submitSortValueUpdate(iri, index)
+  }
+}
+
+async function submitSortValueUpdate (iri: string, newValue: number) {
+  if (!positionSortValues.value) {
+    return
+  }
+  const sortValues = positionSortValues.value[iri]
+  if (!sortValues) {
+    return
+  }
+  const checkValue = sortValues.submittingValue || sortValues.storeValue
+  if (newValue !== checkValue) {
+    sortValues.submittingValue = newValue
+    await $cwa.resourcesManager.updateResource({
+      endpoint: iri,
+      data: {
+        sortValue: newValue
+      }
+    })
+    sortValues.submittingValue = undefined
+  }
+}
+
 onMounted(() => {
   componentGroupSynchronizer.createSyncWatcher({
     resource,
@@ -203,9 +253,11 @@ onMounted(() => {
     fullReference,
     allowedComponents: props.allowedComponents
   })
+  $cwa.admin.eventBus.on('reorder', handleReorderEvent)
 })
 
 onBeforeUnmount(() => {
   componentGroupSynchronizer.stopSyncWatcher()
+  $cwa.admin.eventBus.off('reorder', handleReorderEvent)
 })
 </script>
