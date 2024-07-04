@@ -7,6 +7,7 @@
     <ResourceLoader
       v-for="positionIri of componentPositions"
       :key="getResourceKey(positionIri)"
+      :data-sort-value="getSortValue(positionIri)"
       :iri="positionIri"
       :ui-component="ComponentPosition"
       :class="nestedClasses"
@@ -188,6 +189,11 @@ const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
 function getResourceKey (positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
+}
+
+function getSortValue (positionIri: string) {
+  const storeSortValue = $cwa.resources.getResource(positionIri).value?.data?.sortValue
+  return storeSortValue === undefined ? '?' : storeSortValue
 }
 
 onMounted(() => {
