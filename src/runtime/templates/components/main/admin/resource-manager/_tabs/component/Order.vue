@@ -16,6 +16,9 @@ const positionIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(Cw
 const position = positionIri ? $cwa.resources.getResource(positionIri) : undefined
 const storeOrderValue = computed(() => position?.value?.data?.sortValue)
 const orderValue = ref(storeOrderValue.value || 0)
+watch(storeOrderValue, (newStoreValue) => {
+  orderValue.value = newStoreValue || 0
+})
 watch(orderValue, (newValue) => {
   if (!positionIri) {
     return
