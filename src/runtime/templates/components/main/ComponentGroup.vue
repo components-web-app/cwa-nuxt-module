@@ -24,7 +24,7 @@
 import {
   computed,
   onMounted,
-  onBeforeUnmount
+  onBeforeUnmount, reactive
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
@@ -34,7 +34,14 @@ import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
+
+type PositionSortValues = {
+  [iri: string]: {
+    storeValue: number|undefined
+    submittingValue?: number
+  }
+}
 
 const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
@@ -48,22 +55,14 @@ const groupIsReordering = computed(() => {
     return false
   }
   // look for the earliest component group and if this is the deepest nested one, we enable reordering
-  const currentStack = $cwa.admin.resourceStackManager.resourceStack.value
-  for (const stackItem of currentStack) {
-    const stackItemIri = stackItem.iri
-    const resourceType = getResourceTypeFromIri(stackItemIri)
-    if (resourceType === CwaResourceTypes.COMPONENT_GROUP) {
-      return stackItemIri === iri.value
-    }
-  }
-  return false
+  return $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP) === iri.value
 })
 
 const nestedClasses = computed(() => {
   if (!groupIsReordering.value) {
     return
   }
-  return ['cwa-relative', 'cwa-z-dialog', 'cwa-is-reordering']
+  return ['cwa-is-reordering']
 })
 
 const fullReference = computed(() => {
@@ -107,8 +106,39 @@ const hasAddingPosition = computed(() => {
   return addingEvent.value?.closest.group === iri.value
 })
 
+const positionIris = computed<string[]>(() => {
+  const positionIris = resource.value?.data?.componentPositions
+  if (!positionIris) {
+    return []
+  }
+  return positionIris
+})
+
+const positionSortValues = computed<PositionSortValues>(() => {
+  const sortValues: PositionSortValues = reactive({})
+  for (const iri of positionIris.value) {
+    sortValues[iri] = reactive({
+      storeValue: computed(() => $cwa.resources.getResource(iri).value?.data?.sortValue),
+      submittingValue: undefined
+    })
+  }
+  return sortValues
+})
+
+const orderedComponentPositions = computed<string[]>(() => {
+  const getSortValue = (iri: string) => {
+    const sortValueData = positionSortValues.value[iri]
+    return sortValueData.submittingValue || sortValueData.storeValue || 0
+  }
+  return [...positionIris.value]
+    .filter(iri => positionSortValues.value[iri].storeValue !== undefined)
+    .sort((a, b) => {
+      return getSortValue(a) > getSortValue(b) ? 1 : -1
+    })
+})
+
 const componentPositions = computed(() => {
-  const savedPositions: string[] = resource.value?.data?.componentPositions
+  const savedPositions: string[] = orderedComponentPositions.value
   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
   if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value || addingEvent.value?.addAfter === null || !$cwa.admin.isEditing) {
     return savedPositions

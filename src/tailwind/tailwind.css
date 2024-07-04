@@ -11,8 +11,8 @@
   @apply cwa-p-4;
 }
 .cwa-is-reordering {
-  @apply cwa-relative;
+  @apply cwa-relative cwa-z-dialog;
 }
 .cwa-is-reordering:before {
-  @apply cwa-content-[''] cwa-absolute cwa-top-0 cwa-left-0 cwa-right-0 cwa-bottom-0 cwa-outline-2 cwa-outline-dashed cwa-outline-magenta/30 cwa-outline-offset-[7px] cwa-rounded-sm;
+  @apply cwa-content-[''] cwa-absolute cwa-z-dialog cwa-top-0 cwa-left-0 cwa-right-0 cwa-bottom-0 cwa-outline-2 cwa-outline-dashed cwa-outline-magenta cwa-outline-offset-[7px] cwa-rounded-sm;
 }

@@ -158,6 +158,17 @@ export default class ResourceStackManager {
     this.currentResourceStack.value = []
   }
 
+  public getClosestStackItemByType (type: CwaResourceTypes) {
+    const currentStack = this.resourceStack.value
+    for (const stackItem of currentStack) {
+      const stackItemIri = stackItem.iri
+      const resourceType = getResourceTypeFromIri(stackItemIri)
+      if (resourceType === type) {
+        return stackItemIri
+      }
+    }
+  }
+
   private async confirmStackChange (alertData : { title: string, content: string }, fromContext?: boolean) {
     let cachedNewStack: ResourceStackItem[]|undefined
     if (!fromContext) {
@@ -352,7 +363,7 @@ export default class ResourceStackManager {
     })
 
     this.focusWrapper = document.createElement('div')
-    this.focusWrapper.className = 'cwa-absolute cwa-z-100'
+    this.focusWrapper.className = 'cwa-absolute cwa-z-10'
     document.body.appendChild(this.focusWrapper)
 
     this.focusProxy = this.focusComponent.mount(this.focusWrapper)

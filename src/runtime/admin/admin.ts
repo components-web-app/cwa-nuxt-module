@@ -8,6 +8,10 @@ type Events = {
   manageableComponentMounted: string
   componentMounted: string
   selectResource: string
+  reorder: {
+    positionIri: string
+    location: 'previous'|'next'|number
+  }
 }
 
 export default class Admin {
