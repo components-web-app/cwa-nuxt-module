@@ -106,39 +106,51 @@ const hasAddingPosition = computed(() => {
   return addingEvent.value?.closest.group === iri.value
 })
 
-const positionIris = computed<string[]>(() => {
+const positionIris = computed<string[]|undefined>(() => {
   const positionIris = resource.value?.data?.componentPositions
   if (!positionIris) {
-    return []
+    return undefined
   }
   return positionIris
 })
 
-const positionSortValues = computed<PositionSortValues>(() => {
+const positionSortValues = computed<PositionSortValues|undefined>(() => {
   const sortValues: PositionSortValues = reactive({})
+  if (!positionIris.value) {
+    return
+  }
   for (const iri of positionIris.value) {
     sortValues[iri] = reactive({
-      storeValue: computed(() => $cwa.resources.getResource(iri).value?.data?.sortValue),
+      storeValue: computed(() => $cwa.resources.getResource(iri).value?.data?.sortValue || 0),
       submittingValue: undefined
     })
   }
   return sortValues
 })
 
-const orderedComponentPositions = computed<string[]>(() => {
+const orderedComponentPositions = computed<string[]|undefined>(() => {
+  if (positionSortValues.value === undefined || positionIris.value === undefined) {
+    return
+  }
+  const psv = positionSortValues.value
   const getSortValue = (iri: string) => {
-    const sortValueData = positionSortValues.value[iri]
+    const sortValueData = psv[iri]
     return sortValueData.submittingValue || sortValueData.storeValue || 0
   }
   return [...positionIris.value]
-    .filter(iri => positionSortValues.value[iri].storeValue !== undefined)
+    .filter(iri => psv[iri].storeValue !== undefined)
     .sort((a, b) => {
-      return getSortValue(a) > getSortValue(b) ? 1 : -1
+      const sortA = getSortValue(a)
+      const sortB = getSortValue(b)
+      return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
     })
 })
 
 const componentPositions = computed(() => {
-  const savedPositions: string[] = orderedComponentPositions.value
+  const savedPositions: string[]|undefined = orderedComponentPositions.value
+  if (!savedPositions) {
+    return
+  }
   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
   if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value || addingEvent.value?.addAfter === null || !$cwa.admin.isEditing) {
     return savedPositions
