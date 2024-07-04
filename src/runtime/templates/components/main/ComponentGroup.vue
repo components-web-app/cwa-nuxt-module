@@ -221,11 +221,11 @@ function handleReorderEvent (event: ReorderEvent) {
   const positionCopy = [...orderedComponentPositions.value]
   moveElement(positionCopy, currentIndex, newIndex)
   for (const [index, iri] of positionCopy.entries()) {
-    submitSortValueUpdate(iri, index)
+    submitSortValueUpdate(event.positionIri, iri, index)
   }
 }
 
-async function submitSortValueUpdate (iri: string, newValue: number) {
+async function submitSortValueUpdate (eventIri: string, iri: string, newValue: number) {
   if (!positionSortValues.value) {
     return
   }
@@ -235,14 +235,26 @@ async function submitSortValueUpdate (iri: string, newValue: number) {
   }
   const checkValue = sortValues.submittingValue || sortValues.storeValue
   if (newValue !== checkValue) {
-    sortValues.submittingValue = newValue
-    await $cwa.resourcesManager.updateResource({
-      endpoint: iri,
-      data: {
-        sortValue: newValue
+    if (eventIri === iri) {
+      sortValues.submittingValue = newValue
+      await $cwa.resourcesManager.updateResource({
+        endpoint: iri,
+        data: {
+          sortValue: newValue
+        }
+      })
+      sortValues.submittingValue = undefined
+    } else {
+      const currentResource = $cwa.resources.getResource(iri).value?.data
+      if (currentResource) {
+        $cwa.resourcesManager.saveResource({
+          resource: {
+            ...currentResource,
+            sortValue: newValue
+          }
+        })
       }
-    })
-    sortValues.submittingValue = undefined
+    }
   }
 }
 
