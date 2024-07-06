@@ -195,7 +195,21 @@ function handleReorderEvent (event: ReorderEvent) {
   if (currentIndex === -1) {
     return
   }
-  const newIndex = event.location === 'next' ? currentIndex + 1 : (event.location === 'previous' ? currentIndex - 1 : event.location)
+
+  let newIndex: number = 0
+  switch (event.location) {
+    case 'next':
+      newIndex = currentIndex + 1
+      break
+
+    case 'previous':
+      newIndex = currentIndex - 1
+      break
+
+    default:
+      newIndex = event.location
+      break
+  }
 
   const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
     const startIndex = fromIndex < 0 ? array.length + fromIndex : fromIndex
@@ -207,6 +221,7 @@ function handleReorderEvent (event: ReorderEvent) {
       array.splice(endIndex, 0, item)
     }
   }
+
   const positionCopy = [...orderedComponentPositions.value]
   moveElement(positionCopy, currentIndex, newIndex)
   for (const [index, iri] of positionCopy.entries()) {
@@ -220,29 +235,31 @@ async function submitSortValueUpdate (eventIri: string, iri: string, newValue: n
   if (!sortValues) {
     return
   }
+
   const checkValue = sortValues.submittingValue !== undefined ? sortValues.submittingValue : sortValues.storeValue
-  if (newValue !== checkValue) {
-    if (eventIri === iri) {
-      sortValues.submittingValue = newValue
-      await $cwa.resourcesManager.updateResource({
-        endpoint: iri,
-        data: {
+  if (newValue === checkValue) {
+    return
+  }
+  if (eventIri !== iri) {
+    const currentResource = $cwa.resources.getResource(iri).value?.data
+    if (currentResource) {
+      $cwa.resourcesManager.saveResource({
+        resource: {
+          ...currentResource,
           sortValue: newValue
         }
       })
-      positionSortValues.value[iri].submittingValue = undefined
-    } else {
-      const currentResource = $cwa.resources.getResource(iri).value?.data
-      if (currentResource) {
-        $cwa.resourcesManager.saveResource({
-          resource: {
-            ...currentResource,
-            sortValue: newValue
-          }
-        })
-      }
     }
+    return
   }
+  sortValues.submittingValue = newValue
+  await $cwa.resourcesManager.updateResource({
+    endpoint: iri,
+    data: {
+      sortValue: newValue
+    }
+  })
+  positionSortValues.value[iri].submittingValue = undefined
 }
 
 watchEffect(() => {
