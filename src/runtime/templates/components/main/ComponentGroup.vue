@@ -4,7 +4,14 @@
   </div>
   <template v-else-if="componentPositions?.length">
     <!--CWA_MANAGER_START_GROUP-->
-    <ResourceLoader v-for="positionIri of componentPositions" :key="getResourceKey(positionIri)" :iri="positionIri" :ui-component="ComponentPosition" />
+    <ResourceLoader
+      v-for="positionIri of componentPositions"
+      :key="getResourceKey(positionIri)"
+      :data-sort-value="getSortValue(positionIri)"
+      :iri="positionIri"
+      :ui-component="ComponentPosition"
+      :class="nestedClasses"
+    />
     <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
@@ -15,13 +22,10 @@
 <script setup lang="ts">
 // Comments around the resource loaders is to allow component groups not to need to be wrapped in a dev and so we know when one cg ends
 
-// todo: draggable drag and drop reordering
-// todo: merge in a new component position/ component being added
-
 import {
   computed,
   onMounted,
-  onBeforeUnmount
+  onBeforeUnmount, ref, type Ref, watchEffect
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
@@ -31,6 +35,15 @@ import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
+import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
+import type { ReorderEvent } from '#cwa/runtime/admin/admin'
+
+type PositionSortValues = {
+  [iri: string]: {
+    storeValue: number|undefined
+    submittingValue?: number
+  }
+}
 
 const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
@@ -38,6 +51,21 @@ const $cwa = useCwa()
 useCwaResourceManageable(iri)
 
 const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
+
+const groupIsReordering = computed(() => {
+  if (!iri.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
+    return false
+  }
+  // look for the earliest component group and if this is the deepest nested one, we enable reordering
+  return $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP) === iri.value
+})
+
+const nestedClasses = computed(() => {
+  if (!groupIsReordering.value) {
+    return
+  }
+  return ['cwa-is-reordering']
+})
 
 const fullReference = computed(() => {
   const locationResource = $cwa.resources.getResource(props.location)
@@ -80,8 +108,45 @@ const hasAddingPosition = computed(() => {
   return addingEvent.value?.closest.group === iri.value
 })
 
+const positionIris = computed<string[]|undefined>(() => {
+  const positionIris = resource.value?.data?.componentPositions
+  if (!positionIris) {
+    return undefined
+  }
+  return positionIris
+})
+
+const positionSortValues: Ref<PositionSortValues> = ref({})
+
+const getSortValue = computed(() => {
+  return (iri: string) => {
+    const storeSortValue = $cwa.resources.getResource(iri).value?.data?.sortValue
+    const sortValueData = positionSortValues.value[iri]
+    if (sortValueData?.submittingValue !== undefined) {
+      return sortValueData.submittingValue
+    }
+    return storeSortValue || 0
+  }
+})
+
+const orderedComponentPositions = computed<string[]|undefined>(() => {
+  if (positionIris.value === undefined) {
+    return
+  }
+  return [...positionIris.value]
+    .filter(iri => positionSortValues.value[iri].storeValue !== undefined)
+    .sort((a, b) => {
+      const sortA = getSortValue.value(a)
+      const sortB = getSortValue.value(b)
+      return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
+    })
+})
+
 const componentPositions = computed(() => {
-  const savedPositions: string[] = resource.value?.data?.componentPositions
+  const savedPositions: string[]|undefined = orderedComponentPositions.value
+  if (!savedPositions) {
+    return
+  }
   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
   if (isInstantAdding !== false || !hasAddingPosition.value || !addingEvent.value || addingEvent.value?.addAfter === null || !$cwa.admin.isEditing) {
     return savedPositions
@@ -121,6 +186,96 @@ function getResourceKey (positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
+function handleReorderEvent (event: ReorderEvent) {
+  if (!groupIsReordering.value || !orderedComponentPositions.value) {
+    return
+  }
+
+  const currentIndex = orderedComponentPositions.value.indexOf(event.positionIri)
+  if (currentIndex === -1) {
+    return
+  }
+
+  let newIndex: number = 0
+  switch (event.location) {
+    case 'next':
+      newIndex = currentIndex + 1
+      break
+
+    case 'previous':
+      newIndex = currentIndex - 1
+      break
+
+    default:
+      newIndex = event.location
+      break
+  }
+
+  const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
+    const startIndex = fromIndex < 0 ? array.length + fromIndex : fromIndex
+
+    if (startIndex >= 0 && startIndex < array.length) {
+      const endIndex = toIndex < 0 ? array.length + toIndex : toIndex
+
+      const [item] = array.splice(fromIndex, 1)
+      array.splice(endIndex, 0, item)
+    }
+  }
+
+  const positionCopy = [...orderedComponentPositions.value]
+  moveElement(positionCopy, currentIndex, newIndex)
+  for (const [index, iri] of positionCopy.entries()) {
+    submitSortValueUpdate(event.positionIri, iri, index)
+  }
+  $cwa.admin.eventBus.emit('redrawFocus', undefined)
+}
+
+async function submitSortValueUpdate (eventIri: string, iri: string, newValue: number) {
+  const sortValues = positionSortValues.value[iri]
+  if (!sortValues) {
+    return
+  }
+
+  const checkValue = sortValues.submittingValue !== undefined ? sortValues.submittingValue : sortValues.storeValue
+  if (newValue === checkValue) {
+    return
+  }
+  if (eventIri !== iri) {
+    const currentResource = $cwa.resources.getResource(iri).value?.data
+    if (currentResource) {
+      $cwa.resourcesManager.saveResource({
+        resource: {
+          ...currentResource,
+          sortValue: newValue
+        }
+      })
+    }
+    return
+  }
+  sortValues.submittingValue = newValue
+  await $cwa.resourcesManager.updateResource({
+    endpoint: iri,
+    data: {
+      sortValue: newValue
+    }
+  })
+  positionSortValues.value[iri].submittingValue = undefined
+}
+
+watchEffect(() => {
+  const newValues: PositionSortValues = {}
+  if (!positionIris.value) {
+    return
+  }
+  for (const iri of positionIris.value) {
+    newValues[iri] = {
+      storeValue: $cwa.resources.getResource(iri).value?.data?.sortValue || 0,
+      submittingValue: positionSortValues.value[iri]?.submittingValue
+    }
+  }
+  positionSortValues.value = newValues
+})
+
 onMounted(() => {
   componentGroupSynchronizer.createSyncWatcher({
     resource,
@@ -128,9 +283,11 @@ onMounted(() => {
     fullReference,
     allowedComponents: props.allowedComponents
   })
+  $cwa.admin.eventBus.on('reorder', handleReorderEvent)
 })
 
 onBeforeUnmount(() => {
   componentGroupSynchronizer.stopSyncWatcher()
+  $cwa.admin.eventBus.off('reorder', handleReorderEvent)
 })
 </script>

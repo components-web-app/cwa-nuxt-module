@@ -20,17 +20,23 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
   <!--CWA_MANAGER_START_GROUP-->
   
   <resourceloader-stub
+    class=""
     componentprefix=""
+    data-sort-value="0"
     iri="pos1"
     uicomponent="[object Object]"
   />
   <resourceloader-stub
+    class=""
     componentprefix=""
+    data-sort-value="0"
     iri="pos2"
     uicomponent="[object Object]"
   />
   <resourceloader-stub
+    class=""
     componentprefix=""
+    data-sort-value="0"
     iri="pos3"
     uicomponent="[object Object]"
   />

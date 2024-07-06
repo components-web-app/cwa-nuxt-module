@@ -16,6 +16,7 @@ export interface CwaResource {
   publishedResource?: string
   draftResource?: string
   uiComponent?: string
+  sortValue?: number
   _metadata: {
     adding?: {
       instantAdd: boolean

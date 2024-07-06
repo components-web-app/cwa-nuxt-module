@@ -68,6 +68,10 @@ function createWrapper ({
         isEditing,
         resourceManager: {
           addResourceEvent: ref()
+        },
+        eventBus: {
+          on: vi.fn(),
+          off: vi.fn()
         }
       }
     }

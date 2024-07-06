@@ -158,6 +158,17 @@ export default class ResourceStackManager {
     this.currentResourceStack.value = []
   }
 
+  public getClosestStackItemByType (type: CwaResourceTypes) {
+    const currentStack = this.resourceStack.value
+    for (const stackItem of currentStack) {
+      const stackItemIri = stackItem.iri
+      const resourceType = getResourceTypeFromIri(stackItemIri)
+      if (resourceType === type) {
+        return stackItemIri
+      }
+    }
+  }
+
   private async confirmStackChange (alertData : { title: string, content: string }, fromContext?: boolean) {
     let cachedNewStack: ResourceStackItem[]|undefined
     if (!fromContext) {
@@ -238,7 +249,7 @@ export default class ResourceStackManager {
     // we are starting a new stack - last click before was a window or has been reset
     if (!currentTarget.value) {
       // If the first item being added to stack is the same IRI as the first item populated into the current stack, cancel, do not repopulate the same stack
-      if (!isContext && isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri, false)) {
+      if (!isContext && isResourceClick && this.isResourceInStack(resourceStackItem.iri, false)) {
         currentTarget.value = clickTarget
         return
       }
@@ -254,7 +265,7 @@ export default class ResourceStackManager {
       return
     }
 
-    if (isResourceClick && this.isItemAlreadyInStack(resourceStackItem.iri, !!isContext) && currentTarget.value) {
+    if (isResourceClick && this.isResourceInStack(resourceStackItem.iri, !!isContext) && currentTarget.value) {
       return
     }
 
@@ -352,6 +363,7 @@ export default class ResourceStackManager {
     })
 
     this.focusWrapper = document.createElement('div')
+    this.focusWrapper.className = 'cwa-absolute cwa-z-10'
     document.body.appendChild(this.focusWrapper)
 
     this.focusProxy = this.focusComponent.mount(this.focusWrapper)
@@ -432,7 +444,7 @@ export default class ResourceStackManager {
     this.resourceManagerState.value = {}
   }
 
-  private isItemAlreadyInStack (iri: string, isContext?: boolean): boolean {
+  private isResourceInStack (iri: string, isContext?: boolean): boolean {
     const stack = isContext ? this.contextResourceStack : this.currentResourceStack
     return !!stack.value.find(el => el.iri === iri)
   }

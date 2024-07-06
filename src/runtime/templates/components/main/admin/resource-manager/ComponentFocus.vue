@@ -134,6 +134,7 @@ function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, wid
 let redrawInterval: number|undefined
 onMounted(() => {
   $cwa.admin.eventBus.on('manageableComponentMounted', redraw)
+  $cwa.admin.eventBus.on('redrawFocus', redraw)
   window.addEventListener('resize', redraw, false)
   watch(resourceData, redraw, { deep: true, flush: 'post' })
   watch(canvas, newCanvas => newCanvas && redraw())
@@ -158,6 +159,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', redraw)
   $cwa.admin.eventBus.off('manageableComponentMounted', redraw)
+  $cwa.admin.eventBus.off('redrawFocus', redraw)
   redrawInterval && window.clearInterval(redrawInterval)
 })
 
@@ -168,7 +170,7 @@ defineExpose({
 
 <template>
   <client-only>
-    <canvas ref="canvas" class="cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
+    <canvas ref="canvas" class="cwa-z-100 cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
     <div :class="[borderColor]" :style="cssStyle" class="cwa-animate-pulse cwa-absolute cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
   </client-only>
 </template>

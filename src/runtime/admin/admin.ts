@@ -4,10 +4,17 @@ import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { Resources } from '../resources/resources'
 import ResourceStackManager from './resource-stack-manager'
 
+export type ReorderEvent = {
+  positionIri: string
+  location: 'previous'|'next'|number
+}
+
 type Events = {
+  redrawFocus: undefined
   manageableComponentMounted: string
   componentMounted: string
   selectResource: string
+  reorder: ReorderEvent
 }
 
 export default class Admin {

@@ -10,3 +10,12 @@
 .cwa-section {
   @apply cwa-p-4;
 }
+.cwa-is-reordering {
+  @apply cwa-relative cwa-z-dialog;
+}
+.cwa-is-reordering:before {
+  @apply cwa-content-[''] cwa-absolute cwa-z-dialog cwa-top-0 cwa-left-0 cwa-right-0 cwa-bottom-0 cwa-outline-2 cwa-outline-dashed cwa-outline-magenta cwa-outline-offset-[7px] cwa-rounded-sm;
+}
+.cwa-is-reordering:after {
+  @apply cwa-content-[attr(data-sort-value)] cwa-absolute cwa-z-dialog -cwa-top-4 -cwa-right-4 cwa-text-sm cwa-bg-magenta cwa-p-1 cwa-text-white cwa-rounded-full cwa-min-w-[25px] cwa-text-center
+}
