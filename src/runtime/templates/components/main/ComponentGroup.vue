@@ -25,7 +25,7 @@
 import {
   computed,
   onMounted,
-  onBeforeUnmount, reactive
+  onBeforeUnmount, ref, type Ref, watchEffect
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
@@ -116,34 +116,28 @@ const positionIris = computed<string[]|undefined>(() => {
   return positionIris
 })
 
-const positionSortValues = computed<PositionSortValues|undefined>(() => {
-  const sortValues: PositionSortValues = reactive({})
-  if (!positionIris.value) {
-    return
+const positionSortValues: Ref<PositionSortValues> = ref({})
+
+const getSortValue = computed(() => {
+  return (iri: string) => {
+    const storeSortValue = $cwa.resources.getResource(iri).value?.data?.sortValue
+    const sortValueData = positionSortValues.value[iri]
+    if (sortValueData?.submittingValue !== undefined) {
+      return sortValueData.submittingValue
+    }
+    return storeSortValue || 0
   }
-  for (const iri of positionIris.value) {
-    sortValues[iri] = reactive({
-      storeValue: computed(() => $cwa.resources.getResource(iri).value?.data?.sortValue || 0),
-      submittingValue: undefined
-    })
-  }
-  return sortValues
 })
 
 const orderedComponentPositions = computed<string[]|undefined>(() => {
-  if (positionSortValues.value === undefined || positionIris.value === undefined) {
+  if (positionIris.value === undefined) {
     return
   }
-  const psv = positionSortValues.value
-  const getSortValue = (iri: string) => {
-    const sortValueData = psv[iri]
-    return sortValueData.submittingValue || sortValueData.storeValue || 0
-  }
   return [...positionIris.value]
-    .filter(iri => psv[iri].storeValue !== undefined)
+    .filter(iri => positionSortValues.value[iri].storeValue !== undefined)
     .sort((a, b) => {
-      const sortA = getSortValue(a)
-      const sortB = getSortValue(b)
+      const sortA = getSortValue.value(a)
+      const sortB = getSortValue.value(b)
       return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
     })
 })
@@ -192,13 +186,8 @@ function getResourceKey (positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
-function getSortValue (positionIri: string) {
-  const storeSortValue = $cwa.resources.getResource(positionIri).value?.data?.sortValue
-  return storeSortValue === undefined ? '?' : storeSortValue
-}
-
 function handleReorderEvent (event: ReorderEvent) {
-  if (!groupIsReordering.value || !orderedComponentPositions.value || !positionSortValues.value) {
+  if (!groupIsReordering.value || !orderedComponentPositions.value) {
     return
   }
 
@@ -223,17 +212,15 @@ function handleReorderEvent (event: ReorderEvent) {
   for (const [index, iri] of positionCopy.entries()) {
     submitSortValueUpdate(event.positionIri, iri, index)
   }
+  $cwa.admin.eventBus.emit('redrawFocus', undefined)
 }
 
 async function submitSortValueUpdate (eventIri: string, iri: string, newValue: number) {
-  if (!positionSortValues.value) {
-    return
-  }
   const sortValues = positionSortValues.value[iri]
   if (!sortValues) {
     return
   }
-  const checkValue = sortValues.submittingValue || sortValues.storeValue
+  const checkValue = sortValues.submittingValue !== undefined ? sortValues.submittingValue : sortValues.storeValue
   if (newValue !== checkValue) {
     if (eventIri === iri) {
       sortValues.submittingValue = newValue
@@ -243,7 +230,7 @@ async function submitSortValueUpdate (eventIri: string, iri: string, newValue: n
           sortValue: newValue
         }
       })
-      sortValues.submittingValue = undefined
+      positionSortValues.value[iri].submittingValue = undefined
     } else {
       const currentResource = $cwa.resources.getResource(iri).value?.data
       if (currentResource) {
@@ -257,6 +244,20 @@ async function submitSortValueUpdate (eventIri: string, iri: string, newValue: n
     }
   }
 }
+
+watchEffect(() => {
+  const newValues: PositionSortValues = {}
+  if (!positionIris.value) {
+    return
+  }
+  for (const iri of positionIris.value) {
+    newValues[iri] = {
+      storeValue: $cwa.resources.getResource(iri).value?.data?.sortValue || 0,
+      submittingValue: positionSortValues.value[iri]?.submittingValue
+    }
+  }
+  positionSortValues.value = newValues
+})
 
 onMounted(() => {
   componentGroupSynchronizer.createSyncWatcher({

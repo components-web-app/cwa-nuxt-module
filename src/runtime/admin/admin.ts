@@ -10,6 +10,7 @@ export type ReorderEvent = {
 }
 
 type Events = {
+  redrawFocus: undefined
   manageableComponentMounted: string
   componentMounted: string
   selectResource: string

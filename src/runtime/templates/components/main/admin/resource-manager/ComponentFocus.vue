@@ -134,6 +134,7 @@ function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, wid
 let redrawInterval: number|undefined
 onMounted(() => {
   $cwa.admin.eventBus.on('manageableComponentMounted', redraw)
+  $cwa.admin.eventBus.on('redrawFocus', redraw)
   window.addEventListener('resize', redraw, false)
   watch(resourceData, redraw, { deep: true, flush: 'post' })
   watch(canvas, newCanvas => newCanvas && redraw())
@@ -158,6 +159,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', redraw)
   $cwa.admin.eventBus.off('manageableComponentMounted', redraw)
+  $cwa.admin.eventBus.off('redrawFocus', redraw)
   redrawInterval && window.clearInterval(redrawInterval)
 })
 
