@@ -1,7 +1,6 @@
-import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref, Ref, watch, watchEffect } from 'vue'
+import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref, type Ref, watchEffect } from 'vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import type Cwa from '#cwa/runtime/cwa'
-import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import type { ReorderEvent } from '#cwa/runtime/admin/admin'
 
 type PositionSortValues = {
@@ -24,13 +23,9 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
 
 export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $cwa: Cwa, resourceComponentPositions: ComputedRef<string[]|undefined>) => {
   const positionSortValues: Ref<PositionSortValues> = ref({})
-  const newPositionIndex = ref<number>(-1)
 
   const getSortValue = computed(() => {
     return (iri: string) => {
-      if (iri === placeholderNewPosition) {
-        return newPositionIndex.value
-      }
       const storeSortValue = $cwa.resources.getResource(iri).value?.data?.sortValue
       const sortValueData = positionSortValues.value[iri]
       if (sortValueData?.submittingValue !== undefined) {
@@ -60,68 +55,25 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
     if (positionIris.value === undefined) {
       return
     }
-    const positions = [...positionIris.value]
+    return [...positionIris.value]
       .filter(iri => positionSortValues.value[iri].storeValue !== undefined)
       .sort((a, b) => {
         const sortA = getSortValue.value(a)
         const sortB = getSortValue.value(b)
         return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
       })
-
-    if (newPositionIndex.value === -1) {
-      return positions
-    }
-
-    positions.splice(newPositionIndex.value, 0, placeholderNewPosition)
-    return positions
   })
-
-  const newPlaceholderMeta = computed(() => {
-    const addingEvent = $cwa.resourcesManager.addResourceEvent.value
-    const hasAddingPosition = addingEvent?.closest.group === iri.value
-    const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
-    if (!$cwa.admin.isEditing || !orderedComponentPositions.value || !hasAddingPosition || !addingEvent || addingEvent?.addAfter === null || isInstantAdding !== false) {
-      return
-    }
-    return {
-      addingEvent,
-      orderedComponentPositions: orderedComponentPositions.value
-    }
-  })
-
-  const hasPlaceholderPosition = computed(() => {
-    return newPlaceholderMeta.value !== undefined
-  })
-
-  const placeholderNewPosition = '/_/component_positions/' + NEW_RESOURCE_IRI
 
   const componentPositions = computed(() => {
     return orderedComponentPositions.value
   })
-
-  function getPlaceholderPositionIndex () {
-    if (!hasPlaceholderPosition.value || !newPlaceholderMeta.value) {
-      return -1
-    }
-    const { addingEvent, orderedComponentPositions } = newPlaceholderMeta.value
-
-    const closestPosition = addingEvent.closest.position
-    if (closestPosition) {
-      const existingSortValue = orderedComponentPositions.findIndex(i => (i === closestPosition))
-      return addingEvent?.addAfter ? existingSortValue + 1 : existingSortValue
-    }
-    if (addingEvent?.addAfter) {
-      return orderedComponentPositions.length - 1
-    }
-    return 0
-  }
 
   function handleReorderEvent (event: ReorderEvent) {
     if (!groupIsReordering.value || !orderedComponentPositions.value) {
       return
     }
 
-    const currentIndex = event.positionIri === placeholderNewPosition ? newPositionIndex.value : orderedComponentPositions.value.indexOf(event.positionIri)
+    const currentIndex = orderedComponentPositions.value.indexOf(event.positionIri)
     if (currentIndex === -1) {
       return
     }
@@ -153,11 +105,6 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
   }
 
   async function submitSortValueUpdate (eventIri: string, iri: string, newValue: number) {
-    if (iri === placeholderNewPosition) {
-      newPositionIndex.value = newValue
-      return
-    }
-
     const sortValues = positionSortValues.value[iri]
     if (!sortValues) {
       return
@@ -204,10 +151,6 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       }
     }
     positionSortValues.value = newValues
-  })
-
-  watch(hasPlaceholderPosition, () => {
-    newPositionIndex.value = getPlaceholderPositionIndex()
   })
 
   onMounted(() => {

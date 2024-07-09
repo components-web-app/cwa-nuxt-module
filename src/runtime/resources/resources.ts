@@ -303,7 +303,7 @@ export class Resources {
       // and related groups as position may have a delete cascade
       for (const posIri of componentPositions) {
         const positionResource = this.getResource(posIri).value
-        if (positionResource?.data) {
+        if (positionResource?.data?.componentGroup) {
           refreshEndpoints.push(positionResource.data.componentGroup)
         }
       }

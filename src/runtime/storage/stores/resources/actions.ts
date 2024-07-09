@@ -314,6 +314,36 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
         // todo: save the sortValue here for the position so we can easily manipulate it in the manager before adding via the API
 
+        // const newPlaceholderMeta = computed(() => {
+        //   const addingEvent = $cwa.resourcesManager.addResourceEvent.value
+        //   const hasAddingPosition = addingEvent?.closest.group === iri.value
+        //   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
+        //   if (!$cwa.admin.isEditing || !orderedComponentPositions.value || !hasAddingPosition || !addingEvent || addingEvent?.addAfter === null || isInstantAdding !== false) {
+        //     return
+        //   }
+        //   return {
+        //     addingEvent,
+        //     orderedComponentPositions: orderedComponentPositions.value
+        //   }
+        // })
+
+        // function getPlaceholderPositionIndex () {
+        //   if (!hasPlaceholderPosition.value || !newPlaceholderMeta.value) {
+        //     return -1
+        //   }
+        //   const { addingEvent, orderedComponentPositions } = newPlaceholderMeta.value
+        //
+        //   const closestPosition = addingEvent.closest.position
+        //   if (closestPosition) {
+        //     const existingSortValue = orderedComponentPositions.findIndex(i => (i === closestPosition))
+        //     return addingEvent?.addAfter ? existingSortValue + 1 : existingSortValue
+        //   }
+        //   if (addingEvent?.addAfter) {
+        //     return orderedComponentPositions.length - 1
+        //   }
+        //   return 0
+        // }
+
         saveResource({
           resource: positionResource
         })

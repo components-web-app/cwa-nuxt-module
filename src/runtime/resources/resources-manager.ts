@@ -1,7 +1,6 @@
 import { computed, type ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
-import { storeToRefs } from 'pinia'
 import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
@@ -175,15 +174,16 @@ export class ResourcesManager {
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
 
-    if (iri === NEW_RESOURCE_IRI) {
-      const { adding } = storeToRefs(this.resourcesStore)
-      if (!adding.value) {
-        return
-      }
-      adding.value = _mergeWith(adding.value, event.data, (a, b) => {
+    // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
+    // it'll update anything visually until client-side refresh
+    if (currentResource?._metadata.persisted === false) {
+      const newResource = _mergeWith(currentResource, event.data, (a, b) => {
         if (_isArray(a)) {
           return b.concat(a)
         }
+      })
+      this.saveResource({
+        resource: newResource
       })
       return
     }
