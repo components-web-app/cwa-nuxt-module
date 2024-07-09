@@ -7,7 +7,7 @@
     <ResourceLoader
       v-for="positionIri of componentPositions"
       :key="getResourceKey(positionIri)"
-      :data-sort-value="getSortValue(positionIri)"
+      :data-sort-value="$cwa.resources.getPositionSortValue(positionIri)"
       :iri="positionIri"
       :ui-component="ComponentPosition"
       :class="nestedClasses"
@@ -81,10 +81,7 @@ const showLoader = computed(() => {
 
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
-const resourceComponentPositions = computed(() => {
-  return resource.value?.data?.componentPositions
-})
-const { groupIsReordering, componentPositions, getSortValue } = useComponentGroupPositions(iri, $cwa, resourceComponentPositions)
+const { groupIsReordering, componentPositions } = useComponentGroupPositions(iri, $cwa)
 
 const nestedClasses = computed(() => {
   if (!groupIsReordering.value) {

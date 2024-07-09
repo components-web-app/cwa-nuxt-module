@@ -18,6 +18,7 @@ import {
   CwaResourceApiStatuses, NEW_RESOURCE_IRI
 } from './state'
 import type { CwaResourcesGettersInterface } from './getters'
+import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }
@@ -45,7 +46,7 @@ interface InitResourceEvent {
 
 export interface CwaResourcesActionsInterface {
   resetNewResource (): void
-  initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean, defaultData?: { [key: string]: any }, componentGroup?: string): void
+  initNewResource (addResourceEvent: AddResourceEvent, resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void
   resetCurrentResources (currentIds?: string[]): void
   clearResources (): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
@@ -277,7 +278,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       deleteResource({ resource: resourcesState.adding.value.resource })
       resourcesState.adding.value = undefined
     },
-    initNewResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }, closestGroup?: string): void {
+    initNewResource (addResourceEvent: AddResourceEvent, resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void {
+      const closestGroup = addResourceEvent.closest.group
+      const closestPosition = addResourceEvent.closest.position
+
       const newResource: CwaResource = {
         ...defaultData,
         '@id': NEW_RESOURCE_IRI,
@@ -294,6 +298,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       // also add a position resource as a temporary resource if we are not adding a dynamnic position
       let position: string|undefined
+      let positionResource: CwaResource|undefined
       if (resourceType === 'ComponentPosition') {
         newResource.componentGroup = closestGroup
       } else {
@@ -302,7 +307,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // update the resource to reference that it is in this position
         newResource.componentPositions = [position]
 
-        const positionResource = {
+        positionResource = {
           '@id': position,
           '@type': 'ComponentPosition',
           component: NEW_RESOURCE_IRI,
@@ -312,41 +317,19 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           }
         }
 
-        // todo: save the sortValue here for the position so we can easily manipulate it in the manager before adding via the API
-
-        // const newPlaceholderMeta = computed(() => {
-        //   const addingEvent = $cwa.resourcesManager.addResourceEvent.value
-        //   const hasAddingPosition = addingEvent?.closest.group === iri.value
-        //   const isInstantAdding = $cwa.resources.newResource.value?.data?._metadata?.adding?.instantAdd
-        //   if (!$cwa.admin.isEditing || !orderedComponentPositions.value || !hasAddingPosition || !addingEvent || addingEvent?.addAfter === null || isInstantAdding !== false) {
-        //     return
-        //   }
-        //   return {
-        //     addingEvent,
-        //     orderedComponentPositions: orderedComponentPositions.value
-        //   }
-        // })
-
-        // function getPlaceholderPositionIndex () {
-        //   if (!hasPlaceholderPosition.value || !newPlaceholderMeta.value) {
-        //     return -1
-        //   }
-        //   const { addingEvent, orderedComponentPositions } = newPlaceholderMeta.value
-        //
-        //   const closestPosition = addingEvent.closest.position
-        //   if (closestPosition) {
-        //     const existingSortValue = orderedComponentPositions.findIndex(i => (i === closestPosition))
-        //     return addingEvent?.addAfter ? existingSortValue + 1 : existingSortValue
-        //   }
-        //   if (addingEvent?.addAfter) {
-        //     return orderedComponentPositions.length - 1
-        //   }
-        //   return 0
-        // }
-
         saveResource({
           resource: positionResource
         })
+      }
+
+      const newPosition = positionResource || newResource
+
+      if (closestPosition) {
+        const closestPositionResource = resourcesGetters.getResource.value(closestPosition)
+        const closestSortValue = closestPositionResource?.data?.sortValue
+        if (closestSortValue !== undefined) {
+          newPosition.sortValue = addResourceEvent.addAfter ? closestSortValue + 1 : closestSortValue - 1
+        }
       }
 
       // finish saving the new resource with any modifications arising from if we need a position as well
@@ -363,9 +346,29 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       if (closestGroup) {
         const groupResource = resourcesGetters.getResource.value(closestGroup)
         if (groupResource?.data) {
+          const existingPositionIris = groupResource.data.componentPositions
+
+          // add to start or end of component group
+          if (newPosition.sortValue === undefined && existingPositionIris) {
+            const sortValues: { min?: number, max?: number } = {}
+            for (const existingPositionIri of existingPositionIris) {
+              const existingPositionResource = resourcesGetters.getResource.value(existingPositionIri)
+              const currentSortValue = existingPositionResource?.data?.sortValue
+              if (currentSortValue !== undefined) {
+                if (sortValues.min === undefined || currentSortValue < sortValues.min) {
+                  sortValues.min = currentSortValue
+                }
+                if (sortValues.max === undefined || currentSortValue < sortValues.max) {
+                  sortValues.max = currentSortValue
+                }
+              }
+            }
+            newPosition.sortValue = addResourceEvent?.addAfter ? (sortValues?.max || 0) + 1 : (sortValues?.min || 0)
+          }
+
           const updatedGroupResource = {
             ...groupResource.data,
-            componentPositions: [...(groupResource.data.componentPositions || []), (position || NEW_RESOURCE_IRI)]
+            componentPositions: [...(existingPositionIris || []), (position || NEW_RESOURCE_IRI)]
           }
           saveResource({
             resource: updatedGroupResource

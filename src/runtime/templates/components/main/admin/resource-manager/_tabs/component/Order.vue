@@ -14,8 +14,7 @@ defineExpose(exposeMeta)
 const reordering = createComputedState<boolean>('reordering', false)
 
 const positionIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
-const position = positionIri ? $cwa.resources.getResource(positionIri) : undefined
-const storeOrderValue = computed(() => position?.value?.data?.sortValue)
+const storeOrderValue = computed(() => positionIri ? $cwa.resources.getPositionSortValue(positionIri) : '')
 const orderValue = ref(storeOrderValue.value || 0)
 let debounced: any
 watch(storeOrderValue, (newStoreValue) => {

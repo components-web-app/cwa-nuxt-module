@@ -282,6 +282,14 @@ export class Resources {
     })
   }
 
+  public get getOrderedPositionsForGroup () {
+    return this.resourcesStore.getOrderedPositionsForGroup
+  }
+
+  public get getPositionSortValue () {
+    return this.resourcesStore.getPositionSortValue
+  }
+
   public getRefreshEndpointsForDelete (iri:string): string[] {
     const refreshEndpoints: string[] = []
 
