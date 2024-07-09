@@ -337,7 +337,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             ...groupResource.data,
             componentPositions: [...(groupResource.data.componentPositions || []), (position || NEW_RESOURCE_IRI)]
           }
-          console.log(updatedGroupResource)
           saveResource({
             resource: updatedGroupResource
           })
