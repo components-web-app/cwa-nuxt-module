@@ -17,6 +17,7 @@ export interface CwaResource {
   draftResource?: string
   uiComponent?: string
   sortValue?: number
+  componentGroup?: string
   _metadata: {
     adding?: {
       instantAdd: boolean

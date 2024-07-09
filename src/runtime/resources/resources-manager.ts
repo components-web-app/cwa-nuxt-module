@@ -401,7 +401,7 @@ export class ResourcesManager {
     if (!this._addResourceEvent.value) {
       return
     }
-    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd, defaultData)
+    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd, defaultData, this._addResourceEvent.value.closest.group)
     await nextTick(() => {
       !instantAdd && this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
     })

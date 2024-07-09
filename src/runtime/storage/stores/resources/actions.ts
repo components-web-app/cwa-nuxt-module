@@ -45,7 +45,7 @@ interface InitResourceEvent {
 
 export interface CwaResourcesActionsInterface {
   resetNewResource (): void
-  initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean, defaultData?: { [key: string]: any }): void
+  initNewResource (resourceType: string, endpoint: string, isPublishable?: boolean, instantAdd?: boolean, defaultData?: { [key: string]: any }, componentGroup?: string): void
   resetCurrentResources (currentIds?: string[]): void
   clearResources (): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
@@ -241,11 +241,43 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       if (!resourcesState.adding.value) {
         return
       }
+
+      function clearPositionFromGroup (positionIri: string) {
+        const positionResource = resourcesGetters.getResource.value(positionIri)
+        if (!positionResource?.data) {
+          return
+        }
+        const groupIri = positionResource.data.componentGroup
+        if (!groupIri) {
+          return
+        }
+        const componentGroup = resourcesGetters.getResource.value(groupIri)
+        if (!componentGroup?.data) {
+          return
+        }
+        const positions = [...componentGroup.data.componentPositions]
+        const posIndex = positions.indexOf(positionIri)
+        if (posIndex !== -1) {
+          positions.splice(posIndex, 1)
+        }
+        saveResource({
+          resource: {
+            ...componentGroup.data,
+            componentPositions: positions
+          }
+        })
+      }
+
+      if (resourcesState.adding.value.position) {
+        clearPositionFromGroup(resourcesState.adding.value.position)
+        deleteResource({ resource: resourcesState.adding.value.position })
+      } else {
+        clearPositionFromGroup(resourcesState.adding.value.resource)
+      }
       deleteResource({ resource: resourcesState.adding.value.resource })
-      resourcesState.adding.value.position && deleteResource({ resource: resourcesState.adding.value.resource })
       resourcesState.adding.value = undefined
     },
-    initNewResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void {
+    initNewResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }, closestGroup?: string): void {
       const newResource: CwaResource = {
         ...defaultData,
         '@id': NEW_RESOURCE_IRI,
@@ -262,7 +294,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       // also add a position resource as a temporary resource if we are not adding a dynamnic position
       let position: string|undefined
-      if (resourceType !== 'ComponentPosition') {
+      if (resourceType === 'ComponentPosition') {
+        newResource.componentGroup = closestGroup
+      } else {
         position = `/_/component_positions/${NEW_RESOURCE_IRI}`
 
         // update the resource to reference that it is in this position
@@ -272,6 +306,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           '@id': position,
           '@type': 'ComponentPosition',
           component: NEW_RESOURCE_IRI,
+          componentGroup: closestGroup,
           _metadata: {
             persisted: false
           }
@@ -293,6 +328,20 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.adding.value = {
         resource: NEW_RESOURCE_IRI,
         position
+      }
+
+      if (closestGroup) {
+        const groupResource = resourcesGetters.getResource.value(closestGroup)
+        if (groupResource?.data) {
+          const updatedGroupResource = {
+            ...groupResource.data,
+            componentPositions: [...(groupResource.data.componentPositions || []), (position || NEW_RESOURCE_IRI)]
+          }
+          console.log(updatedGroupResource)
+          saveResource({
+            resource: updatedGroupResource
+          })
+        }
       }
     },
     deleteResource,
