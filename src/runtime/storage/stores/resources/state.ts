@@ -63,7 +63,10 @@ export interface CwaResourcesStateInterface {
     },
     allIds: Array<string>
   }
-  adding: Ref<CwaResource|undefined>
+  adding: Ref<undefined|{
+    resource: string
+    position?: string
+  }>
 }
 
 export default function (): CwaResourcesStateInterface {

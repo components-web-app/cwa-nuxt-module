@@ -359,14 +359,7 @@ export class ResourcesManager {
       // throw new Error(`Could not find a resource with type '${type}' in the stack`)
     }
 
-    const findClosestPosition = (event: BaseEvent): string|undefined => {
-      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
-        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
-      }
-      return findPositionFromGroupEvent(event)
-    }
-
-    const findPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
+    const findClosestPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
       const resource = this.resourcesStore.current.byId?.[event.targetIri]
       const positions = resource?.data?.componentPositions
       if (!positions || !positions.length) {
@@ -377,6 +370,13 @@ export class ResourcesManager {
       } else if (event.addAfter === false) {
         return positions[0]
       }
+    }
+
+    const findClosestPosition = (event: BaseEvent): string|undefined => {
+      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
+        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
+      }
+      return findClosestPositionFromGroupEvent(event)
     }
 
     const closestPosition = findClosestPosition(initEvent)
@@ -413,8 +413,7 @@ export class ResourcesManager {
 
   public clearAddResource () {
     this._addResourceEvent.value = undefined
-    const { adding } = storeToRefs(this.resourcesStore)
-    adding.value = undefined
+    this.clearAddResourceEventResource()
   }
 
   public get addResourceEvent () {

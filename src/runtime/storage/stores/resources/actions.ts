@@ -194,12 +194,59 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     }
   }
 
+  function saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
+    const clearExistingNewResource = () => {
+      // todo: test we clear off any pending new resources awaiting merge
+      const allIdsIndex = resourcesState.new.allIds.indexOf(iri)
+      if (allIdsIndex !== -1) {
+        resourcesState.new.allIds.splice(allIdsIndex, 1)
+        delete resourcesState.new.byId[iri]
+      }
+    }
+
+    const iri = event.resource['@id']
+    if (event.isNew) {
+      const existingResource = resourcesState.current.byId[iri]
+      if (existingResource?.data && isCwaResourceSame(existingResource.data, event.resource)) {
+        clearExistingNewResource()
+        return
+      }
+      resourcesState.new.byId[iri] = {
+        path: event.path,
+        resource: event.resource
+      }
+      if (!resourcesState.new.allIds.includes(iri)) {
+        resourcesState.new.allIds.push(iri)
+      }
+      return
+    }
+
+    const data = initResource({
+      resourcesState,
+      iri,
+      isCurrent: true
+    })
+
+    data.data = event.resource
+
+    clearExistingNewResource()
+
+    // todo: test we save publishable mapping here
+    mapPublishableResource(event.resource)
+    mapPositionToComponent(event.resource)
+  }
+
   return {
     resetNewResource (): void {
+      if (!resourcesState.adding.value) {
+        return
+      }
+      deleteResource({ resource: resourcesState.adding.value.resource })
+      resourcesState.adding.value.position && deleteResource({ resource: resourcesState.adding.value.resource })
       resourcesState.adding.value = undefined
     },
     initNewResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void {
-      resourcesState.adding.value = {
+      const newResource: CwaResource = {
         ...defaultData,
         '@id': NEW_RESOURCE_IRI,
         '@type': resourceType,
@@ -211,6 +258,41 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           },
           persisted: false
         }
+      }
+
+      // also add a position resource as a temporary resource if we are not adding a dynamnic position
+      let position: string|undefined
+      if (resourceType !== 'ComponentPosition') {
+        position = `/_/component_positions/${NEW_RESOURCE_IRI}`
+
+        // update the resource to reference that it is in this position
+        newResource.componentPositions = [position]
+
+        const positionResource = {
+          '@id': position,
+          '@type': 'ComponentPosition',
+          component: NEW_RESOURCE_IRI,
+          _metadata: {
+            persisted: false
+          }
+        }
+
+        // todo: save the sortValue here for the position so we can easily manipulate it in the manager before adding via the API
+
+        saveResource({
+          resource: positionResource
+        })
+      }
+
+      // finish saving the new resource with any modifications arising from if we need a position as well
+      saveResource({
+        resource: newResource
+      })
+
+      // set IRI references to these new resource
+      resourcesState.adding.value = {
+        resource: NEW_RESOURCE_IRI,
+        position
       }
     },
     deleteResource,
@@ -335,46 +417,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         showError({ statusCode: error.statusCode, message: error.message })
       }
     },
-    saveResource (event: SaveResourceEvent|SaveNewResourceEvent): void {
-      const clearExistingNewResource = () => {
-        // todo: test we clear off any pending new resources awaiting merge
-        const allIdsIndex = resourcesState.new.allIds.indexOf(iri)
-        if (allIdsIndex !== -1) {
-          resourcesState.new.allIds.splice(allIdsIndex, 1)
-          delete resourcesState.new.byId[iri]
-        }
-      }
-
-      const iri = event.resource['@id']
-      if (event.isNew) {
-        const existingResource = resourcesState.current.byId[iri]
-        if (existingResource?.data && isCwaResourceSame(existingResource.data, event.resource)) {
-          clearExistingNewResource()
-          return
-        }
-        resourcesState.new.byId[iri] = {
-          path: event.path,
-          resource: event.resource
-        }
-        if (!resourcesState.new.allIds.includes(iri)) {
-          resourcesState.new.allIds.push(iri)
-        }
-        return
-      }
-
-      const data = initResource({
-        resourcesState,
-        iri,
-        isCurrent: true
-      })
-
-      data.data = event.resource
-
-      clearExistingNewResource()
-
-      // todo: test we save publishable mapping here
-      mapPublishableResource(event.resource)
-      mapPositionToComponent(event.resource)
-    }
+    saveResource
   }
 }

@@ -71,38 +71,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   return {
     getResource: computed(() => {
       return (id: string) => {
-        if (id.endsWith(NEW_RESOURCE_IRI)) {
-          const addingResource = resourcesState.adding.value
-          if (!addingResource) {
-            return
-          }
-          const fullAddingResource = {
-            apiState: {
-              status: undefined
-            },
-            data: addingResource
-          }
-          if (id.startsWith('/_/component_positions/')) {
-            if (addingResource['@type'] === 'ComponentPosition') {
-              return fullAddingResource
-            }
-            const ghostPosition: CwaCurrentResourceInterface = {
-              apiState: {
-                status: undefined
-              },
-              data: {
-                '@id': id,
-                '@type': 'ComponentPosition',
-                component: addingResource['@id'],
-                _metadata: {
-                  persisted: false
-                }
-              }
-            }
-            return ghostPosition
-          }
-          return fullAddingResource
-        }
         return resourcesState.current.byId?.[id]
       }
     }),
