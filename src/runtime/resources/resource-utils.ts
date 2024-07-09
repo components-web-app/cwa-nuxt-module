@@ -28,7 +28,9 @@ export interface CwaResource {
     publishable?: {
       published: boolean
       publishedAt: string
-    }
+    },
+    // added and used locally for new/temp position resources to mix in with persisted sort values calculated from resource data
+    sortValue?: number
     [key: string]: any
   }
   [key: string]: any

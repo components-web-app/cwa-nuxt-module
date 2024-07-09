@@ -82,10 +82,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       if (!positions) {
         return
       }
-      const positionResources = positions.filter((iri: string) => includeNewIri || !iri.endsWith(NEW_RESOURCE_IRI)).map((iri: string) => resourcesState.current.byId?.[iri]?.data)
+      const positionResources = positions.filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI)).map((iri: string) => resourcesState.current.byId?.[iri]?.data)
       // @ts-ignore-next-line
       const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource|undefined) => resource !== undefined)
-      return resourcesThatExist
+      const orderedWithoutTemp = resourcesThatExist
         .sort((a: CwaResource, b: CwaResource) => {
           const sortA = a?.sortValue || 0
           const sortB = b?.sortValue || 0
@@ -94,6 +94,16 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         .map((resource: CwaResource) => {
           return resource['@id']
         })
+      if (includeNewIri) {
+        const newIriPositions = positions.filter((iri: string) => iri.endsWith(NEW_RESOURCE_IRI))
+        if (newIriPositions.length) {
+          for (const newIriPosition of newIriPositions) {
+            const newPositionSortValue = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortValue
+            newPositionSortValue !== undefined && orderedWithoutTemp.splice(newPositionSortValue, 0, newIriPosition)
+          }
+        }
+      }
+      return orderedWithoutTemp
     }
   })
 

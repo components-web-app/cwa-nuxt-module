@@ -281,6 +281,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     initNewResource (addResourceEvent: AddResourceEvent, resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void {
       const closestGroup = addResourceEvent.closest.group
       const closestPosition = addResourceEvent.closest.position
+      const addingToGroup = addResourceEvent.targetIri === addResourceEvent.closest.group
 
       const newResource: CwaResource = {
         ...defaultData,
@@ -324,11 +325,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       const newPosition = positionResource || newResource
 
-      if (closestPosition) {
-        const closestPositionResource = resourcesGetters.getResource.value(closestPosition)
-        const closestSortValue = closestPositionResource?.data?.sortValue
-        if (closestSortValue !== undefined) {
-          newPosition.sortValue = addResourceEvent.addAfter ? closestSortValue + 1 : closestSortValue - 1
+      if (!addingToGroup && closestPosition) {
+        const positionSortValue = resourcesGetters.getPositionSortValue.value(closestPosition)
+        if (positionSortValue !== undefined) {
+          newPosition._metadata.sortValue = addResourceEvent?.addAfter ? positionSortValue : positionSortValue - 1
         }
       }
 
@@ -349,21 +349,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           const existingPositionIris = groupResource.data.componentPositions
 
           // add to start or end of component group
-          if (newPosition.sortValue === undefined && existingPositionIris) {
-            const sortValues: { min?: number, max?: number } = {}
-            for (const existingPositionIri of existingPositionIris) {
-              const existingPositionResource = resourcesGetters.getResource.value(existingPositionIri)
-              const currentSortValue = existingPositionResource?.data?.sortValue
-              if (currentSortValue !== undefined) {
-                if (sortValues.min === undefined || currentSortValue < sortValues.min) {
-                  sortValues.min = currentSortValue
-                }
-                if (sortValues.max === undefined || currentSortValue < sortValues.max) {
-                  sortValues.max = currentSortValue
-                }
-              }
-            }
-            newPosition.sortValue = addResourceEvent?.addAfter ? (sortValues?.max || 0) + 1 : (sortValues?.min || 0)
+          if (addingToGroup && existingPositionIris) {
+            newPosition._metadata.sortValue = addResourceEvent?.addAfter ? existingPositionIris.length : 0
           }
 
           const updatedGroupResource = {
