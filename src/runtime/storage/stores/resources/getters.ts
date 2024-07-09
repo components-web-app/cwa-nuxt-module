@@ -7,7 +7,7 @@ import {
 } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
 import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
-import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
+import { CwaResourceApiStatuses } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
 export interface ResourcesLoadStatusInterface {
