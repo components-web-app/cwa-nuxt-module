@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { debounce } from 'lodash-es'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
@@ -16,7 +15,7 @@ const reordering = createComputedState<boolean>('reordering', false)
 const positionIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
 const storeOrderValue = computed(() => positionIri ? $cwa.resources.getPositionSortDisplayNumber(positionIri) : '')
 const orderValue = ref(storeOrderValue.value || 0)
-let debounced: any
+
 watch(storeOrderValue, (newStoreValue) => {
   orderValue.value = newStoreValue || 0
 })
@@ -24,16 +23,10 @@ watch(orderValue, (newValue) => {
   if (!positionIri) {
     return
   }
-  if (debounced) {
-    debounced.cancel()
-  }
-  debounced = debounce(() => {
-    $cwa.admin.eventBus.emit('reorder', {
-      positionIri,
-      location: newValue
-    })
-  }, 1000)
-  debounced()
+  $cwa.admin.eventBus.emit('reorder', {
+    positionIri,
+    location: newValue
+  })
 })
 
 function movePosition (location: 'next'|'previous') {
