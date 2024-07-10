@@ -63,13 +63,13 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
     $cwa.admin.eventBus.emit('redrawFocus', undefined)
   }
 
-  function submitSortValueUpdate (iri: string, newValue: number, eventIri: string) {
+  function submitSortValueUpdate (iri: string, newValue: number, _eventIri: string) {
     const currentResource = $cwa.resources.getResource(iri).value?.data
     if (!currentResource) {
       return
     }
     // @ts-ignore-next-line
-    console.log(iri, newValue, eventIri)
+    // console.log(iri, newValue, eventIri)
     currentResource._metadata.sortDisplayNumber = newValue
 
     $cwa.resourcesManager.saveResource({
