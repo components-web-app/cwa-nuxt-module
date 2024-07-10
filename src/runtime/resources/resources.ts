@@ -286,8 +286,8 @@ export class Resources {
     return this.resourcesStore.getOrderedPositionsForGroup
   }
 
-  public get getPositionSortValue () {
-    return this.resourcesStore.getPositionSortValue
+  public get getPositionSortDisplayNumber () {
+    return this.resourcesStore.getPositionSortDisplayNumber
   }
 
   public getRefreshEndpointsForDelete (iri:string): string[] {

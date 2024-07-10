@@ -7,7 +7,7 @@
     <ResourceLoader
       v-for="positionIri of componentPositions"
       :key="getResourceKey(positionIri)"
-      :data-sort-value="$cwa.resources.getPositionSortValue(positionIri)"
+      :data-sort-value="$cwa.resources.getPositionSortDisplayNumber(positionIri)"
       :iri="positionIri"
       :ui-component="ComponentPosition"
       :class="nestedClasses"

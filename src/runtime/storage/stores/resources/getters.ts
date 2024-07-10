@@ -32,7 +32,7 @@ interface PublishableMapping {
 
 export interface CwaResourcesGettersInterface {
   getOrderedPositionsForGroup: ComputedRef<(groupIri: string, includeNewIri?: boolean) => string[] | undefined>,
-  getPositionSortValue: ComputedRef<(groupIri: string, includeNewIri?: boolean) => number | undefined>,
+  getPositionSortDisplayNumber: ComputedRef<(groupIri: string, includeNewIri?: boolean) => number | undefined>,
   getResource: ComputedRef<(iri: string) => CwaCurrentResourceInterface | undefined>,
   hasNewResources: ComputedRef<boolean>
   findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
@@ -98,7 +98,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         const newIriPositions = positions.filter((iri: string) => iri.endsWith(NEW_RESOURCE_IRI))
         if (newIriPositions.length) {
           for (const newIriPosition of newIriPositions) {
-            const newPositionSortValue = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortValue
+            const newPositionSortValue = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortDisplayNumber
             newPositionSortValue !== undefined && orderedWithoutTemp.splice(newPositionSortValue, 0, newIriPosition)
           }
         }
@@ -109,7 +109,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
 
   return {
     getOrderedPositionsForGroup,
-    getPositionSortValue: computed(() => {
+    getPositionSortDisplayNumber: computed(() => {
       return (positionIri: string, includeNewIri: boolean = true) => {
         const positionResource = resourcesState.current.byId?.[positionIri]?.data
         if (!positionResource) {

@@ -465,7 +465,7 @@ export class ResourcesManager {
       const newDefaultPositionData = this.createNewComponentPosition(positionIri)
       if (data['@type'] === 'ComponentPosition') {
         data.componentGroup = newDefaultPositionData.componentGroup
-        data.sortValue = newDefaultPositionData.sortValue
+        data.sortDisplayNumber = newDefaultPositionData.sortValue
       } else if (!data.componentPositions) {
         // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
         data.componentPositions = [newDefaultPositionData]
@@ -544,7 +544,7 @@ export class ResourcesManager {
       sortValue: 0
     }
     if (positionResource) {
-      const currentSortValue = positionResource.data?.sortValue
+      const currentSortValue = positionResource.data?.sortDisplayNumber
       if (currentSortValue !== undefined) {
         componentPosition.sortValue = addEvent.addAfter ? currentSortValue + 1 : currentSortValue
       }

@@ -30,7 +30,7 @@ export interface CwaResource {
       publishedAt: string
     },
     // added and used locally for new/temp position resources to mix in with persisted sort values calculated from resource data
-    sortValue?: number
+    sortDisplayNumber?: number
     [key: string]: any
   }
   [key: string]: any
