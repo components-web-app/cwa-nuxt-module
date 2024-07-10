@@ -1,14 +1,7 @@
-import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { computed, type ComputedRef, onBeforeUnmount, onMounted } from 'vue'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import type Cwa from '#cwa/runtime/cwa'
 import type { ReorderEvent } from '#cwa/runtime/admin/admin'
-
-type PositionSortValues = {
-  [iri: string]: {
-    storeValue: number|undefined
-    submittingValue?: number
-  }
-}
 
 const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
   const startIndex = fromIndex < 0 ? array.length + fromIndex : fromIndex
@@ -22,8 +15,6 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
 }
 
 export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $cwa: Cwa) => {
-  const positionSortValues: Ref<PositionSortValues> = ref({})
-
   const groupIsReordering = computed(() => {
     if (!iri.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
       return false
@@ -60,49 +51,53 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
         break
 
       default:
-        newIndex = event.location
+        newIndex = event.location - 1
         break
     }
 
     const positionCopy = [...componentPositions.value]
     moveElement(positionCopy, currentIndex, newIndex)
     for (const [index, iri] of positionCopy.entries()) {
-      submitSortValueUpdate(event.positionIri, iri, index)
+      submitSortValueUpdate(iri, index + 1, event.positionIri)
     }
     $cwa.admin.eventBus.emit('redrawFocus', undefined)
   }
 
-  async function submitSortValueUpdate (eventIri: string, iri: string, newValue: number) {
-    const sortValues = positionSortValues.value[iri]
-    if (!sortValues) {
+  function submitSortValueUpdate (iri: string, newValue: number, eventIri: string) {
+    const currentResource = $cwa.resources.getResource(iri).value?.data
+    if (!currentResource) {
       return
     }
+    // @ts-ignore-next-line
+    console.log(iri, newValue, eventIri)
+    currentResource._metadata.sortDisplayNumber = newValue
 
-    const checkValue = sortValues.submittingValue !== undefined ? sortValues.submittingValue : sortValues.storeValue
-    if (newValue === checkValue) {
-      return
-    }
-
-    if (eventIri !== iri) {
-      const currentResource = $cwa.resources.getResource(iri).value?.data
-      if (currentResource) {
-        $cwa.resourcesManager.saveResource({
-          resource: {
-            ...currentResource,
-            sortValue: newValue
-          }
-        })
-      }
-      return
-    }
-    sortValues.submittingValue = newValue
-    await $cwa.resourcesManager.updateResource({
-      endpoint: iri,
-      data: {
-        sortValue: newValue
-      }
+    $cwa.resourcesManager.saveResource({
+      resource: currentResource
     })
-    positionSortValues.value[iri].submittingValue = undefined
+    //   const sortValues = positionSortValues.value[iri]
+    //   if (!sortValues) {
+    //     return
+    //   }
+    //
+    //   const checkValue = sortValues.submittingValue !== undefined ? sortValues.submittingValue : sortValues.storeValue
+    //   if (newValue === checkValue) {
+    //     return
+    //   }
+    //
+    //   if (eventIri !== iri) {
+    //     const currentResource = $cwa.resources.getResource(iri).value?.data
+
+  //     return
+  //   }
+  //   sortValues.submittingValue = newValue
+  //   await $cwa.resourcesManager.updateResource({
+  //     endpoint: iri,
+  //     data: {
+  //       sortValue: newValue
+  //     }
+  //   })
+  //   positionSortValues.value[iri].submittingValue = undefined
   }
 
   // watchEffect(() => {

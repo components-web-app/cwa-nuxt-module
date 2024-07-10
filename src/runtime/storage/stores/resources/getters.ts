@@ -82,13 +82,24 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       if (!positions) {
         return
       }
-      const positionResources = positions.filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI)).map((iri: string) => resourcesState.current.byId?.[iri]?.data)
+      // remove the temporary resource
+      const positionResources = positions
+        .filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
+        .map((iri: string) => resourcesState.current.byId?.[iri]?.data)
       // @ts-ignore-next-line
       const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource|undefined) => resource !== undefined)
+
+      const getSortNumber = (res: CwaResource|undefined) => {
+        if (res?._metadata.sortDisplayNumber !== undefined) {
+          return res._metadata.sortDisplayNumber
+        }
+        return res?.sortValue || 0
+      }
+
       const orderedWithoutTemp = resourcesThatExist
         .sort((a: CwaResource, b: CwaResource) => {
-          const sortA = a?.sortValue || 0
-          const sortB = b?.sortValue || 0
+          const sortA = getSortNumber(a)
+          const sortB = getSortNumber(b)
           return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
         })
         .map((resource: CwaResource) => {
@@ -98,8 +109,8 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         const newIriPositions = positions.filter((iri: string) => iri.endsWith(NEW_RESOURCE_IRI))
         if (newIriPositions.length) {
           for (const newIriPosition of newIriPositions) {
-            const newPositionSortValue = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortDisplayNumber
-            newPositionSortValue !== undefined && orderedWithoutTemp.splice(newPositionSortValue, 0, newIriPosition)
+            const newPositionSortNumber = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortDisplayNumber
+            newPositionSortNumber !== undefined && orderedWithoutTemp.splice(newPositionSortNumber - 1, 0, newIriPosition)
           }
         }
       }

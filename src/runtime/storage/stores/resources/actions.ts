@@ -328,7 +328,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       if (!addingToGroup && closestPosition) {
         const positionSortValue = resourcesGetters.getPositionSortDisplayNumber.value(closestPosition)
         if (positionSortValue !== undefined) {
-          newPosition._metadata.sortDisplayNumber = addResourceEvent?.addAfter ? positionSortValue : positionSortValue - 1
+          newPosition._metadata.sortDisplayNumber = addResourceEvent?.addAfter ? positionSortValue + 1 : positionSortValue
         }
       }
 
@@ -350,7 +350,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
           // add to start or end of component group
           if (addingToGroup && existingPositionIris) {
-            newPosition._metadata.sortDisplayNumber = addResourceEvent?.addAfter ? existingPositionIris.length : 0
+            newPosition._metadata.sortDisplayNumber = addResourceEvent?.addAfter ? existingPositionIris.length + 1 : 1
           }
 
           const updatedGroupResource = {
