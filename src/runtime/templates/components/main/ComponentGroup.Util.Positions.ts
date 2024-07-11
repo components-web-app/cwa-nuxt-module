@@ -37,7 +37,9 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       return
     }
 
-    let newIndex: number = 0
+    const oldPositions = [...componentPositions.value]
+
+    let newIndex: number
     switch (event.location) {
       case 'next':
         newIndex = currentIndex + 1
@@ -58,63 +60,90 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
     const positionCopy = [...componentPositions.value]
     moveElement(positionCopy, currentIndex, newIndex)
     for (const [index, iri] of positionCopy.entries()) {
-      submitSortValueUpdate(iri, index + 1, event.positionIri)
+      const currentResource = $cwa.resources.getResource(iri).value?.data
+      if (!currentResource) {
+        continue
+      }
+      currentResource._metadata.sortDisplayNumber = index + 1
+      $cwa.resourcesManager.saveResource({
+        resource: currentResource
+      })
     }
     $cwa.admin.eventBus.emit('redrawFocus', undefined)
+    sendUpdatePositionRequest(event.positionIri, componentPositions.value, oldPositions)
   }
 
-  function submitSortValueUpdate (iri: string, newValue: number, _eventIri: string) {
-    const currentResource = $cwa.resources.getResource(iri).value?.data
-    if (!currentResource) {
+  async function sendUpdatePositionRequest (iri: string, newPositions: string[], oldPositions: string[]) {
+    // wait for previous request to finish before calculating and submitting new request
+    // a request queue system is preferable
+
+    // component position order has changed in the UI, we want to start synchronising this with the API
+    // multiple changes can happen in quick succession so we want to debounce any update
+    // the process for the API is we just need to update the sortValue of the position that has moved
+    // we should set the new sort value to the sort value of the position that was in that place before
+    // other positions order will be automatically recalculated and saved many API requests
+    const oldIndex = oldPositions.indexOf(iri)
+    const newIndex = newPositions.indexOf(iri)
+    if (oldIndex === newIndex) {
       return
     }
-    // @ts-ignore-next-line
-    // console.log(iri, newValue, eventIri)
-    currentResource._metadata.sortDisplayNumber = newValue
+    const positionToOverwrite = oldPositions[newIndex]
+    if (!positionToOverwrite) {
+      return
+    }
+    const positionToOverwriteSortValue = $cwa.resources.getResource(positionToOverwrite).value?.data?.sortValue
+    if (positionToOverwriteSortValue === undefined) {
+      return
+    }
 
-    $cwa.resourcesManager.saveResource({
-      resource: currentResource
+    await $cwa.resourcesManager.updateResource({
+      endpoint: iri,
+      data: {
+        sortValue: positionToOverwriteSortValue
+      }
     })
-    //   const sortValues = positionSortValues.value[iri]
-    //   if (!sortValues) {
-    //     return
-    //   }
-    //
-    //   const checkValue = sortValues.submittingValue !== undefined ? sortValues.submittingValue : sortValues.storeValue
-    //   if (newValue === checkValue) {
-    //     return
-    //   }
-    //
-    //   if (eventIri !== iri) {
-    //     const currentResource = $cwa.resources.getResource(iri).value?.data
+    // we need to emulate what the position values would do on the server to update the other sortValues in data
+    // without performing lots of requests to fetch all the new values
+    // we will also reset all the metadata display sort numbers
 
-  //     return
-  //   }
-  //   sortValues.submittingValue = newValue
-  //   await $cwa.resourcesManager.updateResource({
-  //     endpoint: iri,
-  //     data: {
-  //       sortValue: newValue
-  //     }
-  //   })
-  //   positionSortValues.value[iri].submittingValue = undefined
+    const updatePosSortValue = (positionIri: string, moveBy: number) => {
+      const posRes = $cwa.resources.getResource(positionIri).value?.data
+      if (posRes === undefined || posRes.sortValue === undefined) {
+        return
+      }
+      const sortValue = posRes.sortValue + moveBy
+      $cwa.resourcesManager.saveResource({
+        resource: {
+          ...posRes,
+          sortValue,
+          _metadata: {
+            ...posRes._metadata,
+            sortDisplayNumber: undefined
+          }
+        }
+      })
+    }
+
+    if (newIndex > oldIndex) {
+      for (const [index, positionIri] of oldPositions.entries()) {
+        if (positionIri === iri) {
+          continue
+        }
+        if (index > oldIndex && index <= newIndex) {
+          updatePosSortValue(positionIri, -1)
+        }
+      }
+    } else {
+      for (const [index, positionIri] of oldPositions.entries()) {
+        if (positionIri === iri) {
+          continue
+        }
+        if (index < oldIndex && index >= newIndex) {
+          updatePosSortValue(positionIri, 1)
+        }
+      }
+    }
   }
-
-  // watchEffect(() => {
-  //   // when position iris change from the resource we update positionSortValues and retain last submitting value too
-  //   // can this not be a computed reference? Moved away from computed, why?.. hmm..
-  //   const newValues: PositionSortValues = {}
-  //   if (!positionIris.value) {
-  //     return
-  //   }
-  //   for (const iri of positionIris.value) {
-  //     newValues[iri] = {
-  //       storeValue: $cwa.resources.getResource(iri).value?.data?.sortValue || 0,
-  //       submittingValue: positionSortValues.value[iri]?.submittingValue
-  //     }
-  //   }
-  //   positionSortValues.value = newValues
-  // })
 
   onMounted(() => {
     $cwa.admin.eventBus.on('reorder', handleReorderEvent)
