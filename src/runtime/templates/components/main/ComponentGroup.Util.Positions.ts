@@ -53,14 +53,14 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
 
       case 'previous':
         newIndex = currentIndex - 1
-        if (newIndex < 0) {
-          newIndex = 0
-        }
         break
 
       default:
         newIndex = event.location - 1
         break
+    }
+    if (newIndex < 0) {
+      newIndex = 0
     }
 
     const positionCopy = [...componentPositions.value]
