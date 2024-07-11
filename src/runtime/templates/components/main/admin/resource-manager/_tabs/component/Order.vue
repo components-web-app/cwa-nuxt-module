@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
@@ -13,20 +13,23 @@ defineExpose(exposeMeta)
 const reordering = createComputedState<boolean>('reordering', false)
 
 const positionIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
-const storeOrderValue = computed(() => positionIri ? $cwa.resources.getPositionSortDisplayNumber(positionIri) : '')
-const orderValue = ref(storeOrderValue.value || 0)
 
-watch(storeOrderValue, (newStoreValue) => {
-  orderValue.value = newStoreValue || 0
-})
-watch(orderValue, (newValue) => {
-  if (!positionIri) {
-    return
+const orderValue = computed({
+  get () {
+    if (!positionIri) {
+      return 0
+    }
+    return $cwa.resources.getPositionSortDisplayNumber(positionIri) || 0
+  },
+  set (newValue: number) {
+    if (!positionIri) {
+      return
+    }
+    $cwa.admin.eventBus.emit('reorder', {
+      positionIri,
+      location: newValue
+    })
   }
-  $cwa.admin.eventBus.emit('reorder', {
-    positionIri,
-    location: newValue
-  })
 })
 
 function movePosition (location: 'next'|'previous') {
