@@ -1,4 +1,5 @@
-import { computed, type ComputedRef, onBeforeUnmount, onMounted } from 'vue'
+import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { debounce } from 'lodash-es'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import type Cwa from '#cwa/runtime/cwa'
 import type { ReorderEvent } from '#cwa/runtime/admin/admin'
@@ -15,6 +16,8 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
 }
 
 export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $cwa: Cwa) => {
+  const updateRequests: Ref<{ [iri: string]: { debounced?: any, apiRequest?: any } }> = ref({})
+
   const groupIsReordering = computed(() => {
     if (!iri.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
       return false
@@ -27,6 +30,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
     return iri.value ? $cwa.resources.getOrderedPositionsForGroup(iri.value) : undefined
   })
 
+  let oldPositions: string[]|undefined
   function handleReorderEvent (event: ReorderEvent) {
     if (!groupIsReordering.value || !componentPositions.value) {
       return
@@ -37,7 +41,9 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       return
     }
 
-    const oldPositions = [...componentPositions.value]
+    if (!oldPositions) {
+      oldPositions = [...componentPositions.value]
+    }
 
     let newIndex: number
     switch (event.location) {
@@ -70,15 +76,36 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       })
     }
     $cwa.admin.eventBus.emit('redrawFocus', undefined)
-    sendUpdatePositionRequest(event.positionIri, componentPositions.value, oldPositions)
+
+    if (updateRequests.value[event.positionIri] === undefined) {
+      updateRequests.value[event.positionIri] = {}
+    }
+    if (updateRequests.value[event.positionIri].debounced) {
+      updateRequests.value[event.positionIri].debounced.cancel()
+    }
+    updateRequests.value[event.positionIri].debounced = debounce(async () => {
+      if (!oldPositions) {
+        return
+      }
+      const savedPositions = oldPositions
+      oldPositions = undefined
+      if (updateRequests.value[event.positionIri].apiRequest) {
+        await updateRequests.value[event.positionIri].apiRequest
+      }
+      componentPositions.value && sendUpdatePositionRequest(event.positionIri, componentPositions.value, savedPositions)
+    }, 1000)
+    updateRequests.value[event.positionIri].debounced()
   }
 
-  async function sendUpdatePositionRequest (iri: string, newPositions: string[], oldPositions: string[]) {
+  function sendUpdatePositionRequest (iri: string, newPositions: string[], oldPositions: string[]) {
+    if (!updateRequests.value[iri]) {
+      return
+    }
     // wait for previous request to finish before calculating and submitting new request
     // a request queue system is preferable
 
     // component position order has changed in the UI, we want to start synchronising this with the API
-    // multiple changes can happen in quick succession so we want to debounce any update
+    // multiple changes can happen in quick succession, so we want to debounce any update
     // the process for the API is we just need to update the sortValue of the position that has moved
     // we should set the new sort value to the sort value of the position that was in that place before
     // other positions order will be automatically recalculated and saved many API requests
@@ -96,12 +123,21 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       return
     }
 
-    await $cwa.resourcesManager.updateResource({
-      endpoint: iri,
-      data: {
-        sortValue: positionToOverwriteSortValue
-      }
+    updateRequests.value[iri].apiRequest = new Promise<void>((resolve) => {
+      updateRequests.value[iri].apiRequest = $cwa.resourcesManager.updateResource({
+        endpoint: iri,
+        data: {
+          sortValue: positionToOverwriteSortValue
+        }
+      })
+      updateRequests.value[iri].apiRequest.then(() => {
+        updateRelatedLocalSortValues(iri, newIndex, oldIndex, oldPositions)
+        resolve()
+      })
     })
+  }
+
+  function updateRelatedLocalSortValues (iri: string, newIndex: number, oldIndex: number, oldPositions: string[]) {
     // we need to emulate what the position values would do on the server to update the other sortValues in data
     // without performing lots of requests to fetch all the new values
     // we will also reset all the metadata display sort numbers
