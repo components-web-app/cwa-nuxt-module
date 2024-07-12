@@ -22,21 +22,21 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
   <resourceloader-stub
     class=""
     componentprefix=""
-    data-sort-value="0"
+    data-sort-value="mock_sort_pos1"
     iri="pos1"
     uicomponent="[object Object]"
   />
   <resourceloader-stub
     class=""
     componentprefix=""
-    data-sort-value="0"
+    data-sort-value="mock_sort_pos2"
     iri="pos2"
     uicomponent="[object Object]"
   />
   <resourceloader-stub
     class=""
     componentprefix=""
-    data-sort-value="0"
+    data-sort-value="mock_sort_pos3"
     iri="pos3"
     uicomponent="[object Object]"
   />

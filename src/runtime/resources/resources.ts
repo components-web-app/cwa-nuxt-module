@@ -282,6 +282,14 @@ export class Resources {
     })
   }
 
+  public get getOrderedPositionsForGroup () {
+    return this.resourcesStore.getOrderedPositionsForGroup
+  }
+
+  public get getPositionSortDisplayNumber () {
+    return this.resourcesStore.getPositionSortDisplayNumber
+  }
+
   public getRefreshEndpointsForDelete (iri:string): string[] {
     const refreshEndpoints: string[] = []
 
@@ -303,7 +311,7 @@ export class Resources {
       // and related groups as position may have a delete cascade
       for (const posIri of componentPositions) {
         const positionResource = this.getResource(posIri).value
-        if (positionResource?.data) {
+        if (positionResource?.data?.componentGroup) {
           refreshEndpoints.push(positionResource.data.componentGroup)
         }
       }

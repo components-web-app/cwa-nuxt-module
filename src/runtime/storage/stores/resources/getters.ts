@@ -1,13 +1,18 @@
-import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
+import { computed } from 'vue'
 import {
+  type CwaResource,
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri
 } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
-import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
-import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
+import {
+  type CwaCurrentResourceInterface,
+  CwaResourceApiStatuses,
+  type CwaResourcesStateInterface,
+  NEW_RESOURCE_IRI
+} from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
 export interface ResourcesLoadStatusInterface {
@@ -26,6 +31,8 @@ interface PublishableMapping {
 }
 
 export interface CwaResourcesGettersInterface {
+  getOrderedPositionsForGroup: ComputedRef<(groupIri: string, includeNewIri?: boolean) => string[] | undefined>,
+  getPositionSortDisplayNumber: ComputedRef<(groupIri: string, includeNewIri?: boolean) => number | undefined>,
   getResource: ComputedRef<(iri: string) => CwaCurrentResourceInterface | undefined>,
   hasNewResources: ComputedRef<boolean>
   findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
@@ -68,41 +75,74 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     return publishedState === undefined ? true : publishedState
   }
 
+  const getOrderedPositionsForGroup = computed(() => {
+    return (groupIri: string, includeNewIri: boolean = true) => {
+      const groupResource = resourcesState.current.byId?.[groupIri]
+      const positions: string[]|undefined = groupResource.data?.componentPositions
+      if (!positions) {
+        return
+      }
+      // remove the temporary resource
+      const positionResources = positions
+        .filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
+        .map((iri: string) => resourcesState.current.byId?.[iri]?.data)
+      // @ts-ignore-next-line
+      const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource|undefined) => resource !== undefined)
+
+      const getSortNumber = (res: CwaResource|undefined) => {
+        if (res?._metadata.sortDisplayNumber !== undefined) {
+          return res._metadata.sortDisplayNumber
+        }
+        return res?.sortValue || 0
+      }
+
+      const orderedWithoutTemp = resourcesThatExist
+        .sort((a: CwaResource, b: CwaResource) => {
+          const sortA = getSortNumber(a)
+          const sortB = getSortNumber(b)
+          return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
+        })
+        .map((resource: CwaResource) => {
+          return resource['@id']
+        })
+      if (includeNewIri) {
+        const newIriPositions = positions.filter((iri: string) => iri.endsWith(NEW_RESOURCE_IRI))
+        if (newIriPositions.length) {
+          for (const newIriPosition of newIriPositions) {
+            const newPositionSortNumber = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortDisplayNumber
+            newPositionSortNumber !== undefined && orderedWithoutTemp.splice(newPositionSortNumber - 1, 0, newIriPosition)
+          }
+        }
+      }
+      return orderedWithoutTemp
+    }
+  })
+
   return {
+    getOrderedPositionsForGroup,
+    getPositionSortDisplayNumber: computed(() => {
+      return (positionIri: string, includeNewIri: boolean = true) => {
+        const positionResource = resourcesState.current.byId?.[positionIri]?.data
+        if (!positionResource) {
+          return
+        }
+        const groupIri = positionResource.componentGroup
+        if (!groupIri) {
+          return
+        }
+        const orderedPositions = getOrderedPositionsForGroup.value(groupIri, includeNewIri)
+        if (!orderedPositions) {
+          return
+        }
+        const index = orderedPositions.indexOf(positionIri)
+        if (index === -1) {
+          return
+        }
+        return index + 1
+      }
+    }),
     getResource: computed(() => {
       return (id: string) => {
-        if (id.endsWith(NEW_RESOURCE_IRI)) {
-          const addingResource = resourcesState.adding.value
-          if (!addingResource) {
-            return
-          }
-          const fullAddingResource = {
-            apiState: {
-              status: undefined
-            },
-            data: addingResource
-          }
-          if (id.startsWith('/_/component_positions/')) {
-            if (addingResource['@type'] === 'ComponentPosition') {
-              return fullAddingResource
-            }
-            const ghostPosition: CwaCurrentResourceInterface = {
-              apiState: {
-                status: undefined
-              },
-              data: {
-                '@id': id,
-                '@type': 'ComponentPosition',
-                component: addingResource['@id'],
-                _metadata: {
-                  persisted: false
-                }
-              }
-            }
-            return ghostPosition
-          }
-          return fullAddingResource
-        }
         return resourcesState.current.byId?.[id]
       }
     }),

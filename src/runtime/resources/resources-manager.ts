@@ -1,7 +1,6 @@
 import { computed, type ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import { set, unset } from 'lodash-es'
-import { storeToRefs } from 'pinia'
 import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
@@ -175,15 +174,16 @@ export class ResourcesManager {
       { ...this.requestOptions('PATCH'), body: event.data }
     ]
 
-    if (iri === NEW_RESOURCE_IRI) {
-      const { adding } = storeToRefs(this.resourcesStore)
-      if (!adding.value) {
-        return
-      }
-      adding.value = _mergeWith(adding.value, event.data, (a, b) => {
+    // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
+    // it'll update anything visually until client-side refresh
+    if (currentResource?._metadata.persisted === false) {
+      const newResource = _mergeWith(currentResource, event.data, (a, b) => {
         if (_isArray(a)) {
           return b.concat(a)
         }
+      })
+      this.saveResource({
+        resource: newResource
       })
       return
     }
@@ -359,14 +359,7 @@ export class ResourcesManager {
       // throw new Error(`Could not find a resource with type '${type}' in the stack`)
     }
 
-    const findClosestPosition = (event: BaseEvent): string|undefined => {
-      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
-        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
-      }
-      return findPositionFromGroupEvent(event)
-    }
-
-    const findPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
+    const findClosestPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
       const resource = this.resourcesStore.current.byId?.[event.targetIri]
       const positions = resource?.data?.componentPositions
       if (!positions || !positions.length) {
@@ -377,6 +370,13 @@ export class ResourcesManager {
       } else if (event.addAfter === false) {
         return positions[0]
       }
+    }
+
+    const findClosestPosition = (event: BaseEvent): string|undefined => {
+      if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
+        return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
+      }
+      return findClosestPositionFromGroupEvent(event)
     }
 
     const closestPosition = findClosestPosition(initEvent)
@@ -401,7 +401,8 @@ export class ResourcesManager {
     if (!this._addResourceEvent.value) {
       return
     }
-    this.resourcesStore.initNewResource(resourceType, endpoint, isPublishable, instantAdd, defaultData)
+    this.resourcesStore.initNewResource(this._addResourceEvent.value, resourceType, endpoint, isPublishable, instantAdd, defaultData)
+
     await nextTick(() => {
       !instantAdd && this.admin.eventBus.emit('selectResource', NEW_RESOURCE_IRI)
     })
@@ -413,8 +414,7 @@ export class ResourcesManager {
 
   public clearAddResource () {
     this._addResourceEvent.value = undefined
-    const { adding } = storeToRefs(this.resourcesStore)
-    adding.value = undefined
+    this.clearAddResourceEventResource()
   }
 
   public get addResourceEvent () {
@@ -465,7 +465,7 @@ export class ResourcesManager {
       const newDefaultPositionData = this.createNewComponentPosition(positionIri)
       if (data['@type'] === 'ComponentPosition') {
         data.componentGroup = newDefaultPositionData.componentGroup
-        data.sortValue = newDefaultPositionData.sortValue
+        data.sortDisplayNumber = newDefaultPositionData.sortValue
       } else if (!data.componentPositions) {
         // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
         data.componentPositions = [newDefaultPositionData]
@@ -544,7 +544,7 @@ export class ResourcesManager {
       sortValue: 0
     }
     if (positionResource) {
-      const currentSortValue = positionResource.data?.sortValue
+      const currentSortValue = positionResource.data?.sortDisplayNumber
       if (currentSortValue !== undefined) {
         componentPosition.sortValue = addEvent.addAfter ? currentSortValue + 1 : currentSortValue
       }
