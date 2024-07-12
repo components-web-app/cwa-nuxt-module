@@ -9,12 +9,24 @@ import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/st
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import * as cwaComposables from '#cwa/runtime/composables/cwa'
 import * as cwaResourceManageableComposables from '#cwa/runtime/composables/cwa-resource-manageable'
+import { useComponentGroupPositions } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Positions'
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
     ComponentGroupUtilSynchronizer: vi.fn(() => {
       return {
         createSyncWatcher: vi.fn()
+      }
+    })
+  }
+})
+
+vi.mock('./ComponentGroup.Util.Positions', () => {
+  return {
+    useComponentGroupPositions: vi.fn(() => {
+      return {
+        componentPositions: undefined,
+        groupIsReordering: computed(() => false)
       }
     })
   }
@@ -58,7 +70,8 @@ function createWrapper ({
       auth: { signedIn: vue.ref(signedIn) },
       resources: {
         ...mockCwaResources,
-        isLoading: { value: isLoading }
+        isLoading: { value: isLoading },
+        getPositionSortDisplayNumber: vi.fn(iri => `mock_sort_${iri}`)
       },
       resourcesManager: {
         createResource: vi.fn(),
@@ -215,7 +228,7 @@ describe('ComponentGroup', () => {
         expect(wrapper.vm.componentPositions).toBeUndefined()
       })
 
-      test('should return resource component positions BASED on its data', () => {
+      test('should return resource component positions from resources store', () => {
         vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
           return {
             value: {
@@ -232,9 +245,11 @@ describe('ComponentGroup', () => {
             componentPositions: mockComponentPositions
           }
         }
+
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
           return mockGroupElement
         })
+        useComponentGroupPositions.mockReturnValueOnce({ componentPositions: mockComponentPositions, groupIsReordering: computed(() => false) })
         const wrapper = createWrapper()
 
         expect(wrapper.vm.componentPositions).toEqual(mockComponentPositions)
@@ -359,6 +374,7 @@ describe('ComponentGroup', () => {
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return mockGroupElement
       })
+      useComponentGroupPositions.mockReturnValueOnce({ componentPositions: mockComponentPositions, groupIsReordering: computed(() => false) })
       const wrapper = createWrapper()
 
       const resourceLoaders = wrapper.findAllComponents({ name: 'ResourceLoader' })
@@ -448,6 +464,7 @@ describe('ComponentGroup', () => {
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return mockGroupElement
       })
+      useComponentGroupPositions.mockReturnValueOnce({ componentPositions: mockComponentPositions, groupIsReordering: computed(() => false) })
       const wrapper = createWrapper()
 
       expect(wrapper.element).toMatchSnapshot()
