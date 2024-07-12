@@ -442,15 +442,15 @@ export class ResourcesManager {
 
   async addResourceAction (publish?: boolean) {
     const addEvent = this._addResourceEvent.value
-    if (!addEvent) {
+    if (!addEvent || !this.resourcesStore.adding?.resource) {
       throw new Error('Cannot add resource. No addResource event is present')
     }
-    const resource = this.resourcesStore.getResource(NEW_RESOURCE_IRI)
-    const data = resource?.data
-    if (!data) {
-      throw new Error('Cannot add resource. No new resource exists in the store')
+
+    const resource = this.resourcesStore.getResource(this.resourcesStore.adding.resource)?.data
+    if (!resource) {
+      throw new Error('Cannot add resource. No new resource exists in the store with data')
     }
-    const addingMeta = resource.data?._metadata.adding
+    const addingMeta = resource._metadata.adding
     if (!addingMeta) {
       throw new Error('Cannot add resource. There was no adding metadata on the new resource in the store.')
     }
@@ -458,34 +458,61 @@ export class ResourcesManager {
     const refreshEndpoints = []
 
     if (addEvent.addAfter !== null) {
-      addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
-      const positionIri = this.getDissectPositionIri()
-
-      // If we are not adding a position, we will create the component with a position at the same time
-      const newDefaultPositionData = this.createNewComponentPosition(positionIri)
-      if (data['@type'] === 'ComponentPosition') {
-        data.componentGroup = newDefaultPositionData.componentGroup
-        data.sortDisplayNumber = newDefaultPositionData.sortValue
-      } else if (!data.componentPositions) {
-        // todo: we may be adding into a placeholder position.. we may also be adding into page data... need to review this
-        data.componentPositions = [newDefaultPositionData]
+      const positionIri = this.resourcesStore.adding.position
+      if (!positionIri) {
+        throw new Error('Position resource is not adding, but we are adding before/after another position so it should be')
       }
-      // if we are adding into an existing position no need to refresh
+
+      const positionData = this.resourcesStore.getResource(positionIri)?.data
+      if (!positionData) {
+        throw new Error('Position resource being added not found')
+      }
+
+      addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
+
+      const getPositionSortValue = () => {
+        let targetPosition: string|undefined
+        if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
+          const groupResource = this.resourcesStore.getResource(addEvent.targetIri)?.data
+          if (!groupResource?.componentPositions || groupResource?.componentPositions.length === 0) {
+            return 0
+          }
+          targetPosition = addEvent.addAfter ? groupResource.componentPositions[groupResource.componentPositions.length - 1] : groupResource.componentPositions[0]
+        } else {
+          targetPosition = addEvent.closest.position
+        }
+        if (!targetPosition) {
+          return 0
+        }
+        const sortValue = this.resourcesStore.getResource(targetPosition)?.data?.sortValue
+        return sortValue !== undefined ? (addEvent.addAfter ? sortValue + 1 : sortValue) : 0
+      }
+
+      const positionPostData: Omit<CwaResource, '@id'|'@type'> = {
+        ...this.resourcesStore.getResource(positionIri)?.data,
+        '@id': undefined,
+        '@type': undefined,
+        sortValue: getPositionSortValue()
+      }
+      resource.componentPositions = [
+        positionPostData
+      ]
+
       refreshEndpoints.push(...this.getRefreshPositions(positionIri))
     } else if (!addEvent.pageDataProperty) {
+      // adding the resource to a position resource, adding a fallback component on a dynamic page/template
       const addingToIri = addEvent.targetIri
       if (getResourceTypeFromIri(addingToIri) !== CwaResourceTypes.COMPONENT_POSITION) {
         throw new Error('Cannot add to arbitrary IRIs. Only to component positions.')
       }
-      // todo: update the component position, component property
-      data.componentPositions = [addingToIri]
+      resource.componentPositions = [addingToIri]
     }
 
     if (publish !== undefined) {
-      data.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
+      resource.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
     }
 
-    const postData: Omit<CwaResource, '@id'|'@type'> = { ...data, '@id': undefined, '@type': undefined }
+    const postData: Omit<CwaResource, '@id'|'@type'> = { ...resource, '@id': undefined, '@type': undefined }
 
     const requestCompleteFn = () => {
       this.clearAddResource()
@@ -564,22 +591,6 @@ export class ResourcesManager {
       return
     }
     return this.groupResource.data?.componentPositions
-  }
-
-  private getDissectPositionIri () {
-    if (!this._addResourceEvent.value) {
-      return
-    }
-    if (this._addResourceEvent.value.closest.position) {
-      return this._addResourceEvent.value.closest.position
-    }
-    if (!this.groupResource) {
-      return
-    }
-    if (!this.groupResourcePositions?.length) {
-      return
-    }
-    return this._addResourceEvent.value.addAfter ? this.groupResourcePositions.value[this.groupResourcePositions.value.length - 1] : this.groupResourcePositions.value[0]
   }
 
   private get resourcesStore () {
