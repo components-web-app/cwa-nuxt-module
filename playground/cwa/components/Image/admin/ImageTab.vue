@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { useCwaResourceManagerTab } from '#imports'
 
-const { exposeMeta } = useCwaResourceManagerTab({
+const { exposeMeta, createComputedState } = useCwaResourceManagerTab({
   name: 'Upload'
 })
+
+const file = createComputedState<string|undefined>('file')
 
 defineExpose(exposeMeta)
 </script>
 
 <template>
   <div>
-    My image tab
+    <CwaUiFormFile v-model="file" label="Upload Image" />
   </div>
 </template>
