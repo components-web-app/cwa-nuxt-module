@@ -455,50 +455,54 @@ export class ResourcesManager {
       throw new Error('Cannot add resource. There was no adding metadata on the new resource in the store.')
     }
 
-    const refreshEndpoints = []
+    const refreshEndpoints: string[] = []
 
     if (addEvent.addAfter !== null) {
-      const positionIri = this.resourcesStore.adding.position
-      if (!positionIri) {
-        throw new Error('Position resource is not adding, but we are adding before/after another position so it should be')
-      }
+      (() => {
+        addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
 
-      const positionData = this.resourcesStore.getResource(positionIri)?.data
-      if (!positionData) {
-        throw new Error('Position resource being added not found')
-      }
-
-      addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
-
-      const getPositionSortValue = () => {
-        let targetPosition: string|undefined
-        if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
-          const groupResource = this.resourcesStore.getResource(addEvent.targetIri)?.data
-          if (!groupResource?.componentPositions || groupResource?.componentPositions.length === 0) {
+        const getPositionSortValue = () => {
+          let targetPosition: string|undefined
+          if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
+            const groupResource = this.resourcesStore.getResource(addEvent.targetIri)?.data
+            if (!groupResource?.componentPositions || groupResource?.componentPositions.length === 0) {
+              return 0
+            }
+            targetPosition = addEvent.addAfter ? groupResource.componentPositions[groupResource.componentPositions.length - 1] : groupResource.componentPositions[0]
+          } else {
+            targetPosition = addEvent.closest.position
+          }
+          if (!targetPosition) {
             return 0
           }
-          targetPosition = addEvent.addAfter ? groupResource.componentPositions[groupResource.componentPositions.length - 1] : groupResource.componentPositions[0]
-        } else {
-          targetPosition = addEvent.closest.position
+          const sortValue = this.resourcesStore.getResource(targetPosition)?.data?.sortValue
+          return sortValue !== undefined ? (addEvent.addAfter ? sortValue + 1 : sortValue) : 0
         }
-        if (!targetPosition) {
-          return 0
+
+        const positionIri = this.resourcesStore.adding.position
+        if (!positionIri) {
+          resource.sortValue = getPositionSortValue()
+          refreshEndpoints.push(...this.getRefreshPositions(this.resourcesStore.adding.resource))
+          return
         }
-        const sortValue = this.resourcesStore.getResource(targetPosition)?.data?.sortValue
-        return sortValue !== undefined ? (addEvent.addAfter ? sortValue + 1 : sortValue) : 0
-      }
 
-      const positionPostData: Omit<CwaResource, '@id'|'@type'> = {
-        ...this.resourcesStore.getResource(positionIri)?.data,
-        '@id': undefined,
-        '@type': undefined,
-        sortValue: getPositionSortValue()
-      }
-      resource.componentPositions = [
-        positionPostData
-      ]
+        const positionData = this.resourcesStore.getResource(positionIri)?.data
+        if (!positionData) {
+          throw new Error('Position resource being added not found')
+        }
 
-      refreshEndpoints.push(...this.getRefreshPositions(positionIri))
+        const positionPostData: Omit<CwaResource, '@id'|'@type'> = {
+          ...this.resourcesStore.getResource(positionIri)?.data,
+          '@id': undefined,
+          '@type': undefined,
+          sortValue: getPositionSortValue()
+        }
+        resource.componentPositions = [
+          positionPostData
+        ]
+
+        refreshEndpoints.push(...this.getRefreshPositions(positionIri))
+      })()
     } else if (!addEvent.pageDataProperty) {
       // adding the resource to a position resource, adding a fallback component on a dynamic page/template
       const addingToIri = addEvent.targetIri

@@ -149,7 +149,7 @@ export default class ManageableResource {
       }
       const addResourceData = this.$cwa.resourcesManager.addResourceEvent.value
 
-      const getChildren = (iri: string): string[] => {
+      const getNestedChildren = (iri: string): string[] => {
         const nested: string[] = []
         if (iri === NEW_RESOURCE_IRI) {
           return nested
@@ -177,7 +177,7 @@ export default class ManageableResource {
         if (addResourceData?.closest.group === iri) {
           const child = `/_/component_positions/${NEW_RESOURCE_IRI}`
           nested.push(child)
-          nested.push(...getChildren(child))
+          nested.push(...getNestedChildren(child))
         }
 
         const properties = resourceTypeToNestedResourceProperties[type]
@@ -197,14 +197,14 @@ export default class ManageableResource {
 
           for (const child of children) {
             nested.push(child)
-            nested.push(...getChildren(child))
+            nested.push(...getNestedChildren(child))
           }
         }
 
         return nested
       }
 
-      return getChildren(currentIri)
+      return getNestedChildren(currentIri)
     }
 
     this.childIrisRef = ref(getChildren())
