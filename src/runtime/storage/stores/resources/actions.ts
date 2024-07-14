@@ -300,9 +300,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       // also add a position resource as a temporary resource if we are not adding a dynamnic position
       let position: string|undefined
       let positionResource: CwaResource|undefined
+
       if (resourceType === 'ComponentPosition') {
         newResource.componentGroup = closestGroup
-      } else {
+      } else if (!addResourceEvent.pageDataProperty) {
         position = `/_/component_positions/${NEW_RESOURCE_IRI}`
 
         // update the resource to reference that it is in this position
