@@ -9,7 +9,7 @@ const props = defineProps<{
 
 const fileInput = ref()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'file'])
 
 const value = computed({
   get () {
@@ -28,6 +28,12 @@ function showFileSelect () {
   })
   fileInput.value.dispatchEvent(clickEvent)
 }
+
+function startUpload () {
+  const file = fileInput.value.files[0]
+  emit('file', file)
+  value.value = file.name
+}
 </script>
 
 <template>
@@ -37,12 +43,13 @@ function showFileSelect () {
       :accept="accept"
       class="cwa-absolute cwa-h-full cwa-w-full cwa-top-0 cwa-left-0 cwa-opacity-0 cwa-outline-0"
       type="file"
+      @change="startUpload"
     >
     <CwaUiFormButton @click="showFileSelect">
       {{ label }}
     </CwaUiFormButton>
     <span class="cwa-ml-3 cwa-text-sm cwa-cursor-pointer cwa-font-medium">
-      {{ value || 'No File' }}
+      {{ value }}
     </span>
   </div>
 </template>
