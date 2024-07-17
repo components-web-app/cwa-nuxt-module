@@ -35,6 +35,7 @@ interface DeleteApiResourceEvent {
 interface DataApiResourceEvent extends DeleteApiResourceEvent {
   data: any
   source?: string
+  headers?: Record<string, string>
 }
 
 export type ApiResourceEvent = DataApiResourceEvent|DeleteApiResourceEvent
@@ -171,7 +172,11 @@ export class ResourcesManager {
 
     const args: [string, RequestOptions] = [
       event.endpoint,
-      { ...this.requestOptions('PATCH'), body: event.data }
+      {
+        ...this.requestOptions(event.data instanceof FormData ? 'POST' : 'PATCH'),
+        body: event.data,
+        headers: event.headers || {}
+      }
     ]
 
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store

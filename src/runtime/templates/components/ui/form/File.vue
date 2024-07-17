@@ -2,14 +2,15 @@
 import { computed, ref } from 'vue'
 
 const props = defineProps<{
-  label: string,
+  label: string
   modelValue: string|number|undefined|null
   accept?: string
+  fileExists: boolean
 }>()
 
 const fileInput = ref()
 
-const emit = defineEmits(['update:modelValue', 'file'])
+const emit = defineEmits(['update:modelValue', 'change', 'delete'])
 
 const value = computed({
   get () {
@@ -29,10 +30,14 @@ function showFileSelect () {
   fileInput.value.dispatchEvent(clickEvent)
 }
 
-function startUpload () {
+function handleFileChange () {
   const file = fileInput.value.files[0]
-  emit('file', file)
+  emit('change', file)
   value.value = file.name
+}
+
+function handleDeleteClick () {
+  emit('delete')
 }
 </script>
 
@@ -43,13 +48,22 @@ function startUpload () {
       :accept="accept"
       class="cwa-absolute cwa-h-full cwa-w-full cwa-top-0 cwa-left-0 cwa-opacity-0 cwa-outline-0"
       type="file"
-      @change="startUpload"
+      @change="handleFileChange"
     >
     <CwaUiFormButton @click="showFileSelect">
       {{ label }}
     </CwaUiFormButton>
     <span class="cwa-ml-3 cwa-text-sm cwa-cursor-pointer cwa-font-medium">
-      {{ value }}
+      {{ value || 'No file' }}
+    </span>
+    <span v-if="fileExists" class="cwa-ml-4">
+      <CwaUiFormButton
+        color="grey"
+        button-class="cwa-min-w-[100px]"
+        @click.prevent="handleDeleteClick"
+      >
+        Delete
+      </CwaUiFormButton>
     </span>
   </div>
 </template>
