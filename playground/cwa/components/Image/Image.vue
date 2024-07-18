@@ -1,19 +1,14 @@
 <template>
-  <div>
-    <div data-placeholder="true" class="h-40 w-40 overflow-hidden relative bg-gray-200" />
-    <img v-if="thumbnailMedia" :src="thumbnailMedia?.contentUrl">
+  <div class="w-full relative">
+    <div v-if="!loaded" data-placeholder="true" class="w-20 h-20 overflow-hidden bg-gray-200 relative" :style="{ width: `${thumbnailMedia?.width}px`, height: `${thumbnailMedia?.height}px` }" />
+    <NuxtImg v-if="thumbnailMedia" :src="thumbnailMedia?.contentUrl" :width="thumbnailMedia?.width" :height="thumbnailMedia?.height" @load="handleLoad" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useCwaResource } from '#imports'
-
-const props = defineProps<IriProp>()
-
-const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
-const resource = getResource()
 
 type MediaFile = {
   contentUrl: string
@@ -25,8 +20,19 @@ type MediaFile = {
   height?: number
 }
 
+const props = defineProps<IriProp>()
+
+const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+const resource = getResource()
+
+const loaded = ref(false)
+
+function handleLoad () {
+  loaded.value = true
+}
+
 const imageFileMediaObjects = computed<MediaFile[]|undefined>(() => {
-  return resource.value?.data?._metadata.mediaObjects.file
+  return resource.value?.data?._metadata.mediaObjects?.file
 })
 
 const thumbnailMedia = computed(() => {

@@ -170,13 +170,19 @@ export class ResourcesManager {
     const iri = event.endpoint.split('?')[0]
     const currentResource = this.resourcesStore.getResource(iri)?.data
 
+    const reqOps = {
+      ...this.requestOptions(event.data instanceof FormData ? 'POST' : 'PATCH'),
+      body: event.data
+    }
+    if (event.headers) {
+      reqOps.headers = {
+        ...reqOps.headers,
+        ...event.headers
+      }
+    }
     const args: [string, RequestOptions] = [
       event.endpoint,
-      {
-        ...this.requestOptions(event.data instanceof FormData ? 'POST' : 'PATCH'),
-        body: event.data,
-        headers: event.headers || {}
-      }
+      reqOps
     ]
 
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store

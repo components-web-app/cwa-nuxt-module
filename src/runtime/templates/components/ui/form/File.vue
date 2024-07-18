@@ -42,7 +42,7 @@ function handleDeleteClick () {
 </script>
 
 <template>
-  <div class="cwa-flex cwa-items-center cwa-select-none">
+  <div class="cwa-flex cwa-relative cwa-items-center cwa-select-none">
     <input
       ref="fileInput"
       :accept="accept"

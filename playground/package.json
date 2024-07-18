@@ -10,7 +10,7 @@
     "vue-tsc": "^1.8.22"
   },
   "dependencies": {
-    "@nuxt/image": "1.0.0-rc.3",
+    "@nuxt/image": "1.7.0",
     "@tiptap/core": "^2.0.0",
     "@tiptap/extension-placeholder": "^2.1.12",
     "@tiptap/pm": "^2.1.12",
