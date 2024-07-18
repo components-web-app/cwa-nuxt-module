@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#imports'
 
-const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
+const { exposeMeta, $cwa, iri, resource } = useCwaResourceManagerTab({
   name: 'Upload'
 })
 
-const filename = ref('')
+function getFilename () {
+  return fileData.value ? `Existing Image (${fileData.value.formattedFileSize})` : ''
+}
+
+const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.file[0])
+
+const filename = ref(getFilename())
 const fileExists = ref(true)
+const updating = ref(false)
 
 defineExpose(exposeMeta)
 
@@ -15,6 +22,7 @@ async function uploadImage (newFile: File|undefined) {
   if (!newFile || !iri.value) {
     return
   }
+  updating.value = true
   const formData = new FormData()
   formData.append('file', newFile)
   await $cwa.resourcesManager.updateResource({
@@ -24,18 +32,36 @@ async function uploadImage (newFile: File|undefined) {
       accept: '*/*'
     }
   })
+  filename.value = getFilename()
+  updating.value = false
 }
 
-function deleteImage () {
-  if (!fileExists.value) {
+async function deleteImage () {
+  if (!fileExists.value || !iri.value) {
     return
   }
+  updating.value = true
+  await $cwa.resourcesManager.updateResource({
+    endpoint: iri.value,
+    data: {
+      file: null
+    }
+  })
+  fileExists.value = false
   filename.value = ''
+  updating.value = false
 }
 </script>
 
 <template>
   <div>
-    <CwaUiFormFile v-model="filename" label="Upload Image" :file-exists="fileExists" @change="uploadImage" @delete="deleteImage" />
+    <CwaUiFormFile
+      v-model="filename"
+      label="Upload Image"
+      :disabled="updating"
+      :file-exists="fileExists"
+      @change="uploadImage"
+      @delete="deleteImage"
+    />
   </div>
 </template>
