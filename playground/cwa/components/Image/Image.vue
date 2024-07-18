@@ -1,13 +1,22 @@
 <template>
   <div class="w-full relative">
-    <div v-if="!loaded" data-placeholder="true" class="w-20 h-20 overflow-hidden bg-gray-200 relative" :style="{ width: `${thumbnailMedia?.width}px`, height: `${thumbnailMedia?.height}px` }" />
-    <NuxtImg v-if="thumbnailMedia" :src="thumbnailMedia?.contentUrl" :width="thumbnailMedia?.width" :height="thumbnailMedia?.height" @load="handleLoad" />
+    <div class="relative" :style="{ width: `${thumbnailMedia?.width}px`, height: `${thumbnailMedia?.height}px` }">
+      <NuxtImg
+        v-if="thumbnailMedia"
+        ref="image"
+        :src="thumbnailMedia?.contentUrl"
+        :width="thumbnailMedia?.width"
+        :height="thumbnailMedia?.height"
+        @load="handleLoad"
+      />
+      <div data-placeholder="true" class="absolute top-0 left-0 w-full h-full overflow-hidden bg-gray-200 pointer-events-none cwa-transition-opacity" :class="{ 'opacity-0': loaded }" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import { computed, ref, toRef } from 'vue'
+import { computed, onMounted, ref, toRef } from 'vue'
 import { useCwaResource } from '#imports'
 
 type MediaFile = {
@@ -26,6 +35,7 @@ const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
 const resource = getResource()
 
 const loaded = ref(false)
+const image = ref()
 
 function handleLoad () {
   loaded.value = true
@@ -41,6 +51,12 @@ const thumbnailMedia = computed(() => {
   }
   const thumbnail = imageFileMediaObjects.value.filter(({ imagineFilter }) => (imagineFilter === 'thumbnail'))
   return thumbnail?.[0] || imageFileMediaObjects.value[0]
+})
+
+onMounted(() => {
+  if (image.value.complete || image.value.naturalHeight !== 0) {
+    handleLoad()
+  }
 })
 
 defineExpose(exposeMeta)

@@ -175,10 +175,7 @@ export class ResourcesManager {
       body: event.data
     }
     if (event.headers) {
-      reqOps.headers = {
-        ...reqOps.headers,
-        ...event.headers
-      }
+      reqOps.headers = event.headers
     }
     const args: [string, RequestOptions] = [
       event.endpoint,
