@@ -1,12 +1,13 @@
 <template>
   <div class="w-full relative">
-    <div v-if="thumbnailMedia" class="relative max-w-2xl max-h-96 flex justify-start overflow-hidden" :style="{ width: `${thumbnailMedia?.width}px`, height: `${thumbnailMedia?.height}px` }">
+    <div v-if="thumbnailMedia" class="relative flex overflow-hidden max-w-full h-96 max-h-screen">
       <NuxtImg
         v-if="thumbnailMedia"
         ref="image"
         :src="thumbnailMedia?.contentUrl"
         :width="thumbnailMedia?.width"
         :height="thumbnailMedia?.height"
+        class="object-contain object-left-top"
         @load="handleLoad"
       />
       <div data-placeholder="true" class="absolute top-0 left-0 w-full h-full overflow-hidden bg-gray-200 pointer-events-none cwa-transition-opacity" :class="{ 'opacity-0': loaded }" />
