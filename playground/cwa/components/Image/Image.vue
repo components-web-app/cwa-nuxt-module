@@ -1,6 +1,6 @@
 <template>
   <div class="w-full relative">
-    <div v-if="thumbnailMedia" class="relative" :style="{ width: `${thumbnailMedia?.width}px`, height: `${thumbnailMedia?.height}px` }">
+    <div v-if="thumbnailMedia" class="relative max-w-2xl max-h-96 flex justify-start overflow-hidden" :style="{ width: `${thumbnailMedia?.width}px`, height: `${thumbnailMedia?.height}px` }">
       <NuxtImg
         v-if="thumbnailMedia"
         ref="image"
@@ -59,7 +59,7 @@ const thumbnailMedia = computed(() => {
 })
 
 onMounted(() => {
-  if (image.value.complete || image.value.naturalHeight !== 0) {
+  if (image.value?.complete || image.value?.naturalHeight !== 0) {
     handleLoad()
   }
 })

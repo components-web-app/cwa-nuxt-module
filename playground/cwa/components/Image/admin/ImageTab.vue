@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 import { useCwaResourceManagerTab } from '#imports'
 
 const { exposeMeta, $cwa, iri, resource } = useCwaResourceManagerTab({
@@ -18,6 +19,9 @@ const updating = ref(false)
 
 defineExpose(exposeMeta)
 
+const { endpoint: updateEndpoint } = useCwaResourceEndpoint(iri, '/upload')
+const { endpoint: deleteEndpoint } = useCwaResourceEndpoint(iri)
+
 async function uploadImage (newFile: File|undefined) {
   if (!newFile || !iri.value) {
     return
@@ -26,7 +30,7 @@ async function uploadImage (newFile: File|undefined) {
   const formData = new FormData()
   formData.append('file', newFile)
   await $cwa.resourcesManager.updateResource({
-    endpoint: `${iri.value}/upload`,
+    endpoint: updateEndpoint.value,
     data: formData,
     headers: {
       accept: '*/*'
@@ -42,7 +46,7 @@ async function deleteImage () {
   }
   updating.value = true
   await $cwa.resourcesManager.updateResource({
-    endpoint: iri.value,
+    endpoint: deleteEndpoint.value,
     data: {
       file: null
     }
