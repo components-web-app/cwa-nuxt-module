@@ -37,6 +37,7 @@ export const useCwaResourceEndpoint = (iri: Ref<string|undefined>, postfix?: str
   })
 
   return {
-    endpoint
+    endpoint,
+    query
   }
 }

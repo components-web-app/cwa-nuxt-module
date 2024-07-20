@@ -4,7 +4,7 @@
       <NuxtImg
         v-if="thumbnailMedia"
         ref="image"
-        :src="thumbnailMedia?.contentUrl"
+        :src="contentUrl"
         :width="thumbnailMedia?.width"
         :height="thumbnailMedia?.height"
         class="object-contain object-left-top"
@@ -23,6 +23,7 @@
 <script setup lang="ts">
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { computed, onMounted, ref, toRef } from 'vue'
+import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 import { useCwaResource } from '#imports'
 
 type MediaFile = {
@@ -36,8 +37,9 @@ type MediaFile = {
 }
 
 const props = defineProps<IriProp>()
-
-const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+const iri = toRef(props, 'iri')
+const { getResource, exposeMeta } = useCwaResource(iri)
+const { query } = useCwaResourceEndpoint(iri)
 const resource = getResource()
 
 const loaded = ref(false)
@@ -57,6 +59,14 @@ const thumbnailMedia = computed(() => {
   }
   const thumbnail = imageFileMediaObjects.value.filter(({ imagineFilter }) => (imagineFilter === 'thumbnail'))
   return thumbnail?.[0] || imageFileMediaObjects.value[0]
+})
+
+const contentUrl = computed(() => {
+  const mediaUrl = thumbnailMedia.value?.contentUrl
+  if (!mediaUrl) {
+    return
+  }
+  return `${mediaUrl}${query.value}`
 })
 
 onMounted(() => {
