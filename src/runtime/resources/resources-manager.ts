@@ -26,6 +26,7 @@ import Admin from '#cwa/runtime/admin/admin'
 import type { Resources } from '#cwa/runtime/resources/resources'
 
 interface DeleteApiResourceEvent {
+  iri?: string
   endpoint: string
   requestCompleteFn?: (resource?: CwaResource) => void|Promise<void>
   saveCompleteFn?: (resource?: CwaResource) => void|Promise<void>
@@ -167,7 +168,9 @@ export class ResourcesManager {
   }
 
   public async updateResource (event: DataApiResourceEvent) {
-    const iri = event.endpoint.split('?')[0]
+    // we can add an iri in the event optionally - this is because for files we could be adding
+    // more postfixes for upload/download, so instead of endless complicated normalization, if the endpoint is getting complete we just provide the IRI so we can do comparisons on returned IRI and other features
+    const iri = (event.iri || event.endpoint).split('?')[0]
     const currentResource = this.resourcesStore.getResource(iri)?.data
 
     const reqOps = {
@@ -238,6 +241,7 @@ export class ResourcesManager {
 
     // if we have just done an update that creates a new draft, we need to select the draft
     const responseId = resource?.['@id']
+    console.log(responseId, iri)
     if (responseId && responseId !== iri) {
       // show a draft if draft is created - also unset if we have just published so we are not trying to view a draft
       this.admin.resourceStackManager.forcePublishedVersion.value = isPublishing ? undefined : false
@@ -249,7 +253,7 @@ export class ResourcesManager {
   private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>, postSaveFn?: (resource?: CwaResource) => void|Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
-    const iri = event.endpoint.split('?')[0]
+    const iri = (event.iri || event.endpoint).split('?')[0]
 
     set(this.requestsInProgress, [source, id], { event, args })
 

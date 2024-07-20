@@ -30,6 +30,7 @@ async function uploadImage (newFile: File|undefined) {
   const formData = new FormData()
   formData.append('file', newFile)
   await $cwa.resourcesManager.updateResource({
+    iri: iri.value,
     endpoint: updateEndpoint.value,
     data: formData,
     headers: {
