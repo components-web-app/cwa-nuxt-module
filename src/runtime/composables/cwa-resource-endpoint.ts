@@ -16,7 +16,7 @@ export const useCwaResourceEndpoint = (iri: Ref<string|undefined>, postfix?: str
       return
     }
     const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = forcePublishedVersion.value !== undefined && publishableState === true
+    applyPostfix.value = (forcePublishedVersion.value !== undefined || !$cwa.admin.isEditing) && publishableState === true
   })
 
   const unwatchApplyPostfix = watch(applyPostfix, (newApplyPostfix) => {
@@ -24,7 +24,7 @@ export const useCwaResourceEndpoint = (iri: Ref<string|undefined>, postfix?: str
       query.value = ''
       return
     }
-    query.value = forcePublishedVersion.value ? '?published=true' : '?published=false'
+    query.value = (forcePublishedVersion.value || !$cwa.admin.isEditing) ? '?published=true' : '?published=false'
   }, {
     immediate: true
   })
