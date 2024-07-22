@@ -1,12 +1,12 @@
 <template>
   <div class="w-full relative">
-    <div v-if="thumbnailMedia" class="relative flex overflow-hidden max-w-full h-96 max-h-screen">
+    <div v-if="displayMedia" class="relative flex overflow-hidden max-w-full h-96 max-h-screen">
       <NuxtImg
-        v-if="thumbnailMedia"
+        v-if="displayMedia"
         ref="image"
         :src="contentUrl"
-        :width="thumbnailMedia?.width"
-        :height="thumbnailMedia?.height"
+        :width="displayMedia?.width"
+        :height="displayMedia?.height"
         class="object-contain object-left-top"
         @load="handleLoad"
       />
@@ -22,7 +22,12 @@
 
 <script setup lang="ts">
 import { useCwaImage } from '#cwa/runtime/composables/cwa-image'
+import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import { toRef } from 'vue'
 
-const { exposeMeta, contentUrl, thumbnailMedia, handleLoad, loaded } = useCwaImage('thumbnail')
+const props = defineProps<IriProp>()
+const iri = toRef(props, 'iri')
+
+const { exposeMeta, contentUrl, displayMedia, handleLoad, loaded } = useCwaImage(iri, 'thumbnail')
 defineExpose(exposeMeta)
 </script>

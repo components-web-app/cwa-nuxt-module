@@ -1,9 +1,8 @@
-import { computed, onMounted, ref, toRef } from 'vue'
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import { computed, type Ref, onMounted, ref } from 'vue'
 import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 import { useCwaResource } from '#imports'
 
-export const useCwaImage = (imagineFilterName?: string) => {
+export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string) => {
   type MediaFile = {
     contentUrl: string
     fileSize: number
@@ -14,8 +13,6 @@ export const useCwaImage = (imagineFilterName?: string) => {
     height?: number
   }
 
-  const props = defineProps<IriProp>()
-  const iri = toRef(props, 'iri')
   const cwaResource = useCwaResource(iri)
   const { query } = useCwaResourceEndpoint(iri)
   const resource = cwaResource.getResource()
@@ -31,7 +28,7 @@ export const useCwaImage = (imagineFilterName?: string) => {
     return resource.value?.data?._metadata.mediaObjects?.file
   })
 
-  const thumbnailMedia = computed(() => {
+  const displayMedia = computed(() => {
     if (!imageFileMediaObjects.value || !imageFileMediaObjects.value.length) {
       return
     }
@@ -40,7 +37,7 @@ export const useCwaImage = (imagineFilterName?: string) => {
   })
 
   const contentUrl = computed(() => {
-    const mediaUrl = thumbnailMedia.value?.contentUrl
+    const mediaUrl = displayMedia.value?.contentUrl
     if (!mediaUrl) {
       return
     }
@@ -56,8 +53,9 @@ export const useCwaImage = (imagineFilterName?: string) => {
   return {
     ...cwaResource,
     contentUrl,
-    thumbnailMedia,
+    displayMedia,
     handleLoad,
-    loaded
+    loaded,
+    resource
   }
 }
