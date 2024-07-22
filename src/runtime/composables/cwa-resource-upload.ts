@@ -1,6 +1,8 @@
 import { computed, type ComputedRef, ref } from 'vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/runtime/composables/cwa'
+import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 
 export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
   const $cwa = useCwa()
@@ -38,8 +40,23 @@ export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
     updating.value = false
   }
 
+  async function confirmDelete () {
+    const alertData = {
+      title: 'Delete this image?',
+      content: '<p>Are you sure you want to permanently delete this image?</p>'
+    }
+    // @ts-ignore-next-line
+    const dialog = createConfirmDialog(ConfirmDialog)
+    const { isCanceled } = await dialog.reveal(alertData)
+
+    return !isCanceled
+  }
+
   async function handleInputDeleteFile () {
     if (!fileExists.value || !iri.value) {
+      return
+    }
+    if (!await confirmDelete()) {
       return
     }
     updating.value = true
