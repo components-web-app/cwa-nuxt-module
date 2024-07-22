@@ -300,9 +300,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       // also add a position resource as a temporary resource if we are not adding a dynamnic position
       let position: string|undefined
       let positionResource: CwaResource|undefined
+
       if (resourceType === 'ComponentPosition') {
         newResource.componentGroup = closestGroup
-      } else {
+      } else if (addResourceEvent.addAfter !== null) {
         position = `/_/component_positions/${NEW_RESOURCE_IRI}`
 
         // update the resource to reference that it is in this position
@@ -321,11 +322,13 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         saveResource({
           resource: positionResource
         })
+      } else if (!addResourceEvent.pageDataProperty) {
+        newResource.componentPositions = [addResourceEvent.closest.position]
       }
 
-      const newPosition = positionResource || newResource
+      const newPosition = positionResource || (newResource['@type'] === 'ComponentPosition' ? newResource : undefined)
 
-      if (!addingToGroup && closestPosition) {
+      if (!addingToGroup && closestPosition && newPosition) {
         const positionSortValue = resourcesGetters.getPositionSortDisplayNumber.value(closestPosition)
         if (positionSortValue !== undefined) {
           newPosition._metadata.sortDisplayNumber = addResourceEvent?.addAfter ? positionSortValue + 1 : positionSortValue
@@ -343,7 +346,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         position
       }
 
-      if (closestGroup) {
+      if (closestGroup && newPosition) {
         const groupResource = resourcesGetters.getResource.value(closestGroup)
         if (groupResource?.data) {
           const existingPositionIris = groupResource.data.componentPositions

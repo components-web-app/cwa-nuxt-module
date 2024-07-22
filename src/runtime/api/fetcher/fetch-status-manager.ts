@@ -142,7 +142,7 @@ export default class FetchStatusManager {
     if (!isCwaResource(cwaResource)) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
-        error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource.')),
+        error: createCwaResourceError(new Error(`Not Saved. The response was not a valid CWA Resource. (${event.resource})`)),
         isCurrent,
         showErrorPage: this.finishFetchShowError(fetchStatus, event.resource)
       })

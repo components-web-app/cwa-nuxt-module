@@ -1,8 +1,8 @@
-import { computed, getCurrentInstance, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import { debounce, get, isObject, set } from 'lodash-es'
 import { useCwa } from '#cwa/runtime/composables/cwa'
-import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
+import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 
 interface ResourceModelOps {
   longWaitThreshold?: number,
@@ -14,10 +14,8 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
-  const applyPostfix = ref(false)
-  const postfix = ref('')
 
-  const endpoint = computed(() => `${iri.value}${postfix.value}`)
+  const { endpoint } = useCwaResourceEndpoint(iri)
 
   const storeValue = computed<T|undefined>(() => (resource.value?.data ? get(resource.value.data, property) : undefined))
   const rootProperty = computed(() => {
@@ -172,25 +170,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     }, longWaitThreshold)
   })
 
-  const unwatchEffect = watchEffect(() => {
-    if (!resource.value) {
-      applyPostfix.value = false
-      return
-    }
-    const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value !== undefined && publishableState === true
-  })
-
-  const unwatchApplyPostfix = watch(applyPostfix, (newApplyPostfix) => {
-    if (!newApplyPostfix) {
-      postfix.value = ''
-      return
-    }
-    postfix.value = $cwa.admin.resourceStackManager.forcePublishedVersion.value ? '?published=true' : '?published=false'
-  }, {
-    immediate: true
-  })
-
   const model = computed<T|undefined|null>({
     get () {
       if (localValue.value !== undefined) {
@@ -207,8 +186,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   onBeforeUnmount(() => {
     unwatchLocalValue()
     unwatchIsBusy()
-    unwatchEffect()
-    unwatchApplyPostfix()
   })
 
   return {
