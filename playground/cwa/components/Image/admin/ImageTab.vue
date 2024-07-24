@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useCwaResourceUpload } from '#cwa/runtime/composables/cwa-resource-upload'
-import { useCwaResourceManagerTab } from '#imports'
+import { useCwaResourceManagerTab, useCwaResourceUpload } from '#imports'
 
 const { exposeMeta, iri } = useCwaResourceManagerTab({
   name: 'Upload'

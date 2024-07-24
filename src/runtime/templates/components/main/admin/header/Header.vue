@@ -1,6 +1,6 @@
 <template>
   <div ref="spacer" />
-  <div ref="header" class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-manager cwa-w-full cwa-h-18 cwa-top-0 cwa-dark-blur" :class="[highlightClass]" @click.stop>
+  <div ref="header" class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-manager cwa-w-full cwa-h-18 cwa-top-0 cwa-dark-blur" :class="highlightClass" @click.stop>
     <div class="cwa-flex cwa-justify-between cwa-items-center">
       <div class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
@@ -51,10 +51,14 @@ const isNavEnabled = computed({
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
 const highlightClass = computed(() => {
-  if (!$cwa.resources.isDynamicPage.value) {
-    return
+  const classes = ['before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5']
+  if ($cwa.resources.isDynamicPage.value) {
+    return [...classes, 'before:cwa-bg-yellow']
   }
-  return 'before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5 before:cwa-bg-yellow'
+  if ($cwa.resources.isDataPage.value) {
+    return [...classes, 'before:cwa-bg-green']
+  }
+  return [...classes, 'before:cwa-bg-blue-600']
 })
 
 onMounted(() => {

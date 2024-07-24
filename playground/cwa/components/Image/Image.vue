@@ -21,9 +21,8 @@
 </template>
 
 <script setup lang="ts">
-import { useCwaImage } from '#cwa/runtime/composables/cwa-image'
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { toRef } from 'vue'
+import { useCwaImage, type IriProp } from '#imports'
 
 const props = defineProps<IriProp>()
 const iri = toRef(props, 'iri')
