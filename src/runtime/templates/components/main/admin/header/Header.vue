@@ -4,7 +4,9 @@
     <div class="cwa-flex cwa-justify-between cwa-items-center">
       <div class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
-          {{ $cwa.resources.page.value.data?.reference }}
+          <span class="cwa-flex cwa-items-center cwa-space-x-2">
+            <span>{{ $cwa.resources.page.value.data?.reference }}</span> <CwaUiIconCogIcon class="cwa-h-5 cwa-w-5" aria-hidden="true" />
+          </span>
         </CwaUiFormButton>
         <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
       </div>
