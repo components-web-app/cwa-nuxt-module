@@ -11,10 +11,10 @@
     >
       <div v-show="showMenu" class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-py-6 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right">
         <div class="cwa-text-light cwa-flex cwa-flex-col cwa-text-center cwa-space-y-2">
-          <div class="cwa-flex cwa-justify-center cwa-opacity-40">
+          <div class="cwa-flex cwa-justify-center cwa-opacity-[.35]">
             <CwaLogo class="cwa-h-8 cwa-w-auto" />
           </div>
-          <h2 class="cwa-opacity-60">
+          <h2 class="cwa-opacity-50 cwa-text-sm cwa-font-bold">
             {{ $cwa.appName }}
           </h2>
         </div>
