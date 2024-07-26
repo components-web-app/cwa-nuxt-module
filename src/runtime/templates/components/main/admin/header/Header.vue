@@ -17,10 +17,10 @@
         <!-- this will be used when cloning a component only -->
         <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
-      <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
+      <div v-if="$cwa.admin.isEditing" class="cwa-flex cwa-space-x-4 cwa-items-center">
         <SpinnerTick :is-loading="isLoading" :is-pending="!!$cwa.resources.newResource.value" />
       </div>
-      <div v-else>
+      <div v-else class="cwa-flex cwa-self-stretch">
         <Menu />
       </div>
     </div>
