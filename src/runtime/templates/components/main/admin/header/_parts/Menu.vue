@@ -9,14 +9,74 @@
       leave-active-class="cwa-duration-200 cwa-ease-in"
       leave-to-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
     >
-      <div v-show="showMenu" class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-py-6 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right">
-        <div class="cwa-text-light cwa-flex cwa-flex-col cwa-text-center cwa-space-y-2">
+      <div v-show="showMenu" class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-pt-6 cwa-pb-12 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right">
+        <div class="cwa-text-light cwa-flex cwa-flex-col cwa-text-center cwa-space-y-2 cwa-mb-5">
           <div class="cwa-flex cwa-justify-center cwa-opacity-[.35]">
             <CwaLogo class="cwa-h-8 cwa-w-auto" />
           </div>
           <h2 class="cwa-opacity-50 cwa-text-sm cwa-font-bold">
             {{ $cwa.appName }}
           </h2>
+        </div>
+        <div class="cwa-flex cwa-justify-center">
+          <div class="cwa-flex cwa-justify-between cwa-w-full cwa-max-w-[400px]">
+            <div class="cwa-mt-2">
+              <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-4">
+                <li>
+                  <MenuPrimaryLink label="Layouts">
+                    <IconLayouts />
+                  </MenuPrimaryLink>
+                </li>
+                <li>
+                  <MenuPrimaryLink label="Pages">
+                    <IconPages />
+                  </MenuPrimaryLink>
+                </li>
+                <li>
+                  <MenuPrimaryLink label="Users">
+                    <IconUsers />
+                  </MenuPrimaryLink>
+                </li>
+              </ul>
+            </div>
+            <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+              <div>
+                <h3>Account</h3>
+                <ul class="cwa-text-sm">
+                  <li>
+                    <MenuLink>
+                      My account
+                    </MenuLink>
+                  </li>
+                  <li>
+                    <MenuLink @click="signOut">
+                      Sign out
+                    </MenuLink>
+                  </li>
+                </ul>
+              </div>
+              <div class="cwa-pr-8">
+                <h3>CWA</h3>
+                <ul class="cwa-text-sm">
+                  <li>
+                    <MenuLink>
+                      About CWA
+                    </MenuLink>
+                  </li>
+                  <li>
+                    <MenuLink>
+                      Module 1.0zzz
+                    </MenuLink>
+                  </li>
+                  <li>
+                    <MenuLink>
+                      API 1.0zzz
+                    </MenuLink>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -25,9 +85,21 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
 import { useCwa } from '#imports'
+import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayouts.vue'
+import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
+import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
+import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 
 const $cwa = useCwa()
 const showMenu = ref(false)
+
+async function signOut () {
+  if ($cwa.navigationDisabled) {
+    return
+  }
+  await $cwa.auth.signOut()
+}
 </script>

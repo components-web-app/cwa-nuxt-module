@@ -12,9 +12,6 @@
               <nuxt-link v-if="$cwa.auth.status.value === CwaAuthStatus.SIGNED_OUT" to="/login" class="text-base font-medium text-gray-500 hover:text-gray-900">
                 Sign In
               </nuxt-link>
-              <a v-else-if="$cwa.auth.status.value === CwaAuthStatus.SIGNED_IN" href="#" class="text-base font-medium text-gray-500 hover:text-gray-900" @click.prevent="signOut">
-                Sign Out
-              </a>
             </ClientOnly>
           </PopoverGroup>
         </div>
@@ -40,11 +37,4 @@ const $cwa = useCwa()
 
 const percent = computed(() => $cwa.resources.pageLoadProgress.value.percent || 3)
 const showPageLoadBar = computed(() => percent.value < 100)
-
-async function signOut () {
-  if ($cwa.navigationDisabled) {
-    return
-  }
-  await $cwa.auth.signOut()
-}
 </script>

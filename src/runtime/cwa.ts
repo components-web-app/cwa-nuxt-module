@@ -123,7 +123,7 @@ export default class Cwa {
     this.options.resources = meta
   }
 
-  public get appName () {
+  public get appName (): string {
     return this.options.appName
   }
 }
