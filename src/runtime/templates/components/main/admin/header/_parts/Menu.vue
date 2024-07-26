@@ -65,7 +65,7 @@
                   </li>
                   <li>
                     <MenuLink :to="moduleLink" target="_blank">
-                      Module <span class="cwa-text-xs">{{ displayModuleVersion }}</span>
+                      App <span class="cwa-text-xs">{{ displayAppVersion }}</span>
                     </MenuLink>
                   </li>
                   <li>
@@ -120,17 +120,17 @@ async function setApiVersion () {
 
 function truncateVersion (version: string) {
   return version.length > 9
-    ? `${version.substr(0, 3)}..${version.substr(-4)}`
+    ? `${version.substring(0, 3)}..${version.substring(version.length - 4)}`
     : version
 }
 
 const displayApiVersion = computed(() => {
-  const unstablePostfix = apiVersion.value.substr(0, 3) === 'dev' ? ' (unstable)' : ''
+  const unstablePostfix = apiVersion.value.substring(0, 3) === 'dev' ? ' (unstable)' : ''
   return truncateVersion(apiVersion.value) + unstablePostfix
 })
 
-const displayModuleVersion = computed(() => {
-  const unstablePostfix = $cwa.currentModulePackageInfo.name.substr(-4) === 'next' ? ' (unstable)' : ''
+const displayAppVersion = computed(() => {
+  const unstablePostfix = $cwa.currentModulePackageInfo.name.substring($cwa.currentModulePackageInfo.name.length - 4) === 'edge' ? ' (unstable)' : ''
   return (
     truncateVersion($cwa.currentModulePackageInfo.version) +
     unstablePostfix
