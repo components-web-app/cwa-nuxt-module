@@ -59,18 +59,18 @@
                 <h3>CWA</h3>
                 <ul class="cwa-text-sm">
                   <li>
-                    <MenuLink>
+                    <MenuLink to="https://cwa.rocks" target="_blank">
                       About CWA
                     </MenuLink>
                   </li>
                   <li>
-                    <MenuLink>
-                      Module 1.0zzz
+                    <MenuLink :to="moduleLink" target="_blank">
+                      Module <span class="cwa-text-xs">{{ displayModuleVersion }}</span>
                     </MenuLink>
                   </li>
                   <li>
-                    <MenuLink>
-                      API 1.0zzz
+                    <MenuLink :to="$cwa.apiUrlBase" target="_blank">
+                      API <span class="cwa-text-xs">{{ displayApiVersion }}</span>
                     </MenuLink>
                   </li>
                 </ul>
@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
 import { useCwa } from '#imports'
@@ -95,6 +95,7 @@ import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts
 
 const $cwa = useCwa()
 const showMenu = ref(false)
+const apiVersion = ref('')
 
 async function signOut () {
   if ($cwa.navigationDisabled) {
@@ -102,4 +103,41 @@ async function signOut () {
   }
   await $cwa.auth.signOut()
 }
+
+const moduleLink = computed(() => {
+  return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
+})
+
+async function setApiVersion () {
+  const docs = await $cwa.getApiDocumentation()
+  const version = docs?.docs?.info.version
+  if (!version) {
+    return
+  }
+  const matches = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
+  apiVersion.value = matches ? matches[1] : version
+}
+
+function truncateVersion (version: string) {
+  return version.length > 9
+    ? `${version.substr(0, 3)}..${version.substr(-4)}`
+    : version
+}
+
+const displayApiVersion = computed(() => {
+  const unstablePostfix = apiVersion.value.substr(0, 3) === 'dev' ? ' (unstable)' : ''
+  return truncateVersion(apiVersion.value) + unstablePostfix
+})
+
+const displayModuleVersion = computed(() => {
+  const unstablePostfix = $cwa.currentModulePackageInfo.name.substr(-4) === 'next' ? ' (unstable)' : ''
+  return (
+    truncateVersion($cwa.currentModulePackageInfo.version) +
+    unstablePostfix
+  )
+})
+
+onMounted(() => {
+  setApiVersion()
+})
 </script>

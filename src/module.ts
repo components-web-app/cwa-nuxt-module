@@ -1,6 +1,7 @@
 import { join } from 'path'
 import path from 'node:path'
 import { statSync } from 'node:fs'
+import fs from 'fs'
 import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import {
@@ -104,6 +105,10 @@ export default defineNuxtModule<CwaModuleOptions>({
   async setup (options: CwaModuleOptions, nuxt) {
     const { resolve } = createResolver(import.meta.url)
 
+    const { version, name } = JSON.parse(
+      fs.readFileSync(resolve('../package.json'), 'utf8')
+    )
+
     // modules
     await installModule('@pinia/nuxt')
 
@@ -194,6 +199,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         getContents: ({ app }) => {
           return `import type { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
+export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
         }
       })
