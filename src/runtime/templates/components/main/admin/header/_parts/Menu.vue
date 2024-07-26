@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-flex cwa-relative cwa-h-full cwa-items-center cwa-z-50">
-    <CwaUiHamburger v-model="showMenu" class="cwa-relative cwa-z-20" />
+    <CwaUiHamburger ref="hamburger" v-model="showMenu" class="cwa-relative cwa-z-20" />
     <Transition
       enter-from-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
       enter-active-class="cwa-duration-200 cwa-ease-out"
@@ -9,7 +9,7 @@
       leave-active-class="cwa-duration-200 cwa-ease-in"
       leave-to-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
     >
-      <div v-show="showMenu" class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-pt-6 cwa-pb-12 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right">
+      <div v-show="showMenu" ref="menu" class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-pt-6 cwa-pb-12 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right">
         <div class="cwa-text-light cwa-flex cwa-flex-col cwa-text-center cwa-space-y-2 cwa-mb-5">
           <div class="cwa-flex cwa-justify-center cwa-opacity-[.35]">
             <CwaLogo class="cwa-h-8 cwa-w-auto" />
@@ -85,6 +85,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
 import { useCwa } from '#imports'
@@ -96,6 +97,14 @@ import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts
 const $cwa = useCwa()
 const showMenu = ref(false)
 const apiVersion = ref('')
+
+const menu = ref(null)
+const hamburger = ref(null)
+onClickOutside(menu, () => {
+  showMenu.value = false
+}, {
+  ignore: [hamburger]
+})
 
 async function signOut () {
   if ($cwa.navigationDisabled) {
