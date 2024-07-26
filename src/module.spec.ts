@@ -26,7 +26,8 @@ vi.mock('node:fs', () => {
   return {
     statSync: vi.fn(() => ({
       isDirectory: vi.fn(() => true)
-    }))
+    })),
+    readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }'))
   }
 })
 
@@ -62,6 +63,7 @@ describe('CWA module', () => {
       const [{ defaults }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
       expect(defaults).toEqual({
+        appName: 'CWA Web App',
         storeName: 'cwa',
         resources: {
           ComponentPosition: {
@@ -176,6 +178,10 @@ export const options:CwaModuleOptions = {
       ]
     }
   }
+}
+export const currentModulePackageInfo:{ version: string, name: string } = {
+  "version": "1.0.0",
+  "name": "@cwa/nuxt"
 }
 `)
     })

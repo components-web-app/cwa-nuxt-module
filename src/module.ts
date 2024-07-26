@@ -1,6 +1,6 @@
 import { join } from 'path'
 import path from 'node:path'
-import { statSync } from 'node:fs'
+import { statSync, readFileSync } from 'node:fs'
 import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import {
@@ -33,8 +33,9 @@ export interface CwaResourcesMeta {
 }
 
 export interface CwaModuleOptions {
+  appName: string
   storeName: string
-  pagesDepth?: number,
+  pagesDepth?: number
   apiUrlBrowser?: string
   apiUrl?: string,
   resources?: CwaResourcesMeta
@@ -84,6 +85,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
   },
   defaults: {
+    appName: 'CWA Web App',
     storeName: 'cwa',
     resources: {
       ComponentPosition: {
@@ -101,6 +103,10 @@ export default defineNuxtModule<CwaModuleOptions>({
   },
   async setup (options: CwaModuleOptions, nuxt) {
     const { resolve } = createResolver(import.meta.url)
+
+    const { version, name } = JSON.parse(
+      readFileSync(resolve('../package.json'), 'utf8')
+    )
 
     // modules
     await installModule('@pinia/nuxt')
@@ -192,6 +198,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         getContents: ({ app }) => {
           return `import type { CwaModuleOptions } from '#cwa/module';
 export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
+export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
         }
       })

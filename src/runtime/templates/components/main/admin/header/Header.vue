@@ -17,8 +17,11 @@
         <!-- this will be used when cloning a component only -->
         <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
       </div>
-      <div v-if="$cwa.admin.isEditing" class="flex cwa-space-x-4 cwa-items-center">
+      <div v-if="$cwa.admin.isEditing" class="cwa-flex cwa-space-x-4 cwa-items-center">
         <SpinnerTick :is-loading="isLoading" :is-pending="!!$cwa.resources.newResource.value" />
+      </div>
+      <div v-else class="cwa-flex cwa-self-stretch">
+        <Menu />
       </div>
     </div>
     <OutdatedContentNotice class="cwa-absolute cwa-top-full cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-20" />
@@ -33,6 +36,7 @@ import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
+import Menu from './_parts/Menu.vue'
 import { useCwa } from '#imports'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 
