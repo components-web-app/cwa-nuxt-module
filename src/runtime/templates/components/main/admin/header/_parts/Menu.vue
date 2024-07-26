@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <CwaUiHamburger v-model="showMenu" />
+  <div class="flex">
+    <CwaUiHamburger v-model="showMenu" class="cwa-relative cwa-z-10" />
   </div>
 </template>
 
