@@ -122,4 +122,8 @@ export default class Cwa {
   public setResourceMeta (meta: CwaResourcesMeta) {
     this.options.resources = meta
   }
+
+  public get appName () {
+    return this.options.appName
+  }
 }

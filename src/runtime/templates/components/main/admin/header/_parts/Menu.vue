@@ -15,7 +15,7 @@
             <CwaLogo class="cwa-h-8 cwa-w-auto" />
           </div>
           <h2 class="cwa-opacity-60">
-            Website Name
+            {{ $cwa.appName }}
           </h2>
         </div>
       </div>
@@ -26,6 +26,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
+import { useCwa } from '#imports'
 
+const $cwa = useCwa()
 const showMenu = ref(false)
 </script>

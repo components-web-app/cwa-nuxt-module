@@ -33,8 +33,9 @@ export interface CwaResourcesMeta {
 }
 
 export interface CwaModuleOptions {
+  appName: string
   storeName: string
-  pagesDepth?: number,
+  pagesDepth?: number
   apiUrlBrowser?: string
   apiUrl?: string,
   resources?: CwaResourcesMeta
@@ -84,6 +85,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
   },
   defaults: {
+    appName: 'CWA Web App',
     storeName: 'cwa',
     resources: {
       ComponentPosition: {

@@ -62,6 +62,7 @@ describe('CWA module', () => {
       const [{ defaults }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
       expect(defaults).toEqual({
+        appName: 'CWA Web App',
         storeName: 'cwa',
         resources: {
           ComponentPosition: {
