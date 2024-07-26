@@ -1,7 +1,6 @@
 import { join } from 'path'
 import path from 'node:path'
-import { statSync } from 'node:fs'
-import fs from 'fs'
+import { statSync, readFileSync } from 'node:fs'
 import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import {
@@ -106,7 +105,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     const { resolve } = createResolver(import.meta.url)
 
     const { version, name } = JSON.parse(
-      fs.readFileSync(resolve('../package.json'), 'utf8')
+      readFileSync(resolve('../package.json'), 'utf8')
     )
 
     // modules
