@@ -23,17 +23,17 @@
             <div class="cwa-mt-2">
               <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-4">
                 <li>
-                  <MenuPrimaryLink label="Layouts">
+                  <MenuPrimaryLink label="Layouts" to="/_cwa/layouts">
                     <IconLayouts />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Pages">
+                  <MenuPrimaryLink label="Pages" to="/_cwa/pages">
                     <IconPages />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Users">
+                  <MenuPrimaryLink label="Users" to="/_cwa/users">
                     <IconUsers />
                   </MenuPrimaryLink>
                 </li>
@@ -84,17 +84,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
-import { useCwa } from '#imports'
+import { useCwa, useRoute } from '#imports'
 import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayouts.vue'
 import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
 import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 
 const $cwa = useCwa()
+const route = useRoute()
+
 const showMenu = ref(false)
 const apiVersion = ref('')
 
@@ -145,6 +147,13 @@ const displayAppVersion = computed(() => {
     unstablePostfix
   )
 })
+
+watch(
+  () => route.path,
+  () => {
+    showMenu.value = false
+  }
+)
 
 onMounted(() => {
   setApiVersion()
