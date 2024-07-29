@@ -1,11 +1,11 @@
 <template>
-  <div id="cwa-root-layout" ref="rootLayout" class="cwa-relative cwa-h-full" @contextmenu="closeContextMenu">
+  <div id="cwa-root-layout" ref="rootLayout" class="cwa-relative cwa-h-full cwa-flex cwa-flex-col" @contextmenu="closeContextMenu">
     <ClientOnly>
       <CwaAdminHeader v-if="showAdmin" />
       <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50" />
     </ClientOnly>
     <component :is="resolvedComponent" v-if="resolvedComponent" class="cwa-relative" @click.stop="onLayoutClick" @contextmenu.stop="onLayoutContextMenu">
-      <div ref="page" @click.stop="onPageClick" @contextmenu.stop="onPageContextMenu">
+      <div ref="page" class="cwa-grow" @click.stop="onPageClick" @contextmenu.stop="onPageContextMenu">
         <slot />
       </div>
     </component>
@@ -23,7 +23,7 @@
 import { computed, ref, getCurrentInstance } from 'vue'
 import { DialogsWrapper } from 'vuejs-confirm-dialog'
 import { useCwa } from '#imports'
-import { CwaAdminHeader, CwaAdminResourceManager } from '#components'
+import { CwaAdminHeader, CwaAdminResourceManager, CwaDefaultLayout } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/module'
@@ -64,7 +64,7 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || 'CwaDefaultLayout'
+  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || CwaDefaultLayout
 })
 
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
@@ -74,7 +74,7 @@ const resolvedComponent = computed(() => {
     typeof instance?.appContext.components !== 'object' ||
       !layoutUiComponent.value
   ) {
-    return 'CwaDefaultLayout'
+    return CwaDefaultLayout
   }
   return layoutUiComponent.value
 })
