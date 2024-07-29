@@ -23,17 +23,17 @@
             <div class="cwa-mt-2">
               <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-4">
                 <li>
-                  <MenuPrimaryLink label="Layouts">
+                  <MenuPrimaryLink label="Layouts" to="/_cwa/layouts">
                     <IconLayouts />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Pages">
+                  <MenuPrimaryLink label="Pages" to="/_cwa/pages">
                     <IconPages />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Users">
+                  <MenuPrimaryLink label="Users" to="/_cwa/users">
                     <IconUsers />
                   </MenuPrimaryLink>
                 </li>

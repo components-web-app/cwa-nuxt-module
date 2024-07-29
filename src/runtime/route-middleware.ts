@@ -4,6 +4,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { abortNavigation, callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import type { CwaResource } from './resources/resource-utils'
 import { useProcess } from '#cwa/runtime/composables/process'
+import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 
 let middlewareToken = ''
 
@@ -29,6 +30,13 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
 
   if (adminRouteGuard !== true) {
     return navigateTo(adminRouteGuard)
+  }
+
+  if (isClient) {
+    await nuxtApp.$cwa.initClientSide()
+    if (to.meta.cwa_admin === true && !nuxtApp.$cwa.auth.hasRole(CwaUserRoles.ADMIN)) {
+      return navigateTo('/')
+    }
   }
 
   if (to.meta.cwa !== true) {
@@ -64,8 +72,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (isClient) {
-    await nuxtApp.$cwa.initClientSide()
-
     // skip on first client side run as server-side will have completed
     if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
       return
