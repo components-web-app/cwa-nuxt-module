@@ -2,7 +2,7 @@
   <div ref="spacer" />
   <div ref="header" class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-manager cwa-w-full cwa-h-18 cwa-top-0 cwa-dark-blur" :class="highlightClass" @click.stop>
     <div class="cwa-flex cwa-justify-between cwa-items-center">
-      <div v-if="!route.meta.cwa_admin" class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
+      <div v-if="!pageIsAdmin" class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
           <span class="cwa-flex cwa-items-center cwa-space-x-2 cwa-justify-center" @click="showEditPage">
             <span>{{ $cwa.resources.page.value.data?.reference }}</span> <CwaUiIconCogIcon class="cwa-h-5 cwa-w-5" aria-hidden="true" />
@@ -11,7 +11,7 @@
         <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
-        <template v-if="!route.meta.cwa_admin">
+        <template v-if="!pageIsAdmin">
           <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" :loading="$cwa.resources.isLoading.value" @click="$cwa.admin.toggleEdit()">
             {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
           </CwaUiFormButton>
@@ -49,6 +49,8 @@ const route = useRoute()
 const header = ref<undefined|HTMLElement>()
 const spacer = ref<undefined|HTMLElement>()
 
+const pageIsAdmin = computed(() => route.meta.cwa_admin)
+
 const isNavEnabled = computed({
   get: () => {
     return $cwa.admin.navigationGuardDisabled
@@ -61,12 +63,15 @@ const isNavEnabled = computed({
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
 const highlightClass = computed(() => {
-  const classes = ['before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5']
+  const classes = ['before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5 before:cwa-transition-all']
   if ($cwa.resources.isDynamicPage.value) {
     return [...classes, 'before:cwa-bg-yellow']
   }
   if ($cwa.resources.isDataPage.value) {
     return [...classes, 'before:cwa-bg-green']
+  }
+  if (pageIsAdmin.value) {
+    return [...classes, 'before:cwa-bg-stone-400']
   }
   return [...classes, 'before:cwa-bg-blue-600']
 })
