@@ -2,7 +2,7 @@
   <div ref="spacer" />
   <div ref="header" class="cwa-section cwa-border-0 cwa-border-b-2 cwa-fixed cwa-z-manager cwa-w-full cwa-h-18 cwa-top-0 cwa-dark-blur" :class="highlightClass" @click.stop>
     <div class="cwa-flex cwa-justify-between cwa-items-center">
-      <div class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
+      <div v-if="!route.meta.cwa_admin" class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
         <CwaUiFormButton v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data" color="dark" class="cwa-min-w-[120px]">
           <span class="cwa-flex cwa-items-center cwa-space-x-2 cwa-justify-center" @click="showEditPage">
             <span>{{ $cwa.resources.page.value.data?.reference }}</span> <CwaUiIconCogIcon class="cwa-h-5 cwa-w-5" aria-hidden="true" />
@@ -11,11 +11,13 @@
         <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
       </div>
       <div class="cwa-flex cwa-justify-start cwa-space-x-4">
-        <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" :loading="$cwa.resources.isLoading.value" @click="$cwa.admin.toggleEdit()">
-          {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
-        </CwaUiFormButton>
-        <!-- this will be used when cloning a component only -->
-        <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
+        <template v-if="!route.meta.cwa_admin">
+          <CwaUiFormButton class="cwa-min-w-[100px]" color="blue" :loading="$cwa.resources.isLoading.value" @click="$cwa.admin.toggleEdit()">
+            {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
+          </CwaUiFormButton>
+          <!-- this will be used when cloning a component only -->
+          <CwaUiFormToggle v-if="false && $cwa.admin.isEditing" v-model="isNavEnabled" label="Enable Navigation" />
+        </template>
       </div>
       <div v-if="$cwa.admin.isEditing" class="cwa-flex cwa-space-x-4 cwa-items-center">
         <SpinnerTick :is-loading="isLoading" :is-pending="!!$cwa.resources.newResource.value" />
@@ -32,6 +34,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from '#app'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
@@ -41,6 +44,7 @@ import { useCwa } from '#imports'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 
 const $cwa = useCwa()
+const route = useRoute()
 
 const header = ref<undefined|HTMLElement>()
 const spacer = ref<undefined|HTMLElement>()
