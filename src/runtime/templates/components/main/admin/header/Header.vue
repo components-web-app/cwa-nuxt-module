@@ -63,7 +63,7 @@ const isNavEnabled = computed({
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
 
 const highlightClass = computed(() => {
-  const classes = ['before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5 before:cwa-transition-all']
+  const classes = ['before:cwa-content-[""] before:cwa-absolute before:cwa-top-0 before:cwa-left-0 before:cwa-w-full before:cwa-h-0.5 before:cwa-transition-colors']
   if ($cwa.resources.isDynamicPage.value) {
     return [...classes, 'before:cwa-bg-yellow']
   }

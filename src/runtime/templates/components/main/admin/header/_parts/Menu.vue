@@ -84,17 +84,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
-import { useCwa } from '#imports'
+import { useCwa, useRoute } from '#imports'
 import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayouts.vue'
 import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
 import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 
 const $cwa = useCwa()
+const route = useRoute()
+
 const showMenu = ref(false)
 const apiVersion = ref('')
 
@@ -145,6 +147,13 @@ const displayAppVersion = computed(() => {
     unstablePostfix
   )
 })
+
+watch(
+  () => route.path,
+  () => {
+    showMenu.value = false
+  }
+)
 
 onMounted(() => {
   setApiVersion()
