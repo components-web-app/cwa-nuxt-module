@@ -575,25 +575,6 @@ export class ResourcesManager {
     return refreshPositions
   }
 
-  private createNewComponentPosition (positionIri?: string) {
-    const addEvent = this._addResourceEvent.value
-    if (!addEvent || !addEvent.closest.group) {
-      throw new Error('Cannot create a new component position. There is no adding event or no group assigned')
-    }
-    const positionResource = positionIri ? this.resourcesStore.getResource(positionIri) : undefined
-    const componentPosition: { componentGroup: string, sortValue: number } = {
-      componentGroup: addEvent.closest.group,
-      sortValue: 0
-    }
-    if (positionResource) {
-      const currentSortValue = positionResource.data?.sortDisplayNumber
-      if (currentSortValue !== undefined) {
-        componentPosition.sortValue = addEvent.addAfter ? currentSortValue + 1 : currentSortValue
-      }
-    }
-    return componentPosition
-  }
-
   private get groupResource () {
     if (!this._addResourceEvent.value || !this._addResourceEvent.value.closest.group) {
       return

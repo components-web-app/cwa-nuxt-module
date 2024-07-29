@@ -167,6 +167,9 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
         }
         if (index > oldIndex && index <= newIndex) {
           updatePosSortValue(positionIri, -1)
+        } else {
+          // to clear the sortDisplayNumber even if the sortValue is not updated, so we order again based on sortValue
+          updatePosSortValue(positionIri, 0)
         }
       }
     } else {
@@ -176,6 +179,9 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
         }
         if (index < oldIndex && index >= newIndex) {
           updatePosSortValue(positionIri, 1)
+        } else {
+          // to clear the sortDisplayNumber even if the sortValue is not updated, so we order again based on sortValue
+          updatePosSortValue(positionIri, 0)
         }
       }
     }
