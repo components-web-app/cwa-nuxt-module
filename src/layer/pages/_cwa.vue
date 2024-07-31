@@ -5,7 +5,7 @@
     </div>
     <div class="cwa-text-stone-600 p-6 cwa-flex cwa-justify-center">
       <NuxtLink to="https://cwa.rocks" target="_blank" rel="noopener">
-        <CwaLogo class="cwa-h-8 cwa-w-auto" /><span class="cwa-sr-only">Components Web App</span>
+        <CwaLogo class="cwa-h-5 cwa-w-auto" /><span class="cwa-sr-only">Components Web App</span>
       </NuxtLink>
     </div>
   </div>
