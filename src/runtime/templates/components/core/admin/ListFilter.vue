@@ -9,7 +9,7 @@
       </div>
       <div class="cwa-min-w-[150px]">
         <FilterFormWrapper label="Sort">
-          <FilterSelect v-model="orderSelect.model.value" :options="orderSelect.options.value" class="flex-grow cwa-w-full" />
+          <FilterSelect v-model="sourceModel" :options="options" class="flex-grow cwa-w-full" />
         </FilterFormWrapper>
       </div>
     </div>
@@ -20,31 +20,25 @@
 import { ref } from 'vue'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form/FilterFormWrapper.vue'
-import { useCwaSelect } from '#imports'
 import FilterSelect from '#cwa/runtime/templates/components/core/admin/form/FilterSelect.vue'
 
 const options = [
   {
     label: 'New - Old',
-    value: { createdAt: 'desc' },
-    disabled: false
+    value: { createdAt: 'desc' }
   },
   {
     label: 'Old - New',
-    value: { createdAt: 'asc' },
-    disabled: false
+    value: { createdAt: 'asc' }
   },
   {
     label: 'A - Z',
-    value: { reference: 'asc' },
-    disabled: false
+    value: { reference: 'asc' }
   },
   {
     label: 'Z - A',
-    value: { reference: 'desc' },
-    disabled: false
+    value: { reference: 'desc' }
   }
 ]
 const sourceModel = ref(options[0].value)
-const orderSelect = useCwaSelect(sourceModel, options)
 </script>

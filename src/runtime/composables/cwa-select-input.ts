@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { isEqual } from 'lodash-es'
 import { defu } from 'defu'
 import type { PopperOptions } from '#cwa/runtime/types/popper'
@@ -46,6 +46,10 @@ export const useCwaSelectInput = (props: SelectInputProps, emit: (event: 'update
     }
     return isEqual(a, b)
   }
+
+  watch(selectedOption, () => {
+    console.log('selected option changed')
+  })
 
   return {
     value,
