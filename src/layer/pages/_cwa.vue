@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-flex cwa-flex-col cwa-h-full">
-    <div class="cwa-bg-stone-800 cwa-text-white cwa-p-8 cwa-grow">
+    <div class="cwa-bg-stone-800 cwa-text-white cwa-grow">
       <NuxtPage />
     </div>
     <div class="cwa-text-stone-600 p-6 cwa-flex cwa-justify-center">
