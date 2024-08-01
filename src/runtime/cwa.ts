@@ -3,7 +3,7 @@ import { useCookie } from '#app/composables/cookie.js'
 import type { NuxtApp } from '#app/nuxt'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
-import type { FetchResourceEvent } from './api/fetcher/fetcher'
+import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
 import Fetcher from './api/fetcher/fetcher'
 import Mercure from './api/mercure'
 import ApiDocumentation, { type ApiDocumentationComponentMetadataCollection } from './api/api-documentation'
@@ -105,6 +105,10 @@ export default class Cwa {
 
   public fetchRoute (route: RouteLocationNormalizedLoaded) {
     return this.fetcher.fetchRoute(route)
+  }
+
+  public fetch (event: FetchEvent) {
+    return this.fetcher.fetch(event)
   }
 
   public clearPrimaryFetch () {

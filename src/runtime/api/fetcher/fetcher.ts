@@ -31,7 +31,7 @@ export interface FetchManifestEvent {
   token: string
 }
 
-interface FetchEvent {
+export interface FetchEvent {
   path: string
   preload?: string[]
 }
@@ -254,7 +254,7 @@ export default class Fetcher {
     return Promise.all(promises)
   }
 
-  private fetch (event: FetchEvent): CwaFetchResponseRaw {
+  public fetch (event: FetchEvent): CwaFetchResponseRaw {
     const url = this.appendQueryToPath(event.path)
     const headers = this.createRequestHeaders(event)
     const response = this.cwaFetch.fetch.raw<any>(url, {
