@@ -19,7 +19,8 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
       <ListboxButton
         :id="props.id || 'filter-select'"
         ref="trigger"
-        class="cwa-flex cwa-transition-colors cwa-relative cwa-rounded-lg cwa-py-2 cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-bg-light/10 cwa-border-0 focus-visible:cwa-bg-light/15"
+        class="cwa-flex cwa-transition-colors cwa-relative cwa-rounded-lg cwa-py-2 cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-border-0"
+        :class="[open ? 'cwa-bg-light/15' : 'cwa-bg-light/10']"
       >
         <span class="cwa-block cwa-truncate cwa-flex-grow">{{ selectedOption?.label }}</span>
         <svg class="-cwa-mr-1 cwa-h-6 cwa-w-6 cwa-transition-transform" :class="{ 'cwa-rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
