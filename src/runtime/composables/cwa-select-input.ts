@@ -14,8 +14,7 @@ export interface SelectOption {
 export type SelectInputProps = {
   options: SelectOption[],
   modelValue: ModelValue,
-  popper?: PopperOptions,
-  id?: string
+  popper?: PopperOptions
 }
 
 export const useCwaSelectInput = (props: SelectInputProps, emit: (event: 'update:modelValue', ...args: any[]) => void) => {

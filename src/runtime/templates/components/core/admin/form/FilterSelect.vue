@@ -3,10 +3,14 @@ import {
   Listbox,
   ListboxButton,
   ListboxOptions,
-  ListboxOption
+  ListboxOption, provideUseId
 } from '@headlessui/vue'
 
+import { useId } from '#app'
 import { type SelectInputProps, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
+
+// see https://github.com/tailwindlabs/headlessui/issues/2913 - temporary until headless ui 2 and vue 3.5
+provideUseId(() => useId())
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<SelectInputProps>()
@@ -17,7 +21,6 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
   <Listbox v-slot="{ open }" v-model="value" :by="compareOptions">
     <div class="cwa-relative cwa-inline-flex">
       <ListboxButton
-        :id="props.id || 'filter-select'"
         ref="trigger"
         class="cwa-flex cwa-transition-colors cwa-relative cwa-rounded-lg cwa-py-2 cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-border-0"
         :class="[open ? 'cwa-bg-stone-700' : 'cwa-bg-stone-700/80']"
