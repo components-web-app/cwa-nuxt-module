@@ -19,7 +19,7 @@ import { useId } from '#app'
 import { ref, computed, defineEmits } from 'vue'
 
 const props = defineProps<{
-  modelValue: string[]
+  modelValue: string[]|null
   value: string
   label: string
   backgroundColorClass: string
@@ -32,13 +32,16 @@ const checkbox = ref()
 const emit = defineEmits(['update:modelValue'])
 function toggleCheckbox () {
   if (isChecked.value) {
+    if (model.value === null) {
+      return
+    }
     model.value = model.value.filter((v) => {
       return v !== props.value
     })
     return
   }
   // model.value.push here does not trigger reactivity for watching model in parent
-  model.value = [...model.value, props.value]
+  model.value = [...(model.value || []), props.value]
 }
 
 const model = computed({
@@ -51,6 +54,6 @@ const model = computed({
 })
 
 const isChecked = computed(() => {
-  return model.value.includes(props.value)
+  return model.value && model.value.includes(props.value)
 })
 </script>

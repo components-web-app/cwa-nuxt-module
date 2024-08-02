@@ -99,7 +99,7 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
           newQuery[`${queryParam}[${newValueKey}]`] = newValue[newValueKey]
         }
       }
-    } else if (newValue) {
+    } else if (newValue && (!Array.isArray(newValue) || newValue.length)) {
       if (Array.isArray(queryParam)) {
         for (const p of queryParam) {
           newQuery[p] = newValue
