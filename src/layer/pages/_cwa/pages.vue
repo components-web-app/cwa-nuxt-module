@@ -1,6 +1,22 @@
 <template>
   <ListHeading title="Pages" />
   <ListFilter :order-options="orderOptions" :search-fields="['reference', 'title', 'uiComponent']" />
+  <ListContainer>
+    <div>
+      <div>
+        <FilterFormWrapper label="Page Type" input-id="page-type">
+          <div class="cwa-flex cwa-space-x-2">
+            <div>
+              <ListFilterButton v-model="selectedTypesModel" value="false" label="Static" background-color-class="cwa-bg-blue-600/20" border-color-class="cwa-border-blue-600" />
+            </div>
+            <div>
+              <ListFilterButton v-model="selectedTypesModel" value="true" label="Dynamic" background-color-class="cwa-bg-yellow/20" border-color-class="cwa-border-yellow" />
+            </div>
+          </div>
+        </FilterFormWrapper>
+      </div>
+    </div>
+  </ListContainer>
   <ListContent fetch-url="/_/pages">
     <template #item="data">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center">
@@ -31,6 +47,10 @@ import { useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
+import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
+import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form/FilterFormWrapper.vue'
+import ListFilterButton from '#cwa/runtime/templates/components/core/admin/ListFilterButton.vue'
+import { useQueryBoundModel } from '#cwa/runtime/composables/cwa-query-bound-model'
 
 const router = useRouter()
 
@@ -52,6 +72,10 @@ const orderOptions = [
     value: { reference: 'desc' }
   }
 ]
+
+const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
+  defaultValue: ['true', 'false']
+})
 
 function goToPage (page: string) {
   router.push(page)

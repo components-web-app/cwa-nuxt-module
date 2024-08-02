@@ -33,14 +33,25 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
     if (!matchingParams || !matchingParams.length) {
       return null
     }
+    const normalizeValueAsArray = (valueIsArray: boolean, value: LocationQueryValue|LocationQueryValue[]) => {
+      if (Array.isArray(value)) {
+        return value
+      }
+      if (valueIsArray) {
+        return [value]
+      }
+      return value
+    }
     if (Array.isArray(queryParam)) {
       for (const p of queryParam) {
+        const valueIsArray = p.endsWith('[]')
         if (route.query[p]) {
-          return route.query[p]
+          return normalizeValueAsArray(valueIsArray, route.query[p])
         }
       }
     } else if (route.query[queryParam]) {
-      return route.query[queryParam]
+      const valueIsArray = queryParam.endsWith('[]')
+      return normalizeValueAsArray(valueIsArray, route.query[queryParam])
     }
 
     const matches = matchingParams[0].match(exp)
@@ -57,12 +68,17 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
   const model = ref(matchedQueryParamValue.value !== null ? matchedQueryParamValue.value : ops?.defaultValue)
 
   watch(matchedQueryParamValue, (newValue) => {
+    // if the query param value(s) changes, update the model
     model.value = newValue
   })
+
   watch(model, async (newValue) => {
+    // update the query params on model change
+
     if (debounced) {
       debounced.cancel()
     }
+
     const filteredKeys = Object.keys(route.query).filter(key => !matchingQueryParams.value.includes(key))
     const newQuery: { [key: string]: LocationQueryValue|LocationQueryValue[] } = {}
     for (const retainedKey of filteredKeys) {
