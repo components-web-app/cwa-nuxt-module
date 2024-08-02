@@ -30,13 +30,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
+const route = useRoute()
 
 const props = defineProps<{
   fetchUrl: string
@@ -44,14 +46,23 @@ const props = defineProps<{
 
 const loading = ref(true)
 const items = ref<any[]>([])
+const currentRequestId = ref<number>(0)
 
 async function reloadItems () {
+  const thisRequestId = currentRequestId.value + 1
+  currentRequestId.value = thisRequestId
   loading.value = true
   const { response } = $cwa.fetch({ path: props.fetchUrl })
   const { _data: data } = await response
-  items.value = data['hydra:member']
-  loading.value = false
+  if (thisRequestId === currentRequestId.value) {
+    data && (items.value = data['hydra:member'])
+    loading.value = false
+  }
 }
+
+watch(() => route.query, () => {
+  reloadItems()
+})
 
 onMounted(() => {
   reloadItems()
