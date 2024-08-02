@@ -43,7 +43,7 @@ export interface CwaFetchRequestHeaders {
 
 export interface CwaFetchResponse extends FetchResponse<CwaResource|undefined> {}
 
-interface CwaFetchResponseRaw {
+export interface CwaFetchResponseRaw {
   response: Promise<CwaFetchResponse>
   headers: CwaFetchRequestHeaders
 }
