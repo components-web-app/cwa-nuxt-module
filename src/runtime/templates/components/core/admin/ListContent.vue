@@ -2,9 +2,18 @@
   <ListFilter />
   <ListContainer class="cwa-py-4">
     <div class="cwa-relative">
-      <Spinner class="cwa-absolute" :show="loading" />
-      <template v-if="!loading">
-        <div v-if="!items.length" class="cwa-flex cwa-justify-center">
+      <Transition
+        appear
+        mode="out-in"
+        enter-from-class="cwa-transform cwa-opacity-0"
+        enter-active-class="cwa-duration-200 cwa-ease-out"
+        enter-to-class="cwa-opacity-100"
+        leave-from-class="cwa-opacity-100"
+        leave-active-class="cwa-duration-200 cwa-ease-in"
+        leave-to-class="cwa-transform cwa-opacity-0"
+      >
+        <Spinner v-if="loading" class="cwa-absolute" :show="true" />
+        <div v-else-if="!items.length" class="cwa-flex cwa-justify-center">
           <div class="cwa-w-full cwa-max-w-xl cwa-text-center cwa-flex cwa-flex-col cwa-space-y-2 cwa-text-stone-400">
             <div class="cwa-flex cwa-justify-center">
               <CwaUiIconWarningIcon class="cwa-w-20" />
@@ -24,7 +33,7 @@
             </slot>
           </li>
         </ul>
-      </template>
+      </Transition>
     </div>
   </ListContainer>
 </template>
