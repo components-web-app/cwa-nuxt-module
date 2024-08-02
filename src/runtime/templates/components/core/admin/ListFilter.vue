@@ -41,6 +41,10 @@ const options = [
   }
 ]
 
-const { model: searchModel } = useQueryBoundModel('search')
-const { model: orderModel } = useQueryBoundModel('order', options[0].value)
+const { model: searchModel } = useQueryBoundModel('search', {
+  delay: 250
+})
+const { model: orderModel } = useQueryBoundModel('order', {
+  defaultValue: options[0].value
+})
 </script>

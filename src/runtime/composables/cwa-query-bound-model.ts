@@ -1,9 +1,16 @@
-import { useRouter, useRoute, LocationQueryValue } from 'vue-router'
+import { useRouter, useRoute, type LocationQueryValue } from 'vue-router'
 import { computed, ref, watch } from 'vue'
+import { debounce } from 'lodash-es'
 
-export const useQueryBoundModel = (queryParam: string, defaultValue?: any) => {
+type ModelOps = {
+  defaultValue?: any
+  delay?: number
+}
+
+export const useQueryBoundModel = (queryParam: string, ops?: ModelOps) => {
   const route = useRoute()
   const router = useRouter()
+  let debounced: any
 
   const exp = new RegExp(`^${queryParam}\\[([a-zA-Z0-9]+)]$`, 'i')
   const matchingQueryParams = computed(() => {
@@ -33,12 +40,15 @@ export const useQueryBoundModel = (queryParam: string, defaultValue?: any) => {
     return null
   })
 
-  const model = ref(matchedQueryParamValue.value !== null ? matchedQueryParamValue.value : defaultValue)
+  const model = ref(matchedQueryParamValue.value !== null ? matchedQueryParamValue.value : ops?.defaultValue)
 
   watch(matchedQueryParamValue, (newValue) => {
     model.value = newValue
   })
   watch(model, async (newValue) => {
+    if (debounced) {
+      debounced.cancel()
+    }
     const filteredKeys = Object.keys(route.query).filter(key => !matchingQueryParams.value.includes(key))
     const newQuery: { [key: string]: LocationQueryValue|LocationQueryValue[] } = {}
     for (const retainedKey of filteredKeys) {
@@ -54,7 +64,10 @@ export const useQueryBoundModel = (queryParam: string, defaultValue?: any) => {
       newQuery[queryParam] = newValue
     }
 
-    await router.replace({ query: newQuery })
+    debounced = debounce(async () => {
+      await router.replace({ query: newQuery })
+    }, ops?.delay || 10)
+    await debounced()
   })
 
   return {
