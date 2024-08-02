@@ -41,7 +41,7 @@ const options = [
   }
 ]
 
-const { model: searchModel } = useQueryBoundModel('search', {
+const { model: searchModel } = useQueryBoundModel(['reference', 'uiComponent'], {
   delay: 250
 })
 const { model: orderModel } = useQueryBoundModel('order', {

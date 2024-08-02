@@ -7,13 +7,20 @@ type ModelOps = {
   delay?: number
 }
 
-export const useQueryBoundModel = (queryParam: string, ops?: ModelOps) => {
+export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) => {
   const route = useRoute()
   const router = useRouter()
   let debounced: any
 
   const exp = new RegExp(`^${queryParam}\\[([a-zA-Z0-9]+)]$`, 'i')
   const matchingQueryParams = computed(() => {
+    if (Array.isArray(queryParam)) {
+      const foundParams: string[] = []
+      for (const p of queryParam) {
+        route.query[p] && foundParams.push(p)
+      }
+      return foundParams
+    }
     if (route.query[queryParam]) {
       return [queryParam]
     }
@@ -26,9 +33,16 @@ export const useQueryBoundModel = (queryParam: string, ops?: ModelOps) => {
     if (!matchingParams || !matchingParams.length) {
       return null
     }
-    if (route.query[queryParam]) {
+    if (Array.isArray(queryParam)) {
+      for (const p of queryParam) {
+        if (route.query[p]) {
+          return route.query[p]
+        }
+      }
+    } else if (route.query[queryParam]) {
       return route.query[queryParam]
     }
+
     const matches = matchingParams[0].match(exp)
     if (!matches || matches.length < 2) {
       return null
@@ -58,10 +72,25 @@ export const useQueryBoundModel = (queryParam: string, ops?: ModelOps) => {
     const isObj = Object.prototype.toString.call(newValue) === '[object Object]'
     if (isObj) {
       for (const newValueKey of Object.keys(newValue)) {
-        newQuery[`${queryParam}[${newValueKey}]`] = newValue[newValueKey]
+        if (!newValue[newValueKey]) {
+          continue
+        }
+        if (Array.isArray(queryParam)) {
+          for (const p of queryParam) {
+            newQuery[`${p}[${newValueKey}]`] = newValue[newValueKey]
+          }
+        } else {
+          newQuery[`${queryParam}[${newValueKey}]`] = newValue[newValueKey]
+        }
       }
-    } else {
-      newQuery[queryParam] = newValue
+    } else if (newValue) {
+      if (Array.isArray(queryParam)) {
+        for (const p of queryParam) {
+          newQuery[p] = newValue
+        }
+      } else {
+        newQuery[queryParam] = newValue
+      }
     }
 
     debounced = debounce(async () => {
