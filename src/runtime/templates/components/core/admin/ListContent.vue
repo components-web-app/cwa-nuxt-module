@@ -1,5 +1,4 @@
 <template>
-  <ListFilter />
   <ListContainer class="cwa-py-4">
     <div class="cwa-relative">
       <Transition
@@ -43,7 +42,6 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
-import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()

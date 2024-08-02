@@ -1,5 +1,6 @@
 <template>
   <ListHeading title="Users" />
+  <ListFilter :order-options="orderOptions" :search-fields="['emailAddress', 'username']" />
   <ListContent fetch-url="/users">
     <template #item="data">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center" :class="{ 'cwa-opacity-50': !data.enabled }">
@@ -23,6 +24,26 @@ import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
+import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
+
+const orderOptions = [
+  {
+    label: 'New - Old',
+    value: { createdAt: 'desc' }
+  },
+  {
+    label: 'Old - New',
+    value: { createdAt: 'asc' }
+  },
+  {
+    label: 'A - Z',
+    value: { username: 'asc' }
+  },
+  {
+    label: 'Z - A',
+    value: { username: 'desc' }
+  }
+]
 
 function getUserRole (roles: CwaUserRoles[]) {
   if (roles.includes(CwaUserRoles.SUPER_ADMIN)) {

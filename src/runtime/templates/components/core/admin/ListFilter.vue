@@ -9,7 +9,7 @@
       </div>
       <div class="cwa-min-w-[150px]">
         <FilterFormWrapper label="Sort" input-id="filter-select">
-          <FilterSelect v-model="orderModel" :options="options" class="flex-grow cwa-w-full" />
+          <FilterSelect v-model="orderModel" :options="orderOptions" class="flex-grow cwa-w-full" />
         </FilterFormWrapper>
       </div>
     </div>
@@ -22,29 +22,16 @@ import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form
 import FilterSelect from '#cwa/runtime/templates/components/core/admin/form/FilterSelect.vue'
 import { useQueryBoundModel } from '#imports'
 
-const options = [
-  {
-    label: 'New - Old',
-    value: { createdAt: 'desc' }
-  },
-  {
-    label: 'Old - New',
-    value: { createdAt: 'asc' }
-  },
-  {
-    label: 'A - Z',
-    value: { reference: 'asc' }
-  },
-  {
-    label: 'Z - A',
-    value: { reference: 'desc' }
-  }
-]
+const props = defineProps<{
+  searchFields: string[]
+  orderOptions: { label: string, value: any }[]
+}>()
 
-const { model: searchModel } = useQueryBoundModel(['reference', 'uiComponent'], {
+const { model: searchModel } = useQueryBoundModel(props.searchFields, {
   delay: 250
 })
+
 const { model: orderModel } = useQueryBoundModel('order', {
-  defaultValue: options[0].value
+  defaultValue: props.orderOptions[0].value
 })
 </script>
