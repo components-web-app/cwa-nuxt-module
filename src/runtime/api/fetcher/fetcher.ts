@@ -277,7 +277,16 @@ export default class Fetcher {
     }
 
     const queryString = queryKeys
-      .map((key: string) => key + '=' + queryObj[key])
+      .reduce((accumulator, key) => {
+        if (key.endsWith('[]') && Array.isArray(queryObj[key])) {
+          for (const arrValue of queryObj[key]) {
+            accumulator.push(key + '=' + arrValue)
+          }
+        } else {
+          accumulator.push(key + '=' + queryObj[key])
+        }
+        return accumulator
+      }, [] as string[])
       .join('&')
     const delimiter = path.includes('?') ? '&' : '?'
     return `${path}${delimiter}${queryString}`
