@@ -10,10 +10,14 @@
           </div>
           <span class="cwa-text-stone-400">UI: {{ data.uiComponent }}</span>
         </div>
-        <div>
+        <div class="cwa-flex cwa-space-x-2">
           <CwaUiFormButton>
             <CwaUiIconCogIcon class="cwa-w-6" />
             <span class="cwa-sr-only">Settings</span>
+          </CwaUiFormButton>
+          <CwaUiFormButton @click="() => goToPage(data['@id'])">
+            <CwaUiIconEyeIcon class="cwa-h-5" />
+            <span class="cwa-sr-only">View</span>
           </CwaUiFormButton>
         </div>
       </div>
@@ -23,9 +27,12 @@
 
 <script lang="ts" setup>
 import { useHead } from '#app'
+import { useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
+
+const router = useRouter()
 
 const orderOptions = [
   {
@@ -45,6 +52,10 @@ const orderOptions = [
     value: { reference: 'desc' }
   }
 ]
+
+function goToPage (page: string) {
+  router.push(page)
+}
 
 useHead({
   title: 'Pages'
