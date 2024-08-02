@@ -1,61 +1,21 @@
 <script setup lang="ts">
-import { isEqual } from 'lodash-es'
 import {
   Listbox,
   ListboxButton,
   ListboxOptions,
-  ListboxOption
+  ListboxOption,
+  provideUseId
 } from '@headlessui/vue'
 
-import { computed } from 'vue'
-import { defu } from 'defu'
-import type { PopperOptions } from '#cwa/runtime/types/popper'
-import { usePopper } from '#cwa/runtime/composables/popper'
+import { useId } from '#app'
+import { type SelectInputProps, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
 
-type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
-
-export interface SelectOption {
-  label: string,
-  value: ModelValue,
-  disabled?: boolean
-}
-
-const props = defineProps<{
-  options: SelectOption[],
-  modelValue: ModelValue,
-  popper?: PopperOptions
-}>()
+// see https://github.com/tailwindlabs/headlessui/issues/2913 - temporary until headless ui 2 and vue 3.5
+provideUseId(() => useId())
 
 const emit = defineEmits(['update:modelValue'])
-
-const value = computed({
-  get () {
-    return props.modelValue
-  },
-  set (value) {
-    emit('update:modelValue', value)
-  }
-})
-
-const ops = {
-  popper: {
-    placement: 'bottom-start'
-  }
-}
-
-const selectedOption = computed(() => {
-  return props.options.find(({ value }) => isEqual(value, props.modelValue)) || props.options[0] || null
-})
-const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper as PopperOptions))
-const [trigger, container] = usePopper(popperOps.value)
-
-function compareOptions (a: ModelValue, b: ModelValue) {
-  if (a === undefined && b === null) {
-    return true
-  }
-  return isEqual(a, b)
-}
-
+const props = defineProps<SelectInputProps>()
+const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(props, emit)
 </script>
 
 <template>
