@@ -3,7 +3,8 @@ import {
   Listbox,
   ListboxButton,
   ListboxOptions,
-  ListboxOption, provideUseId
+  ListboxOption,
+  provideUseId
 } from '@headlessui/vue'
 
 import { useId } from '#app'
