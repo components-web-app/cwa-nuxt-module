@@ -12,12 +12,20 @@
 </template>
 
 <script lang="ts" setup>
-import { useHead } from '#app'
-import { definePageMeta } from '#imports'
+import { navigateTo, useHead } from '#app'
+import { onBeforeMount } from 'vue'
+import { definePageMeta, useCwa } from '#imports'
+import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
+const $cwa = useCwa()
+
+onBeforeMount(() => {
+  if (!$cwa.auth.hasRole(CwaUserRoles.ADMIN)) {
+    navigateTo('/')
+  }
+})
 
 definePageMeta({
   cwa: false,
-  cwa_admin: true,
   layout: 'cwa-root-layout'
 })
 useHead({
