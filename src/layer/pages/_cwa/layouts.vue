@@ -17,9 +17,7 @@
       </div>
     </template>
   </ListContent>
-  <Teleport to="body">
-    <ResourceModalOverlay />
-  </Teleport>
+  <ResourceModalOverlay />
 </template>
 
 <script lang="ts" setup>
