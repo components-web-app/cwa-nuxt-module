@@ -18,7 +18,7 @@
     </template>
   </ListContent>
   <Teleport to="body">
-    <ResourceModal />
+    <ResourceModalOverlay />
   </Teleport>
 </template>
 
@@ -28,7 +28,7 @@ import { useRoute } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
-import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
+import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 
 const route = useRoute()
 

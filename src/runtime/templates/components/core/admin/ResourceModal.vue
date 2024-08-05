@@ -1,30 +1,31 @@
 <template>
-  <Transition
-    enter-from-class="cwa-transform cwa-opacity-0"
-    enter-active-class="cwa-duration-200"
-    enter-to-class="cwa-opacity-100"
-    leave-from-class="cwa-opacity-100"
-    leave-active-class="cwa-duration-200"
-    leave-to-class="cwa-transform cwa-opacity-0"
-  >
-    <div v-if="route.params.iri" class="cwa-fixed cwa-z-dialog cwa-dark-blur cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full" @click="hideModal">
-      <NuxtPage v-if="route.params.iri" @click.stop />
+  <div class="cwa-text-light cwa-w-full cwa-bg-stone-800 cwa-max-w-4xl cwa-max-h-full cwa-min-h-96 cwa-flex cwa-flex-col">
+    <div class="cwa-bg-stone-900/40 cwa-border-b-2 cwa-border-b-stone-700">
+      <div class="cwa-p-3 cwa-flex cwa-justify-end cwa-text-stone-400">
+        <button @click="closeModal">
+          <CwaUiIconXMarkIcon class="cwa-h-10" />
+        </button>
+      </div>
+      <div class="cwa-p-4 cwa-flex cwa-justify-center">
+        <div class="cwa-w-full cwa-max-w-xl cwa-flex cwa-items-center cwa-space-x-4">
+          <h2 class="cwa-text-4xl">
+            Main Layout
+          </h2>
+          <CwaUiIconPenIcon class="cwa-h-[1.3em]" />
+        </div>
+      </div>
     </div>
-  </Transition>
+    <div class="cwa-grow cwa-px-4 cwa-py-6 cwa-flex cwa-justify-center">
+      <div class="cwa-w-full cwa-max-w-xl cwa-overflow-auto cwa-max-h-full">
+        <slot />
+      </div>
+    </div>
+  </div>
 </template>
+<script setup lang="ts">
+const emit = defineEmits(['close'])
 
-<script lang="ts" setup>
-import { useRoute, useRouter } from 'vue-router'
-
-const route = useRoute()
-const router = useRouter()
-function hideModal () {
-  if (!route.name) {
-    return
-  }
-  router.push({
-    name: route.name.toString().replace('-iri', ''),
-    query: route.query
-  })
+function closeModal () {
+  emit('close')
 }
 </script>
