@@ -7,11 +7,13 @@ import {
   PopoverButton,
   PopoverPanel
 } from '@headlessui/vue'
+import type { RouteLocationRaw } from 'vue-router'
 import type { PopperOptions } from '#cwa/runtime/types/popper'
 import { usePopper } from '#cwa/runtime/composables/popper'
 import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
 import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import { NuxtLink } from '#components'
 const slots = useSlots()
 
 export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
@@ -31,6 +33,7 @@ const props = withDefaults(defineProps<
   popper?: PopperOptions
   disabled?: boolean
   loading?: boolean
+  to?: RouteLocationRaw
 }>(), {
   color: 'grey',
   buttonClass: undefined,
@@ -106,12 +109,19 @@ const [trigger, container] = usePopper(popperOps.value)
 
 <template>
   <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1.5 relative">
-    <button v-if="showButton" :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']" :disabled="loading || disabled || open" @click.prevent.stop="emit('click')">
+    <component
+      :is="to ? NuxtLink : 'button'"
+      v-if="showButton"
+      :to="to"
+      :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']"
+      :disabled="loading || disabled || open"
+      @click.prevent.stop="emit('click')"
+    >
       <div v-if="loading" class="cwa-flex cwa-w-full cwa-justify-center">
         <Spinner :show="true" />
       </div>
       <slot v-else />
-    </button>
+    </component>
     <template v-if="hasOptions">
       <PopoverButton ref="trigger" :class="buttonBaseClass" class="cwa-relative" :disabled="disabled || loading">
         &nbsp;

@@ -67,7 +67,10 @@ async function reloadItems () {
   }
 }
 
-watch(() => route.query, () => {
+watch(() => route.query, (oldQuery, newQuery) => {
+  if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {
+    return
+  }
   reloadItems()
 })
 

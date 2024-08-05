@@ -9,7 +9,7 @@
           <span class="cwa-text-stone-400">UI: {{ getDisplayLayoutUi(data.uiComponent) }}</span>
         </div>
         <div>
-          <CwaUiFormButton>
+          <CwaUiFormButton :to="{ name: '_cwa-layouts-iri', params: { iri: data['@id'] }, query: route.query }">
             <CwaUiIconCogIcon class="cwa-w-6" />
             <span class="cwa-sr-only">Settings</span>
           </CwaUiFormButton>
@@ -17,10 +17,17 @@
       </div>
     </template>
   </ListContent>
+  <Teleport to="body">
+    <div v-if="route.params.iri" class="cwa-fixed cwa-z-dialog cwa-dark-blur cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full">
+      MODAL::
+      <NuxtPage />
+    </div>
+  </Teleport>
 </template>
 
 <script lang="ts" setup>
 import { useHead } from '#app'
+import { useRoute } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
@@ -47,6 +54,8 @@ const orderOptions = [
 function getDisplayLayoutUi (ui: string) {
   return ui.replace(/CwaLayout/, '')
 }
+
+const route = useRoute()
 
 useHead({
   title: 'Layouts'
