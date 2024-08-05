@@ -40,7 +40,8 @@ const props = withDefaults(defineProps<
   options: undefined,
   popper: undefined,
   disabled: false,
-  loading: false
+  loading: false,
+  to: undefined
 })
 
 const emit = defineEmits<{(e: 'click', value?: ModelValue): void}>()
