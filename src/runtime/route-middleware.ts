@@ -31,6 +31,10 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     return navigateTo(adminRouteGuard)
   }
 
+  if (isClient) {
+    await nuxtApp.$cwa.initClientSide()
+  }
+
   if (to.meta.cwa !== true) {
     nuxtApp.$cwa.clearPrimaryFetch()
     return
@@ -68,8 +72,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     const resource = await nuxtApp.$cwa.fetchRoute(to)
     return handleRouteRedirect(resource)
   }
-
-  await nuxtApp.$cwa.initClientSide()
 
   // skip on first client side run as server-side will have completed
   if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {

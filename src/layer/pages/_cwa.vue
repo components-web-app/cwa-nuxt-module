@@ -26,6 +26,7 @@ onBeforeMount(() => {
 
 definePageMeta({
   cwa: false,
+  cwa_admin: true,
   layout: 'cwa-root-layout'
 })
 useHead({
