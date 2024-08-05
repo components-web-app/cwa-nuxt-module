@@ -18,30 +18,19 @@
     </template>
   </ListContent>
   <Teleport to="body">
-    <Transition
-      enter-from-class="cwa-transform cwa-opacity-0"
-      enter-active-class="cwa-duration-200"
-      enter-to-class="cwa-opacity-100"
-      leave-from-class="cwa-opacity-100"
-      leave-active-class="cwa-duration-200"
-      leave-to-class="cwa-transform cwa-opacity-0"
-    >
-      <div v-if="route.params.iri" class="cwa-fixed cwa-z-dialog cwa-dark-blur cwa-top-0 cwa-left-0 cwa-w-full cwa-h-full" @click="hideModal">
-        <NuxtPage v-if="route.params.iri" @click.stop />
-      </div>
-    </Transition>
+    <ResourceModal />
   </Teleport>
 </template>
 
 <script lang="ts" setup>
 import { useHead } from '#app'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
+import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const orderOptions = [
   {
@@ -64,16 +53,6 @@ const orderOptions = [
 
 function getDisplayLayoutUi (ui: string) {
   return ui.replace(/CwaLayout/, '')
-}
-
-function hideModal () {
-  if (!route.name) {
-    return
-  }
-  router.push({
-    name: route.name.toString().replace('-iri', ''),
-    query: route.query
-  })
 }
 
 useHead({
