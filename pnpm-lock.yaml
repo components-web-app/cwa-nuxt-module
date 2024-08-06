@@ -55,6 +55,9 @@ importers:
       vue:
         specifier: ^3.4.33
         version: 3.4.33(typescript@5.5.4)
+      vue-input-autowidth:
+        specifier: ^2.2.1
+        version: 2.2.1
       vuejs-confirm-dialog:
         specifier: ^0.5.1
         version: 0.5.1(vue-template-compiler@2.7.16)(vue@3.4.33(typescript@5.5.4))
@@ -6391,6 +6394,9 @@ packages:
     engines: {node: ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: '>=6.0.0'
+
+  vue-input-autowidth@2.2.1:
+    resolution: {integrity: sha512-AXmLy53BBg5nqFnjRc8N1c0xNLljiuba5yjxRaW9+HRy9F9zhk5AEu6n3cu3SYoDLYQAM0GNgWzzi3g9KTFyBA==}
 
   vue-router@4.4.0:
     resolution: {integrity: sha512-HB+t2p611aIZraV2aPSRNXf0Z/oLZFrlygJm+sZbdJaW6lcFqEDQwnzUBXn+DApw+/QzDU/I9TeWx9izEjTmsA==}
@@ -14076,6 +14082,8 @@ snapshots:
       semver: 7.6.3
     transitivePeerDependencies:
       - supports-color
+
+  vue-input-autowidth@2.2.1: {}
 
   vue-router@4.4.0(vue@3.4.33(typescript@5.5.4)):
     dependencies:

@@ -1,5 +1,5 @@
 <template>
-  <ResourceModal @close="$emit('close')">
+  <ResourceModal v-model="title" @close="$emit('close')">
     <div class="cwa-mb-6">
       <div class="cwa-flex cwa-space-x-1 cwa-overflow-hidden cwa-items-center cwa-text-lg">
         <button class="cwa-py-1.5 cwa-px-3 cwa-transition cwa-rounded cwa-min-w-24" :class="[true ? 'cwa-text-stone-100 cwa-bg-stone-700/80' : 'cwa-text-stone-400 hover:cwa-text-stone-300']">
@@ -24,7 +24,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
-
+const title = ref('My Layout Title')
 defineEmits(['close'])
 </script>
