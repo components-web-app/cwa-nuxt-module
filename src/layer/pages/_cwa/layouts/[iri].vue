@@ -4,7 +4,7 @@
       <template #details>
         <div>
           <div>
-            Content
+            <ModalSelect v-model="sel1Value" :options="sel1Ops" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-mt-6">
             <div>
@@ -23,7 +23,8 @@
 import { ref } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
-const title = ref('My Layout Title')
+import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
+
 defineEmits(['close'])
 
 const tabs: ResourceModalTab[] = [
@@ -36,4 +37,26 @@ const tabs: ResourceModalTab[] = [
     id: 'info'
   }
 ]
+
+const sel1Ops = [
+  {
+    label: 'New - Old',
+    value: { createdAt: 'desc' }
+  },
+  {
+    label: 'Old - New',
+    value: { createdAt: 'asc' }
+  },
+  {
+    label: 'A - Z',
+    value: { reference: 'asc' }
+  },
+  {
+    label: 'Z - A',
+    value: { reference: 'desc' }
+  }
+]
+
+const title = ref('My Layout Title')
+const sel1Value = ref(sel1Ops[0].value)
 </script>
