@@ -4,7 +4,7 @@
       <template #details>
         <div>
           <div>
-            <ModalSelect v-model="sel1Value" :options="sel1Ops" />
+            <ModalSelect v-model="sel1Value" label="Input Label" :options="sel1Ops" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-mt-6">
             <div>

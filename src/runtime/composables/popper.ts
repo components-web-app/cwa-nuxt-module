@@ -49,32 +49,58 @@ export function usePopper ({
       instance.value = createPopper(referenceEl, popperEl, omitBy({
         placement,
         strategy,
-        modifiers: [{
-          name: 'flip',
-          enabled: !locked
-        }, {
-          name: 'preventOverflow',
-          options: {
-            padding: overflowPadding
+        modifiers: [
+          {
+            name: 'flip',
+            enabled: !locked
+          },
+          {
+            name: 'preventOverflow',
+            options: {
+              padding: overflowPadding
+            }
+          },
+          {
+            name: 'offset',
+            options: {
+              offset: [offsetSkid, offsetDistance]
+            }
+          },
+          {
+            name: 'computeStyles',
+            options: {
+              adaptive,
+              gpuAcceleration
+            }
+          },
+          {
+            name: 'eventListeners',
+            options: {
+              scroll,
+              resize
+            }
+          },
+          {
+            name: 'sameWidth',
+            enabled: true,
+            phase: 'beforeWrite',
+            requires: ['computeStyles'],
+            fn: ({ state }: { state: any }) => {
+              if (!state) {
+                return
+              }
+              state.styles.popper.minWidth = `${state.rects.reference.width}px`
+            },
+            effect: ({ state }: { state: any }) => {
+              if (!state) {
+                return
+              }
+              state.elements.popper.style.minWidth = `${
+                state.elements.reference.offsetWidth
+              }px`
+            }
           }
-        }, {
-          name: 'offset',
-          options: {
-            offset: [offsetSkid, offsetDistance]
-          }
-        }, {
-          name: 'computeStyles',
-          options: {
-            adaptive,
-            gpuAcceleration
-          }
-        }, {
-          name: 'eventListeners',
-          options: {
-            scroll,
-            resize
-          }
-        }]
+        ]
       }, isUndefined))
 
       onInvalidate(instance.value.destroy)
