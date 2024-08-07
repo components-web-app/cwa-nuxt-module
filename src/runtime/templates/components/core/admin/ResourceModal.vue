@@ -21,8 +21,8 @@
         </div>
       </div>
     </div>
-    <div class="cwa-grow cwa-px-4 cwa-py-6 cwa-flex cwa-justify-center">
-      <div class="cwa-w-full cwa-max-w-xl cwa-overflow-auto cwa-max-h-full">
+    <div class="cwa-grow cwa-px-4 cwa-pt-6 cwa-pb-10 cwa-flex cwa-justify-center cwa-min-h-0">
+      <div class="cwa-w-full cwa-max-w-xl cwa-overflow-auto">
         <slot />
       </div>
     </div>

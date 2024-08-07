@@ -2,9 +2,12 @@
   <ResourceModal v-model="title" @close="$emit('close')">
     <ResourceModalTabs :tabs="tabs">
       <template #details>
-        <div>
+        <div class="cwa-flex cwa-flex-col cwa-space-y-4">
           <div>
-            <ModalSelect v-model="sel1Value" label="Input Label" :options="sel1Ops" />
+            <ModalSelect v-model="layoutUiModel" label="UI Component" :options="layoutComponentOptions" />
+          </div>
+          <div>
+            <ModalSelect v-model="sel2Value" label="UI Style Classes" :options="layoutStyleOptions" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-mt-6">
             <div>
@@ -20,10 +23,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useCwa } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
+import { componentNames } from '#components'
+
+const $cwa = useCwa()
 
 defineEmits(['close'])
 
@@ -38,25 +45,37 @@ const tabs: ResourceModalTab[] = [
   }
 ]
 
-const sel1Ops = [
-  {
-    label: 'New - Old',
-    value: { createdAt: 'desc' }
-  },
-  {
-    label: 'Old - New',
-    value: { createdAt: 'asc' }
-  },
-  {
-    label: 'A - Z',
-    value: { reference: 'asc' }
-  },
-  {
-    label: 'Z - A',
-    value: { reference: 'desc' }
+const layoutComponentNames = computed(() => {
+  return componentNames.filter(n => n.startsWith('CwaLayout'))
+})
+
+const layoutComponentOptions = computed(() => {
+  const options = []
+  for (const componentName of layoutComponentNames.value) {
+    options.push({
+      label: $cwa.layoutsConfig?.[componentName]?.name || componentName,
+      value: componentName
+    })
   }
-]
+  return options
+})
+
+const layoutStyleOptions = computed(() => {
+  const configuredClasses = $cwa.layoutsConfig?.[layoutUiModel.value]?.classes
+  if (!configuredClasses) {
+    return []
+  }
+  const options = []
+  for (const [label, value] of Object.entries(configuredClasses)) {
+    options.push({
+      label,
+      value
+    })
+  }
+  return options
+})
 
 const title = ref('My Layout Title')
-const sel1Value = ref(sel1Ops[0].value)
+const layoutUiModel = ref(layoutComponentOptions.value[0].value)
+const sel2Value = ref(layoutStyleOptions.value[0].value)
 </script>
