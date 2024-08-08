@@ -15,13 +15,13 @@
             </h2>
           </div>
           <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
-            <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="isEditingTitle = false" />
+            <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="saveTitle()" />
             <CwaUiIconPenIcon v-else class="cwa-w-full" @click="isEditingTitle = true" />
           </div>
         </div>
       </div>
     </div>
-    <div class="cwa-grow cwa-px-4 cwa-pt-6 cwa-pb-10 cwa-flex cwa-justify-center cwa-min-h-0">
+    <div class="cwa-grow cwa-px-4 cwa-pt-4 cwa-pb-10 cwa-flex cwa-justify-center cwa-min-h-0">
       <div class="cwa-w-full cwa-max-w-xl cwa-overflow-auto">
         <slot />
       </div>
@@ -35,11 +35,16 @@ import { directive as vAutoWidth } from 'vue-input-autowidth'
 
 // eslint-disable-next-line vue/require-prop-types
 const titleModel = defineModel()
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'save'])
 
 const isEditingTitle = ref(false)
 
 function closeModal () {
   emit('close')
+}
+
+function saveTitle () {
+  emit('save')
+  isEditingTitle.value = false
 }
 </script>

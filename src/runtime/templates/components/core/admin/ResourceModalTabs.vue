@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-flex cwa-flex-col cwa-h-full">
-    <div class="cwa-mb-6">
+    <div class="cwa-mb-4">
       <div class="cwa-flex cwa-space-x-1 cwa-overflow-hidden cwa-items-center cwa-text-lg">
         <button
           v-for="(tab, index) of tabs"
