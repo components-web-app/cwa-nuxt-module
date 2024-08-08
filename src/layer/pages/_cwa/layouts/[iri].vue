@@ -1,17 +1,17 @@
 <template>
-  <ResourceModal v-model="referenceModel" @close="$emit('close')" @save="saveReference">
+  <ResourceModal v-if="localResourceData" v-model="localResourceData.reference" :is-loading="isLoading" @close="$emit('close')" @save="saveResource">
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalSelect v-model="layoutUiModel" label="Layout UI" :options="layoutComponentOptions" />
+            <ModalSelect v-model="localResourceData.uiComponent" label="Layout UI" :options="layoutComponentOptions" />
           </div>
           <div v-if="layoutStyleOptions.length">
-            <ModalSelect v-model="styleClassModel" label="Style" :options="layoutStyleOptions" />
+            <ModalSelect v-model="localResourceData.uiClassNames" label="Style" :options="layoutStyleOptions" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2">
             <div>
-              <CwaUiFormButton color="blue">
+              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="saveResource">
                 Save
               </CwaUiFormButton>
             </div>
@@ -23,17 +23,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useCwa } from '#imports'
+import { type SelectOption, useCwa } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import { componentNames } from '#components'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 const route = useRoute()
 const $cwa = useCwa()
-const endpoint = route.params.iri
+const endpoint = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
+const isLoading = ref(true)
+const isUpdating = ref(false)
 
 const emit = defineEmits(['close'])
 
@@ -49,17 +52,10 @@ const tabs: ResourceModalTab[] = [
 ]
 
 function loadLayoutResource () {
-  return $cwa.fetcher.fetchResource({
-    path: route.params.iri
+  return $cwa.fetchResource({
+    path: endpoint
   })
 }
-
-onMounted(async () => {
-  await loadLayoutResource()
-  if (!resource.value || resource.value['@type'] !== 'Layout') {
-    emit('close')
-  }
-})
 
 const resource = computed(() => $cwa.resources.getResource(endpoint).value?.data)
 
@@ -79,11 +75,14 @@ const layoutComponentOptions = computed(() => {
 })
 
 const layoutStyleOptions = computed(() => {
-  const configuredClasses = $cwa.layoutsConfig?.[layoutUiModel.value]?.classes
+  if (!localResourceData.value?.uiComponent) {
+    return []
+  }
+  const configuredClasses = $cwa.layoutsConfig?.[localResourceData.value?.uiComponent]?.classes
   if (!configuredClasses) {
     return []
   }
-  const options = [
+  const options: SelectOption[] = [
     {
       label: 'Default',
       value: null
@@ -98,16 +97,32 @@ const layoutStyleOptions = computed(() => {
   return options
 })
 
-async function saveReference () {
+async function saveResource () {
+  isUpdating.value = true
   await $cwa.resourcesManager.updateResource({
     endpoint,
     data: {
-      reference: referenceModel.value
+      reference: localResourceData.value?.reference,
+      uiComponent: localResourceData.value?.uiComponent,
+      uiClassNames: localResourceData.value?.uiClassNames
     }
   })
+  isUpdating.value = false
 }
 
-const referenceModel = ref(resource.value?.reference)
-const layoutUiModel = ref(resource.value?.uiComponent)
-const styleClassModel = ref(layoutStyleOptions.value[0].value)
+const localResourceData = ref<CwaResource>()
+
+watch(resource, (newResource) => {
+  newResource && (localResourceData.value = newResource)
+})
+
+onMounted(async () => {
+  await loadLayoutResource()
+  if (!resource.value || resource.value['@type'] !== 'Layout') {
+    emit('close')
+    return
+  }
+  localResourceData.value = resource.value
+  isLoading.value = false
+})
 </script>

@@ -52,14 +52,14 @@ export default defineNuxtConfig({
     },
     layouts: {
       CwaLayoutPrimary: {
-        name: 'Primary',
+        name: 'Primary Layout',
         classes: {
-          'Big Text': ['text-2xl']
+          'Blue Background': ['bg-blue-600']
         }
       }
     },
     pages: {
-      CwaPagePrimary: {
+      PrimaryPageTemplate: {
         name: 'Primary',
         classes: {
           'Big Text': ['text-2xl']

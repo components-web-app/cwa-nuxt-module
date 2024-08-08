@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div :class="['relative', 'flex-grow', 'flex', 'flex-col', ...($cwa.resources.layout?.value?.data?.uiClassNames || [])]">
     <VitePwaManifest />
     <CwaUiProgressBar :show="showPageLoadBar" :percent="percent" class="page-progress-bar fixed left-0 top-0 z-[200]" />
     <Spinner :show="$cwa.resources.isLoading.value" class="absolute top-4 right-4 z-50" />
