@@ -132,12 +132,17 @@ async function saveResource () {
   isUpdating.value = false
 }
 
-function deleteResource () {
-
-}
-
 function formatDate (dateStr:string) {
   return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
+}
+
+async function deleteResource () {
+  isUpdating.value = true
+  const result = await $cwa.resourcesManager.deleteResource({
+    endpoint
+  })
+  result && emit('close')
+  isUpdating.value = false
 }
 
 const localResourceData = ref<CwaResource>()
