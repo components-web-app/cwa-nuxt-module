@@ -13,9 +13,15 @@
         <div class="cwa-p-4 cwa-flex cwa-justify-center">
           <div class="cwa-w-full cwa-max-w-xl cwa-flex cwa-items-center cwa-space-x-2">
             <div class="cwa-max-w-[calc(100%-1.3em)]">
-              <input v-if="isEditingTitle" v-model="titleModel" v-auto-width="{ comfortZone: '.5rem' }" class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2">
-              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent">
-                {{ titleModel }}
+              <input
+                v-if="isEditingTitle"
+                v-model="titleModel"
+                v-auto-width="{ comfortZone: '.5rem', minWidth: '270px' }"
+                class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
+                placeholder="Enter Reference"
+              >
+              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']">
+                {{ titleModel || '[No Reference]' }}
               </h2>
             </div>
             <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
