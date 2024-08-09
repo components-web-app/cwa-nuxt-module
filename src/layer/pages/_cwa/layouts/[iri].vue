@@ -66,20 +66,31 @@ const tabs: ResourceModalTab[] = [
   {
     label: 'Details',
     id: 'details'
-  },
-  {
-    label: 'Info',
-    id: 'info'
   }
 ]
+if (endpoint !== 'add') {
+  tabs.push({
+    label: 'Info',
+    id: 'info'
+  })
+}
 
 function loadLayoutResource () {
+  if (endpoint === 'add') {
+    localResourceData.value = {
+      '@id': 'add',
+      '@type': 'Layout',
+      reference: null,
+      uiComponent: layoutComponentOptions.value[0].value
+    }
+    return localResourceData.value
+  }
   return $cwa.fetchResource({
     path: endpoint
   })
 }
 
-const resource = computed(() => $cwa.resources.getResource(endpoint).value?.data)
+const resource = computed(() => endpoint === 'add' ? localResourceData.value : $cwa.resources.getResource(endpoint).value?.data)
 
 const layoutComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaLayout'))

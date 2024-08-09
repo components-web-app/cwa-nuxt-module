@@ -1,5 +1,5 @@
 <template>
-  <ListHeading title="Layouts" />
+  <ListHeading title="Layouts" @add="goToAdd" />
   <ListFilter :order-options="orderOptions" :search-fields="['reference', 'uiComponent']" />
   <ListContent fetch-url="/_/layouts">
     <template #item="data">
@@ -22,12 +22,13 @@
 
 <script lang="ts" setup>
 import { useHead } from '#app'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 
+const router = useRouter()
 const route = useRoute()
 
 const orderOptions = [
@@ -51,6 +52,10 @@ const orderOptions = [
 
 function getDisplayLayoutUi (ui: string) {
   return ui.replace(/CwaLayout/, '')
+}
+
+function goToAdd () {
+  router.push({ name: '_cwa-layouts-iri', params: { iri: 'add' }, query: route.query })
 }
 
 useHead({
