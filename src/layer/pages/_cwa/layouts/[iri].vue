@@ -18,6 +18,26 @@
           </div>
         </div>
       </template>
+      <template #info>
+        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+          <div>
+            <ModalInfo label="Created" :content="formatDate(localResourceData.createdAt)" />
+          </div>
+          <div>
+            <ModalInfo label="Updated" :content="formatDate(localResourceData.updatedAt)" />
+          </div>
+          <div>
+            <ModalInfo label="ID" :content="localResourceData['@id']" />
+          </div>
+          <div class="cwa-flex cwa-justify-start cwa-pt-6">
+            <div>
+              <CwaUiFormButton :disabled="isUpdating" @click="deleteResource">
+                Delete
+              </CwaUiFormButton>
+            </div>
+          </div>
+        </div>
+      </template>
     </ResourceModalTabs>
   </ResourceModal>
 </template>
@@ -25,12 +45,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import dayjs from 'dayjs'
 import { type SelectOption, useCwa } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import { componentNames } from '#components'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 
 const route = useRoute()
 const $cwa = useCwa()
@@ -108,6 +130,14 @@ async function saveResource () {
     }
   })
   isUpdating.value = false
+}
+
+function deleteResource () {
+
+}
+
+function formatDate (dateStr:string) {
+  return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
 }
 
 const localResourceData = ref<CwaResource>()

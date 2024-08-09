@@ -28,6 +28,9 @@ importers:
       consola:
         specifier: ^3.2.3
         version: 3.2.3
+      dayjs:
+        specifier: ^1.11.12
+        version: 1.11.12
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -3064,6 +3067,9 @@ packages:
   date-format@4.0.14:
     resolution: {integrity: sha512-39BOQLs9ZjKh0/patS9nrT8wc3ioX3/eA/zgbKNopnF2wCqJEoxywwwElATYvRsXdnOxA/OQeQoFZ3rFjVajhg==}
     engines: {node: '>=4.0'}
+
+  dayjs@1.11.12:
+    resolution: {integrity: sha512-Rt2g+nTbLlDWZTwwrIXjy9MeiZmSDI375FvZs72ngxx8PDC6YXOeR3q5LAuPzjZQxhiWdRKac7RKV+YyQYfYIg==}
 
   db0@0.1.4:
     resolution: {integrity: sha512-Ft6eCwONYxlwLjBXSJxw0t0RYtA5gW9mq8JfBXn9TtC0nDPlqePAhpv9v4g9aONBi6JI1OXHTKKkUYGd+BOrCA==}
@@ -10138,6 +10144,8 @@ snapshots:
       '@babel/runtime': 7.24.8
 
   date-format@4.0.14: {}
+
+  dayjs@1.11.12: {}
 
   db0@0.1.4: {}
 
