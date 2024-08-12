@@ -1,5 +1,5 @@
 <template>
-  <ListHeading title="Pages" />
+  <ListHeading title="Pages" @add="goToAdd" />
   <ListFilter :order-options="orderOptions" :search-fields="['reference', 'title', 'uiComponent']" />
   <ListContainer>
     <div>
@@ -27,7 +27,7 @@
           <span class="cwa-text-stone-400">UI: {{ data.uiComponent }}</span>
         </div>
         <div class="cwa-flex cwa-space-x-2">
-          <CwaUiFormButton>
+          <CwaUiFormButton :to="computedItemLink(data['@id'])">
             <CwaUiIconCogIcon class="cwa-w-6" />
             <span class="cwa-sr-only">Settings</span>
           </CwaUiFormButton>
@@ -39,11 +39,14 @@
       </div>
     </template>
   </ListContent>
+  <ResourceModalOverlay @reload="triggerReload" />
 </template>
 
 <script lang="ts" setup>
 import { useHead } from '#app'
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+import { useListPage } from './composables/useListPage'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
@@ -51,6 +54,11 @@ import ListContainer from '#cwa/runtime/templates/components/core/admin/ListCont
 import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form/FilterFormWrapper.vue'
 import ListFilterButton from '#cwa/runtime/templates/components/core/admin/ListFilterButton.vue'
 import { useQueryBoundModel } from '#cwa/runtime/composables/cwa-query-bound-model'
+import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
+
+const listContent = ref<InstanceType<typeof ListContent> | null>(null)
+
+const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
 const router = useRouter()
 
