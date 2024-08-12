@@ -15,18 +15,19 @@
             <div class="cwa-max-w-[calc(100%-1.3em)]">
               <input
                 v-if="isEditingTitle"
+                ref="referenceInput"
                 v-model="titleModel"
                 v-auto-width="{ comfortZone: '.5rem', minWidth: '270px' }"
                 class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
                 placeholder="Enter Reference"
               >
-              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="isEditingTitle = true">
+              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="triggerEditTitle">
                 {{ titleModel || '[No Reference]' }}
               </h2>
             </div>
             <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
               <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="saveTitle()" />
-              <CwaUiIconPenIcon v-else class="cwa-w-full" @click="isEditingTitle = true" />
+              <CwaUiIconPenIcon v-else class="cwa-w-full" @click="triggerEditTitle" />
             </div>
           </div>
         </div>
@@ -41,11 +42,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { directive as vAutoWidth } from 'vue-input-autowidth'
 import ResourceLoadingIndicator from '#cwa/runtime/templates/components/main/admin/_common/ResourceLoadingIndicator.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+
+const referenceInput = ref<undefined|HTMLInputElement>()
 
 // eslint-disable-next-line vue/require-prop-types
 const titleModel = defineModel()
@@ -63,5 +66,13 @@ function closeModal () {
 function saveTitle () {
   emit('save')
   isEditingTitle.value = false
+}
+
+async function triggerEditTitle () {
+  isEditingTitle.value = true
+  await nextTick()
+  if (referenceInput.value) {
+    referenceInput.value.focus()
+  }
 }
 </script>
