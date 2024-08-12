@@ -39,7 +39,7 @@
             <ModalInput v-model="localResourceData.plainPassword" label="New Password" type="password" placeholder="***" autocomplete="new-password" />
           </div>
           <div>
-            <ModalInput v-model="localResourceData.passwordRepeat" label="Repeat Password" type="password" placeholder="***" autocomplete="new-password" />
+            <ModalInput v-model="localResourceData.repeatPassword" label="Repeat Password" type="password" placeholder="***" autocomplete="new-password" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div v-if="!isAdding">
