@@ -196,7 +196,7 @@ onMounted(async () => {
     emit('close')
     return
   }
-  localResourceData.value = resource.value
+  localResourceData.value = { ...resource.value }
   isLoading.value = false
 })
 </script>
