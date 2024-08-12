@@ -17,6 +17,7 @@
       </div>
     </template>
   </ListContent>
+  <ResourceModalOverlay @reload="triggerReload" />
 </template>
 
 <script lang="ts" setup>
@@ -25,6 +26,7 @@ import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeadin
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
+import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 
 const orderOptions = [
   {
