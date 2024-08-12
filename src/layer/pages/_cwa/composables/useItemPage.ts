@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
+import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
 type LimitedCwaResource = Omit<CwaResource, '@id'|'_metadata'>
 
@@ -11,9 +12,10 @@ type UseItemOps = {
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
   resourceType: string,
   defaultResource: Omit<LimitedCwaResource, '@type'>
+  validate?: (data: any) => boolean|string
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate }: UseItemOps) => {
   const $cwa = useCwa()
   const route = useRoute()
   const endpoint = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
@@ -62,6 +64,26 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   async function saveResource (close = false) {
     if (!localResourceData.value) {
       return
+    }
+    if (validate) {
+      const result = validate(localResourceData.value)
+      if (result !== true) {
+        if (result !== false) {
+          $cwa.resourcesManager.addError({
+            type: ErrorType.VALIDATION,
+            timestamp: (new Date()).getTime(),
+            statusCode: 0,
+            detail: result,
+            violations: [
+              {
+                message: result,
+                property: 'plainPassword'
+              }
+            ]
+          })
+        }
+        return
+      }
     }
     isUpdating.value = true
     const data = {

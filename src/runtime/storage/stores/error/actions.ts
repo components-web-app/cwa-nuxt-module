@@ -5,6 +5,7 @@ import { ErrorType } from './state'
 
 export interface CwaErrorActionsInterface {
   error(event: ApiResourceEvent, error: FetchError): void
+  manual (error: CwaErrorEvent): void
   clear(): void
   removeById(id: number): void
   removeByEndpoint(endpoint: string): void
@@ -51,6 +52,12 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
       errorState.allIds.push(id)
       errorState.allEndpoints.set(event.endpoint, id)
     },
+    manual (error: CwaErrorEvent) {
+      const id = error.timestamp
+      errorState.byId[id] = error
+      errorState.allIds.push(id)
+      errorState.allEndpoints.set('unset', id)
+    },
     clear () {
       errorState.allIds = []
       errorState.allEndpoints.clear()
@@ -64,8 +71,9 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
 
       delete errorState.byId[id]
       errorState.allIds.splice(errorState.allIds.indexOf(id), 1)
-      if (errorState.allEndpoints.has(err.event.endpoint)) {
-        errorState.allEndpoints.delete(err.event.endpoint)
+      const endpoint = err.event?.endpoint || 'local'
+      if (endpoint) {
+        errorState.allEndpoints.delete(endpoint)
       }
     },
     removeByEndpoint (endpoint: string) {

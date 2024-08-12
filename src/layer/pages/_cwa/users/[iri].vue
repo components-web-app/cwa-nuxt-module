@@ -14,10 +14,32 @@
             <CwaUiFormToggle v-model="localResourceData.enabled" label="User Enabled" />
           </div>
           <div>
-            <ModalInput v-model="localResourceData.emailAddress" label="Email" />
+            <ModalInput v-model="localResourceData.emailAddress" label="Email" type="email" />
           </div>
           <div>
             <ModalSelect v-model="selectRole" label="Role" :options="roleOptions" />
+          </div>
+          <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
+            <div v-if="!isAdding">
+              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
+                Save & Close
+              </CwaUiFormButton>
+            </div>
+            <div>
+              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(false)">
+                {{ isAdding ? 'Add Now' : 'Save' }}
+              </CwaUiFormButton>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #password>
+        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+          <div>
+            <ModalInput v-model="localResourceData.plainPassword" label="New Password" type="password" placeholder="***" autocomplete="new-password" />
+          </div>
+          <div>
+            <ModalInput v-model="localResourceData.passwordRepeat" label="Repeat Password" type="password" placeholder="***" autocomplete="new-password" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div v-if="!isAdding">
@@ -76,7 +98,15 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
   createEndpoint: '/users',
   emit,
   resourceType: 'User',
-  defaultResource: {}
+  defaultResource: {},
+  validate: (data) => {
+    if (data?.plainPassword) {
+      if (data.plainPassword !== data.repeatPassword) {
+        return 'The passwords entered do not match'
+      }
+    }
+    return true
+  }
 })
 
 const roleOptions: SelectOption[] = [

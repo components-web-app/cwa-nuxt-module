@@ -51,7 +51,9 @@ function clearEmitTimeout () {
 }
 
 onMounted(() => {
-  setEmitTimeout()
+  setTimeout(() => {
+    setEmitTimeout()
+  }, 20)
 })
 </script>
 
