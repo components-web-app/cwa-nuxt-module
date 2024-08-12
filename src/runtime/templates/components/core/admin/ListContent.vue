@@ -86,4 +86,8 @@ watch(() => route.query, (oldQuery, newQuery) => {
 onMounted(() => {
   reloadItems()
 })
+
+defineExpose({
+  reloadItems
+})
 </script>

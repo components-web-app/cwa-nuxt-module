@@ -1,5 +1,5 @@
 <template>
-  <ResourceModal v-if="localResourceData" v-model="localResourceData.reference" :is-loading="isLoading" @close="$emit('close')" @save="saveResource">
+  <ResourceModal v-if="localResourceData" v-model="localResourceData.reference" :is-loading="isLoading" @close="$emit('close')" @save="saveReference">
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
@@ -12,7 +12,7 @@
           <div class="cwa-flex cwa-justify-end cwa-pt-2">
             <div>
               <CwaUiFormButton color="blue" :disabled="isUpdating" @click="saveResource">
-                Save
+                {{ isAdding ? 'Add' : 'Save' }}
               </CwaUiFormButton>
             </div>
           </div>
@@ -60,7 +60,8 @@ const endpoint = Array.isArray(route.params.iri) ? route.params.iri[0] : route.p
 const isLoading = ref(true)
 const isUpdating = ref(false)
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'reload'])
+const isAdding = computed(() => endpoint === 'add')
 
 const tabs: ResourceModalTab[] = [
   {
@@ -68,7 +69,7 @@ const tabs: ResourceModalTab[] = [
     id: 'details'
   }
 ]
-if (endpoint !== 'add') {
+if (!isAdding.value) {
   tabs.push({
     label: 'Info',
     id: 'info'
@@ -76,7 +77,7 @@ if (endpoint !== 'add') {
 }
 
 function loadLayoutResource () {
-  if (endpoint === 'add') {
+  if (isAdding.value) {
     localResourceData.value = {
       '@id': 'add',
       '@type': 'Layout',
@@ -90,7 +91,7 @@ function loadLayoutResource () {
   })
 }
 
-const resource = computed(() => endpoint === 'add' ? localResourceData.value : $cwa.resources.getResource(endpoint).value?.data)
+const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(endpoint).value?.data)
 
 const layoutComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaLayout'))
@@ -130,16 +131,34 @@ const layoutStyleOptions = computed(() => {
   return options
 })
 
+function saveReference () {
+  if (isAdding.value) {
+    return
+  }
+  return saveResource()
+}
+
 async function saveResource () {
   isUpdating.value = true
-  await $cwa.resourcesManager.updateResource({
-    endpoint,
-    data: {
-      reference: localResourceData.value?.reference,
-      uiComponent: localResourceData.value?.uiComponent,
-      uiClassNames: localResourceData.value?.uiClassNames
-    }
-  })
+  const data = {
+    reference: localResourceData.value?.reference,
+    uiComponent: localResourceData.value?.uiComponent,
+    uiClassNames: localResourceData.value?.uiClassNames
+  }
+  if (isAdding.value) {
+    await $cwa.resourcesManager.createResource({
+      endpoint: '/_/layouts',
+      data,
+      source: 'admin-modal'
+    })
+    emit('reload')
+    emit('close')
+  } else {
+    await $cwa.resourcesManager.updateResource({
+      endpoint,
+      data
+    })
+  }
   isUpdating.value = false
 }
 
@@ -149,10 +168,11 @@ function formatDate (dateStr:string) {
 
 async function deleteResource () {
   isUpdating.value = true
-  const result = await $cwa.resourcesManager.deleteResource({
+  await $cwa.resourcesManager.deleteResource({
     endpoint
   })
-  result && emit('close')
+  emit('reload')
+  emit('close')
   isUpdating.value = false
 }
 

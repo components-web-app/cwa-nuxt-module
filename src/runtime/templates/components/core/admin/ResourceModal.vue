@@ -20,7 +20,7 @@
                 class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
                 placeholder="Enter Reference"
               >
-              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']">
+              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="isEditingTitle = true">
                 {{ titleModel || '[No Reference]' }}
               </h2>
             </div>
