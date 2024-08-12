@@ -51,8 +51,9 @@ const fullReference = computed(() => {
   if (!locationResource.value) {
     return
   }
-  const locationResourceReference = locationResource.value.data?.reference
-  return `${props.reference}_${locationResourceReference}`
+  // do not use reference as configured by the user as this can change, so use IRI as reference here
+  // const locationResourceReference = locationResource.value.data?.reference
+  return `${props.reference}_${props.location}`
 })
 
 const resource = computed(() => {

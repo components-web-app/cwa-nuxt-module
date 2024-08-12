@@ -50,6 +50,22 @@ export default defineNuxtConfig({
         instantAdd: true
       }
     },
+    layouts: {
+      CwaLayoutPrimary: {
+        name: 'Primary Layout',
+        classes: {
+          'Blue Background': ['bg-blue-600']
+        }
+      }
+    },
+    pages: {
+      PrimaryPageTemplate: {
+        name: 'Primary',
+        classes: {
+          'Big Text': ['text-2xl']
+        }
+      }
+    },
     tailwind: {
       base: false
     }

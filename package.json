@@ -1,5 +1,5 @@
 {
-  "packageManager": "pnpm@9.3.0",
+  "packageManager": "pnpm@9.7.0",
   "name": "@cwa/nuxt",
   "version": "1.0.0",
   "license": "MIT",
@@ -49,6 +49,7 @@
     "@popperjs/core": "^2.11.8",
     "@vueuse/core": "^10.11.0",
     "consola": "^3.2.3",
+    "dayjs": "^1.11.12",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "luxon": "^3.4.4",

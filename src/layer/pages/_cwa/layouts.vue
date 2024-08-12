@@ -1,7 +1,7 @@
 <template>
-  <ListHeading title="Layouts" />
+  <ListHeading title="Layouts" @add="goToAdd" />
   <ListFilter :order-options="orderOptions" :search-fields="['reference', 'uiComponent']" />
-  <ListContent fetch-url="/_/layouts">
+  <ListContent ref="listContent" fetch-url="/_/layouts">
     <template #item="data">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
@@ -17,17 +17,20 @@
       </div>
     </template>
   </ListContent>
-  <ResourceModalOverlay />
+  <ResourceModalOverlay @reload="triggerReload" />
 </template>
 
 <script lang="ts" setup>
+import { ref } from 'vue'
 import { useHead } from '#app'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 
+const listContent = ref<InstanceType<typeof ListContent> | null>(null)
+const router = useRouter()
 const route = useRoute()
 
 const orderOptions = [
@@ -51,6 +54,14 @@ const orderOptions = [
 
 function getDisplayLayoutUi (ui: string) {
   return ui.replace(/CwaLayout/, '')
+}
+
+function goToAdd () {
+  router.push({ name: '_cwa-layouts-iri', params: { iri: 'add' }, query: route.query })
+}
+
+function triggerReload () {
+  listContent.value?.reloadItems()
 }
 
 useHead({

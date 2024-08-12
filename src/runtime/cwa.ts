@@ -130,6 +130,14 @@ export default class Cwa {
     this.options.resources = meta
   }
 
+  public get layoutsConfig () {
+    return this.options.layouts
+  }
+
+  public get pagesConfig () {
+    return this.options.pages
+  }
+
   public get appName (): string {
     return this.options.appName
   }

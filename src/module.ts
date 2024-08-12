@@ -32,13 +32,26 @@ export interface CwaResourcesMeta {
   [type:string]: CwaResourceMeta
 }
 
+export interface CwaUiMeta {
+  name?: string
+  classes?: {
+    [name: string]: string[]|string
+  }
+}
+
 export interface CwaModuleOptions {
   appName: string
   storeName: string
   pagesDepth?: number
   apiUrlBrowser?: string
-  apiUrl?: string,
+  apiUrl?: string
   resources?: CwaResourcesMeta
+  layouts?: {
+    [type: string]: CwaUiMeta
+  }
+  pages?: {
+    [type: string]: CwaUiMeta
+  }
   tailwind?: {
     base?: boolean
   },
