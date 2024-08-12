@@ -14,6 +14,9 @@
             <CwaUiFormToggle v-model="localResourceData.enabled" label="User Enabled" />
           </div>
           <div>
+            <ModalInput v-model="localResourceData.emailAddress" label="Email" />
+          </div>
+          <div>
             <ModalSelect v-model="selectRole" label="Role" :options="roleOptions" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
@@ -62,6 +65,7 @@ import ResourceModal from '#cwa/runtime/templates/components/core/admin/Resource
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
+import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 
 const emit = defineEmits<{
   close: [],
