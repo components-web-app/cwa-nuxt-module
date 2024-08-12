@@ -118,8 +118,13 @@ const tabs = computed<ResourceModalTab[]>(() => {
 
 const $cwa = useCwa()
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveReference } = useItemPage(emit, {
-  reference: null,
-  uiComponent: layoutComponentOptions.value[0].value
+const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveReference } = useItemPage({
+  createEndpoint: '/_/layouts',
+  emit,
+  resourceType: 'Layout',
+  defaultResource: {
+    reference: null,
+    uiComponent: layoutComponentOptions.value[0].value
+  }
 })
 </script>

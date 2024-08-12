@@ -4,9 +4,16 @@ import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
-type LimitedCwaResource = Omit<CwaResource, '@id'|'@type'|'_metadata'>
+type LimitedCwaResource = Omit<CwaResource, '@id'|'_metadata'>
 
-export const useItemPage = (emit: ((evt: 'close') => void) & ((evt: 'reload') => void), defaultResource: LimitedCwaResource) => {
+type UseItemOps = {
+  createEndpoint: string
+  emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
+  resourceType: string,
+  defaultResource: Omit<LimitedCwaResource, '@type'>
+}
+
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint }: UseItemOps) => {
   const $cwa = useCwa()
   const route = useRoute()
   const endpoint = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
@@ -24,7 +31,10 @@ export const useItemPage = (emit: ((evt: 'close') => void) & ((evt: 'reload') =>
 
   function loadResource () {
     if (isAdding.value) {
-      localResourceData.value = defaultResource
+      localResourceData.value = {
+        '@type': resourceType,
+        ...defaultResource
+      }
       return localResourceData.value
     }
     return $cwa.fetchResource({
@@ -58,7 +68,7 @@ export const useItemPage = (emit: ((evt: 'close') => void) & ((evt: 'reload') =>
     }
     if (isAdding.value) {
       await $cwa.resourcesManager.createResource({
-        endpoint: '/_/layouts',
+        endpoint: createEndpoint,
         data,
         source: 'admin-modal'
       })
@@ -82,7 +92,7 @@ export const useItemPage = (emit: ((evt: 'close') => void) & ((evt: 'reload') =>
 
   onMounted(async () => {
     await loadResource()
-    if (!resource.value || resource.value['@type'] !== 'Layout') {
+    if (!resource.value || resource.value['@type'] !== resourceType) {
       emit('close')
       return
     }
