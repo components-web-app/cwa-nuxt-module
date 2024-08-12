@@ -128,7 +128,7 @@ describe('ComponentGroup', () => {
         })
 
         const wrapper = createWrapper()
-        expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${mockResourceReference}`)
+        expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${mockLocation}`)
         expect(mockCwaResources.getResource).toHaveBeenCalledWith(mockLocation)
       })
     })
@@ -157,7 +157,7 @@ describe('ComponentGroup', () => {
         })
 
         const wrapper = createWrapper()
-        expect(mockCwaResources.getComponentGroupByReference).toHaveBeenCalledWith(`${mockReference}_${mockResourceReference}`)
+        expect(mockCwaResources.getComponentGroupByReference).toHaveBeenCalledWith(`${mockReference}_${mockLocation}`)
         expect(wrapper.vm.resource).toEqual('COMPY-PONENET')
       })
     })
