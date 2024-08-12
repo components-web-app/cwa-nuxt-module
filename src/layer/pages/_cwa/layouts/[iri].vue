@@ -1,5 +1,5 @@
 <template>
-  <ResourceModal v-if="localResourceData" v-model="localResourceData.reference" :is-loading="isLoading" @close="$emit('close')" @save="saveReference">
+  <ResourceModal v-if="localResourceData" v-model="localResourceData.reference" :is-loading="isLoading" @close="$emit('close')" @save="saveTitle">
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
@@ -118,7 +118,7 @@ const tabs = computed<ResourceModalTab[]>(() => {
 
 const $cwa = useCwa()
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveReference } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/layouts',
   emit,
   resourceType: 'Layout',

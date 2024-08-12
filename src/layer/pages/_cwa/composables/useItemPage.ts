@@ -52,7 +52,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     isUpdating.value = false
   }
 
-  function saveReference () {
+  function saveTitle () {
     if (isAdding.value) {
       return
     }
@@ -60,11 +60,12 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   }
 
   async function saveResource (close = false) {
+    if (!localResourceData.value) {
+      return
+    }
     isUpdating.value = true
     const data = {
-      reference: localResourceData.value?.reference,
-      uiComponent: localResourceData.value?.uiComponent,
-      uiClassNames: localResourceData.value?.uiClassNames
+      ...localResourceData.value
     }
     if (isAdding.value) {
       await $cwa.resourcesManager.createResource({
@@ -107,7 +108,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     isAdding,
     formatDate,
     deleteResource,
-    saveReference,
+    saveTitle,
     saveResource
   }
 }

@@ -22,7 +22,7 @@
                 placeholder="Enter Reference"
               >
               <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="triggerEditTitle">
-                {{ titleModel || '[No Reference]' }}
+                {{ titleModel || '['+titlePlaceholder+']' }}
               </h2>
             </div>
             <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
@@ -53,9 +53,12 @@ const referenceInput = ref<undefined|HTMLInputElement>()
 // eslint-disable-next-line vue/require-prop-types
 const titleModel = defineModel()
 const emit = defineEmits(['close', 'save'])
-defineProps<{
+withDefaults(defineProps<{
   isLoading?: boolean
-}>()
+  titlePlaceholder?: string
+}>(), {
+  titlePlaceholder: 'No Reference'
+})
 
 const isEditingTitle = ref(false)
 
