@@ -9,10 +9,15 @@
           <div v-if="layoutStyleOptions.length">
             <ModalSelect v-model="localResourceData.uiClassNames" label="Style" :options="layoutStyleOptions" />
           </div>
-          <div class="cwa-flex cwa-justify-end cwa-pt-2">
+          <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
+            <div v-if="!isAdding">
+              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
+                Save & Close
+              </CwaUiFormButton>
+            </div>
             <div>
               <CwaUiFormButton color="blue" :disabled="isUpdating" @click="saveResource">
-                {{ isAdding ? 'Add' : 'Save' }}
+                {{ isAdding ? 'Add Now' : 'Save' }}
               </CwaUiFormButton>
             </div>
           </div>
@@ -138,7 +143,7 @@ function saveReference () {
   return saveResource()
 }
 
-async function saveResource () {
+async function saveResource (close = false) {
   isUpdating.value = true
   const data = {
     reference: localResourceData.value?.reference,
@@ -158,6 +163,9 @@ async function saveResource () {
       endpoint,
       data
     })
+    if (close) {
+      emit('close')
+    }
   }
   isUpdating.value = false
 }
