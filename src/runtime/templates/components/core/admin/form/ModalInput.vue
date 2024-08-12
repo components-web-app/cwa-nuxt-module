@@ -11,6 +11,6 @@
 import { useId } from '#app'
 
 const id = useId()
-const model = defineModel()
+const model = defineModel<string>()
 defineProps<{ label: string }>()
 </script>
