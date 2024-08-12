@@ -11,6 +11,9 @@
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
+            <CwaUiFormToggle v-model="localResourceData.enabled" label="User Enabled" />
+          </div>
+          <div>
             <ModalSelect v-model="selectRole" label="Role" :options="roleOptions" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
