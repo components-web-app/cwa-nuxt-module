@@ -18,7 +18,10 @@
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalInput v-model="localResourceData.title" label="Page Title" />
+            <ModalInput v-model="localResourceData.title" label="SEO Page Title" />
+          </div>
+          <div>
+            <ModalInput v-model="localResourceData.metaDescription" label="SEO Meta Description" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div v-if="!isAdding">
