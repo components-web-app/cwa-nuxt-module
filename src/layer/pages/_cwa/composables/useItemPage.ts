@@ -90,19 +90,21 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       ...localResourceData.value
     }
     if (isAdding.value) {
-      await $cwa.resourcesManager.createResource({
+      const newResource = await $cwa.resourcesManager.createResource({
         endpoint: createEndpoint,
         data,
         source: 'admin-modal'
       })
-      emit('reload')
-      emit('close')
+      if (newResource) {
+        emit('reload')
+        emit('close')
+      }
     } else {
-      await $cwa.resourcesManager.updateResource({
+      const updatedResource = await $cwa.resourcesManager.updateResource({
         endpoint,
         data
       })
-      if (close) {
+      if (close && updatedResource) {
         emit('close')
       }
     }
