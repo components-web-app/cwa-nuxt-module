@@ -1,7 +1,7 @@
 import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { useNuxtApp, useRoute } from '#app'
+import { useNuxtApp, useRoute, useRouter } from '#app'
 import type { CookieRef } from '#app'
 import { AuthStore } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
@@ -204,6 +204,11 @@ export default class Auth {
     this.resourcesStore.clearResources()
     this.fetcherStore.clearFetches()
     const route = useRoute()
+    if (route.meta.cwa_admin) {
+      const router = useRouter()
+      router.replace('/')
+      return
+    }
     await this.fetcher.fetchRoute(route)
   }
 
