@@ -13,12 +13,13 @@ type UseItemOps = {
   resourceType: string,
   defaultResource: Omit<LimitedCwaResource, '@type'>
   validate?: (data: any) => boolean|string
+  endpoint?: string
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint }: UseItemOps) => {
   const $cwa = useCwa()
   const route = useRoute()
-  const endpoint = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
+  endpoint = endpoint || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri)
 
   const isLoading = ref(true)
   const isUpdating = ref(false)

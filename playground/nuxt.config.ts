@@ -60,7 +60,7 @@ export default defineNuxtConfig({
     },
     pages: {
       PrimaryPageTemplate: {
-        name: 'Primary',
+        name: 'Primary Page',
         classes: {
           'Big Text': ['text-2xl']
         }

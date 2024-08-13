@@ -1,13 +1,17 @@
 <template>
-  <ResourceModal v-if="localResourceData" v-model="localResourceData.reference" :is-loading="isLoading" @close="$emit('close')" @save="saveTitle">
+  <ResourceModal
+    v-if="localResourceData"
+    v-model="localResourceData.reference"
+    title-placeholder="No Reference"
+    :is-loading="isLoading"
+    @close="$emit('close')"
+    @save="saveTitle"
+  >
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalSelect v-model="localResourceData.uiComponent" label="Layout UI" :options="layoutComponentOptions" />
-          </div>
-          <div v-if="layoutStyleOptions.length">
-            <ModalSelect v-model="localResourceData.uiClassNames" label="Style" :options="layoutStyleOptions" />
+            <ModalInput v-model="localResourceData.title" label="Page Title" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div v-if="!isAdding">
@@ -49,55 +53,22 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useItemPage } from '../composables/useItemPage'
-import { type SelectOption, useCwa } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
-import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
-import { componentNames } from '#components'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
+import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
+import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
 
 const emit = defineEmits<{
   close: [],
   reload: []
 }>()
 
-const layoutComponentNames = computed(() => {
-  return componentNames.filter(n => n.startsWith('CwaLayout'))
-})
-
-const layoutComponentOptions = computed(() => {
-  const options = []
-  for (const componentName of layoutComponentNames.value) {
-    options.push({
-      label: $cwa.layoutsConfig?.[componentName]?.name || componentName.replace(/^CwaLayout/, ''),
-      value: componentName
-    })
-  }
-  return options
-})
-
-const layoutStyleOptions = computed(() => {
-  if (!localResourceData.value?.uiComponent) {
-    return []
-  }
-  const configuredClasses = $cwa.layoutsConfig?.[localResourceData.value?.uiComponent]?.classes
-  if (!configuredClasses) {
-    return []
-  }
-  const options: SelectOption[] = [
-    {
-      label: 'Default',
-      value: null
-    }
-  ]
-  for (const [label, value] of Object.entries(configuredClasses)) {
-    options.push({
-      label,
-      value
-    })
-  }
-  return options
+const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
+  createEndpoint: '/_/pages',
+  emit,
+  resourceType: 'Page',
+  defaultResource: {}
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {
@@ -114,17 +85,5 @@ const tabs = computed<ResourceModalTab[]>(() => {
     })
   }
   return t
-})
-
-const $cwa = useCwa()
-
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
-  createEndpoint: '/_/layouts',
-  emit,
-  resourceType: 'Layout',
-  defaultResource: {
-    reference: null,
-    uiComponent: layoutComponentOptions.value[0].value
-  }
 })
 </script>

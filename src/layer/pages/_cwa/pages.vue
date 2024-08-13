@@ -24,7 +24,7 @@
           <div class="cwa-flex cwa-items-center cwa-space-x-3">
             <span class="cwa-text-xl">{{ data.reference }}</span><span :class="['cwa-outline', 'cwa-outline-1', 'cwa-outline-offset-2', 'cwa-w-2', 'cwa-h-2', 'cwa-rounded-full', data.isTemplate ? 'cwa-outline-yellow cwa-bg-yellow' : 'cwa-outline-blue-600 cwa-bg-blue-600']" />
           </div>
-          <span class="cwa-text-stone-400">UI: {{ data.uiComponent }}</span>
+          <span class="cwa-text-stone-400">UI: {{ getDisplayPageUi(data.uiComponent) }}</span>
         </div>
         <div class="cwa-flex cwa-space-x-2">
           <CwaUiFormButton :to="computedItemLink(data['@id'])">
@@ -55,9 +55,11 @@ import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form
 import ListFilterButton from '#cwa/runtime/templates/components/core/admin/ListFilterButton.vue'
 import { useQueryBoundModel } from '#cwa/runtime/composables/cwa-query-bound-model'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
+import { useCwa } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
+const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
 const router = useRouter()
@@ -87,6 +89,10 @@ const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
 
 function goToPage (page: string) {
   router.push(page)
+}
+
+function getDisplayPageUi (ui: string) {
+  return $cwa.pagesConfig[ui]?.name || ui
 }
 
 useHead({
