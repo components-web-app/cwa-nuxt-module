@@ -5,7 +5,8 @@
     </template>
     <template v-else>
       <div class="cwa-relative cwa-bg-stone-900/40 cwa-border-b-2 cwa-border-b-stone-700">
-        <div class="cwa-p-3 cwa-flex cwa-justify-end cwa-text-stone-400">
+        <div class="cwa-p-3 cwa-flex cwa-justify-end cwa-text-stone-400 cwa-space-x-4 cwa-items-center">
+          <slot name="icons" />
           <button @click="closeModal">
             <CwaUiIconXMarkIcon class="cwa-h-10" />
           </button>

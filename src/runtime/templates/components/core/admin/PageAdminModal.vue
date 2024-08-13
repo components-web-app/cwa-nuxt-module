@@ -7,6 +7,13 @@
     @close="$emit('close')"
     @save="saveTitle"
   >
+    <template #icons>
+      <div>
+        <NuxtLink :to="localResourceData['@id']">
+          <CwaUiIconEyeIcon class="cwa-w-9" />
+        </NuxtLink>
+      </div>
+    </template>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
