@@ -15,7 +15,7 @@ export enum ErrorType {
 }
 
 interface CwaBaseErrorEvent {
-  event: ApiResourceEvent
+  event?: ApiResourceEvent
   detail: string
   violations: CwaViolationError[]
   timestamp: number

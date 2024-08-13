@@ -1,7 +1,7 @@
 <template>
-  <ListHeading title="Users" />
+  <ListHeading title="Users" @add="goToAdd" />
   <ListFilter :order-options="orderOptions" :search-fields="['emailAddress', 'username']" />
-  <ListContent fetch-url="/users">
+  <ListContent ref="listContent" fetch-url="/users">
     <template #item="data">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center" :class="{ 'cwa-opacity-50': !data.enabled }">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
@@ -9,7 +9,7 @@
           <span>{{ data.emailAddress }}</span>
         </div>
         <div>
-          <CwaUiFormButton>
+          <CwaUiFormButton :to="computedItemLink(data['@id'])">
             <CwaUiIconCogIcon class="cwa-w-6" />
             <span class="cwa-sr-only">Settings</span>
           </CwaUiFormButton>
@@ -17,14 +17,22 @@
       </div>
     </template>
   </ListContent>
+  <ResourceModalOverlay @reload="triggerReload" />
 </template>
 
 <script lang="ts" setup>
 import { useHead } from '#app'
+import { ref } from 'vue'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
+import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
+import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
+
+const listContent = ref<InstanceType<typeof ListContent> | null>(null)
+
+const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
 const orderOptions = [
   {

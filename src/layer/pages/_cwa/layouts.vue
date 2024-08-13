@@ -9,7 +9,7 @@
           <span class="cwa-text-stone-400">UI: {{ getDisplayLayoutUi(data.uiComponent) }}</span>
         </div>
         <div>
-          <CwaUiFormButton :to="{ name: '_cwa-layouts-iri', params: { iri: data['@id'] }, query: route.query }">
+          <CwaUiFormButton :to="computedItemLink(data['@id'])">
             <CwaUiIconCogIcon class="cwa-w-6" />
             <span class="cwa-sr-only">Settings</span>
           </CwaUiFormButton>
@@ -23,15 +23,15 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { useHead } from '#app'
-import { useRoute, useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
+import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
-const router = useRouter()
-const route = useRoute()
+
+const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
 const orderOptions = [
   {
@@ -54,14 +54,6 @@ const orderOptions = [
 
 function getDisplayLayoutUi (ui: string) {
   return ui.replace(/CwaLayout/, '')
-}
-
-function goToAdd () {
-  router.push({ name: '_cwa-layouts-iri', params: { iri: 'add' }, query: route.query })
-}
-
-function triggerReload () {
-  listContent.value?.reloadItems()
 }
 
 useHead({

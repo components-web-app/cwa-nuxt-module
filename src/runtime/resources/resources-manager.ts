@@ -315,6 +315,10 @@ export class ResourcesManager {
     }
   }
 
+  public addError (error: CwaErrorEvent) {
+    this.errorStore.manual(error)
+  }
+
   public get errors (): CwaErrorEvent[] {
     return this.errorStore.getErrors
   }
