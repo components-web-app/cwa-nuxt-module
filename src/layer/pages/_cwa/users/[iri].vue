@@ -106,7 +106,10 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
   createEndpoint: '/users',
   emit,
   resourceType: 'User',
-  defaultResource: {},
+  defaultResource: {
+    enabled: true,
+    roles: ['ROLE_USER']
+  },
   validate: (data) => {
     if (data?.plainPassword) {
       if (data.plainPassword !== data.repeatPassword) {
