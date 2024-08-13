@@ -16,10 +16,13 @@ type UseItemOps = {
   endpoint?: string
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint }: UseItemOps) => {
   const $cwa = useCwa()
   const route = useRoute()
-  endpoint = endpoint || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri)
+  const endpoint = userDefinedEndpoint || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri)
+  if (!endpoint) {
+    throw new Error('No Endpoint Found For useItemPage composable')
+  }
 
   const isLoading = ref(true)
   const isUpdating = ref(false)

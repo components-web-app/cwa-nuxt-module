@@ -7,7 +7,7 @@
     @close="$emit('close')"
     @save="saveTitle"
   >
-    <template #icons>
+    <template v-if="!hideViewLink" #icons>
       <div>
         <NuxtLink :to="localResourceData['@id']">
           <CwaUiIconEyeIcon class="cwa-w-9" />
@@ -59,6 +59,9 @@
       </template>
     </ResourceModalTabs>
   </ResourceModal>
+  <div v-else>
+    no localResourceData {{ localResourceData }}
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -73,12 +76,14 @@ const emit = defineEmits<{
   close: [],
   reload: []
 }>()
+const props = defineProps<{ iri?: string, hideViewLink?: boolean }>()
 
 const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',
-  defaultResource: {}
+  defaultResource: {},
+  endpoint: props.iri
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {
