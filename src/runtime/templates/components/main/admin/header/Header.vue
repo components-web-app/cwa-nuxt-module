@@ -55,13 +55,13 @@
   </div>
   <RequestErrors />
   <ResourceModalOverlayTemplate :show="showEditModal">
-    <PageAdminModal :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="showEditModal = false" />
+    <PageAdminModal :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="showEditModal = false" @reload="goToAdminPagesView" />
   </ResourceModalOverlayTemplate>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from '#app'
+import { useRoute, useRouter } from '#app'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
@@ -77,6 +77,7 @@ import PageAdminModal from '#cwa/runtime/templates/components/core/admin/PageAdm
 
 const $cwa = useCwa()
 const route = useRoute()
+const router = useRouter()
 
 const header = ref<undefined|HTMLElement>()
 const spacer = ref<undefined|HTMLElement>()
@@ -111,6 +112,10 @@ const highlightClass = computed(() => {
 
 function showEditPage () {
   showEditModal.value = true
+}
+
+function goToAdminPagesView () {
+  router.replace('/_cwa/pages')
 }
 
 onMounted(() => {

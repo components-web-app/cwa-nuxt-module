@@ -23,6 +23,9 @@
           <div>
             <ModalInput v-model="localResourceData.metaDescription" label="SEO Meta Description" />
           </div>
+          <div>
+            <ModalSelect v-model="localResourceData.layout" label="Layout" :options="layoutOptions" />
+          </div>
           <div class="cwa-flex cwa-space-x-2">
             <div class="cwa-grow">
               <ModalSelect v-model="localResourceData.uiComponent" label="Page UI" :options="pageComponentOptions" />
@@ -70,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -80,6 +83,7 @@ import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import { useCwa } from '#imports'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 const emit = defineEmits<{
   close: [],
@@ -127,11 +131,27 @@ const pageStyleOptions = computed(() => {
   return options
 })
 
+const layoutOptions = computed(() => {
+  if (!layouts.value) {
+    return []
+  }
+  const options: SelectOption[] = []
+  for (const layout of layouts.value) {
+    options.push({
+      label: layout.reference,
+      value: layout['@id']
+    })
+  }
+  return options
+})
+
 const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',
-  defaultResource: {},
+  defaultResource: {
+    uiComponent: pageComponentOptions.value[0].value
+  },
   endpoint: props.iri
 })
 
@@ -149,5 +169,32 @@ const tabs = computed<ResourceModalTab[]>(() => {
     })
   }
   return t
+})
+
+const currentRequestId = ref(0)
+const layouts = ref<CwaResource[]>()
+
+async function loadLayoutOptions () {
+  const thisRequestId = currentRequestId.value + 1
+  currentRequestId.value = thisRequestId
+  isLoading.value = true
+  const { response } = $cwa.fetch({ path: '/_/layouts' })
+  const { _data: data } = await response
+  if (thisRequestId === currentRequestId.value) {
+    data && (layouts.value = data['hydra:member'])
+    isLoading.value = false
+  }
+  if (!layouts.value?.length) {
+    emit('close')
+    return
+  }
+
+  if (isAdding.value && localResourceData.value && !localResourceData.value.layout) {
+    localResourceData.value.layout = layoutOptions.value[0].value
+  }
+}
+
+onMounted(() => {
+  loadLayoutOptions()
 })
 </script>
