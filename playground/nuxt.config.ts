@@ -51,7 +51,7 @@ export default defineNuxtConfig({
       }
     },
     layouts: {
-      CwaLayoutPrimary: {
+      Primary: {
         name: 'Primary Layout',
         classes: {
           'Blue Background': ['bg-blue-600']

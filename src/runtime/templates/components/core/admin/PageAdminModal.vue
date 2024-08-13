@@ -23,6 +23,14 @@
           <div>
             <ModalInput v-model="localResourceData.metaDescription" label="SEO Meta Description" />
           </div>
+          <div class="cwa-flex cwa-space-x-2">
+            <div class="cwa-grow">
+              <ModalSelect v-model="localResourceData.uiComponent" label="Page UI" :options="pageComponentOptions" />
+            </div>
+            <div v-if="pageStyleOptions.length" class="cwa-w-1/2">
+              <ModalSelect v-model="localResourceData.uiClassNames" label="Style" :options="pageStyleOptions" />
+            </div>
+          </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div v-if="!isAdding">
               <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
@@ -59,9 +67,6 @@
       </template>
     </ResourceModalTabs>
   </ResourceModal>
-  <div v-else>
-    no localResourceData {{ localResourceData }}
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -71,12 +76,56 @@ import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
+import { componentNames } from '#components'
+import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
+import { useCwa } from '#imports'
+import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 
 const emit = defineEmits<{
   close: [],
   reload: []
 }>()
 const props = defineProps<{ iri?: string, hideViewLink?: boolean }>()
+
+const $cwa = useCwa()
+const pageComponentNames = computed(() => {
+  return componentNames.filter(n => n.startsWith('CwaPage'))
+})
+
+const pageComponentOptions = computed(() => {
+  const options = []
+  for (const componentName of pageComponentNames.value) {
+    const cleanName = componentName.replace(/^CwaPage/, '')
+    options.push({
+      label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
+      value: componentName
+    })
+  }
+  return options
+})
+
+const pageStyleOptions = computed(() => {
+  if (!localResourceData.value?.uiComponent) {
+    return []
+  }
+  const configuredClasses = $cwa.pagesConfig?.[localResourceData.value?.uiComponent]?.classes
+  if (!configuredClasses) {
+    return []
+  }
+  const options: SelectOption[] = [
+    {
+      label: 'Default',
+      value: null
+    }
+  ]
+  for (const [label, value] of Object.entries(configuredClasses)) {
+    options.push({
+      label,
+      value
+    })
+  }
+  return options
+})
 
 const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',

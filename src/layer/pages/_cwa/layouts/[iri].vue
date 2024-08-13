@@ -69,8 +69,9 @@ const layoutComponentNames = computed(() => {
 const layoutComponentOptions = computed(() => {
   const options = []
   for (const componentName of layoutComponentNames.value) {
+    const cleanName = componentName.replace(/^CwaPage/, '')
     options.push({
-      label: $cwa.layoutsConfig?.[componentName]?.name || componentName.replace(/^CwaLayout/, ''),
+      label: $cwa.layoutsConfig?.[cleanName]?.name || cleanName,
       value: componentName
     })
   }
