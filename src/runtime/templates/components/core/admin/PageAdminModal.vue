@@ -155,6 +155,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
   emit,
   resourceType: 'Page',
   defaultResource: {
+    isTemplate: false,
     uiComponent: pageComponentOptions.value[0].value
   },
   endpoint: props.iri
