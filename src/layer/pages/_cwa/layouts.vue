@@ -55,7 +55,7 @@ const orderOptions = [
 ]
 
 function getDisplayLayoutUi (ui: string) {
-  return $cwa.layoutsConfig[ui]?.name || ui.replace(/^CwaLayout/, '')
+  return $cwa.layoutsConfig?.[ui]?.name || ui.replace(/^CwaLayout/, '')
 }
 
 useHead({
