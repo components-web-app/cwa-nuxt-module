@@ -12,24 +12,27 @@
           </button>
         </div>
         <div class="cwa-p-4 cwa-flex cwa-justify-center">
-          <div class="cwa-w-full cwa-max-w-xl cwa-flex cwa-items-center cwa-space-x-2">
-            <div class="cwa-max-w-[calc(100%-1.3em)]">
-              <input
-                v-if="isEditingTitle"
-                ref="referenceInput"
-                v-model="titleModel"
-                v-auto-width="{ comfortZone: '.5rem', minWidth: '270px' }"
-                class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
-                placeholder="Enter Reference"
-              >
-              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="triggerEditTitle">
-                {{ titleModel || '['+titlePlaceholder+']' }}
-              </h2>
+          <div class="cwa-grow cwa-max-w-xl cwa-flex cwa-items-center cwa-space-x-6">
+            <div class="cwa-grow cwa-flex cwa-items-center cwa-space-x-2 cwa-min-w-0">
+              <div class="cwa-max-w-[calc(100%-1.3em)]">
+                <input
+                  v-if="isEditingTitle"
+                  ref="referenceInput"
+                  v-model="titleModel"
+                  v-auto-width="{ comfortZone: '.5rem', minWidth: '270px' }"
+                  class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
+                  placeholder="Enter Reference"
+                >
+                <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="triggerEditTitle">
+                  {{ titleModel || '['+titlePlaceholder+']' }}
+                </h2>
+              </div>
+              <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
+                <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="saveTitle()" />
+                <CwaUiIconPenIcon v-else class="cwa-w-full" @click="triggerEditTitle" />
+              </div>
             </div>
-            <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
-              <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="saveTitle()" />
-              <CwaUiIconPenIcon v-else class="cwa-w-full" @click="triggerEditTitle" />
-            </div>
+            <slot name="title" />
           </div>
         </div>
         <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />

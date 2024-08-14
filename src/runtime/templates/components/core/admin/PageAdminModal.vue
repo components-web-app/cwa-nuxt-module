@@ -7,6 +7,11 @@
     @close="$emit('close')"
     @save="saveTitle"
   >
+    <template #title>
+      <div>
+        DD
+      </div>
+    </template>
     <template v-if="!hideViewLink" #icons>
       <div>
         <NuxtLink :to="localResourceData['@id']">
