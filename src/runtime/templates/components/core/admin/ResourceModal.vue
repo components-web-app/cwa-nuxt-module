@@ -4,7 +4,7 @@
       <Spinner class="cwa-absolute cwa-top-1/2 cwa-left-1/2 -cwa-translate-x-1/2  -cwa-translate-y-1/2" :show="true" />
     </template>
     <template v-else>
-      <div class="cwa-relative cwa-bg-stone-900/40 cwa-border-b-2 cwa-border-b-stone-700">
+      <div class="cwa-relative cwa-bg-stone-900/40 cwa-border-b-2" :class="[borderColorClass]">
         <div class="cwa-p-3 cwa-flex cwa-justify-end cwa-text-stone-400 cwa-space-x-4 cwa-items-center">
           <slot name="icons" />
           <button @click="closeModal">
@@ -59,9 +59,11 @@ const titleModel = defineModel()
 const emit = defineEmits(['close', 'save'])
 withDefaults(defineProps<{
   isLoading?: boolean
-  titlePlaceholder?: string
+  titlePlaceholder?: string,
+  borderColorClass?: 'cwa-border-b-stone-700'|'cwa-border-b-green'|'cwa-border-b-yellow'
 }>(), {
-  titlePlaceholder: 'No Reference'
+  titlePlaceholder: 'No Reference',
+  borderColorClass: 'cwa-border-b-stone-700'
 })
 
 const isEditingTitle = ref(false)

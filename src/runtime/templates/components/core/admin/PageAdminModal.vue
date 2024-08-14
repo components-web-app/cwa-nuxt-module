@@ -4,6 +4,7 @@
     v-model="localResourceData.reference"
     title-placeholder="No Reference"
     :is-loading="isLoading"
+    :border-color-class="localResourceData.isTemplate ? 'cwa-border-b-yellow' : 'cwa-border-b-green'"
     @close="$emit('close')"
     @save="saveTitle"
   >
