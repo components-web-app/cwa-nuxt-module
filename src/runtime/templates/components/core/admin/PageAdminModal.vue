@@ -39,7 +39,7 @@
             </div>
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
-            <div v-if="!isAdding">
+            <div>
               <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
                 Save & Close
               </CwaUiFormButton>
