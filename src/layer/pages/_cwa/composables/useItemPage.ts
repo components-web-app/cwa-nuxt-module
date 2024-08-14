@@ -101,7 +101,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       })
       if (newResource) {
         emit('reload')
-        emit('close')
+        close && emit('close')
       }
     } else {
       const updatedResource = await $cwa.resourcesManager.updateResource({

@@ -43,7 +43,7 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
           class="cwa-flex cwa-transition-colors cwa-relative cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-border-0 cwa-items-center"
         >
           <span class="cwa-block cwa-truncate cwa-flex-grow">{{ selectedOption?.label }}</span>
-          <span class="cwa-w-3 cwa-h-3 cwa-rounded-full cwa-ml-2.5 cwa-mr-2.5" :class="[selectedOption?.value === true ? 'cwa-bg-yellow' : 'cwa-bg-green']" />
+          <span class="cwa-w-3 cwa-h-3 cwa-rounded-full cwa-ml-2.5 cwa-mr-2.5" :class="[selectedOption?.value === true ? 'cwa-bg-yellow' : 'cwa-bg-blue-600']" />
           <svg class="-cwa-mr-1 cwa-h-6 cwa-w-6 cwa-transition-transform" :class="{ 'cwa-rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
           </svg>
@@ -85,7 +85,7 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
                       'cwa-block cwa-truncate cwa-grow',
                     ]"
                   >{{ option.label }}</span>
-                  <span class="cwa-w-2 cwa-h-2 cwa-rounded-full cwa-ml-2.5" :class="[option?.value === true ? 'cwa-bg-yellow' : 'cwa-bg-green']" />
+                  <span class="cwa-w-2 cwa-h-2 cwa-rounded-full cwa-ml-2.5" :class="[option?.value === true ? 'cwa-bg-yellow' : 'cwa-bg-blue-600']" />
                 </li>
               </ListboxOption>
             </ListboxOptions>

@@ -4,7 +4,7 @@
     v-model="localResourceData.reference"
     title-placeholder="No Reference"
     :is-loading="isLoading"
-    :border-color-class="localResourceData.isTemplate ? 'cwa-border-b-yellow' : 'cwa-border-b-green'"
+    :border-color-class="localResourceData.isTemplate ? 'cwa-border-b-yellow' : 'cwa-border-b-blue-600'"
     @close="$emit('close')"
     @save="saveTitle"
   >
@@ -201,7 +201,7 @@ async function loadLayoutOptions () {
 }
 
 watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined|boolean, oldIsTemplate: undefined|boolean) => {
-  isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
+  !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 
 onMounted(() => {

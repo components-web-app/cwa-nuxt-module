@@ -60,7 +60,7 @@ const emit = defineEmits(['close', 'save'])
 withDefaults(defineProps<{
   isLoading?: boolean
   titlePlaceholder?: string,
-  borderColorClass?: 'cwa-border-b-stone-700'|'cwa-border-b-green'|'cwa-border-b-yellow'
+  borderColorClass?: 'cwa-border-b-stone-700'|'cwa-border-b-green'|'cwa-border-b-yellow'|'cwa-border-b-blue-600'
 }>(), {
   titlePlaceholder: 'No Reference',
   borderColorClass: 'cwa-border-b-stone-700'
