@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -198,6 +198,10 @@ async function loadLayoutOptions () {
     localResourceData.value.layout = layoutOptions.value[0].value
   }
 }
+
+watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined|boolean, oldIsTemplate: undefined|boolean) => {
+  isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
+})
 
 onMounted(() => {
   loadLayoutOptions()
