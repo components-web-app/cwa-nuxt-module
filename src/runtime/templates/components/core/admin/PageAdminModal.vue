@@ -41,7 +41,7 @@
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div>
               <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
-                Save & Close
+                {{ isAdding ? 'Add' : 'Save' }} & Close
               </CwaUiFormButton>
             </div>
             <div>
