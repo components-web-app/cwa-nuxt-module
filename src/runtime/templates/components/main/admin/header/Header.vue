@@ -55,7 +55,15 @@
   </div>
   <RequestErrors />
   <ResourceModalOverlayTemplate :show="showEditModal">
-    <PageAdminModal :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="showEditModal = false" @reload="goToAdminPagesView" />
+    <PageDataAdminModal
+      v-if="$cwa.resources.pageDataIri.value && $cwa.resources.pageData?.value?.data"
+      :resource-type="$cwa.resources.pageData.value.data['@type']"
+      :iri="$cwa.resources.pageDataIri.value"
+      :hide-view-link="true"
+      @close="showEditModal = false"
+      @reload="goToAdminPagesView"
+    />
+    <PageAdminModal v-else :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="showEditModal = false" @reload="goToAdminPagesView" />
   </ResourceModalOverlayTemplate>
 </template>
 
@@ -74,6 +82,7 @@ import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayou
 import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
 import ResourceModalOverlayTemplate from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
 import PageAdminModal from '#cwa/runtime/templates/components/core/admin/PageAdminModal.vue'
+import PageDataAdminModal from '#cwa/runtime/templates/components/core/admin/PageDataAdminModal.vue'
 
 const $cwa = useCwa()
 const route = useRoute()
