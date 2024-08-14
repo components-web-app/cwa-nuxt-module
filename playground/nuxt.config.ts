@@ -51,7 +51,7 @@ export default defineNuxtConfig({
       }
     },
     layouts: {
-      CwaLayoutPrimary: {
+      Primary: {
         name: 'Primary Layout',
         classes: {
           'Blue Background': ['bg-blue-600']
@@ -60,7 +60,7 @@ export default defineNuxtConfig({
     },
     pages: {
       PrimaryPageTemplate: {
-        name: 'Primary',
+        name: 'Primary Page',
         classes: {
           'Big Text': ['text-2xl']
         }

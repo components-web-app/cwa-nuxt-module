@@ -54,11 +54,14 @@
     <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />
   </div>
   <RequestErrors />
+  <ResourceModalOverlayTemplate :show="showEditModal">
+    <PageAdminModal :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="showEditModal = false" @reload="goToAdminPagesView" />
+  </ResourceModalOverlayTemplate>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from '#app'
+import { useRoute, useRouter } from '#app'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
@@ -69,14 +72,18 @@ import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/
 import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
 import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayouts.vue'
 import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
+import ResourceModalOverlayTemplate from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
+import PageAdminModal from '#cwa/runtime/templates/components/core/admin/PageAdminModal.vue'
 
 const $cwa = useCwa()
 const route = useRoute()
+const router = useRouter()
 
 const header = ref<undefined|HTMLElement>()
 const spacer = ref<undefined|HTMLElement>()
 
 const pageIsAdmin = computed(() => route.meta.cwa_admin)
+const showEditModal = ref(false)
 
 const isNavEnabled = computed({
   get: () => {
@@ -104,7 +111,11 @@ const highlightClass = computed(() => {
 })
 
 function showEditPage () {
-  window.alert('Will show an edit page modal - Coming Soon')
+  showEditModal.value = true
+}
+
+function goToAdminPagesView () {
+  router.replace('/_cwa/pages')
 }
 
 onMounted(() => {

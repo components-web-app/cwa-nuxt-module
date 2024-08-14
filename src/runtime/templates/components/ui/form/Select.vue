@@ -8,6 +8,7 @@ import {
 } from '@headlessui/vue'
 
 import { useId } from '#app'
+import { computed } from 'vue'
 import { type SelectInputProps, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
 
 // see https://github.com/tailwindlabs/headlessui/issues/2913 - temporary until headless ui 2 and vue 3.5
@@ -15,7 +16,7 @@ provideUseId(() => useId())
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<SelectInputProps>()
-const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(props, emit)
+const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(computed(() => props), emit)
 </script>
 
 <template>

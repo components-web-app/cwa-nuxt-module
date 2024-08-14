@@ -16,7 +16,7 @@
               </CwaUiFormButton>
             </div>
             <div>
-              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(false)">
+              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(true)">
                 {{ isAdding ? 'Add Now' : 'Save' }}
               </CwaUiFormButton>
             </div>
@@ -69,8 +69,9 @@ const layoutComponentNames = computed(() => {
 const layoutComponentOptions = computed(() => {
   const options = []
   for (const componentName of layoutComponentNames.value) {
+    const cleanName = componentName.replace(/^CwaPage/, '')
     options.push({
-      label: $cwa.layoutsConfig?.[componentName]?.name || componentName,
+      label: $cwa.layoutsConfig?.[cleanName]?.name || cleanName,
       value: componentName
     })
   }

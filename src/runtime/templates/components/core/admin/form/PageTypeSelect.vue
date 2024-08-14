@@ -3,19 +3,31 @@ import {
   Listbox,
   ListboxButton,
   ListboxOptions,
-  ListboxOption, provideUseId, ListboxLabel
+  ListboxOption,
+  provideUseId
 } from '@headlessui/vue'
 
 import { useId } from '#app'
 import { computed } from 'vue'
-import { type SelectInputProps, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
+import { type SelectInputProps, type SelectOption, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
 
 // see https://github.com/tailwindlabs/headlessui/issues/2913 - temporary until headless ui 2 and vue 3.5
 provideUseId(() => useId())
 
 const emit = defineEmits(['update:modelValue'])
-const props = defineProps<SelectInputProps & { label: string }>()
-const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(computed(() => props), emit)
+const props = defineProps<Omit<SelectInputProps, 'options'>>()
+const options: SelectOption[] = [
+  {
+    label: 'Static',
+    value: false
+  },
+  {
+    label: 'Dynamic',
+    value: true
+  }
+]
+const selectInputProps = computed(() => ({ ...props, options }))
+const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(selectInputProps, emit)
 </script>
 
 <template>
@@ -24,16 +36,14 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
     v-model="value"
     :by="compareOptions"
   >
-    <div class="cwa-relative cwa-w-full">
-      <div class="cwa-rounded-lg cwa-py-1.5 cwa-relative cwa-border" :class="[open ? 'cwa-bg-dark cwa-border-stone-600' : 'cwa-bg-dark/90 cwa-border-stone-700']">
-        <ListboxLabel class="cwa-px-4 cwa-text-stone-400 cwa-absolute">
-          {{ label }}
-        </ListboxLabel>
+    <div class="cwa-relative">
+      <div class="cwa-rounded-lg cwa-py-1.5 cwa-relative" :class="[open ? 'cwa-bg-stone-700/90' : 'cwa-bg-stone-700/70']">
         <ListboxButton
           ref="trigger"
           class="cwa-flex cwa-transition-colors cwa-relative cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-border-0 cwa-items-center"
         >
-          <span class="cwa-block cwa-truncate cwa-flex-grow cwa-pt-6">{{ selectedOption?.label }}</span>
+          <span class="cwa-block cwa-truncate cwa-flex-grow">{{ selectedOption?.label }}</span>
+          <span class="cwa-w-3 cwa-h-3 cwa-rounded-full cwa-ml-2.5 cwa-mr-2.5" :class="[selectedOption?.value === true ? 'cwa-bg-yellow' : 'cwa-bg-blue-600']" />
           <svg class="-cwa-mr-1 cwa-h-6 cwa-w-6 cwa-transition-transform" :class="{ 'cwa-rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
           </svg>
@@ -65,16 +75,17 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
               >
                 <li
                   :class="[
-                    active ? 'cwa-text-white' : 'cwa-text-stone-400',
-                    'cwa-relative cwa-cursor-pointer cwa-select-none cwa-py-2 cwa-px-4',
+                    active ? 'cwa-text-white cwa-opacity-100' : 'cwa-text-stone-400 cwa-opacity-80',
+                    'cwa-relative cwa-cursor-pointer cwa-select-none cwa-py-2 cwa-px-4 cwa-flex cwa-items-center hover:cwa-opacity-100',
                   ]"
                 >
                   <span
                     :class="[
                       selected ? 'cwa-text-white' : '',
-                      'cwa-block cwa-truncate',
+                      'cwa-block cwa-truncate cwa-grow',
                     ]"
                   >{{ option.label }}</span>
+                  <span class="cwa-w-2 cwa-h-2 cwa-rounded-full cwa-ml-2.5" :class="[option?.value === true ? 'cwa-bg-yellow' : 'cwa-bg-blue-600']" />
                 </li>
               </ListboxOption>
             </ListboxOptions>

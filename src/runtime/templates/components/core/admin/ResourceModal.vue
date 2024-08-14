@@ -4,31 +4,35 @@
       <Spinner class="cwa-absolute cwa-top-1/2 cwa-left-1/2 -cwa-translate-x-1/2  -cwa-translate-y-1/2" :show="true" />
     </template>
     <template v-else>
-      <div class="cwa-relative cwa-bg-stone-900/40 cwa-border-b-2 cwa-border-b-stone-700">
-        <div class="cwa-p-3 cwa-flex cwa-justify-end cwa-text-stone-400">
+      <div class="cwa-relative cwa-bg-stone-900/40 cwa-border-b-2" :class="[borderColorClass]">
+        <div class="cwa-p-3 cwa-flex cwa-justify-end cwa-text-stone-400 cwa-space-x-4 cwa-items-center">
+          <slot name="icons" />
           <button @click="closeModal">
             <CwaUiIconXMarkIcon class="cwa-h-10" />
           </button>
         </div>
         <div class="cwa-p-4 cwa-flex cwa-justify-center">
-          <div class="cwa-w-full cwa-max-w-xl cwa-flex cwa-items-center cwa-space-x-2">
-            <div class="cwa-max-w-[calc(100%-1.3em)]">
-              <input
-                v-if="isEditingTitle"
-                ref="referenceInput"
-                v-model="titleModel"
-                v-auto-width="{ comfortZone: '.5rem', minWidth: '270px' }"
-                class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
-                placeholder="Enter Reference"
-              >
-              <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="triggerEditTitle">
-                {{ titleModel || '['+titlePlaceholder+']' }}
-              </h2>
+          <div class="cwa-grow cwa-max-w-xl cwa-flex cwa-items-center cwa-space-x-6">
+            <div class="cwa-grow cwa-flex cwa-items-center cwa-space-x-2 cwa-min-w-0">
+              <div class="cwa-max-w-[calc(100%-1.3em)]">
+                <input
+                  v-if="isEditingTitle"
+                  ref="referenceInput"
+                  v-model="titleModel"
+                  v-auto-width="{ comfortZone: '.5rem', minWidth: '270px' }"
+                  class="cwa-dark-blur cwa-text-4xl cwa-py-1 cwa-px-2 cwa-max-w-full -cwa-ml-2 cwa-placeholder-light/20"
+                  placeholder="Enter Reference"
+                >
+                <h2 v-else class="cwa-text-4xl cwa-truncate cwa-py-1 cwa-pr-3 cwa-border cwa-border-transparent" :class="[titleModel ? '' : 'cwa-text-light/20']" @click="triggerEditTitle">
+                  {{ titleModel || '['+titlePlaceholder+']' }}
+                </h2>
+              </div>
+              <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
+                <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="saveTitle()" />
+                <CwaUiIconPenIcon v-else class="cwa-w-full" @click="triggerEditTitle" />
+              </div>
             </div>
-            <div class="cwa-flex-shrink-0 cwa-w-[1.3em] cwa-cursor-pointer">
-              <CwaUiIconTickIcon v-if="isEditingTitle" class="cwa-w-full" @click="saveTitle()" />
-              <CwaUiIconPenIcon v-else class="cwa-w-full" @click="triggerEditTitle" />
-            </div>
+            <slot name="title" />
           </div>
         </div>
         <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />
@@ -55,9 +59,11 @@ const titleModel = defineModel()
 const emit = defineEmits(['close', 'save'])
 withDefaults(defineProps<{
   isLoading?: boolean
-  titlePlaceholder?: string
+  titlePlaceholder?: string,
+  borderColorClass?: 'cwa-border-b-stone-700'|'cwa-border-b-green'|'cwa-border-b-yellow'|'cwa-border-b-blue-600'
 }>(), {
-  titlePlaceholder: 'No Reference'
+  titlePlaceholder: 'No Reference',
+  borderColorClass: 'cwa-border-b-stone-700'
 })
 
 const isEditingTitle = ref(false)
