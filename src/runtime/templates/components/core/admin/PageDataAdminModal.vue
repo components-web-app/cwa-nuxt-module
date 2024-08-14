@@ -78,14 +78,14 @@ const emit = defineEmits<{
   close: [],
   reload: []
 }>()
-const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType: string }>()
+const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType?: string }>()
 
 const $cwa = useCwa()
 
 const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
-  resourceType: props.resourceType,
+  resourceType: props.resourceType || 'Page',
   defaultResource: {
   },
   endpoint: props.iri

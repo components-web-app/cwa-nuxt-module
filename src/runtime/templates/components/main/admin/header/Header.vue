@@ -56,14 +56,14 @@
   <RequestErrors />
   <ResourceModalOverlayTemplate :show="showEditModal">
     <PageDataAdminModal
-      v-if="$cwa.resources.pageDataIri.value && $cwa.resources.pageData?.value?.data"
-      :resource-type="$cwa.resources.pageData.value.data['@type']"
+      v-if="$cwa.resources.pageDataIri.value"
+      :resource-type="$cwa.resources.pageData?.value?.data?.['@type']"
       :iri="$cwa.resources.pageDataIri.value"
       :hide-view-link="true"
-      @close="showEditModal = false"
+      @close="closeModal"
       @reload="goToAdminPagesView"
     />
-    <PageAdminModal v-else :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="showEditModal = false" @reload="goToAdminPagesView" />
+    <PageAdminModal v-else-if="$cwa.resources.pageIri.value" :iri="$cwa.resources.pageIri.value" :hide-view-link="true" @close="closeModal" @reload="goToAdminPagesView" />
   </ResourceModalOverlayTemplate>
 </template>
 
@@ -121,6 +121,10 @@ const highlightClass = computed(() => {
 
 function showEditPage () {
   showEditModal.value = true
+}
+
+function closeModal () {
+  showEditModal.value = false
 }
 
 function goToAdminPagesView () {
