@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ComputedRef } from 'vue'
 import { isEqual } from 'lodash-es'
 import { defu } from 'defu'
 import type { PopperOptions } from '#cwa/runtime/types/popper'
@@ -17,10 +17,10 @@ export type SelectInputProps = {
   popper?: PopperOptions
 }
 
-export const useCwaSelectInput = (props: SelectInputProps, emit: (event: 'update:modelValue', ...args: any[]) => void) => {
+export const useCwaSelectInput = (inputProps: ComputedRef<SelectInputProps>, emit: (event: 'update:modelValue', ...args: any[]) => void) => {
   const value = computed({
     get () {
-      return props.modelValue
+      return inputProps.value.modelValue
     },
     set (value) {
       emit('update:modelValue', value)
@@ -34,9 +34,9 @@ export const useCwaSelectInput = (props: SelectInputProps, emit: (event: 'update
   }
 
   const selectedOption = computed(() => {
-    return props.options.find(({ value }) => isEqual(value, props.modelValue)) || props.options[0] || null
+    return inputProps.value.options.find(({ value }) => isEqual(value, inputProps.value.modelValue)) || inputProps.value.options[0] || null
   })
-  const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper as PopperOptions))
+  const popperOps = computed<PopperOptions>(() => defu({}, inputProps.value.popper, ops.popper as PopperOptions))
   const [trigger, container] = usePopper(popperOps.value)
 
   function compareOptions (a: ModelValue, b: ModelValue) {

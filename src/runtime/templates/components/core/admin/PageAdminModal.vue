@@ -9,9 +9,7 @@
     @save="saveTitle"
   >
     <template #title>
-      <div>
-        DD
-      </div>
+      <PageTypeSelect v-model="localResourceData.isTemplate" />
     </template>
     <template v-if="!hideViewLink" #icons>
       <div>
@@ -90,6 +88,7 @@ import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import { useCwa } from '#imports'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import PageTypeSelect from '#cwa/runtime/templates/components/core/admin/form/PageTypeSelect.vue'
 
 const emit = defineEmits<{
   close: [],
