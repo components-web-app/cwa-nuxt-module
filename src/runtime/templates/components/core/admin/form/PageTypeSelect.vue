@@ -18,12 +18,12 @@ const emit = defineEmits(['update:modelValue'])
 const props = defineProps<Omit<SelectInputProps, 'options'>>()
 const options: SelectOption[] = [
   {
-    label: 'Dynamic',
-    value: true
-  },
-  {
     label: 'Static',
     value: false
+  },
+  {
+    label: 'Dynamic',
+    value: true
   }
 ]
 const selectInputProps = computed(() => ({ ...props, options }))
