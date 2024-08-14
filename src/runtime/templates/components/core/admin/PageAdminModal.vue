@@ -11,7 +11,7 @@
     <template #title>
       <PageTypeSelect v-model="localResourceData.isTemplate" />
     </template>
-    <template v-if="!hideViewLink" #icons>
+    <template v-if="!hideViewLink && !isAdding" #icons>
       <div>
         <NuxtLink :to="localResourceData['@id']">
           <CwaUiIconEyeIcon class="cwa-w-9" />

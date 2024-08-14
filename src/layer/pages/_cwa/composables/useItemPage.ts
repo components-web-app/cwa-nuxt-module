@@ -1,5 +1,5 @@
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -18,6 +18,7 @@ type UseItemOps = {
 
 export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint }: UseItemOps) => {
   const $cwa = useCwa()
+  const router = useRouter()
   const route = useRoute()
   const endpoint = userDefinedEndpoint || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri)
   if (!endpoint) {
@@ -89,21 +90,27 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         return
       }
     }
-    isUpdating.value = true
-    const data = {
-      ...localResourceData.value
-    }
-    if (isAdding.value) {
-      const newResource = await $cwa.resourcesManager.createResource({
-        endpoint: createEndpoint,
-        data,
-        source: 'admin-modal'
-      })
-      if (newResource) {
-        emit('reload')
-        close && emit('close')
+    const doRequest = async () => {
+      const data = {
+        ...localResourceData.value
       }
-    } else {
+      if (isAdding.value) {
+        const newResource = await $cwa.resourcesManager.createResource({
+          endpoint: createEndpoint,
+          data,
+          source: 'admin-modal'
+        })
+        if (newResource) {
+          emit('reload')
+          if (close) {
+            emit('close')
+          } else {
+            router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query })
+          }
+        }
+        return
+      }
+
       const updatedResource = await $cwa.resourcesManager.updateResource({
         endpoint,
         data
@@ -112,6 +119,9 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         emit('close')
       }
     }
+
+    isUpdating.value = true
+    await doRequest()
     isUpdating.value = false
   }
 
