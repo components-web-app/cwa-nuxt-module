@@ -17,7 +17,7 @@
       </div>
     </div>
   </ListContainer>
-  <ListContent fetch-url="/_/pages">
+  <ListContent ref="listContent" fetch-url="/_/pages">
     <template #item="data">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
@@ -92,7 +92,7 @@ function goToPage (page: string) {
 }
 
 function getDisplayPageUi (ui: string) {
-  return $cwa.pagesConfig[ui]?.name || ui
+  return $cwa.pagesConfig?.[ui]?.name || ui
 }
 
 useHead({
