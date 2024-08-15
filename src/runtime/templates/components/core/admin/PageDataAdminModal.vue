@@ -100,6 +100,10 @@ const tabs = computed<ResourceModalTab[]>(() => {
   ]
   if (!isAdding.value) {
     t.push({
+      label: 'Routes',
+      id: 'routes'
+    })
+    t.push({
       label: 'Info',
       id: 'info'
     })

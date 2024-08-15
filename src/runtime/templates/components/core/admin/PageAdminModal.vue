@@ -155,7 +155,7 @@ const layoutOptions = computed(() => {
   return options
 })
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',
@@ -174,6 +174,16 @@ const tabs = computed<ResourceModalTab[]>(() => {
     }
   ]
   if (!isAdding.value) {
+    if (resource.value?.isTemplate) {
+      t.push({
+        label: 'Data Pages',
+        id: 'data'
+      })
+    }
+    t.push({
+      label: 'Routes',
+      id: 'routes'
+    })
     t.push({
       label: 'Info',
       id: 'info'

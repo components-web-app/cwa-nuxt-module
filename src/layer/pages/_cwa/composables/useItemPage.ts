@@ -142,6 +142,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   return {
     isLoading,
     isUpdating,
+    resource,
     localResourceData,
     isAdding,
     formatDate,
