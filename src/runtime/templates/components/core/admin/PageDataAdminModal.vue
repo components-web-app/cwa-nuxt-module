@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, toRef, watch } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -85,14 +85,14 @@ const emit = defineEmits<{
 const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType?: string }>()
 
 const $cwa = useCwa()
-
+const iriRef = toRef(props, 'iri')
 const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: props.resourceType || 'Page',
   defaultResource: {
   },
-  endpoint: props.iri
+  endpoint: iriRef
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {

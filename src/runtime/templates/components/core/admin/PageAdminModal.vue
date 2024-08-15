@@ -53,7 +53,7 @@
         </div>
       </template>
       <template #routes>
-        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" />
+        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" @reload="loadResource" />
       </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, toRef, watch } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -159,7 +159,7 @@ const layoutOptions = computed(() => {
   return options
 })
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',
@@ -167,7 +167,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
     isTemplate: false,
     uiComponent: pageComponentOptions.value[0].value
   },
-  endpoint: props.iri,
+  endpoint: toRef(props, 'iri'),
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes'))
 })
 

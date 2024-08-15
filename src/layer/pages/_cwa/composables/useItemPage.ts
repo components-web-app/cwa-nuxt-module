@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, onMounted, ref, watch } from 'vue'
+import { computed, type ComputedRef, onMounted, type Ref, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
@@ -15,9 +15,9 @@ type UseItemOps = {
   resourceType: string,
   defaultResource: Omit<TempCwaResource, '@type'>
   validate?: (data: any) => boolean|string
-  endpoint?: string
+  endpoint?: Ref<string|undefined>
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
-  iri?: string
+  iri?: Ref<string|undefined>
   excludeFields?: string[]
 }
 
@@ -25,8 +25,8 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
-  const endpoint = userDefinedEndpoint || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri)
-  if (!endpoint) {
+  const endpoint = computed(() => userDefinedEndpoint?.value || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri))
+  if (!endpoint.value) {
     throw new Error('No Endpoint Found For useItemPage composable')
   }
 
@@ -34,8 +34,8 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const isUpdating = ref(false)
   const localResourceData = ref<TempCwaResource|CwaResource>()
 
-  const isAdding = computed(() => endpoint === 'add')
-  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri || endpoint).value?.data)
+  const isAdding = computed(() => endpoint.value === 'add')
+  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri?.value || endpoint.value).value?.data)
 
   function formatDate (dateStr:string) {
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
@@ -50,15 +50,15 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       return localResourceData.value
     }
     return $cwa.fetchResource({
-      path: endpoint,
-      iri
+      path: endpoint.value,
+      iri: iri?.value
     })
   }
 
   async function deleteResource () {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
-      endpoint
+      endpoint: iri?.value || endpoint.value
     })
     emit('reload')
     emit('close')
@@ -123,7 +123,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
 
       const updatedResource = await $cwa.resourcesManager.updateResource({
-        endpoint: iri,
+        endpoint: iri?.value || endpoint.value,
         data
       })
       if (close && updatedResource) {
@@ -139,7 +139,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   }
 
   watch(resource, (newResource) => {
-    newResource && (localResourceData.value = newResource)
+    !isAdding.value && newResource && (localResourceData.value = { ...newResource })
   })
 
   onMounted(async () => {
@@ -148,7 +148,6 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       emit('close')
       return
     }
-    localResourceData.value = { ...resource.value }
     isLoading.value = false
   })
 

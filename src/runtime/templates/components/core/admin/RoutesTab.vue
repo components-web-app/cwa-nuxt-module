@@ -22,8 +22,8 @@
           </div>
           <div>
             <Spinner v-if="isLoadingRoute" :show="true" />
-            <RouteRedirectsTree v-else-if="resource?.redirectedFrom" :redirects="resource.redirectedFrom" @reload="loadResource" />
-            <p v-else>
+            <RouteRedirectsTree v-else-if="resource?.redirectedFrom?.length" :redirects="resource.redirectedFrom" @reload="loadResource" />
+            <p v-else class="cwa-text-lg cwa-font-bold cwa-text-stone-400 cwa-mb-2 cwa-mt-4">
               You do not have any redirects
             </p>
           </div>
@@ -104,7 +104,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import slugify from 'slugify'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -124,8 +124,9 @@ const emit = defineEmits<{
 }>()
 
 const $cwa = useCwa()
-const routeIri = props.pageResource?.route
-const endpoint = `${routeIri}/redirects` || 'add'
+const pageResource = toRef(props, 'pageResource')
+const routeIri = computed(() => pageResource.value?.route)
+const endpoint = computed(() => routeIri.value ? `${routeIri.value}/redirects` : 'add')
 
 const submitting = ref(false)
 const newRedirectPath = ref<string>()
@@ -161,7 +162,7 @@ async function createRedirect () {
     data: {
       name: newRedirectPath.value,
       path: finalPath.value,
-      redirect: routeIri
+      redirect: routeIri.value
     }
   })
   submitting.value = false
@@ -174,20 +175,42 @@ async function createRedirect () {
 async function saveRoute () {
   const resource = await saveResource()
   if (resource) {
+    emit('reload')
     goBackToViewing()
-    await loadResource()
   }
 }
+
+watch(routeIri, async () => {
+  await loadResource()
+})
+
+const defaultResource = computed(() => {
+  const obj: {
+    path: string
+    pageData?: string
+    page?: string
+  } = {
+    path: ''
+  }
+  if (pageResource.value['@type'] === 'Page') {
+    obj.page = pageResource.value['@id']
+  } else {
+    obj.pageData = pageResource.value['@id']
+  }
+  return obj
+})
 
 const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
-  defaultResource: {
-    path: ''
+  defaultResource: defaultResource.value,
+  validate (data) {
+    data.name = data.path
+    return true
   },
   endpoint,
-  iri: routeIri || 'add',
+  iri: routeIri,
   excludeFields: ['redirectedFrom']
 })
 </script>
