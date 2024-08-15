@@ -153,6 +153,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     formatDate,
     deleteResource,
     saveTitle,
-    saveResource
+    saveResource,
+    loadResource
   }
 }

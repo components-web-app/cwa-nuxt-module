@@ -91,7 +91,7 @@
           </div>
         </div>
         <div class="cwa-flex cwa-justify-start">
-          <CwaUiFormButton color="blue">
+          <CwaUiFormButton color="blue" :disabled="submitting" @click="createRedirect">
             Create Redirect
           </CwaUiFormButton>
         </div>
@@ -108,6 +108,7 @@ import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalIn
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
+import { useCwa } from '#imports'
 
 const props = defineProps<{
   pageResource: CwaResource
@@ -118,9 +119,13 @@ const emit = defineEmits<{
   reload: []
 }>()
 
+const $cwa = useCwa()
+const routeIri = props.pageResource?.route
+const endpoint = `${routeIri}/redirects` || 'add'
+
+const submitting = ref(false)
 const newRedirectPath = ref<string>()
 const currentScreen = ref<'view'|'manage-route'|'create-redirect'>('view')
-const routeIri = computed(() => props.pageResource?.route)
 
 const recommendedRoute = computed(() => {
   if (!props.pageResource.title) {
@@ -140,9 +145,25 @@ function addRedirect () {
   currentScreen.value = 'create-redirect'
 }
 
-const endpoint = `${routeIri.value}/redirects` || 'add'
+async function createRedirect () {
+  submitting.value = true
+  const newResource = await $cwa.resourcesManager.createResource({
+    endpoint: '/_/routes',
+    data: {
+      name: newRedirectPath.value,
+      path: newRedirectPath.value,
+      redirect: routeIri
+    }
+  })
+  submitting.value = false
+  if (newResource) {
+    newRedirectPath.value = ''
+    goBackToViewing()
+    await loadResource()
+  }
+}
 
-const { isLoading: isLoadingRoute, resource, localResourceData } = useItemPage({
+const { isLoading: isLoadingRoute, resource, localResourceData, loadResource } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
@@ -150,6 +171,6 @@ const { isLoading: isLoadingRoute, resource, localResourceData } = useItemPage({
     path: ''
   },
   endpoint,
-  iri: routeIri.value || 'add'
+  iri: routeIri || 'add'
 })
 </script>
