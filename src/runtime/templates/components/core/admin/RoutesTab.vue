@@ -77,7 +77,7 @@
       </div>
     </div>
     <div v-else-if="currentScreen === 'create-redirect'">
-      <div class="cwa-flex cwa-flex-col cwa-space-y-8">
+      <div class="cwa-flex cwa-flex-col cwa-space-y-6">
         <div>
           <button @click="goBackToViewing">
             &lt; Back to Routes
@@ -89,7 +89,7 @@
           </div>
           <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
             <p v-if="newRedirectPath">
-              A user visiting <b class="cwa-bg-dark cwa-p-2">{{ newRedirectPath }}</b> will be redirected to <b class="cwa-bg-dark cwa-p-2">{{ resource?.path }}</b>
+              A user visiting <b class="cwa-bg-dark cwa-p-2">{{ finalPath }}</b> will be redirected to <b class="cwa-bg-dark cwa-p-2">{{ resource?.path }}</b>
             </p>
           </div>
         </div>
@@ -142,6 +142,7 @@ function goToManageRoute () {
   currentScreen.value = 'manage-route'
 }
 function goBackToViewing () {
+  newRedirectPath.value = ''
   currentScreen.value = 'view'
 }
 
@@ -149,19 +150,22 @@ function addRedirect () {
   currentScreen.value = 'create-redirect'
 }
 
+const finalPath = computed(() => {
+  return newRedirectPath.value?.startsWith('/') ? newRedirectPath.value : `/${newRedirectPath.value}`
+})
+
 async function createRedirect () {
   submitting.value = true
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes',
     data: {
       name: newRedirectPath.value,
-      path: newRedirectPath.value,
+      path: finalPath.value,
       redirect: routeIri
     }
   })
   submitting.value = false
   if (newResource) {
-    newRedirectPath.value = ''
     goBackToViewing()
     await loadResource()
   }
