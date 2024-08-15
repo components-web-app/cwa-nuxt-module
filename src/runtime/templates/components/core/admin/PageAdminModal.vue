@@ -101,10 +101,14 @@ const pageComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaPage'))
 })
 
+function cleanUiName (componentName: string) {
+  return componentName.replace(/^CwaPage/, '')
+}
+
 const pageComponentOptions = computed(() => {
   const options = []
   for (const componentName of pageComponentNames.value) {
-    const cleanName = componentName.replace(/^CwaPage/, '')
+    const cleanName = cleanUiName(componentName)
     options.push({
       label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
       value: componentName
@@ -117,7 +121,8 @@ const pageStyleOptions = computed(() => {
   if (!localResourceData.value?.uiComponent) {
     return []
   }
-  const configuredClasses = $cwa.pagesConfig?.[localResourceData.value?.uiComponent]?.classes
+  const cleanName = cleanUiName(localResourceData.value?.uiComponent)
+  const configuredClasses = $cwa.pagesConfig?.[cleanName]?.classes
   if (!configuredClasses) {
     return []
   }

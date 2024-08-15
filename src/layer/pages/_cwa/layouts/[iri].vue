@@ -10,14 +10,14 @@
             <ModalSelect v-model="localResourceData.uiClassNames" label="Style" :options="layoutStyleOptions" />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
-            <div v-if="!isAdding">
-              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
-                Save & Close
+            <div>
+              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(!isAdding)">
+                {{ isAdding ? 'Add Now' : 'Save & Close' }}
               </CwaUiFormButton>
             </div>
             <div>
-              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(true)">
-                {{ isAdding ? 'Add Now' : 'Save' }}
+              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(isAdding)">
+                {{ isAdding ? 'Add & Close' : 'Save' }}
               </CwaUiFormButton>
             </div>
           </div>
@@ -66,10 +66,14 @@ const layoutComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaLayout'))
 })
 
+function cleanUiName (componentName: string) {
+  return componentName.replace(/^CwaLayout/, '')
+}
+
 const layoutComponentOptions = computed(() => {
   const options = []
   for (const componentName of layoutComponentNames.value) {
-    const cleanName = componentName.replace(/^CwaPage/, '')
+    const cleanName = cleanUiName(componentName)
     options.push({
       label: $cwa.layoutsConfig?.[cleanName]?.name || cleanName,
       value: componentName
@@ -82,7 +86,8 @@ const layoutStyleOptions = computed(() => {
   if (!localResourceData.value?.uiComponent) {
     return []
   }
-  const configuredClasses = $cwa.layoutsConfig?.[localResourceData.value?.uiComponent]?.classes
+  const cleanName = cleanUiName(localResourceData.value?.uiComponent)
+  const configuredClasses = $cwa.layoutsConfig?.[cleanName]?.classes
   if (!configuredClasses) {
     return []
   }
