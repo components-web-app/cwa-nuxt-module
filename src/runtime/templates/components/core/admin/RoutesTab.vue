@@ -52,8 +52,8 @@
                 Save Route
               </CwaUiFormButton>
             </div>
-            <div>
-              <CwaUiFormButton color="grey" :disabled="isUpdating" @click="deleteResource">
+            <div v-if="!!routeIri">
+              <CwaUiFormButton color="grey" :disabled="isUpdating" @click="deleteRoute">
                 Delete Route
               </CwaUiFormButton>
             </div>
@@ -173,11 +173,17 @@ async function createRedirect () {
 }
 
 async function saveRoute () {
-  const resource = await saveResource()
+  const resource = await saveResource(true)
   if (resource) {
     emit('reload')
     goBackToViewing()
   }
+}
+
+async function deleteRoute () {
+  await deleteResource()
+  emit('reload')
+  goBackToViewing()
 }
 
 watch(routeIri, async () => {
