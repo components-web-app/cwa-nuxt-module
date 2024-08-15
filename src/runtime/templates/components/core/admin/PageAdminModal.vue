@@ -163,7 +163,8 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
     isTemplate: false,
     uiComponent: pageComponentOptions.value[0].value
   },
-  endpoint: props.iri
+  endpoint: props.iri,
+  routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes'))
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {

@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, type ComputedRef, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
@@ -7,6 +7,8 @@ import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
 type LimitedCwaResource = Omit<CwaResource, '@id'|'_metadata'>
 
+type StartsWithHash = `#${string}`;
+
 type UseItemOps = {
   createEndpoint: string
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
@@ -14,9 +16,10 @@ type UseItemOps = {
   defaultResource: Omit<LimitedCwaResource, '@type'>
   validate?: (data: any) => boolean|string
   endpoint?: string
+  routeHashAfterAdd?: ComputedRef<StartsWithHash>
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
@@ -105,7 +108,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
           if (close) {
             emit('close')
           } else {
-            router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query })
+            router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query, hash: routeHashAfterAdd?.value })
           }
         }
         return
