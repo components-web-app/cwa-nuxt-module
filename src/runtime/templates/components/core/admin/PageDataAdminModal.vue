@@ -38,6 +38,9 @@
           </div>
         </div>
       </template>
+      <template #routes>
+        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" />
+      </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
@@ -73,6 +76,7 @@ import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import { useCwa } from '#imports'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import RoutesTab from '#cwa/runtime/templates/components/core/admin/RoutesTab.vue'
 
 const emit = defineEmits<{
   close: [],
@@ -82,7 +86,7 @@ const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType?:
 
 const $cwa = useCwa()
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: props.resourceType || 'Page',
