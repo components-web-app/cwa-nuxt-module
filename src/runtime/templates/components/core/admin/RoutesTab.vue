@@ -2,7 +2,7 @@
   <div>
     <div v-if="currentScreen === 'view'">
       <div class="cwa-flex cwa-flex-col cwa-space-y-6">
-        <ModalInfo label="Route" :content="resource?.path">
+        <ModalInfo label="Route" :content="isLoadingRoute ? undefined : resource?.path">
           <Spinner v-if="isLoadingRoute" :show="true" />
           <CwaUiFormButton v-else :color="resource?.path ? 'dark' : 'blue'" @click="goToManageRoute">
             {{ resource?.path ? 'Edit' : 'Create New Route' }}
@@ -27,20 +27,48 @@
         </div>
       </div>
     </div>
-    <div v-else-if="currentScreen === 'manage-route'">
+    <div v-else-if="currentScreen === 'manage-route' && localResourceData">
       <div class="cwa-flex cwa-flex-col cwa-space-y-8">
         <div>
           <button @click="goBackToViewing">
             &lt; Back to Routes
           </button>
         </div>
-        <div class="cwa-flex cwa-flex-col cwa-space-4-4">
-          Edit and Create Section
+        <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+          <div>
+            <ModalInput v-model="localResourceData.path" label="Route path" :placeholder="recommendedRoute" />
+          </div>
+          <div>
+            <p class="cwa-text-sm cwa-text-stone-300">
+              When updating, we will automatically create a new redirect from the old path.
+            </p>
+          </div>
+          <div class="cwa-flex cwa-justify-between">
+            <div>
+              <CwaUiFormButton color="blue">
+                Save Route
+              </CwaUiFormButton>
+            </div>
+            <div>
+              <CwaUiFormButton color="grey">
+                Delete Route
+              </CwaUiFormButton>
+            </div>
+          </div>
         </div>
         <template v-if="recommendedRoute !== resource?.path">
           <div class="cwa-w-full cwa-border-b cwa-border-b-stone-600" />
-          <div class="cwa-flex cwa-flex-col">
-            Section to generate route as recommended by page title: `{{ recommendedRoute }}`
+          <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+            <ModalInfo label="Recommended route path" :content="recommendedRoute" />
+          </div>
+          <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
+            <p>This is based on your page title <b>`{{ pageResource.title }}`</b>.</p>
+            <p>It is optimal for search engines to increase the relevance of the page to the title provided. Relevance of page content is important too.</p>
+          </div>
+          <div class="cwa-flex cwa-justify-start">
+            <CwaUiFormButton color="blue">
+              Use Recommended Route
+            </CwaUiFormButton>
           </div>
         </template>
       </div>
@@ -62,6 +90,7 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
+import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 
 const props = defineProps<{
   pageResource: CwaResource
@@ -94,11 +123,13 @@ function addRedirect () {
   currentScreen.value = 'create-redirect'
 }
 
-const { isLoading: isLoadingRoute, resource } = useItemPage({
+const { isLoading: isLoadingRoute, resource, localResourceData } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
-  defaultResource: {},
+  defaultResource: {
+    path: ''
+  },
   endpoint: routeIri.value || 'add'
 })
 </script>
