@@ -13,7 +13,9 @@
             {{ redirectRoute.path }}
           </div>
           <div>
-            <CwaUiIconBinIcon class="cwa-w-4" />
+            <button @click="deleteRoute(redirectRoute['@id'])">
+              <CwaUiIconBinIcon class="cwa-w-4" />
+            </button>
           </div>
           <RouteRedirectsTree v-if="redirectRoute.redirectedFrom" :redirects="redirectRoute.redirectedFrom" @reload="$emit('reload')" />
         </div>
@@ -24,11 +26,20 @@
 
 <script lang="ts" setup>
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import { useCwa } from '#imports'
 
-defineEmits<{
+const $cwa = useCwa()
+const emit = defineEmits<{
   reload: []
 }>()
 defineProps<{
   redirects: CwaResource[]
 }>()
+
+async function deleteRoute (iri: string) {
+  await $cwa.resourcesManager.deleteResource({
+    endpoint: iri
+  })
+  emit('reload')
+}
 </script>
