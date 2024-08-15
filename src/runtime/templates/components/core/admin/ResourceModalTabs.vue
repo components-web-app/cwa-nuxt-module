@@ -23,19 +23,35 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { useRoute, useRouter } from '#imports'
 
 export type ResourceModalTab = {
   id: string
   label: string
 }
 
-defineProps<{
+const router = useRouter()
+const route = useRoute()
+
+const props = defineProps<{
   tabs: ResourceModalTab[]
 }>()
 
 function selectTab (index: number) {
   selectedTabIndex.value = index
+  router.push({ ...route, hash: `#${props.tabs[selectedTabIndex.value].id}` })
 }
 
-const selectedTabIndex = ref(0)
+function getIndexFromHash () {
+  const currentHash = route.hash?.substring(1, route.hash.length)
+  if (!currentHash) {
+    return 0
+  }
+  const initialHashValue = route.hash.substring(1, route.hash.length)
+  const initialIndex = props.tabs.findIndex(({ id }) => id === initialHashValue) || 0
+
+  return initialIndex
+}
+
+const selectedTabIndex = ref(getIndexFromHash())
 </script>
