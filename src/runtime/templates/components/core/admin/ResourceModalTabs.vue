@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from '#imports'
 
 export type ResourceModalTab = {
@@ -39,7 +39,7 @@ const props = defineProps<{
 
 function selectTab (index: number) {
   selectedTabIndex.value = index
-  router.push({ ...route, hash: `#${props.tabs[selectedTabIndex.value].id}` })
+  router.push({ ...route, hash: `#${selectedTabId.value}` })
 }
 
 function getIndexFromHash () {
@@ -48,8 +48,35 @@ function getIndexFromHash () {
     return 0
   }
   const initialHashValue = route.hash.substring(1, route.hash.length)
-  return props.tabs.findIndex(({ id }) => id === initialHashValue) || 0
+  return getIndexFromId(initialHashValue)
+}
+
+function getIndexFromId (checkId: string) {
+  const index = props.tabs.findIndex(({ id }) => id === checkId)
+  return index !== -1 ? index : 0
 }
 
 const selectedTabIndex = ref(getIndexFromHash())
+const selectedTabId = computed(() => {
+  return props.tabs[selectedTabIndex.value]?.id
+})
+
+const indexAndId = computed(() => {
+  return {
+    index: selectedTabIndex.value,
+    id: selectedTabId.value
+  }
+})
+
+// if the tabs change due to resource changing (like changing to static/dynamic) then we want to ideally satay on the same tab if it exists or return to 0
+watch(indexAndId, (newValues, oldValues) => {
+  if (oldValues.id === undefined) {
+    return
+  }
+  const indexIsSame = oldValues.index === newValues.index
+  const idHasChanged = oldValues.id !== newValues.id
+  if (indexIsSame && idHasChanged) {
+    selectedTabIndex.value = getIndexFromId(oldValues.id)
+  }
+})
 </script>

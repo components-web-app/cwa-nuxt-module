@@ -52,6 +52,9 @@
           </div>
         </div>
       </template>
+      <template #routes>
+        <RoutesTab />
+      </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
@@ -89,6 +92,7 @@ import { useCwa } from '#imports'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import PageTypeSelect from '#cwa/runtime/templates/components/core/admin/form/PageTypeSelect.vue'
+import RoutesTab from '#cwa/runtime/templates/components/core/admin/RoutesTab.vue'
 
 const emit = defineEmits<{
   close: [],
