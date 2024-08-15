@@ -14,7 +14,7 @@
       </div>
     </div>
     <div class="cwa-grow cwa-min-h-0 cwa-overflow-auto">
-      <slot :name="tabs[selectedTabIndex].id">
+      <slot v-if="tabs[selectedTabIndex]?.id" :name="tabs[selectedTabIndex]?.id">
         No tab content provided for tab index `{{ selectedTabIndex }}`- ID: `{{ tabs[selectedTabIndex].id }}`
       </slot>
     </div>
@@ -22,20 +22,61 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from '#imports'
 
 export type ResourceModalTab = {
   id: string
   label: string
 }
 
-defineProps<{
+const router = useRouter()
+const route = useRoute()
+
+const props = defineProps<{
   tabs: ResourceModalTab[]
 }>()
 
 function selectTab (index: number) {
   selectedTabIndex.value = index
+  router.push({ ...route, hash: `#${selectedTabId.value}` })
 }
 
-const selectedTabIndex = ref(0)
+function getIndexFromHash () {
+  const currentHash = route.hash?.substring(1, route.hash.length)
+  if (!currentHash) {
+    return 0
+  }
+  const initialHashValue = route.hash.substring(1, route.hash.length)
+  return getIndexFromId(initialHashValue)
+}
+
+function getIndexFromId (checkId: string) {
+  const index = props.tabs.findIndex(({ id }) => id === checkId)
+  return index !== -1 ? index : 0
+}
+
+const selectedTabIndex = ref(getIndexFromHash())
+const selectedTabId = computed(() => {
+  return props.tabs[selectedTabIndex.value]?.id
+})
+
+const indexAndId = computed(() => {
+  return {
+    index: selectedTabIndex.value,
+    id: selectedTabId.value
+  }
+})
+
+// if the tabs change due to resource changing (like changing to static/dynamic) then we want to ideally satay on the same tab if it exists or return to 0
+watch(indexAndId, (newValues, oldValues) => {
+  if (oldValues.id === undefined) {
+    return
+  }
+  const indexIsSame = oldValues.index === newValues.index
+  const idHasChanged = oldValues.id !== newValues.id
+  if (indexIsSame && idHasChanged) {
+    selectedTabIndex.value = getIndexFromId(oldValues.id)
+  }
+})
 </script>

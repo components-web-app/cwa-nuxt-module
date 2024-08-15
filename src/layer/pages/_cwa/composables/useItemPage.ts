@@ -1,36 +1,41 @@
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, type ComputedRef, onMounted, type Ref, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
-type LimitedCwaResource = Omit<CwaResource, '@id'|'_metadata'>
+type TempCwaResource = Omit<CwaResource, '@id'|'_metadata'>
+
+type StartsWithHash = `#${string}`;
 
 type UseItemOps = {
   createEndpoint: string
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
   resourceType: string,
-  defaultResource: Omit<LimitedCwaResource, '@type'>
+  defaultResource: Omit<TempCwaResource, '@type'>
   validate?: (data: any) => boolean|string
-  endpoint?: string
+  endpoint?: Ref<string|undefined>
+  routeHashAfterAdd?: ComputedRef<StartsWithHash>
+  iri?: Ref<string|undefined>
+  excludeFields?: string[]
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
-  const endpoint = userDefinedEndpoint || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri)
-  if (!endpoint) {
+  const endpoint = computed(() => userDefinedEndpoint?.value || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri))
+  if (!endpoint.value) {
     throw new Error('No Endpoint Found For useItemPage composable')
   }
 
   const isLoading = ref(true)
   const isUpdating = ref(false)
-  const localResourceData = ref<LimitedCwaResource>()
+  const localResourceData = ref<TempCwaResource|CwaResource>()
 
-  const isAdding = computed(() => endpoint === 'add')
-  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(endpoint).value?.data)
+  const isAdding = computed(() => endpoint.value === 'add')
+  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri?.value || endpoint.value).value?.data)
 
   function formatDate (dateStr:string) {
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
@@ -45,14 +50,15 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       return localResourceData.value
     }
     return $cwa.fetchResource({
-      path: endpoint
+      path: endpoint.value,
+      iri: iri?.value
     })
   }
 
   async function deleteResource () {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
-      endpoint
+      endpoint: iri?.value || endpoint.value
     })
     emit('reload')
     emit('close')
@@ -91,8 +97,13 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
     }
     const doRequest = async () => {
-      const data = {
+      const data: { [key: string]: any } = {
         ...localResourceData.value
+      }
+      if (excludeFields) {
+        for (const field of excludeFields) {
+          data[field] && (delete data[field])
+        }
       }
       if (isAdding.value) {
         const newResource = await $cwa.resourcesManager.createResource({
@@ -105,28 +116,30 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
           if (close) {
             emit('close')
           } else {
-            router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query })
+            router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query, hash: routeHashAfterAdd?.value })
           }
         }
-        return
+        return newResource
       }
 
       const updatedResource = await $cwa.resourcesManager.updateResource({
-        endpoint,
+        endpoint: iri?.value || endpoint.value,
         data
       })
       if (close && updatedResource) {
         emit('close')
       }
+      return updatedResource
     }
 
     isUpdating.value = true
-    await doRequest()
+    const resource = await doRequest()
     isUpdating.value = false
+    return resource
   }
 
   watch(resource, (newResource) => {
-    newResource && (localResourceData.value = newResource)
+    !isAdding.value && newResource && (localResourceData.value = { ...newResource })
   })
 
   onMounted(async () => {
@@ -135,18 +148,19 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       emit('close')
       return
     }
-    localResourceData.value = { ...resource.value }
     isLoading.value = false
   })
 
   return {
     isLoading,
     isUpdating,
+    resource,
     localResourceData,
     isAdding,
     formatDate,
     deleteResource,
     saveTitle,
-    saveResource
+    saveResource,
+    loadResource
   }
 }
