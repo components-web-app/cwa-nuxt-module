@@ -48,12 +48,12 @@
           </div>
           <div class="cwa-flex cwa-justify-between">
             <div>
-              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="saveRoute">
+              <CwaUiFormButton color="blue" :disabled="disableButtons" @click="saveRoute">
                 Save Route
               </CwaUiFormButton>
             </div>
             <div v-if="!!routeIri">
-              <CwaUiFormButton color="grey" :disabled="isUpdating" @click="deleteRoute">
+              <CwaUiFormButton color="grey" :disabled="disableButtons" @click="deleteRoute">
                 Delete Route
               </CwaUiFormButton>
             </div>
@@ -69,7 +69,7 @@
             <p>It is optimal for search engines to increase the relevance of the page to the title provided. Relevance of page content is important too.</p>
           </div>
           <div class="cwa-flex cwa-justify-start">
-            <CwaUiFormButton color="blue">
+            <CwaUiFormButton color="blue" :disabled="disableButtons" @click="generateRoute">
               Use Recommended Route
             </CwaUiFormButton>
           </div>
@@ -94,7 +94,7 @@
           </div>
         </div>
         <div class="cwa-flex cwa-justify-start">
-          <CwaUiFormButton color="blue" :disabled="submitting" @click="createRedirect">
+          <CwaUiFormButton color="blue" :disabled="disableButtons" @click="createRedirect">
             Create Redirect
           </CwaUiFormButton>
         </div>
@@ -127,6 +127,7 @@ const $cwa = useCwa()
 const pageResource = toRef(props, 'pageResource')
 const routeIri = computed(() => pageResource.value?.route)
 const endpoint = computed(() => routeIri.value ? `${routeIri.value}/redirects` : 'add')
+const disableButtons = computed(() => submitting.value || isUpdating.value)
 
 const submitting = ref(false)
 const newRedirectPath = ref<string>()
@@ -172,9 +173,26 @@ async function createRedirect () {
   }
 }
 
+async function generateRoute () {
+  submitting.value = true
+  const newResource = await $cwa.resourcesManager.createResource({
+    endpoint: '/_/routes/generate',
+    data: {
+      page: defaultResource.value.page,
+      pageData: defaultResource.value.pageData
+    }
+  })
+  submitting.value = false
+  if (newResource) {
+    emit('reload')
+    goBackToViewing()
+  }
+}
+
 async function saveRoute () {
   const resource = await saveResource(true)
   if (resource) {
+    await loadResource()
     emit('reload')
     goBackToViewing()
   }
