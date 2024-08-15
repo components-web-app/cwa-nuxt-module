@@ -22,7 +22,10 @@
           </div>
           <div>
             <Spinner v-if="isLoadingRoute" :show="true" />
-            <pre v-else>{{ resource?.redirectedFrom }}</pre>
+            <RouteRedirectsTree v-else-if="resource?.redirectedFrom" :redirects="resource.redirectedFrom" @reload="loadResource" />
+            <p v-else>
+              You do not have any redirects
+            </p>
           </div>
         </div>
       </div>
@@ -109,6 +112,7 @@ import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import { useCwa } from '#imports'
+import RouteRedirectsTree from '#cwa/runtime/templates/components/core/admin/RouteRedirectsTree.vue'
 
 const props = defineProps<{
   pageResource: CwaResource
