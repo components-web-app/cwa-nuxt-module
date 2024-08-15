@@ -48,9 +48,7 @@ function getIndexFromHash () {
     return 0
   }
   const initialHashValue = route.hash.substring(1, route.hash.length)
-  const initialIndex = props.tabs.findIndex(({ id }) => id === initialHashValue) || 0
-
-  return initialIndex
+  return props.tabs.findIndex(({ id }) => id === initialHashValue) || 0
 }
 
 const selectedTabIndex = ref(getIndexFromHash())

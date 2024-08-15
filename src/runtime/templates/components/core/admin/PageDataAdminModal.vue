@@ -128,7 +128,7 @@ async function loadDynamicPageOptions () {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   isLoading.value = true
-  const { response } = $cwa.fetch({ path: '/_/pages?isTemplate=true' })
+  const { response } = $cwa.fetch({ path: '/_/pages?isTemplate=true', noQuery: true })
   const { _data: data } = await response
   if (thisRequestId === currentRequestId.value) {
     data && (dynamicPages.value = data['hydra:member'])

@@ -189,7 +189,7 @@ async function loadLayoutOptions () {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   isLoading.value = true
-  const { response } = $cwa.fetch({ path: '/_/layouts' })
+  const { response } = $cwa.fetch({ path: '/_/layouts', noQuery: true })
   const { _data: data } = await response
   if (thisRequestId === currentRequestId.value) {
     data && (layouts.value = data['hydra:member'])

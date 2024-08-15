@@ -28,14 +28,14 @@
             </div>
           </template>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
-            <div v-if="!isAdding">
-              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
-                Save & Close
+            <div>
+              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(!isAdding)">
+                {{ isAdding ? 'Add Now' : 'Save & Close' }}
               </CwaUiFormButton>
             </div>
             <div>
-              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(true)">
-                {{ isAdding ? 'Add Now' : 'Save' }}
+              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(isAdding)">
+                {{ isAdding ? 'Add & Close' : 'Save' }}
               </CwaUiFormButton>
             </div>
           </div>
@@ -57,7 +57,7 @@
             </div>
             <div>
               <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(false)">
-                {{ isAdding ? 'Add Now' : 'Save' }}
+                Save
               </CwaUiFormButton>
             </div>
           </div>

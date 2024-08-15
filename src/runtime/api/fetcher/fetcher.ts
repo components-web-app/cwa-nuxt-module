@@ -33,6 +33,7 @@ export interface FetchManifestEvent {
 
 export interface FetchEvent {
   path: string
+  noQuery?: boolean
   preload?: string[]
 }
 
@@ -255,7 +256,7 @@ export default class Fetcher {
   }
 
   public fetch (event: FetchEvent): CwaFetchResponseRaw {
-    const url = this.appendQueryToPath(event.path)
+    const url = event.noQuery ? event.path : this.appendQueryToPath(event.path)
     const headers = this.createRequestHeaders(event)
     const response = this.cwaFetch.fetch.raw<any>(url, {
       headers
