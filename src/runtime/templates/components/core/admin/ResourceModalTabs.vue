@@ -14,7 +14,7 @@
       </div>
     </div>
     <div class="cwa-grow cwa-min-h-0 cwa-overflow-auto">
-      <slot :name="tabs[selectedTabIndex].id">
+      <slot v-if="tabs[selectedTabIndex]?.id" :name="tabs[selectedTabIndex]?.id">
         No tab content provided for tab index `{{ selectedTabIndex }}`- ID: `{{ tabs[selectedTabIndex].id }}`
       </slot>
     </div>
