@@ -17,9 +17,10 @@ type UseItemOps = {
   validate?: (data: any) => boolean|string
   endpoint?: string
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
+  iri?: string
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
@@ -33,7 +34,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const localResourceData = ref<TempCwaResource|CwaResource>()
 
   const isAdding = computed(() => endpoint === 'add')
-  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(endpoint).value?.data)
+  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri || endpoint).value?.data)
 
   function formatDate (dateStr:string) {
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
@@ -48,7 +49,8 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       return localResourceData.value
     }
     return $cwa.fetchResource({
-      path: endpoint
+      path: endpoint,
+      iri
     })
   }
 

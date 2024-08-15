@@ -21,7 +21,7 @@
             </div>
           </div>
           <div>
-            <Spinner v-if="isLoadingRoute || isLoadingRedirects" :show="true" />
+            <Spinner v-if="isLoadingRoute" :show="true" />
             <pre v-else>{{ resource?.redirectedFrom }}</pre>
           </div>
         </div>
@@ -74,10 +74,27 @@
       </div>
     </div>
     <div v-else-if="currentScreen === 'create-redirect'">
-      <div>
-        <button @click="goBackToViewing">
-          &lt; Back to Routes
-        </button>
+      <div class="cwa-flex cwa-flex-col cwa-space-y-8">
+        <div>
+          <button @click="goBackToViewing">
+            &lt; Back to Routes
+          </button>
+        </div>
+        <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+          <div>
+            <ModalInput v-model="newRedirectPath" label="Redirect from path" placeholder="/some-path" />
+          </div>
+          <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
+            <p v-if="newRedirectPath">
+              A user visiting <b class="cwa-bg-dark cwa-p-2">{{ newRedirectPath }}</b> will be redirected to <b class="cwa-bg-dark cwa-p-2">{{ resource?.path }}</b>
+            </p>
+          </div>
+        </div>
+        <div class="cwa-flex cwa-justify-start">
+          <CwaUiFormButton color="blue">
+            Create Redirect
+          </CwaUiFormButton>
+        </div>
       </div>
     </div>
   </div>
@@ -101,7 +118,7 @@ const emit = defineEmits<{
   reload: []
 }>()
 
-const isLoadingRedirects = ref(true)
+const newRedirectPath = ref<string>()
 const currentScreen = ref<'view'|'manage-route'|'create-redirect'>('view')
 const routeIri = computed(() => props.pageResource?.route)
 
@@ -123,6 +140,8 @@ function addRedirect () {
   currentScreen.value = 'create-redirect'
 }
 
+const endpoint = `${routeIri.value}/redirects` || 'add'
+
 const { isLoading: isLoadingRoute, resource, localResourceData } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
@@ -130,6 +149,7 @@ const { isLoading: isLoadingRoute, resource, localResourceData } = useItemPage({
   defaultResource: {
     path: ''
   },
-  endpoint: routeIri.value || 'add'
+  endpoint,
+  iri: routeIri.value || 'add'
 })
 </script>

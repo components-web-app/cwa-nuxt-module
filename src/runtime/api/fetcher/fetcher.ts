@@ -24,6 +24,7 @@ export interface FetchResourceEvent {
   shallowFetch?: boolean|'noexist'
   noSave?: boolean
   isPrimary?: boolean
+  iri?: string
 }
 
 export interface FetchManifestEvent {
@@ -108,8 +109,8 @@ export default class Fetcher {
     })
   }
 
-  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave, isPrimary }: FetchResourceEvent): Promise<CwaResource|undefined> {
-    const iri = path.split('?')[0]
+  public async fetchResource ({ path, token, manifestPath, preload, shallowFetch, noSave, isPrimary, iri: userProvidedIri }: FetchResourceEvent): Promise<CwaResource|undefined> {
+    const iri = userProvidedIri || path.split('?')[0]
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token,
@@ -160,7 +161,7 @@ export default class Fetcher {
     }
 
     const doRedirect = this.fetchStatusManager.primaryFetchPath === path &&
-      getResourceTypeFromIri(path) === CwaResourceTypes.ROUTE &&
+      getResourceTypeFromIri(iri) === CwaResourceTypes.ROUTE &&
       resource?.redirectPath
 
     if (doRedirect) {
