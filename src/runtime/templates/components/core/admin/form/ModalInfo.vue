@@ -1,17 +1,20 @@
 <template>
-  <div class="cwa-flex cwa-flex-col space-space-y-1">
+  <div class="cwa-flex cwa-flex-col cwa-space-y-1">
     <span class="cwa-text-stone-400">
       {{ label }}
     </span>
-    <span class="cwa-truncate">
-      {{ content }}
-    </span>
+    <div class="cwa-flex cwa-items-center cwa-space-x-4">
+      <span v-if="content" class="cwa-truncate">
+        {{ content }}
+      </span>
+      <slot />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 defineProps<{
   label: string
-  content: string
+  content?: string
 }>()
 </script>

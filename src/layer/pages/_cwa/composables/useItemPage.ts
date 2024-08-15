@@ -5,7 +5,7 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
-type LimitedCwaResource = Omit<CwaResource, '@id'|'_metadata'>
+type TempCwaResource = Omit<CwaResource, '@id'|'_metadata'>
 
 type StartsWithHash = `#${string}`;
 
@@ -13,7 +13,7 @@ type UseItemOps = {
   createEndpoint: string
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
   resourceType: string,
-  defaultResource: Omit<LimitedCwaResource, '@type'>
+  defaultResource: Omit<TempCwaResource, '@type'>
   validate?: (data: any) => boolean|string
   endpoint?: string
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
@@ -30,7 +30,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
 
   const isLoading = ref(true)
   const isUpdating = ref(false)
-  const localResourceData = ref<LimitedCwaResource>()
+  const localResourceData = ref<TempCwaResource|CwaResource>()
 
   const isAdding = computed(() => endpoint === 'add')
   const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(endpoint).value?.data)

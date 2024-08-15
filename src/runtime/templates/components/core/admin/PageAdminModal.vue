@@ -53,7 +53,7 @@
         </div>
       </template>
       <template #routes>
-        <RoutesTab />
+        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" />
       </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">

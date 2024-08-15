@@ -57,6 +57,7 @@
     "nuxt": "^3.12.4",
     "object-hash": "^3.0.0",
     "pinia": "^2.1.7",
+    "slugify": "^1.6.6",
     "uuid": "^9.0.1",
     "vue": "^3.4.33",
     "vue-input-autowidth": "^2.2.1",
