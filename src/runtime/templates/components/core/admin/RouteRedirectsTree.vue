@@ -13,8 +13,8 @@
             {{ redirectRoute.path }}
           </div>
           <div>
-            <button @click="deleteRoute(redirectRoute['@id'])">
-              <CwaUiIconBinIcon class="cwa-w-4" />
+            <button class="cwa-opacity-60 hover:cwa-opacity-80" @click="deleteRoute(redirectRoute['@id'])">
+              <CwaUiIconBinIcon class="cwa-w-3.5" />
             </button>
           </div>
           <RouteRedirectsTree v-if="redirectRoute.redirectedFrom" :redirects="redirectRoute.redirectedFrom" @reload="$emit('reload')" />

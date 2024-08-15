@@ -48,12 +48,12 @@
           </div>
           <div class="cwa-flex cwa-justify-between">
             <div>
-              <CwaUiFormButton color="blue">
+              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="saveRoute">
                 Save Route
               </CwaUiFormButton>
             </div>
             <div>
-              <CwaUiFormButton color="grey">
+              <CwaUiFormButton color="grey" :disabled="isUpdating" @click="deleteResource">
                 Delete Route
               </CwaUiFormButton>
             </div>
@@ -171,7 +171,15 @@ async function createRedirect () {
   }
 }
 
-const { isLoading: isLoadingRoute, resource, localResourceData, loadResource } = useItemPage({
+async function saveRoute () {
+  const resource = await saveResource()
+  if (resource) {
+    goBackToViewing()
+    await loadResource()
+  }
+}
+
+const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
@@ -179,6 +187,7 @@ const { isLoading: isLoadingRoute, resource, localResourceData, loadResource } =
     path: ''
   },
   endpoint,
-  iri: routeIri || 'add'
+  iri: routeIri || 'add',
+  excludeFields: ['redirectedFrom']
 })
 </script>

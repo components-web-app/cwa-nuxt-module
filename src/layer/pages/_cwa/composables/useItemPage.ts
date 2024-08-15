@@ -18,9 +18,10 @@ type UseItemOps = {
   endpoint?: string
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
   iri?: string
+  excludeFields?: string[]
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
@@ -96,8 +97,13 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
     }
     const doRequest = async () => {
-      const data = {
+      const data: { [key: string]: any } = {
         ...localResourceData.value
+      }
+      if (excludeFields) {
+        for (const field of excludeFields) {
+          data[field] && (delete data[field])
+        }
       }
       if (isAdding.value) {
         const newResource = await $cwa.resourcesManager.createResource({
@@ -113,21 +119,23 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
             router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query, hash: routeHashAfterAdd?.value })
           }
         }
-        return
+        return newResource
       }
 
       const updatedResource = await $cwa.resourcesManager.updateResource({
-        endpoint,
+        endpoint: iri,
         data
       })
       if (close && updatedResource) {
         emit('close')
       }
+      return updatedResource
     }
 
     isUpdating.value = true
-    await doRequest()
+    const resource = await doRequest()
     isUpdating.value = false
+    return resource
   }
 
   watch(resource, (newResource) => {
