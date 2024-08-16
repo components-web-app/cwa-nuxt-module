@@ -1,5 +1,5 @@
 <template>
-  <PageDataAdminModal :resource-type="dataTypeClassName" @reload="$emit('reload')" />
+  <PageDataAdminModal :resource-type="dataTypeClassName || ''" @reload="$emit('reload')" />
 </template>
 
 <script lang="ts" setup>
