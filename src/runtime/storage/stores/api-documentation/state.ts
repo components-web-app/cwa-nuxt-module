@@ -1,5 +1,12 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+
+export interface PageDataMetadataResource extends CwaResource {
+  '@type': 'PageDataMetadata',
+  resourceClass: string
+  properties: { property: string, componentShortName: string, '@id': string, '@type': 'PageDataPropertyMetadata' }[]
+}
 
 export interface CwaApiDocumentationDataInterface {
   entrypoint?: {
@@ -55,9 +62,7 @@ export interface CwaApiDocumentationDataInterface {
     },
     '@id': '/_/page_data_metadatas',
     '@type': 'hydra:Collection',
-    'hydra:member': {
-      properties: { property: string, componentShortName: string, '@id': string, '@type': 'PageDataPropertyMetadata' }[]
-    }[]
+    'hydra:member': PageDataMetadataResource[]
   }
 }
 
