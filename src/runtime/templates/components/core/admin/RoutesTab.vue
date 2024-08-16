@@ -8,7 +8,7 @@
             {{ resource?.path ? 'Edit' : 'Create New Route' }}
           </CwaUiFormButton>
         </ModalInfo>
-        <div class="cwa-dark-blur cwa-p-6 cwa-flex cwa-flex-col cwa-space-y-2.5 cwa-border cwa-rounded-xl cwa-border-stone-600">
+        <div class="cwa-dark-blur cwa-p-4 cwa-flex cwa-flex-col cwa-space-y-2.5 cwa-border cwa-rounded-xl cwa-border-stone-600">
           <div class="cwa-flex cwa-space-x-4 cwa-items-center">
             <h2 class="cwa-text-stone-400 cwa-text-2xl">
               Redirects

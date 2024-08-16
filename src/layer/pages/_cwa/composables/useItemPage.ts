@@ -147,7 +147,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
 
   onMounted(async () => {
     await loadResource()
-    if (!resource.value || resource.value['@type'] !== resourceType) {
+    if (!resource.value || (resourceType !== undefined && resource.value['@type'] !== resourceType)) {
       emit('close')
       return
     }

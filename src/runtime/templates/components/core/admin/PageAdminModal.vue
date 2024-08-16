@@ -179,12 +179,6 @@ const tabs = computed<ResourceModalTab[]>(() => {
     }
   ]
   if (!isAdding.value) {
-    if (resource.value?.isTemplate) {
-      t.push({
-        label: 'Data Pages',
-        id: 'data'
-      })
-    }
     t.push({
       label: 'Routes',
       id: 'routes'
