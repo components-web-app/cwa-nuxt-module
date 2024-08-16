@@ -12,7 +12,7 @@
           <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
         </template>
         <template v-else>
-          <ul class="cwa-flex cwa-space-x-8 cwa-text-stone-400">
+          <ul class="cwa-flex cwa-space-x-8 cwa-text-stone-400 cwa-items-center">
             <li>
               <NuxtLink to="/_cwa/layouts" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
                 <IconLayouts />
@@ -21,20 +21,26 @@
             </li>
             <li>
               <NuxtLink to="/_cwa/pages" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
-                <IconPages />
+                <IconPages class="cwa-h-6" />
                 <span class="cwa-sr-only">Pages</span>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/_cwa/users" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
-                <IconUsers />
-                <span class="cwa-sr-only">Users</span>
+              <NuxtLink to="/_cwa/data" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
+                <IconData class="cwa-h-6" />
+                <span class="cwa-sr-only">Data</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink to="/_cwa/routes" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
                 <IconRoutes class="cwa-h-6" />
                 <span class="cwa-sr-only">Routes</span>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/_cwa/users" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
+                <IconUsers />
+                <span class="cwa-sr-only">Users</span>
               </NuxtLink>
             </li>
           </ul>
@@ -90,6 +96,7 @@ import ResourceModalOverlayTemplate from '#cwa/runtime/templates/components/core
 import PageAdminModal from '#cwa/runtime/templates/components/core/admin/PageAdminModal.vue'
 import PageDataAdminModal from '#cwa/runtime/templates/components/core/admin/PageDataAdminModal.vue'
 import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
+import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
 
 const $cwa = useCwa()
 const route = useRoute()

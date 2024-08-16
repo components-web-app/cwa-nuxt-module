@@ -21,7 +21,7 @@
         <div class="cwa-flex cwa-justify-center">
           <div class="cwa-flex cwa-justify-between cwa-w-full cwa-max-w-[400px]">
             <div class="cwa-mt-2">
-              <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-4">
+              <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-5">
                 <li>
                   <MenuPrimaryLink label="Layouts" to="/_cwa/layouts">
                     <IconLayouts class="cwa-w-7" />
@@ -29,17 +29,22 @@
                 </li>
                 <li>
                   <MenuPrimaryLink label="Pages" to="/_cwa/pages">
-                    <IconPages class="cwa-w-7" />
+                    <IconPages class="cwa-w-5 cwa-mx-1" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Users" to="/_cwa/users">
-                    <IconUsers class="cwa-w-7" />
+                  <MenuPrimaryLink label="Data" to="/_cwa/data">
+                    <IconData class="cwa-w-6 cwa-mx-0.5" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
                   <MenuPrimaryLink label="Routes" to="/_cwa/routes">
                     <IconRoutes class="cwa-w-7" />
+                  </MenuPrimaryLink>
+                </li>
+                <li>
+                  <MenuPrimaryLink label="Users" to="/_cwa/users">
+                    <IconUsers class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
               </ul>
@@ -99,6 +104,7 @@ import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.v
 import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
+import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
 
 const $cwa = useCwa()
 const route = useRoute()
