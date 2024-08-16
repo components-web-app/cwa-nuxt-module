@@ -66,6 +66,11 @@ export default defineNuxtConfig({
         }
       }
     },
+    pageData: {
+      'App\\Entity\\BlogArticleData': {
+        name: 'Blog Articles'
+      }
+    },
     tailwind: {
       base: false
     }

@@ -1,12 +1,12 @@
 <template>
-  <ListHeading title="Data Page Types" :hide-add="true" />
+  <ListHeading title="Page Data Categories" :hide-add="true" />
   <ListContainer>
     <ul class="cwa-my-6 cwa-flex cwa-flex-col cwa-space-y-4">
       <li v-for="pageData of dataTypes" :key="pageData['@id']">
         <div class="cwa-flex cwa-p-4 cwa-border cwa-border-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center cwa-bg-dark/80 hover:cwa-bg-dark cwa-cursor-pointer cwa-transition-colors">
           <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
             <div class="cwa-flex cwa-items-center cwa-space-x-3">
-              <span class="cwa-text-xl">{{ pageData.resourceClass }}</span>
+              <span class="cwa-text-xl">{{ displayPageDataClassName(pageData.resourceClass) }}</span>
             </div>
           </div>
           <div class="cwa-flex cwa-space-x-2">
@@ -30,6 +30,10 @@ import type { PageDataMetadataResource } from '#cwa/runtime/storage/stores/api-d
 
 const $cwa = useCwa()
 const dataTypes = ref<PageDataMetadataResource[]>([])
+
+function displayPageDataClassName (cls: string) {
+  return $cwa.pageDataConfig?.[cls]?.name || cls
+}
 
 onMounted(async () => {
   if (!$cwa.auth.user?.['@id']) {

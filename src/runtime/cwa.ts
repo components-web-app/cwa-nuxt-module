@@ -138,6 +138,10 @@ export default class Cwa {
     return this.options.pages
   }
 
+  public get pageDataConfig () {
+    return this.options.pageData
+  }
+
   public get appName (): string {
     return this.options.appName
   }

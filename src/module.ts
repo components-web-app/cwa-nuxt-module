@@ -52,6 +52,9 @@ export interface CwaModuleOptions {
   pages?: {
     [type: string]: CwaUiMeta
   }
+  pageData?: {
+    [resourceClass: string]: Pick<CwaUiMeta, 'name'>
+  }
   tailwind?: {
     base?: boolean
   },
