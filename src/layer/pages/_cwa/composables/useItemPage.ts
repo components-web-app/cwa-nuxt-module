@@ -51,7 +51,8 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     }
     return $cwa.fetchResource({
       path: endpoint.value,
-      iri: iri?.value
+      iri: iri?.value,
+      shallowFetch: true
     })
   }
 
@@ -138,9 +139,11 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return resource
   }
 
-  watch(resource, (newResource) => {
+  function syncLocalResourceWithStore (newResource: TempCwaResource|undefined) {
     !isAdding.value && newResource && (localResourceData.value = { ...newResource })
-  })
+  }
+
+  watch(resource, syncLocalResourceWithStore)
 
   onMounted(async () => {
     await loadResource()

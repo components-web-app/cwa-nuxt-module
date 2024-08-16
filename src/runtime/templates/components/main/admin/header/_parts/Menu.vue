@@ -24,17 +24,22 @@
               <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-4">
                 <li>
                   <MenuPrimaryLink label="Layouts" to="/_cwa/layouts">
-                    <IconLayouts />
+                    <IconLayouts class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
                   <MenuPrimaryLink label="Pages" to="/_cwa/pages">
-                    <IconPages />
+                    <IconPages class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
                   <MenuPrimaryLink label="Users" to="/_cwa/users">
-                    <IconUsers />
+                    <IconUsers class="cwa-w-7" />
+                  </MenuPrimaryLink>
+                </li>
+                <li>
+                  <MenuPrimaryLink label="Routes" to="/_cwa/routes">
+                    <IconRoutes class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
               </ul>
@@ -93,6 +98,7 @@ import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayou
 import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
 import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
+import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
 
 const $cwa = useCwa()
 const route = useRoute()

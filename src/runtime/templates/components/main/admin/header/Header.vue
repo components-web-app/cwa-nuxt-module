@@ -31,6 +31,12 @@
                 <span class="cwa-sr-only">Users</span>
               </NuxtLink>
             </li>
+            <li>
+              <NuxtLink to="/_cwa/routes" class="hover:cwa-text-white cwa-transition-colors" active-class="cwa-text-white">
+                <IconRoutes class="cwa-h-6" />
+                <span class="cwa-sr-only">Routes</span>
+              </NuxtLink>
+            </li>
           </ul>
         </template>
       </div>
@@ -54,7 +60,7 @@
     <ResourceLoadingIndicator class="cwa-absolute cwa-top-full cwa-left-0 cwa-z-10" />
   </div>
   <RequestErrors />
-  <ResourceModalOverlayTemplate :show="showEditModal">
+  <ResourceModalOverlayTemplate :show="showEditModal && !!($cwa.resources.pageDataIri.value || $cwa.resources.pageIri.value)">
     <PageDataAdminModal
       v-if="$cwa.resources.pageDataIri.value"
       :resource-type="$cwa.resources.pageData?.value?.data?.['@type']"
@@ -83,6 +89,7 @@ import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.v
 import ResourceModalOverlayTemplate from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
 import PageAdminModal from '#cwa/runtime/templates/components/core/admin/PageAdminModal.vue'
 import PageDataAdminModal from '#cwa/runtime/templates/components/core/admin/PageDataAdminModal.vue'
+import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
 
 const $cwa = useCwa()
 const route = useRoute()
