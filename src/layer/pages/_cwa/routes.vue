@@ -20,7 +20,7 @@
             <IconPages class="cwa-w-6" />
             <span class="cwa-sr-only">Settings</span>
           </CwaUiFormButton>
-          <CwaUiFormButton v-else-if="!data.redirect" color="blue">
+          <CwaUiFormButton v-else-if="!data.redirect" color="blue" @click="deleteRoute(data['@id'])">
             <CwaUiIconBinIcon class="cwa-w-4 cwa-m-1" />
             <span class="cwa-sr-only">Settings</span>
           </CwaUiFormButton>
@@ -39,12 +39,21 @@ import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
 import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
 import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
+import { useCwa } from '#imports'
 
+const $cwa = useCwa()
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
-const { computedItemLink } = useListPage(listContent)
+const { computedItemLink, triggerReload } = useListPage(listContent)
 
 function getAssociatedIri (data: any) {
   return data.page || data.pageData
+}
+
+async function deleteRoute (routeIri: string) {
+  await $cwa.resourcesManager.deleteResource({
+    endpoint: routeIri
+  })
+  triggerReload()
 }
 
 const orderOptions = [
