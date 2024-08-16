@@ -3,7 +3,7 @@
   <ListFilter :order-options="orderOptions" :search-fields="['path']" />
   <ListContent ref="listContent" fetch-url="/_/routes">
     <template #item="data">
-      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center">
+      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1 cwa-min-w-0">
           <span class="cwa-text-xl cwa-truncate">{{ data.path }}</span>
           <span v-if="data.redirect || getAssociatedIri(data)" class="cwa-text-stone-400">
@@ -13,16 +13,20 @@
               <span class="cwa-truncate">{{ data.redirect || getAssociatedIri(data) }}</span>
             </span>
           </span>
-          <span v-else class="cwa-truncate cwa-text-magenta cwa-font-bold">This route has no association and should be deleted</span>
+          <span v-else>
+            <span class="cwa-inline-flex cwa-truncate cwa-bg-magenta/60 cwa-text-white cwa-font-bold cwa-py-1 cwa-px-3 cwa-border cwa-border-magenta cwa-rounded">
+              This route has no association and should be deleted
+            </span>
+          </span>
         </div>
         <div>
           <CwaUiFormButton v-if="getAssociatedIri(data)" :to="computedItemLink(getAssociatedIri(data), '_cwa-pages', '#routes')">
             <IconPages class="cwa-w-6" />
-            <span class="cwa-sr-only">Settings</span>
+            <span class="cwa-sr-only">View</span>
           </CwaUiFormButton>
-          <CwaUiFormButton v-else-if="!data.redirect" color="blue" @click="deleteRoute(data['@id'])">
+          <CwaUiFormButton v-else-if="!data.redirect" color="error" @click="deleteRoute(data['@id'])">
             <CwaUiIconBinIcon class="cwa-w-4 cwa-m-1" />
-            <span class="cwa-sr-only">Settings</span>
+            <span class="cwa-sr-only">Delete</span>
           </CwaUiFormButton>
         </div>
       </div>

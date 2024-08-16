@@ -22,7 +22,7 @@
             </h2>
           </div>
         </div>
-        <ul v-else class="cwa-flex cwa-flex-col cwa-space-y-4">
+        <ul v-else class="cwa-flex cwa-flex-col">
           <li v-for="(item, index) in itemsFromStore" :key="`list-item-${index}`">
             <slot name="item" v-bind="item">
               <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">

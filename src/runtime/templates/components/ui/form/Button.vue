@@ -23,7 +23,7 @@ export interface ButtonOption {
   value: ModelValue
 }
 
-export type ButtonColor = 'blue' | 'grey' | 'dark'
+export type ButtonColor = 'blue' | 'grey' | 'dark' | 'error'
 
 const props = withDefaults(defineProps<
 {
@@ -52,6 +52,9 @@ const buttonColorClassNames = computed(() => {
   }
   if (props.color === 'dark') {
     return 'cwa-text-light cwa-bg-dark/90 hover:cwa-bg-dark cwa-border-stone-400 hover:cwa-border-white hover:cwa-text-white'
+  }
+  if (props.color === 'error') {
+    return 'cwa-text-light cwa-bg-magenta/80 hover:cwa-bg-magenta cwa-border-magenta hover:cwa-border-magenta hover:cwa-text-white'
   }
   return 'cwa-text-white cwa-bg-stone-700/90 hover:cwa-bg-stone-700 cwa-border-transparent'
 })

@@ -19,7 +19,7 @@
   </ListContainer>
   <ListContent ref="listContent" fetch-url="/_/pages">
     <template #item="data">
-      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-4 cwa-space-x-4 cwa-items-center">
+      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
           <div class="cwa-flex cwa-items-center cwa-space-x-3">
             <span class="cwa-text-xl">{{ data.reference }}</span><span :class="['cwa-outline', 'cwa-outline-1', 'cwa-outline-offset-2', 'cwa-w-2', 'cwa-h-2', 'cwa-rounded-full', data.isTemplate ? 'cwa-outline-yellow cwa-bg-yellow' : 'cwa-outline-blue-600 cwa-bg-blue-600']" />
