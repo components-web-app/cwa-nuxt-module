@@ -27,8 +27,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { useCwa } from '#imports'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
@@ -36,38 +36,16 @@ import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
+import { useDataType } from '#cwa/layer/pages/_cwa/composables/useDataType'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const $cwa = useCwa()
-const route = useRoute()
 const router = useRouter()
+const { pageDataClassName, dataTypeCamelCase } = useDataType()
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
-const dataType = computed(() => {
-  const typeParam = route.params.type
-  return Array.isArray(typeParam) ? typeParam[0] : typeParam
-})
-const dataTypeClassName = computed(() => {
-  if (!dataType.value) {
-    return
-  }
-  return dataType.value.split('\\').pop()
-})
-const dataTypeCamelCase = computed(() => {
-  const className = dataTypeClassName.value
-  if (!className) {
-    return
-  }
-  return className.charAt(0).toLowerCase() + className.slice(1)
-})
-const pageDataClassName = computed(() => {
-  if (!dataType.value) {
-    return 'Unknown'
-  }
-  return $cwa.pageDataConfig?.[dataType.value]?.name || dataType.value
-})
 const endpoint = ref<string>()
 
 const orderOptions = [
