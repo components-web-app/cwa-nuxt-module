@@ -3,33 +3,7 @@
   <ListFilter :order-options="orderOptions" :search-fields="['path']" />
   <ListContent ref="listContent" fetch-url="/_/routes">
     <template #item="data">
-      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
-        <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1 cwa-min-w-0">
-          <span class="cwa-text-xl cwa-truncate">{{ data.path }}</span>
-          <span v-if="data.redirect || getAssociatedIri(data)" class="cwa-text-stone-400">
-            <span class="cwa-inline-flex cwa-max-w-full cwa-bg-dark cwa-p-2 cwa-font-bold cwa-space-x-2">
-              <IconRoutes v-if="data.redirect" class="cwa-w-5" />
-              <IconPages v-else class="cwa-w-5" />
-              <span class="cwa-truncate">{{ data.redirect || getAssociatedIri(data) }}</span>
-            </span>
-          </span>
-          <span v-else>
-            <span class="cwa-inline-flex cwa-truncate cwa-bg-magenta/60 cwa-text-white cwa-font-bold cwa-py-1 cwa-px-3 cwa-border cwa-border-magenta cwa-rounded">
-              This route has no association and should be deleted
-            </span>
-          </span>
-        </div>
-        <div>
-          <CwaUiFormButton v-if="getAssociatedIri(data)" :to="computedItemLink(getAssociatedIri(data), '_cwa-pages', '#routes')">
-            <IconPages class="cwa-w-6" />
-            <span class="cwa-sr-only">View</span>
-          </CwaUiFormButton>
-          <CwaUiFormButton v-else-if="!data.redirect" color="error" @click="deleteRoute(data['@id'])">
-            <CwaUiIconBinIcon class="cwa-w-4 cwa-m-1" />
-            <span class="cwa-sr-only">Delete</span>
-          </CwaUiFormButton>
-        </div>
-      </div>
+      <RouteListRow :data="data" :link-fn="computedItemLink" @delete="deleteRoute" />
     </template>
   </ListContent>
 </template>
@@ -41,17 +15,12 @@ import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeadin
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
-import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
-import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
 import { useCwa } from '#imports'
+import RouteListRow from '#cwa/runtime/templates/components/core/admin/RouteListRow.vue'
 
 const $cwa = useCwa()
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 const { computedItemLink, triggerReload } = useListPage(listContent)
-
-function getAssociatedIri (data: any) {
-  return data.page || data.pageData
-}
 
 async function deleteRoute (routeIri: string) {
   await $cwa.resourcesManager.deleteResource({
