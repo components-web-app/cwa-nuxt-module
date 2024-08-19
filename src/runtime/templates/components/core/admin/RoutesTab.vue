@@ -199,7 +199,7 @@ async function saveRoute () {
 }
 
 async function deleteRoute () {
-  await deleteResource()
+  await deleteResource([pageResource.value['@id']])
   emit('reload')
   goBackToViewing()
 }

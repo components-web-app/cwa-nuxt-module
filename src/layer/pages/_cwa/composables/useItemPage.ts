@@ -56,10 +56,11 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     })
   }
 
-  async function deleteResource () {
+  async function deleteResource (refreshEndpoints?: string[]) {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
-      endpoint: iri?.value || endpoint.value
+      endpoint: iri?.value || endpoint.value,
+      refreshEndpoints
     })
     emit('reload')
     emit('close')
