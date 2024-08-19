@@ -1,4 +1,4 @@
-import { computed, type ComputedRef, onMounted, type Ref, ref, watch } from 'vue'
+import { computed, type ComputedRef, isRef, onMounted, type Ref, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
@@ -10,7 +10,7 @@ type TempCwaResource = Omit<CwaResource, '@id'|'_metadata'>
 type StartsWithHash = `#${string}`;
 
 type UseItemOps = {
-  createEndpoint: string
+  createEndpoint: string|Ref<string>
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
   resourceType: string,
   defaultResource: Omit<TempCwaResource, '@type'>
@@ -108,7 +108,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
       if (isAdding.value) {
         const newResource = await $cwa.resourcesManager.createResource({
-          endpoint: createEndpoint,
+          endpoint: isRef(createEndpoint) ? createEndpoint.value : createEndpoint,
           data,
           source: 'admin-modal'
         })
