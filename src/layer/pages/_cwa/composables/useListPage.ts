@@ -5,7 +5,6 @@ import ListContent from '#cwa/runtime/templates/components/core/admin/ListConten
 
 export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | null>) => {
   const router = useRouter()
-
   const route = useRoute()
 
   function triggerReload () {

@@ -21,11 +21,11 @@ export const useDataList = () => {
       path: $cwa.auth.user?.['@id']
     })
     const docs = await $cwa.getApiDocumentation()
-    const datas = docs?.pageDataMetadata?.['hydra:member']
-    if (!datas) {
+    const allMetadata = docs?.pageDataMetadata?.['hydra:member']
+    if (!allMetadata) {
       return
     }
-    dataTypes.value = datas.filter(data => (!data.resourceClass.endsWith('\\AbstractPageData')))
+    dataTypes.value = allMetadata.filter(data => (!data.resourceClass.endsWith('\\AbstractPageData')))
   })
 
   return {

@@ -6,9 +6,9 @@
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
           <div class="cwa-flex cwa-items-center cwa-space-x-3">
-            <span class="cwa-text-xl">{{ data.title }}</span><span :class="['cwa-outline', 'cwa-outline-1', 'cwa-outline-offset-2', 'cwa-w-2', 'cwa-h-2', 'cwa-rounded-full', 'cwa-outline-green', 'cwa-bg-green']" />
+            <span class="cwa-text-xl">{{ data.title }}</span><span :class="['cwa-outline', 'cwa-outline-1', 'cwa-outline-offset-2', 'cwa-w-2', 'cwa-h-2', 'cwa-rounded-full', data.route ? ['cwa-outline-green', 'cwa-bg-green'] : ['cwa-outline-orange', 'cwa-bg-orange']]" />
           </div>
-          <span class="cwa-text-stone-400">{{ data.page }}</span>
+          <span class="cwa-text-stone-400">{{ pageDataById[data.page]?.reference || data.page }}</span>
         </div>
         <div class="cwa-flex cwa-space-x-2">
           <CwaUiFormButton :to="computedItemLink(data['@id'])">
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { useCwa } from '#imports'
@@ -37,6 +37,8 @@ import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/R
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
 import { useDataType } from '#cwa/layer/pages/_cwa/composables/useDataType'
+import { useDynamicPageLoader } from '#cwa/layer/pages/_cwa/composables/useDynamicPageLoader'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
@@ -45,6 +47,7 @@ const router = useRouter()
 const { pageDataClassName, dataTypeCamelCase } = useDataType()
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
+const { loadDynamicPageOptions, dynamicPages } = useDynamicPageLoader()
 
 const endpoint = ref<string>()
 
@@ -73,6 +76,20 @@ function goToPage (page: string) {
 
 // to force the loading of api documentation
 useDataList()
+
+onMounted(async () => {
+  await loadDynamicPageOptions()
+})
+
+const pageDataById = computed(() => {
+  if (!dynamicPages.value) {
+    return {}
+  }
+  return dynamicPages.value.reduce((obj, resource) => {
+    obj[resource['@id']] = { ...resource }
+    return obj
+  }, {} as { [iri: string]: CwaResource })
+})
 
 watchEffect(async () => {
   const docs = await $cwa.getApiDocumentation()

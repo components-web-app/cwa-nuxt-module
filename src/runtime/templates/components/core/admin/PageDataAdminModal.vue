@@ -66,17 +66,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onMounted, toRef, watch } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
 import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
-import { useCwa } from '#imports'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import RoutesTab from '#cwa/runtime/templates/components/core/admin/RoutesTab.vue'
+import { useDynamicPageLoader } from '#cwa/layer/pages/_cwa/composables/useDynamicPageLoader'
 
 const emit = defineEmits<{
   close: [],
@@ -84,7 +84,6 @@ const emit = defineEmits<{
 }>()
 const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType: string }>()
 
-const $cwa = useCwa()
 const iriRef = toRef(props, 'iri')
 const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/pages',
@@ -129,34 +128,20 @@ const pageOptions = computed<SelectOption[]>(() => {
   return options
 })
 
-const currentRequestId = ref(0)
-const dynamicPages = ref<CwaResource[]>()
-
-async function loadDynamicPageOptions () {
-  const thisRequestId = currentRequestId.value + 1
-  currentRequestId.value = thisRequestId
-  isLoading.value = true
-  const { response } = $cwa.fetch({ path: '/_/pages?isTemplate=true', noQuery: true })
-  const { _data: data } = await response
-  if (thisRequestId === currentRequestId.value) {
-    data && (dynamicPages.value = data['hydra:member'])
-    isLoading.value = false
-  }
-  if (!dynamicPages.value?.length) {
-    emit('close')
-    return
-  }
-
-  if (isAdding.value && localResourceData.value && !localResourceData.value.layout) {
-    localResourceData.value.layout = pageOptions.value[0].value
-  }
-}
+const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 
 watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined|boolean, oldIsTemplate: undefined|boolean) => {
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 
-onMounted(() => {
-  loadDynamicPageOptions()
+onMounted(async () => {
+  await loadDynamicPageOptions()
+  if (!dynamicPages.value?.length) {
+    emit('close')
+    return
+  }
+  if (isAdding.value && localResourceData.value && !localResourceData.value.layout) {
+    localResourceData.value.layout = pageOptions.value[0].value
+  }
 })
 </script>
