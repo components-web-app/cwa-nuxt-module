@@ -39,7 +39,7 @@
         </div>
       </template>
       <template #routes>
-        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" />
+        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" @reload="loadResource" />
       </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
@@ -90,7 +90,7 @@ const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType: 
 
 const iriRef = toRef(props, 'iri')
 const createEndpoint = ref('')
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource } = useItemPage({
   createEndpoint,
   emit,
   resourceType: props.resourceType,
