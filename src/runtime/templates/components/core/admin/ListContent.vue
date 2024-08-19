@@ -23,8 +23,8 @@
           </div>
         </div>
         <ul v-else class="cwa-flex cwa-flex-col">
-          <li v-for="(item, index) in itemsFromStore" :key="`list-item-${index}`">
-            <slot name="item" v-bind="item">
+          <li v-for="(item, index) in items" :key="`list-item-${index}`">
+            <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
               <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">
                 <span class="cwa-font-bold">No list item template UI provided</span>
                 <pre class="cwa-text-xs cwa-p-2 cwa-max-h-40 cwa-overflow-auto">{{ item }}</pre>
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
@@ -67,14 +67,10 @@ async function reloadItems () {
   }
 }
 
-const itemsFromStore = computed(() => {
-  const mergedItems = []
-  for (const item of items.value) {
-    const storeItemData = $cwa.resources.getResource(item['@id']).value?.data
-    mergedItems.push(storeItemData || item)
-  }
-  return mergedItems
-})
+function getItemFromStore (item: CwaResource) {
+  const storeItemData = $cwa.resources.getResource(item['@id']).value?.data
+  return storeItemData || item
+}
 
 watch(() => route.query, (oldQuery, newQuery) => {
   if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {

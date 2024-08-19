@@ -2,8 +2,8 @@
   <ListHeading title="Routes" :hide-add="true" />
   <ListFilter :order-options="orderOptions" :search-fields="['path']" />
   <ListContent ref="listContent" fetch-url="/_/routes">
-    <template #item="data">
-      <RouteListRow :data="data" :link-fn="computedItemLink" @delete="deleteRoute" />
+    <template #item="{data, rawData}">
+      <RouteListRow :data="data" :associated-resource="rawData.associatedResource" :link-fn="computedItemLink" @delete="deleteRoute" />
     </template>
   </ListContent>
 </template>

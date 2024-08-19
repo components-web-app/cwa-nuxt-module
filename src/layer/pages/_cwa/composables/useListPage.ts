@@ -16,14 +16,18 @@ export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | 
   }
 
   const computedItemLink = computed(() => {
-    return (iri: string, routeName?: string, hash?: string): RouteLocationRaw => {
+    return (iri: string, routeName?: string, hash?: string, params?: { [key: string]: string }): RouteLocationRaw => {
       const currentRouteName = routeName || route.name?.toString()
       if (!currentRouteName) {
         return '#'
       }
       const upperRouteName = currentRouteName.replace(/-iri$/, '')
 
-      return { name: `${upperRouteName}-iri`, params: { iri }, query: route.query, hash }
+      if (!params) {
+        params = {}
+      }
+      params.iri = iri
+      return { name: `${upperRouteName}-iri`, params, query: route.query, hash }
     }
   })
 

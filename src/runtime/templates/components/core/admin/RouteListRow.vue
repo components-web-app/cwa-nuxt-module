@@ -1,8 +1,6 @@
 <template>
   <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
     <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1 cwa-min-w-0">
-      <pre>{{ data.associatedResource }}</pre>
-      <pre>{{ dataTypes }}</pre>
       <span class="cwa-text-xl cwa-truncate">{{ data.path }}</span>
       <span v-if="relatedResource" class="cwa-text-stone-400">
         <span class="cwa-inline-flex cwa-max-w-full cwa-bg-dark cwa-p-2 cwa-font-bold cwa-space-x-2 cwa-items-center">
@@ -19,7 +17,7 @@
       </span>
     </div>
     <div>
-      <CwaUiFormButton v-if="relatedResource" :to="linkFn(getAssociatedIri(data), '_cwa-pages', '#routes')">
+      <CwaUiFormButton v-if="relatedResource" :to="linkTo">
         <IconPages v-if="data.page" class="cwa-h-6" />
         <IconData v-else class="cwa-h-6" />
         <span class="cwa-sr-only">View</span>
@@ -40,19 +38,30 @@ import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
-const { dataTypes } = useDataList()
+const { fqcnToEntrypointKey } = useDataList()
 
 const props = defineProps<{
   data: CwaResource
-  linkFn:(iri: string, routeName?: string, hash?: string) => RouteLocationRaw
+  linkFn:(iri: string, routeName?: string, hash?: string, params?: { [key: string]: string }) => RouteLocationRaw
+  associatedResource?: CwaResource
 }>()
 
 defineEmits<{
   delete: [string]
 }>()
 
+const linkTo = computed(() => {
+  if (!relatedResource.value) {
+    return
+  }
+  if (resourceType.value === 'PageData') {
+    return props.linkFn(props.data.pageData, '_cwa-data-type-iri', '#routes', { type: fqcnToEntrypointKey(props.associatedResource?.['@type'] || '') || '' })
+  }
+  return props.linkFn(props.data.page, '_cwa-pages', '#routes')
+})
+
 const resourceType = computed<undefined|'Route'|'Page'|'PageData'>(() => {
-  const assocResource = props.data.associatedResource
+  const assocResource = props.associatedResource
   if (!assocResource) {
     return
   }
@@ -67,18 +76,15 @@ const resourceType = computed<undefined|'Route'|'Page'|'PageData'>(() => {
 
 const relatedResource = computed(() => {
   if (resourceType.value === 'Page') {
-    return props.data.associatedResource.reference
+    return props.associatedResource?.reference
   }
   if (resourceType.value === 'PageData') {
-    return props.data.associatedResource.title
+    return props.associatedResource?.title
   }
   if (resourceType.value === 'Route') {
-    return props.data.associatedResource.path
+    return props.associatedResource?.path
   }
   return undefined
 })
 
-function getAssociatedIri (data: any) {
-  return data.page || data.pageData
-}
 </script>
