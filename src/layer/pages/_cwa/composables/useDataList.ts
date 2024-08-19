@@ -5,6 +5,7 @@ import type { PageDataMetadataResource } from '#cwa/runtime/storage/stores/api-d
 export const useDataList = () => {
   const $cwa = useCwa()
   const dataTypes = ref<PageDataMetadataResource[]>([])
+  const isLoadingDataTypes = ref(true)
 
   function fqcnToEntrypointKey (fqcn: string) {
     // e.g. App\\Entity\\BlogArticleData -> blogArticleData
@@ -25,6 +26,7 @@ export const useDataList = () => {
     if (!$cwa.auth.user?.['@id']) {
       return
     }
+    isLoadingDataTypes.value = true
     // need to fetch a resource to get the docs from link header if not set - user should always be there as we are logged in
     await $cwa.fetchResource({
       path: $cwa.auth.user?.['@id']
@@ -32,14 +34,17 @@ export const useDataList = () => {
     const docs = await $cwa.getApiDocumentation()
     const allMetadata = docs?.pageDataMetadata?.['hydra:member']
     if (!allMetadata) {
+      isLoadingDataTypes.value = false
       return
     }
     dataTypes.value = allMetadata.filter(data => (!data.resourceClass.endsWith('\\AbstractPageData')))
+    isLoadingDataTypes.value = false
   })
 
   return {
     displayPageDataClassName,
     dataTypes,
-    fqcnToEntrypointKey
+    fqcnToEntrypointKey,
+    isLoadingDataTypes
   }
 }
