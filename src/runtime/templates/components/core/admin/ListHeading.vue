@@ -1,6 +1,7 @@
 <template>
   <ListContainer class="cwa-bg-dark cwa-pt-12 cwa-pb-8 cwa-border-b-2 cwa-border-b-stone-700">
     <div class="cwa-w-full cwa-max-w-2xl">
+      <slot />
       <div class="cwa-flex cwa-space-x-6 cwa-items-center">
         <div>
           <h1 class="cwa-text-4xl cwa-text-light">

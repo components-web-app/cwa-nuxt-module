@@ -1,5 +1,12 @@
 <template>
-  <ListHeading :title="pageDataClassName" @add="goToAdd" />
+  <ListHeading :title="pageDataClassName" @add="goToAdd">
+    <div class="-cwa-mt-7 cwa-mb-5">
+      <NuxtLink :to="{name: '_cwa-data'}" class="cwa-text-sm cwa-flex cwa-items-center cwa-transition-opacity cwa-space-x-1.5 cwa-opacity-70 hover:cwa-opacity-100">
+        <CwaUiIconArrowIcon class="cwa-w-4 cwa-rotate-90 cwa-my-2" />
+        <span>Page data categories</span>
+      </NuxtLink>
+    </div>
+  </ListHeading>
   <ListFilter :order-options="orderOptions" :search-fields="['title']" />
   <ListContent v-if="endpoint" ref="listContent" :fetch-url="endpoint">
     <template #item="data">
