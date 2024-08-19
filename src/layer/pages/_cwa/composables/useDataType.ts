@@ -23,10 +23,10 @@ export const useDataType = () => {
     return className.charAt(0).toLowerCase() + className.slice(1)
   })
   const pageDataClassName = computed(() => {
-    if (!dataType.value) {
+    if (!dataTypeClassName.value) {
       return 'Unknown'
     }
-    return $cwa.pageDataConfig?.[dataType.value]?.name || dataType.value
+    return $cwa.pageDataConfig?.[dataTypeClassName.value]?.name || dataType.value
   })
 
   return {

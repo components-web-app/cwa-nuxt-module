@@ -7,7 +7,9 @@ export const useDataList = () => {
   const dataTypes = ref<PageDataMetadataResource[]>([])
 
   function displayPageDataClassName (cls: string) {
-    return $cwa.pageDataConfig?.[cls]?.name || cls
+    const clsName = cls.split('\\').pop()
+    const configName = clsName ? $cwa.pageDataConfig?.[clsName]?.name : undefined
+    return configName || clsName || cls
   }
 
   onMounted(async () => {
