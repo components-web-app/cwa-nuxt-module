@@ -39,7 +39,12 @@ const props = defineProps<{
 
 function selectTab (index: number) {
   selectedTabIndex.value = index
-  router.push({ ...route, hash: `#${selectedTabId.value}` })
+  // todo: attempt to fix TypeError: Cannot redefine property: __navigationId
+  // replicated by opening data in admin on details tab, clicking to view the data page, opening data modal, clicking to the routes tab
+  // does not resolve, but it does stop the error from preventing the routes to load
+  setTimeout(() => {
+    router.replace({ ...route, hash: `#${selectedTabId.value}` })
+  }, 100)
 }
 
 function getIndexFromHash () {

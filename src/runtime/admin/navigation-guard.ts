@@ -57,7 +57,8 @@ export default class NavigationGuard {
         // only redirect if necessary - infinite loops otherwise
         return {
           path: toRoute.path,
-          query: toRoute.query
+          query: toRoute.query,
+          hash: toRoute.hash
         }
       } finally {
         this.programmatic = false
