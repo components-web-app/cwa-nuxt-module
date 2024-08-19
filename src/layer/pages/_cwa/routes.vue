@@ -49,6 +49,6 @@ const orderOptions = [
 ]
 
 useHead({
-  title: 'Users'
+  title: 'Routes'
 })
 </script>

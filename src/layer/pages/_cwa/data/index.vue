@@ -22,8 +22,13 @@
 </template>
 
 <script setup lang="ts">
+import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
 const { displayPageDataClassName, dataTypes } = useDataList()
+
+useHead({
+  title: 'Page Data Categories'
+})
 </script>

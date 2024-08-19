@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
+import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { useCwa } from '#imports'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
@@ -95,6 +96,12 @@ watchEffect(async () => {
   const docs = await $cwa.getApiDocumentation()
   if (dataTypeCamelCase.value) {
     endpoint.value = docs?.entrypoint?.[dataTypeCamelCase.value]
+  }
+})
+
+useHead({
+  title: () => {
+    return pageDataClassName.value + ' - Page Data'
   }
 })
 </script>
