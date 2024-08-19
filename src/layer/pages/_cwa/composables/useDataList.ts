@@ -6,6 +6,15 @@ export const useDataList = () => {
   const $cwa = useCwa()
   const dataTypes = ref<PageDataMetadataResource[]>([])
 
+  function fqcnToEntrypointKey (fqcn: string) {
+    // e.g. App\\Entity\\BlogArticleData -> blogArticleData
+    const className = fqcn.split('\\').pop()
+    if (!className) {
+      return
+    }
+    return className.charAt(0).toLowerCase() + className.slice(1)
+  }
+
   function displayPageDataClassName (cls: string) {
     const clsName = cls.split('\\').pop()
     const configName = clsName ? $cwa.pageDataConfig?.[clsName]?.name : undefined
@@ -30,6 +39,7 @@ export const useDataList = () => {
 
   return {
     displayPageDataClassName,
-    dataTypes
+    dataTypes,
+    fqcnToEntrypointKey
   }
 }

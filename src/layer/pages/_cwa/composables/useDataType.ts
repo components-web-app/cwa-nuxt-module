@@ -13,14 +13,7 @@ export const useDataType = () => {
     if (!dataType.value) {
       return
     }
-    return dataType.value.split('\\').pop()
-  })
-  const dataTypeCamelCase = computed(() => {
-    const className = dataTypeClassName.value
-    if (!className) {
-      return
-    }
-    return className.charAt(0).toLowerCase() + className.slice(1)
+    return dataType.value.charAt(0).toUpperCase() + dataType.value.slice(1)
   })
   const pageDataClassName = computed(() => {
     if (!dataTypeClassName.value) {
@@ -31,7 +24,7 @@ export const useDataType = () => {
 
   return {
     dataTypeClassName,
-    dataTypeCamelCase,
+    dataType,
     pageDataClassName
   }
 }

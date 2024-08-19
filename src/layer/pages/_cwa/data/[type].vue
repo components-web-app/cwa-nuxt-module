@@ -45,7 +45,7 @@ const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const $cwa = useCwa()
 const router = useRouter()
-const { pageDataClassName, dataTypeCamelCase } = useDataType()
+const { pageDataClassName, dataType } = useDataType()
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const { loadDynamicPageOptions, dynamicPages } = useDynamicPageLoader()
@@ -94,8 +94,8 @@ const pageDataById = computed(() => {
 
 watchEffect(async () => {
   const docs = await $cwa.getApiDocumentation()
-  if (dataTypeCamelCase.value) {
-    endpoint.value = docs?.entrypoint?.[dataTypeCamelCase.value]
+  if (dataType.value) {
+    endpoint.value = docs?.entrypoint?.[dataType.value]
   }
 })
 

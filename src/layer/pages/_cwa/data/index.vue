@@ -3,7 +3,7 @@
   <ListContainer>
     <ul class="cwa-my-6 cwa-flex cwa-flex-col cwa-space-y-4">
       <li v-for="pageData of dataTypes" :key="pageData['@id']">
-        <NuxtLink :to="{ name: '_cwa-data-type', params: { type: pageData.resourceClass } }" class="cwa-flex cwa-p-4 cwa-border cwa-border-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center cwa-bg-dark/80 hover:cwa-bg-dark cwa-cursor-pointer cwa-transition-colors">
+        <NuxtLink :to="{ name: '_cwa-data-type', params: { type: fqcnToEntrypointKey(pageData.resourceClass) } }" class="cwa-flex cwa-p-4 cwa-border cwa-border-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center cwa-bg-dark/80 hover:cwa-bg-dark cwa-cursor-pointer cwa-transition-colors">
           <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
             <div class="cwa-flex cwa-items-center cwa-space-x-3">
               <span class="cwa-text-xl">{{ displayPageDataClassName(pageData.resourceClass) }}</span>
@@ -26,7 +26,7 @@ import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
-const { displayPageDataClassName, dataTypes } = useDataList()
+const { displayPageDataClassName, dataTypes, fqcnToEntrypointKey } = useDataList()
 
 useHead({
   title: 'Page Data Categories'
