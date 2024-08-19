@@ -10,7 +10,7 @@
             </div>
           </div>
           <div class="cwa-flex cwa-space-x-2">
-            <CwaUiFormButton>
+            <CwaUiFormButton class="cwa-pointer-events-none">
               <CwaUiIconArrowIcon class="cwa-w-5 -cwa-rotate-90 cwa-my-2" />
               <span class="cwa-sr-only">View</span>
             </CwaUiFormButton>
