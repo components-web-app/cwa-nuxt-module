@@ -125,7 +125,7 @@ const highlightClass = computed(() => {
     return [...classes, 'before:cwa-bg-yellow']
   }
   if ($cwa.resources.isDataPage.value) {
-    return [...classes, 'before:cwa-bg-green']
+    return [...classes, $cwa.resources.pageData?.value?.data?.route ? 'before:cwa-bg-green' : 'before:cwa-bg-orange']
   }
   if (pageIsAdmin.value) {
     return [...classes, 'before:cwa-bg-stone-400']

@@ -4,7 +4,7 @@
     v-model="localResourceData.title"
     title-placeholder="No Title"
     :is-loading="isLoading"
-    border-color-class="cwa-border-b-green"
+    :border-color-class="resource?.route ? 'cwa-border-b-green': 'cwa-border-b-orange'"
     @close="$emit('close')"
     @save="saveTitle"
   >
