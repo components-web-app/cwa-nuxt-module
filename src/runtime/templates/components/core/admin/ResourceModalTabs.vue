@@ -4,6 +4,7 @@
       <div class="cwa-flex cwa-space-x-1 cwa-overflow-hidden cwa-items-center cwa-text-lg">
         <button
           v-for="(tab, index) of tabs"
+          :id="tab.id"
           :key="`tab-button-${tab.id}`"
           class="cwa-py-1.5 cwa-px-5 cwa-transition cwa-rounded"
           :class="[index === selectedTabIndex ? 'cwa-text-stone-100 cwa-bg-stone-700/80' : 'cwa-text-stone-400 hover:cwa-text-stone-300']"
