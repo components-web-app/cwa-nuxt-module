@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import { computed } from 'vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 
-export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | null>) => {
+export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | null>, clearPageNumberQuery?: boolean) => {
   const router = useRouter()
   const route = useRoute()
 
@@ -29,8 +29,7 @@ export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | 
       params.iri = iri
 
       const query = { ...route.query }
-      delete query.perPage
-      delete query.page
+      clearPageNumberQuery && delete query.page
 
       return { name: `${upperRouteName}-iri`, params, query, hash }
     }

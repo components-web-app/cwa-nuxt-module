@@ -66,6 +66,7 @@ watch(perPageModel, (newValue) => {
 watch(() => route.query, (newQuery, oldQuery) => {
   const cleanPaginationFromQuery = (q: LocationQuery) => {
     const cleanQuery = { ...q }
+    delete cleanQuery.perPage
     delete cleanQuery.page
     return cleanQuery
   }

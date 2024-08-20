@@ -20,7 +20,7 @@ import RouteListRow from '#cwa/runtime/templates/components/core/admin/RouteList
 
 const $cwa = useCwa()
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
-const { computedItemLink, triggerReload } = useListPage(listContent)
+const { computedItemLink, triggerReload } = useListPage(listContent, true)
 
 async function deleteRoute (routeIri: string) {
   await $cwa.resourcesManager.deleteResource({
