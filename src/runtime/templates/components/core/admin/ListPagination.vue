@@ -1,6 +1,6 @@
 <template>
   <div class="cwa-flex cwa-justify-between cwa-items-center">
-    <div class="cwa-text-stone-400">
+    <div class="cwa-text-stone-400 cwa-py-1.5 cwa-text-sm">
       {{ showingFrom }} to {{ showingTo }} of {{ totalItems }} results
     </div>
     <div>
@@ -8,26 +8,8 @@
         <ListPaginationButton :disabled="isFirst" @click="pageModel--">
           &lt;
         </ListPaginationButton>
-        <ListPaginationButton>
-          1
-        </ListPaginationButton>
-        <ListPaginationButton>
-          2
-        </ListPaginationButton>
-        <ListPaginationButton>
-          3
-        </ListPaginationButton>
-        <ListPaginationButton>
-          ...
-        </ListPaginationButton>
-        <ListPaginationButton>
-          8
-        </ListPaginationButton>
-        <ListPaginationButton>
-          9
-        </ListPaginationButton>
-        <ListPaginationButton>
-          10
+        <ListPaginationButton v-for="pageNumber of pages" :key="`page-change-button-${pageNumber}`" :selected="pageNumber === pageModel" @click="pageModel = pageNumber">
+          {{ pageNumber }}
         </ListPaginationButton>
         <ListPaginationButton :disabled="isLast" @click="pageModel++">
           &gt;
@@ -43,6 +25,7 @@ import ListPaginationButton from './ListPaginationButton.vue'
 const props = defineProps<{
   totalItems: number
 }>()
+
 const pageModel = defineModel<number>('page', { required: true })
 const perPageModel = defineModel<number>('perPage', { required: true })
 
@@ -57,5 +40,37 @@ const isFirst = computed(() => {
 })
 const isLast = computed(() => {
   return showingTo.value === props.totalItems
+})
+const totalPages = computed(() => {
+  return Math.ceil(props.totalItems / perPageModel.value)
+})
+const pages = computed(() => {
+  if (!totalPages.value) {
+    return []
+  }
+  const allPages = Array.from(Array(totalPages.value), (_, x) => x + 1)
+  const maxPagesToDisplay = 7
+  if (allPages.length < maxPagesToDisplay) {
+    return allPages
+  }
+
+  const displayPages = []
+  displayPages.push(pageModel.value)
+  let lowest = pageModel.value
+  let highest = pageModel.value
+  let displayCounter = 1
+  while (displayCounter < maxPagesToDisplay) {
+    displayCounter++
+    if ((displayCounter % 2 === 0 || highest >= totalPages.value) && lowest > 1) {
+      lowest--
+      displayPages.unshift(lowest)
+      continue
+    }
+    if (highest < totalPages.value) {
+      highest++
+      displayPages.push(highest)
+    }
+  }
+  return displayPages
 })
 </script>
