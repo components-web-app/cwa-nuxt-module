@@ -89,12 +89,14 @@ export function usePopper ({
               if (!state) {
                 return
               }
+              state.styles.popper.width = 'auto'
               state.styles.popper.minWidth = `${state.rects.reference.width}px`
             },
             effect: ({ state }: { state: any }) => {
               if (!state) {
                 return
               }
+              state.elements.popper.style.width = 'auto'
               state.elements.popper.style.minWidth = `${
                 state.elements.reference.offsetWidth
               }px`
