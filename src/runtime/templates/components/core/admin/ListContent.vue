@@ -22,16 +22,20 @@
             </h2>
           </div>
         </div>
-        <ul v-else class="cwa-flex cwa-flex-col">
-          <li v-for="(item, index) in items" :key="`list-item-${index}`">
-            <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
-              <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">
-                <span class="cwa-font-bold">No list item template UI provided</span>
-                <pre class="cwa-text-xs cwa-p-2 cwa-max-h-40 cwa-overflow-auto">{{ item }}</pre>
-              </div>
-            </slot>
-          </li>
-        </ul>
+        <div v-else>
+          <ListPagination v-model:page.number="pageModel" v-model:perPage.number="perPageModel" :total-items="hydraData.totalItems || 0" />
+          <ul class="cwa-flex cwa-flex-col cwa-mb-8">
+            <li v-for="(item, index) in items" :key="`list-item-${index}`">
+              <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
+                <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">
+                  <span class="cwa-font-bold">No list item template UI provided</span>
+                  <pre class="cwa-text-xs cwa-p-2 cwa-max-h-40 cwa-overflow-auto">{{ item }}</pre>
+                </div>
+              </slot>
+            </li>
+          </ul>
+          <ListPagination v-model:page.number="pageModel" v-model:perPage.number="perPageModel" :total-items="hydraData.totalItems || 0" />
+        </div>
       </Transition>
     </div>
   </ListContainer>
@@ -40,12 +44,19 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
+import ListContainer from './ListContainer.vue'
+import ListPagination from './ListPagination.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
-import { useCwa } from '#imports'
+import { useCwa, useQueryBoundModel } from '#imports'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 const route = useRoute()
+const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
+const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
+if (!perPageModel.value) {
+  perPageModel.value = 5
+}
 
 const props = defineProps<{
   fetchUrl: string
@@ -53,6 +64,7 @@ const props = defineProps<{
 
 const loading = ref(true)
 const items = ref<any[]>([])
+const hydraData = ref()
 const currentRequestId = ref<number>(0)
 
 async function reloadItems () {
@@ -61,6 +73,19 @@ async function reloadItems () {
   loading.value = true
   const { response } = $cwa.fetch({ path: props.fetchUrl })
   const { _data: data } = await response
+  /*
+  hydra:totalItems: 123
+  hydra:view:
+    @id: "/_/routes?perPage=5&page=1"
+    @type: "hydra:PartialCollectionView"
+    hydra:first: "/_/routes?perPage=5&page=1"
+    hydra:last: "/_/routes?perPage=5&page=5"
+    hydra:next: "/_/routes?perPage=5&page=2"
+   */
+  hydraData.value = {
+    totalItems: data?.['hydra:totalItems'] || 0,
+    view: data?.['hydra:view']
+  }
   if (thisRequestId === currentRequestId.value) {
     data && (items.value = data['hydra:member'])
     loading.value = false

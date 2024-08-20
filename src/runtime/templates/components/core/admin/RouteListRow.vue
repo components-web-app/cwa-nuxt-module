@@ -54,8 +54,14 @@ const linkTo = computed(() => {
   if (!relatedResource.value) {
     return
   }
-  if (resourceType.value === 'PageData') {
+  if (resourceType.value === 'PageData' || props.data.pageData) {
+    if (!props.data.pageData) {
+      return '#'
+    }
     return props.linkFn(props.data.pageData, '_cwa-data-type-iri', '#routes', { type: fqcnToEntrypointKey(props.associatedResource?.['@type'] || '') || '' })
+  }
+  if (!props.data.page) {
+    return '#'
   }
   return props.linkFn(props.data.page, '_cwa-pages', '#routes')
 })

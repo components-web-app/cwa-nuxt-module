@@ -4,7 +4,8 @@ import { debounce } from 'lodash-es'
 
 type ModelOps = {
   defaultValue?: any
-  delay?: number
+  delay?: number,
+  asNumber?: boolean
 }
 
 export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) => {
@@ -40,8 +41,9 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
       if (valueIsArray) {
         return [value]
       }
-      return value
+      return (ops?.asNumber && value !== null) ? Number(value) : value
     }
+
     if (Array.isArray(queryParam)) {
       for (const p of queryParam) {
         const valueIsArray = p.endsWith('[]')
@@ -74,7 +76,6 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
 
   watch(model, async (newValue) => {
     // update the query params on model change
-
     if (debounced) {
       debounced.cancel()
     }
