@@ -22,16 +22,20 @@
             </h2>
           </div>
         </div>
-        <ul v-else class="cwa-flex cwa-flex-col">
-          <li v-for="(item, index) in items" :key="`list-item-${index}`">
-            <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
-              <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">
-                <span class="cwa-font-bold">No list item template UI provided</span>
-                <pre class="cwa-text-xs cwa-p-2 cwa-max-h-40 cwa-overflow-auto">{{ item }}</pre>
-              </div>
-            </slot>
-          </li>
-        </ul>
+        <div v-else>
+          <ListPagination />
+          <ul class="cwa-flex cwa-flex-col cwa-mb-8">
+            <li v-for="(item, index) in items" :key="`list-item-${index}`">
+              <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
+                <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">
+                  <span class="cwa-font-bold">No list item template UI provided</span>
+                  <pre class="cwa-text-xs cwa-p-2 cwa-max-h-40 cwa-overflow-auto">{{ item }}</pre>
+                </div>
+              </slot>
+            </li>
+          </ul>
+          <ListPagination />
+        </div>
       </Transition>
     </div>
   </ListContainer>
@@ -40,7 +44,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
+import ListContainer from './ListContainer.vue'
+import ListPagination from './ListPagination.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { useCwa } from '#imports'
 
