@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { type LocationQuery, useRoute } from 'vue-router'
 import ListContainer from './ListContainer.vue'
 import ListPagination from './ListPagination.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
@@ -54,9 +54,29 @@ const $cwa = useCwa()
 const route = useRoute()
 const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
 const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
-if (!perPageModel.value) {
-  perPageModel.value = 5
-}
+
+watch(perPageModel, (newValue) => {
+  if (!newValue) {
+    perPageModel.value = 5
+  }
+}, {
+  immediate: true
+})
+
+watch(() => route.query, (newQuery, oldQuery) => {
+  const cleanPaginationFromQuery = (q: LocationQuery) => {
+    const cleanQuery = { ...q }
+    delete cleanQuery.page
+    return cleanQuery
+  }
+  const cleanedOld = cleanPaginationFromQuery(oldQuery)
+  const cleanedNew = cleanPaginationFromQuery(newQuery)
+  if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
+    pageModel.value = 1
+  }
+}, {
+  deep: true
+})
 
 const props = defineProps<{
   fetchUrl: string

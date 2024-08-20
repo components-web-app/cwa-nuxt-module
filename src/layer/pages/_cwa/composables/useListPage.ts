@@ -27,7 +27,12 @@ export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | 
         params = {}
       }
       params.iri = iri
-      return { name: `${upperRouteName}-iri`, params, query: route.query, hash }
+
+      const query = { ...route.query }
+      delete query.perPage
+      delete query.page
+
+      return { name: `${upperRouteName}-iri`, params, query, hash }
     }
   })
 

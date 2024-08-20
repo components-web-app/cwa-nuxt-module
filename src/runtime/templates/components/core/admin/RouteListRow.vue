@@ -43,7 +43,12 @@ const { fqcnToEntrypointKey } = useDataList()
 const props = defineProps<{
   data: CwaResource
   linkFn:(iri: string, routeName?: string, hash?: string, params?: { [key: string]: string }) => RouteLocationRaw
-  associatedResource?: CwaResource
+  associatedResources?: {
+    redirect?: string
+    page?: string
+    pageData?: string
+    pageDataType?: string
+  }
 }>()
 
 defineEmits<{
@@ -54,11 +59,11 @@ const linkTo = computed(() => {
   if (!relatedResource.value) {
     return
   }
-  if (resourceType.value === 'PageData' || props.data.pageData) {
+  if (props.associatedResources?.pageData) {
     if (!props.data.pageData) {
       return '#'
     }
-    return props.linkFn(props.data.pageData, '_cwa-data-type-iri', '#routes', { type: fqcnToEntrypointKey(props.associatedResource?.['@type'] || '') || '' })
+    return props.linkFn(props.data.pageData, '_cwa-data-type-iri', '#routes', { type: fqcnToEntrypointKey(props.associatedResources?.pageDataType || '') || '' })
   }
   if (!props.data.page) {
     return '#'
@@ -67,30 +72,21 @@ const linkTo = computed(() => {
 })
 
 const resourceType = computed<undefined|'Route'|'Page'|'PageData'>(() => {
-  const assocResource = props.associatedResource
+  const assocResource = props.associatedResources
   if (!assocResource) {
     return
   }
-  if (props.data.redirect) {
+  if (props.associatedResources?.redirect) {
     return 'Route'
   }
-  if (assocResource['@type'] === 'Page') {
+  if (props.associatedResources?.page) {
     return 'Page'
   }
   return 'PageData'
 })
 
 const relatedResource = computed(() => {
-  if (resourceType.value === 'Page') {
-    return props.associatedResource?.reference
-  }
-  if (resourceType.value === 'PageData') {
-    return props.associatedResource?.title
-  }
-  if (resourceType.value === 'Route') {
-    return props.associatedResource?.path
-  }
-  return undefined
+  return props.associatedResources?.redirect || props.associatedResources?.pageData || props.associatedResources?.page
 })
 
 </script>

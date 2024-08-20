@@ -3,7 +3,7 @@
   <ListFilter :order-options="orderOptions" :search-fields="['path']" />
   <ListContent ref="listContent" fetch-url="/_/routes">
     <template #item="{data, rawData}">
-      <RouteListRow :data="data" :associated-resource="rawData.associatedResource" :link-fn="computedItemLink" @delete="deleteRoute" />
+      <RouteListRow :data="data" :associated-resources="rawData.associatedResources" :link-fn="computedItemLink" @delete="deleteRoute" />
     </template>
   </ListContent>
 </template>

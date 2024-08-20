@@ -42,6 +42,9 @@ const isLast = computed(() => {
   return showingTo.value === props.totalItems
 })
 const totalPages = computed(() => {
+  if (!perPageModel.value) {
+    return 1
+  }
   return Math.ceil(props.totalItems / perPageModel.value)
 })
 const pages = computed(() => {
