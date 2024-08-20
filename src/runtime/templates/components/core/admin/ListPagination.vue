@@ -5,7 +5,7 @@
     </div>
     <div>
       <ul class="cwa-flex cwa-bg-dark cwa-rounded-lg cwa-overflow-hidden cwa-border cwa-border-stone-600">
-        <ListPaginationButton>
+        <ListPaginationButton :disabled="isFirst" @click="pageModel--">
           &lt;
         </ListPaginationButton>
         <ListPaginationButton>
@@ -29,7 +29,7 @@
         <ListPaginationButton>
           10
         </ListPaginationButton>
-        <ListPaginationButton>
+        <ListPaginationButton :disabled="isLast" @click="pageModel++">
           &gt;
         </ListPaginationButton>
       </ul>
@@ -51,5 +51,11 @@ const showingFrom = computed(() => {
 })
 const showingTo = computed(() => {
   return Math.min(props.totalItems, showingFrom.value - 1 + perPageModel.value)
+})
+const isFirst = computed(() => {
+  return pageModel.value <= 1
+})
+const isLast = computed(() => {
+  return showingTo.value === props.totalItems
 })
 </script>

@@ -55,7 +55,7 @@ const route = useRoute()
 const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
 const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
 if (!perPageModel.value) {
-  perPageModel.value = 10
+  perPageModel.value = 5
 }
 
 const props = defineProps<{
