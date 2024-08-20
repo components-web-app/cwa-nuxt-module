@@ -1,7 +1,7 @@
 <template>
   <div class="cwa-flex cwa-justify-between cwa-items-center">
     <div class="cwa-text-stone-400">
-      1 to 10 of 97 results
+      {{ showingFrom }} to {{ showingTo }} of {{ totalItems }} results
     </div>
     <div>
       <ul class="cwa-flex cwa-bg-dark cwa-rounded-lg cwa-overflow-hidden cwa-border cwa-border-stone-600">
@@ -37,5 +37,19 @@
   </div>
 </template>
 <script setup lang="ts">
+import { computed } from 'vue'
 import ListPaginationButton from './ListPaginationButton.vue'
+
+const props = defineProps<{
+  totalItems: number
+}>()
+const pageModel = defineModel<number>('page', { required: true })
+const perPageModel = defineModel<number>('perPage', { required: true })
+
+const showingFrom = computed(() => {
+  return 1 + ((pageModel.value - 1) * perPageModel.value)
+})
+const showingTo = computed(() => {
+  return Math.min(props.totalItems, showingFrom.value - 1 + perPageModel.value)
+})
 </script>
