@@ -8,6 +8,7 @@ const props = defineProps<{
   modelValue: string|undefined|null,
   endpoint: string
   property: string
+  notNullable?: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
@@ -44,6 +45,13 @@ async function fetchResource () {
   }
 }
 
+function clearResource () {
+  if (props.notNullable) {
+    return
+  }
+  window.alert('Will clear the resource - set as null')
+}
+
 watch(value, () => {
   fetchResource()
 }, {
@@ -55,9 +63,12 @@ watch(resourcePropertyValue, (newResourcePropertyValue) => {
 </script>
 
 <template>
-  <div>
-    <div>
-      <CwaUiFormInput v-model="searchValue" :disabled="fetchingCurrentResource !== 0" />
+  <div class="cwa-flex cwa-items-center cwa-space-x-2">
+    <div class="cwa-relative">
+      <CwaUiFormInput v-model="searchValue" class="cwa-pr-8" :disabled="fetchingCurrentResource !== 0" />
+      <button v-if="!notNullable && !!resourcePropertyValue" class="cwa-absolute cwa-right-1 cwa-top-1/2 -cwa-translate-y-1/2 cwa-opacity-50 hover:cwa-opacity-100 cwa-transition" @click="clearResource">
+        <CwaUiIconXMarkIcon class="cwa-w-6" />
+      </button>
     </div>
   </div>
 </template>
