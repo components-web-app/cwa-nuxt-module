@@ -2,11 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { useCwaResourceManagerTab, useCwaResourceModel } from '#imports'
 
-const { exposeMeta, iri } = useCwaResourceManagerTab({
+const { exposeMeta, iri, resource } = useCwaResourceManagerTab({
   name: 'Link'
 })
 
-const showInternalRoute = ref(true)
+const showInternalRoute = ref(!resource.value?.data?.rawPath)
 const toggleLabel = computed(() => {
   return showInternalRoute.value ? 'Internal' : 'External'
 })
@@ -21,6 +21,12 @@ watch(showInternalRoute, (isInternal) => {
   if (isInternal) {
     rawPathModel.model.value = null
   }
+})
+
+watch(() => !resource.value?.data?.rawPath, (noRawPath: boolean) => {
+  showInternalRoute.value = noRawPath
+}, {
+  immediate: true
 })
 
 defineExpose(exposeMeta)
