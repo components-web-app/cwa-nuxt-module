@@ -34,7 +34,9 @@ const value = computed({
     emit('update:modelValue', value)
   }
 })
-const resourcePropertyValue = ref<string>()
+const resourcePropertyValue = computed(() => {
+  return selectedResource.value?.[props.property]
+})
 
 async function fetchResource () {
   if (!value.value) {
@@ -48,8 +50,6 @@ async function fetchResource () {
   if (fetchCurrentCount.value === fetchingCurrentResource.value) {
     selectedResource.value = newResource
     fetchingCurrentResource.value = 0
-    resourcePropertyValue.value = selectedResource.value?.[props.property]
-    searchValue.value = resourcePropertyValue.value
   }
 }
 
@@ -87,7 +87,12 @@ function clearResource () {
   window.alert('Will clear the resource - set as null')
 }
 
+watch(resourcePropertyValue, (newValue) => {
+  searchValue.value = newValue
+})
+
 watch(value, () => {
+  searchValue.value = ''
   fetchResource()
 })
 
@@ -106,7 +111,6 @@ onMounted(() => {
 <template>
   <div class="cwa-flex cwa-items-center cwa-space-x-2">
     <div class="cwa-relative">
-      searchValue: {{ searchValue }}
       <CwaUiFormInput v-model="searchValue" class="cwa-pr-8" :disabled="fetchingCurrentResource !== 0" />
       <button v-if="!notNullable && !!resourcePropertyValue" class="cwa-absolute cwa-right-1 cwa-top-1/2 -cwa-translate-y-1/2 cwa-opacity-50 hover:cwa-opacity-100 cwa-transition" @click="clearResource">
         <CwaUiIconXMarkIcon class="cwa-w-6" />
