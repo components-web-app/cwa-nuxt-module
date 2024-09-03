@@ -1,7 +1,9 @@
 <template>
-  <nuxt-link :target="isExternal ? '_blank' : undefined" :to="resource?.data?.url || '#'" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900 no-underline" @click="handleClick">
-    {{ resource?.data?.label || 'No Link Label' }}
-  </nuxt-link>
+  <div>
+    <nuxt-link :target="isExternal ? '_blank' : undefined" :to="resource?.data?.url || '#'" exact-active-class="!text-gray-900 underline" class="text-base font-medium text-gray-500 hover:text-gray-900 no-underline" @click="handleClick">
+      {{ resource?.data?.label || 'No Link Label' }}
+    </nuxt-link>
+  </div>
 </template>
 
 <script setup lang="ts">
