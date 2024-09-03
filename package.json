@@ -49,7 +49,7 @@
     "@popperjs/core": "^2.11.8",
     "@vueuse/core": "^10.11.0",
     "consola": "^3.2.3",
-    "dayjs": "^1.11.12",
+    "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
     "lodash-es": "^4.17.21",
     "luxon": "^3.4.4",
