@@ -175,7 +175,6 @@ export default class Fetcher {
         token: startFetchResult.token
       })
     }
-
     return resource
   }
 

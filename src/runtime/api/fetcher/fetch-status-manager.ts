@@ -108,7 +108,7 @@ export default class FetchStatusManager {
     // if resource is already in success state, leave it alone, we may have already been fetching, we can set it as an error if token old and new one will save it.
     // What if order of api responses is different? Then it'd be a success already and skipped for error.
     if (this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-      return
+      return this.resourcesStore.current.byId?.[event.resource].data
     }
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
     const fetchStatus = this.fetcherStore.fetches[event.token]
