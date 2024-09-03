@@ -1,21 +1,31 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { debounce } from 'lodash-es'
+import { Popover, PopoverPanel } from '@headlessui/vue'
 import CwaUiFormInput from './Input.vue'
-import { useCwa } from '#imports'
+import { useCwa, usePopper } from '#imports'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
+import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
+import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
 const props = defineProps<{
-  modelValue: string|undefined|null,
+  modelValue: ModelValue,
   endpoint: string
   property: string
   searchProperties?: string[]
   notNullable?: boolean
 }>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{(e: 'update:modelValue', value?: ModelValue): void }>()
 
 const $cwa = useCwa()
+
+const [trigger, container] = usePopper({
+  placement: 'top-start',
+  offsetDistance: 4
+})
 
 const selectedResource = ref<CwaResource>()
 const searchValue = ref<string>()
@@ -25,6 +35,11 @@ const fetchingSearchValue = ref()
 const debounceFetchActive = ref(false)
 const fetchingSearchResults = ref(false)
 const searchResults = ref<CwaResource[]>()
+const focussed = ref(false)
+const open = computed(() => {
+  return focussed.value && (showLoadingIndicator.value || !!searchResults.value)
+})
+
 let debouncedSearchCall: any
 
 const value = computed({
@@ -39,13 +54,13 @@ const resourcePropertyValue = computed(() => {
   return selectedResource.value?.[props.property]
 })
 const showLoadingIndicator = computed(() => {
-  return fetchingSearchResults.value || debounceFetchActive.value
+  return fetchingCurrentResource.value === 0 && (fetchingSearchResults.value || debounceFetchActive.value)
 })
 const displaySearchResults = computed(() => {
   if (!searchResults.value) {
     return
   }
-  return searchResults.value.reduce((a, v) => ({ ...a, [v['@id']]: v[props.property] }), {})
+  return [...searchResults.value].reverse().map(result => ({ value: result['@id'], label: result[props.property] }))
 })
 
 async function fetchResource () {
@@ -55,7 +70,8 @@ async function fetchResource () {
   }
   fetchingCurrentResource.value = ++(fetchCurrentCount.value)
   const newResource = await $cwa.fetchResource({
-    path: `${value.value}`
+    path: `${value.value}`,
+    noSave: false
   })
   if (fetchCurrentCount.value === fetchingCurrentResource.value) {
     selectedResource.value = newResource
@@ -65,7 +81,10 @@ async function fetchResource () {
 
 async function search () {
   debounceFetchActive.value = false
-  const searchParamsObj: { [key:string]: string } = { perPage: 20 }
+  const searchParamsObj: { [key:string]: string } = {
+    perPage: '6',
+    [`order[${props.property}]`]: 'asc'
+  }
   if (fetchingSearchValue.value && fetchingSearchValue.value === searchValue.value) {
     return
   }
@@ -105,7 +124,18 @@ function clearResource () {
   if (props.notNullable) {
     return
   }
-  window.alert('Will clear the resource - set as null')
+  value.value = null
+}
+
+function handleOptionClick (clickValue: ModelValue, close: () => void) {
+  value.value = clickValue
+  close()
+  focussed.value = false
+}
+function unfocus () {
+  setTimeout(() => {
+    focussed.value = false
+  }, 100)
 }
 
 watch(resourcePropertyValue, (newValue) => {
@@ -139,15 +169,26 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="cwa-flex cwa-items-center cwa-space-x-2">
-    <div class="cwa-relative">
-      <CwaUiFormInput v-model="searchValue" class="cwa-pr-8" :disabled="fetchingCurrentResource !== 0" />
+  <Popover class="cwa-flex cwa-items-center cwa-space-x-2">
+    <div ref="trigger" class="cwa-relative">
+      <CwaUiFormInput v-model="searchValue" class="cwa-pr-8" :disabled="fetchingCurrentResource !== 0" @focus="focussed = true" @blur="unfocus" />
+      <div v-if="fetchingCurrentResource !== 0" class="cwa-absolute cwa-top-1/2 -cwa-translate-y-1/2 cwa-left-2">
+        <Spinner :show="true" />
+      </div>
       <button v-if="!notNullable && !!resourcePropertyValue" class="cwa-absolute cwa-right-1 cwa-top-1/2 -cwa-translate-y-1/2 cwa-opacity-50 hover:cwa-opacity-100 cwa-transition" @click="clearResource">
         <CwaUiIconXMarkIcon class="cwa-w-6" />
       </button>
     </div>
-    <div v-if="showLoadingIndicator || !!searchResults">
-      <pre class="cwa-h-20 cwa-overflow-auto cwa-bg-dark cwa-p-2 cwa-border">{{ showLoadingIndicator ? 'Loading...' : displaySearchResults }}</pre>
+    <div v-if="open">
+      <PopoverPanel v-slot="{ close }" ref="container" static class="cwa-absolute cwa-max-h-60 cwa-min-w-full cwa-max-w-[300px] cwa-overflow-auto cwa-dark-blur cwa-border-0 cwa-outline-dotted cwa-outline-1 cwa-outline-stone-400">
+        <div v-if="showLoadingIndicator">
+          Loading...
+        </div>
+        <template v-for="(option, index) of displaySearchResults" v-else>
+          <ButtonPopoverGroup v-if="Array.isArray(option)" :key="`popover-group-option-${index}`" :options="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
+          <ButtonPopoverItem v-else :key="`popover-item-option-${index}`" :option="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
+        </template>
+      </PopoverPanel>
     </div>
-  </div>
+  </Popover>
 </template>
