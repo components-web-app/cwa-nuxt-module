@@ -65,7 +65,7 @@ async function fetchResource () {
 
 async function search () {
   debounceFetchActive.value = false
-  const searchParamsObj: { [key:string]: string } = {}
+  const searchParamsObj: { [key:string]: string } = { perPage: 20 }
   if (fetchingSearchValue.value && fetchingSearchValue.value === searchValue.value) {
     return
   }
