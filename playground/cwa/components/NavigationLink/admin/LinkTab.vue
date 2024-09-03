@@ -1,15 +1,39 @@
 <script setup lang="ts">
-import { useCwaResourceManagerTab } from '#imports'
+import { computed, ref, watch } from 'vue'
+import { useCwaResourceManagerTab, useCwaResourceModel } from '#imports'
 
-const { exposeMeta } = useCwaResourceManagerTab({
+const { exposeMeta, iri } = useCwaResourceManagerTab({
   name: 'Link'
+})
+
+const showInternalRoute = ref(true)
+const toggleLabel = computed(() => {
+  return showInternalRoute.value ? 'Internal' : 'External'
+})
+
+const routeModel = useCwaResourceModel<string>(iri, 'route', {
+  debounceTime: 0
+})
+
+const rawPathModel = useCwaResourceModel<string|null>(iri, 'rawPath')
+
+watch(showInternalRoute, (isInternal) => {
+  if (isInternal) {
+    rawPathModel.model.value = null
+  }
 })
 
 defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div>
-    My link tab
+  <div class="cwa-flex cwa-space-x-8">
+    <CwaUiFormToggle v-model="showInternalRoute" :label="toggleLabel" />
+    <CwaUiFormLabelWrapper v-if="showInternalRoute" label="Route">
+      <CwaUiFormInput v-model="routeModel.model.value" />
+    </CwaUiFormLabelWrapper>
+    <CwaUiFormLabelWrapper v-else label="URL">
+      <CwaUiFormInput v-model="rawPathModel.model.value" />
+    </CwaUiFormLabelWrapper>
   </div>
 </template>
