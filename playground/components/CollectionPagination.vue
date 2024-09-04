@@ -29,51 +29,17 @@
 
 <script setup lang="ts">
 import { ArrowLongLeftIcon, ArrowLongRightIcon } from '@heroicons/vue/20/solid'
-import { computed } from 'vue'
+import {
+  type CwaPaginationEmits,
+  type CwaPaginationProps,
+  useCwaCollectionPagination
+} from '#cwa/runtime/composables/cwa-collection-pagination'
 
 const pageClass = 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
 const selectedPageClass = 'border-indigo-500 text-indigo-600'
 const nextPreviousClass = 'inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 enabled:hover:border-gray-300 enabled:hover:text-gray-700 disabled:opacity-50'
 
-const props = defineProps<{
-  currentPage: number,
-  totalPages: number,
-  maxPagesToDisplay: number
-}>()
-
-defineEmits<{
-  next: [],
-  previous: [],
-  change: [value: number]
-}>()
-
-const pages = computed(() => {
-  if (!props.totalPages) {
-    return []
-  }
-  const allPages = Array.from(Array(props.totalPages), (_, x) => x + 1)
-  const maxPagesToDisplay = 7
-  if (allPages.length < maxPagesToDisplay) {
-    return allPages
-  }
-
-  const displayPages = []
-  displayPages.push(props.currentPage)
-  let lowest = props.currentPage
-  let highest = props.currentPage
-  let displayCounter = 1
-  while (displayCounter < maxPagesToDisplay) {
-    displayCounter++
-    if ((displayCounter % 2 === 0 || highest >= props.totalPages) && lowest > 1) {
-      lowest--
-      displayPages.unshift(lowest)
-      continue
-    }
-    if (highest < props.totalPages) {
-      highest++
-      displayPages.push(highest)
-    }
-  }
-  return displayPages
-})
+const props = defineProps<CwaPaginationProps>()
+defineEmits<CwaPaginationEmits>()
+const { pages } = useCwaCollectionPagination(props)
 </script>
