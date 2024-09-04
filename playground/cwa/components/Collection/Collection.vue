@@ -1,8 +1,8 @@
 <template>
-  <div class="pb-20 flex flex-col space-y-2">
+  <div class="pb-5 flex flex-col space-y-2">
     <CollectionSearch />
-    <div v-if="resource?.data?.collection?.['hydra:member']" class="flex flex-wrap -mx-4">
-      <article v-for="post of resource.data.collection['hydra:member']" :key="post['@id']" class="mx-4 my-4 w-[calc(25%-2rem)] relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gray-900 px-8 pb-8 pt-80 sm:pt-48 lg:pt-60">
+    <div v-if="collectionItems" class="relative flex flex-wrap -mx-4 min-h-96">
+      <article v-for="post of collectionItems" :key="post['@id']" class="mx-4 my-4 w-[calc(25%-2rem)] relative z-0 isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gray-900 px-8 pb-8 pt-80 sm:pt-48 lg:pt-60">
         <img v-if="post.image" :src="post.image" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover">
         <div v-else class="absolute inset-0 -z-10 h-full w-full text-white flex justify-center items-center font-bold">
           No Image
@@ -19,16 +19,34 @@
           </NuxtLink>
         </h3>
       </article>
+      <div v-if="!collectionItems.length" class="absolute top-0 left-0 right-0 bottom-0 bg-white/50 flex justify-center items-center font-bold text-2xl text-gray-700">
+        No Results
+      </div>
+      <Transition
+        enter-from-class="transform opacity-0"
+        enter-active-class="duration-300 ease-out"
+        enter-to-class="opacity-100"
+        leave-from-class="opacity-100"
+        leave-active-class="duration-300 ease-in"
+        leave-to-class="transform opacity-0"
+      >
+        <div v-if="isLoadingCollection" class="absolute z-10 top-0 left-0 right-0 bottom-0 bg-white/50 flex justify-center items-center">
+          <Spinner :show="true" />
+        </div>
+      </Transition>
     </div>
     <CollectionPagination class="w-full" />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import { toRef } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import dayjs from 'dayjs'
-import { useCwaResource } from '#imports'
+import { type LocationQuery, useRoute } from 'vue-router'
+import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import { useCwa, useCwaResource, useQueryBoundModel } from '#imports'
 
 const props = defineProps<IriProp>()
 
@@ -38,6 +56,59 @@ const resource = getResource()
 function formatDate (dateStr:string) {
   return dayjs(dateStr).format('DD/MM/YY')
 }
+
+// parts which could be from a CWA module composable
+const isLoadingCollection = ref(false)
+const fetchedCollectionItems = ref<CwaResource[]>()
+const loadCounter = ref(0)
+
+const $cwa = useCwa()
+const route = useRoute()
+// const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
+const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
+
+const collectionItems = computed<CwaResource[]|undefined>(() => {
+  return fetchedCollectionItems.value || resource.value?.data?.collection?.['hydra:member']
+})
+
+const dataResourceIri = computed(() => {
+  return resource.value?.data?.resourceIri
+})
+async function reloadCollection () {
+  if (!dataResourceIri.value) {
+    return
+  }
+  const currentLoadCounter = ++loadCounter.value
+  isLoadingCollection.value = true
+
+  const { response } = $cwa.fetch({ path: props.iri })
+  const { _data: data } = await response
+
+  if (currentLoadCounter === loadCounter.value) {
+    data && (fetchedCollectionItems.value = data?.collection?.['hydra:member'])
+    isLoadingCollection.value = false
+  }
+}
+
+watch(() => route.query, (newQuery, oldQuery) => {
+  const cleanPaginationFromQuery = (q: LocationQuery) => {
+    const cleanQuery = { ...q }
+    delete cleanQuery.perPage
+    delete cleanQuery.page
+    return cleanQuery
+  }
+  const cleanedOld = cleanPaginationFromQuery(oldQuery)
+  const cleanedNew = cleanPaginationFromQuery(newQuery)
+  if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
+    pageModel.value = 1
+  }
+
+  if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {
+    return
+  }
+  reloadCollection()
+})
+// end composable
 
 defineExpose(exposeMeta)
 </script>
