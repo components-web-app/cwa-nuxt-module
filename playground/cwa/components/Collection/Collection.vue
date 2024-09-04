@@ -35,7 +35,15 @@
         </div>
       </Transition>
     </div>
-    <CollectionPagination class="w-full" />
+    <CollectionPagination
+      class="w-full"
+      :current-page="pageModel || 1"
+      :total-pages="totalPages"
+      :max-pages-to-display="7"
+      @next="goToNextPage"
+      @previous="goToPreviousPage"
+      @change="changePage"
+    />
   </div>
 </template>
 
@@ -74,6 +82,23 @@ const collectionItems = computed<CwaResource[]|undefined>(() => {
 const dataResourceIri = computed(() => {
   return resource.value?.data?.resourceIri
 })
+
+const totalPages = ref(1)
+
+function populateCollectionData (resource?: { collection?: { 'hydra:member': CwaResource[], 'hydra:view': { 'hydra:last': string } } } & CwaResource) {
+  if (resource?.collection?.['hydra:member']) {
+    fetchedCollectionItems.value = resource?.collection?.['hydra:member']
+    const lastPagePath = resource?.collection?.['hydra:view']?.['hydra:last']
+    if (!lastPagePath) {
+      totalPages.value = 1
+    } else {
+      const urlParams = new URLSearchParams(lastPagePath.split('?')[1])
+      const pageQueryParam = urlParams.get('page')
+      totalPages.value = pageQueryParam ? (parseInt(pageQueryParam) || 1) : 1
+    }
+  }
+}
+
 async function reloadCollection () {
   if (!dataResourceIri.value) {
     return
@@ -82,12 +107,30 @@ async function reloadCollection () {
   isLoadingCollection.value = true
 
   const { response } = $cwa.fetch({ path: props.iri })
-  const { _data: data } = await response
+  const { _data: resource } = await response
 
   if (currentLoadCounter === loadCounter.value) {
-    data && (fetchedCollectionItems.value = data?.collection?.['hydra:member'])
+    populateCollectionData(resource)
     isLoadingCollection.value = false
   }
+}
+
+function goToNextPage () {
+  if (pageModel.value >= totalPages.value) {
+    return
+  }
+  changePage(pageModel.value + 1)
+}
+
+function goToPreviousPage () {
+  if (!pageModel.value || pageModel.value <= 1) {
+    return
+  }
+  changePage(pageModel.value - 1)
+}
+
+function changePage (newPageNumber: number) {
+  pageModel.value = newPageNumber
 }
 
 watch(() => route.query, (newQuery, oldQuery) => {
@@ -108,6 +151,8 @@ watch(() => route.query, (newQuery, oldQuery) => {
   }
   reloadCollection()
 })
+
+populateCollectionData(resource.value?.data)
 // end composable
 
 defineExpose(exposeMeta)

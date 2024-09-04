@@ -1,30 +1,79 @@
 <template>
   <nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">
     <div class="-mt-px flex w-0 flex-1">
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+      <button :disabled="currentPage === 1" :class="nextPreviousClass" @click="$emit('previous')">
         <ArrowLongLeftIcon class="mr-3 h-5 w-5 text-gray-400" aria-hidden="true" />
         Previous
-      </a>
+      </button>
     </div>
     <div class="hidden md:-mt-px md:flex">
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">1</a>
-      <!-- Current: "border-indigo-500 text-indigo-600", Default: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" -->
-      <a href="#" class="inline-flex items-center border-t-2 border-indigo-500 px-4 pt-4 text-sm font-medium text-indigo-600" aria-current="page">2</a>
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">3</a>
-      <span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500">...</span>
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">8</a>
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">9</a>
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">10</a>
+      <button
+        v-for="page of pages"
+        :key="`page-${page}`"
+        class="inline-flex items-center border-t-2 px-4 pt-4 text-sm font-medium"
+        :class="[page === currentPage ? selectedPageClass : pageClass]"
+        :aria-current="page === currentPage ? 'page' : undefined"
+        @click="$emit('change', page)"
+      >
+        {{ page }}
+      </button>
     </div>
     <div class="-mt-px flex w-0 flex-1 justify-end">
-      <a href="#" class="inline-flex items-center border-t-2 border-transparent pl-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+      <button :disabled="currentPage === totalPages" :class="nextPreviousClass" @click="$emit('next')">
         Next
         <ArrowLongRightIcon class="ml-3 h-5 w-5 text-gray-400" aria-hidden="true" />
-      </a>
+      </button>
     </div>
   </nav>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ArrowLongLeftIcon, ArrowLongRightIcon } from '@heroicons/vue/20/solid'
+import { computed } from 'vue'
+
+const pageClass = 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+const selectedPageClass = 'border-indigo-500 text-indigo-600'
+const nextPreviousClass = 'inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 enabled:hover:border-gray-300 enabled:hover:text-gray-700 disabled:opacity-50'
+
+const props = defineProps<{
+  currentPage: number,
+  totalPages: number,
+  maxPagesToDisplay: number
+}>()
+
+defineEmits<{
+  next: [],
+  previous: [],
+  change: [value: number]
+}>()
+
+const pages = computed(() => {
+  if (!props.totalPages) {
+    return []
+  }
+  const allPages = Array.from(Array(props.totalPages), (_, x) => x + 1)
+  const maxPagesToDisplay = 7
+  if (allPages.length < maxPagesToDisplay) {
+    return allPages
+  }
+
+  const displayPages = []
+  displayPages.push(props.currentPage)
+  let lowest = props.currentPage
+  let highest = props.currentPage
+  let displayCounter = 1
+  while (displayCounter < maxPagesToDisplay) {
+    displayCounter++
+    if ((displayCounter % 2 === 0 || highest >= props.totalPages) && lowest > 1) {
+      lowest--
+      displayPages.unshift(lowest)
+      continue
+    }
+    if (highest < props.totalPages) {
+      highest++
+      displayPages.push(highest)
+    }
+  }
+  return displayPages
+})
 </script>
