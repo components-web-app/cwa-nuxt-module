@@ -31,14 +31,14 @@ defineExpose(exposeMeta)
 
 <template>
   <div class="flex space-x-4">
-    <CwaUiFormLabelWrapper label="Dynamic Data Category">
+    <CwaUiFormLabelWrapper label="Data Category">
       <CwaUiFormSelect v-model="resourceIriSelect.model.value" :options="resourceIriSelect.options.value" />
+    </CwaUiFormLabelWrapper>
+    <CwaUiFormLabelWrapper label="Filter">
+      <CwaUiFormSelect v-model="defaultQueryParametersSelect.model.value" :options="defaultQueryParametersSelect.options.value" />
     </CwaUiFormLabelWrapper>
     <CwaUiFormLabelWrapper label="Items Per Page">
       <CwaUiFormInput v-model.number="perPageModel.model.value" />
-    </CwaUiFormLabelWrapper>
-    <CwaUiFormLabelWrapper label="Default Filters">
-      <CwaUiFormSelect v-model="defaultQueryParametersSelect.model.value" :options="defaultQueryParametersSelect.options.value" />
     </CwaUiFormLabelWrapper>
   </div>
 </template>

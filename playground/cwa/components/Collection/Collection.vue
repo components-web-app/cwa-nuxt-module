@@ -8,14 +8,14 @@
         </div>
         <div class="absolute inset-0 -z-10 bg-gradient-to-t from-gray-900 via-gray-900/40" />
         <div class="absolute inset-0 -z-10 rounded-2xl ring-1 ring-inset ring-gray-900/10" />
-        <div class="flex flex-wrap items-center gap-y-1 overflow-hidden text-sm leading-6 text-gray-300">
+        <div class="flex flex-wrap items-center gap-y-1 overflow-hidden text-sm leading-3 text-gray-300">
           <time :datetime="post.createdAt" class="mr-8">{{ formatDate(post.createdAt) }}</time>
         </div>
         <h3 class="mt-3 text-lg font-semibold leading-6 text-white">
-          <a :href="post.routePath">
+          <NuxtLink :to="post.routePath">
             <span class="absolute inset-0" />
             {{ post.title }}
-          </a>
+          </NuxtLink>
         </h3>
       </article>
     </div>
@@ -37,7 +37,7 @@ const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
 const resource = getResource()
 
 function formatDate (dateStr:string) {
-  return dayjs(dateStr).format('DD/MM/YY @ HH:mm')
+  return dayjs(dateStr).format('DD/MM/YY')
 }
 
 defineExpose(exposeMeta)
