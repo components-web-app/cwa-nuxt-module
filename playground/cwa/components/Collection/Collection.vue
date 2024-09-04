@@ -1,5 +1,6 @@
 <template>
-  <div class="pb-20">
+  <div class="pb-20 flex flex-col space-y-2">
+    <CollectionSearch />
     <div v-if="resource?.data?.collection?.['hydra:member']" class="flex flex-wrap -mx-4">
       <article v-for="post of resource.data.collection['hydra:member']" :key="post['@id']" class="mx-4 my-4 w-[calc(25%-2rem)] relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gray-900 px-8 pb-8 pt-80 sm:pt-48 lg:pt-60">
         <img v-if="post.image" :src="post.image" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover">
@@ -19,9 +20,7 @@
         </h3>
       </article>
     </div>
-    <CodeBlock v-if="false">
-      {{ resource }}
-    </CodeBlock>
+    <CollectionPagination class="w-full" />
   </div>
 </template>
 
