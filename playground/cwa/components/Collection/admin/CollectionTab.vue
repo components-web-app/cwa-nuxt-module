@@ -37,7 +37,7 @@ defineExpose(exposeMeta)
     <CwaUiFormLabelWrapper label="Items Per Page">
       <CwaUiFormInput v-model.number="perPageModel.model.value" />
     </CwaUiFormLabelWrapper>
-    <CwaUiFormLabelWrapper label="Filters">
+    <CwaUiFormLabelWrapper label="Default Filters">
       <CwaUiFormSelect v-model="defaultQueryParametersSelect.model.value" :options="defaultQueryParametersSelect.options.value" />
     </CwaUiFormLabelWrapper>
   </div>

@@ -31,7 +31,7 @@ const resourceType = computed(() => {
 })
 
 const buttonLabel = computed<'Publish'|undefined>(() => {
-  if (publishedState.value) {
+  if (publishedState.value !== false) {
     return
   }
   return 'Publish'
