@@ -1,6 +1,6 @@
 <template>
   <div class="w-full relative">
-    <div v-if="displayMedia" class="relative flex overflow-hidden max-w-full">
+    <div v-if="displayMedia" class="relative flex overflow-hidden max-w-[300px]" :style="{ 'aspect-ratio': `${displayMedia.width} / ${displayMedia.height}` }">
       <NuxtImg
         v-if="displayMedia"
         ref="image"
