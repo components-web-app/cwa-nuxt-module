@@ -133,7 +133,7 @@ const [trigger, container] = usePopper(popperOps.value)
         <span :class="middleDotClassName" />
         <span :class="bottomDotClassName" />
       </PopoverButton>
-      <PopoverPanel v-slot="{ close }" ref="container" class="cwa-absolute cwa-min-w-[220px] cwa-w-full cwa-max-w-[300px] cwa-bg-stone-700 cwa-py-1">
+      <PopoverPanel v-slot="{ close }" ref="container" class="cwa-absolute !cwa-min-w-[220px] cwa-max-w-[300px] cwa-bg-stone-700 cwa-py-1">
         <template v-for="(option, index) of options">
           <ButtonPopoverGroup v-if="Array.isArray(option)" :key="`popover-group-option-${index}`" :options="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
           <ButtonPopoverItem v-else :key="`popover-item-option-${index}`" :option="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
