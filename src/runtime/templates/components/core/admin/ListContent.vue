@@ -23,7 +23,7 @@
           </div>
         </div>
         <div v-else>
-          <ListPagination v-model:page.number="pageModel" v-model:perPage.number="perPageModel" :total-items="hydraData.totalItems || 0" />
+          <ListPagination v-model:page.number="pageModel" v-model:per-page.number="perPageModel" :total-items="hydraData.totalItems || 0" />
           <ul class="cwa-flex cwa-flex-col cwa-mb-8">
             <li v-for="(item, index) in items" :key="`list-item-${index}`">
               <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
@@ -34,7 +34,7 @@
               </slot>
             </li>
           </ul>
-          <ListPagination v-model:page.number="pageModel" v-model:perPage.number="perPageModel" :total-items="hydraData.totalItems || 0" />
+          <ListPagination v-model:page.number="pageModel" v-model:per-page.number="perPageModel" :total-items="hydraData.totalItems || 0" />
         </div>
       </Transition>
     </div>
