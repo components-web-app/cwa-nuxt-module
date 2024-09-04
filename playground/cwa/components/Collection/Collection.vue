@@ -3,10 +3,10 @@
     <CollectionSearch />
     <div v-if="collectionItems" class="relative flex flex-wrap -mx-4 min-h-96">
       <article v-for="post of collectionItems" :key="post['@id']" class="mx-4 my-4 w-[calc(25%-2rem)] relative z-0 isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gray-900 px-8 pb-8 pt-80 sm:pt-48 lg:pt-60">
-        <img v-if="post.image" :src="post.image" alt="" class="absolute inset-0 -z-10 h-full w-full object-cover">
-        <div v-else class="absolute inset-0 -z-10 h-full w-full text-white flex justify-center items-center font-bold">
+        <div v-if="!post.image" class="absolute inset-0 -z-10 h-full w-full text-white flex justify-center items-center font-bold">
           No Image
         </div>
+        <CollectionImage v-else :iri="post.image" class="absolute inset-0 -z-10 h-full w-full object-cover" />
         <div class="absolute inset-0 -z-10 bg-gradient-to-t from-gray-900 via-gray-900/40" />
         <div class="absolute inset-0 -z-10 rounded-2xl ring-1 ring-inset ring-gray-900/10" />
         <div class="flex flex-wrap items-center gap-y-1 overflow-hidden text-sm leading-3 text-gray-300">

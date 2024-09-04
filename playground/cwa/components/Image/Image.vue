@@ -1,6 +1,6 @@
 <template>
   <div class="w-full relative">
-    <div v-if="displayMedia" class="relative flex overflow-hidden max-w-full h-96 max-h-screen">
+    <div v-if="displayMedia" class="relative flex overflow-hidden max-w-full">
       <NuxtImg
         v-if="displayMedia"
         ref="image"
