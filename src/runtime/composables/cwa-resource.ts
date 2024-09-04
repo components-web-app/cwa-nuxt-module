@@ -7,7 +7,7 @@ export type IriProp = {
  iri: string
 }
 
-interface CwaResourceUtilsOps {
+export interface CwaResourceUtilsOps {
   name?: string
   styles?: StyleOptions,
   manager?: {

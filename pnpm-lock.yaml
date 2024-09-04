@@ -161,6 +161,9 @@ importers:
 
   playground:
     dependencies:
+      '@heroicons/vue':
+        specifier: ^2.1.5
+        version: 2.1.5(vue@3.5.0(typescript@5.5.4))
       '@nuxt/image':
         specifier: 1.7.0
         version: 1.7.0(ioredis@5.4.1)(magicast@0.3.5)(rollup@2.79.1)(webpack-sources@3.2.3)
@@ -1455,6 +1458,11 @@ packages:
     engines: {node: '>=10'}
     peerDependencies:
       vue: ^3.2.0
+
+  '@heroicons/vue@2.1.5':
+    resolution: {integrity: sha512-IpqR72sFqFs55kyKfFS7tN+Ww6odFNeH/7UxycIOrlVYfj4WUGAdzQtLBnJspucSeqWFQsKM0g0YrgU655BEfA==}
+    peerDependencies:
+      vue: '>= 3'
 
   '@humanwhocodes/config-array@0.11.14':
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
@@ -7947,6 +7955,10 @@ snapshots:
   '@headlessui/vue@1.7.22(vue@3.5.0(typescript@5.5.4))':
     dependencies:
       '@tanstack/vue-virtual': 3.10.6(vue@3.5.0(typescript@5.5.4))
+      vue: 3.5.0(typescript@5.5.4)
+
+  '@heroicons/vue@2.1.5(vue@3.5.0(typescript@5.5.4))':
+    dependencies:
       vue: 3.5.0(typescript@5.5.4)
 
   '@humanwhocodes/config-array@0.11.14':

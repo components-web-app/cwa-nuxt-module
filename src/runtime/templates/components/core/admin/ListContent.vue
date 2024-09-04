@@ -63,22 +63,6 @@ watch(perPageModel, (newValue) => {
   immediate: true
 })
 
-watch(() => route.query, (newQuery, oldQuery) => {
-  const cleanPaginationFromQuery = (q: LocationQuery) => {
-    const cleanQuery = { ...q }
-    delete cleanQuery.perPage
-    delete cleanQuery.page
-    return cleanQuery
-  }
-  const cleanedOld = cleanPaginationFromQuery(oldQuery)
-  const cleanedNew = cleanPaginationFromQuery(newQuery)
-  if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
-    pageModel.value = 1
-  }
-}, {
-  deep: true
-})
-
 const props = defineProps<{
   fetchUrl: string
 }>()
@@ -117,6 +101,22 @@ function getItemFromStore (item: CwaResource) {
   const storeItemData = $cwa.resources.getResource(item['@id']).value?.data
   return storeItemData || item
 }
+
+watch(() => route.query, (newQuery, oldQuery) => {
+  const cleanPaginationFromQuery = (q: LocationQuery) => {
+    const cleanQuery = { ...q }
+    delete cleanQuery.perPage
+    delete cleanQuery.page
+    return cleanQuery
+  }
+  const cleanedOld = cleanPaginationFromQuery(oldQuery)
+  const cleanedNew = cleanPaginationFromQuery(newQuery)
+  if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
+    pageModel.value = 1
+  }
+}, {
+  deep: true
+})
 
 watch(() => route.query, (oldQuery, newQuery) => {
   if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {
