@@ -41,6 +41,9 @@ module.exports = {
             h4: {
               color: theme('colors.primary')
             },
+            strong: {
+              color: theme('colors.current')
+            },
             a: {
               color: theme('colors.primary'),
               '&:hover': {
