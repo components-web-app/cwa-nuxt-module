@@ -9,8 +9,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useHead } from '#app'
 import { ref } from 'vue'
+import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'

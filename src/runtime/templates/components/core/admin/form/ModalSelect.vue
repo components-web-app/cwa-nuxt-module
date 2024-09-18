@@ -6,8 +6,8 @@ import {
   ListboxOption, provideUseId, ListboxLabel
 } from '@headlessui/vue'
 
-import { useId } from '#app'
 import { computed } from 'vue'
+import { useId } from '#app'
 import { type SelectInputProps, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
 
 // see https://github.com/tailwindlabs/headlessui/issues/2913 - temporary until headless ui 2 and vue 3.5

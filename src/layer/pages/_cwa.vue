@@ -12,8 +12,8 @@
 </template>
 
 <script lang="ts" setup>
-import { navigateTo, useHead } from '#app'
 import { onBeforeMount } from 'vue'
+import { navigateTo, useHead } from '#app'
 import { definePageMeta, useCwa } from '#imports'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 const $cwa = useCwa()

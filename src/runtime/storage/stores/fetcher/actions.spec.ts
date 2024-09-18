@@ -371,10 +371,11 @@ describe('Fetcher store action -> addFetchResource', () => {
 
   test('If the token is for a fetch chain that is not primary, even if there is a primary fetch in progress, continue and add', () => {
     // mock is fetch chain complete as true so that we can spy on the method being called. Functionality is tested in getters anyway
+    const isCurrentFetchingToken = vi.fn(() => {
+      return true
+    })
     currentGetters.isCurrentFetchingToken = computed(() => {
-      return vi.fn(() => {
-        return true
-      })
+      return isCurrentFetchingToken
     })
 
     fetcherState.primaryFetch.fetchingToken = 'existing-incomplete-primary-token'
@@ -382,6 +383,7 @@ describe('Fetcher store action -> addFetchResource', () => {
       token: 'existing-token',
       resource: '/another-path-2'
     })
+
     expect(currentGetters.isCurrentFetchingToken.value).toHaveBeenCalledWith('existing-token')
     expect(result).toBe(true)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual([

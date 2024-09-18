@@ -15,8 +15,8 @@
 </template>
 
 <script lang="ts" setup>
-import { useId } from '#app'
 import { ref, computed, defineEmits } from 'vue'
+import { useId } from '#app'
 
 const props = defineProps<{
   modelValue: string[]|null
