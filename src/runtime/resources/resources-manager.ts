@@ -233,7 +233,9 @@ export class ResourcesManager {
     const postSaveFn = () => {
       // if we have just published a resource, remove the old draft and turn off edit mode
       if (isPublishingAndOverwritingPreviousLiveResource) {
-        this.removeResource({ resource: event.endpoint })
+        // when we remove the resource we do not want to remove the component position or update it...
+        // position will  have a refresh request already in process
+        this.removeResource({ resource: event.endpoint, noCascade: true })
       }
     }
 

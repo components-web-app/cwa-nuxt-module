@@ -1,10 +1,7 @@
 import { defineNuxtConfig } from 'nuxt/config'
-import { createResolver } from '@nuxt/kit'
 
 const API_URL = process.env.API_URL || 'https://localhost:8443'
 const API_URL_BROWSER = process.env.API_URL_BROWSER || API_URL
-
-const { resolve } = createResolver(import.meta.url)
 
 export default defineNuxtConfig({
   app: {
@@ -13,10 +10,10 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       htmlAttrs: {
         lang: 'en-GB',
-        class: 'bg-blue-400'
+        class: 'bg-black'
       },
       bodyAttrs: {
-        class: 'bg-white'
+        class: 'bg-background'
       }
     }
   },
@@ -84,21 +81,6 @@ export default defineNuxtConfig({
       exclude: [
         '../**/*.spec.ts',
         '../**/*.test.ts'
-      ]
-    }
-  },
-  tailwindcss: {
-    config: {
-      content: [
-        resolve('nuxt.config.ts'),
-        resolve('components/**/*.{js,vue,ts}'),
-        resolve('layouts/**/*.{js,vue,ts}'),
-        resolve('pages/**/*.{js,vue,ts}'),
-        resolve('cwa/**/*.{js,vue,ts}')
-      ],
-      plugins: [
-        require('@tailwindcss/forms'),
-        require('@tailwindcss/typography')
       ]
     }
   },

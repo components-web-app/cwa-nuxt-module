@@ -14,7 +14,7 @@
         :src="contentUrl"
         :width="displayMedia?.width"
         :height="displayMedia?.height"
-        class="object-contain object-left-top"
+        class="object-contain object-left-top saturate-0"
         @load="handleLoad"
       />
     </Transition>

@@ -23,7 +23,7 @@ import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined|false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string|undefined }
 
-export interface DeleteResourceEvent { resource: string }
+export interface DeleteResourceEvent { resource: string, noCascade?: boolean }
 
 export interface SetResourceInProgressStatusEvent {
   iri: string, isComplete: false
@@ -83,6 +83,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
     switch (resourceType) {
       case CwaResourceTypes.COMPONENT_POSITION: {
+        if (event.noCascade) {
+          break
+        }
         // remove a component position from all component groups
         const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
         for (const componentGroup of Object.values(componentGroups)) {
@@ -96,7 +99,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         break
       }
       case CwaResourceTypes.COMPONENT: {
-        if (!resource.data) {
+        if (!resource.data || event.noCascade) {
           break
         }
 
@@ -110,6 +113,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
               continue
             }
             if (!positionResource.data.pageDataProperty) {
+              // if we are deleting a component because it has been replaced by a live, we should not be deleting the
+              // position, it will be being refreshed
               deleteResource({
                 resource: positionIri
               })

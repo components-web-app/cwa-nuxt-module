@@ -65,13 +65,15 @@ const displaySearchResults = computed(() => {
 
 async function fetchResource () {
   if (!value.value) {
+    fetchingCurrentResource.value = 0
     selectedResource.value = undefined
     return
   }
   fetchingCurrentResource.value = ++(fetchCurrentCount.value)
   const newResource = await $cwa.fetchResource({
     path: `${value.value}`,
-    noSave: false
+    noSave: false,
+    shallowFetch: true
   })
   if (fetchCurrentCount.value === fetchingCurrentResource.value) {
     selectedResource.value = newResource
@@ -131,6 +133,7 @@ function handleOptionClick (clickValue: ModelValue, close: () => void) {
   value.value = clickValue
   close()
   focussed.value = false
+  searchValue.value = resourcePropertyValue.value
 }
 function unfocus () {
   setTimeout(() => {
