@@ -2,9 +2,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { RouteLocationNormalizedLoaded, RouteLocationRaw } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
+import * as nuxt from '#app'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
-import * as nuxt from '#app'
 
 function createToRoute (cwa?: boolean|undefined): RouteLocationNormalizedLoaded {
   if (cwa === undefined) {

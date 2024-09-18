@@ -81,12 +81,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from '#app'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
 import Menu from './_parts/Menu.vue'
-import { useRoute, useRouter } from '#app'
 import { useCwa } from '#imports'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'

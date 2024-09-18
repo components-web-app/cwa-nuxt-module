@@ -45,8 +45,8 @@
 <script lang="ts" setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
-import { useListPage } from './composables/useListPage'
 import { useHead } from '#app'
+import { useListPage } from './composables/useListPage'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
