@@ -140,7 +140,10 @@ export default class ManageableResource {
       return this.childIrisRef
     }
 
-    const watchRefs: WatchSource[] = [this.$cwa.resourcesManager.addResourceEvent, () => this.currentResource?.data]
+    const watchRefs: WatchSource[] = [
+      this.$cwa.resourcesManager.addResourceEvent,
+      () => this.currentResource?.data
+    ]
 
     const getChildren = () => {
       const currentIri = this.currentIri?.value
@@ -156,6 +159,7 @@ export default class ManageableResource {
         }
         const resource = this.$cwa.resources.getResource(iri)
         watchRefs.push(resource)
+
         const type = getResourceTypeFromIri(iri)
         if (!resource.value) {
           consola.warn(`Could not get children for '${iri}' - Resource not found`)
@@ -196,8 +200,11 @@ export default class ManageableResource {
           }
 
           for (const child of children) {
-            nested.push(child)
-            nested.push(...getNestedChildren(child))
+            const allPublishableIrisOfChildren = this.$cwa.resources.findAllPublishableIris(child)
+            for (const childIri of allPublishableIrisOfChildren) {
+              nested.push(childIri)
+              nested.push(...getNestedChildren(childIri))
+            }
           }
         }
 
@@ -217,6 +224,7 @@ export default class ManageableResource {
     }, {
       immediate: true
     })
+
     return this.childIrisRef
   }
 

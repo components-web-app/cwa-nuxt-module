@@ -25,8 +25,12 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@nuxt/image',
     '@nuxt/test-utils/module',
-    '@vite-pwa/nuxt'
+    '@vite-pwa/nuxt',
+    'nuxt-svgo'
   ],
+  svgo: {
+    autoImportPath: './assets/svg/'
+  },
   devtools: {
     enabled: true
   },

@@ -16,6 +16,7 @@
     "@tiptap/extension-placeholder": "^2.1.12",
     "@tiptap/pm": "^2.1.12",
     "@tiptap/starter-kit": "^2.1.12",
-    "@tiptap/vue-3": "^2.1.12"
+    "@tiptap/vue-3": "^2.1.12",
+    "nuxt-svgo": "^4.0.6"
   }
 }
