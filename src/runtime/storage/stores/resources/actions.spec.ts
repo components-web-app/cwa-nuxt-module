@@ -162,11 +162,10 @@ describe('Resources -> mergeNewResources', () => {
   const resourcesState = state()
   const resourcesGetters = getters(resourcesState)
   const resourcesActions = actions(resourcesState, resourcesGetters)
-
+  const fetchedAtDate = new Date(2000, 1, 1, 13)
   beforeEach(() => {
     vi.useFakeTimers()
-    const date = new Date(2000, 1, 1, 13)
-    vi.setSystemTime(date)
+    vi.setSystemTime(fetchedAtDate)
   })
 
   afterEach(() => {
@@ -234,7 +233,7 @@ describe('Resources -> mergeNewResources', () => {
         headers: {
           path: 'any'
         },
-        fetchedAt: 949410000000
+        fetchedAt: fetchedAtDate.getTime()
       },
       data: {
         '@id': '/to-add',
@@ -280,7 +279,7 @@ describe('Resources -> mergeNewResources', () => {
         headers: {
           path: 'any'
         },
-        fetchedAt: 1075640400000
+        fetchedAt: date.getTime()
       },
       data: {
         '@id': '/resource',
@@ -301,11 +300,10 @@ describe('Resources -> resetCurrentResources', () => {
   const resourcesState = state()
   const resourcesGetters = getters(resourcesState)
   const resourcesActions = actions(resourcesState, resourcesGetters)
-
+  const fetchedAtDate = new Date(2000, 1, 1, 13)
   beforeEach(() => {
     vi.useFakeTimers()
-    const date = new Date(2000, 1, 1, 13)
-    vi.setSystemTime(date)
+    vi.setSystemTime(fetchedAtDate)
   })
 
   afterEach(() => {
@@ -382,7 +380,7 @@ describe('Resources -> resetCurrentResources', () => {
       status: CwaResourceApiStatuses.SUCCESS,
       headers: { path: '1' },
       ssr: undefined,
-      fetchedAt: 949410000000
+      fetchedAt: fetchedAtDate.getTime()
     })
   })
 
