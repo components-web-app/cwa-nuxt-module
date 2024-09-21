@@ -38,7 +38,7 @@ vi.mock('./storage/storage', () => {
 
 vi.mock('./api/fetcher/fetcher', () => {
   return {
-    default: vi.fn(() => ({ setSignedIn: vi.fn() }))
+    default: vi.fn(() => ({ }))
   }
 })
 
@@ -178,7 +178,6 @@ describe('Cwa class test', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, { path }, stores.resources)
-    expect(Fetcher.mock.results[0].value.setSignedIn).toBeCalledWith(Auth.mock.results[0].value.signedIn)
   })
 
   test('Resources is initialised and accessible', () => {

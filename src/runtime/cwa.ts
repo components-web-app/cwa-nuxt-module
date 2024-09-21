@@ -74,7 +74,6 @@ export default class Cwa {
       this.storage.stores.fetcher,
       useCookie('cwa_auth', { sameSite: 'strict' })
     )
-    this.fetcher.setSignedIn(this.auth.signedIn)
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)

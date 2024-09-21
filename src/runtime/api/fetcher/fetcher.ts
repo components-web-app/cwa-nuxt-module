@@ -1,6 +1,5 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import type { FetchResponse } from 'ofetch'
-import type { ComputedRef } from 'vue'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri,
@@ -69,7 +68,6 @@ export default class Fetcher {
   private fetchStatusManager: FetchStatusManager
   private currentRoute: RouteLocationNormalizedLoaded
   private resourcesStoreDefinition: ResourcesStore
-  private signedIn: undefined|ComputedRef<boolean>
 
   constructor (
     cwaFetch: CwaFetch,
@@ -81,10 +79,6 @@ export default class Fetcher {
     this.fetchStatusManager = fetchStatusManager
     this.currentRoute = currentRoute
     this.resourcesStoreDefinition = resourcesStoreDefinition
-  }
-
-  public setSignedIn (signedIn: ComputedRef<boolean>) {
-    this.signedIn = signedIn
   }
 
   public async fetchRoute (route: RouteLocationNormalizedLoaded): Promise<CwaResource|undefined> {
