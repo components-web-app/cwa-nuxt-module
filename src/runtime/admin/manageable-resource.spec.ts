@@ -286,8 +286,7 @@ describe('ManageableResource Class', () => {
 
       vi.spyOn($cwa, 'resources', 'get').mockImplementation(() => {
         return {
-          getResource,
-          findAllPublishableIris: vi.fn(iri => ([iri]))
+          getResource
         }
       })
       vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {

@@ -200,11 +200,8 @@ export default class ManageableResource {
           }
 
           for (const child of children) {
-            const allPublishableIrisOfChildren = this.$cwa.resources.findAllPublishableIris(child)
-            for (const childIri of allPublishableIrisOfChildren) {
-              nested.push(childIri)
-              nested.push(...getNestedChildren(childIri))
-            }
+            nested.push(child)
+            nested.push(...getNestedChildren(child))
           }
         }
 
