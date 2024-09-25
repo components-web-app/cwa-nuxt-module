@@ -122,6 +122,7 @@ export default class ManageableResource {
 
     // the child will have to have a click handler added for this (parent) resource
     const isNewlyMountedIriAChild = iriIsChild()
+
     if (isNewlyMountedIriAChild) {
       this.removeClickEventListeners()
       this.addClickEventListeners()
