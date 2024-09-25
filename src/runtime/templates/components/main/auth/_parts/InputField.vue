@@ -22,8 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import hash from 'object-hash'
-import { ref } from 'vue'
+import { useId } from '#app'
 
 defineEmits(['update:modelValue'])
 
@@ -43,5 +42,5 @@ const props = withDefaults(defineProps<{
   errors: undefined
 })
 
-const id = ref(hash(props))
+const id = useId()
 </script>
