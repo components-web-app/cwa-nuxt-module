@@ -99,7 +99,8 @@
     "overrides": {
       "vite": ">=5.0.12",
       "semver": ">=7.5.2",
-      "ufo": ">=1.5"
+      "ufo": ">=1.5",
+      "rollup": ">=3.29.5"
     },
     "auditConfig": {
       "ignoreCves": []
@@ -109,7 +110,8 @@
     "vite": ">=5.1.7",
     "semver": ">=7.5.2",
     "ufo": ">=1.5",
-    "micromatch": ">=4.0.8"
+    "micromatch": ">=4.0.8",
+    "rollup": ">=3.29.5"
   },
   "engines": {
     "pnpm": ">=9.7.0"
