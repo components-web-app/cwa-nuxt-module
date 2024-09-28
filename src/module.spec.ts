@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { describe, expect, Mock, test, vi } from 'vitest'
+import { describe, expect, type Mock, test, vi } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 
 vi.mock('@nuxt/kit', async () => {
@@ -31,12 +31,12 @@ vi.mock('node:fs', () => {
   }
 })
 
-async function prepareMockNuxt (options = {}, nuxt?) {
+async function prepareMockNuxt (options = {}, nuxt?: any) {
   await import('./module')
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = Object.assign({ hook: vi.fn(), options: { alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
+  const mockNuxt = Object.assign({ hook: vi.fn(), options: { runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
 
   await setup(Object.assign({ tailwind: { base: true } }, options), mockNuxt)
 
@@ -124,6 +124,7 @@ describe('CWA module', () => {
           }
         }),
         options: {
+          runtimeConfig: { public: { cwa: {} } },
           alias: {},
           css: [],
           build: {
@@ -215,6 +216,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
             }
           }),
           options: {
+            runtimeConfig: { public: { cwa: {} } },
             alias: {},
             css: [],
             build: {
@@ -246,6 +248,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
             }
           }),
           options: {
+            runtimeConfig: { public: { cwa: {} } },
             alias: {},
             css: [],
             build: {

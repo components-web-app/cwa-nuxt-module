@@ -1,6 +1,7 @@
 import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
+import { defu } from 'defu'
 import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import {
@@ -42,9 +43,9 @@ export interface CwaUiMeta {
 export interface CwaModuleOptions {
   appName: string
   storeName: string
-  pagesDepth?: number
-  apiUrlBrowser?: string
   apiUrl?: string
+  apiUrlBrowser?: string
+  pagesDepth?: number
   resources?: CwaResourcesMeta
   layouts?: {
     [type: string]: CwaUiMeta
@@ -59,6 +60,15 @@ export interface CwaModuleOptions {
     base?: boolean
   },
   layoutName?: string
+}
+
+declare module '@nuxt/schema' {
+  interface PublicRuntimeConfig {
+    cwa: {
+      apiUrl: string
+      apiUrlBrowser: string
+    }
+  }
 }
 
 function createDefaultCwaPages (
@@ -118,6 +128,11 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
   },
   async setup (options: CwaModuleOptions, nuxt) {
+    nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
+      apiUrl: options.apiUrl || options.apiUrlBrowser || '',
+      apiUrlBrowser: options.apiUrlBrowser || options.apiUrl || ''
+    })
+
     const { resolve } = createResolver(import.meta.url)
 
     const { version, name } = JSON.parse(

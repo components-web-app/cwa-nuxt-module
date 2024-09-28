@@ -1,4 +1,5 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
+import * as nuxtApp from '#app/nuxt'
 import type { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -17,6 +18,12 @@ import Auth from './api/auth'
 vi.mock('#app/composables/cookie.js', () => {
   return {
     useCookie: vi.fn((...args) => ([...args]))
+  }
+})
+
+vi.mock('#app/nuxt', () => {
+  return {
+    useRuntimeConfig: vi.fn(() => ({ public: { cwa: { apiUrl: '', apiUrlBrowser: '' } } }))
   }
 })
 
@@ -90,15 +97,24 @@ const path = 'something'
 const storeName = 'dummystore'
 const $router = vi.fn()
 function createCwa ({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
+  vi.spyOn(nuxtApp, 'useRuntimeConfig').mockImplementation(() => ({
+    public: {
+      cwa: {
+        apiUrlBrowser,
+        apiUrl
+      }
+    }
+  }))
   return new Cwa({
     _route: {
       path
     },
     $router
   }, {
-    apiUrlBrowser,
-    apiUrl,
     storeName
+  }, {
+    version: 'abc',
+    name: 'named'
   })
 }
 

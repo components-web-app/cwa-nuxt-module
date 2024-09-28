@@ -1,5 +1,5 @@
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-import type { NuxtApp } from '#app/nuxt'
+import { useRuntimeConfig, type NuxtApp } from '#app/nuxt'
 import { useCookie } from '#app/composables/cookie.js'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
@@ -47,11 +47,12 @@ export default class Cwa {
   constructor (nuxtApp: Pick<NuxtApp, '_route'|'_middleware'|'$router'|'cwaResources'>, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
     const { isClient } = useProcess()
+    const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
-      this.apiUrl = options.apiUrlBrowser || options.apiUrl || defaultApiUrl
+      this.apiUrl = apiUrlBrowser || apiUrl || defaultApiUrl
     } else {
-      this.apiUrl = options.apiUrl || options.apiUrlBrowser || defaultApiUrl
+      this.apiUrl = apiUrl || apiUrlBrowser || defaultApiUrl
     }
 
     this.cwaFetch = new CwaFetch(this.apiUrl)
