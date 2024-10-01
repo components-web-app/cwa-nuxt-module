@@ -2,13 +2,12 @@ import {
   computed,
   markRaw,
   ref,
-  watch
-} from 'vue'
-import type {
-  ComponentPublicInstance,
-  Ref,
-  WatchStopHandle
-  , WatchSource
+  watch, type WatchHandle
+  ,
+  type ComponentPublicInstance,
+  type Ref,
+  type WatchStopHandle,
+  type WatchSource
 } from 'vue'
 import { consola } from 'consola'
 import {
@@ -38,6 +37,8 @@ export default class ManageableResource {
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
   private childIrisRef: Ref<string[]>|undefined
+  private watchRefs: Ref<WatchSource[]>|undefined
+  private unwatchChildRefs: WatchHandle|undefined
 
   constructor (
     private readonly component: ComponentPublicInstance,
@@ -135,94 +136,103 @@ export default class ManageableResource {
     }
   }
 
-  // COMPUTED FOR REFRESHING
+  private initialiseChildrenWatchRefs () {
+    if (!this.watchRefs) {
+      this.watchRefs = ref([])
+    }
+    if (this.unwatchChildRefs) {
+      this.unwatchChildRefs()
+    }
+    this.watchRefs.value = [
+      this.$cwa.resourcesManager.addResourceEvent,
+      () => this.currentResource?.data
+    ]
+  }
+
+  private getChildren () {
+    this.initialiseChildrenWatchRefs()
+    const currentIri = this.currentIri?.value
+    if (!currentIri) {
+      return []
+    }
+    const addResourceData = this.$cwa.resourcesManager.addResourceEvent.value
+
+    const getNestedChildren = (iri: string): string[] => {
+      const nested: string[] = []
+      if (iri === NEW_RESOURCE_IRI) {
+        return nested
+      }
+      const resource = this.$cwa.resources.getResource(iri)
+      this.watchRefs && this.watchRefs.value.push(resource)
+
+      const type = getResourceTypeFromIri(iri)
+      if (!resource.value) {
+        consola.warn(`Could not get children for '${iri}' - Resource not found`)
+        return nested
+      }
+      if (!type) {
+        return nested
+      }
+
+      // we don't have a real IRI for a placeholder - placeholders only currently used for positions
+      if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
+        nested.push(`${iri}_placeholder`)
+      }
+
+      if (addResourceData && addResourceData.closest.position === iri && addResourceData.targetIri === iri && addResourceData.addAfter === null) {
+        nested.push(NEW_RESOURCE_IRI)
+      }
+
+      if (addResourceData?.closest.group === iri) {
+        const child = `/_/component_positions/${NEW_RESOURCE_IRI}`
+        nested.push(child)
+        nested.push(...getNestedChildren(child))
+      }
+
+      const properties = resourceTypeToNestedResourceProperties[type]
+
+      for (const prop of properties) {
+        let children: string|string[] = resource.value.data?.[prop]
+        if (!children) {
+          continue
+        }
+
+        if (Array.isArray(children)) {
+          // do not modify the original array in the object
+          children = [...children]
+        } else {
+          children = [children]
+        }
+
+        for (const child of children) {
+          nested.push(child)
+          nested.push(...getNestedChildren(child))
+        }
+      }
+
+      return nested
+    }
+
+    if (this.watchRefs) {
+      this.unwatchChildRefs = watch(this.watchRefs, () => {
+        if (!this.childIrisRef) {
+          return
+        }
+        this.childIrisRef.value = this.getChildren()
+      }, {
+        immediate: true
+      })
+    }
+
+    return getNestedChildren(currentIri)
+  }
+
   private get childIris (): Ref<string[]> {
     if (this.childIrisRef) {
       return this.childIrisRef
     }
 
-    const watchRefs: WatchSource[] = [
-      this.$cwa.resourcesManager.addResourceEvent,
-      () => this.currentResource?.data
-    ]
-
-    const getChildren = () => {
-      const currentIri = this.currentIri?.value
-      if (!currentIri) {
-        return []
-      }
-      const addResourceData = this.$cwa.resourcesManager.addResourceEvent.value
-
-      const getNestedChildren = (iri: string): string[] => {
-        const nested: string[] = []
-        if (iri === NEW_RESOURCE_IRI) {
-          return nested
-        }
-        const resource = this.$cwa.resources.getResource(iri)
-        watchRefs.push(resource)
-
-        const type = getResourceTypeFromIri(iri)
-        if (!resource.value) {
-          consola.warn(`Could not get children for '${iri}' - Resource not found`)
-          return nested
-        }
-        if (!type) {
-          return nested
-        }
-
-        // we don't have a real IRI for a placeholder - placeholders only currently used for positions
-        if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
-          nested.push(`${iri}_placeholder`)
-        }
-
-        if (addResourceData && addResourceData.closest.position === iri && addResourceData.targetIri === iri && addResourceData.addAfter === null) {
-          nested.push(NEW_RESOURCE_IRI)
-        }
-
-        if (addResourceData?.closest.group === iri) {
-          const child = `/_/component_positions/${NEW_RESOURCE_IRI}`
-          nested.push(child)
-          nested.push(...getNestedChildren(child))
-        }
-
-        const properties = resourceTypeToNestedResourceProperties[type]
-
-        for (const prop of properties) {
-          let children: string|string[] = resource.value.data?.[prop]
-          if (!children) {
-            continue
-          }
-
-          if (Array.isArray(children)) {
-            // do not modify the original array in the object
-            children = [...children]
-          } else {
-            children = [children]
-          }
-
-          for (const child of children) {
-            nested.push(child)
-            nested.push(...getNestedChildren(child))
-          }
-        }
-
-        return nested
-      }
-
-      return getNestedChildren(currentIri)
-    }
-
-    this.childIrisRef = ref(getChildren())
-
-    watch(watchRefs, () => {
-      if (!this.childIrisRef) {
-        return
-      }
-      this.childIrisRef.value = getChildren()
-    }, {
-      immediate: true
-    })
-
+    this.childIrisRef = ref(this.getChildren())
     return this.childIrisRef
   }
 
