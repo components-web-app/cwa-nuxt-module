@@ -5,6 +5,7 @@
     :error="error"
     @submit="$emit('submit')"
   >
+    <slot name="header" />
     <InputField
       v-model="credentials.username"
       label="Username or Email"
@@ -21,7 +22,7 @@
       autocomplete="current-password"
       :required="true"
     />
-    <slot>
+    <slot name="footer">
       <div class="cwa-flex cwa-items-center cwa-justify-between">
         <AuthPageLink link-to="/" link-text="< Back to home" />
         <AuthPageLink link-to="/forgot-password" link-text="Forgot your password?" />
