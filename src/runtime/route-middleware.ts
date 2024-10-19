@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
 import type { RouteLocationNormalized } from 'vue-router'
-import type { CwaResource } from './resources/resource-utils'
 import { abortNavigation, callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
+import type { CwaResource } from './resources/resource-utils'
 import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''

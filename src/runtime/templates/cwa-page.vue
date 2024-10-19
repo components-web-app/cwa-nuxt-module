@@ -3,8 +3,8 @@
 </template>
 
 <script setup lang="ts">
-import ResourceLoader from './components/core/ResourceLoader.vue'
 import { useHead } from '#app'
+import ResourceLoader from './components/core/ResourceLoader.vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
