@@ -1,5 +1,4 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import * as nuxtApp from '#app/nuxt'
 import type { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -14,6 +13,7 @@ import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import Auth from './api/auth'
+import * as nuxtApp from '#app/nuxt'
 
 vi.mock('#app/composables/cookie.js', () => {
   return {

@@ -15,7 +15,7 @@
     <!--CWA_MANAGER_END_GROUP-->
   </template>
   <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
-    <HotSpot screen-reader-action="Add component position" :iri="iri" />
+    <LazyHotSpot screen-reader-action="Add component position" :iri="iri" />
   </div>
 </template>
 
@@ -25,7 +25,8 @@
 import {
   computed,
   onMounted,
-  onBeforeUnmount
+  onBeforeUnmount,
+  defineAsyncComponent
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import {
@@ -37,7 +38,10 @@ import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/st
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
-import HotSpot from '#cwa/runtime/templates/components/utils/HotSpot.vue'
+const LazyHotSpot = defineAsyncComponent({
+  suspensible: false,
+  loader: () => import('#cwa/runtime/templates/components/utils/HotSpot.vue')
+})
 
 const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
