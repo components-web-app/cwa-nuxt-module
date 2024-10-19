@@ -1,7 +1,7 @@
 <template>
   <div id="cwa-root-layout" ref="rootLayout" class="cwa-relative cwa-h-full cwa-flex cwa-flex-col" @contextmenu="closeContextMenu">
     <ClientOnly>
-      <CwaAdminHeader v-if="showAdmin" />
+      <LazyCwaAdminHeader v-if="showAdmin" />
       <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50" />
     </ClientOnly>
     <component :is="resolvedComponent" v-if="resolvedComponent" class="cwa-relative" @click.stop="onLayoutClick" @contextmenu.stop="onLayoutContextMenu">
@@ -10,7 +10,7 @@
       </div>
     </component>
     <ClientOnly>
-      <CwaAdminResourceManager ref="resourceManager" />
+      <LazyCwaAdminResourceManager ref="resourceManager" />
       <LayoutPageOverlay v-if="$cwa.admin.isEditing && page && rootLayout" :page="page" :layout="rootLayout" />
       <teleport to="body">
         <DialogsWrapper />
@@ -23,14 +23,14 @@
 import { computed, ref, getCurrentInstance } from 'vue'
 import { DialogsWrapper } from 'vuejs-confirm-dialog'
 import { useCwa } from '#imports'
-import { CwaAdminHeader, CwaAdminResourceManager, CwaDefaultLayout } from '#components'
+import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 
 const $cwa = useCwa()
-const resourceManager = ref<null|InstanceType<typeof CwaAdminResourceManager>>(null)
+const resourceManager = ref<null|InstanceType<typeof LazyCwaAdminResourceManager>>(null)
 const page = ref<null|HTMLDivElement>(null)
 const rootLayout = ref<null|HTMLDivElement>(null)
 const instance = getCurrentInstance()
@@ -64,7 +64,7 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || CwaDefaultLayout
+  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
@@ -74,7 +74,7 @@ const resolvedComponent = computed(() => {
     typeof instance?.appContext.components !== 'object' ||
       !layoutUiComponent.value
   ) {
-    return CwaDefaultLayout
+    return LazyCwaDefaultLayout
   }
   return layoutUiComponent.value
 })
