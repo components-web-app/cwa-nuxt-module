@@ -11,7 +11,7 @@ const flatConfigComposer = createConfigForNuxt({
 // })
 
 flatConfigComposer.prepend({
-  ignores: ['dist', 'node_modules'],
+  ignores: ['dist', 'node_modules', '**/*.spec.ts'],
   files: [
     'src/runtime/templates/components/**/*.vue',
     'playground/cwa/**/*.vue',

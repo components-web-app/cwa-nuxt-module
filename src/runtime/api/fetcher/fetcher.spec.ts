@@ -749,7 +749,9 @@ describe('Fetcher -> fetchBatch', () => {
         token: startEvent.token,
       }
     })
-    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => {})
+
+    FetchStatusManager.mock.instances[0].startFetchResource.mockImplementation(() => false)
+    FetchStatusManager.mock.instances[0].getFetchedCurrentResource.mockImplementation(path => ({ path }))
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => true)
@@ -778,7 +780,7 @@ describe('Fetcher -> fetchBatch', () => {
     vi.clearAllMocks()
   })
 
-  test('fetchBatch should return the promise all results as an array', async () => {
+  test('fetchBatch should return the promise all with the results', async () => {
     const fetchResourceEvent = {
       path: '/new-path',
       token: 'any',
@@ -787,10 +789,10 @@ describe('Fetcher -> fetchBatch', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     fetcher.fetchResource.mockClear()
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+
     await delay(2)
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource', '/resolve-another-resource'], token: 'any' })
-
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
       path: '/resolve-resource',
       token: 'any',
@@ -801,7 +803,13 @@ describe('Fetcher -> fetchBatch', () => {
     })
     expect(fetcher.fetchResource).toHaveBeenCalledTimes(2)
 
-    const fetchResourceCallsArray = fetcher.fetchResource.mock.results.map(({ value }) => value)
-    expect(fetcher.fetchBatch.mock.results[0].value).toStrictEqual(fetchResourceCallsArray)
+    expect(await fetcher.fetchBatch.mock.results[0].value).toStrictEqual([
+      {
+        path: '/resolve-resource',
+      },
+      {
+        path: '/resolve-another-resource',
+      },
+    ])
   })
 })

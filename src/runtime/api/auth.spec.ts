@@ -94,13 +94,13 @@ describe('Auth', () => {
       const { auth, mercure } = createAuth()
       const mockRefreshResult = { name: 'Mock' }
       const loginRequestSpy = vi.spyOn(auth, 'loginRequest').mockImplementationOnce(() => {})
-      const refreshSpy = vi.spyOn(auth, 'refreshUser').mockResolvedValue(mockRefreshResult)
+      const refreshSpy = vi.spyOn(auth, 'refreshUser').mockResolvedValue(Promise.resolve(mockRefreshResult))
 
       const result = await auth.signIn(credentials)
       expect(loginRequestSpy).toHaveBeenCalledWith(credentials)
       expect(mercure.init).toHaveBeenCalledWith(true)
       expect(refreshSpy).toHaveBeenCalled()
-      expect(result).toEqual(refreshSpy.mock.results[0].value)
+      expect(result).toEqual(await refreshSpy.mock.results[0].value)
     })
   })
 
