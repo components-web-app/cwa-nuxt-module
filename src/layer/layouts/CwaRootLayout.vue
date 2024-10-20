@@ -9,7 +9,7 @@
         <slot />
       </div>
     </component>
-    <ClientOnly>
+    <ClientOnly v-if="showAdmin">
       <LazyCwaAdminResourceManager ref="resourceManager" />
       <LayoutPageOverlay v-if="$cwa.admin.isEditing && page && rootLayout" :page="page" :layout="rootLayout" />
       <teleport to="body">
