@@ -252,10 +252,10 @@ export default class ManageableResource {
     let endCommentTag: undefined | string
 
     do {
-      if (!endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue.startsWith('CWA_MANAGER_START_')) {
+      if (!endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue.startsWith(' CWA_MANAGER_START_')) {
         const startTag = currentEl.nodeValue
         const startTagPostfix = startTag.replace(/^(CWA_MANAGER_START_)/, '')
-        endCommentTag = `CWA_MANAGER_END_${startTagPostfix}`
+        endCommentTag = ` CWA_MANAGER_END_${startTagPostfix} `
       }
       if (endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === endCommentTag) {
         break
