@@ -3,11 +3,11 @@ import type { CwaFetcherStateInterface, FetchStatus } from './state'
 export class FetcherGetterUtils {
   private fetcherState: CwaFetcherStateInterface
 
-  public constructor (fetcherState: CwaFetcherStateInterface) {
+  public constructor(fetcherState: CwaFetcherStateInterface) {
     this.fetcherState = fetcherState
   }
 
-  public getFetchStatusByToken (token: string): FetchStatus|undefined {
+  public getFetchStatusByToken(token: string): FetchStatus | undefined {
     const fetchStatus = this.fetcherState.fetches[token]
     if (!fetchStatus) {
       return
@@ -15,7 +15,7 @@ export class FetcherGetterUtils {
     return fetchStatus
   }
 
-  public isFetchResolving (token: string): boolean {
+  public isFetchResolving(token: string): boolean {
     const fetchStatus = this.getFetchStatusByToken(token)
 
     if (!fetchStatus) {

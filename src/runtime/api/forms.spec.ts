@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'vitest'
 import Forms from './forms'
 
-function createForms () {
+function createForms() {
   const mockResourcesStore = {
-    useStore () {
+    useStore() {
       return {
         current: {
-          byId: {}
-        }
+          byId: {},
+        },
       }
-    }
+    },
   }
-  // @ts-ignore
+  // @ts-expect-error
   const forms = new Forms(mockResourcesStore)
 
   return { forms, resourcesStore: mockResourcesStore }
@@ -35,11 +35,11 @@ describe('Forms', () => {
           byId: {
             [iri]: {
               data: {
-                '@type': 'Component'
-              }
-            }
-          }
-        }
+                '@type': 'Component',
+              },
+            },
+          },
+        },
       })
 
       expect(forms.getForm(iri).value).toBeUndefined()
@@ -55,64 +55,64 @@ describe('Forms', () => {
             [iri]: {
               data: {
                 '@type': 'Form',
-                formView: {
+                'formView': {
                   vars: {
                     full_name: 'form full name',
-                    depth: 0
+                    depth: 0,
                   },
                   children: [
                     {
                       vars: {
                         full_name: 'child full name',
-                        depth: 1
+                        depth: 1,
                       },
                       children: [{
                         vars: {
                           full_name: 'grandchild full name',
-                          depth: 2
-                        }
-                      }]
+                          depth: 2,
+                        },
+                      }],
                     },
                     {
                       vars: {
                         full_name: 'second child full name',
-                        depth: 1
+                        depth: 1,
                       },
-                      children: []
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
+                      children: [],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
       })
 
       expect(forms.getForm(iri).value).toEqual({
         'form full name': {
           vars: {
             full_name: 'form full name',
-            depth: 0
-          }
+            depth: 0,
+          },
         },
         'child full name': {
           vars: {
             full_name: 'child full name',
-            depth: 1
-          }
+            depth: 1,
+          },
         },
         'grandchild full name': {
           vars: {
             full_name: 'grandchild full name',
-            depth: 2
-          }
+            depth: 2,
+          },
         },
         'second child full name': {
           vars: {
             full_name: 'second child full name',
-            depth: 1
-          }
-        }
+            depth: 1,
+          },
+        },
       })
     })
   })
@@ -129,16 +129,16 @@ describe('Forms', () => {
             [iri]: {
               data: {
                 '@type': 'Form',
-                formView: {
+                'formView': {
                   vars: {
                     full_name: 'test_form',
-                    errors: mockErrors
-                  }
-                }
-              }
-            }
-          }
-        }
+                    errors: mockErrors,
+                  },
+                },
+              },
+            },
+          },
+        },
       })
 
       expect(forms.getFormViewErrors(iri, 'test_form').value).toEqual(mockErrors)
@@ -154,15 +154,15 @@ describe('Forms', () => {
             [iri]: {
               data: {
                 '@type': 'Form',
-                formView: {
+                'formView': {
                   vars: {
-                    full_name: 'test_form'
-                  }
-                }
-              }
-            }
-          }
-        }
+                    full_name: 'test_form',
+                  },
+                },
+              },
+            },
+          },
+        },
       })
 
       expect(forms.getFormViewErrors(iri, 'test_form').value).toBeUndefined()

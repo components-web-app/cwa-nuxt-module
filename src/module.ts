@@ -11,32 +11,32 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule, resolveAlias, updateTemplates
+  installModule, resolveAlias, updateTemplates,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
 
 export type GlobalComponentNames = keyof GlobalComponents
 
-export type ManagerTab = GlobalComponentNames|DefineComponent<{}, {}, any>
+export type ManagerTab = GlobalComponentNames | DefineComponent<object, object, any>
 export type ComponentUi = GlobalComponentNames
 
 export interface CwaResourceMeta {
-  name?: string,
-  description?: string,
-  instantAdd?: boolean,
-  managerTabs?: ManagerTab[],
+  name?: string
+  description?: string
+  instantAdd?: boolean
+  managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
 }
 
 export interface CwaResourcesMeta {
-  [type:string]: CwaResourceMeta
+  [type: string]: CwaResourceMeta
 }
 
 export interface CwaUiMeta {
   name?: string
   classes?: {
-    [name: string]: string[]|string
+    [name: string]: string[] | string
   }
 }
 
@@ -58,7 +58,7 @@ export interface CwaModuleOptions {
   }
   tailwind?: {
     base?: boolean
-  },
+  }
   layoutName?: string
 }
 
@@ -71,21 +71,21 @@ declare module '@nuxt/schema' {
   }
 }
 
-function createDefaultCwaPages (
+function createDefaultCwaPages(
   pages: NuxtPage[],
   pageComponentFilePath: string,
   maxDepth: number,
-  layout?: string|undefined
+  layout?: string | undefined,
 ) {
-  function create (currentDepth = 0) {
+  function create(currentDepth = 0) {
     const page: NuxtPage = {
       name: `cwaPage${currentDepth}`,
       path: `:cwaPage${currentDepth}*`,
       file: pageComponentFilePath,
       meta: {
         cwa: true,
-        layout: layout || 'cwa-root-layout'
-      }
+        layout: layout || 'cwa-root-layout',
+      },
     }
     if (currentDepth === 0) {
       page.path = '/:cwaPage0*'
@@ -107,8 +107,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     configKey: 'cwa',
     compatibility: {
       nuxt: '^3.6.5',
-      bridge: false
-    }
+      bridge: false,
+    },
   },
   defaults: {
     appName: 'CWA Web App',
@@ -117,26 +117,26 @@ export default defineNuxtModule<CwaModuleOptions>({
       ComponentPosition: {
         name: 'Position',
         description: '<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>',
-        instantAdd: true
+        instantAdd: true,
       },
       ComponentGroup: {
-        name: 'Group'
-      }
+        name: 'Group',
+      },
     },
     tailwind: {
-      base: true
-    }
+      base: true,
+    },
   },
-  async setup (options: CwaModuleOptions, nuxt) {
+  async setup(options: CwaModuleOptions, nuxt) {
     nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
       apiUrl: options.apiUrl || options.apiUrlBrowser || '',
-      apiUrlBrowser: options.apiUrlBrowser || options.apiUrl || ''
+      apiUrlBrowser: options.apiUrlBrowser || options.apiUrl || '',
     })
 
     const { resolve } = createResolver(import.meta.url)
 
     const { version, name } = JSON.parse(
-      readFileSync(resolve('../package.json'), 'utf8')
+      readFileSync(resolve('../package.json'), 'utf8'),
     )
 
     // modules
@@ -167,19 +167,20 @@ export default defineNuxtModule<CwaModuleOptions>({
     const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
-    function extendCwaOptions (components: Component[]) {
+    function extendCwaOptions(components: Component[]) {
       const defaultResourcesConfig: CwaResourcesMeta = {}
 
       // exclude files within admin and ui folders which will not need a configuration
       const regex = /^(?!.+\/(admin|ui)\/).+.vue$/
       const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
-      const componentsByPath: { [key:string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
+      const componentsByPath: { [key: string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
       const userComponents = allUserComponents.filter(({ filePath }) => regex.test(filePath))
       for (const component of userComponents) {
         const isDirectory = (p: string) => {
           try {
             return statSync(p).isDirectory()
-          } catch (_e) {
+          }
+          catch (_e) {
             return false
           }
         }
@@ -190,7 +191,7 @@ export default defineNuxtModule<CwaModuleOptions>({
             const componentFilePaths = Object.keys(componentsByPath).filter(path => path.startsWith(dirPath))
             componentFilePaths.forEach((filePath) => {
               if (componentsByPath[filePath]) {
-                // @ts-ignore: Unable to resolve that pascalName exists in keyof type
+                // @ts-expect-error: Unable to resolve that pascalName exists in keyof type
                 componentsByPath[filePath].global && componentNames.push(componentsByPath[filePath].pascalName)
               }
             })
@@ -209,7 +210,7 @@ export default defineNuxtModule<CwaModuleOptions>({
           // auto name with spaces in place of pascal/camel case
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
           managerTabs,
-          ui
+          ui,
         }
       }
       const resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
@@ -231,10 +232,10 @@ export default defineNuxtModule<CwaModuleOptions>({
 export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
 export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
-        }
+        },
       })
       addPlugin({
-        src: resolve('./runtime/plugin')
+        src: resolve('./runtime/plugin'),
       })
     })
 
@@ -243,7 +244,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'main'),
         prefix: 'Cwa',
-        ignore: ['**/_*/*', '**/*.spec.{cts,mts,ts}']
+        ignore: ['**/_*/*', '**/*.spec.{cts,mts,ts}'],
       })
       // dirs.unshift({
       //   path: join(cwaVueComponentsDir, 'utils'),
@@ -253,7 +254,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'ui'),
         prefix: 'CwaUi',
-        ignore: ['**/*.spec.{cts,mts,ts}']
+        ignore: ['**/*.spec.{cts,mts,ts}'],
       })
 
       // todo: https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
@@ -263,21 +264,21 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
         path: join(nuxt.options.srcDir, 'cwa', 'layouts'),
         prefix: 'CwaLayout',
         global: true,
-        ignore: ['**/*.spec.{cts,mts,ts}']
+        ignore: ['**/*.spec.{cts,mts,ts}'],
       })
 
       dirs.unshift({
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
         prefix: 'CwaPage',
         global: true,
-        ignore: ['**/*.spec.{cts,mts,ts}']
+        ignore: ['**/*.spec.{cts,mts,ts}'],
       })
 
       dirs.unshift({
         path: userComponentsPath,
         prefix: 'CwaComponent',
         global: true,
-        ignore: ['**/*.spec.{cts,mts,ts}']
+        ignore: ['**/*.spec.{cts,mts,ts}'],
       })
     })
 
@@ -292,8 +293,8 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       if (cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         await updateTemplates({
           filter: template => [
-            'cwa-options.ts'
-          ].includes(template.filename)
+            'cwa-options.ts',
+          ].includes(template.filename),
         })
       }
     })
@@ -303,8 +304,8 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       config.optimizeDeps.include = config.optimizeDeps.include || []
       config.optimizeDeps.exclude = config.optimizeDeps.exclude || []
 
-      const lodashIndex =
-        config.optimizeDeps.exclude.indexOf('lodash')
+      const lodashIndex
+        = config.optimizeDeps.exclude.indexOf('lodash')
       if (lodashIndex > -1) {
         config.optimizeDeps.exclude.splice(lodashIndex, 1)
       }
@@ -313,5 +314,5 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
         config.optimizeDeps.include.push('lodash')
       }
     })
-  }
+  },
 })

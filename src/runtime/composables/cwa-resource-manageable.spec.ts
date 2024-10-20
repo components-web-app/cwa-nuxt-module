@@ -10,9 +10,9 @@ vi.mock('../admin/manageable-resource', () => {
     default: vi.fn(() => {
       return {
         init: vi.fn(),
-        clear: vi.fn()
+        clear: vi.fn(),
       }
-    })
+    }),
   }
 })
 
@@ -21,7 +21,7 @@ vi.mock('vue', async () => {
   return {
     ...mod,
     onMounted: vi.fn(fn => fn()),
-    onBeforeUnmount: vi.fn(fn => fn())
+    onBeforeUnmount: vi.fn(fn => fn()),
   }
 })
 
@@ -31,9 +31,9 @@ describe('CWA resource manageable composable', () => {
     admin: {
       eventBus: {
         emit: vi.fn(),
-        on: vi.fn()
-      }
-    }
+        on: vi.fn(),
+      },
+    },
   }
 
   beforeEach(() => {
@@ -75,7 +75,9 @@ describe('CWA resource manageable composable', () => {
     let hookCallback = null
 
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
-    vi.spyOn(vue, 'onBeforeUnmount').mockImplementation((fn) => { hookCallback = fn })
+    vi.spyOn(vue, 'onBeforeUnmount').mockImplementation((fn) => {
+      hookCallback = fn
+    })
 
     const clearSpy = vi.fn()
 

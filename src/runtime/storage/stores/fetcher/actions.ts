@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
 import logger from 'consola'
-import { CwaResourceError } from '../../../errors/cwa-resource-error'
+import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherStateInterface, FetchStatus } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
 
 export interface StartFetchEvent {
   token?: string
-  path: string,
+  path: string
   manifestPath?: string
   isPrimary?: boolean
   isCurrentSuccessResourcesResolved: boolean
@@ -18,7 +18,7 @@ export interface FinishFetchEvent {
 }
 
 export interface AddFetchResourceEvent {
-  token: string,
+  token: string
   resource: string
 }
 
@@ -30,7 +30,7 @@ export interface StartFetchResponse {
 
 export enum FinishFetchManifestType {
   SUCCESS = 'SUCCESS',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
 }
 
 export interface ManifestSuccessFetchEvent {
@@ -59,7 +59,7 @@ export interface CwaFetcherActionsInterface {
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface): CwaFetcherActionsInterface {
-  function getFetchStatusFromToken (token: string) {
+  function getFetchStatusFromToken(token: string) {
     const fetchStatus = fetcherState.fetches[token]
     if (!fetchStatus) {
       throw new Error(`The fetch chain token '${token}' does not exist`)
@@ -68,15 +68,16 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
   }
 
   return {
-    abortFetch (event: AbortFetchEvent) {
+    abortFetch(event: AbortFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
     },
-    finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
+    finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus
       try {
         fetchStatus = getFetchStatusFromToken(event.token)
-      } catch (error: any) {
+      }
+      catch (error: any) {
         logger.trace(error.message)
         return
       }
@@ -90,21 +91,22 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         fetchStatus.manifest.error = event.error.asObject
       }
     },
-    startFetch (event: StartFetchEvent): StartFetchResponse {
+    startFetch(event: StartFetchEvent): StartFetchResponse {
       if (event.token) {
         try {
           const existingFetchStatus = getFetchStatusFromToken(event.token)
           return {
             continue: !existingFetchStatus.abort,
             resources: existingFetchStatus.resources,
-            token: event.token
+            token: event.token,
           }
-        } catch (error) {
+        }
+        catch (error) {
           // if the request has been aborted finished and cleared already, but then manifest was returned and tries to continue
           return {
             continue: false,
             resources: [],
-            token: event.token
+            token: event.token,
           }
         }
       }
@@ -129,7 +131,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
           return {
             continue: false,
             resources: lastSuccessState.resources,
-            token: fetcherState.primaryFetch.successToken
+            token: fetcherState.primaryFetch.successToken,
           }
         }
       }
@@ -139,11 +141,11 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const initialState: FetchStatus = reactive({
         path: event.path,
         resources: [],
-        isPrimary: !!event.isPrimary
+        isPrimary: !!event.isPrimary,
       })
       if (event.manifestPath) {
         initialState.manifest = {
-          path: event.manifestPath
+          path: event.manifestPath,
         }
       }
 
@@ -154,7 +156,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       fetcherState.fetches[token] = initialState
       return { token, continue: true, resources: [] }
     },
-    finishFetch (event: FinishFetchEvent) {
+    finishFetch(event: FinishFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
 
       if (
@@ -186,7 +188,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         delete fetcherState.fetches[event.token]
       }
     },
-    addFetchResource (event: AddFetchResourceEvent) {
+    addFetchResource(event: AddFetchResourceEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
 
       // isFetchStatusCurrent return true if not primary or if primary and current
@@ -197,12 +199,12 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       fetchStatus.resources.push(event.resource)
       return true
     },
-    clearFetches () {
+    clearFetches() {
       fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = undefined
       for (const token of Object.keys(fetcherState.fetches)) {
         delete fetcherState.fetches[token]
       }
-    }
+    },
   }
 }

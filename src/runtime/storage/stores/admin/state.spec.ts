@@ -8,8 +8,8 @@ describe('Manager State context', () => {
     expect(initialState).toStrictEqual({
       state: reactive({
         isEditing: false,
-        navigationGuardDisabled: false
-      })
+        navigationGuardDisabled: false,
+      }),
     })
   })
 })

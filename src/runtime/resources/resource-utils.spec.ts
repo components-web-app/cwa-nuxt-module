@@ -1,34 +1,35 @@
 import { describe, expect, test } from 'vitest'
+import type {
+  CwaResource } from './resource-utils'
 import {
   getPublishedResourceIri,
   getResourceTypeFromIri,
-  CwaResource,
   CwaResourceTypes,
-  isCwaResource, isCwaResourceSame
+  isCwaResource, isCwaResourceSame,
 } from './resource-utils'
 
 describe('Resource isCwaResourceSame function', () => {
   test.each([
     {
-      resource1: { '@id': 'id', '@type': 'type', _metadata: { persisted: true } },
-      resource2: { '@id': 'id', '@type': 'type', _metadata: { persisted: true } },
-      result: true
+      resource1: { '@id': 'id', '@type': 'type', '_metadata': { persisted: true } },
+      resource2: { '@id': 'id', '@type': 'type', '_metadata': { persisted: true } },
+      result: true,
     },
     {
-      resource1: { '@id': 'id', '@type': 'type', _metadata: { persisted: true } },
-      resource2: { '@id': 'id', '@type': 'type', publishedResource: 'aha', draftResource: 'aha', modifiedAt: 'aha', something: null, _metadata: { persisted: false } },
-      result: true
+      resource1: { '@id': 'id', '@type': 'type', '_metadata': { persisted: true } },
+      resource2: { '@id': 'id', '@type': 'type', 'publishedResource': 'aha', 'draftResource': 'aha', 'modifiedAt': 'aha', 'something': null, '_metadata': { persisted: false } },
+      result: true,
     },
     {
-      resource1: { '@id': 'id', '@type': 'type', something: 'was-something', _metadata: { persisted: true } },
-      resource2: { '@id': 'id', '@type': 'type', publishedResource: 'aha', draftResource: 'aha', modifiedAt: 'aha', something: null, _metadata: { persisted: false } },
-      result: false
+      resource1: { '@id': 'id', '@type': 'type', 'something': 'was-something', '_metadata': { persisted: true } },
+      resource2: { '@id': 'id', '@type': 'type', 'publishedResource': 'aha', 'draftResource': 'aha', 'modifiedAt': 'aha', 'something': null, '_metadata': { persisted: false } },
+      result: false,
     },
     {
-      resource1: { '@id': 'id1', '@type': 'type', _metadata: { persisted: true } },
-      resource2: { '@id': 'id2', '@type': 'type', _metadata: { persisted: true } },
-      result: false
-    }
+      resource1: { '@id': 'id1', '@type': 'type', '_metadata': { persisted: true } },
+      resource2: { '@id': 'id2', '@type': 'type', '_metadata': { persisted: true } },
+      result: false,
+    },
   ])('If resource 1 is $resource1 and resource 2 is $resource2 then the result should be $result', ({ resource1, resource2, result }) => {
     expect(isCwaResourceSame(resource1, resource2)).toBe(result)
   })
@@ -41,21 +42,21 @@ describe('Resource isCwaResource function', () => {
   test('variable provided does not have @id', () => {
     const resource = {
       '@type': 'something',
-      _metadata: {}
+      '_metadata': {},
     }
     expect(isCwaResource(resource)).toBe(false)
   })
   test('variable provided does not have @type', () => {
     const resource = {
       '@id': 'id',
-      _metadata: {}
+      '_metadata': {},
     }
     expect(isCwaResource(resource)).toBe(false)
   })
   test('variable provided does not have _metadata', () => {
     const resource = {
       '@id': 'id',
-      '@type': 'something'
+      '@type': 'something',
     }
     expect(isCwaResource(resource)).toBe(false)
   })
@@ -63,7 +64,7 @@ describe('Resource isCwaResource function', () => {
     const resource = {
       '@id': 'id',
       '@type': 'something',
-      _metadata: 'not-an-object'
+      '_metadata': 'not-an-object',
     }
     expect(isCwaResource(resource)).toBe(false)
   })
@@ -71,7 +72,7 @@ describe('Resource isCwaResource function', () => {
     const resource = {
       '@id': 'id',
       '@type': 'something',
-      _metadata: {}
+      '_metadata': {},
     }
     expect(isCwaResource(resource)).toBe(true)
   })
@@ -81,9 +82,9 @@ describe('Resource getPublishedResourceIri function', () => {
   const resource: CwaResource = {
     '@id': 'id',
     '@type': 'type',
-    _metadata: {
-      persisted: true
-    }
+    '_metadata': {
+      persisted: true,
+    },
   }
 
   test('Not a publishable resource', () => {
@@ -95,8 +96,8 @@ describe('Resource getPublishedResourceIri function', () => {
       persisted: true,
       publishable: {
         published: true,
-        publishedAt: 'any'
-      }
+        publishedAt: 'any',
+      },
     }
     expect(getPublishedResourceIri(resource)).toBe('id')
   })
@@ -106,8 +107,8 @@ describe('Resource getPublishedResourceIri function', () => {
       persisted: true,
       publishable: {
         published: false,
-        publishedAt: 'any'
-      }
+        publishedAt: 'any',
+      },
     }
     expect(getPublishedResourceIri(resource)).toBeNull()
   })
@@ -117,8 +118,8 @@ describe('Resource getPublishedResourceIri function', () => {
       persisted: true,
       publishable: {
         published: false,
-        publishedAt: 'any'
-      }
+        publishedAt: 'any',
+      },
     }
     resource.publishedResource = 'published-id'
     expect(getPublishedResourceIri(resource)).toBe('published-id')

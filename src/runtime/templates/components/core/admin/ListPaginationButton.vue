@@ -3,7 +3,7 @@
     <button
       :disabled="!!disabled"
       class="cwa-py-1.5 cwa-px-3 cwa-transition-colors cwa-font-bold"
-      :class="[ disabled ? 'cwa-opacity-50' : 'hover:cwa-bg-stone-700 hover:cwa-text-light', selected ? 'cwa-text-light cwa-bg-stone-700' : 'cwa-text-stone-400']"
+      :class="[disabled ? 'cwa-opacity-50' : 'hover:cwa-bg-stone-700 hover:cwa-text-light', selected ? 'cwa-text-light cwa-bg-stone-700' : 'cwa-text-stone-400']"
     >
       <slot />
     </button>

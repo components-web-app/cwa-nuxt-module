@@ -8,12 +8,12 @@ const loadingDynamicMetadata = ref(false)
 
 const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Data Placeholder',
-  order: DEFAULT_TAB_ORDER
+  order: DEFAULT_TAB_ORDER,
 })
 
 defineExpose(exposeMeta)
 
-async function goToTemplate () {
+async function goToTemplate() {
   if (!$cwa.resources.pageIri.value) {
     return
   }
@@ -31,17 +31,17 @@ const hasDynamicComponent = computed(() => {
   return resource.value?.data?.component !== resource.value?.data?._metadata.staticComponent
 })
 
-const availablePropsToComponentNames = computed<{ [prop:string]: string }>(() => {
+const availablePropsToComponentNames = computed<{ [prop: string]: string }>(() => {
   const pageData = $cwa.resources.pageData?.value
   if (!pageData) {
     return {}
   }
   return pageData?.data?._metadata.pageDataMetadata.properties.reduce(
-    (obj: { [prop:string]: string }, item: { property: string, componentShortName: string }) => {
+    (obj: { [prop: string]: string }, item: { property: string, componentShortName: string }) => {
       obj[item.property] = item.componentShortName
       return obj
     },
-    {}
+    {},
   ) || {}
 })
 
@@ -49,7 +49,7 @@ const pageDataProperty = computed(() => {
   return resource.value?.data?.pageDataProperty
 })
 
-const componentName = computed<string|undefined>(() => {
+const componentName = computed<string | undefined>(() => {
   if (!pageDataProperty.value) {
     return
   }
@@ -69,7 +69,7 @@ const dynamicComponentName = computed(() => {
 
 const instantAdd = computed(() => (!!resourceConfig.value?.instantAdd))
 
-async function getApiMetadata () {
+async function getApiMetadata() {
   if (!componentName.value) {
     throw new Error('Cannot get API Metadata when componentName is not set')
   }
@@ -80,7 +80,7 @@ async function getApiMetadata () {
   return apiComponents[componentName.value]
 }
 
-async function addDynamicComponent () {
+async function addDynamicComponent() {
   loadingDynamicMetadata.value = true
   try {
     const apiMetadata = await getApiMetadata()
@@ -90,12 +90,13 @@ async function addDynamicComponent () {
     await $cwa.resourcesManager.initAddResource(iri.value, null, $cwa.admin.resourceStackManager.resourceStack.value, pageDataProperty.value)
     // need to add the addResourceEvent
     await $cwa.resourcesManager.setAddResourceEventResource(componentName.value, apiMetadata.endpoint, apiMetadata.isPublishable, instantAdd.value)
-  } finally {
+  }
+  finally {
     loadingDynamicMetadata.value = false
   }
 }
 
-function selectComponent () {
+function selectComponent() {
   const componentIri = resource.value?.data?.component
   if (!componentIri) {
     return
@@ -124,7 +125,10 @@ function selectComponent () {
       </div>
       <div class="cwa-text-sm">
         <span class="cwa-text-stone-400">Edit this position or fallback component?</span>
-        <a href="#" @click.prevent="goToTemplate">
+        <a
+          href="#"
+          @click.prevent="goToTemplate"
+        >
           Go to page dynamic page
         </a>
       </div>

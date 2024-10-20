@@ -20,11 +20,11 @@ export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string) => {
   const loaded = ref(false)
   const image = ref()
 
-  function handleLoad () {
+  function handleLoad() {
     loaded.value = true
   }
 
-  const imageFileMediaObjects = computed<MediaFile[]|undefined>(() => {
+  const imageFileMediaObjects = computed<MediaFile[] | undefined>(() => {
     return resource.value?.data?._metadata.mediaObjects?.file
   })
 
@@ -56,6 +56,6 @@ export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string) => {
     displayMedia,
     handleLoad,
     loaded,
-    resource
+    resource,
   }
 }

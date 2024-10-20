@@ -7,7 +7,7 @@ export const useDataList = () => {
   const dataTypes = ref<PageDataMetadataResource[]>([])
   const isLoadingDataTypes = ref(true)
 
-  function fqcnToEntrypointKey (fqcn: string) {
+  function fqcnToEntrypointKey(fqcn: string) {
     // e.g. App\\Entity\\BlogArticleData -> blogArticleData
     const className = fqcn.split('\\').pop()
     if (!className) {
@@ -16,7 +16,7 @@ export const useDataList = () => {
     return className.charAt(0).toLowerCase() + className.slice(1)
   }
 
-  function displayPageDataClassName (cls: string) {
+  function displayPageDataClassName(cls: string) {
     const clsName = cls.split('\\').pop()
     const configName = clsName ? $cwa.pageDataConfig?.[clsName]?.name : undefined
     return configName || clsName || cls
@@ -29,7 +29,7 @@ export const useDataList = () => {
     isLoadingDataTypes.value = true
     // need to fetch a resource to get the docs from link header if not set - user should always be there as we are logged in
     await $cwa.fetchResource({
-      path: $cwa.auth.user?.['@id']
+      path: $cwa.auth.user?.['@id'],
     })
     const docs = await $cwa.getApiDocumentation()
     const allMetadata = docs?.pageDataMetadata?.['hydra:member']
@@ -45,6 +45,6 @@ export const useDataList = () => {
     displayPageDataClassName,
     dataTypes,
     fqcnToEntrypointKey,
-    isLoadingDataTypes
+    isLoadingDataTypes,
   }
 }

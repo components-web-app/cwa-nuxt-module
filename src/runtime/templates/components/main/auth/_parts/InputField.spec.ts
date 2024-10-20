@@ -4,23 +4,23 @@ import { shallowMount } from '@vue/test-utils'
 import InputField from './InputField.vue'
 
 interface InputMeta {
-  name: string;
-  label: string;
-  modelValue: string;
-  type?: string;
-  autocomplete?: string;
-  required?: boolean;
-  errors?: string[];
+  name: string
+  label: string
+  modelValue: string
+  type?: string
+  autocomplete?: string
+  required?: boolean
+  errors?: string[]
 }
 
-function createWrapper ({
+function createWrapper({
   name,
   label,
   modelValue,
   type = 'text',
   autocomplete = 'login',
   required = false,
-  errors
+  errors,
 }: InputMeta) {
   return shallowMount(InputField, {
     props: {
@@ -30,11 +30,11 @@ function createWrapper ({
       type,
       autocomplete,
       required,
-      errors
+      errors,
     },
     global: {
-      renderStubDefaultSlot: true
-    }
+      renderStubDefaultSlot: true,
+    },
   })
 }
 
@@ -45,7 +45,7 @@ describe('InputField', () => {
       const wrapper = createWrapper({
         name: 'login',
         label: 'Login',
-        modelValue: ''
+        modelValue: '',
       })
 
       const input = wrapper.find('input')
@@ -62,7 +62,7 @@ describe('InputField', () => {
       const wrapper = createWrapper({
         name: 'login',
         label: 'Login',
-        modelValue: value
+        modelValue: value,
       })
 
       const input = wrapper.find('input')
@@ -76,7 +76,7 @@ describe('InputField', () => {
       const wrapper = createWrapper({
         name: 'login',
         label: 'Login',
-        modelValue: ''
+        modelValue: '',
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -87,7 +87,7 @@ describe('InputField', () => {
         name: 'login',
         label: 'Login',
         modelValue: '',
-        required: true
+        required: true,
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -99,7 +99,7 @@ describe('InputField', () => {
         label: 'Password',
         autocomplete: 'password',
         modelValue: '',
-        type: 'password'
+        type: 'password',
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -110,7 +110,7 @@ describe('InputField', () => {
         name: 'login',
         label: 'Login',
         modelValue: '',
-        errors: ['Login should be minimum 6 characters long', 'Login cannot contain whitespaces']
+        errors: ['Login should be minimum 6 characters long', 'Login cannot contain whitespaces'],
       })
 
       expect(wrapper.element).toMatchSnapshot()

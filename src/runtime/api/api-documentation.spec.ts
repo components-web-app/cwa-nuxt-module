@@ -20,21 +20,23 @@ vi.mock('./fetcher/cwa-fetch', () => {
           setTimeout(resolve, 2)
         })
         return 'response from ' + path
-      })
-    }))
+      }),
+    })),
   }
 })
 
 let apiDocumentationStore: ApiDocumentationStore
 const cwaFetchInstance = new CwaFetch('https://dummy-api-url')
-function createApiDocumentation (): ApiDocumentation {
+function createApiDocumentation(): ApiDocumentation {
   apiDocumentationStore = new ApiDocumentationStore('storeName')
   return new ApiDocumentation(cwaFetchInstance, apiDocumentationStore)
 }
 
-function delay (time: number, returnValue: any = undefined) {
+function delay(time: number, returnValue: any = undefined) {
   return new Promise((resolve) => {
-    setTimeout(() => { resolve(returnValue) }, time)
+    setTimeout(() => {
+      resolve(returnValue)
+    }, time)
   })
 }
 
@@ -45,7 +47,7 @@ describe('API Documentation setDocsPathFromLinkHeader functionality', () => {
 
   beforeEach(() => {
     const pinia = createTestingPinia({
-      createSpy: vi.fn
+      createSpy: vi.fn,
     })
     setActivePinia(pinia)
     vi.clearAllMocks()
@@ -58,7 +60,7 @@ describe('API Documentation setDocsPathFromLinkHeader functionality', () => {
     apiDocumentation.setDocsPathFromLinkHeader(validLinkHeader)
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
     expect(piniaStore.$patch).toHaveBeenCalledWith({
-      docsPath: 'https://some-domain/docs.jsonld'
+      docsPath: 'https://some-domain/docs.jsonld',
     })
     expect(piniaStore.$state.docsPath).toBe('https://some-domain/docs.jsonld')
   })
@@ -78,9 +80,9 @@ describe('API Documentation setDocsPathFromLinkHeader functionality', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.apiDocumentation': {
-          docsPath: 'https://someurl'
-        }
-      }
+          docsPath: 'https://someurl',
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -97,11 +99,11 @@ describe('API Documentation getApiDocumentation functionality', () => {
   const apiDocsObject = {
     docs: 'response from https://some-domain/docs.jsonld',
     entrypoint: 'response from /',
-    pageDataMetadata: 'response from /_/page_data_metadatas'
+    pageDataMetadata: 'response from /_/page_data_metadatas',
   }
   beforeAll(() => {
     const pinia = createTestingPinia({
-      createSpy: vi.fn
+      createSpy: vi.fn,
     })
     setActivePinia(pinia)
     apiDocumentation = createApiDocumentation()
@@ -125,7 +127,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
     const piniaStore = apiDocumentationStore.useStore()
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
     expect(piniaStore.$patch).toHaveBeenCalledWith({
-      apiDocumentation: apiDocsObject
+      apiDocumentation: apiDocsObject,
     })
   })
 

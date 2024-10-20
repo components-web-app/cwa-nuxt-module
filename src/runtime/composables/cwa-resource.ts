@@ -4,12 +4,12 @@ import { useCwa } from './cwa'
 import type { StyleOptions } from '#cwa/runtime/admin/manageable-resource'
 
 export type IriProp = {
- iri: string
+  iri: string
 }
 
 export interface CwaResourceUtilsOps {
   name?: string
-  styles?: StyleOptions,
+  styles?: StyleOptions
   manager?: {
     disabled?: boolean
   }
@@ -19,14 +19,14 @@ export interface CwaResourceMeta {
   cwaResource: {
     name?: string
     styles?: StyleOptions
-  },
+  }
   disableManager: boolean
 }
 
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
 
-  // @ts-ignore-next-line
+  // @ts-expect-error-next-line
   const disableManager = !!ops?.manager?.disabled
 
   onMounted(() => {
@@ -40,15 +40,15 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const exposeMeta: CwaResourceMeta = {
     cwaResource: {
       name: ops?.name,
-      styles: ops?.styles
+      styles: ops?.styles,
     },
-    disableManager
+    disableManager,
   }
 
   return {
     $cwa,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
     getResource: () => computed(() => $cwa.resources.getResource(iri.value).value),
-    exposeMeta
+    exposeMeta,
   }
 }

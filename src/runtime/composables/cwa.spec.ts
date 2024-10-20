@@ -9,7 +9,7 @@ describe('CWA composable', () => {
 
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
-        $cwa: mockCwa
+        $cwa: mockCwa,
       }
     })
 

@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { toRef } from 'vue'
+import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResource } from '#imports'
 
 const props = defineProps<IriProp>()

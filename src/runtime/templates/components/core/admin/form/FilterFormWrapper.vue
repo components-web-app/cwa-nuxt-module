@@ -1,5 +1,8 @@
 <template>
-  <label class="cwa-block cwa-text-light/70" :for="inputId">
+  <label
+    class="cwa-block cwa-text-light/70"
+    :for="inputId"
+  >
     {{ label }}
   </label>
   <span class="cwa-flex cwa-relative">
@@ -9,7 +12,7 @@
 
 <script lang="ts" setup>
 defineProps<{
-  label: string,
+  label: string
   inputId?: string
 }>()
 </script>

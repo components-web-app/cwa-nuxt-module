@@ -4,11 +4,11 @@ import { debounce } from 'lodash-es'
 
 type ModelOps = {
   defaultValue?: any
-  delay?: number,
+  delay?: number
   asNumber?: boolean
 }
 
-export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) => {
+export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps) => {
   const route = useRoute()
   const router = useRouter()
   let debounced: any
@@ -34,7 +34,7 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
     if (!matchingParams || !matchingParams.length) {
       return null
     }
-    const normalizeValueAsArray = (valueIsArray: boolean, value: LocationQueryValue|LocationQueryValue[]) => {
+    const normalizeValueAsArray = (valueIsArray: boolean, value: LocationQueryValue | LocationQueryValue[]) => {
       if (Array.isArray(value)) {
         return value
       }
@@ -51,7 +51,8 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
           return normalizeValueAsArray(valueIsArray, route.query[p])
         }
       }
-    } else if (route.query[queryParam]) {
+    }
+    else if (route.query[queryParam]) {
       const valueIsArray = queryParam.endsWith('[]')
       return normalizeValueAsArray(valueIsArray, route.query[queryParam])
     }
@@ -81,7 +82,7 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
     }
 
     const filteredKeys = Object.keys(route.query).filter(key => !matchingQueryParams.value.includes(key))
-    const newQuery: { [key: string]: LocationQueryValue|LocationQueryValue[] } = {}
+    const newQuery: { [key: string]: LocationQueryValue | LocationQueryValue[] } = {}
     for (const retainedKey of filteredKeys) {
       newQuery[retainedKey] = route.query[retainedKey]
     }
@@ -96,16 +97,19 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
           for (const p of queryParam) {
             newQuery[`${p}[${newValueKey}]`] = newValue[newValueKey]
           }
-        } else {
+        }
+        else {
           newQuery[`${queryParam}[${newValueKey}]`] = newValue[newValueKey]
         }
       }
-    } else if (newValue && (!Array.isArray(newValue) || newValue.length)) {
+    }
+    else if (newValue && (!Array.isArray(newValue) || newValue.length)) {
       if (Array.isArray(queryParam)) {
         for (const p of queryParam) {
           newQuery[p] = newValue
         }
-      } else {
+      }
+      else {
         newQuery[queryParam] = newValue
       }
     }
@@ -117,6 +121,6 @@ export const useQueryBoundModel = (queryParam: string|string[], ops?: ModelOps) 
   })
 
   return {
-    model
+    model,
   }
 }

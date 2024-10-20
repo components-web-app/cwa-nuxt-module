@@ -2,29 +2,28 @@ import type { ComponentPublicInstance, ComputedRef, Ref, ShallowRef, App } from 
 import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { consola as logger } from 'consola'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import { AdminStore } from '../storage/stores/admin/admin-store'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { AdminStore } from '../storage/stores/admin/admin-store'
+import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
 import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
-import { Resources } from '#cwa/runtime/resources/resources'
+import type { Resources } from '#cwa/runtime/resources/resources'
 
 interface _ResourceStackItem {
   iri: string
   domElements: Ref<HTMLElement[]>
-  displayName?: string,
-  managerTabs?: ManagerTab[],
-  ui?: ComponentUi[],
+  displayName?: string
+  managerTabs?: ManagerTab[]
+  ui?: ComponentUi[]
   childIris: Ref<string[]>
-  styles?: ComputedRef<StyleOptions|undefined>
+  styles?: ComputedRef<StyleOptions | undefined>
   resourceOps?: ManageableResourceOps
 }
 
 // can be used to have additional properties not sent by the initial addToStack event
-export interface ResourceStackItem extends _ResourceStackItem {
-}
+export type ResourceStackItem = _ResourceStackItem
 
 interface AddToStackWindowEvent {
   clickTarget: EventTarget | null
@@ -34,7 +33,7 @@ interface AddToStackEvent extends _ResourceStackItem, AddToStackWindowEvent {
 }
 
 export interface AddResourceEvent {
-  addAfter: boolean|null
+  addAfter: boolean | null
   targetIri: string
   closest: {
     position?: string
@@ -44,71 +43,71 @@ export interface AddResourceEvent {
 }
 
 export default class ResourceStackManager {
-  public readonly forcePublishedVersion: Ref<boolean|undefined> = ref()
+  public readonly forcePublishedVersion: Ref<boolean | undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
   private readonly isLayoutStack: Ref<boolean> = ref(false)
   private readonly _isEditingLayout: Ref<boolean> = ref(false)
-  private readonly currentClickTarget: Ref<EventTarget|null> = ref(null)
+  private readonly currentClickTarget: Ref<EventTarget | null> = ref(null)
   private readonly currentResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly previousResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
-  private readonly lastContextTarget: Ref<EventTarget|null> = ref(null)
+  private readonly lastContextTarget: Ref<EventTarget | null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
-  private readonly cachedCurrentStackItem = shallowRef<undefined|ResourceStackItem>()
+  private readonly cachedCurrentStackItem = shallowRef<undefined | ResourceStackItem>()
   private readonly resourceManagerState = ref({} as Record<string, any>)
   private readonly yOffset = 100
-  private focusComponent: App|undefined
-  private focusWrapper: HTMLElement|undefined
-  private focusProxy: ComponentPublicInstance|undefined
-  private _currentStackItem: ComputedRef<undefined | ResourceStackItem>|undefined
-  private _currentIri: ComputedRef<string|undefined>|undefined
+  private focusComponent: App | undefined
+  private focusWrapper: HTMLElement | undefined
+  private focusProxy: ComponentPublicInstance | undefined
+  private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
+  private _currentIri: ComputedRef<string | undefined> | undefined
 
-  constructor (private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
+  constructor(private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
     watch(() => this.isEditing, this.listenEditModeChange.bind(this))
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
   }
 
-  private async handleCurrentStackItemChange (currentStackItem: ResourceStackItem|undefined) {
+  private async handleCurrentStackItemChange(currentStackItem: ResourceStackItem | undefined) {
     this.cachedCurrentStackItem.value = currentStackItem
     await nextTick()
     this.scrollIntoView()
     this.createFocusComponent()
   }
 
-  public get isEditingLayout () {
+  public get isEditingLayout() {
     return this._isEditingLayout
   }
 
-  public getState (prop: string) {
+  public getState(prop: string) {
     return this.resourceManagerState.value[prop]
   }
 
-  public setState (prop: string, value: any) {
+  public setState(prop: string, value: any) {
     Object.assign(this.resourceManagerState.value, { [prop]: value })
   }
 
-  public get contextStack () {
+  public get contextStack() {
     return computed(() => {
       return this.lastContextTarget.value ? [] : this.contextResourceStack.value
     })
   }
 
-  public get resourceStack () {
+  public get resourceStack() {
     return computed(() => {
       return this.currentClickTarget.value ? [] : this.currentResourceStack.value
     })
   }
 
-  public get isPopulating () {
+  public get isPopulating() {
     return computed(() => !!this.currentClickTarget.value)
   }
 
-  public get isContextPopulating () {
+  public get isContextPopulating() {
     return computed(() => !!this.lastContextTarget.value)
   }
 
-  public get currentStackItem () {
+  public get currentStackItem() {
     if (!this._currentStackItem) {
       this._currentStackItem = computed(() => {
         if (!this.showManager.value) {
@@ -126,7 +125,7 @@ export default class ResourceStackManager {
     return this._currentStackItem
   }
 
-  public get currentIri () {
+  public get currentIri() {
     if (!this._currentIri) {
       this._currentIri = computed(() => {
         const currentStackItem = this.currentStackItem.value
@@ -146,7 +145,7 @@ export default class ResourceStackManager {
     return this._currentIri
   }
 
-  public resetStack (isContext?: boolean) {
+  public resetStack(isContext?: boolean) {
     if (isContext) {
       this.lastContextTarget.value = null
       this.contextResourceStack.value = []
@@ -158,7 +157,7 @@ export default class ResourceStackManager {
     this.currentResourceStack.value = []
   }
 
-  public getClosestStackItemByType (type: CwaResourceTypes) {
+  public getClosestStackItemByType(type: CwaResourceTypes) {
     const currentStack = this.resourceStack.value
     for (const stackItem of currentStack) {
       const stackItemIri = stackItem.iri
@@ -169,14 +168,14 @@ export default class ResourceStackManager {
     }
   }
 
-  private async confirmStackChange (alertData : { title: string, content: string }, fromContext?: boolean) {
-    let cachedNewStack: ResourceStackItem[]|undefined
+  private async confirmStackChange(alertData: { title: string, content: string }, fromContext?: boolean) {
+    let cachedNewStack: ResourceStackItem[] | undefined
     if (!fromContext) {
       cachedNewStack = this.currentResourceStack.value
       this.currentResourceStack.value = this.previousResourceStack.value
     }
 
-    // @ts-ignore-next-line
+    // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
     if (isCanceled) {
@@ -193,7 +192,7 @@ export default class ResourceStackManager {
     return true
   }
 
-  public async selectStackIndex (index: number, fromContext: boolean) {
+  public async selectStackIndex(index: number, fromContext: boolean) {
     if (!this.isEditing) {
       return
     }
@@ -225,22 +224,22 @@ export default class ResourceStackManager {
     }
   }
 
-  private getCurrentTarget (isContext?: boolean) {
+  private getCurrentTarget(isContext?: boolean) {
     return isContext ? this.lastContextTarget : this.currentClickTarget
   }
 
-  public completeStack (event: AddToStackWindowEvent, isContext?: boolean, type?: undefined|'page'|'layout') {
+  public completeStack(event: AddToStackWindowEvent, isContext?: boolean, type?: undefined | 'page' | 'layout') {
     if (type) {
       this.isLayoutStack.value = type === 'layout'
     }
     this._addToStack(event, isContext)
   }
 
-  public addToStack (event: AddToStackEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
+  public addToStack(event: AddToStackEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
     return this._addToStack(event, isContext, resourceOps)
   }
 
-  private _addToStack (event: AddToStackEvent|AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
+  private _addToStack(event: AddToStackEvent | AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
     const currentTarget = this.getCurrentTarget(!!isContext)
 
     const { clickTarget, ...resourceStackItem } = event
@@ -282,7 +281,7 @@ export default class ResourceStackManager {
     currentTarget.value = clickTarget
   }
 
-  private finishStack (isContext: boolean) {
+  private finishStack(isContext: boolean) {
     this.filterDisabledStackItems(isContext)
     this.getCurrentTarget(isContext).value = null
 
@@ -291,7 +290,7 @@ export default class ResourceStackManager {
     }
   }
 
-  public isComponentGroupDisabled (iri: string): boolean {
+  public isComponentGroupDisabled(iri: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP) {
       return false
     }
@@ -299,7 +298,7 @@ export default class ResourceStackManager {
     return this.resources.isDataPage.value && !this.isLayoutStack.value
   }
 
-  public isComponentDisabled (iri: string): boolean {
+  public isComponentDisabled(iri: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
       return false
     }
@@ -307,7 +306,7 @@ export default class ResourceStackManager {
     return this.resources.isDataPage.value && !this.resources.isPageDataResource(iri).value && !this.isLayoutStack.value
   }
 
-  private filterDisabledStackItems (isContext: boolean) {
+  private filterDisabledStackItems(isContext: boolean) {
     const stack = this.getCurrentStack(isContext)
     const newStack: ResourceStackItem[] = []
 
@@ -323,11 +322,11 @@ export default class ResourceStackManager {
     stack.value = newStack
   }
 
-  private getCurrentStack (isContext: boolean) {
+  private getCurrentStack(isContext: boolean) {
     return isContext ? this.contextResourceStack : this.currentResourceStack
   }
 
-  private insertResourceStackItem (resourceStackItem: ResourceStackItem, isContext?: boolean) {
+  private insertResourceStackItem(resourceStackItem: ResourceStackItem, isContext?: boolean) {
     // the deepest nested resource should be earliest index e.g. 0 = component (child of 1 = position (child of 2 = group))
     const stack = this.getCurrentStack(!!isContext)
     const iris = this.resourcesStore.findAllPublishableIris(resourceStackItem.iri)
@@ -342,15 +341,15 @@ export default class ResourceStackManager {
     insertAtIndex === -1 ? stack.value.push(resourceStackItem) : stack.value.splice(insertAtIndex, 0, resourceStackItem)
   }
 
-  public redrawFocus () {
+  public redrawFocus() {
     if (!this.focusProxy) {
       return
     }
-    // @ts-ignore-next-line
+    // @ts-expect-error-next-line
     this.focusProxy.redraw()
   }
 
-  private createFocusComponent () {
+  private createFocusComponent() {
     this.removeFocusComponent()
     const stackItem = this.currentStackItem.value
     if (!this.currentIri.value || !stackItem) {
@@ -359,7 +358,7 @@ export default class ResourceStackManager {
 
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
-      domElements: stackItem.domElements
+      domElements: stackItem.domElements,
     })
 
     this.focusWrapper = document.createElement('div')
@@ -369,7 +368,7 @@ export default class ResourceStackManager {
     this.focusProxy = this.focusComponent.mount(this.focusWrapper)
   }
 
-  private removeFocusComponent () {
+  private removeFocusComponent() {
     if (this.focusComponent) {
       const toUnmount = this.focusComponent
       this.focusComponent = undefined
@@ -383,8 +382,8 @@ export default class ResourceStackManager {
     }
   }
 
-  private scrollIntoView () {
-    let element: undefined|HTMLElement
+  private scrollIntoView() {
+    let element: undefined | HTMLElement
     let elementOutOfView = false
     const stackItem = this.currentStackItem.value
     if (!stackItem) {
@@ -413,13 +412,13 @@ export default class ResourceStackManager {
     window.scrollTo({ top: y, behavior: 'smooth' })
   }
 
-  private isElementOutsideViewport (el: HTMLElement) {
+  private isElementOutsideViewport(el: HTMLElement) {
     const { top, left, bottom, right } = el.getBoundingClientRect()
     const { innerHeight, innerWidth } = window
     return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
   }
 
-  private listenEditModeChange (isEditing: boolean) {
+  private listenEditModeChange(isEditing: boolean) {
     if (!isEditing) {
       // if we reset the stack then the resource manager disappears and no item/tabs selected immediately
       this.showManager.value = false
@@ -430,7 +429,7 @@ export default class ResourceStackManager {
     }
   }
 
-  private listenCurrentIri (newIri: string|undefined, oldIri: string|undefined) {
+  private listenCurrentIri(newIri: string | undefined, oldIri: string | undefined) {
     if (newIri && oldIri) {
       if (this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)) {
         return
@@ -439,25 +438,25 @@ export default class ResourceStackManager {
     this.resetResourceManagerVars()
   }
 
-  private resetResourceManagerVars () {
+  private resetResourceManagerVars() {
     this.forcePublishedVersion.value = undefined
     this.resourceManagerState.value = {}
   }
 
-  private isResourceInStack (iri: string, isContext?: boolean): boolean {
+  private isResourceInStack(iri: string, isContext?: boolean): boolean {
     const stack = isContext ? this.contextResourceStack : this.currentResourceStack
     return !!stack.value.find(el => el.iri === iri)
   }
 
-  private get isEditing () {
+  private get isEditing() {
     return this.adminStore.state.isEditing
   }
 
-  private get adminStore () {
+  private get adminStore() {
     return this.adminStoreDefinition.useStore()
   }
 
-  private get resourcesStore () {
+  private get resourcesStore() {
     return this.resourcesStoreDefinition.useStore()
   }
 }

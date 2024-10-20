@@ -1,15 +1,28 @@
 <template>
-  <ListHeading :title="pageDataClassName" @add="goToAdd">
+  <ListHeading
+    :title="pageDataClassName"
+    @add="goToAdd"
+  >
     <div class="-cwa-mt-7 cwa-mb-5">
-      <NuxtLink :to="{name: '_cwa-data'}" class="cwa-text-sm cwa-flex cwa-items-center cwa-transition-opacity cwa-space-x-1.5 cwa-opacity-70 hover:cwa-opacity-100">
+      <NuxtLink
+        :to="{ name: '_cwa-data' }"
+        class="cwa-text-sm cwa-flex cwa-items-center cwa-transition-opacity cwa-space-x-1.5 cwa-opacity-70 hover:cwa-opacity-100"
+      >
         <CwaUiIconArrowIcon class="cwa-w-4 cwa-rotate-90 cwa-my-2" />
         <span>Page data categories</span>
       </NuxtLink>
     </div>
   </ListHeading>
-  <ListFilter :order-options="orderOptions" :search-fields="['title']" />
-  <ListContent v-if="endpoint" ref="listContent" :fetch-url="endpoint">
-    <template #item="{data}">
+  <ListFilter
+    :order-options="orderOptions"
+    :search-fields="['title']"
+  />
+  <ListContent
+    v-if="endpoint"
+    ref="listContent"
+    :fetch-url="endpoint"
+  >
+    <template #item="{ data }">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
           <div class="cwa-flex cwa-items-center cwa-space-x-3">
@@ -62,23 +75,23 @@ const endpoint = ref<string>()
 const orderOptions = [
   {
     label: 'New - Old',
-    value: { createdAt: 'desc' }
+    value: { createdAt: 'desc' },
   },
   {
     label: 'Old - New',
-    value: { createdAt: 'asc' }
+    value: { createdAt: 'asc' },
   },
   {
     label: 'A - Z',
-    value: { title: 'asc' }
+    value: { title: 'asc' },
   },
   {
     label: 'Z - A',
-    value: { title: 'desc' }
-  }
+    value: { title: 'desc' },
+  },
 ]
 
-function goToPage (page: string) {
+function goToPage(page: string) {
   router.push(page)
 }
 
@@ -109,6 +122,6 @@ watchEffect(async () => {
 useHead({
   title: () => {
     return pageDataClassName.value + ' - Page Data'
-  }
+  },
 })
 </script>

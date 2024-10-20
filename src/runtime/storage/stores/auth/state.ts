@@ -5,13 +5,13 @@ export enum CwaUserRoles {
   SUPER_ADMIN = 'ROLE_SUPER_ADMIN',
   ADMIN = 'ROLE_ADMIN',
   ALLOWED_TO_SWITCH = 'ROLE_ALLOWED_TO_SWITCH',
-  USER = 'ROLE_USER'
+  USER = 'ROLE_USER',
 }
 
 interface CwaUser extends CwaResource {
   emailAddress: string
   enabled: boolean
-  roles: (string|CwaUserRoles)[]
+  roles: (string | CwaUserRoles)[]
   username: string
 }
 
@@ -24,7 +24,7 @@ export interface CwaAuthStateInterface {
 export default function (): CwaAuthStateInterface {
   return {
     data: reactive({
-      user: undefined
-    })
+      user: undefined,
+    }),
   }
 }

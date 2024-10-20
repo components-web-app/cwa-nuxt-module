@@ -11,7 +11,7 @@ export interface CwaErrorActionsInterface {
   removeByEndpoint(endpoint: string): void
 }
 
-function getErrorType (type: string): ErrorType {
+function getErrorType(type: string): ErrorType {
   switch (type) {
     case 'hydra:Error':
       return ErrorType.SERVER
@@ -27,19 +27,21 @@ function getErrorType (type: string): ErrorType {
 export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInterface {
   return {
     // use endpoint to make error be replace
-    error (event: ApiResourceEvent, error: FetchError) {
+    error(event: ApiResourceEvent, error: FetchError) {
       const id = new Date().getTime()
       const err: Partial<CwaErrorEvent> = { event, timestamp: id }
 
       if (error.cause) {
         err.type = getErrorType(error.cause.constructor.name)
         err.detail = (error.cause as Error).message
-      } else if (error.data?.['hydra:description']) {
+      }
+      else if (error.data?.['hydra:description']) {
         err.type = getErrorType(error.data['@type'])
         // todo: hydra:description deprecated in favour of error.data.detail
         err.detail = error.data['hydra:description']
         err.violations = error.data.violations?.map((e: any) => ({ property: e.propertyPath, message: e.message }))
-      } else {
+      }
+      else {
         err.type = ErrorType.SERVER
         err.detail = error.data
       }
@@ -52,18 +54,18 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
       errorState.allIds.push(id)
       errorState.allEndpoints.set(event.endpoint, id)
     },
-    manual (error: CwaErrorEvent) {
+    manual(error: CwaErrorEvent) {
       const id = error.timestamp
       errorState.byId[id] = error
       errorState.allIds.push(id)
       errorState.allEndpoints.set('unset', id)
     },
-    clear () {
+    clear() {
       errorState.allIds = []
       errorState.allEndpoints.clear()
       errorState.byId = {}
     },
-    removeById (id: number) {
+    removeById(id: number) {
       const err = errorState.byId[id]
       if (!err) {
         return
@@ -76,13 +78,14 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
         errorState.allEndpoints.delete(endpoint)
       }
     },
-    removeByEndpoint (endpoint: string) {
+    removeByEndpoint(endpoint: string) {
       if (!errorState.allEndpoints.has(endpoint)) {
         return
       }
 
       const id = errorState.allEndpoints.get(endpoint)
+
       id && this.removeById(id)
-    }
+    },
   }
 }

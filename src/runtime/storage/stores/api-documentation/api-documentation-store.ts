@@ -1,10 +1,10 @@
 import {
-  defineStore
+  defineStore,
 } from 'pinia'
 import type {
   CwaPiniaStoreDefinitionInterface,
   CwaPiniaStoreInterface,
-  CwaStore
+  CwaStore,
 } from '../cwa-store-types'
 import type { CwaApiDocumentationStateInterface } from './state'
 import CwaApiDocumentationState from './state'
@@ -12,9 +12,9 @@ import CwaApiDocumentationState from './state'
 /**
  * Interface Definitions
  */
-export interface CwaApiDocumentationInterface extends CwaApiDocumentationStateInterface {}
-export interface CwaApiDocumentationStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
-export interface CwaApiDocumentationStoreInterface extends CwaPiniaStoreInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface> {}
+export type CwaApiDocumentationInterface = CwaApiDocumentationStateInterface
+export type CwaApiDocumentationStoreDefinitionInterface = CwaPiniaStoreDefinitionInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface>
+export type CwaApiDocumentationStoreInterface = CwaPiniaStoreInterface<`${string}.apiDocumentation`, CwaApiDocumentationInterface>
 
 /**
  * Main Store Class
@@ -22,16 +22,16 @@ export interface CwaApiDocumentationStoreInterface extends CwaPiniaStoreInterfac
 export class ApiDocumentationStore implements CwaStore {
   private readonly storeDefinition: CwaApiDocumentationStoreDefinitionInterface
 
-  constructor (storeName: string) {
+  constructor(storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.apiDocumentation`, (): CwaApiDocumentationInterface => {
       const apiDocumentationState = CwaApiDocumentationState()
       return {
-        ...apiDocumentationState
+        ...apiDocumentationState,
       }
     })
   }
 
-  public useStore (): CwaApiDocumentationStoreInterface {
+  public useStore(): CwaApiDocumentationStoreInterface {
     return this.storeDefinition()
   }
 }

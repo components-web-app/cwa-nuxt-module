@@ -7,14 +7,14 @@ export const useResetPassword = () => {
   const route = useRoute()
   const $cwa = useCwa()
 
-  const error = ref<string|null>(null)
+  const error = ref<string | null>(null)
   const submitting = ref(false)
   const success = ref(false)
-  const submittedFormIri = ref<string|null>(null)
+  const submittedFormIri = ref<string | null>(null)
 
   const passwords = reactive({
     first: '',
-    second: ''
+    second: '',
   })
 
   const inputErrors = computed(() => {
@@ -24,24 +24,24 @@ export const useResetPassword = () => {
     }
     return {
       form: $cwa.forms.getFormViewErrors(formIri, 'password_update').value,
-      password: $cwa.forms.getFormViewErrors(formIri, 'password_update[plainPassword][first]').value
+      password: $cwa.forms.getFormViewErrors(formIri, 'password_update[plainPassword][first]').value,
     }
   })
 
   submittedFormIri.value && $cwa.forms.getFormViewErrors(submittedFormIri.value, 'password_update[plainPassword][first]')
 
-  function getStringFromParam (paramName: string): string {
+  function getStringFromParam(paramName: string): string {
     const paramValue = route.params[paramName]
     return Array.isArray(paramValue) ? paramValue[0] : paramValue
   }
 
-  function handleResetError (fetchError: FetchError) {
+  function handleResetError(fetchError: FetchError) {
     if (fetchError.status === 404) {
       return 'The reset link is invalid or has expired. Please restart the reset password process.'
     }
     if (fetchError.status === 422) {
       $cwa.resourcesManager.saveResource({
-        resource: fetchError.data
+        resource: fetchError.data,
       })
       submittedFormIri.value = fetchError.data['@id']
       return
@@ -49,7 +49,7 @@ export const useResetPassword = () => {
     return fetchError.data?.message || fetchError.statusMessage || 'Unexpected error'
   }
 
-  async function resetPassword () {
+  async function resetPassword() {
     if (success.value) {
       navigateTo('/login')
     }
@@ -63,11 +63,12 @@ export const useResetPassword = () => {
     const response = await $cwa.auth.resetPassword({
       username: getStringFromParam('username'),
       token: getStringFromParam('token'),
-      passwords
+      passwords,
     })
     if (response instanceof FetchError) {
       error.value = handleResetError(response)
-    } else {
+    }
+    else {
       success.value = true
     }
     submitting.value = false
@@ -78,6 +79,6 @@ export const useResetPassword = () => {
     success,
     passwords,
     inputErrors,
-    resetPassword
+    resetPassword,
   }
 }

@@ -1,17 +1,40 @@
 <template>
-  <div id="cwa-root-layout" ref="rootLayout" class="cwa-relative cwa-h-full cwa-flex cwa-flex-col" @contextmenu="closeContextMenu">
+  <div
+    id="cwa-root-layout"
+    ref="rootLayout"
+    class="cwa-relative cwa-h-full cwa-flex cwa-flex-col"
+    @contextmenu="closeContextMenu"
+  >
     <ClientOnly>
       <LazyCwaAdminHeader v-if="showAdmin" />
-      <OutdatedContentNotice v-else class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50" />
+      <OutdatedContentNotice
+        v-else
+        class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50"
+      />
     </ClientOnly>
-    <component :is="resolvedComponent" v-if="resolvedComponent" class="cwa-relative" @click.stop="onLayoutClick" @contextmenu.stop="onLayoutContextMenu">
-      <div ref="page" class="cwa-grow" @click.stop="onPageClick" @contextmenu.stop="onPageContextMenu">
+    <component
+      :is="resolvedComponent"
+      v-if="resolvedComponent"
+      class="cwa-relative"
+      @click.stop="onLayoutClick"
+      @contextmenu.stop="onLayoutContextMenu"
+    >
+      <div
+        ref="page"
+        class="cwa-grow"
+        @click.stop="onPageClick"
+        @contextmenu.stop="onPageContextMenu"
+      >
         <slot />
       </div>
     </component>
     <ClientOnly v-if="showAdmin">
       <LazyCwaAdminResourceManager ref="resourceManager" />
-      <LayoutPageOverlay v-if="$cwa.admin.isEditing && page && rootLayout" :page="page" :layout="rootLayout" />
+      <LayoutPageOverlay
+        v-if="$cwa.admin.isEditing && page && rootLayout"
+        :page="page"
+        :layout="rootLayout"
+      />
       <teleport to="body">
         <DialogsWrapper />
       </teleport>
@@ -30,32 +53,32 @@ import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 
 const $cwa = useCwa()
-const resourceManager = ref<null|InstanceType<typeof LazyCwaAdminResourceManager>>(null)
-const page = ref<null|HTMLDivElement>(null)
-const rootLayout = ref<null|HTMLDivElement>(null)
+const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
+const page = ref<null | HTMLDivElement>(null)
+const rootLayout = ref<null | HTMLDivElement>(null)
 const instance = getCurrentInstance()
 
-function callResourceManagerHandler (handler: 'contextMenuHandler'|'clickHandler', e: MouseEvent, type: 'layout'|'page') {
+function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandler', e: MouseEvent, type: 'layout' | 'page') {
   resourceManager.value && resourceManager.value[handler](e, type)
 }
 
-function closeContextMenu (e: MouseEvent) {
+function closeContextMenu(e: MouseEvent) {
   resourceManager.value && resourceManager.value.closeContextMenu(e)
 }
 
-function onLayoutContextMenu (e: MouseEvent) {
+function onLayoutContextMenu(e: MouseEvent) {
   callResourceManagerHandler('contextMenuHandler', e, 'layout')
 }
 
-function onPageContextMenu (e: MouseEvent) {
+function onPageContextMenu(e: MouseEvent) {
   callResourceManagerHandler('contextMenuHandler', e, 'page')
 }
 
-function onPageClick (e: MouseEvent) {
+function onPageClick(e: MouseEvent) {
   callResourceManagerHandler('clickHandler', e, 'page')
 }
 
-function onLayoutClick (e: MouseEvent) {
+function onLayoutClick(e: MouseEvent) {
   callResourceManagerHandler('clickHandler', e, 'layout')
 }
 
@@ -71,8 +94,8 @@ const layoutUiComponent = computed<GlobalComponentNames>(() => {
 const resolvedComponent = computed(() => {
   // todo: add checks to ensure component exists - otherwise output a warning and/or default
   if (
-    typeof instance?.appContext.components !== 'object' ||
-      !layoutUiComponent.value
+    typeof instance?.appContext.components !== 'object'
+    || !layoutUiComponent.value
   ) {
     return LazyCwaDefaultLayout
   }

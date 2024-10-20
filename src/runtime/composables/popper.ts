@@ -15,10 +15,10 @@ import type { MaybeElement } from '@vueuse/core'
 import type { PopperOptions } from '../types/popper'
 
 export const createPopper = popperGenerator({
-  defaultModifiers: [...defaultModifiers, offset, flip, preventOverflow, computeStyles, eventListeners]
+  defaultModifiers: [...defaultModifiers, offset, flip, preventOverflow, computeStyles, eventListeners],
 })
 
-export function usePopper ({
+export function usePopper({
   locked = false,
   overflowPadding = 8,
   offsetDistance = 8,
@@ -28,7 +28,7 @@ export function usePopper ({
   scroll = true,
   resize = true,
   placement,
-  strategy
+  strategy,
 }: PopperOptions, virtualReference?: Ref<Element | VirtualElement>) {
   const reference = ref<MaybeElement>(null)
   const popper = ref<MaybeElement>(null)
@@ -36,15 +36,23 @@ export function usePopper ({
 
   onMounted(() => {
     watchEffect((onInvalidate) => {
-      if (!popper.value) { return }
-      if (!reference.value && !virtualReference?.value) { return }
+      if (!popper.value) {
+        return
+      }
+      if (!reference.value && !virtualReference?.value) {
+        return
+      }
 
       const popperEl = unrefElement(popper)
       const referenceEl = virtualReference?.value || unrefElement(reference)
 
       // if (!(referenceEl instanceof HTMLElement)) { return }
-      if (!(popperEl instanceof HTMLElement)) { return }
-      if (!referenceEl) { return }
+      if (!(popperEl instanceof HTMLElement)) {
+        return
+      }
+      if (!referenceEl) {
+        return
+      }
 
       instance.value = createPopper(referenceEl, popperEl, omitBy({
         placement,
@@ -52,33 +60,33 @@ export function usePopper ({
         modifiers: [
           {
             name: 'flip',
-            enabled: !locked
+            enabled: !locked,
           },
           {
             name: 'preventOverflow',
             options: {
-              padding: overflowPadding
-            }
+              padding: overflowPadding,
+            },
           },
           {
             name: 'offset',
             options: {
-              offset: [offsetSkid, offsetDistance]
-            }
+              offset: [offsetSkid, offsetDistance],
+            },
           },
           {
             name: 'computeStyles',
             options: {
               adaptive,
-              gpuAcceleration
-            }
+              gpuAcceleration,
+            },
           },
           {
             name: 'eventListeners',
             options: {
               scroll,
-              resize
-            }
+              resize,
+            },
           },
           {
             name: 'sameWidth',
@@ -100,9 +108,9 @@ export function usePopper ({
               state.elements.popper.style.minWidth = `${
                 state.elements.reference.offsetWidth
               }px`
-            }
-          }
-        ]
+            },
+          },
+        ],
       }, isUndefined))
 
       onInvalidate(instance.value.destroy)

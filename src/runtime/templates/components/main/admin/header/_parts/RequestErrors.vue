@@ -5,13 +5,16 @@ import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
 const $cwa = useCwa()
 
-function removeError (timestamp: number) {
+function removeError(timestamp: number) {
   $cwa.resourcesManager.removeError(timestamp)
 }
 </script>
 
 <template>
-  <div aria-live="assertive" class="cwa-pointer-events-none cwa-fixed cwa-inset-0 cwa-flex cwa-items-end cwa-pt-20 cwa-pb-4 cwa-py-6 sm:cwa-px-4 sm:cwa-items-start cwa-z-notifications">
+  <div
+    aria-live="assertive"
+    class="cwa-pointer-events-none cwa-fixed cwa-inset-0 cwa-flex cwa-items-end cwa-pt-20 cwa-pb-4 cwa-py-6 sm:cwa-px-4 sm:cwa-items-start cwa-z-notifications"
+  >
     <TransitionGroup
       tag="ul"
       class="cwa-list-none cwa-flex cwa-w-full cwa-flex-col cwa-items-center cwa-space-y-4 sm:cwa-items-end"
@@ -32,11 +35,17 @@ function removeError (timestamp: number) {
           Oops! There was a problem.
         </p>
         <ul v-if="error.type === ErrorType.VALIDATION">
-          <li v-for="violation in error.violations" :key="`violation-${violation.property}-${error.timestamp}`">
+          <li
+            v-for="violation in error.violations"
+            :key="`violation-${violation.property}-${error.timestamp}`"
+          >
             {{ violation.property }}: {{ violation.message }}
           </li>
         </ul>
-        <p v-else class="cwa-mt-1 cwa-text-sm cwa-text-gray-500">
+        <p
+          v-else
+          class="cwa-mt-1 cwa-text-sm cwa-text-gray-500"
+        >
           {{ error?.statusCode || 'Network Error' }}: {{ error.detail }}
         </p>
       </Notification>

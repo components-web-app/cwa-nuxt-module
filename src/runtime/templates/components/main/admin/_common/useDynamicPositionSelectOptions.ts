@@ -2,10 +2,10 @@ import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Sel
 import type Cwa from '#cwa/runtime/cwa'
 
 export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
-  async function getOptions () {
+  async function getOptions() {
     const newOptions: SelectOption[] = [{
       label: 'None',
-      value: null
+      value: null,
     }]
     const docs = await $cwa.getApiDocumentation()
     // todo: we can look up the current Page Data resource and in _metadata.pageDataMetadata.properties is an array of { componentShortName: string, property: string } - we can display the resolved component name and value of the property
@@ -20,6 +20,6 @@ export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
   }
 
   return {
-    getOptions
+    getOptions,
   }
 }

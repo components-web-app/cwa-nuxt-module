@@ -1,6 +1,6 @@
 export const useProcess = () => {
   return {
-    isClient: process.client,
-    isServer: process.server
+    isClient: import.meta.client,
+    isServer: import.meta.server,
   }
 }

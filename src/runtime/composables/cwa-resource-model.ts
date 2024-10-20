@@ -5,11 +5,11 @@ import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 
 interface ResourceModelOps {
-  longWaitThreshold?: number,
+  longWaitThreshold?: number
   debounceTime?: number
 }
 
-export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: string|string[], ops?: ResourceModelOps) => {
+export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps) => {
   const proxy = getCurrentInstance()?.proxy
   const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
@@ -17,7 +17,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
 
   const { endpoint } = useCwaResourceEndpoint(iri)
 
-  const storeValue = computed<T|undefined>(() => (resource.value?.data ? get(resource.value.data, property) : undefined))
+  const storeValue = computed<T | undefined>(() => (resource.value?.data ? get(resource.value.data, property) : undefined))
   const rootProperty = computed(() => {
     if (Array.isArray(property)) {
       return property[0]
@@ -26,20 +26,20 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   })
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
 
-  const localValueWithIri = ref<{ [iri: string]: T|null|undefined }>({})
+  const localValueWithIri = ref<{ [iri: string]: T | null | undefined }>({})
   const localValue = computed({
-    get () {
+    get() {
       if (!iri.value) {
         return undefined
       }
       return localValueWithIri.value[iri.value]
     },
-    set (newValue: T|null|undefined) {
+    set(newValue: T | null | undefined) {
       if (!iri.value) {
         return
       }
       localValueWithIri.value[iri.value] = newValue
-    }
+    },
   })
 
   const pendingSubmit = ref(false)
@@ -53,20 +53,20 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
   const isSubmitting = ref(false)
   const lastSubmittedValueInProgress = ref()
 
-  function isEqual (value1: any, value2: any) {
-    function requiresNormalizing (value: any) {
+  function isEqual(value1: any, value2: any) {
+    function requiresNormalizing(value: any) {
       const type = typeof value
       return value !== undefined && value !== null && (type === 'object' || Array.isArray(value))
     }
 
-    function getNormalizedValue (value: any): string|null|undefined {
+    function getNormalizedValue(value: any): string | null | undefined {
       return requiresNormalizing(value) ? JSON.stringify(value) : value
     }
 
     return getNormalizedValue(value1) === getNormalizedValue(value2)
   }
 
-  async function updateResource (newLocalValue: any) {
+  async function updateResource(newLocalValue: any) {
     const submittingIri = iri.value
     if (!submittingIri) {
       return
@@ -86,8 +86,8 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     // if we are already submitting this value, just skip - we shouldn't really get here
     // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
     if (
-      resource.value === undefined ||
-      (isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
+      resource.value === undefined
+      || (isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
     ) {
       resetValue()
       return
@@ -107,7 +107,8 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     if (isNewValueObject) {
       const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, newLocalValue)
       submittingValue = newObject[rootProperty.value]
-    } else {
+    }
+    else {
       submittingValue = newLocalValue
     }
     lastSubmittedValueInProgress.value = submittingValue
@@ -116,9 +117,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     const newResource = await $cwa.resourcesManager.updateResource({
       endpoint: endpoint.value,
       data: {
-        [rootProperty.value]: submittingValue
+        [rootProperty.value]: submittingValue,
       },
-      source
+      source,
     })
 
     // todo: check on when second request made before initial is complete
@@ -134,7 +135,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     isEqual(storeValue.value, submittingValue) && isEqual(storeValue.value, localValue.value) && resetValue()
   }
 
-  function resetValue (resetIri?: string) {
+  function resetValue(resetIri?: string) {
     const useIri = resetIri || iri.value
     if (!useIri) {
       return
@@ -154,7 +155,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     debounced()
   })
 
-  let longWaitTimeoutFn: ReturnType<typeof setTimeout>|undefined
+  let longWaitTimeoutFn: ReturnType<typeof setTimeout> | undefined
 
   const unwatchIsBusy = watch(isBusy, (newBusy) => {
     if (!newBusy) {
@@ -170,17 +171,17 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
     }, longWaitThreshold)
   })
 
-  const model = computed<T|undefined|null>({
-    get () {
+  const model = computed<T | undefined | null>({
+    get() {
       if (localValue.value !== undefined) {
         return localValue.value
       }
       // when deleted, the store value is updating to undefined, then this model getter is null
       return storeValue.value || null
     },
-    set (value) {
+    set(value) {
       localValue.value = value
-    }
+    },
   })
 
   onBeforeUnmount(() => {
@@ -193,10 +194,10 @@ export const useCwaResourceModel = <T>(iri: Ref<string|undefined>, property: str
       pendingSubmit,
       submitting: isSubmitting,
       isBusy,
-      isLongWait
+      isLongWait,
     },
     resetValue,
     model,
-    localValueWithIri
+    localValueWithIri,
   }
 }

@@ -2,31 +2,31 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
-const canvas = ref<HTMLCanvasElement|undefined>()
+const canvas = ref<HTMLCanvasElement | undefined>()
 const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
 
 const $cwa = useCwa()
 
 const props = defineProps<{
-  page: HTMLDivElement,
+  page: HTMLDivElement
   layout: HTMLDivElement
 }>()
 
-function updateWindowSize () {
+function updateWindowSize() {
   windowSize.value = {
     width: window.innerWidth,
     height: window.innerHeight,
-    timestamp: (new Date()).getTime()
+    timestamp: (new Date()).getTime(),
   }
 }
 
-async function redraw () {
+async function redraw() {
   await nextTick()
   updateWindowSize()
   drawCanvas()
 }
 
-function getHatchCanvas () {
+function getHatchCanvas() {
   const p = document.createElement('canvas')
   p.width = 32
   p.height = 16
@@ -54,7 +54,7 @@ function getHatchCanvas () {
   return p
 }
 
-function drawCanvas () {
+function drawCanvas() {
   if (!canvas.value) {
     return
   }
@@ -74,13 +74,14 @@ function drawCanvas () {
   ctx.beginPath()
   if ($cwa.admin.resourceStackManager.isEditingLayout.value) {
     drawLayoutFocus(ctx)
-  } else {
+  }
+  else {
     drawPageFocus(ctx)
   }
   ctx.fill()
 }
 
-function drawPageFocus (ctx: CanvasRenderingContext2D) {
+function drawPageFocus(ctx: CanvasRenderingContext2D) {
   const [layoutRect] = getBoundingRect()
   const pageCoords = getPageCoords()
   ctx.moveTo(0, 0)
@@ -95,7 +96,7 @@ function drawPageFocus (ctx: CanvasRenderingContext2D) {
   ctx.lineTo(0, layoutRect.height)
 }
 
-function drawLayoutFocus (ctx: CanvasRenderingContext2D) {
+function drawLayoutFocus(ctx: CanvasRenderingContext2D) {
   const pageCoords = getPageCoords()
   ctx.moveTo(pageCoords.left, pageCoords.top)
   ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top)
@@ -103,10 +104,10 @@ function drawLayoutFocus (ctx: CanvasRenderingContext2D) {
   ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
 }
 
-function getBoundingRect () {
+function getBoundingRect() {
   return [
     props.layout.getBoundingClientRect(),
-    props.page.getBoundingClientRect()
+    props.page.getBoundingClientRect(),
   ]
 }
 
@@ -116,11 +117,11 @@ const getPageCoords = () => {
     top: pageRect.top - layoutRect.top,
     left: pageRect.left - layoutRect.left,
     width: pageRect.width,
-    height: pageRect.height
+    height: pageRect.height,
   }
 }
 
-let redrawInterval: number|undefined
+let redrawInterval: number | undefined
 onMounted(() => {
   $cwa.admin.eventBus.on('componentMounted', redraw)
   window.addEventListener('resize', redraw, false)
@@ -153,6 +154,10 @@ onBeforeUnmount(() => {
 
 <template>
   <ClientOnly>
-    <canvas id="cwa-layout-page-overlay" ref="canvas" class="cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
+    <canvas
+      id="cwa-layout-page-overlay"
+      ref="canvas"
+      class="cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0"
+    />
   </ClientOnly>
 </template>

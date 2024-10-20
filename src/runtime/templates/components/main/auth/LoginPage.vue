@@ -24,8 +24,14 @@
     />
     <slot name="footer">
       <div class="cwa-flex cwa-items-center cwa-justify-between">
-        <AuthPageLink link-to="/" link-text="< Back to home" />
-        <AuthPageLink link-to="/forgot-password" link-text="Forgot your password?" />
+        <AuthPageLink
+          link-to="/"
+          link-text="< Back to home"
+        />
+        <AuthPageLink
+          link-to="/forgot-password"
+          link-text="Forgot your password?"
+        />
       </div>
     </slot>
   </AuthTemplate>
@@ -40,21 +46,21 @@ import AuthPageLink from './_parts/AuthPageLink.vue'
 const emit = defineEmits(['submit', 'update:modelValue'])
 
 const props = defineProps<{
-  submitButtonText: string,
-  submitting: boolean,
+  submitButtonText: string
+  submitting: boolean
   modelValue: {
-    username: string,
+    username: string
     password: string
   }
   error?: string
 }>()
 
 const credentials = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (newValue) {
+  set(newValue) {
     emit('update:modelValue', newValue)
-  }
+  },
 })
 </script>

@@ -16,16 +16,16 @@ import { definePageMeta, useLogin } from '#imports'
 const { error, submitting, signIn, credentials } = useLogin()
 
 definePageMeta({
-  cwa: false
+  cwa: false,
 })
 
 useHead({
   title: 'Login',
   bodyAttrs: {
-    class: 'cwa-h-full'
+    class: 'cwa-h-full',
   },
   htmlAttrs: {
-    class: 'cwa-h-full cwa-bg-neutral-900'
-  }
+    class: 'cwa-h-full cwa-bg-neutral-900',
+  },
 })
 </script>

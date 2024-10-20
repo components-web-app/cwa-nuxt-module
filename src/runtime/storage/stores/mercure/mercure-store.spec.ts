@@ -5,13 +5,13 @@ import { MercureStore } from './mercure-store'
 import state from './state'
 
 vi.mock('./state', () => ({
-  default: vi.fn(() => ({ stateKey: 'value' }))
+  default: vi.fn(() => ({ stateKey: 'value' })),
 }))
 
 describe('MercureStore tests', () => {
   beforeEach(() => {
     const pinia = createTestingPinia({
-      createSpy: vi.fn
+      createSpy: vi.fn,
     })
     setActivePinia(pinia)
     vi.clearAllMocks()
@@ -22,7 +22,7 @@ describe('MercureStore tests', () => {
     const storeDefinition = store.useStore()
 
     expect(state).toBeCalledTimes(1)
-    // @ts-ignore
+    // @ts-expect-error
     expect(storeDefinition.stateKey).toBe('value')
   })
 })

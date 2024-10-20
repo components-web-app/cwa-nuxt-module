@@ -4,14 +4,14 @@ import {
   type CwaResource,
   CwaResourceTypes,
   getPublishedResourceState,
-  getResourceTypeFromIri
+  getResourceTypeFromIri,
 } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
 import {
   type CwaCurrentResourceInterface,
   CwaResourceApiStatuses,
   type CwaResourcesStateInterface,
-  NEW_RESOURCE_IRI
+  NEW_RESOURCE_IRI,
 } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
@@ -31,9 +31,9 @@ interface PublishableMapping {
 }
 
 export interface CwaResourcesGettersInterface {
-  getOrderedPositionsForGroup: ComputedRef<(groupIri: string, includeNewIri?: boolean) => string[] | undefined>,
-  getPositionSortDisplayNumber: ComputedRef<(groupIri: string, includeNewIri?: boolean) => number | undefined>,
-  getResource: ComputedRef<(iri: string) => CwaCurrentResourceInterface | undefined>,
+  getOrderedPositionsForGroup: ComputedRef<(groupIri: string, includeNewIri?: boolean) => string[] | undefined>
+  getPositionSortDisplayNumber: ComputedRef<(groupIri: string, includeNewIri?: boolean) => number | undefined>
+  getResource: ComputedRef<(iri: string) => CwaCurrentResourceInterface | undefined>
   hasNewResources: ComputedRef<boolean>
   findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
   findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
@@ -66,7 +66,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     }, {} as PublishableMapping)
   ))
 
-  function findIsPublishedByIri (iri: string) {
+  function findIsPublishedByIri(iri: string) {
     const resource = resourcesState.current.byId?.[iri]
     if (!resource) {
       return false
@@ -78,7 +78,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   const getOrderedPositionsForGroup = computed(() => {
     return (groupIri: string, includeNewIri: boolean = true) => {
       const groupResource = resourcesState.current.byId?.[groupIri]
-      const positions: string[]|undefined = groupResource.data?.componentPositions
+      const positions: string[] | undefined = groupResource.data?.componentPositions
       if (!positions) {
         return
       }
@@ -86,10 +86,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       const positionResources = positions
         .filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
         .map((iri: string) => resourcesState.current.byId?.[iri]?.data)
-      // @ts-ignore-next-line
-      const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource|undefined) => resource !== undefined)
+      // @ts-expect-error-next-line
+      const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource | undefined) => resource !== undefined)
 
-      const getSortNumber = (res: CwaResource|undefined) => {
+      const getSortNumber = (res: CwaResource | undefined) => {
         if (res?._metadata.sortDisplayNumber !== undefined) {
           return res._metadata.sortDisplayNumber
         }
@@ -110,6 +110,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         if (newIriPositions.length) {
           for (const newIriPosition of newIriPositions) {
             const newPositionSortNumber = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortDisplayNumber
+
             newPositionSortNumber !== undefined && orderedWithoutTemp.splice(newPositionSortNumber - 1, 0, newIriPosition)
           }
         }
@@ -182,6 +183,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return (iri: string) => {
         const iris = [iri]
         const relatedIri = draftToPublishedIris.value[iri] || publishedToDraftIris.value[iri]
+
         relatedIri && iris.push(relatedIri)
         return iris
       }
@@ -194,7 +196,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         [CwaResourceTypes.LAYOUT]: [],
         [CwaResourceTypes.COMPONENT_GROUP]: [],
         [CwaResourceTypes.COMPONENT_POSITION]: [],
-        [CwaResourceTypes.COMPONENT]: []
+        [CwaResourceTypes.COMPONENT]: [],
       }
       for (const iri of resourcesState.current.allIds) {
         const type = getResourceTypeFromIri(iri)
@@ -260,15 +262,16 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       let percent
       if (complete === 0) {
         percent = total === 0 ? 100 : 0
-      } else {
+      }
+      else {
         percent = Math.round((complete / total) * 100)
       }
       return {
         pending,
         complete,
         total,
-        percent
+        percent,
       }
-    })
+    }),
   }
 }

@@ -6,7 +6,7 @@ import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils
 
 const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Publish',
-  order: DEFAULT_TAB_ORDER
+  order: DEFAULT_TAB_ORDER,
 })
 
 const publishableState = computed(() => resource.value ? getPublishedResourceState(resource.value) : undefined)
@@ -37,7 +37,11 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    <CwaUiFormToggle v-if="alternateIri" v-model="editLiveVersion" label="Edit live version" />
+    <CwaUiFormToggle
+      v-if="alternateIri"
+      v-model="editLiveVersion"
+      label="Edit live version"
+    />
     <span v-else>
       {{ publishableState === false ? 'Draft' : 'Live' }}
     </span>

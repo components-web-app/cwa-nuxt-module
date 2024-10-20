@@ -25,6 +25,6 @@ export const useDataType = () => {
   return {
     dataTypeClassName,
     dataType,
-    pageDataClassName
+    pageDataClassName,
   }
 }

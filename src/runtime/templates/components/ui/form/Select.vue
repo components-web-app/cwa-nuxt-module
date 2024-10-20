@@ -4,7 +4,7 @@ import {
   ListboxButton,
   ListboxOptions,
   ListboxOption,
-  provideUseId
+  provideUseId,
 } from '@headlessui/vue'
 
 import { computed } from 'vue'
@@ -20,7 +20,10 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
 </script>
 
 <template>
-  <Listbox v-model="value" :by="compareOptions">
+  <Listbox
+    v-model="value"
+    :by="compareOptions"
+  >
     <div class="cwa-relative cwa-inline-flex">
       <ListboxButton
         ref="trigger"

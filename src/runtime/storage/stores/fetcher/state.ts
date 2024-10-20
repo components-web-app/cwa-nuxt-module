@@ -8,9 +8,9 @@ interface FetchManifestInterface {
 }
 
 export interface FetchStatus {
-  path: string,
-  isPrimary: boolean,
-  resources: string[],
+  path: string
+  isPrimary: boolean
+  resources: string[]
   manifest?: FetchManifestInterface
   abort?: true
 }
@@ -30,6 +30,6 @@ export interface CwaFetcherStateInterface {
 export default function (): CwaFetcherStateInterface {
   return {
     primaryFetch: reactive({}),
-    fetches: reactive({})
+    fetches: reactive({}),
   }
 }

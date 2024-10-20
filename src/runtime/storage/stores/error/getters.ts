@@ -14,6 +14,6 @@ export default function (resourcesState: CwaErrorStateInterface): CwaErrorsGette
     }),
     getErrors: computed<CwaErrorEvent[]>(() => {
       return resourcesState.allIds.map(e => resourcesState.byId[e])
-    })
+    }),
   }
 }

@@ -7,8 +7,8 @@ describe('Auth State context', () => {
     const initialState = state()
     expect(initialState).toStrictEqual({
       data: reactive({
-        user: undefined
-      })
+        user: undefined,
+      }),
     })
   })
 })

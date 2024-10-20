@@ -6,29 +6,29 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    watch: vi.fn(() => {}) // mod.watch(...args)
+    watch: vi.fn(() => {}), // mod.watch(...args)
   }
 })
 
-function createResourceManager (mockStore?: any) {
+function createResourceManager(mockStore?: any) {
   const mockAdminStore = {
     useStore: () => mockStore || ({
       state: reactive({
-        isEditing: false
-      })
-    })
+        isEditing: false,
+      }),
+    }),
   }
 
   const mockResourcesStore = {
     useStore: () => mockStore || ({
-      state: reactive({})
-    })
+      state: reactive({}),
+    }),
   }
 
   const manager = new ResourceStackManager(mockAdminStore, mockResourcesStore)
   return {
     manager,
-    store: mockAdminStore
+    store: mockAdminStore,
   }
 }
 
@@ -68,7 +68,7 @@ describe('Resource Manager', () => {
   describe('resourceStack getter', () => {
     test.each([
       { currentClickTarget: ref({}), mockStack: ['anything'], expected: [] },
-      { currentClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] }
+      { currentClickTarget: ref(null), mockStack: [1, 2, 3], expected: [1, 2, 3] },
     ])('If currentClickTarget is $currentClickTarget the stack should return $expected', ({ currentClickTarget, mockStack, expected }) => {
       const { manager } = createResourceManager()
 
@@ -85,26 +85,26 @@ describe('Resource Manager', () => {
         stack: [{ test: true }, null, null],
         showManager: true,
         currentClickTarget: undefined,
-        toEqual: { test: true }
+        toEqual: { test: true },
       },
       {
         stack: [{ test: true }, null, null],
         showManager: false,
         currentClickTarget: undefined,
-        toEqual: undefined
+        toEqual: undefined,
       },
       {
         stack: [{ test: true }, null, null],
         showManager: true,
         currentClickTarget: {},
-        toEqual: undefined
+        toEqual: undefined,
       },
       {
         stack: [],
         showManager: true,
         currentClickTarget: undefined,
-        toEqual: undefined
-      }
+        toEqual: undefined,
+      },
     ])('should return first item from stack', ({ stack, showManager, currentClickTarget, toEqual }) => {
       const { manager } = createResourceManager()
 
@@ -225,10 +225,10 @@ describe('Resource Manager', () => {
     describe('listenEditModeChange', () => {
       test.each([
         { newEditingState: false, showManager: false },
-        { newEditingState: true, showManager: true }
+        { newEditingState: true, showManager: true },
       ])('When edit mode is changed from $initialEditingState to $newEditingState while manager is true, showManager should be $showManager', ({
         newEditingState,
-        showManager
+        showManager,
       }) => {
         const { manager } = createResourceManager()
         manager.showManager.value = true

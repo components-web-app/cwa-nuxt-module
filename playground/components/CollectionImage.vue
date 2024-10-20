@@ -18,13 +18,17 @@
         @load="handleLoad"
       />
     </Transition>
-    <div data-placeholder="true" class="absolute top-0 left-0 w-full h-full overflow-hidden bg-gray-200 pointer-events-none cwa-transition-opacity" :class="{ 'opacity-0': loaded }" />
+    <div
+      data-placeholder="true"
+      class="absolute top-0 left-0 w-full h-full overflow-hidden bg-gray-200 pointer-events-none cwa-transition-opacity"
+      :class="{ 'opacity-0': loaded }"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useCwaImage } from '#cwa/runtime/composables/cwa-image'
 import { toRef } from 'vue'
+import { useCwaImage } from '#cwa/runtime/composables/cwa-image'
 import { useCwa } from '#imports'
 
 const props = defineProps<{
@@ -34,7 +38,7 @@ const props = defineProps<{
 const $cwa = useCwa()
 
 await $cwa.fetchResource({
-  path: props.iri
+  path: props.iri,
 })
 
 const { contentUrl, displayMedia, handleLoad, loaded } = useCwaImage(toRef(props, 'iri'), 'thumbnail')

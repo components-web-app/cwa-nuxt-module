@@ -1,56 +1,55 @@
 import { computed, type ComputedRef } from 'vue'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
-import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type { FetchStatus } from '../storage/stores/fetcher/state'
 import {
   CwaResourceTypes,
-  getResourceTypeFromIri
+  getResourceTypeFromIri,
 } from './resource-utils'
 
 interface PageLoadStatus {
-  resources: (string|undefined)[]
+  resources: (string | undefined)[]
   total: number
   complete: number
   percent: number
 }
 
 export class Resources {
-  // eslint-disable-next-line no-useless-constructor
-  constructor (private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore) {
+  constructor(private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore) {
   }
 
-  public get currentIds () {
+  public get currentIds() {
     return this.resourcesStore.current.currentIds
   }
 
-  public isIriPublishableEquivalent (oldIri: string, newIri: string) {
+  public isIriPublishableEquivalent(oldIri: string, newIri: string) {
     return this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)
   }
 
-  public findAllPublishableIris (iri: string) {
+  public findAllPublishableIris(iri: string) {
     return this.resourcesStore.findAllPublishableIris(iri)
   }
 
-  public getResource (id: string) {
+  public getResource(id: string) {
     return computed(() => {
       return this.resourcesStore.getResource(id)
     })
   }
 
-  public get newResource () {
+  public get newResource() {
     return computed(() => this.resourcesStore.getResource(NEW_RESOURCE_IRI))
   }
 
-  public getComponentGroupByReference (reference: string) {
+  public getComponentGroupByReference(reference: string) {
     const componentGroups = this.resourcesStore.resourcesByType[CwaResourceTypes.COMPONENT_GROUP]
     return componentGroups.find((componentGroupResource) => {
       return componentGroupResource.data?.reference === reference
     })
   }
 
-  public get currentResources () {
+  public get currentResources() {
     return this.resourcesStore.current.currentIds.reduce((obj, id: string) => {
       const idResource = this.getResource(id).value
       if (idResource) {
@@ -62,7 +61,7 @@ export class Resources {
     })
   }
 
-  private get displayFetchStatus () {
+  private get displayFetchStatus() {
     const fetchingToken = this.fetcherStore.primaryFetch.fetchingToken
     // if the page is fetched in a primary fetching token in progress we start showing that page load progress
     if (fetchingToken) {
@@ -80,7 +79,7 @@ export class Resources {
     return this.fetcherStore.resolvedSuccessFetchStatus
   }
 
-  private get pageLoadResources () {
+  private get pageLoadResources() {
     const token = this.fetcherStore.primaryFetch.fetchingToken
     if (!token) {
       return
@@ -94,9 +93,9 @@ export class Resources {
       return
     }
 
-    const resources: (string|undefined)[] = [
+    const resources: (string | undefined)[] = [
       this.getLayoutIriByFetchStatus(fetchStatus),
-      this.getPageIriByFetchStatus(fetchStatus)
+      this.getPageIriByFetchStatus(fetchStatus),
     ]
 
     if (type === CwaResourceTypes.ROUTE || type === CwaResourceTypes.PAGE_DATA) {
@@ -116,7 +115,7 @@ export class Resources {
     return resources
   }
 
-  public get pageLoadProgress (): ComputedRef<PageLoadStatus> {
+  public get pageLoadProgress(): ComputedRef<PageLoadStatus> {
     return computed<PageLoadStatus>(() => {
       const pageLoadResources = this.pageLoadResources
       if (!pageLoadResources) {
@@ -124,7 +123,7 @@ export class Resources {
           resources: [],
           total: 0,
           complete: 0,
-          percent: 100
+          percent: 100,
         }
       }
 
@@ -146,12 +145,12 @@ export class Resources {
         resources: pageLoadResources,
         total,
         complete,
-        percent
+        percent,
       }
     })
   }
 
-  public isPageDataResource (iri: string) {
+  public isPageDataResource(iri: string) {
     return computed(() => {
       if (!this.pageData?.value?.data || !iri) {
         return false
@@ -169,7 +168,7 @@ export class Resources {
     })
   }
 
-  private getFetchStatusType (fetchStatus?: FetchStatus): undefined|string {
+  private getFetchStatusType(fetchStatus?: FetchStatus): undefined | string {
     if (!fetchStatus) {
       return
     }
@@ -180,7 +179,7 @@ export class Resources {
     return type
   }
 
-  private getLayoutIriByFetchStatus (fetchStatus?: FetchStatus): string|undefined {
+  private getLayoutIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
     const pageIri = this.getPageIriByFetchStatus(fetchStatus)
     if (!pageIri) {
       return
@@ -189,7 +188,7 @@ export class Resources {
     return pageResource?.data?.layout
   }
 
-  private getPageIriByFetchStatus (fetchStatus?: FetchStatus): string|undefined {
+  private getPageIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
     const type = this.getFetchStatusType(fetchStatus)
     if (!type) {
       return
@@ -220,7 +219,7 @@ export class Resources {
     }
   }
 
-  public get pageDataIri () {
+  public get pageDataIri() {
     return computed(() => {
       const fetchStatus = this.displayFetchStatus
       const type = this.getFetchStatusType(fetchStatus)
@@ -238,29 +237,29 @@ export class Resources {
     })
   }
 
-  public get pageData () {
+  public get pageData() {
     if (!this.pageDataIri.value) {
       return
     }
     return this.getResource(this.pageDataIri.value)
   }
 
-  public get pageIri (): ComputedRef<string|undefined> {
+  public get pageIri(): ComputedRef<string | undefined> {
     return computed(() => this.getPageIriByFetchStatus(this.displayFetchStatus))
   }
 
-  public get page () {
+  public get page() {
     if (!this.pageIri.value) {
       return
     }
     return this.getResource(this.pageIri.value)
   }
 
-  public get layoutIri (): ComputedRef<string|undefined> {
+  public get layoutIri(): ComputedRef<string | undefined> {
     return computed(() => this.getLayoutIriByFetchStatus(this.displayFetchStatus))
   }
 
-  public get layout (): ComputedRef<CwaCurrentResourceInterface|undefined> {
+  public get layout(): ComputedRef<CwaCurrentResourceInterface | undefined> {
     return computed(() => {
       const layoutIri = this.layoutIri.value
       if (!layoutIri) {
@@ -270,27 +269,27 @@ export class Resources {
     })
   }
 
-  public findPublishedComponentIri (iri: string) {
+  public findPublishedComponentIri(iri: string) {
     return computed(() => {
       return this.resourcesStore.findPublishedComponentIri(iri)
     })
   }
 
-  public findDraftComponentIri (iri: string) {
+  public findDraftComponentIri(iri: string) {
     return computed(() => {
       return this.resourcesStore.findDraftComponentIri(iri)
     })
   }
 
-  public get getOrderedPositionsForGroup () {
+  public get getOrderedPositionsForGroup() {
     return this.resourcesStore.getOrderedPositionsForGroup
   }
 
-  public get getPositionSortDisplayNumber () {
+  public get getPositionSortDisplayNumber() {
     return this.resourcesStore.getPositionSortDisplayNumber
   }
 
-  public getRefreshEndpointsForDelete (iri:string): string[] {
+  public getRefreshEndpointsForDelete(iri: string): string[] {
     const refreshEndpoints: string[] = []
 
     // todo: this is very eager, is there a better way to know if the component is in page data?
@@ -319,41 +318,41 @@ export class Resources {
     return refreshEndpoints
   }
 
-  public get isLoading (): ComputedRef<boolean> {
+  public get isLoading(): ComputedRef<boolean> {
     return computed(() => {
       return !this.fetcherStore.fetchesResolved || !!this.resourceLoadStatus.pending
     })
   }
 
-  public get resourceLoadStatus () {
+  public get resourceLoadStatus() {
     return this.resourcesStore.resourceLoadStatus
   }
 
-  private get fetcherStore () {
+  private get fetcherStore() {
     return this.fetcherStoreDefinition.useStore()
   }
 
-  private get resourcesStore () {
+  private get resourcesStore() {
     return this.resourcesStoreDefinition.useStore()
   }
 
-  public get usesPageTemplate () {
+  public get usesPageTemplate() {
     return computed(() => !!this.page?.value?.data?.isTemplate)
   }
 
-  public get isDataPage () {
+  public get isDataPage() {
     return computed(() => {
       return this.usesPageTemplate.value && !!this.pageDataIri.value
     })
   }
 
-  public get isDynamicPage () {
+  public get isDynamicPage() {
     return computed(() => {
       return this.usesPageTemplate.value && !this.pageDataIri.value
     })
   }
 
-  public get hasNewResources () {
+  public get hasNewResources() {
     return this.resourcesStore.hasNewResources
   }
 }

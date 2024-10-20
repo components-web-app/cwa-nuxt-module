@@ -24,7 +24,7 @@ import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
 import {
   CwaResourceTypes,
   getPublishedResourceState,
-  getResourceTypeFromIri
+  getResourceTypeFromIri,
 } from '#cwa/runtime/resources/resource-utils'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
@@ -35,8 +35,8 @@ const props = withDefaults(
   defineProps<IriProp & { componentPrefix?: string, uiComponent?: any }>(),
   {
     componentPrefix: '',
-    uiComponent: undefined
-  }
+    uiComponent: undefined,
+  },
 )
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
@@ -62,7 +62,7 @@ const isLoading = computed(() => {
   return isLoading || (resource.value === undefined && resourceLoadBuffering.value)
 })
 
-const warningPlaceholder = computed((): string|undefined => {
+const warningPlaceholder = computed((): string | undefined => {
   if (!props.iri) {
     return 'No IRI has been passed as a property to the `ResourceLoader` component'
   }
@@ -114,9 +114,9 @@ const resolvedComponent = computed(() => {
     return props.uiComponent
   }
   if (
-    typeof instance?.appContext.components !== 'object' ||
-    !resourceUiComponent.value ||
-    !(resourceUiComponent.value in instance.appContext.components)
+    typeof instance?.appContext.components !== 'object'
+    || !resourceUiComponent.value
+    || !(resourceUiComponent.value in instance.appContext.components)
   ) {
     return
   }
@@ -131,10 +131,10 @@ const ssrNoDataWithSilentError = computed(() => {
 const ssrPositionHasPartialData = computed(() => {
   // error caused by position and component both re-fetching at the same time. We get a scheduler flush issue - 'Cannot read properties of null (reading 'parentNode')'
   // occurs if the component only has a draft version and on server load, then client-side tries to refresh the component and the position at the same time
-  return resource.value?.apiState.ssr &&
-    !!$cwa.auth.user &&
-    getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION &&
-    $cwa.resources.usesPageTemplate.value
+  return resource.value?.apiState.ssr
+    && !!$cwa.auth.user
+    && getResourceTypeFromIri(props.iri) === CwaResourceTypes.COMPONENT_POSITION
+    && $cwa.resources.usesPageTemplate.value
 })
 
 const refetchPublishedSsrResourceToResolveDraft = computed(() => {
@@ -149,9 +149,9 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
 
   // if we already fetched a draft then we had permissions, if it was from server, and fetched published, we should re-fetch to check for draft version
   // the next fetch would simply fetch the draft if it's available as the default response from the API
-  return publishableState === true &&
-    resource.value?.apiState.ssr &&
-    $cwa.auth.user
+  return publishableState === true
+    && resource.value?.apiState.ssr
+    && $cwa.auth.user
 })
 
 // With ISR when the page is loaded it could be cached, this should trigger on front-end still and can send a request to update/check the component from the API again
@@ -166,21 +166,21 @@ const isOutdated = computed(() => {
   return timeDifference > 5000
 })
 
-async function clientFetchResource () {
+async function clientFetchResource() {
   await $cwa.fetchResource({
-    path: props.iri
+    path: props.iri,
   })
 }
 
 const methods = {
-  async fetchResource () {
+  async fetchResource() {
     if (isLoading.value) {
       return
     }
     if (
-      ssrNoDataWithSilentError.value ||
-      ssrPositionHasPartialData.value ||
-      refetchPublishedSsrResourceToResolveDraft.value
+      ssrNoDataWithSilentError.value
+      || ssrPositionHasPartialData.value
+      || refetchPublishedSsrResourceToResolveDraft.value
     ) {
       await clientFetchResource()
     }
@@ -188,7 +188,7 @@ const methods = {
     // once we have a resource we need to make sure we have loaded the published as well if it is a draft, and the draft
     // if it is published. Just in case the server was also authenticated to load the draft - so we cannot guarantee that
     // a draft being loaded will also have the published
-  }
+  },
 }
 
 onMounted(() => {
@@ -197,12 +197,12 @@ onMounted(() => {
   // if has a silent error, we are client-side and last attempt was not while logged in
   // todo: NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {
-    immediate: true
+    immediate: true,
   })
 })
 
 defineExpose({
-  resourceComponent
+  resourceComponent,
 })
 
 // TODO - NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft

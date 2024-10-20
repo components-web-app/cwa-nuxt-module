@@ -8,7 +8,7 @@ const config = {
   coverageAnalysis: 'off',
   ignorePatterns: ['src/templates/**', 'dist', 'coverage'],
   plugins: [
-    '@stryker-mutator/vitest-runner'
-  ]
+    '@stryker-mutator/vitest-runner',
+  ],
 }
 export default config

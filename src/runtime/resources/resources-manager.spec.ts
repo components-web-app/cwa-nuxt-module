@@ -1,44 +1,44 @@
 import { describe, vi, test, expect } from 'vitest'
 import { ResourcesManager } from './resources-manager'
-import { type CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
-function createResourcesManager () {
+function createResourcesManager() {
   const mockCwaFetch = {
-    fetch: vi.fn()
+    fetch: vi.fn(),
   }
   const resourcesStoreActions = {
     saveResource: vi.fn(),
     deleteResource: vi.fn(),
-    getResource: vi.fn()
+    getResource: vi.fn(),
   }
   const mockResourcesStore = {
-    useStore () {
+    useStore() {
       return resourcesStoreActions
-    }
+    },
   }
   const errorStoreActions = {
-    removeByEndpoint: vi.fn()
+    removeByEndpoint: vi.fn(),
   }
   const mockErrorsStore = {
-    useStore () {
+    useStore() {
       return errorStoreActions
-    }
+    },
   }
   const mockFetchPath = {
-    value: ''
+    value: '',
   }
   const mockFetchManager = {
-    get primaryFetchPath () {
+    get primaryFetchPath() {
       return mockFetchPath.value
-    }
+    },
   }
 
   const resourcesManager = new ResourcesManager(
-    // @ts-ignore
+    // @ts-expect-error
     mockCwaFetch,
     mockResourcesStore,
     mockFetchManager,
-    mockErrorsStore
+    mockErrorsStore,
   )
 
   return {
@@ -47,7 +47,7 @@ function createResourcesManager () {
     fetchPath: mockFetchPath,
     resourceStore: mockResourcesStore,
     resourcesStoreActions,
-    errorStoreActions
+    errorStoreActions,
   }
 }
 
@@ -59,8 +59,8 @@ describe('Resources manager', () => {
       const mockPayload = {
         endpoint: '/api/mock/endpoint',
         data: {
-          test: true
-        }
+          test: true,
+        },
       }
       const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
       cwaFetch.fetch.mockResolvedValue(mockResource)
@@ -70,13 +70,13 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
         method: 'POST',
         headers: {
-          accept: 'application/ld+json,application/json',
-          'content-type': 'application/ld+json'
+          'accept': 'application/ld+json,application/json',
+          'content-type': 'application/ld+json',
         },
-        body: mockPayload.data
+        body: mockPayload.data,
       })
       expect(saveSpy).toHaveBeenCalledWith({
-        resource: mockResource
+        resource: mockResource,
       })
     })
 
@@ -86,8 +86,8 @@ describe('Resources manager', () => {
       const mockPayload = {
         endpoint: '/api/mock/endpoint',
         data: {
-          test: true
-        }
+          test: true,
+        },
       }
       fetchPath.value = 'primary-path'
       const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
@@ -98,14 +98,14 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch).toHaveBeenCalledWith(mockPayload.endpoint, {
         method: 'POST',
         headers: {
-          path: 'primary-path',
-          accept: 'application/ld+json,application/json',
-          'content-type': 'application/ld+json'
+          'path': 'primary-path',
+          'accept': 'application/ld+json,application/json',
+          'content-type': 'application/ld+json',
         },
-        body: mockPayload.data
+        body: mockPayload.data,
       })
       expect(saveSpy).toHaveBeenCalledWith({
-        resource: mockResource
+        resource: mockResource,
       })
     })
   })
@@ -117,8 +117,8 @@ describe('Resources manager', () => {
       const mockPayload = {
         endpoint: '/api/mock/endpoint',
         data: {
-          test: true
-        }
+          test: true,
+        },
       }
       const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
       cwaFetch.fetch.mockResolvedValue(mockResource)
@@ -129,12 +129,12 @@ describe('Resources manager', () => {
         method: 'PATCH',
         headers: {
           'content-type': 'application/merge-patch+json',
-          accept: 'application/ld+json,application/json'
+          'accept': 'application/ld+json,application/json',
         },
-        body: mockPayload.data
+        body: mockPayload.data,
       })
       expect(saveSpy).toHaveBeenCalledWith({
-        resource: mockResource
+        resource: mockResource,
       })
     })
   })
@@ -145,9 +145,9 @@ describe('Resources manager', () => {
       const mockCwaResource: CwaResource = {
         '@id': 'mock-id',
         '@type': 'Component',
-        _metadata: {
-          persisted: true
-        }
+        '_metadata': {
+          persisted: true,
+        },
       }
       const mockPayload = { resource: mockCwaResource }
       const mockResult = { test: true }
@@ -179,9 +179,9 @@ describe('Resources manager', () => {
       expect(resourcesManager.requestOptions('POST')).toEqual({
         method: 'POST',
         headers: {
-          accept: 'application/ld+json,application/json',
-          'content-type': 'application/ld+json'
-        }
+          'accept': 'application/ld+json,application/json',
+          'content-type': 'application/ld+json',
+        },
       })
     })
 
@@ -192,8 +192,8 @@ describe('Resources manager', () => {
         method: 'PATCH',
         headers: {
           'content-type': 'application/merge-patch+json',
-          accept: 'application/ld+json,application/json'
-        }
+          'accept': 'application/ld+json,application/json',
+        },
       })
     })
 
@@ -206,9 +206,9 @@ describe('Resources manager', () => {
         method: 'PATCH',
         headers: {
           'content-type': 'application/merge-patch+json',
-          accept: 'application/ld+json,application/json',
-          path: '/test'
-        }
+          'accept': 'application/ld+json,application/json',
+          'path': '/test',
+        },
       })
     })
   })

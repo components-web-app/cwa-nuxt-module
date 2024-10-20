@@ -9,7 +9,7 @@ import ResourceStackManager from './resource-stack-manager'
 
 vi.mock('./resource-manager', () => {
   return {
-    default: vi.fn()
+    default: vi.fn(),
   }
 })
 
@@ -23,25 +23,25 @@ vi.mock('../storage/stores/admin/admin-store', () => {
         toggleEdit: vi.fn(),
         state: {
           isEditing: 'isEdit',
-          navigationGuardDisabled: 'ngs'
-        }
-      }))
-    }))
+          navigationGuardDisabled: 'ngs',
+        },
+      })),
+    })),
   }
 })
 
 vi.mock('mitt', () => {
   return {
-    default: vi.fn()
+    default: vi.fn(),
   }
 })
 
-function createAdmin () {
+function createAdmin() {
   return new Admin(new AdminStore('storeName'), new ResourcesStore('storeName'), new Resources())
 }
 
 describe('Admin class', () => {
-  let admin: Admin|null = null
+  let admin: Admin | null = null
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -56,8 +56,8 @@ describe('Admin class', () => {
       toggleEdit: toggleSpy,
       state: {
         isEditing: 'isEdit',
-        navigationGuardDisabled: 'ngs'
-      }
+        navigationGuardDisabled: 'ngs',
+      },
     })
 
     expect(admin.toggleEdit(true)).toBeUndefined()
@@ -67,12 +67,12 @@ describe('Admin class', () => {
     admin = createAdmin()
     const mockState = {
       isEditing: 'isEdit',
-      navigationGuardDisabled: 'ngs'
+      navigationGuardDisabled: 'ngs',
     }
 
     admin.adminStoreDefinition.useStore = () => ({
       toggleEdit: vi.fn(),
-      state: mockState
+      state: mockState,
     })
 
     expect(admin.setNavigationGuardDisabled(false)).toBeUndefined()
@@ -90,7 +90,7 @@ describe('Admin class', () => {
     admin = createAdmin()
     const mockStore = {
       toggleEdit: vi.fn(),
-      state: {}
+      state: {},
     }
 
     admin.adminStoreDefinition.useStore = () => mockStore

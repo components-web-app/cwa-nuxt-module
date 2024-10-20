@@ -5,9 +5,9 @@ import _mergeWith from 'lodash/mergeWith.js'
 import _isArray from 'lodash/isArray.js'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { DateTime } from 'luxon'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
-import CwaFetch from '../api/fetcher/cwa-fetch'
-import FetchStatusManager from '../api/fetcher/fetch-status-manager'
+import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type CwaFetch from '../api/fetcher/cwa-fetch'
+import type FetchStatusManager from '../api/fetcher/fetch-status-manager'
 import type { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } from '../storage/stores/resources/actions'
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
@@ -16,20 +16,20 @@ import {
   CwaResourceTypes,
   getPublishedResourceIri,
   getPublishedResourceState,
-  getResourceTypeFromIri
+  getResourceTypeFromIri,
 } from './resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/runtime/admin/resource-stack-manager'
-import Admin from '#cwa/runtime/admin/admin'
+import type Admin from '#cwa/runtime/admin/admin'
 import type { Resources } from '#cwa/runtime/resources/resources'
 
 interface DeleteApiResourceEvent {
   iri?: string
   endpoint: string
-  requestCompleteFn?: (resource?: CwaResource) => void|Promise<void>
-  saveCompleteFn?: (resource?: CwaResource) => void|Promise<void>
+  requestCompleteFn?: (resource?: CwaResource) => void | Promise<void>
+  saveCompleteFn?: (resource?: CwaResource) => void | Promise<void>
   refreshEndpoints?: string[]
 }
 
@@ -39,9 +39,9 @@ interface DataApiResourceEvent extends DeleteApiResourceEvent {
   headers?: Record<string, string>
 }
 
-export type ApiResourceEvent = DataApiResourceEvent|DeleteApiResourceEvent
+export type ApiResourceEvent = DataApiResourceEvent | DeleteApiResourceEvent
 
-interface RequestHeaders extends Record<string, string> { }
+type RequestHeaders = Record<string, string>
 
 interface RequestOptions {
   headers: RequestHeaders
@@ -54,19 +54,19 @@ export class ResourcesManager {
   private readonly resourcesStoreDefinition: ResourcesStore
   private readonly fetchStatusManager: FetchStatusManager
   private readonly errorStoreDefinition: ErrorStore
-  private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, {}] } }>({})
+  private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, { event: ApiResourceEvent, args: [string, RequestOptions] }] } }>({})
   private readonly reqCount = ref(0)
-  private readonly _addResourceEvent: Ref<undefined|AddResourceEvent> = ref()
+  private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
   private _requestCount?: ComputedRef<number>
 
-  constructor (
+  constructor(
     cwaFetch: CwaFetch,
     resourcesStoreDefinition: ResourcesStore,
     fetchStatusManager: FetchStatusManager,
     errorStoreDefinition: ErrorStore,
     private readonly fetcher: Fetcher,
     private readonly admin: Admin,
-    private readonly resources: Resources
+    private readonly resources: Resources,
   ) {
     this.cwaFetch = cwaFetch
     this.resourcesStoreDefinition = resourcesStoreDefinition
@@ -79,11 +79,11 @@ export class ResourcesManager {
     })
   }
 
-  public mergeNewResources () {
+  public mergeNewResources() {
     return this.resourcesStore.mergeNewResources()
   }
 
-  public get requestCount () {
+  public get requestCount() {
     if (this._requestCount) {
       return this._requestCount
     }
@@ -91,7 +91,7 @@ export class ResourcesManager {
     return this._requestCount
   }
 
-  public getWaitForRequestPromise (endpoint: string, property: string, source?: string) {
+  public getWaitForRequestPromise(endpoint: string, property: string, source?: string) {
     const hasRequestConflict = () => {
       if (!this.requestsInProgress.value) {
         return false
@@ -122,27 +122,27 @@ export class ResourcesManager {
     })
   }
 
-  public createResource (event: DataApiResourceEvent) {
+  public createResource(event: DataApiResourceEvent) {
     const args: [string, RequestOptions] = [
       event.endpoint,
-      { ...this.requestOptions('POST'), body: event.data }
+      { ...this.requestOptions('POST'), body: event.data },
     ]
     return this.doResourceRequest(event, args)
   }
 
-  private async confirmDelete () {
+  private async confirmDelete() {
     const alertData = {
       title: 'Delete this resource?',
-      content: '<p>Are you sure you want to permanently delete this resource?</p>'
+      content: '<p>Are you sure you want to permanently delete this resource?</p>',
     }
-    // @ts-ignore-next-line
+    // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
 
     return !isCanceled
   }
 
-  private getEndpointForIri (iri: string) {
+  private getEndpointForIri(iri: string) {
     const resource = this.resourcesStore.getResource(iri)?.data
     if (!resource) {
       return iri
@@ -152,22 +152,22 @@ export class ResourcesManager {
     return `${iri}${postfix}`
   }
 
-  public async deleteResource (event: ApiResourceEvent) {
+  public async deleteResource(event: ApiResourceEvent) {
     if (!await this.confirmDelete()) {
       return false
     }
     const args: [string, RequestOptions] = [
       this.getEndpointForIri(event.endpoint),
-      { ...this.requestOptions('DELETE') }
+      { ...this.requestOptions('DELETE') },
     ]
     return this.doResourceRequest(event, args)
   }
 
-  public removeResource (event: DeleteResourceEvent) {
+  public removeResource(event: DeleteResourceEvent) {
     return this.resourcesStore.deleteResource(event)
   }
 
-  public async updateResource (event: DataApiResourceEvent) {
+  public async updateResource(event: DataApiResourceEvent) {
     // we can add an iri in the event optionally - this is because for files we could be adding
     // more postfixes for upload/download, so instead of endless complicated normalization, if the endpoint is getting complete we just provide the IRI so we can do comparisons on returned IRI and other features
     const iri = (event.iri || event.endpoint).split('?')[0]
@@ -175,14 +175,14 @@ export class ResourcesManager {
 
     const reqOps = {
       ...this.requestOptions(event.data instanceof FormData ? 'POST' : 'PATCH'),
-      body: event.data
+      body: event.data,
     }
     if (event.headers) {
       reqOps.headers = event.headers
     }
     const args: [string, RequestOptions] = [
       event.endpoint,
-      reqOps
+      reqOps,
     ]
 
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
@@ -194,14 +194,14 @@ export class ResourcesManager {
         }
       })
       this.saveResource({
-        resource: newResource
+        resource: newResource,
       })
       return
     }
 
     const currentIsDraft = getPublishedResourceState({ data: currentResource }) === false
     let isPublishing = false
-    let existingLiveIri: string|null = null
+    let existingLiveIri: string | null = null
 
     // if we are publishing, then we are adding positions to refresh as well. Could possibly bypass this and adjust locally manually.
     if (currentIsDraft) {
@@ -251,7 +251,7 @@ export class ResourcesManager {
     return resource
   }
 
-  private async doResourceRequest (event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void|Promise<void>, postSaveFn?: (resource?: CwaResource) => void|Promise<void>) {
+  private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
     const iri = (event.iri || event.endpoint).split('?')[0]
@@ -274,11 +274,12 @@ export class ResourcesManager {
       if (refreshEndpoints.length) {
         const fetchBathEvent: { paths: string[], shallowFetch: 'noexist' } = {
           paths: refreshEndpoints,
-          shallowFetch: 'noexist'
+          shallowFetch: 'noexist',
         }
         try {
           await this.fetcher.fetchBatch(fetchBathEvent)
-        } catch (err) {
+        }
+        catch (err) {
           // issues refreshing endpoints which are no longer found can be common
           const fetchError = err as FetchError<any>
           if (fetchError?.statusCode !== 404) {
@@ -287,64 +288,67 @@ export class ResourcesManager {
         }
       }
       if (postRequestFn) {
-        await postRequestFn(resource as CwaResource|undefined)
+        await postRequestFn(resource as CwaResource | undefined)
       }
       if (event.requestCompleteFn) {
-        await event.requestCompleteFn(resource as CwaResource|undefined)
+        await event.requestCompleteFn(resource as CwaResource | undefined)
       }
       if ('data' in event) {
         this.saveResource({
-          resource
+          resource,
         })
-      } else {
+      }
+      else {
         this.removeResource({
-          resource: iri
+          resource: iri,
         })
       }
       // required if we need to update the store further before we process mercure requests again, but need the new resource to be up to date in data as well.
       // implemented to ensure we remove old drafts when a new live has been overwritten
       if (postSaveFn) {
-        await postSaveFn(resource as CwaResource|undefined)
+        await postSaveFn(resource as CwaResource | undefined)
       }
       if (event.saveCompleteFn) {
-        await event.saveCompleteFn(resource as CwaResource|undefined)
+        await event.saveCompleteFn(resource as CwaResource | undefined)
       }
       return resource
-    } catch (err) {
+    }
+    catch (err) {
       this.errorStore.error(event, err as FetchError<any>)
-    } finally {
+    }
+    finally {
       unset(this.requestsInProgress, [source, id])
     }
   }
 
-  public addError (error: CwaErrorEvent) {
+  public addError(error: CwaErrorEvent) {
     this.errorStore.manual(error)
   }
 
-  public get errors (): CwaErrorEvent[] {
+  public get errors(): CwaErrorEvent[] {
     return this.errorStore.getErrors
   }
 
-  public get hasErrors (): boolean {
+  public get hasErrors(): boolean {
     return this.errorStore.hasErrors
   }
 
-  public removeError (id: number) {
+  public removeError(id: number) {
     this.errorStore.removeById(id)
   }
 
   // @internal - just used in reset-password.ts - should be private and refactored for that use case
-  public saveResource (event: SaveResourceEvent | SaveNewResourceEvent) {
+  public saveResource(event: SaveResourceEvent | SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
 
-  private requestOptions (method: 'POST' | 'PATCH' | 'DELETE'): RequestOptions {
+  private requestOptions(method: 'POST' | 'PATCH' | 'DELETE'): RequestOptions {
     const headers: {
-      accept: string
-      path?: string
+      'accept': string
+      'path'?: string
       'content-type'?: string
     } = {
-      accept: 'application/ld+json,application/json'
+      accept: 'application/ld+json,application/json',
     }
     if (this.fetchStatusManager.primaryFetchPath) {
       headers.path = this.fetchStatusManager.primaryFetchPath
@@ -352,21 +356,21 @@ export class ResourcesManager {
     headers['content-type'] = method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json'
     return {
       method,
-      headers
+      headers,
     }
   }
 
-  public async initAddResource (targetIri: string, addAfter: null|boolean, resourceStack: ResourceStackItem[], pageDataProperty?: string) {
+  public async initAddResource(targetIri: string, addAfter: null | boolean, resourceStack: ResourceStackItem[], pageDataProperty?: string) {
     type BaseEvent = {
       targetIri: string
-      addAfter: null|boolean
+      addAfter: null | boolean
     }
     const initEvent: BaseEvent = {
       targetIri,
-      addAfter
+      addAfter,
     }
 
-    const findClosestResourceByType = (type: CwaResourceTypes): string|undefined => {
+    const findClosestResourceByType = (type: CwaResourceTypes): string | undefined => {
       for (const stackItem of resourceStack) {
         if (getResourceTypeFromIri(stackItem.iri) === type) {
           return stackItem.iri
@@ -376,7 +380,7 @@ export class ResourcesManager {
       // throw new Error(`Could not find a resource with type '${type}' in the stack`)
     }
 
-    const findClosestPositionFromGroupEvent = (event: BaseEvent): string|undefined => {
+    const findClosestPositionFromGroupEvent = (event: BaseEvent): string | undefined => {
       const resource = this.resourcesStore.current.byId?.[event.targetIri]
       const positions = resource?.data?.componentPositions
       if (!positions || !positions.length) {
@@ -384,12 +388,13 @@ export class ResourcesManager {
       }
       if (event.addAfter === true) {
         return positions[positions.length - 1]
-      } else if (event.addAfter === false) {
+      }
+      else if (event.addAfter === false) {
         return positions[0]
       }
     }
 
-    const findClosestPosition = (event: BaseEvent): string|undefined => {
+    const findClosestPosition = (event: BaseEvent): string | undefined => {
       if (getResourceTypeFromIri(event.targetIri) !== CwaResourceTypes.COMPONENT_GROUP) {
         return findClosestResourceByType(CwaResourceTypes.COMPONENT_POSITION)
       }
@@ -408,13 +413,13 @@ export class ResourcesManager {
       addAfter,
       closest: {
         position: closestPosition,
-        group: closestGroup
+        group: closestGroup,
       },
-      pageDataProperty
+      pageDataProperty,
     }
   }
 
-  public async setAddResourceEventResource (resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }) {
+  public async setAddResourceEventResource(resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }) {
     if (!this._addResourceEvent.value) {
       return
     }
@@ -425,28 +430,28 @@ export class ResourcesManager {
     })
   }
 
-  public clearAddResourceEventResource () {
+  public clearAddResourceEventResource() {
     this.resourcesStore.resetNewResource()
   }
 
-  public clearAddResource () {
+  public clearAddResource() {
     this._addResourceEvent.value = undefined
     this.clearAddResourceEventResource()
   }
 
-  public get addResourceEvent () {
+  public get addResourceEvent() {
     return this._addResourceEvent
   }
 
-  public async confirmDiscardAddingResource () {
+  public async confirmDiscardAddingResource() {
     if (!this._addResourceEvent.value) {
       return true
     }
     const alertData = {
       title: 'Discard new resource?',
-      content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>'
+      content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>',
     }
-    // @ts-ignore-next-line
+    // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
 
@@ -457,7 +462,7 @@ export class ResourcesManager {
     return true
   }
 
-  async addResourceAction (publish?: boolean) {
+  async addResourceAction(publish?: boolean) {
     const addEvent = this._addResourceEvent.value
     if (!addEvent || !this.resourcesStore.adding?.resource) {
       throw new Error('Cannot add resource. No addResource event is present')
@@ -479,14 +484,15 @@ export class ResourcesManager {
         addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
 
         const getPositionSortValue = () => {
-          let targetPosition: string|undefined
+          let targetPosition: string | undefined
           if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
             const groupResource = this.resourcesStore.getResource(addEvent.targetIri)?.data
             if (!groupResource?.componentPositions || groupResource?.componentPositions.length === 0) {
               return 0
             }
             targetPosition = addEvent.addAfter ? groupResource.componentPositions[groupResource.componentPositions.length - 1] : groupResource.componentPositions[0]
-          } else {
+          }
+          else {
             targetPosition = addEvent.closest.position
           }
           if (!targetPosition) {
@@ -508,19 +514,20 @@ export class ResourcesManager {
           throw new Error('Position resource being added not found')
         }
 
-        const positionPostData: Omit<CwaResource, '@id'|'@type'> = {
+        const positionPostData: Omit<CwaResource, '@id' | '@type'> = {
           ...this.resourcesStore.getResource(positionIri)?.data,
           '@id': undefined,
           '@type': undefined,
-          sortValue: getPositionSortValue()
+          'sortValue': getPositionSortValue(),
         }
         resource.componentPositions = [
-          positionPostData
+          positionPostData,
         ]
 
         refreshEndpoints.push(...this.getRefreshPositions(positionIri))
       })()
-    } else if (!addEvent.pageDataProperty) {
+    }
+    else if (!addEvent.pageDataProperty) {
       // adding the resource to a position resource, adding a fallback component on a dynamic page/template
       const addingToIri = addEvent.targetIri
       if (getResourceTypeFromIri(addingToIri) !== CwaResourceTypes.COMPONENT_POSITION) {
@@ -533,7 +540,7 @@ export class ResourcesManager {
       resource.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
     }
 
-    const postData: Omit<CwaResource, '@id'|'@type'> = { ...resource, '@id': undefined, '@type': undefined }
+    const postData: Omit<CwaResource, '@id' | '@type'> = { ...resource, '@id': undefined, '@type': undefined }
 
     const requestCompleteFn = () => {
       this.clearAddResource()
@@ -545,7 +552,7 @@ export class ResourcesManager {
       refreshEndpoints,
       requestCompleteFn: () => {
         this.clearAddResource()
-      }
+      },
     })
 
     if (newResource && addEvent.pageDataProperty) {
@@ -553,14 +560,14 @@ export class ResourcesManager {
         endpoint: this.resources.pageDataIri.value,
         data: { [addEvent.pageDataProperty]: newResource['@id'] },
         refreshEndpoints: [addEvent.targetIri],
-        requestCompleteFn
+        requestCompleteFn,
       })
     }
 
     return newResource
   }
 
-  private getRefreshPositions (positionIri?: string): string[] {
+  private getRefreshPositions(positionIri?: string): string[] {
     const refreshPositions: string[] = []
     if (!positionIri) {
       return refreshPositions
@@ -581,25 +588,25 @@ export class ResourcesManager {
     return refreshPositions
   }
 
-  private get groupResource () {
+  private get groupResource() {
     if (!this._addResourceEvent.value || !this._addResourceEvent.value.closest.group) {
       return
     }
     return this.resourcesStore.getResource(this._addResourceEvent.value.closest.group)
   }
 
-  private get groupResourcePositions () {
+  private get groupResourcePositions() {
     if (!this.groupResource) {
       return
     }
     return this.groupResource.data?.componentPositions
   }
 
-  private get resourcesStore () {
+  private get resourcesStore() {
     return this.resourcesStoreDefinition.useStore()
   }
 
-  private get errorStore () {
+  private get errorStore() {
     return this.errorStoreDefinition.useStore()
   }
 }

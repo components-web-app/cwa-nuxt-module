@@ -30,7 +30,13 @@ const nextIndex = computed(() => (props.index - 1))
     :style="{ minWidth: rootWidth && index === 0 ? `${rootWidth}px` : `auto` }"
     @click="$emit('click', index)"
   >
-    <resource-context-item v-if="nextIndex >= 0" :index="nextIndex" :root-width="rootWidth" :use-current-stack="useCurrentStack" @click="childIndex => $emit('click', childIndex)" />
+    <resource-context-item
+      v-if="nextIndex >= 0"
+      :index="nextIndex"
+      :root-width="rootWidth"
+      :use-current-stack="useCurrentStack"
+      @click="childIndex => $emit('click', childIndex)"
+    />
     <button class="cwa-px-1.5 cwa-py-0.5 cwa-w-auto cwa-min-w-full">
       {{ stackItem.displayName || stackItem.iri }}
     </button>

@@ -15,9 +15,9 @@ vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
     ComponentGroupUtilSynchronizer: vi.fn(() => {
       return {
-        createSyncWatcher: vi.fn()
+        createSyncWatcher: vi.fn(),
       }
-    })
+    }),
   }
 })
 
@@ -26,9 +26,9 @@ vi.mock('./ComponentGroup.Util.Positions', () => {
     useComponentGroupPositions: vi.fn(() => {
       return {
         componentPositions: undefined,
-        groupIsReordering: computed(() => false)
+        groupIsReordering: computed(() => false),
       }
-    })
+    }),
   }
 })
 
@@ -36,7 +36,7 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    watch: vi.fn(() => {})
+    watch: vi.fn(() => {}),
   }
 })
 
@@ -46,47 +46,47 @@ const mockLocation = 'mockLocation'
 const mockCwaResources = {
   getResource: vi.fn().mockImplementation(() => vue.computed(() => { return undefined })),
   getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference'),
-  newResource: vi.fn().mockImplementation(() => computed(() => undefined))
+  newResource: vi.fn().mockImplementation(() => computed(() => undefined)),
 }
 
-function createWrapper ({
+function createWrapper({
   isLoading = false,
   reference = mockReference,
   location = mockLocation,
   allowedComponents = [],
   signedIn = false,
-  isEditing = true
+  isEditing = true,
 }: {
-  isLoading?: boolean;
-  reference?: string;
-  location?: string;
-  allowedComponents?: string[];
-  signedIn?: boolean;
-  isEditing?: boolean;
+  isLoading?: boolean
+  reference?: string
+  location?: string
+  allowedComponents?: string[]
+  signedIn?: boolean
+  isEditing?: boolean
 } = {}) {
-  // @ts-ignore
+  // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
     return {
       auth: { signedIn: vue.ref(signedIn) },
       resources: {
         ...mockCwaResources,
         isLoading: { value: isLoading },
-        getPositionSortDisplayNumber: vi.fn(iri => `mock_sort_${iri}`)
+        getPositionSortDisplayNumber: vi.fn(iri => `mock_sort_${iri}`),
       },
       resourcesManager: {
         createResource: vi.fn(),
-        updateResource: vi.fn()
+        updateResource: vi.fn(),
       },
       admin: {
         isEditing,
         resourceManager: {
-          addResourceEvent: ref()
+          addResourceEvent: ref(),
         },
         eventBus: {
           on: vi.fn(),
-          off: vi.fn()
-        }
-      }
+          off: vi.fn(),
+        },
+      },
     }
   })
 
@@ -96,9 +96,9 @@ function createWrapper ({
     props: {
       reference,
       location,
-      allowedComponents
+      allowedComponents,
     },
-    shallow: true
+    shallow: true,
   })
 }
 
@@ -121,9 +121,9 @@ describe('ComponentGroup', () => {
           return {
             value: {
               data: {
-                reference: mockResourceReference
-              }
-            }
+                reference: mockResourceReference,
+              },
+            },
           }
         })
 
@@ -150,9 +150,9 @@ describe('ComponentGroup', () => {
           return {
             value: {
               data: {
-                reference: mockResourceReference
-              }
-            }
+                reference: mockResourceReference,
+              },
+            },
           }
         })
 
@@ -171,7 +171,7 @@ describe('ComponentGroup', () => {
 
       test('should return true IF resources loading flag is true AND resource is not defined', () => {
         const wrapper = createWrapper({
-          isLoading: true
+          isLoading: true,
         })
 
         expect(wrapper.vm.showLoader).toEqual(true)
@@ -183,22 +183,22 @@ describe('ComponentGroup', () => {
           return {
             data: undefined,
             apiState: {
-              status: CwaResourceApiStatuses.IN_PROGRESS
-            }
+              status: CwaResourceApiStatuses.IN_PROGRESS,
+            },
           }
         })
         vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
           return {
             value: {
               data: {
-                reference: 'anything'
-              }
-            }
+                reference: 'anything',
+              },
+            },
           }
         })
 
         const wrapper = createWrapper({
-          isLoading: true
+          isLoading: true,
         })
 
         expect(wrapper.vm.showLoader).toEqual(true)
@@ -208,16 +208,16 @@ describe('ComponentGroup', () => {
     describe('componentPositions', () => {
       test.each([{
         component: {
-          data: undefined
-        }
+          data: undefined,
+        },
       }, { component: undefined }])('should return undefined if component is $component', ({ component }) => {
         vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
           return {
             value: {
               data: {
-                reference: 'anything'
-              }
-            }
+                reference: 'anything',
+              },
+            },
           }
         })
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
@@ -233,17 +233,17 @@ describe('ComponentGroup', () => {
           return {
             value: {
               data: {
-                reference: 'anything'
-              }
-            }
+                reference: 'anything',
+              },
+            },
           }
         })
 
         const mockComponentPositions = ['pos1', 'pos2', 'pos3']
         const mockGroupElement = {
           data: {
-            componentPositions: mockComponentPositions
-          }
+            componentPositions: mockComponentPositions,
+          },
         }
 
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
@@ -261,49 +261,49 @@ describe('ComponentGroup', () => {
         {
           expected: false,
           component: {
-            data: undefined
+            data: undefined,
           },
           signedIn: true,
-          isEditing: true
+          isEditing: true,
         },
         {
           expected: false,
           component: undefined,
           signedIn: true,
-          isEditing: true
+          isEditing: true,
         },
         {
           expected: false,
           component: {
-            data: {}
+            data: {},
           },
           signedIn: false,
-          isEditing: true
+          isEditing: true,
         },
         {
           expected: false,
           component: {
-            data: {}
+            data: {},
           },
           signedIn: true,
-          isEditing: false
+          isEditing: false,
         },
         {
           expected: true,
           component: {
-            data: {}
+            data: {},
           },
           signedIn: true,
-          isEditing: true
-        }
+          isEditing: true,
+        },
       ])('should return $expected IF user is signed in is $signedIn AND resource is $component', ({ expected, signedIn, component, isEditing }) => {
         vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
           return {
             value: {
               data: {
-                reference: 'anything'
-              }
-            }
+                reference: 'anything',
+              },
+            },
           }
         })
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
@@ -312,7 +312,7 @@ describe('ComponentGroup', () => {
 
         const wrapper = createWrapper({
           signedIn: vue.ref(signedIn),
-          isEditing
+          isEditing,
         })
 
         expect(wrapper.vm.signedInAndResourceExists).toEqual(expected)
@@ -329,16 +329,16 @@ describe('ComponentGroup', () => {
         return {
           value: {
             data: {
-              reference: mockResourceReference
-            }
-          }
+              reference: mockResourceReference,
+            },
+          },
         }
       })
 
       const watchSpy = vi.fn()
       const unwatchSpy = vi.fn()
 
-      // @ts-ignore
+      // @ts-expect-error
       ComponentGroupUtilSynchronizer.mockReturnValueOnce({ createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy })
 
       const wrapper = createWrapper()
@@ -359,17 +359,17 @@ describe('ComponentGroup', () => {
         return {
           value: {
             data: {
-              reference: 'anything'
-            }
-          }
+              reference: 'anything',
+            },
+          },
         }
       })
 
       const mockComponentPositions = ['pos1', 'pos2', 'pos3']
       const mockGroupElement = {
         data: {
-          componentPositions: mockComponentPositions
-        }
+          componentPositions: mockComponentPositions,
+        },
       }
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return mockGroupElement
@@ -396,20 +396,20 @@ describe('ComponentGroup', () => {
       const resourceWatchHandler = vi.fn()
       const resolvedResource = {
         data: undefined,
-        apiState: {}
+        apiState: {},
       }
       vi.spyOn(cwaResourceManageableComposables, 'useCwaResourceManageable').mockImplementation(() => {
         return {
-          resourceWatchHandler
+          resourceWatchHandler,
         }
       })
       vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
         return {
           value: {
             data: {
-              reference: 'anything'
-            }
-          }
+              reference: 'anything',
+            },
+          },
         }
       })
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
@@ -424,7 +424,7 @@ describe('ComponentGroup', () => {
       expect(watchCall[1]).toEqual(wrapper.vm.managerWatchCallback)
       expect(watchCall[2]).toEqual({
         immediate: true,
-        flush: 'post'
+        flush: 'post',
       })
     })
   })
@@ -432,7 +432,7 @@ describe('ComponentGroup', () => {
   describe('snapshots', () => {
     test('should match snapshot IF loader is shown', () => {
       const wrapper = createWrapper({
-        isLoading: true
+        isLoading: true,
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -449,17 +449,17 @@ describe('ComponentGroup', () => {
         return {
           value: {
             data: {
-              reference: 'anything'
-            }
-          }
+              reference: 'anything',
+            },
+          },
         }
       })
 
       const mockComponentPositions = ['pos1', 'pos2', 'pos3']
       const mockGroupElement = {
         data: {
-          componentPositions: mockComponentPositions
-        }
+          componentPositions: mockComponentPositions,
+        },
       }
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return mockGroupElement
@@ -481,19 +481,19 @@ describe('ComponentGroup', () => {
         return {
           value: {
             data: {
-              reference: 'anything'
-            }
-          }
+              reference: 'anything',
+            },
+          },
         }
       })
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return {
-          data: {}
+          data: {},
         }
       })
 
       const wrapper = createWrapper({
-        signedIn: true
+        signedIn: true,
       })
 
       expect(wrapper.element).toMatchSnapshot()

@@ -4,30 +4,30 @@ import { shallowMount } from '@vue/test-utils'
 import AuthTemplate from './AuthTemplate.vue'
 
 interface LoginMeta {
-  submitButtonText: string;
-  submitting: boolean;
-  error?: string;
-  slotContent?: string;
+  submitButtonText: string
+  submitting: boolean
+  error?: string
+  slotContent?: string
 }
 
-function createWrapper ({
+function createWrapper({
   submitButtonText,
   submitting,
   error = '',
-  slotContent = ''
+  slotContent = '',
 }: LoginMeta) {
   return shallowMount(AuthTemplate, {
     props: {
       submitButtonText,
       submitting,
-      error
+      error,
     },
     slots: {
-      default: slotContent
+      default: slotContent,
     },
     global: {
-      renderStubDefaultSlot: true
-    }
+      renderStubDefaultSlot: true,
+    },
   })
 }
 
@@ -36,7 +36,7 @@ describe('LoginPage', () => {
     test('should emit on form submit', async () => {
       const wrapper = createWrapper({
         submitting: true,
-        submitButtonText: 'Submit'
+        submitButtonText: 'Submit',
       })
       const form = wrapper.find('form')
 
@@ -51,7 +51,7 @@ describe('LoginPage', () => {
       const wrapper = createWrapper({
         submitting: true,
         submitButtonText: 'Submit',
-        slotContent: '<div>Test form content</div>'
+        slotContent: '<div>Test form content</div>',
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -62,7 +62,7 @@ describe('LoginPage', () => {
         submitting: false,
         submitButtonText: 'Submit',
         error: 'Something went wrong, try submitting form again',
-        slotContent: '<div>Test form content</div>'
+        slotContent: '<div>Test form content</div>',
       })
 
       expect(wrapper.element).toMatchSnapshot()

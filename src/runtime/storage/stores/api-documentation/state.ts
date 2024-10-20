@@ -3,9 +3,9 @@ import type { Ref } from 'vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 export interface PageDataMetadataResource extends CwaResource {
-  '@type': 'PageDataMetadata',
-  resourceClass: string
-  properties: { property: string, componentShortName: string, '@id': string, '@type': 'PageDataPropertyMetadata' }[]
+  '@type': 'PageDataMetadata'
+  'resourceClass': string
+  'properties': { 'property': string, 'componentShortName': string, '@id': string, '@type': 'PageDataPropertyMetadata' }[]
 }
 
 export interface CwaApiDocumentationDataInterface {
@@ -14,7 +14,7 @@ export interface CwaApiDocumentationDataInterface {
     '@id': string
     '@type': 'Entrypoint'
     [key: string]: string
-  },
+  }
   docs?: {
     '@context': any
     '@id': string
@@ -29,7 +29,7 @@ export interface CwaApiDocumentationDataInterface {
       'rdfs:label': string
       'hydra:description': string
       'hydra:supportedOperation': Array<{
-        '@type': Array<string>|string
+        '@type': Array<string> | string
         'hydra:method': string
         'hydra:title': string
         'rdfs:label': string
@@ -50,29 +50,29 @@ export interface CwaApiDocumentationDataInterface {
         }>
       }>
     }>
-    info: {
+    'info': {
       version: string
     }
   }
   pageDataMetadata?: {
     '@context': {
-      '@vocab': string,
-      hydra: string,
-      properties: 'PageDataMetadata/properties'
-    },
-    '@id': '/_/page_data_metadatas',
-    '@type': 'hydra:Collection',
+      '@vocab': string
+      'hydra': string
+      'properties': 'PageDataMetadata/properties'
+    }
+    '@id': '/_/page_data_metadatas'
+    '@type': 'hydra:Collection'
     'hydra:member': PageDataMetadataResource[]
   }
 }
 
 export interface CwaApiDocumentationStateInterface {
-  docsPath: Ref<string|null>,
+  docsPath: Ref<string | null>
   apiDocumentation?: CwaApiDocumentationDataInterface
 }
 
 export default function (): CwaApiDocumentationStateInterface {
   return {
-    docsPath: ref(null)
+    docsPath: ref(null),
   }
 }

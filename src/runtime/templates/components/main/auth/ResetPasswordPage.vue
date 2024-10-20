@@ -39,25 +39,25 @@ import AuthTemplate from './_parts/AuthTemplate.vue'
 import InputField from './_parts/InputField.vue'
 
 const props = defineProps<{
-  submitting: boolean,
+  submitting: boolean
   modelValue: {
-    first: string,
+    first: string
     second: string
   }
   error?: string
   inputErrors?: {
-    form?: string[],
+    form?: string[]
     password?: string[]
-  },
+  }
   success: boolean
 }>()
 
 const passwords = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (newValue) {
+  set(newValue) {
     emit('update:modelValue', newValue)
-  }
+  },
 })
 </script>

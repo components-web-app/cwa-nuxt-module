@@ -6,14 +6,14 @@ import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 const { exposeMeta, iri, $cwa } = useCwaResourceManagerTab({
   name: 'Info',
-  order: DEFAULT_TAB_ORDER + 1
+  order: DEFAULT_TAB_ORDER + 1,
 })
 
 defineExpose(exposeMeta)
 
 const disableButton = ref(false)
 
-async function handleDelete () {
+async function handleDelete() {
   if (!iri.value) {
     return
   }
@@ -25,7 +25,7 @@ async function handleDelete () {
   disableButton.value = true
   const result = await $cwa.resourcesManager.deleteResource({
     endpoint: iri.value,
-    refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(iri.value)
+    refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(iri.value),
   })
   if (result !== false) {
     $cwa.admin.emptyStack()

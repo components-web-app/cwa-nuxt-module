@@ -16,15 +16,15 @@ const emit = defineEmits(['update:modelValue'])
 const stackSize = computed(() => $cwa.admin.resourceStackManager.contextStack.value.length)
 
 const isOpen = computed({
-  get () {
+  get() {
     return props.modelValue && stackSize.value > 0
   },
-  set (value) {
+  set(value) {
     emit('update:modelValue', value)
-  }
+  },
 })
 
-function selectResource (index: number) {
+function selectResource(index: number) {
   $cwa.admin.resourceStackManager.selectStackIndex(index, true)
   isOpen.value = false
 }
@@ -36,6 +36,9 @@ function selectResource (index: number) {
     :virtual-element="virtualElement"
     @click.stop
   >
-    <resource-context-item :index="stackSize - 1" @click="index => selectResource(index)" />
+    <resource-context-item
+      :index="stackSize - 1"
+      @click="index => selectResource(index)"
+    />
   </context-menu>
 </template>

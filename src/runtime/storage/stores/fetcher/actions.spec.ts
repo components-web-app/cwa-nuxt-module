@@ -3,14 +3,17 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 import logger from 'consola'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
-import actions, { CwaFetcherActionsInterface, FinishFetchManifestType } from './actions'
-import state, { CwaFetcherStateInterface, FetchStatus } from './state'
-import getters, { CwaFetcherGettersInterface } from './getters'
+import type { CwaFetcherActionsInterface } from './actions'
+import actions, { FinishFetchManifestType } from './actions'
+import type { CwaFetcherStateInterface, FetchStatus } from './state'
+import state from './state'
+import type { CwaFetcherGettersInterface } from './getters'
+import getters from './getters'
 
 vi.mock('consola')
 vi.mock('uuid', () => {
   return {
-    v4: vi.fn(() => ('mock-uuid-token'))
+    v4: vi.fn(() => ('mock-uuid-token')),
   }
 })
 
@@ -25,7 +28,7 @@ describe('Fetcher store action -> abortFetch', () => {
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
-      isPrimary: false
+      isPrimary: false,
     }
     fetcherState = state()
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
@@ -40,14 +43,14 @@ describe('Fetcher store action -> abortFetch', () => {
   test('An error is thrown if the token does not exist', () => {
     expect(() => {
       fetcherActions.abortFetch({
-        token: 'non-existent'
+        token: 'non-existent',
       })
-    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+    }).toThrowError('The fetch chain token \'non-existent\' does not exist')
   })
 
   test('A fetch token can be marked as aborted', () => {
     fetcherActions.abortFetch({
-      token: 'existing-token'
+      token: 'existing-token',
     })
     expect(fetcherState.fetches['existing-token'].abort).toBe(true)
   })
@@ -66,17 +69,17 @@ describe('Fetcher store action -> startFetch', () => {
     existingIncompletePrimaryFetchState = {
       path: '/existing-incomplete-primary-path',
       resources: ['/existing-path', '/in-progress-resource'],
-      isPrimary: true
+      isPrimary: true,
     }
     existingCompletedPrimaryFetchState = {
       path: '/existing-complete-primary-path',
       resources: ['/existing-primary-path', '/existing-path'],
-      isPrimary: true
+      isPrimary: true,
     }
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
-      isPrimary: false
+      isPrimary: false,
     }
     fetcherState = state()
     fetcherState.primaryFetch.successToken = 'existing-token'
@@ -94,38 +97,38 @@ describe('Fetcher store action -> startFetch', () => {
   test('If a token is provided we should return the existing status', () => {
     const response = fetcherActions.startFetch({
       path: 'my-path',
-      token: 'existing-token'
+      token: 'existing-token',
     })
     expect(uuidv4).not.toHaveBeenCalled()
     expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
     expect(response).toStrictEqual({
       continue: true,
       resources: existingFetchState.resources,
-      token: 'existing-token'
+      token: 'existing-token',
     })
   })
 
   test('If a token is provided that does not exist, we should not continue with the request', () => {
     const response = fetcherActions.startFetch({
       path: 'my-path',
-      token: 'non-existent'
+      token: 'non-existent',
     })
     expect(response).toStrictEqual({
       continue: false,
       resources: [],
-      token: 'non-existent'
+      token: 'non-existent',
     })
     expect(uuidv4).not.toHaveBeenCalled()
   })
 
   test('A token is generated to start a new fetch chain', () => {
     const startFetchEvent = {
-      path: 'my-path'
+      path: 'my-path',
     }
     const expectedFetchChain = {
       path: startFetchEvent.path,
       resources: [],
-      isPrimary: false
+      isPrimary: false,
     }
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(uuidv4).toHaveBeenCalledTimes(1)
@@ -134,47 +137,47 @@ describe('Fetcher store action -> startFetch', () => {
     expect(response).toStrictEqual({
       continue: true,
       resources: expectedFetchChain.resources,
-      token: 'mock-uuid-token'
+      token: 'mock-uuid-token',
     })
   })
 
   test('A manifest path is populated', () => {
     const startFetchEvent = {
       path: 'my-path',
-      manifestPath: '/manifest-path'
+      manifestPath: '/manifest-path',
     }
     const expectedFetchChain = {
       path: startFetchEvent.path,
       resources: [],
       isPrimary: false,
       manifest: {
-        path: '/manifest-path'
-      }
+        path: '/manifest-path',
+      },
     }
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(fetcherState.fetches['mock-uuid-token']).toStrictEqual(expectedFetchChain)
     expect(response).toStrictEqual({
       continue: true,
       resources: expectedFetchChain.resources,
-      token: 'mock-uuid-token'
+      token: 'mock-uuid-token',
     })
   })
 
   test('Primary fetches will set primaryFetch.fetchingToken', () => {
     const startFetchEvent = {
       path: 'my-path',
-      isPrimary: true
+      isPrimary: true,
     }
     const expectedFetchChain = {
       path: startFetchEvent.path,
       resources: [],
-      isPrimary: true
+      isPrimary: true,
     }
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(response).toStrictEqual({
       continue: true,
       resources: expectedFetchChain.resources,
-      token: 'mock-uuid-token'
+      token: 'mock-uuid-token',
     })
     expect(fetcherState.primaryFetch.fetchingToken).toBe('mock-uuid-token')
     expect(fetcherState.fetches['mock-uuid-token']).toStrictEqual(expectedFetchChain)
@@ -184,7 +187,7 @@ describe('Fetcher store action -> startFetch', () => {
     const startFetchEvent = {
       path: '/existing-complete-primary-path',
       isPrimary: true,
-      isCurrentSuccessResourcesResolved: true
+      isCurrentSuccessResourcesResolved: true,
     }
     fetcherState.primaryFetch.successToken = 'existing-complete-primary-token'
     fetcherState.primaryFetch.fetchingToken = 'any-other-primary-fetch-token'
@@ -201,7 +204,7 @@ describe('Fetcher store action -> startFetch', () => {
     expect(response).toStrictEqual({
       continue: false,
       resources: existingCompletedPrimaryFetchState.resources,
-      token: 'existing-complete-primary-token'
+      token: 'existing-complete-primary-token',
     })
 
     expect.assertions(4)
@@ -210,7 +213,7 @@ describe('Fetcher store action -> startFetch', () => {
   test('If there is already a successful and but not completed primary fetch with the same path as a new primary fetch we create a new fetch chain token', () => {
     const startFetchEvent = {
       path: '/existing-incomplete-primary-path',
-      isPrimary: true
+      isPrimary: true,
     }
     fetcherState.primaryFetch.successToken = 'existing-incomplete-primary-token'
     fetcherState.primaryFetch.fetchingToken = 'any-other-primary-fetch-token'
@@ -220,7 +223,7 @@ describe('Fetcher store action -> startFetch', () => {
     expect(response).toStrictEqual({
       continue: true,
       resources: [],
-      token: 'mock-uuid-token'
+      token: 'mock-uuid-token',
     })
   })
 })
@@ -236,12 +239,12 @@ describe('Fetcher store action -> finishFetch', () => {
     existingPrimaryFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
-      isPrimary: true
+      isPrimary: true,
     }
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
-      isPrimary: false
+      isPrimary: false,
     }
     fetcherState = state()
     fetcherState.fetches['existing-primary-token'] = reactive(existingPrimaryFetchState)
@@ -256,14 +259,14 @@ describe('Fetcher store action -> finishFetch', () => {
   test('If the token does not exist, an error is thrown', () => {
     expect(() => {
       fetcherActions.finishFetch({
-        token: 'non-existent'
+        token: 'non-existent',
       })
-    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+    }).toThrowError('The fetch chain token \'non-existent\' does not exist')
   })
 
   test('If the current fetch chain is not primary, we should delete it', () => {
     fetcherActions.finishFetch({
-      token: 'existing-token'
+      token: 'existing-token',
     })
     expect(fetcherState.fetches['existing-token']).toBeUndefined()
   })
@@ -271,7 +274,7 @@ describe('Fetcher store action -> finishFetch', () => {
   test('If the current fetch chain is primary, but the fetch token does not match we should delete it', () => {
     fetcherState.primaryFetch.fetchingToken = 'another-token'
     fetcherActions.finishFetch({
-      token: 'existing-primary-token'
+      token: 'existing-primary-token',
     })
     expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
   })
@@ -279,7 +282,7 @@ describe('Fetcher store action -> finishFetch', () => {
   test('If the current fetch chain is primary, and the new token matches, we should not delete it', () => {
     fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
     fetcherActions.finishFetch({
-      token: 'existing-primary-token'
+      token: 'existing-primary-token',
     })
     expect(fetcherState.fetches['existing-primary-token']).toStrictEqual(existingPrimaryFetchState)
   })
@@ -288,7 +291,7 @@ describe('Fetcher store action -> finishFetch', () => {
     fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
     fetcherState.primaryFetch.successToken = 'existing-token'
     fetcherActions.finishFetch({
-      token: 'existing-primary-token'
+      token: 'existing-primary-token',
     })
     expect(fetcherState.fetches['existing-token']).toBeUndefined()
   })
@@ -297,7 +300,7 @@ describe('Fetcher store action -> finishFetch', () => {
     fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
     fetcherState.primaryFetch.successToken = 'some-token'
     fetcherActions.finishFetch({
-      token: 'existing-primary-token'
+      token: 'existing-primary-token',
     })
     expect(fetcherState.primaryFetch.successToken).toBe('existing-primary-token')
     expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
@@ -317,17 +320,17 @@ describe('Fetcher store action -> addFetchResource', () => {
     existingIncompletePrimaryFetchState = {
       path: '/existing-incomplete-primary-path',
       resources: ['/existing-path', '/in-progress-resource'],
-      isPrimary: true
+      isPrimary: true,
     }
     existingCompletedPrimaryFetchState = {
       path: '/existing-complete-primary-path',
       resources: ['/existing-primary-path', '/existing-path'],
-      isPrimary: true
+      isPrimary: true,
     }
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
-      isPrimary: false
+      isPrimary: false,
     }
     fetcherState = state()
     fetcherState.fetches['existing-incomplete-primary-token'] = reactive(existingIncompletePrimaryFetchState)
@@ -345,15 +348,15 @@ describe('Fetcher store action -> addFetchResource', () => {
     expect(() => {
       fetcherActions.addFetchResource({
         token: 'non-existent',
-        resource: '/my-resource'
+        resource: '/my-resource',
       })
-    }).toThrowError("The fetch chain token 'non-existent' does not exist")
+    }).toThrowError('The fetch chain token \'non-existent\' does not exist')
   })
 
   test('If the fetch chain status already contains this resource, return false to stop the duplicate fetch', () => {
     const result = fetcherActions.addFetchResource({
       token: 'existing-token',
-      resource: '/existing-path'
+      resource: '/existing-path',
     })
     expect(result).toBe(false)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual(existingFetchState.resources)
@@ -363,7 +366,7 @@ describe('Fetcher store action -> addFetchResource', () => {
     fetcherState.primaryFetch.fetchingToken = 'changed-fetching-token'
     const result = fetcherActions.addFetchResource({
       token: 'existing-incomplete-primary-token',
-      resource: '/existing-path'
+      resource: '/existing-path',
     })
     expect(result).toBe(false)
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual(existingFetchState.resources)
@@ -381,7 +384,7 @@ describe('Fetcher store action -> addFetchResource', () => {
     fetcherState.primaryFetch.fetchingToken = 'existing-incomplete-primary-token'
     const result = fetcherActions.addFetchResource({
       token: 'existing-token',
-      resource: '/another-path-2'
+      resource: '/another-path-2',
     })
 
     expect(currentGetters.isCurrentFetchingToken.value).toHaveBeenCalledWith('existing-token')
@@ -389,7 +392,7 @@ describe('Fetcher store action -> addFetchResource', () => {
     expect(fetcherState.fetches['existing-token'].resources).toStrictEqual([
       '/existing-path',
       '/errored-resource',
-      '/another-path-2'
+      '/another-path-2',
     ])
   })
 
@@ -397,13 +400,13 @@ describe('Fetcher store action -> addFetchResource', () => {
     fetcherState.primaryFetch.fetchingToken = 'existing-complete-primary-token'
     const result = fetcherActions.addFetchResource({
       token: 'existing-complete-primary-token',
-      resource: '/another-path-2'
+      resource: '/another-path-2',
     })
     expect(result).toBe(true)
     expect(fetcherState.fetches['existing-complete-primary-token'].resources).toStrictEqual([
       '/existing-primary-path',
       '/existing-path',
-      '/another-path-2'
+      '/another-path-2',
     ])
   })
 
@@ -411,12 +414,12 @@ describe('Fetcher store action -> addFetchResource', () => {
     fetcherState.primaryFetch.successToken = 'existing-complete-primary-token'
     const result = fetcherActions.addFetchResource({
       token: 'existing-complete-primary-token',
-      resource: '/another-path-2'
+      resource: '/another-path-2',
     })
     expect(result).toBe(false)
     expect(fetcherState.fetches['existing-complete-primary-token'].resources).toStrictEqual([
       '/existing-primary-path',
-      '/existing-path'
+      '/existing-path',
     ])
   })
 })
@@ -429,15 +432,15 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     const existingFetchState: FetchStatus = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
-      isPrimary: false
+      isPrimary: false,
     }
     const existingManifestFetchState: FetchStatus = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
       manifest: {
-        path: '/some-manifest-path'
-      }
+        path: '/some-manifest-path',
+      },
     }
     fetcherState = state()
     fetcherState.fetches['existing-token-no-manifest'] = reactive(existingFetchState)
@@ -453,10 +456,10 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'non-existent',
-      resources: ['/any']
+      resources: ['/any'],
     })
     expect(logger.trace).toHaveBeenCalledTimes(1)
-    expect(logger.trace).toHaveBeenCalledWith("The fetch chain token 'non-existent' does not exist")
+    expect(logger.trace).toHaveBeenCalledWith('The fetch chain token \'non-existent\' does not exist')
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toBeUndefined()
   })
 
@@ -465,16 +468,16 @@ describe('Fetcher store action -> finishManifestFetch', () => {
       fetcherActions.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
         token: 'existing-token-no-manifest',
-        resources: ['/any']
+        resources: ['/any'],
       })
-    }).toThrowError("Cannot set manifest status for 'existing-token-no-manifest'. The manifest was never started.")
+    }).toThrowError('Cannot set manifest status for \'existing-token-no-manifest\'. The manifest was never started.')
   })
 
   test('Can set the success status on a manifest', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'existing-token-with-manifest',
-      resources: ['/any']
+      resources: ['/any'],
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toStrictEqual(['/any'])
@@ -485,7 +488,7 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.ERROR,
       token: 'existing-token-with-manifest',
-      error: newError
+      error: newError,
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.error).toStrictEqual(newError.asObject)

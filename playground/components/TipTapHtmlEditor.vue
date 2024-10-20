@@ -49,7 +49,7 @@ import {
   BubbleMenu,
   useEditor,
   EditorContent,
-  FloatingMenu
+  FloatingMenu,
 } from '@tiptap/vue-3'
 import { computed, toRef, watch } from 'vue'
 import type { Editor } from '@tiptap/core'
@@ -57,7 +57,7 @@ import type { UnionCommands } from '@tiptap/core/src/types'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
-  modelValue: string|null|undefined,
+  modelValue: string | null | undefined
   disabled?: boolean
 }>()
 
@@ -65,12 +65,12 @@ const emit = defineEmits(['update:modelValue'])
 
 // reactive updating of the model
 const value = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (value) {
+  set(value) {
     emit('update:modelValue', value)
-  }
+  },
 })
 
 // create the editor
@@ -80,8 +80,8 @@ const editor = useEditor({
     StarterKit,
     Placeholder.configure({
       placeholder: 'Write something …',
-      emptyEditorClass: 'is-editor-empty text-inherit opacity-50'
-    })
+      emptyEditorClass: 'is-editor-empty text-inherit opacity-50',
+    }),
   ],
   onUpdate: () => {
     // HTML
@@ -90,7 +90,7 @@ const editor = useEditor({
     // JSON
     // this.$emit('update:modelValue', this.editor.getJSON())
   },
-  editable: !props.disabled
+  editable: !props.disabled,
 })
 
 // match the editor value to the modelValue prop
@@ -124,19 +124,19 @@ watch(disabledRef, () => {
 })
 
 // Common menu item props
-const buttonBubbleMenuProps = computed(() => (call: UnionCommands, isActiveName: string, attributes?: {}) => {
+const buttonBubbleMenuProps = computed(() => (call: UnionCommands, isActiveName: string, attributes?: object) => {
   return {
     editor: editor.value as Editor,
     editorFn: {
       call,
-      attributes
+      attributes,
     },
-    isActiveName
+    isActiveName,
   }
 })
 
 defineExpose({
-  editor
+  editor,
 })
 </script>
 

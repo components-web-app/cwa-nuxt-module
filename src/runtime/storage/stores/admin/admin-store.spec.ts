@@ -4,20 +4,21 @@ import { setActivePinia } from 'pinia'
 import { AdminStore } from './admin-store'
 import state from './state'
 import actions from './actions'
+
 vi.mock('./state', () => ({
-  default: vi.fn(() => ({ stateKey: 'value' }))
+  default: vi.fn(() => ({ stateKey: 'value' })),
 }))
 
 vi.mock('./actions', () => ({
   default: vi.fn(() => ({
-    someFunction: vi.fn()
-  }))
+    someFunction: vi.fn(),
+  })),
 }))
 
 describe('ManagerStore tests', () => {
   beforeEach(() => {
     const pinia = createTestingPinia({
-      createSpy: vi.fn
+      createSpy: vi.fn,
     })
     setActivePinia(pinia)
     vi.clearAllMocks()
@@ -28,7 +29,7 @@ describe('ManagerStore tests', () => {
     const storeDefinition = store.useStore()
 
     expect(state).toBeCalledTimes(1)
-    // @ts-ignore
+    // @ts-expect-error
     expect(storeDefinition.stateKey).toBe('value')
 
     expect(actions).toBeCalledTimes(1)

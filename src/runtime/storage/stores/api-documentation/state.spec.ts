@@ -6,7 +6,7 @@ describe('ApiDocumentation State context', () => {
   test('Initial state is correct', () => {
     const initialState = state()
     expect(initialState).toStrictEqual({
-      docsPath: ref(null)
+      docsPath: ref(null),
     })
   })
 })

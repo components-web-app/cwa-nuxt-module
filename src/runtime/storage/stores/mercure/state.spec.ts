@@ -6,7 +6,7 @@ describe('Mercure State context', () => {
   test('Initial state is correct', () => {
     const initialState = state()
     expect(initialState).toStrictEqual({
-      hub: ref(null)
+      hub: ref(null),
     })
   })
 })

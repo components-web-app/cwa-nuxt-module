@@ -1,6 +1,9 @@
 <template>
   <div class="cwa-text-sm">
-    <NuxtLink :to="props.linkTo" class="cwa-font-medium cwa-text-neutral-400 hover:cwa-text-neutral-200">
+    <NuxtLink
+      :to="props.linkTo"
+      class="cwa-font-medium cwa-text-neutral-400 hover:cwa-text-neutral-200"
+    >
       {{ props.linkText }}
     </NuxtLink>
   </div>

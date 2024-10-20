@@ -1,9 +1,21 @@
 <template>
-  <ListHeading title="Users" @add="goToAdd" />
-  <ListFilter :order-options="orderOptions" :search-fields="['emailAddress', 'username']" />
-  <ListContent ref="listContent" fetch-url="/users">
-    <template #item="{data}">
-      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center" :class="{ 'cwa-opacity-50': !data.enabled }">
+  <ListHeading
+    title="Users"
+    @add="goToAdd"
+  />
+  <ListFilter
+    :order-options="orderOptions"
+    :search-fields="['emailAddress', 'username']"
+  />
+  <ListContent
+    ref="listContent"
+    fetch-url="/users"
+  >
+    <template #item="{ data }">
+      <div
+        class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center"
+        :class="{ 'cwa-opacity-50': !data.enabled }"
+      >
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
           <span class="cwa-text-xl">{{ data.username }} <span class="cwa-text-stone-400 cwa-text-sm">{{ getUserRole(data.roles) }}</span></span>
           <span>{{ data.emailAddress }}</span>
@@ -37,23 +49,23 @@ const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const orderOptions = [
   {
     label: 'New - Old',
-    value: { createdAt: 'desc' }
+    value: { createdAt: 'desc' },
   },
   {
     label: 'Old - New',
-    value: { createdAt: 'asc' }
+    value: { createdAt: 'asc' },
   },
   {
     label: 'A - Z',
-    value: { username: 'asc' }
+    value: { username: 'asc' },
   },
   {
     label: 'Z - A',
-    value: { username: 'desc' }
-  }
+    value: { username: 'desc' },
+  },
 ]
 
-function getUserRole (roles: CwaUserRoles[]) {
+function getUserRole(roles: CwaUserRoles[]) {
   if (roles.includes(CwaUserRoles.SUPER_ADMIN)) {
     return 'Super Admin'
   }
@@ -67,6 +79,6 @@ function getUserRole (roles: CwaUserRoles[]) {
 }
 
 useHead({
-  title: 'Users'
+  title: 'Users',
 })
 </script>

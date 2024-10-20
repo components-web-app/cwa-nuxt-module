@@ -20,7 +20,7 @@ const circleColor = computed(() => {
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 100 100"
     xml:space="preserve"
-    :class="[ isPendingRef ? 'pending' : (isLoadingRef ? 'progress' : 'ready') ]"
+    :class="[isPendingRef ? 'pending' : (isLoadingRef ? 'progress' : 'ready')]"
   >
     <circle
       class="circle"
@@ -30,7 +30,11 @@ const circleColor = computed(() => {
       fill="transparent"
       :class="circleColor"
     />
-    <polyline class="tick cwa-stroke-green" points="25,55 45,70 75,33" fill="transparent" />
+    <polyline
+      class="tick cwa-stroke-green"
+      points="25,55 45,70 75,33"
+      fill="transparent"
+    />
   </svg>
 </template>
 

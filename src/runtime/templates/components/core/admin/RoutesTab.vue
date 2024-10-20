@@ -2,9 +2,19 @@
   <div>
     <div v-if="currentScreen === 'view'">
       <div class="cwa-flex cwa-flex-col cwa-space-y-6">
-        <ModalInfo label="Route" :content="isLoadingRoute ? undefined : resource?.path">
-          <Spinner v-if="isLoadingRoute" :show="true" />
-          <CwaUiFormButton v-else :color="resource?.path ? 'dark' : 'blue'" @click="goToManageRoute">
+        <ModalInfo
+          label="Route"
+          :content="isLoadingRoute ? undefined : resource?.path"
+        >
+          <Spinner
+            v-if="isLoadingRoute"
+            :show="true"
+          />
+          <CwaUiFormButton
+            v-else
+            :color="resource?.path ? 'dark' : 'blue'"
+            @click="goToManageRoute"
+          >
             {{ resource?.path ? 'Edit' : 'Create New Route' }}
           </CwaUiFormButton>
         </ModalInfo>
@@ -14,16 +24,29 @@
               Redirects
             </h2>
             <div>
-              <button class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-border-transparent cwa-p-2.5" @click="addRedirect">
+              <button
+                class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-border-transparent cwa-p-2.5"
+                @click="addRedirect"
+              >
                 <CwaUiIconPlusIcon class="cwa-w-4 cwa-h-4" />
                 <span class="cwa-sr-only">Add</span>
               </button>
             </div>
           </div>
           <div>
-            <Spinner v-if="isLoadingRoute" :show="true" />
-            <RouteRedirectsTree v-else-if="resource?.redirectedFrom?.length" :redirects="resource.redirectedFrom" @reload="loadResource" />
-            <p v-else class="cwa-text-lg cwa-font-bold cwa-text-stone-400 cwa-mb-2 cwa-mt-4">
+            <Spinner
+              v-if="isLoadingRoute"
+              :show="true"
+            />
+            <RouteRedirectsTree
+              v-else-if="resource?.redirectedFrom?.length"
+              :redirects="resource.redirectedFrom"
+              @reload="loadResource"
+            />
+            <p
+              v-else
+              class="cwa-text-lg cwa-font-bold cwa-text-stone-400 cwa-mb-2 cwa-mt-4"
+            >
               You do not have any redirects
             </p>
           </div>
@@ -39,7 +62,11 @@
         </div>
         <div class="cwa-flex cwa-flex-col cwa-space-y-4">
           <div>
-            <ModalInput v-model="localResourceData.path" label="Route path" :placeholder="recommendedRoute" />
+            <ModalInput
+              v-model="localResourceData.path"
+              label="Route path"
+              :placeholder="recommendedRoute"
+            />
           </div>
           <div>
             <p class="cwa-text-sm cwa-text-stone-300">
@@ -48,12 +75,20 @@
           </div>
           <div class="cwa-flex cwa-justify-between">
             <div>
-              <CwaUiFormButton color="blue" :disabled="disableButtons" @click="saveRoute">
+              <CwaUiFormButton
+                color="blue"
+                :disabled="disableButtons"
+                @click="saveRoute"
+              >
                 Save Route
               </CwaUiFormButton>
             </div>
             <div v-if="!!routeIri">
-              <CwaUiFormButton color="grey" :disabled="disableButtons" @click="deleteRoute">
+              <CwaUiFormButton
+                color="grey"
+                :disabled="disableButtons"
+                @click="deleteRoute"
+              >
                 Delete Route
               </CwaUiFormButton>
             </div>
@@ -62,14 +97,21 @@
         <template v-if="recommendedRoute !== resource?.path">
           <div class="cwa-w-full cwa-border-b cwa-border-b-stone-600" />
           <div class="cwa-flex cwa-flex-col cwa-space-y-4">
-            <ModalInfo label="Recommended route path" :content="recommendedRoute" />
+            <ModalInfo
+              label="Recommended route path"
+              :content="recommendedRoute"
+            />
           </div>
           <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
             <p>This is based on your page title <b>`{{ pageResource.title }}`</b>.</p>
             <p>It is optimal for search engines to increase the relevance of the page to the title provided. Relevance of page content is important too.</p>
           </div>
           <div class="cwa-flex cwa-justify-start">
-            <CwaUiFormButton color="blue" :disabled="disableButtons" @click="generateRoute">
+            <CwaUiFormButton
+              color="blue"
+              :disabled="disableButtons"
+              @click="generateRoute"
+            >
               Use Recommended Route
             </CwaUiFormButton>
           </div>
@@ -85,7 +127,11 @@
         </div>
         <div class="cwa-flex cwa-flex-col cwa-space-y-4">
           <div>
-            <ModalInput v-model="newRedirectPath" label="Redirect from path" placeholder="/some-path" />
+            <ModalInput
+              v-model="newRedirectPath"
+              label="Redirect from path"
+              placeholder="/some-path"
+            />
           </div>
           <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
             <p v-if="newRedirectPath">
@@ -94,7 +140,11 @@
           </div>
         </div>
         <div class="cwa-flex cwa-justify-start">
-          <CwaUiFormButton color="blue" :disabled="disableButtons" @click="createRedirect">
+          <CwaUiFormButton
+            color="blue"
+            :disabled="disableButtons"
+            @click="createRedirect"
+          >
             Create Redirect
           </CwaUiFormButton>
         </div>
@@ -119,7 +169,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  close: [],
+  close: []
   reload: []
 }>()
 
@@ -131,7 +181,7 @@ const disableButtons = computed(() => submitting.value || isUpdating.value)
 
 const submitting = ref(false)
 const newRedirectPath = ref<string>()
-const currentScreen = ref<'view'|'manage-route'|'create-redirect'>('view')
+const currentScreen = ref<'view' | 'manage-route' | 'create-redirect'>('view')
 
 const recommendedRoute = computed(() => {
   if (!props.pageResource.title) {
@@ -140,15 +190,15 @@ const recommendedRoute = computed(() => {
   return '/' + slugify(props.pageResource.title.toLowerCase())
 })
 
-function goToManageRoute () {
+function goToManageRoute() {
   currentScreen.value = 'manage-route'
 }
-function goBackToViewing () {
+function goBackToViewing() {
   newRedirectPath.value = ''
   currentScreen.value = 'view'
 }
 
-function addRedirect () {
+function addRedirect() {
   currentScreen.value = 'create-redirect'
 }
 
@@ -156,15 +206,15 @@ const finalPath = computed(() => {
   return newRedirectPath.value?.startsWith('/') ? newRedirectPath.value : `/${newRedirectPath.value}`
 })
 
-async function createRedirect () {
+async function createRedirect() {
   submitting.value = true
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes',
     data: {
       name: newRedirectPath.value,
       path: finalPath.value,
-      redirect: routeIri.value
-    }
+      redirect: routeIri.value,
+    },
   })
   submitting.value = false
   if (newResource) {
@@ -173,14 +223,14 @@ async function createRedirect () {
   }
 }
 
-async function generateRoute () {
+async function generateRoute() {
   submitting.value = true
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes/generate',
     data: {
       page: defaultResource.value.page,
-      pageData: defaultResource.value.pageData
-    }
+      pageData: defaultResource.value.pageData,
+    },
   })
   submitting.value = false
   if (newResource) {
@@ -189,7 +239,7 @@ async function generateRoute () {
   }
 }
 
-async function saveRoute () {
+async function saveRoute() {
   const resource = await saveResource(true)
   if (resource) {
     await loadResource()
@@ -198,7 +248,7 @@ async function saveRoute () {
   }
 }
 
-async function deleteRoute () {
+async function deleteRoute() {
   await deleteResource()
   emit('reload')
   goBackToViewing()
@@ -214,11 +264,12 @@ const defaultResource = computed(() => {
     pageData?: string
     page?: string
   } = {
-    path: ''
+    path: '',
   }
   if (pageResource.value['@type'] === 'Page') {
     obj.page = pageResource.value['@id']
-  } else {
+  }
+  else {
     obj.pageData = pageResource.value['@id']
   }
   return obj
@@ -229,12 +280,12 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   emit,
   resourceType: 'Route',
   defaultResource: defaultResource.value,
-  validate (data) {
+  validate(data) {
     data.name = data.path
     return true
   },
   endpoint,
   iri: routeIri,
-  excludeFields: ['redirectedFrom']
+  excludeFields: ['redirectedFrom'],
 })
 </script>

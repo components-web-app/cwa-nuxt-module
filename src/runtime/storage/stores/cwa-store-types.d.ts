@@ -3,7 +3,7 @@ import type {
   Store,
   StoreActions,
   StoreGetters,
-  StoreState
+  StoreState,
 } from 'pinia'
 
 export interface CwaStore {

@@ -3,11 +3,11 @@ import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import Spinner from './Spinner.vue'
 
-function createWrapper (show: boolean) {
+function createWrapper(show: boolean) {
   return shallowMount(Spinner, {
     props: {
-      show
-    }
+      show,
+    },
   })
 }
 describe('Spinner', () => {

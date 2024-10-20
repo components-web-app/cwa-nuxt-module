@@ -18,7 +18,7 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
   // const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
   const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
 
-  const collectionItems = computed<CwaResource[]|undefined>(() => {
+  const collectionItems = computed<CwaResource[] | undefined>(() => {
     return fetchedCollectionItems.value || resource.value?.data?.collection?.['hydra:member']
   })
 
@@ -28,13 +28,14 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
 
   const totalPages = ref(1)
 
-  function populateCollectionData (resource?: { collection?: { 'hydra:member': CwaResource[], 'hydra:view': { 'hydra:last': string } } } & CwaResource) {
+  function populateCollectionData(resource?: { collection?: { 'hydra:member': CwaResource[], 'hydra:view': { 'hydra:last': string } } } & CwaResource) {
     if (resource?.collection?.['hydra:member']) {
       fetchedCollectionItems.value = resource?.collection?.['hydra:member']
       const lastPagePath = resource?.collection?.['hydra:view']?.['hydra:last']
       if (!lastPagePath) {
         totalPages.value = 1
-      } else {
+      }
+      else {
         const urlParams = new URLSearchParams(lastPagePath.split('?')[1])
         const pageQueryParam = urlParams.get('page')
         totalPages.value = pageQueryParam ? (parseInt(pageQueryParam) || 1) : 1
@@ -42,7 +43,7 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     }
   }
 
-  async function reloadCollection () {
+  async function reloadCollection() {
     if (!dataResourceIri.value) {
       return
     }
@@ -58,21 +59,21 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     }
   }
 
-  function goToNextPage () {
+  function goToNextPage() {
     if (pageModel.value >= totalPages.value) {
       return
     }
     changePage(pageModel.value + 1)
   }
 
-  function goToPreviousPage () {
+  function goToPreviousPage() {
     if (!pageModel.value || pageModel.value <= 1) {
       return
     }
     changePage(pageModel.value - 1)
   }
 
-  function changePage (newPageNumber: number) {
+  function changePage(newPageNumber: number) {
     pageModel.value = newPageNumber
   }
 
@@ -106,6 +107,6 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     totalPages,
     goToNextPage,
     goToPreviousPage,
-    changePage
+    changePage,
   }
 }

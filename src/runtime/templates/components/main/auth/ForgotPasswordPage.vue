@@ -22,7 +22,10 @@
       />
       <div class="cwa-flex cwa-items-center cwa-justify-between">
         <slot>
-          <AuthPageLink link-to="/login" link-text="< Back to login" />
+          <AuthPageLink
+            link-to="/login"
+            link-text="< Back to login"
+          />
         </slot>
       </div>
     </template>
@@ -36,7 +39,7 @@ import InputField from './_parts/InputField.vue'
 import AuthPageLink from './_parts/AuthPageLink.vue'
 
 const props = defineProps<{
-  submitting: boolean,
+  submitting: boolean
   modelValue: {
     username: string
   }
@@ -47,11 +50,11 @@ const props = defineProps<{
 const emit = defineEmits(['submit', 'update:modelValue'])
 
 const credentials = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (newValue) {
+  set(newValue) {
     emit('update:modelValue', newValue)
-  }
+  },
 })
 </script>

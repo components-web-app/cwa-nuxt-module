@@ -4,33 +4,33 @@ import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 import * as utils from '#cwa/runtime/resources/resource-utils'
 
-function createResources () {
+function createResources() {
   const mockResourcesStore = {
-    useStore () {
+    useStore() {
       const current = {
         currentIds: [] as string[],
-        byId: {}
+        byId: {},
       }
       return {
         current,
-        getResource: vi.fn(id => current.byId[id])
+        getResource: vi.fn(id => current.byId[id]),
       }
-    }
+    },
   }
 
   const mockFetcherStore = {
-    useStore () {
+    useStore() {
       return {
         primaryFetch: {
-          fetchingToken: '123' as string | null
+          fetchingToken: '123' as string | null,
         },
         fetches: {},
-        resolvedSuccessFetchStatus: computed(() => ({ path: '/test', isPrimary: true, resources: ['1', '2'] }))
+        resolvedSuccessFetchStatus: computed(() => ({ path: '/test', isPrimary: true, resources: ['1', '2'] })),
       }
-    }
+    },
   }
 
-  // @ts-ignore
+  // @ts-expect-error
   const resources = new Resources(mockResourcesStore, mockFetcherStore)
 
   return { resources, resourcesStore: mockResourcesStore, fetcherStore: mockFetcherStore }
@@ -45,8 +45,8 @@ describe('Resources', () => {
       resourcesStore.useStore = () => ({
         current: {
           byId: {},
-          currentIds: mockIds
-        }
+          currentIds: mockIds,
+        },
       })
 
       expect(resources.currentIds).toEqual(mockIds)
@@ -61,13 +61,13 @@ describe('Resources', () => {
 
       const current = {
         byId: {
-          [mockId]: mockResource
+          [mockId]: mockResource,
         },
-        currentIds: []
+        currentIds: [],
       }
       resourcesStore.useStore = () => ({
         current,
-        getResource: vi.fn(id => current.byId[id])
+        getResource: vi.fn(id => current.byId[id]),
       })
 
       expect(resources.getResource(mockId).value).toEqual(mockResource)
@@ -80,9 +80,9 @@ describe('Resources', () => {
       resourcesStore.useStore = () => ({
         current: {
           byId: {},
-          currentIds: []
+          currentIds: [],
         },
-        getResource: vi.fn(() => undefined)
+        getResource: vi.fn(() => undefined),
       })
 
       expect(resources.getResource(mockId).value).toBeUndefined()
@@ -100,19 +100,19 @@ describe('Resources', () => {
         byId: {
           a: resourceA,
           b: resourceB,
-          c: resourceC
+          c: resourceC,
         },
-        currentIds: ['a', 'b', 'c']
+        currentIds: ['a', 'b', 'c'],
       }
       resourcesStore.useStore = () => ({
         current,
-        getResource: vi.fn(id => current.byId[id])
+        getResource: vi.fn(id => current.byId[id]),
       })
 
       expect(resources.currentResources).toEqual({
         a: resourceA,
         b: resourceB,
-        c: resourceC
+        c: resourceC,
       })
     })
   })
@@ -126,9 +126,9 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: null
+          fetchingToken: null,
         },
-        resolvedSuccessFetchStatus: mockStatus
+        resolvedSuccessFetchStatus: mockStatus,
       })
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
@@ -142,7 +142,7 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         resolvedSuccessFetchStatus: mockStatus,
-        fetches: {}
+        fetches: {},
       })
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
@@ -156,12 +156,12 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abcd' as string | null
+          fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {
-          abcd: { test: true }
-        }
+          abcd: { test: true },
+        },
       })
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(null)
@@ -177,12 +177,12 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abcd' as string | null
+          fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {
-          abcd: { test: true }
-        }
+          abcd: { test: true },
+        },
       })
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue('this-iri-does-not-exist')
@@ -201,19 +201,19 @@ describe('Resources', () => {
         ...initialResourcesState,
         current: {
           currentIds: [mockPageIri] as string[],
-          byId: {}
-        }
+          byId: {},
+        },
       })
 
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abcd' as string | null
+          fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {
-          abcd: { test: true }
-        }
+          abcd: { test: true },
+        },
       })
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
@@ -233,31 +233,31 @@ describe('Resources', () => {
         ...initialResourcesState,
         current: {
           currentIds: [mockPageIri] as string[],
-          byId: {}
-        }
+          byId: {},
+        },
       })
 
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abcd' as string | null
+          fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {
-          abcd: { test: true }
-        }
+          abcd: { test: true },
+        },
       })
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
       vi.spyOn(resources, 'getResource').mockReturnValue({
         value: {
           data: {
-            some: 'data'
+            some: 'data',
           },
           apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        }
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          },
+        },
       })
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
@@ -275,31 +275,31 @@ describe('Resources', () => {
         ...initialResourcesState,
         current: {
           currentIds: [mockPageIri] as string[],
-          byId: {}
-        }
+          byId: {},
+        },
       })
 
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abcd' as string | null
+          fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {
-          abcd: resourceStatus
-        }
+          abcd: resourceStatus,
+        },
       })
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
       vi.spyOn(resources, 'getResource').mockReturnValue({
         value: {
           data: {
-            some: 'data'
+            some: 'data',
           },
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
+        },
       })
 
       expect(resources.displayFetchStatus).toEqual(resourceStatus)
@@ -314,8 +314,8 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: null
-        }
+          fetchingToken: null,
+        },
       })
 
       expect(resources.pageLoadResources).toBeUndefined()
@@ -328,9 +328,9 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
-        fetches: {}
+        fetches: {},
       })
 
       expect(resources.pageLoadResources).toBeUndefined()
@@ -343,13 +343,13 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
           abc: {
-            mock: true
-          }
-        }
+            mock: true,
+          },
+        },
       })
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(null)
@@ -367,11 +367,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.COMPONENT)
@@ -394,11 +394,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE_DATA)
@@ -421,11 +421,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.ROUTE)
@@ -450,11 +450,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.ROUTE)
@@ -472,16 +472,16 @@ describe('Resources', () => {
     test('Returns a component if it exists with the same reference', () => {
       const { resources, resourcesStore } = createResources()
       const component = { data: { any: 'thing', reference: 'ref' } }
-      // @ts-ignore
+      // @ts-expect-error
       resourcesStore.useStore = () => ({
         resourcesByType: {
           [utils.CwaResourceTypes.COMPONENT_GROUP]: [component, {}, {
             data: {
               some: 'dupe-not-to-return',
-              reference: 'ref'
-            }
-          }]
-        }
+              reference: 'ref',
+            },
+          }],
+        },
       })
       expect(resources.getComponentGroupByReference('ref')).toEqual(component)
     })
@@ -495,15 +495,15 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: null
-        }
+          fetchingToken: null,
+        },
       })
 
       expect(resources.pageLoadProgress.value).toEqual({
         resources: [],
         total: 0,
         complete: 0,
-        percent: 100
+        percent: 100,
       })
     })
 
@@ -517,11 +517,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
@@ -535,7 +535,7 @@ describe('Resources', () => {
         resources: [mockLayoutIri, mockPageIri],
         total: 2,
         complete: 1,
-        percent: 50
+        percent: 50,
       })
     })
 
@@ -549,11 +549,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
@@ -566,7 +566,7 @@ describe('Resources', () => {
         resources: [mockLayoutIri, mockPageIri],
         total: 2,
         complete: 0,
-        percent: 0
+        percent: 0,
       })
     })
 
@@ -579,11 +579,11 @@ describe('Resources', () => {
       fetcherStore.useStore = () => ({
         ...initialState,
         primaryFetch: {
-          fetchingToken: 'abc'
+          fetchingToken: 'abc',
         },
         fetches: {
-          abc: mockFetchStatus
-        }
+          abc: mockFetchStatus,
+        },
       })
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
@@ -596,7 +596,7 @@ describe('Resources', () => {
         resources: [mockLayoutIri, undefined],
         total: 2,
         complete: 1,
-        percent: 50
+        percent: 50,
       })
     })
   })
@@ -814,7 +814,7 @@ describe('Resources', () => {
 
       fetcherStore.useStore = () => ({
         ...initialState,
-        fetchesResolved: false
+        fetchesResolved: false,
       })
 
       expect(resources.isLoading.value).toEqual(true)
@@ -827,14 +827,14 @@ describe('Resources', () => {
 
       fetcherStore.useStore = () => ({
         ...initialState,
-        fetchesResolved: true
+        fetchesResolved: true,
       })
 
       resourcesStore.useStore = () => ({
         ...initialResourcesState,
         resourceLoadStatus: {
-          pending: 1
-        }
+          pending: 1,
+        },
       })
 
       expect(resources.isLoading.value).toEqual(true)
@@ -847,14 +847,14 @@ describe('Resources', () => {
 
       fetcherStore.useStore = () => ({
         ...initialState,
-        fetchesResolved: true
+        fetchesResolved: true,
       })
 
       resourcesStore.useStore = () => ({
         ...initialResourcesState,
         resourceLoadStatus: {
-          pending: 0
-        }
+          pending: 0,
+        },
       })
 
       expect(resources.isLoading.value).toEqual(false)
@@ -869,7 +869,7 @@ describe('Resources', () => {
 
       resourcesStore.useStore = () => ({
         ...initialState,
-        resourceLoadStatus: mockStatus
+        resourceLoadStatus: mockStatus,
       })
 
       expect(resources.resourceLoadStatus).toEqual(mockStatus)

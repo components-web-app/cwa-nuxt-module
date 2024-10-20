@@ -1,17 +1,17 @@
 import { type RouteLocationRaw, useRoute, useRouter } from 'vue-router'
 import type { Ref } from 'vue'
 import { computed } from 'vue'
-import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
+import type ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 
 export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | null>, clearPageNumberQuery?: boolean) => {
   const router = useRouter()
   const route = useRoute()
 
-  function triggerReload () {
+  function triggerReload() {
     listContent.value?.reloadItems()
   }
 
-  function goToAdd () {
+  function goToAdd() {
     router.push(computedItemLink.value('add'))
   }
 
@@ -38,6 +38,6 @@ export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | 
   return {
     goToAdd,
     triggerReload,
-    computedItemLink
+    computedItemLink,
   }
 }

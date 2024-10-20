@@ -8,26 +8,26 @@ describe('Preload headers export is correct', () => {
         '/page/layout/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
         '/page/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
         '/pageData/page/layout/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
-        '/pageData/page/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component'
+        '/pageData/page/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
       ],
       PAGE: [
         '/layout/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
-        '/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component'
+        '/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
       ],
       LAYOUT: [
-        '/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component'
+        '/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
       ],
       PAGE_DATA: [
         '/page/layout/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
-        '/page/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component'
+        '/page/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
       ],
       COMPONENT_GROUP: [
-        '/componentPositions/*/component/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component'
+        '/componentPositions/*/component/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
       ],
       COMPONENT_POSITION: [
-        '/component/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component'
+        '/component/componentGroups/*/componentPositions/*/component/componentGroups/*/componentPositions/*/component',
       ],
-      COMPONENT: ['/componentGroups/*/componentPositions/*/component']
+      COMPONENT: ['/componentGroups/*/componentPositions/*/component'],
     })
   })
 })

@@ -2,7 +2,7 @@
 import { useCwaResourceManagerTab, useCwaResourceUpload } from '#imports'
 
 const { exposeMeta, iri } = useCwaResourceManagerTab({
-  name: 'Upload'
+  name: 'Upload',
 })
 
 const { filenameInputModel, updating, fileExists, handleInputChangeFile, handleInputDeleteFile } = useCwaResourceUpload(iri)

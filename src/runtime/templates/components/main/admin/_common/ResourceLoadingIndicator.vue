@@ -8,7 +8,7 @@ const requestsOngoing = computed(() => {
   return $cwa.resourcesManager.requestCount.value > 0
 })
 
-const holder = ref<undefined|HTMLElement>()
+const holder = ref<undefined | HTMLElement>()
 const currentIndicators = ref<number[]>([])
 const indicatorCount = ref(0)
 
@@ -20,7 +20,8 @@ onMounted(() => {
         indicatorCount.value = 0
       }
       currentIndicators.value.push(indicatorCount.value)
-    } else if (currentIndicators.value.length) {
+    }
+    else if (currentIndicators.value.length) {
       currentIndicators.value.splice(0, 1)
     }
   })
@@ -28,9 +29,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="holder" class="cwa-w-full cwa-h-1 cwa-pointer-events-none">
+  <div
+    ref="holder"
+    class="cwa-w-full cwa-h-1 cwa-pointer-events-none"
+  >
     <TransitionGroup name="load-indicator">
-      <div v-for="count in currentIndicators" :key="`load-indicator-${count}`" class="cwa-absolute cwa-h-full cwa-bg-orange cwa-top-0 cwa-left-0 cwa-right-0">
+      <div
+        v-for="count in currentIndicators"
+        :key="`load-indicator-${count}`"
+        class="cwa-absolute cwa-h-full cwa-bg-orange cwa-top-0 cwa-left-0 cwa-right-0"
+      >
         <div class="cwa-shadow-[inset_-20px_0_10px_-10px] cwa-shadow-orange cwa-absolute cwa-right-full cwa-w-[2rem] cwa-h-full" />
         <div class="cwa-loader-inner-holder cwa-transition cwa-duration-300 cwa-left-0 cwa-right-0 cwa-top-0 cwa-h-full">
           <div class="cwa-loader-inner-indicator cwa-bg-white/70 cwa-h-full cwa-top-0 cwa-absolute cwa-z-10" />

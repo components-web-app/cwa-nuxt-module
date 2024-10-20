@@ -1,22 +1,23 @@
 import { describe, beforeEach, vi, test, expect, afterEach } from 'vitest'
 import { reactive } from 'vue'
-import { CwaFetcherStateInterface } from './state'
-import getters, { CwaFetcherGettersInterface } from './getters'
+import type { CwaFetcherStateInterface } from './state'
+import type { CwaFetcherGettersInterface } from './getters'
+import getters from './getters'
 import { FetcherGetterUtils } from './getter-utils'
 
 vi.mock('./getter-utils', () => {
   return {
     FetcherGetterUtils: vi.fn(() => ({
       getFetchStatusByToken: vi.fn(),
-      isFetchResolving: vi.fn()
-    }))
+      isFetchResolving: vi.fn(),
+    })),
   }
 })
 
-function createState (): CwaFetcherStateInterface {
+function createState(): CwaFetcherStateInterface {
   return {
     primaryFetch: reactive({}),
-    fetches: reactive({})
+    fetches: reactive({}),
   }
 }
 
@@ -31,13 +32,13 @@ describe('FetcherStore getters -> primaryFetchPath', () => {
       'token-a': {
         path: 'path-a',
         isPrimary: true,
-        resources: []
+        resources: [],
       },
       'token-b': {
         path: 'path-b',
         isPrimary: true,
-        resources: []
-      }
+        resources: [],
+      },
     }
   })
 
@@ -46,7 +47,7 @@ describe('FetcherStore getters -> primaryFetchPath', () => {
       { fetchingToken: undefined, successToken: undefined, result: undefined },
       { fetchingToken: 'token-a', successToken: 'token-b', result: 'path-a' },
       { fetchingToken: undefined, successToken: 'token-b', result: 'path-b' },
-      { fetchingToken: 'token-a', successToken: undefined, result: 'path-a' }
+      { fetchingToken: 'token-a', successToken: undefined, result: 'path-a' },
     ])('If the fetching token is $fetchingToken and the success token is $successToken then the path should be $result', ({ fetchingToken, successToken, result }) => {
       state.primaryFetch.successToken = successToken
       state.primaryFetch.fetchingToken = fetchingToken
@@ -81,7 +82,7 @@ describe('FetcherStore getters -> resolvedSuccessFetchStatus', () => {
   test.each([
     { isFetchResolving: false, returnFetchStatus: true, result: 'result' },
     { isFetchResolving: true, returnFetchStatus: false, result: undefined },
-    { isFetchResolving: false, returnFetchStatus: false, result: undefined }
+    { isFetchResolving: false, returnFetchStatus: false, result: undefined },
   ])('If isFetchResolving is $isFetchResolving and getFetchStatusByToken is $getFetchStatusByToken return $result', ({ isFetchResolving, returnFetchStatus, result }) => {
     const utils = FetcherGetterUtils.mock.results[0].value
     const expected = returnFetchStatus ? result : undefined
@@ -112,19 +113,19 @@ describe('FetcherStore getters -> fetchesResolved', () => {
     {
       data: {
         something: {},
-        resolving: {}
+        resolving: {},
       },
-      result: false
+      result: false,
     },
     {
       data: {
-        something: {}
+        something: {},
       },
-      result: true
-    }
+      result: true,
+    },
   ])('If data is $data the fetchesResolved result should be $result', ({
     data,
-    result
+    result,
   }) => {
     state.fetches = data
     const utils = FetcherGetterUtils.mock.results[0].value
@@ -158,7 +159,7 @@ describe('FetcherStore getters -> isFetchResolving', () => {
     })
     expect(getterFns.isFetchResolving.value('any-token')).toStrictEqual({
       fetchStatus: 'fetchStatusResult',
-      resolving: 'isResolving'
+      resolving: 'isResolving',
     })
     expect(utils.isFetchResolving).toHaveBeenCalledWith('any-token')
     expect(utils.getFetchStatusByToken).toHaveBeenCalledWith('any-token')
@@ -177,7 +178,7 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
   test('Throws an error if the token does not exist', () => {
     expect(() => {
       getterFns.isCurrentFetchingToken.value('some-token')
-    }).toThrowError("Failed to check if the token 'some-token' is current. It does not exist.")
+    }).toThrowError('Failed to check if the token \'some-token\' is current. It does not exist.')
   })
 
   test('Non-primary fetch tokens return true', () => {
@@ -185,8 +186,8 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
       'some-token': {
         path: 'any',
         isPrimary: false,
-        resources: ['/success-resource', '/not-found-resource']
-      }
+        resources: ['/success-resource', '/not-found-resource'],
+      },
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
   })
@@ -197,8 +198,8 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
         path: 'any',
         isPrimary: false,
         resources: ['/success-resource', '/not-found-resource'],
-        abort: true
-      }
+        abort: true,
+      },
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)
   })
@@ -209,8 +210,8 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
       'some-token': {
         path: 'any',
         isPrimary: true,
-        resources: ['/success-resource', '/not-found-resource']
-      }
+        resources: ['/success-resource', '/not-found-resource'],
+      },
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(true)
   })
@@ -221,8 +222,8 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
       'some-token': {
         path: 'any',
         isPrimary: true,
-        resources: ['/success-resource', '/not-found-resource']
-      }
+        resources: ['/success-resource', '/not-found-resource'],
+      },
     }
     expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)
   })

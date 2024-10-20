@@ -1,24 +1,48 @@
 <template>
-  <ListHeading title="Pages" @add="goToAdd" />
-  <ListFilter :order-options="orderOptions" :search-fields="['reference', 'title', 'uiComponent']" />
+  <ListHeading
+    title="Pages"
+    @add="goToAdd"
+  />
+  <ListFilter
+    :order-options="orderOptions"
+    :search-fields="['reference', 'title', 'uiComponent']"
+  />
   <ListContainer>
     <div>
       <div>
-        <FilterFormWrapper label="Page Type" input-id="page-type">
+        <FilterFormWrapper
+          label="Page Type"
+          input-id="page-type"
+        >
           <div class="cwa-flex cwa-space-x-2">
             <div>
-              <ListFilterButton v-model="selectedTypesModel" value="false" label="Static" background-color-class="cwa-bg-blue-600/20" border-color-class="cwa-border-blue-600" />
+              <ListFilterButton
+                v-model="selectedTypesModel"
+                value="false"
+                label="Static"
+                background-color-class="cwa-bg-blue-600/20"
+                border-color-class="cwa-border-blue-600"
+              />
             </div>
             <div>
-              <ListFilterButton v-model="selectedTypesModel" value="true" label="Dynamic" background-color-class="cwa-bg-yellow/20" border-color-class="cwa-border-yellow" />
+              <ListFilterButton
+                v-model="selectedTypesModel"
+                value="true"
+                label="Dynamic"
+                background-color-class="cwa-bg-yellow/20"
+                border-color-class="cwa-border-yellow"
+              />
             </div>
           </div>
         </FilterFormWrapper>
       </div>
     </div>
   </ListContainer>
-  <ListContent ref="listContent" fetch-url="/_/pages">
-    <template #item="{data}">
+  <ListContent
+    ref="listContent"
+    fetch-url="/_/pages"
+  >
+    <template #item="{ data }">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
           <div class="cwa-flex cwa-items-center cwa-space-x-3">
@@ -45,8 +69,8 @@
 <script lang="ts" setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
-import { useHead } from '#app'
 import { useListPage } from './composables/useListPage'
+import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
@@ -67,35 +91,35 @@ const router = useRouter()
 const orderOptions = [
   {
     label: 'New - Old',
-    value: { createdAt: 'desc' }
+    value: { createdAt: 'desc' },
   },
   {
     label: 'Old - New',
-    value: { createdAt: 'asc' }
+    value: { createdAt: 'asc' },
   },
   {
     label: 'A - Z',
-    value: { reference: 'asc' }
+    value: { reference: 'asc' },
   },
   {
     label: 'Z - A',
-    value: { reference: 'desc' }
-  }
+    value: { reference: 'desc' },
+  },
 ]
 
 const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
-  defaultValue: ['true', 'false']
+  defaultValue: ['true', 'false'],
 })
 
-function goToPage (page: string) {
+function goToPage(page: string) {
   router.push(page)
 }
 
-function getDisplayPageUi (ui: string) {
+function getDisplayPageUi(ui: string) {
   return $cwa.pagesConfig?.[ui]?.name || ui
 }
 
 useHead({
-  title: 'Pages'
+  title: 'Pages',
 })
 </script>

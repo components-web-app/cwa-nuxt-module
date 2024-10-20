@@ -1,9 +1,23 @@
 <template>
-  <ListHeading title="Routes" :hide-add="true" />
-  <ListFilter :order-options="orderOptions" :search-fields="['path']" />
-  <ListContent ref="listContent" fetch-url="/_/routes">
-    <template #item="{data, rawData}">
-      <RouteListRow :data="data" :associated-resources="rawData.associatedResources" :link-fn="computedItemLink" @delete="deleteRoute" />
+  <ListHeading
+    title="Routes"
+    :hide-add="true"
+  />
+  <ListFilter
+    :order-options="orderOptions"
+    :search-fields="['path']"
+  />
+  <ListContent
+    ref="listContent"
+    fetch-url="/_/routes"
+  >
+    <template #item="{ data, rawData }">
+      <RouteListRow
+        :data="data"
+        :associated-resources="rawData.associatedResources"
+        :link-fn="computedItemLink"
+        @delete="deleteRoute"
+      />
     </template>
   </ListContent>
 </template>
@@ -22,9 +36,9 @@ const $cwa = useCwa()
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 const { computedItemLink, triggerReload } = useListPage(listContent, true)
 
-async function deleteRoute (routeIri: string) {
+async function deleteRoute(routeIri: string) {
   await $cwa.resourcesManager.deleteResource({
-    endpoint: routeIri
+    endpoint: routeIri,
   })
   triggerReload()
 }
@@ -32,23 +46,23 @@ async function deleteRoute (routeIri: string) {
 const orderOptions = [
   {
     label: 'New - Old',
-    value: { createdAt: 'desc' }
+    value: { createdAt: 'desc' },
   },
   {
     label: 'Old - New',
-    value: { createdAt: 'asc' }
+    value: { createdAt: 'asc' },
   },
   {
     label: 'A - Z',
-    value: { path: 'asc' }
+    value: { path: 'asc' },
   },
   {
     label: 'Z - A',
-    value: { path: 'desc' }
-  }
+    value: { path: 'desc' },
+  },
 ]
 
 useHead({
-  title: 'Routes'
+  title: 'Routes',
 })
 </script>

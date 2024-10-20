@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { watchOnce } from '@vueuse/core'
 import {
-  useCwaResourceManagerTab
+  useCwaResourceManagerTab,
 } from '#cwa/runtime/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
@@ -13,35 +13,35 @@ import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataR
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
-  order: DEFAULT_TAB_ORDER
+  order: DEFAULT_TAB_ORDER,
 })
 
 const savedUiComponent = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data?.uiComponent : undefined)
 
 const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
-  debounceTime: 0
+  debounceTime: 0,
 })
 const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
-  debounceTime: 0
+  debounceTime: 0,
 })
 
 const uiSelect = useCwaSelect(uiComponentModel.model)
 const classNamesSelect = useCwaSelect(uiClassNamesModel.model)
 
-const componentMeta = ref<(CwaResourceMeta|null)[]>([])
+const componentMeta = ref<(CwaResourceMeta | null)[]>([])
 
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
 const uiOptions = computed(() => {
   const options: SelectOption[] = [{
     label: 'Default',
-    value: null
+    value: null,
   }]
   componentMeta.value.forEach((meta, index) => {
     // it seems meta can be null when re-mounting the meta resolver when changing to a draft from live (editing)
     options.push({
       label: meta?.cwaResource.name || current.value?.ui?.[index] || 'Unknown',
-      value: current.value?.ui?.[index]
+      value: current.value?.ui?.[index],
     })
   })
   return options
@@ -50,14 +50,14 @@ const uiOptions = computed(() => {
 const classOptions = computed(() => {
   const options: SelectOption[] = [{
     label: 'Default',
-    value: null
+    value: null,
   }]
   const currentClasses = current.value?.styles?.value?.classes
   if (currentClasses) {
     for (const [styleName, styles] of Object.entries(currentClasses)) {
       options.push({
         label: styleName,
-        value: styles
+        value: styles,
       })
     }
   }
@@ -73,7 +73,7 @@ const components = computed(() => {
 
 const resolverProps = computed(() => {
   return {
-    iri: iri.value
+    iri: iri.value,
   }
 })
 
@@ -82,7 +82,7 @@ const { startDataResolver } = useDataResolver(componentMeta, {
   props: resolverProps,
   propsValidator: (props: typeof resolverProps.value) => {
     return !!props.iri
-  }
+  },
 })
 // seem to need to start here for these to be consistent
 startDataResolver()
@@ -105,14 +105,19 @@ onMounted(() => {
 })
 
 defineExpose(exposeMeta)
-
 </script>
 
 <template>
   <div>
     <div class="cwa-flex cwa-space-x-2">
-      <CwaUiFormSelect v-model="uiSelect.model.value" :options="uiSelect.options.value" />
-      <CwaUiFormSelect v-model="classNamesSelect.model.value" :options="classNamesSelect.options.value" />
+      <CwaUiFormSelect
+        v-model="uiSelect.model.value"
+        :options="uiSelect.options.value"
+      />
+      <CwaUiFormSelect
+        v-model="classNamesSelect.model.value"
+        :options="classNamesSelect.options.value"
+      />
     </div>
   </div>
 </template>

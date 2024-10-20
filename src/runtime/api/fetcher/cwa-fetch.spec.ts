@@ -6,7 +6,7 @@ vi.mock('ofetch')
 
 describe('Create a fetch instances with defaults', () => {
   test('Correct defaults are set on fetch', () => {
-    // @ts-ignore
+    // @ts-expect-error
     vi.spyOn($fetch, 'create').mockImplementation(() => {
       return 'mockedFetchCreateInstance'
     })
@@ -14,9 +14,9 @@ describe('Create a fetch instances with defaults', () => {
     expect($fetch.create).toBeCalledWith({
       baseURL: 'https://my-api',
       headers: {
-        accept: 'application/ld+json,application/json'
+        accept: 'application/ld+json,application/json',
       },
-      credentials: 'include'
+      credentials: 'include',
     })
     expect(cwaFetch.fetch).toBe('mockedFetchCreateInstance')
   })

@@ -1,6 +1,9 @@
 <template>
   <div class="cwa-flex cwa-flex-col cwa-h-full">
-    <div v-if="tabs.length > 1" class="cwa-mb-4">
+    <div
+      v-if="tabs.length > 1"
+      class="cwa-mb-4"
+    >
       <div class="cwa-flex cwa-space-x-1 cwa-overflow-hidden cwa-items-center cwa-text-lg">
         <button
           v-for="(tab, index) of tabs"
@@ -15,7 +18,10 @@
       </div>
     </div>
     <div class="cwa-grow cwa-min-h-0 cwa-overflow-auto">
-      <slot v-if="tabs[selectedTabIndex]?.id" :name="tabs[selectedTabIndex]?.id">
+      <slot
+        v-if="tabs[selectedTabIndex]?.id"
+        :name="tabs[selectedTabIndex]?.id"
+      >
         No tab content provided for tab index `{{ selectedTabIndex }}`- ID: `{{ tabs[selectedTabIndex].id }}`
       </slot>
     </div>
@@ -38,7 +44,7 @@ const props = defineProps<{
   tabs: ResourceModalTab[]
 }>()
 
-function selectTab (index: number) {
+function selectTab(index: number) {
   selectedTabIndex.value = index
   // todo: attempt to fix TypeError: Cannot redefine property: __navigationId
   // replicated by opening data in admin on details tab, clicking to view the data page, opening data modal, clicking to the routes tab
@@ -48,7 +54,7 @@ function selectTab (index: number) {
   }, 100)
 }
 
-function getIndexFromHash () {
+function getIndexFromHash() {
   const currentHash = route.hash?.substring(1, route.hash.length)
   if (!currentHash) {
     return 0
@@ -57,7 +63,7 @@ function getIndexFromHash () {
   return getIndexFromId(initialHashValue)
 }
 
-function getIndexFromId (checkId: string) {
+function getIndexFromId(checkId: string) {
   const index = props.tabs.findIndex(({ id }) => id === checkId)
   return index !== -1 ? index : 0
 }
@@ -70,7 +76,7 @@ const selectedTabId = computed(() => {
 const indexAndId = computed(() => {
   return {
     index: selectedTabIndex.value,
-    id: selectedTabId.value
+    id: selectedTabId.value,
   }
 })
 

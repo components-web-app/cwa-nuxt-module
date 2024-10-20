@@ -5,7 +5,7 @@ import {
   type CwaResource,
   CwaResourceTypes,
   getPublishedResourceState,
-  getResourceTypeFromIri
+  getResourceTypeFromIri,
 } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
@@ -30,7 +30,7 @@ const resourceType = computed(() => {
   return props.currentIri ? getResourceTypeFromIri(props.currentIri) : undefined
 })
 
-const buttonLabel = computed<'Publish'|undefined>(() => {
+const buttonLabel = computed<'Publish' | undefined>(() => {
   if (publishedState.value !== false) {
     return
   }
@@ -38,30 +38,31 @@ const buttonLabel = computed<'Publish'|undefined>(() => {
 })
 
 const buttonOptions = computed(() => {
-  const ops: (ButtonOption|ButtonOption[])[] = []
+  const ops: (ButtonOption | ButtonOption[])[] = []
 
   if (!$cwa.resources.isDataPage.value || $cwa.admin.resourceStackManager.isEditingLayout.value) {
     if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
       ops.push([
         {
           label: 'Add Before',
-          value: 'add-before'
+          value: 'add-before',
         },
         {
           label: 'Add After',
-          value: 'add-after'
-        }
+          value: 'add-after',
+        },
       ])
-    } else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
+    }
+    else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
       ops.push([
         {
           label: 'Add to Start',
-          value: 'add-before'
+          value: 'add-before',
         },
         {
           label: 'Add to End',
-          value: 'add-after'
-        }
+          value: 'add-after',
+        },
       ])
     }
   }
@@ -73,18 +74,18 @@ const buttonOptions = computed(() => {
   return ops
 })
 
-async function publishResource () {
+async function publishResource() {
   publishing.value = true
   await $cwa.resourcesManager.updateResource({
     endpoint: props.currentIri,
     data: {
-      publishedAt: DateTime.local().toUTC().toISO()
-    }
+      publishedAt: DateTime.local().toUTC().toISO(),
+    },
   })
   publishing.value = false
 }
 
-function handleManagerCtaClick (value?: ModelValue) {
+function handleManagerCtaClick(value?: ModelValue) {
   if (!value) {
     buttonLabel.value === 'Publish' && publishResource()
     return

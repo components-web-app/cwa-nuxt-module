@@ -1,7 +1,10 @@
 <template>
   <div class="mx-auto flex w-full max-w-7xl items-center p-4 justify-start space-x-10 lg:px-8">
     <div class="w-full">
-      <CwaComponentGroup reference="primary" :location="props.iri" />
+      <CwaComponentGroup
+        reference="primary"
+        :location="props.iri"
+      />
     </div>
   </div>
 </template>

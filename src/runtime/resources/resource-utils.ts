@@ -7,18 +7,18 @@ export enum CwaResourceTypes {
   PAGE_DATA = 'PAGE_DATA',
   COMPONENT_GROUP = 'COMPONENT_GROUP',
   COMPONENT_POSITION = 'COMPONENT_POSITION',
-  COMPONENT = 'COMPONENT'
+  COMPONENT = 'COMPONENT',
 }
 
 export interface CwaResource {
   '@id': string
   '@type': string
-  publishedResource?: string
-  draftResource?: string
-  uiComponent?: string
-  sortValue?: number
-  componentGroup?: string
-  _metadata: {
+  'publishedResource'?: string
+  'draftResource'?: string
+  'uiComponent'?: string
+  'sortValue'?: number
+  'componentGroup'?: string
+  '_metadata': {
     adding?: {
       instantAdd: boolean
       endpoint: string
@@ -28,7 +28,7 @@ export interface CwaResource {
     publishable?: {
       published: boolean
       publishedAt: string
-    },
+    }
     // added and used locally for new/temp position resources to mix in with persisted sort values calculated from resource data
     sortDisplayNumber?: number
     [key: string]: any
@@ -51,10 +51,10 @@ const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
   [CwaResourceTypes.LAYOUT]: '/_/layouts/',
   [CwaResourceTypes.COMPONENT_GROUP]: '/_/component_groups/',
   [CwaResourceTypes.COMPONENT_POSITION]: '/_/component_positions/',
-  [CwaResourceTypes.COMPONENT]: '/component/'
+  [CwaResourceTypes.COMPONENT]: '/component/',
 }
 
-export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined {
+export function getResourceTypeFromIri(iri: string): CwaResourceTypes | undefined {
   for (const type of Object.values(CwaResourceTypes)) {
     const prefix: string = resourceTypeToIriPrefix[type]
     if (iri.startsWith(prefix) || iri === prefix.slice(0, -1)) {
@@ -63,13 +63,13 @@ export function getResourceTypeFromIri (iri: string): CwaResourceTypes|undefined
   }
 }
 
-export function getPublishedResourceState (resource: Pick<CwaCurrentResourceInterface, 'data'>): undefined|boolean {
+export function getPublishedResourceState(resource: Pick<CwaCurrentResourceInterface, 'data'>): undefined | boolean {
   const publishableMeta = resource.data?._metadata.publishable
   return publishableMeta?.published
 }
 
 // todo: used in mercure, perhaps we should use the new resource store mapping though? This doesn't require any more fetches to have been made though..
-export function getPublishedResourceIri (resourceData: CwaResource): string|null {
+export function getPublishedResourceIri(resourceData: CwaResource): string | null {
   const publishableMetadata = resourceData._metadata?.publishable
   const resourceIri = resourceData['@id']
   // not a publishable resource
@@ -82,14 +82,14 @@ export function getPublishedResourceIri (resourceData: CwaResource): string|null
   return resourceData.publishedResource || null
 }
 
-export function isCwaResource (obj: any): obj is CwaResource {
+export function isCwaResource(obj: any): obj is CwaResource {
   if (typeof obj !== 'object') {
     return false
   }
   return obj['@id'] !== undefined && obj['@type'] !== undefined && obj._metadata !== undefined && typeof obj._metadata === 'object'
 }
 
-export function isCwaResourceSame (resource1: CwaResource, resource2: CwaResource): boolean {
+export function isCwaResourceSame(resource1: CwaResource, resource2: CwaResource): boolean {
   const clearAndStringify = (obj: CwaResource): string => {
     const newObj: any = Object.assign({}, obj)
     delete newObj.publishedResource
@@ -117,5 +117,5 @@ export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap =
   [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
   [CwaResourceTypes.COMPONENT_POSITION]: ['component'],
   // draft will always be fetched by default if exists and auth to do, so we just need to fetch the associated published resource - will only be returned if we have auth
-  [CwaResourceTypes.COMPONENT]: ['componentGroups', 'publishedResource']
+  [CwaResourceTypes.COMPONENT]: ['componentGroups', 'publishedResource'],
 }

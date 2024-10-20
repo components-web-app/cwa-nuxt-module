@@ -8,19 +8,20 @@ export const useLogin = () => {
 
   const credentials = reactive({
     username: '',
-    password: ''
+    password: '',
   })
 
   const error = ref()
   const submitting = ref(false)
 
-  async function signIn () {
+  async function signIn() {
     submitting.value = true
     error.value = undefined
     const user = await $cwa.auth.signIn(credentials)
     if (user instanceof FetchError) {
       error.value = user.data?.message || user.statusMessage
-    } else {
+    }
+    else {
       navigateTo('/')
     }
     submitting.value = false
@@ -30,6 +31,6 @@ export const useLogin = () => {
     credentials,
     error,
     submitting,
-    signIn
+    signIn,
   }
 }

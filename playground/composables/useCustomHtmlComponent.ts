@@ -1,11 +1,11 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useCwaResourceModel, useCwa } from '#imports'
-import TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
+import type TipTapHtmlEditor from '~/components/TipTapHtmlEditor.vue'
 
 export const useCustomHtmlComponent = (iriRef: Ref<string>) => {
   const $cwa = useCwa()
-  const editorComponent = ref<typeof TipTapHtmlEditor|undefined>()
+  const editorComponent = ref<typeof TipTapHtmlEditor | undefined>()
 
   const resourceModel = useCwaResourceModel<string>(iriRef, 'html')
   const disableEditor = computed(() => !$cwa.admin.isEditing || $cwa.admin.resourceStackManager.currentIri.value !== iriRef.value)
@@ -15,12 +15,12 @@ export const useCustomHtmlComponent = (iriRef: Ref<string>) => {
     await nextTick()
     $cwa.admin.resourceStackManager.redrawFocus()
   }, {
-    flush: 'post'
+    flush: 'post',
   })
 
   return {
     editorComponent,
     resourceModel,
-    disableEditor
+    disableEditor,
   }
 }

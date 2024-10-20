@@ -11,20 +11,20 @@ import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/Button
 import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
 const props = defineProps<{
-  modelValue: ModelValue,
+  modelValue: ModelValue
   endpoint: string
   property: string
   searchProperties?: string[]
   notNullable?: boolean
 }>()
 
-const emit = defineEmits<{(e: 'update:modelValue', value?: ModelValue): void }>()
+const emit = defineEmits<{ (e: 'update:modelValue', value?: ModelValue): void }>()
 
 const $cwa = useCwa()
 
 const [trigger, container] = usePopper({
   placement: 'top-start',
-  offsetDistance: 4
+  offsetDistance: 4,
 })
 
 const selectedResource = ref<CwaResource>()
@@ -43,12 +43,12 @@ const open = computed(() => {
 let debouncedSearchCall: any
 
 const value = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (value) {
+  set(value) {
     emit('update:modelValue', value)
-  }
+  },
 })
 const resourcePropertyValue = computed(() => {
   return selectedResource.value?.[props.property]
@@ -63,7 +63,7 @@ const displaySearchResults = computed(() => {
   return [...searchResults.value].reverse().map(result => ({ value: result['@id'], label: result[props.property] }))
 })
 
-async function fetchResource () {
+async function fetchResource() {
   if (!value.value) {
     fetchingCurrentResource.value = 0
     selectedResource.value = undefined
@@ -73,7 +73,7 @@ async function fetchResource () {
   const newResource = await $cwa.fetchResource({
     path: `${value.value}`,
     noSave: false,
-    shallowFetch: true
+    shallowFetch: true,
   })
   if (fetchCurrentCount.value === fetchingCurrentResource.value) {
     selectedResource.value = newResource
@@ -81,11 +81,11 @@ async function fetchResource () {
   }
 }
 
-async function search () {
+async function search() {
   debounceFetchActive.value = false
-  const searchParamsObj: { [key:string]: string } = {
+  const searchParamsObj: { [key: string]: string } = {
     perPage: '6',
-    [`order[${props.property}]`]: 'asc'
+    [`order[${props.property}]`]: 'asc',
   }
   if (fetchingSearchValue.value && fetchingSearchValue.value === searchValue.value) {
     return
@@ -106,14 +106,15 @@ async function search () {
     for (const prop of props.searchProperties) {
       searchParamsObj[prop] = searchValue.value
     }
-  } else {
+  }
+  else {
     searchParamsObj[props.property] = searchValue.value
   }
   const params = new URLSearchParams(searchParamsObj)
   const query = params.toString()
   const path = `${props.endpoint}?${query}`
   const fetch = $cwa.fetch({
-    path
+    path,
   })
   const result = await fetch.response
   if (searchValue.value === fetchingSearchValue.value) {
@@ -122,20 +123,20 @@ async function search () {
   }
 }
 
-function clearResource () {
+function clearResource() {
   if (props.notNullable) {
     return
   }
   value.value = null
 }
 
-function handleOptionClick (clickValue: ModelValue, close: () => void) {
+function handleOptionClick(clickValue: ModelValue, close: () => void) {
   value.value = clickValue
   close()
   focussed.value = false
   searchValue.value = resourcePropertyValue.value
 }
-function unfocus () {
+function unfocus() {
   setTimeout(() => {
     focussed.value = false
   }, 100)
@@ -173,23 +174,57 @@ onMounted(() => {
 
 <template>
   <Popover class="cwa-flex cwa-items-center cwa-space-x-2">
-    <div ref="trigger" class="cwa-relative">
-      <CwaUiFormInput v-model="searchValue" class="cwa-pr-8" :disabled="fetchingCurrentResource !== 0" @focus="focussed = true" @blur="unfocus" />
-      <div v-if="fetchingCurrentResource !== 0" class="cwa-absolute cwa-top-1/2 -cwa-translate-y-1/2 cwa-left-2">
+    <div
+      ref="trigger"
+      class="cwa-relative"
+    >
+      <CwaUiFormInput
+        v-model="searchValue"
+        class="cwa-pr-8"
+        :disabled="fetchingCurrentResource !== 0"
+        @focus="focussed = true"
+        @blur="unfocus"
+      />
+      <div
+        v-if="fetchingCurrentResource !== 0"
+        class="cwa-absolute cwa-top-1/2 -cwa-translate-y-1/2 cwa-left-2"
+      >
         <Spinner :show="true" />
       </div>
-      <button v-if="!notNullable && !!resourcePropertyValue" class="cwa-absolute cwa-right-1 cwa-top-1/2 -cwa-translate-y-1/2 cwa-opacity-50 hover:cwa-opacity-100 cwa-transition" @click="clearResource">
+      <button
+        v-if="!notNullable && !!resourcePropertyValue"
+        class="cwa-absolute cwa-right-1 cwa-top-1/2 -cwa-translate-y-1/2 cwa-opacity-50 hover:cwa-opacity-100 cwa-transition"
+        @click="clearResource"
+      >
         <CwaUiIconXMarkIcon class="cwa-w-6" />
       </button>
     </div>
     <div v-if="open">
-      <PopoverPanel v-slot="{ close }" ref="container" static class="cwa-absolute cwa-max-h-60 cwa-min-w-full cwa-max-w-[300px] cwa-overflow-auto cwa-dark-blur cwa-border-0 cwa-outline-dotted cwa-outline-1 cwa-outline-stone-400">
+      <PopoverPanel
+        v-slot="{ close }"
+        ref="container"
+        static
+        class="cwa-absolute cwa-max-h-60 cwa-min-w-full cwa-max-w-[300px] cwa-overflow-auto cwa-dark-blur cwa-border-0 cwa-outline-dotted cwa-outline-1 cwa-outline-stone-400"
+      >
         <div v-if="showLoadingIndicator">
           Loading...
         </div>
-        <template v-for="(option, index) of displaySearchResults" v-else>
-          <ButtonPopoverGroup v-if="Array.isArray(option)" :key="`popover-group-option-${index}`" :options="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
-          <ButtonPopoverItem v-else :key="`popover-item-option-${index}`" :option="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
+        <template
+          v-for="(option, index) of displaySearchResults"
+          v-else
+        >
+          <ButtonPopoverGroup
+            v-if="Array.isArray(option)"
+            :key="`popover-group-option-${index}`"
+            :options="option"
+            @click="(value: ModelValue) => handleOptionClick(value, close)"
+          />
+          <ButtonPopoverItem
+            v-else
+            :key="`popover-item-option-${index}`"
+            :option="option"
+            @click="(value: ModelValue) => handleOptionClick(value, close)"
+          />
         </template>
       </PopoverPanel>
     </div>

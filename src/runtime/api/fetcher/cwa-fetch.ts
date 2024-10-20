@@ -4,13 +4,13 @@ import { $fetch, type $Fetch } from 'ofetch'
 export default class CwaFetch {
   public readonly fetch: $Fetch
 
-  constructor (baseURL: string) {
+  constructor(baseURL: string) {
     this.fetch = $fetch.create({
       baseURL,
       headers: {
-        accept: 'application/ld+json,application/json'
+        accept: 'application/ld+json,application/json',
       },
-      credentials: 'include'
+      credentials: 'include',
     })
   }
 }

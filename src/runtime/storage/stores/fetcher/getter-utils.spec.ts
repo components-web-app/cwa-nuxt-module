@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
-import { CwaFetcherStateInterface, FetchStatus } from './state'
+import type { CwaFetcherStateInterface, FetchStatus } from './state'
 import { FetcherGetterUtils } from './getter-utils'
 
-function createState (): CwaFetcherStateInterface {
+function createState(): CwaFetcherStateInterface {
   return {
     primaryFetch: reactive({}),
-    fetches: reactive({})
+    fetches: reactive({}),
   }
 }
 
@@ -31,10 +31,10 @@ describe('FetcherStore getters -> getFetchStatusByToken', () => {
     const fetchStatus = {
       path: 'any',
       isPrimary: false,
-      resources: []
+      resources: [],
     }
     state.fetches = {
-      'some-token': fetchStatus
+      'some-token': fetchStatus,
     }
     expect(getterUtils.getFetchStatusByToken('some-token')).toStrictEqual(fetchStatus)
   })
@@ -65,8 +65,8 @@ describe('FetcherStore getters -> isFetchResolving', () => {
         path: 'any',
         isPrimary: false,
         resources: ['/success-resource', '/not-found-resource'],
-        abort: true
-      }
+        abort: true,
+      },
     }
     expect(getterUtils.isFetchResolving('some-token')).toBe(false)
   })
@@ -76,8 +76,8 @@ describe('FetcherStore getters -> isFetchResolving', () => {
       'some-token': {
         path: 'any',
         isPrimary: false,
-        resources: []
-      }
+        resources: [],
+      },
     }
     expect(getterUtils.isFetchResolving('some-token')).toBe(false)
   })
@@ -86,25 +86,25 @@ describe('FetcherStore getters -> isFetchResolving', () => {
     { manifest: false, manifestResources: undefined, manifestError: undefined, result: false },
     { manifest: true, manifestResources: undefined, manifestError: undefined, result: true },
     { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: false },
-    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: false }
+    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: false },
   ])(
-    "If manifest is '$manifest', manifest resources are '$manifestResources' and manifest error is '$manifestError' then the result should be '$result'",
-    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined|string[], manifestError: any|undefined, result: boolean }
+    'If manifest is \'$manifest\', manifest resources are \'$manifestResources\' and manifest error is \'$manifestError\' then the result should be \'$result\'',
+    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined | string[], manifestError: any | undefined, result: boolean },
     ) => {
       const currentFetch: FetchStatus = {
         path: 'any',
         isPrimary: false,
-        resources: ['/success-resource', '/not-found-resource']
+        resources: ['/success-resource', '/not-found-resource'],
       }
       if (manifest) {
         currentFetch.manifest = {
           path: 'any',
           resources: manifestResources,
-          error: manifestError
+          error: manifestError,
         }
       }
       state.fetches = {
-        'some-token': currentFetch
+        'some-token': currentFetch,
       }
       expect(getterUtils.isFetchResolving('some-token')).toBe(result)
     })

@@ -11,16 +11,16 @@ interface resolveTabsOps { resourceType?: string, resourceConfig?: CwaResourceMe
 
 export default class ManagerTabsResolver {
   private cwa: Cwa
-  constructor () {
+  constructor() {
     this.cwa = useCwa()
   }
 
-  private* getComponentGroupTabs () {
+  private* getComponentGroupTabs() {
     yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Component.vue'))
     yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Position.vue'))
   }
 
-  private* getComponentPositionTabs () {
+  private* getComponentPositionTabs() {
     if (this.cwa.resources.isDataPage.value) {
       yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/DataPage.vue'))
       return
@@ -32,7 +32,7 @@ export default class ManagerTabsResolver {
     // yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Static.vue'))
   }
 
-  private* getComponentTabs (resource: CwaCurrentResourceInterface) {
+  private* getComponentTabs(resource: CwaCurrentResourceInterface) {
     yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/Ui.vue'))
     yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/component/Order.vue'))
     if (getPublishedResourceState(resource) !== undefined) {
@@ -40,9 +40,9 @@ export default class ManagerTabsResolver {
     }
   }
 
-  public resolve (ops: resolveTabsOps) {
+  public resolve(ops: resolveTabsOps) {
     let tabs: ManagerTab[] = [
-      defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/ResourceInfoTab.vue'))
+      defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/ResourceInfoTab.vue')),
     ]
     if (ops.resourceConfig?.managerTabs) {
       tabs = [...tabs, ...ops.resourceConfig.managerTabs]

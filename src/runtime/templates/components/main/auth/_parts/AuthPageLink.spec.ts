@@ -3,12 +3,12 @@ import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import AuthPageLink from './AuthPageLink.vue'
 
-function createWrapper () {
+function createWrapper() {
   return shallowMount(AuthPageLink, {
     props: {
       linkText: 'Click here to get money',
-      linkTo: '/bank/loan'
-    }
+      linkTo: '/bank/loan',
+    },
   })
 }
 

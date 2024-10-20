@@ -1,8 +1,17 @@
 <template>
-  <ListHeading title="Layouts" @add="goToAdd" />
-  <ListFilter :order-options="orderOptions" :search-fields="['reference', 'uiComponent']" />
-  <ListContent ref="listContent" fetch-url="/_/layouts">
-    <template #item="{data}">
+  <ListHeading
+    title="Layouts"
+    @add="goToAdd"
+  />
+  <ListFilter
+    :order-options="orderOptions"
+    :search-fields="['reference', 'uiComponent']"
+  />
+  <ListContent
+    ref="listContent"
+    fetch-url="/_/layouts"
+  >
+    <template #item="{ data }">
       <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
         <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
           <span class="cwa-text-xl">{{ data.reference }}</span>
@@ -38,27 +47,27 @@ const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const orderOptions = [
   {
     label: 'New - Old',
-    value: { createdAt: 'desc' }
+    value: { createdAt: 'desc' },
   },
   {
     label: 'Old - New',
-    value: { createdAt: 'asc' }
+    value: { createdAt: 'asc' },
   },
   {
     label: 'A - Z',
-    value: { reference: 'asc' }
+    value: { reference: 'asc' },
   },
   {
     label: 'Z - A',
-    value: { reference: 'desc' }
-  }
+    value: { reference: 'desc' },
+  },
 ]
 
-function getDisplayLayoutUi (ui: string) {
+function getDisplayLayoutUi(ui: string) {
   return $cwa.layoutsConfig?.[ui]?.name || ui.replace(/^CwaLayout/, '')
 }
 
 useHead({
-  title: 'Layouts'
+  title: 'Layouts',
 })
 </script>

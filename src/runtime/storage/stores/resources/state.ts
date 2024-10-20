@@ -8,7 +8,7 @@ export const NEW_RESOURCE_IRI = '__new__'
 export enum CwaResourceApiStatuses {
   ERROR = -1,
   IN_PROGRESS = 0,
-  SUCCESS = 1
+  SUCCESS = 1,
 }
 
 interface SsrApiState {
@@ -16,23 +16,23 @@ interface SsrApiState {
 }
 
 export interface CwaResourceApiStateGeneral extends SsrApiState {
-  status: CwaResourceApiStatuses.IN_PROGRESS|undefined,
+  status: CwaResourceApiStatuses.IN_PROGRESS | undefined
   headers?: CwaFetchRequestHeaders
 }
 
 export interface CwaResourceApiStateError extends SsrApiState {
-  status: CwaResourceApiStatuses.ERROR,
-  error?: CwaResourceErrorObject,
+  status: CwaResourceApiStatuses.ERROR
+  error?: CwaResourceErrorObject
   fetchedAt: number
 }
 
 export interface CwaResourceApiStateSuccess extends SsrApiState {
-  status: CwaResourceApiStatuses.SUCCESS,
-  headers: CwaFetchRequestHeaders,
+  status: CwaResourceApiStatuses.SUCCESS
+  headers: CwaFetchRequestHeaders
   fetchedAt: number
 }
 
-declare type CwaResourceApiState = CwaResourceApiStateGeneral|CwaResourceApiStateError|CwaResourceApiStateSuccess
+declare type CwaResourceApiState = CwaResourceApiStateGeneral | CwaResourceApiStateError | CwaResourceApiStateSuccess
 
 export interface CwaCurrentResourceInterface {
   data?: CwaResource
@@ -48,7 +48,7 @@ export interface CwaResourcesStateInterface {
   current: {
     byId: {
       [key: string]: CwaCurrentResourceInterface
-    },
+    }
     allIds: Array<string>
     currentIds: Array<string>
     publishableMapping: Array<PublishableMapping>
@@ -57,13 +57,13 @@ export interface CwaResourcesStateInterface {
   new: {
     byId: {
       [key: string]: {
-        resource: any,
+        resource: any
         path?: string
       }
-    },
+    }
     allIds: Array<string>
   }
-  adding: Ref<undefined|{
+  adding: Ref<undefined | {
     resource: string
     position?: string
   }>
@@ -76,12 +76,12 @@ export default function (): CwaResourcesStateInterface {
       allIds: [],
       currentIds: [],
       publishableMapping: [],
-      positionsByComponent: {}
+      positionsByComponent: {},
     }),
     new: reactive({
       byId: {},
-      allIds: []
+      allIds: [],
     }),
-    adding: ref(undefined)
+    adding: ref(undefined),
   }
 }

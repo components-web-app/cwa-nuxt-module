@@ -9,30 +9,30 @@ import ComponentPosition from './ComponentPosition.vue'
 
 const mockComponentIri = 'test'
 
-function createWrapper () {
-  // @ts-ignore
+function createWrapper() {
+  // @ts-expect-error
   vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
-    getResource: vi.fn(() => ref({ data: { component: mockComponentIri, '@id': '/position-iri' } }))
+    getResource: vi.fn(() => ref({ data: { 'component': mockComponentIri, '@id': '/position-iri' } })),
   }))
   vi.spyOn(cwaResourceManageableComposable, 'useCwaResourceManageable').mockImplementation(() => ({}))
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     admin: {
-      isEditing: false
+      isEditing: false,
     },
     resources: {
       findPublishedComponentIri: vi.fn(() => ref(mockComponentIri)),
-      getResource: vi.fn(() => undefined)
+      getResource: vi.fn(() => undefined),
     },
     resourcesManager: {
-      addResourceEvent: ref(undefined)
-    }
+      addResourceEvent: ref(undefined),
+    },
   }))
 
   return shallowMount(ComponentPosition, {
     props: {
-      iri: '/position-iri'
-    }
+      iri: '/position-iri',
+    },
   })
 }
 

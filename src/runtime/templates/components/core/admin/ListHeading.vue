@@ -9,7 +9,10 @@
           </h1>
         </div>
         <div v-if="!hideAdd">
-          <button class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-border-transparent cwa-p-2.5" @click="$emit('add')">
+          <button
+            class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-border-transparent cwa-p-2.5"
+            @click="$emit('add')"
+          >
             <CwaUiIconPlusIcon class="cwa-w-4 cwa-h-4" />
             <span class="cwa-sr-only">Add</span>
           </button>
@@ -23,7 +26,7 @@
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 
 defineProps<{
-  title: string,
+  title: string
   hideAdd?: boolean
 }>()
 defineEmits<{

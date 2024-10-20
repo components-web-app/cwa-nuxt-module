@@ -1,17 +1,17 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
-import { AdminStore } from '../storage/stores/admin/admin-store'
+import type { AdminStore } from '../storage/stores/admin/admin-store'
 
 export default class NavigationGuard {
   private programmatic = false
-  public constructor (private router: Router, private adminStoreDefinition: AdminStore) {
+  public constructor(private router: Router, private adminStoreDefinition: AdminStore) {
     this.extendRouteMethods()
   }
 
-  private extendRouteMethods () {
+  private extendRouteMethods() {
     ['push', 'go', 'back', 'forward', 'replace'].forEach((methodName) => {
-      // @ts-ignore
+      // @ts-expect-error
       const routerFn: (...args: any[]) => any = this.router[methodName]
-      // @ts-ignore
+      // @ts-expect-error
       this.router[methodName] = (...args) => {
         this.programmatic = true
         return routerFn.apply(this.router, args)
@@ -19,7 +19,7 @@ export default class NavigationGuard {
     })
   }
 
-  private isRouteForcedNavigation (toRoute: RouteLocationNormalized) {
+  private isRouteForcedNavigation(toRoute: RouteLocationNormalized) {
     const cwaForceQuery = toRoute.query?.cwa_force === 'true'
     if (cwaForceQuery) {
       delete toRoute.query.cwa_force
@@ -30,18 +30,18 @@ export default class NavigationGuard {
     return cwaForceParam === 'true'
   }
 
-  private allowNavigation (toRoute: RouteLocationNormalized) {
-    return this.isRouteForcedNavigation(toRoute) ||
-      !this.programmatic ||
-      !this.navigationDisabled
+  private allowNavigation(toRoute: RouteLocationNormalized) {
+    return this.isRouteForcedNavigation(toRoute)
+      || !this.programmatic
+      || !this.navigationDisabled
   }
 
-  public get navigationDisabled () {
-    return this.adminStore.state.isEditing &&
-      !this.adminStore.state.navigationGuardDisabled
+  public get navigationDisabled() {
+    return this.adminStore.state.isEditing
+      && !this.adminStore.state.navigationGuardDisabled
   }
 
-  public get adminNavigationGuardFn () {
+  public get adminNavigationGuardFn() {
     return (toRoute: RouteLocationNormalized) => {
       try {
         const cwaForceQuery = toRoute.query?.cwa_force
@@ -58,15 +58,16 @@ export default class NavigationGuard {
         return {
           path: toRoute.path,
           query: toRoute.query,
-          hash: toRoute.hash
+          hash: toRoute.hash,
         }
-      } finally {
+      }
+      finally {
         this.programmatic = false
       }
     }
   }
 
-  private get adminStore () {
+  private get adminStore() {
     return this.adminStoreDefinition.useStore()
   }
 }

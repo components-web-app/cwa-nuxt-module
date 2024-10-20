@@ -4,11 +4,11 @@ import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-en
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 
-export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
+export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>) => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
-  function getFilename () {
+  function getFilename() {
     return fileData.value ? `Existing Image (${fileData.value.formattedFileSize})` : ''
   }
 
@@ -21,7 +21,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
   const { endpoint: updateEndpoint } = useCwaResourceEndpoint(iri, '/upload')
   const { endpoint: deleteEndpoint } = useCwaResourceEndpoint(iri)
 
-  async function handleInputChangeFile (newFile: File|undefined) {
+  async function handleInputChangeFile(newFile: File | undefined) {
     if (!newFile || !iri.value) {
       return
     }
@@ -33,26 +33,26 @@ export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
       endpoint: updateEndpoint.value,
       data: formData,
       headers: {
-        accept: '*/*'
-      }
+        accept: '*/*',
+      },
     })
     filenameInputModel.value = getFilename()
     updating.value = false
   }
 
-  async function confirmDelete () {
+  async function confirmDelete() {
     const alertData = {
       title: 'Delete this image?',
-      content: '<p>Are you sure you want to permanently delete this image?</p>'
+      content: '<p>Are you sure you want to permanently delete this image?</p>',
     }
-    // @ts-ignore-next-line
+    // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
 
     return !isCanceled
   }
 
-  async function handleInputDeleteFile () {
+  async function handleInputDeleteFile() {
     if (!fileExists.value || !iri.value) {
       return
     }
@@ -63,8 +63,8 @@ export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
     await $cwa.resourcesManager.updateResource({
       endpoint: deleteEndpoint.value,
       data: {
-        file: null
-      }
+        file: null,
+      },
     })
     fileExists.value = false
     filenameInputModel.value = ''
@@ -76,6 +76,6 @@ export const useCwaResourceUpload = (iri: ComputedRef<string|undefined>) => {
     updating,
     fileExists,
     handleInputChangeFile,
-    handleInputDeleteFile
+    handleInputDeleteFile,
   }
 }

@@ -6,7 +6,7 @@ import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 
 const { exposeMeta, createComputedState, $cwa } = useCwaResourceManagerTab({
   name: 'Order',
-  order: DEFAULT_TAB_ORDER
+  order: DEFAULT_TAB_ORDER,
 })
 
 defineExpose(exposeMeta)
@@ -15,37 +15,37 @@ const reordering = createComputedState<boolean>('reordering', false)
 const positionIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
 
 const orderValue = computed({
-  get () {
+  get() {
     if (!positionIri) {
       return 0
     }
     return $cwa.resources.getPositionSortDisplayNumber(positionIri) || 0
   },
-  set (newValue: number) {
+  set(newValue: number) {
     if (!positionIri) {
       return
     }
     $cwa.admin.eventBus.emit('reorder', {
       positionIri,
-      location: newValue
+      location: newValue,
     })
-  }
+  },
 })
 
-function movePosition (location: 'next'|'previous') {
+function movePosition(location: 'next' | 'previous') {
   if (!positionIri) {
     return
   }
   $cwa.admin.eventBus.emit('reorder', {
     positionIri,
-    location
+    location,
   })
 }
 
-function moveUp () {
+function moveUp() {
   movePosition('previous')
 }
-function moveDown () {
+function moveDown() {
   movePosition('next')
 }
 </script>
@@ -53,10 +53,19 @@ function moveDown () {
 <template>
   <div>
     <div class="cwa-flex cwa-space-x-4">
-      <CwaUiFormToggle v-model="reordering" label="Enable reordering" />
-      <div class="cwa-flex cwa-space-x-4" :class="{ 'cwa-pointer-events-none cwa-opacity-30': !reordering || $cwa.resourcesManager.requestCount.value }">
+      <CwaUiFormToggle
+        v-model="reordering"
+        label="Enable reordering"
+      />
+      <div
+        class="cwa-flex cwa-space-x-4"
+        :class="{ 'cwa-pointer-events-none cwa-opacity-30': !reordering || $cwa.resourcesManager.requestCount.value }"
+      >
         <div class="cwa-max-w-[100px]">
-          <CwaUiFormInput v-model="orderValue" type="number" />
+          <CwaUiFormInput
+            v-model="orderValue"
+            type="number"
+          />
         </div>
         <div class="cwa-flex cwa-space-x-2">
           <CwaUiFormButton @click="moveUp">

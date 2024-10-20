@@ -4,11 +4,11 @@ import type { CwaFetcherStateInterface, FetchStatus } from './state'
 import { FetcherGetterUtils } from './getter-utils'
 
 export interface CwaFetcherGettersInterface {
-  resolvedSuccessFetchStatus: ComputedRef<FetchStatus|undefined>
-  primaryFetchPath: ComputedRef<string|undefined>
-  fetchesResolved: ComputedRef<boolean>,
-  isFetchResolving: ComputedRef<(token: string) => { fetchStatus: FetchStatus|undefined, resolving: boolean }>,
-  isCurrentFetchingToken: ComputedRef<(token: string) => boolean|undefined>
+  resolvedSuccessFetchStatus: ComputedRef<FetchStatus | undefined>
+  primaryFetchPath: ComputedRef<string | undefined>
+  fetchesResolved: ComputedRef<boolean>
+  isFetchResolving: ComputedRef<(token: string) => { fetchStatus: FetchStatus | undefined, resolving: boolean }>
+  isCurrentFetchingToken: ComputedRef<(token: string) => boolean | undefined>
 }
 
 export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGettersInterface {
@@ -47,7 +47,7 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
     isFetchResolving: computed(() => {
       return (token: string) => ({
         fetchStatus: utils.getFetchStatusByToken(token),
-        resolving: utils.isFetchResolving(token)
+        resolving: utils.isFetchResolving(token),
       })
     }),
     isCurrentFetchingToken: computed(() => {
@@ -61,6 +61,6 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
         }
         return !fetchStatus.isPrimary || token === fetcherState.primaryFetch.fetchingToken
       }
-    })
+    }),
   }
 }

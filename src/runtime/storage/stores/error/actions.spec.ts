@@ -18,7 +18,7 @@ describe('Errors -> error', () => {
   test('add error in the state', () => {
     errorsActions.error({ endpoint: '/bar', data: {} }, createFetchError({
       options: { method: 'GET' },
-      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'hydra:Error', 'hydra:description': 'Hello darkness my old friend' } }
+      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'hydra:Error', 'hydra:description': 'Hello darkness my old friend' } },
     }))
 
     const err = errorsState.byId[errorsState.allIds[0]]
@@ -30,7 +30,7 @@ describe('Errors -> error', () => {
   test('remove error by endpoint', () => {
     errorsActions.error({ endpoint: '/bar', data: {} }, createFetchError({
       options: { method: 'GET' },
-      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'hydra:Error', 'hydra:description': 'Hello darkness my old friend' } }
+      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'hydra:Error', 'hydra:description': 'Hello darkness my old friend' } },
     }))
     expect(errorsState.allEndpoints.has('/bar')).toBeTruthy()
     errorsActions.removeByEndpoint('/bar')
@@ -41,7 +41,7 @@ describe('Errors -> error', () => {
   test('remove error by id', () => {
     errorsActions.error({ endpoint: '/bar', data: {} }, createFetchError({
       options: { method: 'GET' },
-      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'hydra:Error', 'hydra:description': 'Hello darkness my old friend' } }
+      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'hydra:Error', 'hydra:description': 'Hello darkness my old friend' } },
     }))
     const id = errorsState.allIds[0]
     errorsActions.removeById(id)
@@ -54,7 +54,7 @@ describe('Errors -> error', () => {
     errorsActions.error({ endpoint: '/bar', data: {} }, createFetchError({
       error: new TypeError('Network issue'),
       options: {},
-      response: {}
+      response: {},
     }))
 
     const err = errorsState.byId[errorsState.allIds[0]]
@@ -65,7 +65,7 @@ describe('Errors -> error', () => {
   test('non-json error', () => {
     errorsActions.error({ endpoint: '/bar', data: {} }, createFetchError({
       options: {},
-      response: { _data: '<html>', statusCode: 502 }
+      response: { _data: '<html>', statusCode: 502 },
     }))
 
     const err = errorsState.byId[errorsState.allIds[0]]

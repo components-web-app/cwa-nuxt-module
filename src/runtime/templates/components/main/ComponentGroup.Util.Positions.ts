@@ -15,7 +15,7 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
   }
 }
 
-export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $cwa: Cwa) => {
+export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>, $cwa: Cwa) => {
   const updateRequests: Ref<{ [iri: string]: { debounced?: any, apiRequest?: any } }> = ref({})
 
   const groupIsReordering = computed(() => {
@@ -30,8 +30,8 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
     return iri.value ? $cwa.resources.getOrderedPositionsForGroup(iri.value) : undefined
   })
 
-  let oldPositions: string[]|undefined
-  function handleReorderEvent (event: ReorderEvent) {
+  let oldPositions: string[] | undefined
+  function handleReorderEvent(event: ReorderEvent) {
     if (!groupIsReordering.value || !componentPositions.value) {
       return
     }
@@ -72,7 +72,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       }
       currentResource._metadata.sortDisplayNumber = index + 1
       $cwa.resourcesManager.saveResource({
-        resource: currentResource
+        resource: currentResource,
       })
     }
     $cwa.admin.eventBus.emit('redrawFocus', undefined)
@@ -92,12 +92,13 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       if (updateRequests.value[event.positionIri].apiRequest) {
         await updateRequests.value[event.positionIri].apiRequest
       }
+
       componentPositions.value && sendUpdatePositionRequest(event.positionIri, componentPositions.value, savedPositions)
     }, 1000)
     updateRequests.value[event.positionIri].debounced()
   }
 
-  function sendUpdatePositionRequest (iri: string, newPositions: string[], oldPositions: string[]) {
+  function sendUpdatePositionRequest(iri: string, newPositions: string[], oldPositions: string[]) {
     if (!updateRequests.value[iri]) {
       return
     }
@@ -127,8 +128,8 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
       updateRequests.value[iri].apiRequest = $cwa.resourcesManager.updateResource({
         endpoint: iri,
         data: {
-          sortValue: positionToOverwriteSortValue
-        }
+          sortValue: positionToOverwriteSortValue,
+        },
       })
       updateRequests.value[iri].apiRequest.then(() => {
         updateRelatedLocalSortValues(iri, newIndex, oldIndex, oldPositions)
@@ -137,7 +138,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
     })
   }
 
-  function updateRelatedLocalSortValues (iri: string, newIndex: number, oldIndex: number, oldPositions: string[]) {
+  function updateRelatedLocalSortValues(iri: string, newIndex: number, oldIndex: number, oldPositions: string[]) {
     // we need to emulate what the position values would do on the server to update the other sortValues in data
     // without performing lots of requests to fetch all the new values
     // we will also reset all the metadata display sort numbers
@@ -154,9 +155,9 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
           sortValue,
           _metadata: {
             ...posRes._metadata,
-            sortDisplayNumber: undefined
-          }
-        }
+            sortDisplayNumber: undefined,
+          },
+        },
       })
     }
 
@@ -167,19 +168,22 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
         }
         if (index > oldIndex && index <= newIndex) {
           updatePosSortValue(positionIri, -1)
-        } else {
+        }
+        else {
           // to clear the sortDisplayNumber even if the sortValue is not updated, so we order again based on sortValue
           updatePosSortValue(positionIri, 0)
         }
       }
-    } else {
+    }
+    else {
       for (const [index, positionIri] of oldPositions.entries()) {
         if (positionIri === iri) {
           continue
         }
         if (index < oldIndex && index >= newIndex) {
           updatePosSortValue(positionIri, 1)
-        } else {
+        }
+        else {
           // to clear the sortDisplayNumber even if the sortValue is not updated, so we order again based on sortValue
           updatePosSortValue(positionIri, 0)
         }
@@ -197,6 +201,6 @@ export const useComponentGroupPositions = (iri: ComputedRef<string|undefined>, $
 
   return {
     groupIsReordering,
-    componentPositions
+    componentPositions,
   }
 }

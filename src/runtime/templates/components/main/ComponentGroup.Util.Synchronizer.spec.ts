@@ -11,7 +11,7 @@ vi.mock('../../../resources/resource-utils', async () => {
   const { CwaResourceTypes } = await vi.importActual('../../../resources/resource-utils')
   return {
     CwaResourceTypes,
-    getResourceTypeFromIri: vi.fn()
+    getResourceTypeFromIri: vi.fn(),
   }
 })
 
@@ -22,44 +22,46 @@ vi.mock('vue', async () => {
     watch: vi.fn((...args) => {
       const unwatch = mod.watch(...args)
       return vi.fn(() => unwatch())
-    })
+    }),
   }
 })
 
-function createGroupSynchronizer () {
+function createGroupSynchronizer() {
   const mockResourcesManager = {
     createResource: vi.fn(),
-    updateResource: vi.fn()
+    updateResource: vi.fn(),
   }
   const mockResources = {
-    isLoading: ref(false)
+    isLoading: ref(false),
   }
   const mockAuth = {
-    signedIn: ref(false)
+    signedIn: ref(false),
   }
 
-  // @ts-ignore
+  // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
       auth: mockAuth,
       resources: mockResources,
-      resourcesManager: mockResourcesManager
+      resourcesManager: mockResourcesManager,
     }
   })
 
-  // @ts-ignore
+  // @ts-expect-error
   const groupSynchronizer = new ComponentGroupUtilSynchronizer()
 
   return {
     groupSynchronizer,
     resources: mockResources,
     resourcesManager: mockResourcesManager,
-    auth: mockAuth
+    auth: mockAuth,
   }
 }
 
-function createSyncWatcher (groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents: null|string[] }) {
-  const mockResource = computed(() => { return (ops?.resource !== undefined ? ops.resource : { data: {} }) })
+function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents: null | string[] }) {
+  const mockResource = computed(() => {
+    return (ops?.resource !== undefined ? ops.resource : { data: {} })
+  })
   const mockLocation = 'mockLocation'
   const mockReference = computed(() => 'mockReference')
 
@@ -67,7 +69,7 @@ function createSyncWatcher (groupSynchronizer: ComponentGroupUtilSynchronizer, o
     resource: mockResource,
     location: mockLocation,
     fullReference: mockReference,
-    allowedComponents: ops?.allowedComponents !== undefined ? ops.allowedComponents : ['a', 'b', 'c']
+    allowedComponents: ops?.allowedComponents !== undefined ? ops.allowedComponents : ['a', 'b', 'c'],
   }
   groupSynchronizer.createSyncWatcher(syncWatcherOps)
   return syncWatcherOps
@@ -111,7 +113,7 @@ describe('Group synchronizer', () => {
     vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementationOnce(() => CwaResourceTypes.PAGE)
 
     const syncWatcherOps = createSyncWatcher(groupSynchronizer, {
-      resource: null
+      resource: null,
     })
 
     resources.isLoading.value = false
@@ -125,8 +127,8 @@ describe('Group synchronizer', () => {
         reference: syncWatcherOps.fullReference.value,
         location: syncWatcherOps.location,
         allowedComponents: syncWatcherOps.allowedComponents,
-        pages: [syncWatcherOps.location]
-      }
+        pages: [syncWatcherOps.location],
+      },
     })
   })
 
@@ -134,7 +136,7 @@ describe('Group synchronizer', () => {
     const { auth, resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
 
     const syncWatcherOps = createSyncWatcher(groupSynchronizer, {
-      resource: null
+      resource: null,
     })
 
     resources.isLoading.value = false
@@ -147,8 +149,8 @@ describe('Group synchronizer', () => {
       data: {
         reference: syncWatcherOps.fullReference.value,
         location: syncWatcherOps.location,
-        allowedComponents: syncWatcherOps.allowedComponents
-      }
+        allowedComponents: syncWatcherOps.allowedComponents,
+      },
     })
   })
 
@@ -159,12 +161,12 @@ describe('Group synchronizer', () => {
       resource: {
         data: {
           '@id': mockId,
-          allowedComponents: ['a']
+          'allowedComponents': ['a'],
         },
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
-      }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
+      },
     })
 
     resources.isLoading.value = false
@@ -175,8 +177,8 @@ describe('Group synchronizer', () => {
     expect(resourcesManager.updateResource).toHaveBeenCalledWith({
       endpoint: mockId,
       data: {
-        allowedComponents: syncWatcherOps.allowedComponents
-      }
+        allowedComponents: syncWatcherOps.allowedComponents,
+      },
     })
   })
 
@@ -187,12 +189,12 @@ describe('Group synchronizer', () => {
       resource: {
         data: {
           '@id': mockId,
-          allowedComponents: ['a', 'b', 'c']
+          'allowedComponents': ['a', 'b', 'c'],
         },
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
-      }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
+      },
     })
 
     resources.isLoading.value = false
@@ -209,13 +211,13 @@ describe('Group synchronizer', () => {
     createSyncWatcher(groupSynchronizer, {
       resource: {
         data: {
-          '@id': mockId
+          '@id': mockId,
         },
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
       },
-      allowedComponents: null
+      allowedComponents: null,
     })
 
     resources.isLoading.value = false

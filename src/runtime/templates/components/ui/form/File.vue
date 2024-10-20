@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 const props = defineProps<{
   label: string
-  modelValue: string|number|undefined|null
+  modelValue: string | number | undefined | null
   accept?: string
   fileExists: boolean
   disabled?: boolean
@@ -14,36 +14,39 @@ const fileInput = ref()
 const emit = defineEmits(['update:modelValue', 'change', 'delete'])
 
 const value = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (value) {
+  set(value) {
     emit('update:modelValue', value)
-  }
+  },
 })
 
-function showFileSelect () {
+function showFileSelect() {
   const clickEvent = new MouseEvent('click', {
     view: window,
     bubbles: true,
-    cancelable: false
+    cancelable: false,
   })
   fileInput.value.dispatchEvent(clickEvent)
 }
 
-function handleFileChange () {
+function handleFileChange() {
   const file = fileInput.value.files[0]
   emit('change', file)
   value.value = file.name
 }
 
-function handleDeleteClick () {
+function handleDeleteClick() {
   emit('delete')
 }
 </script>
 
 <template>
-  <div class="cwa-flex cwa-relative cwa-items-center cwa-select-none" :class="{ 'cwa-opacity-50 cwa-pointer-events-none': disabled }">
+  <div
+    class="cwa-flex cwa-relative cwa-items-center cwa-select-none"
+    :class="{ 'cwa-opacity-50 cwa-pointer-events-none': disabled }"
+  >
     <div class="cwa-flex cwa-items-center cwa-relative">
       <input
         ref="fileInput"
@@ -59,7 +62,10 @@ function handleDeleteClick () {
         {{ value || 'No file' }}
       </span>
     </div>
-    <span v-if="fileExists" class="cwa-ml-4">
+    <span
+      v-if="fileExists"
+      class="cwa-ml-4"
+    >
       <CwaUiFormButton
         color="grey"
         button-class="cwa-min-w-[100px]"

@@ -1,6 +1,6 @@
 import { describe, test, vi, expect, afterEach } from 'vitest'
 import { computed, ref } from 'vue'
-import { Mock } from '@vitest/spy'
+import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
 import * as ResourceUtils from '../resources/resource-utils'
@@ -38,7 +38,7 @@ const Node = {
   DOCUMENT_POSITION_CONTAINS: 0x08,
   /** Set when other is a descendant of node. */
   DOCUMENT_POSITION_CONTAINED_BY: 0x10,
-  DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 0x20
+  DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 0x20,
 }
 vi.stubGlobal('Node', Node)
 
@@ -49,28 +49,28 @@ vi.mock('../cwa', () => {
         eventBus: {
           on: vi.fn(),
           off: vi.fn(),
-          emit: vi.fn()
+          emit: vi.fn(),
         },
         resourceStackManager: {
           addToStack: vi.fn(),
-          currentStackItem: ref({ iri: '/something' })
-        }
+          currentStackItem: ref({ iri: '/something' }),
+        },
       },
       resources: {
-        findAllPublishableIris: vi.fn(iri => ([iri]))
+        findAllPublishableIris: vi.fn(iri => ([iri])),
       },
       resourcesManager: {
-        addResourceEvent: ref()
-      }
-    }))
+        addResourceEvent: ref(),
+      },
+    })),
   }
 })
 
 vi.mock('./manager-tabs-resolver', () => {
   return {
     default: vi.fn(() => ({
-      resolve: vi.fn()
-    }))
+      resolve: vi.fn(),
+    })),
   }
 })
 
@@ -78,31 +78,31 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    watch: vi.fn()
+    watch: vi.fn(),
   }
 })
 
 interface DummyDom {
-  nodeType: 1|2|3
+  nodeType: 1 | 2 | 3
   nextSibling?: DummyDom
   addEventListener?: Mock
 }
 
-function createDomElement (nodeType: 1|2|3): DummyDom {
+function createDomElement(nodeType: 1 | 2 | 3): DummyDom {
   return {
     nodeType,
-    nextSibling: null
+    nextSibling: null,
   }
 }
 
-function createManageableResource ($el?: DummyDom) {
+function createManageableResource($el?: DummyDom) {
   const component = {
-    $el: $el || createDomElement(1)
+    $el: $el || createDomElement(1),
   }
   const $cwa = new Cwa()
   return {
     instance: new ManageableResource(component, $cwa, ref({ styles: { name: ['style'] } })),
-    $cwa
+    $cwa,
   }
 }
 
@@ -141,7 +141,7 @@ describe('ManageableResource Class', () => {
       expect(Object.create(instance._initNewIri.prototype) instanceof watchSpy.mock.lastCall[1]).toBe(true)
       expect(watchSpy.mock.lastCall[2]).toEqual({
         immediate: true,
-        flush: 'post'
+        flush: 'post',
       })
     })
   })
@@ -150,12 +150,12 @@ describe('ManageableResource Class', () => {
     test.each([
       {
         currentIri: '/abc',
-        clearCallCount: 1
+        clearCallCount: 1,
       },
       {
         currentIri: undefined,
-        clearCallCount: 1
-      }
+        clearCallCount: 1,
+      },
     ])('If currentIri is `$currentIri` then the "clear" function is called `$clearCallCount` times and currentIri is set', ({ currentIri, clearCallCount }) => {
       const { instance } = createManageableResource()
       instance.currentIri = ref(currentIri)
@@ -190,7 +190,7 @@ describe('ManageableResource Class', () => {
     })
     test.each([
       { soft: false },
-      { soft: true }
+      { soft: true },
     ])('clear functions are carried out', ({ soft }) => {
       const { instance, $cwa } = createManageableResource()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
@@ -211,7 +211,8 @@ describe('ManageableResource Class', () => {
         expect(instance.currentIri.value).toEqual('/abc')
         expect(unwatchCurrentIri).not.toHaveBeenCalled()
         expect(instance.unwatchCurrentIri).toBe(unwatchCurrentIri)
-      } else {
+      }
+      else {
         expect($cwa.admin.eventBus.off).toHaveBeenCalled()
         expect(instance.currentIri).toBeUndefined()
         expect(unwatchCurrentIri).toHaveBeenCalled()
@@ -223,7 +224,7 @@ describe('ManageableResource Class', () => {
   describe('componentMountedListener function', () => {
     test.each([
       { iri: '/child', childIris: ['/child', '/another-child'], callCount: 1 },
-      { iri: '/no-exist', childIris: ['/eeeerie'], callCount: 0 }
+      { iri: '/no-exist', childIris: ['/eeeerie'], callCount: 0 },
     ])('If iri passed is $iri with childIris as $childIris then functions should be called $callCount times', ({ iri, childIris, callCount }) => {
       const { instance } = createManageableResource()
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
@@ -252,41 +253,41 @@ describe('ManageableResource Class', () => {
           if (iri === '/group') {
             obj = {
               ...obj,
-              componentPositions: ['/position-1', '/position-2', '/position-3']
+              componentPositions: ['/position-1', '/position-2', '/position-3'],
             }
           }
           if (iri === '/position-1') {
             obj = {
-              ...obj
+              ...obj,
             }
           }
           if (iri === '/position-2') {
             obj = {
               ...obj,
-              component: '/component'
+              component: '/component',
             }
           }
           if (iri === '/position-3') {
             obj = {
               ...obj,
-              component: '/no-type'
+              component: '/no-type',
             }
           }
           if (iri === '/no-type') {
             obj = {
               ...obj,
-              component: '/whatever'
+              component: '/whatever',
             }
           }
           return {
-            data: obj
+            data: obj,
           }
         })
       })
 
       vi.spyOn($cwa, 'resources', 'get').mockImplementation(() => {
         return {
-          getResource
+          getResource,
         }
       })
       vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {
@@ -331,7 +332,7 @@ describe('ManageableResource Class', () => {
         rootElement,
         // rootElement.nextSibling, - SHOULD BE EXCLUDED FOR NODE TYPE
         rootElement.nextSibling.nextSibling,
-        rootElement.nextSibling.nextSibling.nextSibling
+        rootElement.nextSibling.nextSibling.nextSibling,
       ])
     })
   })
@@ -340,11 +341,11 @@ describe('ManageableResource Class', () => {
     const { instance } = createManageableResource()
     const els = [
       {
-        addEventListener: vi.fn()
+        addEventListener: vi.fn(),
       },
       {
-        addEventListener: vi.fn()
-      }
+        addEventListener: vi.fn(),
+      },
     ]
     vi.spyOn(instance, 'getAllEls').mockImplementationOnce(() => {
       return els
@@ -360,11 +361,11 @@ describe('ManageableResource Class', () => {
     const { instance } = createManageableResource()
     const els = [
       {
-        removeEventListener: vi.fn()
+        removeEventListener: vi.fn(),
       },
       {
-        removeEventListener: vi.fn()
-      }
+        removeEventListener: vi.fn(),
+      },
     ]
     instance.domElements.value = els
 
@@ -418,7 +419,7 @@ describe('ManageableResource Class', () => {
         managerTabs: ['abc'],
         ui: 'ui',
         styles,
-        childIris
+        childIris,
       }, false, instance.ops)
     })
   })
@@ -441,7 +442,7 @@ describe('ManageableResource Class', () => {
         iri: instance.currentIri,
         domElements: instance.domElements,
         clickTarget: mockEvent.target,
-        displayName: mockName
+        displayName: mockName,
       })
     })
   })

@@ -3,12 +3,12 @@ import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
 
-function createWrapper (percent?: number) {
+function createWrapper(percent?: number) {
   return shallowMount(ProgressBar, {
     props: {
       show: percent !== undefined,
-      percent: percent || 0
-    }
+      percent: percent || 0,
+    },
   })
 }
 describe('ProgressBar', () => {

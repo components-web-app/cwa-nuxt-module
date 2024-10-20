@@ -5,19 +5,31 @@
     </div>
     <div>
       <ul class="cwa-flex cwa-bg-dark cwa-rounded-lg cwa-overflow-hidden cwa-border cwa-border-stone-600">
-        <ListPaginationButton :disabled="isFirst" @click="pageModel--">
+        <ListPaginationButton
+          :disabled="isFirst"
+          @click="pageModel--"
+        >
           &lt;
         </ListPaginationButton>
-        <ListPaginationButton v-for="pageNumber of pages" :key="`page-change-button-${pageNumber}`" :selected="pageNumber === pageModel" @click="pageModel = pageNumber">
+        <ListPaginationButton
+          v-for="pageNumber of pages"
+          :key="`page-change-button-${pageNumber}`"
+          :selected="pageNumber === pageModel"
+          @click="pageModel = pageNumber"
+        >
           {{ pageNumber }}
         </ListPaginationButton>
-        <ListPaginationButton :disabled="isLast" @click="pageModel++">
+        <ListPaginationButton
+          :disabled="isLast"
+          @click="pageModel++"
+        >
           &gt;
         </ListPaginationButton>
       </ul>
     </div>
   </div>
 </template>
+
 <script setup lang="ts">
 import { computed } from 'vue'
 import ListPaginationButton from './ListPaginationButton.vue'

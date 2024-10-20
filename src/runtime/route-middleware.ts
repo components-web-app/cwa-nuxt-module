@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
 import type { RouteLocationNormalized } from 'vue-router'
-import { abortNavigation, callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import type { CwaResource } from './resources/resource-utils'
+import { abortNavigation, callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''
@@ -52,7 +52,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   }
 
   // todo: redirects do not work if clicking on route that should redirect quickly multiple times
-  const handleRouteRedirect = async (resource: CwaResource|undefined) => {
+  const handleRouteRedirect = async (resource: CwaResource | undefined) => {
     // only check for the redirect path, we know the resource returned is the primary resource,
     // and we have requested to fetch a route, so will be a route resource.
     if (resource?.redirectPath) {
@@ -80,7 +80,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
 
   const startedMiddlewareToken = middlewareToken
   nuxtApp.$cwa.fetchRoute(to)
-    .then(async (resource: CwaResource|undefined) => {
+    .then(async (resource: CwaResource | undefined) => {
       // check if the request finishing is still current to perform redirect
       if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
         return

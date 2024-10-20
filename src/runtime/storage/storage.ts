@@ -1,10 +1,10 @@
 import {
-  ResourcesStore
+  ResourcesStore,
 } from './stores/resources/resources-store'
 import { FetcherStore } from './stores/fetcher/fetcher-store'
 import { MercureStore } from './stores/mercure/mercure-store'
 import {
-  ApiDocumentationStore
+  ApiDocumentationStore,
 } from './stores/api-documentation/api-documentation-store'
 import { AuthStore } from './stores/auth/auth-store'
 import { AdminStore } from './stores/admin/admin-store'
@@ -23,7 +23,7 @@ export interface CwaStores {
 export class Storage {
   public readonly stores: CwaStores
 
-  constructor (storeName: string) {
+  constructor(storeName: string) {
     this.stores = {
       resources: new ResourcesStore(storeName),
       fetcher: new FetcherStore(storeName),
@@ -31,7 +31,7 @@ export class Storage {
       apiDocumentation: new ApiDocumentationStore(storeName),
       auth: new AuthStore(storeName),
       admin: new AdminStore(storeName),
-      error: new ErrorStore(storeName)
+      error: new ErrorStore(storeName),
     }
   }
 }

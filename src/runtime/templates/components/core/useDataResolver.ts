@@ -6,18 +6,18 @@ import {
   ref,
   type Ref,
   watch,
-  type WatchStopHandle
+  type WatchStopHandle,
 } from 'vue'
 import { useNuxtApp } from '#app'
 import type { ManagerTab } from '#cwa/module.js'
 
 interface Options {
-  components: Ref<ManagerTab[]|undefined>
+  components: Ref<ManagerTab[] | undefined>
   props: Ref<any>
   propsValidator?: (props: any) => boolean
 }
 
-export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops: Options) => {
+export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, ops: Options) => {
   allMeta.value = []
 
   const nuxtApp = useNuxtApp()
@@ -25,10 +25,10 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
 
   const rootDefinition = defineComponent(
     (props: { component: ManagerTab, cProps: any }, { expose }) => {
-      const metadata = ref<T|null>(null)
+      const metadata = ref<T | null>(null)
       const resolved = ref(false)
-      const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent> =
-        typeof props.component === 'string'
+      const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent>
+        = typeof props.component === 'string'
           ? globalComponents[props.component]
           : props.component
       if (possibleAsyncDefinition === undefined) {
@@ -37,8 +37,9 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
 
       if (possibleAsyncDefinition.name !== 'AsyncComponentWrapper') {
         resolved.value = true
-      } else {
-        // @ts-ignore-next-line
+      }
+      else {
+        // @ts-expect-error-next-line
         const isAsyncResolved = () => !!possibleAsyncDefinition.__asyncResolved
 
         resolved.value = isAsyncResolved()
@@ -54,17 +55,17 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
 
       expose({
         metadata,
-        resolved
+        resolved,
       })
       return () => {
         return h(possibleAsyncDefinition, { ...props.cProps, ref: metadata })
       }
     },
-    // eslint-disable-next-line vue/one-component-per-file
+
     {
-      // eslint-disable-next-line vue/require-prop-types
-      props: ['component', 'cProps']
-    }
+
+      props: ['component', 'cProps'],
+    },
   )
 
   const resolvedWatchers = ref<WatchStopHandle[]>([])
@@ -81,7 +82,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
 
     for (const [index, cName] of ops.components.value.entries()) {
       const wrapper = document.createElement('div')
-      // eslint-disable-next-line vue/one-component-per-file
+
       const component = createApp(rootDefinition, { cProps: ops.props.value, component: cName })
       const instance = component.mount(wrapper)
       const exposed = instance.$.exposed
@@ -107,14 +108,14 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
     }
   }
 
-  let stopPrimaryWatch: WatchStopHandle|undefined
+  let stopPrimaryWatch: WatchStopHandle | undefined
   const startDataResolver = () => {
     if (stopPrimaryWatch) {
       return
     }
     allMeta.value = []
     stopPrimaryWatch = watch([ops.components, ops.props], handleInputChange, {
-      immediate: true
+      immediate: true,
     })
   }
 
@@ -134,6 +135,6 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T|null)[]>, ops:
 
   return {
     startDataResolver,
-    stopDataResolver
+    stopDataResolver,
   }
 }

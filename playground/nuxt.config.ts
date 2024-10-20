@@ -1,29 +1,8 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
-  runtimeConfig: {
-    public: {
-      cwa: {
-        apiUrl: 'https://localhost',
-        apiUrlBrowser: 'https://localhost'
-      }
-    }
-  },
-  app: {
-    head: {
-      titleTemplate: '%s - CWA Playground',
-      charset: 'utf-8',
-      htmlAttrs: {
-        lang: 'en-GB',
-        class: 'bg-black'
-      },
-      bodyAttrs: {
-        class: 'bg-background'
-      }
-    }
-  },
   extends: [
-    '../src/layer'
+    '../src/layer',
   ],
   modules: [
     '../src/module',
@@ -31,69 +10,87 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxt/test-utils/module',
     '@vite-pwa/nuxt',
-    'nuxt-svgo'
+    'nuxt-svgo',
   ],
-  svgo: {
-    autoImportPath: './assets/svg/'
-  },
   devtools: {
-    enabled: true
+    enabled: true,
+  },
+  app: {
+    head: {
+      titleTemplate: '%s - CWA Playground',
+      charset: 'utf-8',
+      htmlAttrs: {
+        lang: 'en-GB',
+        class: 'bg-black',
+      },
+      bodyAttrs: {
+        class: 'bg-background',
+      },
+    },
+  },
+  runtimeConfig: {
+    public: {
+      cwa: {
+        apiUrl: 'https://localhost',
+        apiUrlBrowser: 'https://localhost',
+      },
+    },
+  },
+  routeRules: {
+    // '/': { prerender: true },
+    '/**': { isr: true },
+  },
+  typescript: {
+    // typeCheck: 'build',
+    tsConfig: {
+      include: [
+        '../src',
+      ],
+      exclude: [
+        '../**/*.spec.ts',
+        '../**/*.test.ts',
+      ],
+    },
   },
   cwa: {
     appName: 'CWA Module Test Playground',
     resources: {
       NavigationLink: {
         name: 'Link',
-        description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>'
+        description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>',
       },
       HtmlContent: {
         name: 'Body Text',
-        description: '<p>Easily create a body of text with the ability to style and format the content using themes in-keeping with your website.</p>'
+        description: '<p>Easily create a body of text with the ability to style and format the content using themes in-keeping with your website.</p>',
       },
       Image: {
-        instantAdd: true
-      }
+        instantAdd: true,
+      },
     },
     layouts: {
       Primary: {
         name: 'Primary Layout',
         classes: {
-          'Blue Background': ['bg-blue-600']
-        }
-      }
+          'Blue Background': ['bg-blue-600'],
+        },
+      },
     },
     pages: {
       PrimaryPageTemplate: {
         name: 'Primary Page',
         classes: {
-          'Big Text': ['text-2xl']
-        }
-      }
+          'Big Text': ['text-2xl'],
+        },
+      },
     },
     pageData: {
       BlogArticleData: {
-        name: 'Blog Articles'
-      }
+        name: 'Blog Articles',
+      },
     },
     tailwind: {
-      base: false
-    }
-  },
-  typescript: {
-    // typeCheck: 'build',
-    tsConfig: {
-      include: [
-        '../src'
-      ],
-      exclude: [
-        '../**/*.spec.ts',
-        '../**/*.test.ts'
-      ]
-    }
-  },
-  routeRules: {
-    // '/': { prerender: true },
-    '/**': { isr: true }
+      base: false,
+    },
   },
   pwa: {
     registerType: 'autoUpdate',
@@ -105,27 +102,27 @@ export default defineNuxtConfig({
         {
           src: 'pwa-192x192.png',
           sizes: '192x192',
-          type: 'image/png'
-        },
-        {
-          src: 'pwa-512x512.png',
-          sizes: '512x512',
-          type: 'image/png'
+          type: 'image/png',
         },
         {
           src: 'pwa-512x512.png',
           sizes: '512x512',
           type: 'image/png',
-          purpose: 'any maskable'
-        }
-      ]
+        },
+        {
+          src: 'pwa-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+      ],
     },
     workbox: {
       navigateFallback: null,
-      globPatterns: ['**/*.{js,mjs,ts,json,css,html,png,svg,ico,jpg,jpeg,webp}']
+      globPatterns: ['**/*.{js,mjs,ts,json,css,html,png,svg,ico,jpg,jpeg,webp}'],
     },
     client: {
-      installPrompt: true
+      installPrompt: true,
       // you don't need to include this: only for testing purposes
       // if enabling periodic sync for update use 1 hour or so (periodicSyncForUpdates: 3600)
       // periodicSyncForUpdates: 20
@@ -134,7 +131,10 @@ export default defineNuxtConfig({
       enabled: true,
       suppressWarnings: false,
       navigateFallbackAllowlist: [/^\/$/],
-      type: 'module'
-    }
-  }
+      type: 'module',
+    },
+  },
+  svgo: {
+    autoImportPath: './assets/svg/',
+  },
 })

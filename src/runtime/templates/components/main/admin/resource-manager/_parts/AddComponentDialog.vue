@@ -1,6 +1,14 @@
 <template>
-  <DialogBox v-model="open" title="Add Component" :buttons="buttons" :is-loading="dialogLoading">
-    <Spinner v-if="loadingComponents" :show="true" />
+  <DialogBox
+    v-model="open"
+    title="Add Component"
+    :buttons="buttons"
+    :is-loading="dialogLoading"
+  >
+    <Spinner
+      v-if="loadingComponents"
+      :show="true"
+    />
     <template v-else-if="displayData">
       <div class="cwa-flex cwa-space-x-4">
         <div class="cwa-flex cwa-flex-col cwa-w-4/12 cwa-space-y-3 cwa-min-h-64">
@@ -25,9 +33,15 @@
           </div>
         </div>
         <div class="cwa-flex-grow cwa-w-8/12">
-          <div class="cwa-mb-6 cwa-space-y-4" v-html="resourceDescription" />
+          <div
+            class="cwa-mb-6 cwa-space-y-4"
+            v-html="resourceDescription"
+          />
           <template v-if="selectedComponent === 'ComponentPosition'">
-            <CwaUiFormSelect v-model="dynamicPropertySelect.model.value" :options="dynamicPropertySelect.options.value" />
+            <CwaUiFormSelect
+              v-model="dynamicPropertySelect.model.value"
+              :options="dynamicPropertySelect.options.value"
+            />
           </template>
         </div>
       </div>
@@ -41,12 +55,12 @@ import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/
 import { useCwa, useCwaSelect } from '#imports'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import type {
-  ApiDocumentationComponentMetadata
+  ApiDocumentationComponentMetadata,
 } from '#cwa/runtime/api/api-documentation'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import type { CwaResourceMeta } from '#cwa/module'
 import {
-  useDynamicPositionSelectOptions
+  useDynamicPositionSelectOptions,
 } from '#cwa/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 
 interface MergedComponentMetadata {
@@ -72,15 +86,15 @@ const { getOptions } = useDynamicPositionSelectOptions($cwa)
 const loadingComponents = ref(true)
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
 const displayData = ref<DisplayDataI>()
-const selectedComponent = ref<string|undefined>()
+const selectedComponent = ref<string | undefined>()
 const dialogLoading = ref(false)
 
-const dynamicPositionPropertyModel = ref<string|undefined>()
+const dynamicPositionPropertyModel = ref<string | undefined>()
 
 const dynamicPropertySelect = useCwaSelect(dynamicPositionPropertyModel)
 dynamicPropertySelect.options.value = [{
   label: 'Loading...',
-  value: undefined
+  value: undefined,
 }]
 
 const addResourceEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
@@ -89,15 +103,15 @@ const isInstantAddResourceSaved = computed(() => {
 })
 
 const open = computed({
-  get () {
+  get() {
     // the event will not have a group in the stack if we are on a dynamic data page, but we may be adding a component pre-configured which will not require this dialog
     return !!addResourceEvent.value && !!addResourceEvent.value?.closest.group && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
   },
-  set (value: boolean) {
+  set(value: boolean) {
     if (!value) {
       $cwa.resourcesManager.clearAddResource()
     }
-  }
+  },
 })
 
 const instantAdd = computed(() => (!!selectedResourceMeta.value?.instantAdd))
@@ -109,24 +123,24 @@ const buttons = computed<ActionButton[]>(() => {
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
       callbackFn: handleAdd,
-      disabled: !selectedComponent.value
+      disabled: !selectedComponent.value,
     },
     {
       label: 'Cancel',
-      color: 'grey'
-    }
+      color: 'grey',
+    },
   ]
 })
 
-function getComponentName (metadata: MergedComponentMetadata) {
+function getComponentName(metadata: MergedComponentMetadata) {
   return metadata.config.name || metadata.apiMetadata.resourceName
 }
 
-function selectComponent (name?: string) {
+function selectComponent(name?: string) {
   selectedComponent.value = name
 }
 
-async function findAvailableComponents (allowedComponents: undefined|string[], includePosition = false): Promise<ComponentMetadataCollection> {
+async function findAvailableComponents(allowedComponents: undefined | string[], includePosition = false): Promise<ComponentMetadataCollection> {
   const apiComponents = await $cwa.getComponentMetadata(false, includePosition)
   if (!apiComponents) {
     throw new Error('Could not retrieve component metadata from the API')
@@ -135,7 +149,7 @@ async function findAvailableComponents (allowedComponents: undefined|string[], i
   const asEntries = Object.entries(apiComponents)
   const filtered = allowedComponents
     ? asEntries.filter(
-      ([_, value]) => (allowedComponents.includes(value.endpoint))
+      ([_, value]) => (allowedComponents.includes(value.endpoint)),
     )
     : asEntries
   const mapped = filtered.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig?.[name] }]))
@@ -165,11 +179,11 @@ const defaultComponentData = computed<{ [key: string]: any }>(() => {
     return {}
   }
   return {
-    pageDataProperty: dynamicPropertySelect.model.value
+    pageDataProperty: dynamicPropertySelect.model.value,
   }
 })
 
-async function createDisplayData (): Promise<undefined|DisplayDataI> {
+async function createDisplayData(): Promise<undefined | DisplayDataI> {
   const event = addResourceEvent.value
   if (!event) {
     return
@@ -185,15 +199,15 @@ async function createDisplayData (): Promise<undefined|DisplayDataI> {
     event,
     availableComponents,
     enableDynamicPosition,
-    displayAvailableComponents
+    displayAvailableComponents,
   }
 }
 
-function findAllowedComponents (groupIri: string): undefined|string[] {
+function findAllowedComponents(groupIri: string): undefined | string[] {
   return $cwa.resources.getResource(groupIri).value?.data?.allowedComponents
 }
 
-function handleAdd () {
+function handleAdd() {
   if (!selectedComponent.value) {
     return
   }
@@ -203,7 +217,7 @@ function handleAdd () {
   }
   $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value, defaultComponentData.value)
 }
-async function loadOps () {
+async function loadOps() {
   dynamicPropertySelect.options.value = await getOptions()
 }
 
@@ -224,7 +238,8 @@ watch(isInstantAddResourceSaved, async (newlySaved) => {
         $cwa.admin.eventBus.emit('selectResource', newResource['@id'])
       })
     }
-  } finally {
+  }
+  finally {
     $cwa.resourcesManager.clearAddResourceEventResource()
     dialogLoading.value = false
   }
@@ -239,5 +254,4 @@ watch(open, async (isOpen: boolean) => {
   displayData.value = await createDisplayData()
   loadingComponents.value = false
 })
-
 </script>

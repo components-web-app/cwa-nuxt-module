@@ -23,6 +23,6 @@ export const useCwaSelect = (model: Ref<ModelValue>, ops: SelectOption[] = []) =
   })
   return {
     model: selectModel,
-    options
+    options,
   }
 }

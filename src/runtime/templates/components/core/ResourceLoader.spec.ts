@@ -15,23 +15,23 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    watch: vi.fn(() => {})
+    watch: vi.fn(() => {}),
   }
 })
 
-function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any) {
-  // @ts-ignore
+function createWrapper(resource?: any, status?: CwaAuthStatus, component?: any) {
+  // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => ({
     auth: {
       status: {
-        value: status ?? CwaAuthStatus.SIGNED_IN
-      }
+        value: status ?? CwaAuthStatus.SIGNED_IN,
+      },
     },
     fetchResource: vi.fn(),
     resources: {
-      getResource: vi.fn(() => ref(resource))
+      getResource: vi.fn(() => ref(resource)),
     },
-    prerendered: ref()
+    prerendered: ref(),
   }))
 
   return mount(ResourceLoader, {
@@ -39,7 +39,7 @@ function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any)
     props: {
       iri: mockIri,
       componentPrefix: mockPrefix,
-      uiComponent: component
+      uiComponent: component,
     },
     global: {
       renderStubDefaultSlot: true,
@@ -47,10 +47,10 @@ function createWrapper (resource?: any, status?: CwaAuthStatus, component?: any)
         GlobalComponent: {
           name: 'GlobalComponent',
           template: '<div> global </div>',
-          props: ['iri']
-        }
-      }
-    }
+          props: ['iri'],
+        },
+      },
+    },
   })
 }
 
@@ -64,8 +64,8 @@ describe('ResourceLoader', () => {
       test('If the resource exists, resourceLoadBuffering should be false', () => {
         const wrapper = createWrapper({
           apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          },
         })
         expect(wrapper.vm.resourceLoadBuffering).toEqual(false)
       })
@@ -87,50 +87,50 @@ describe('ResourceLoader', () => {
           resource: {
             data: null,
             apiState: {
-              status: CwaResourceApiStatuses.IN_PROGRESS
-            }
+              status: CwaResourceApiStatuses.IN_PROGRESS,
+            },
           },
-          result: true
+          result: true,
         },
         {
           resourceLoadBuffering: false,
           resource: {
             data: undefined,
             apiState: {
-              status: CwaResourceApiStatuses.SUCCESS
-            }
+              status: CwaResourceApiStatuses.SUCCESS,
+            },
           },
-          result: false
+          result: false,
         },
         {
           resourceLoadBuffering: false,
           resource: {
             data: { test: true },
             apiState: {
-              status: CwaResourceApiStatuses.IN_PROGRESS
-            }
+              status: CwaResourceApiStatuses.IN_PROGRESS,
+            },
           },
-          result: false
+          result: false,
         },
         {
           resourceLoadBuffering: true,
           resource: {
             data: { test: true },
             apiState: {
-              status: CwaResourceApiStatuses.IN_PROGRESS
-            }
+              status: CwaResourceApiStatuses.IN_PROGRESS,
+            },
           },
-          result: false
+          result: false,
         },
         {
           resourceLoadBuffering: true,
           resource: undefined,
-          result: true
-        }
+          result: true,
+        },
       ])('should return $result IF there resource is $resource and buffering is $resourceLoadBuffering', ({
         resource,
         result,
-        resourceLoadBuffering
+        resourceLoadBuffering,
       }) => {
         const wrapper = createWrapper(resource)
         wrapper.vm.resourceLoadBuffering = ref(resourceLoadBuffering)
@@ -149,8 +149,8 @@ describe('ResourceLoader', () => {
         const wrapper = createWrapper({
           data: null,
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
         })
 
         expect(wrapper.vm.resourceUiComponent).not.toBeDefined()
@@ -160,11 +160,11 @@ describe('ResourceLoader', () => {
         const mockComponentName = 'Test'
         const wrapper = createWrapper({
           data: {
-            uiComponent: mockComponentName
+            uiComponent: mockComponentName,
           },
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
         })
 
         expect(wrapper.vm.resourceUiComponent).toEqual(mockPrefix + mockComponentName)
@@ -174,11 +174,11 @@ describe('ResourceLoader', () => {
         const mockType = 'MType'
         const wrapper = createWrapper({
           data: {
-            '@type': mockType
+            '@type': mockType,
           },
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
         })
 
         expect(wrapper.vm.resourceUiComponent).toEqual(mockPrefix + mockType)
@@ -190,8 +190,8 @@ describe('ResourceLoader', () => {
         const wrapper = createWrapper({
           apiState: {
             status: CwaResourceApiStatuses.ERROR,
-            error: {}
-          }
+            error: {},
+          },
         })
 
         expect(wrapper.vm.hasError).toEqual(true)
@@ -201,8 +201,8 @@ describe('ResourceLoader', () => {
         const wrapper = createWrapper({
           apiState: {
             status: CwaResourceApiStatuses.SUCCESS,
-            error: {}
-          }
+            error: {},
+          },
         })
 
         expect(wrapper.vm.hasError).toEqual(false)
@@ -214,8 +214,8 @@ describe('ResourceLoader', () => {
         const wrapper = createWrapper({
           apiState: {
             status: CwaResourceApiStatuses.SUCCESS,
-            error: {}
-          }
+            error: {},
+          },
         })
 
         expect(wrapper.vm.hasSilentError).toEqual(false)
@@ -226,9 +226,9 @@ describe('ResourceLoader', () => {
           apiState: {
             status: CwaResourceApiStatuses.ERROR,
             error: {
-              statusCode: 501
-            }
-          }
+              statusCode: 501,
+            },
+          },
         })
 
         expect(wrapper.vm.hasSilentError).toEqual(false)
@@ -239,9 +239,9 @@ describe('ResourceLoader', () => {
           apiState: {
             status: CwaResourceApiStatuses.ERROR,
             error: {
-              statusCode: 399
-            }
-          }
+              statusCode: 399,
+            },
+          },
         })
 
         expect(wrapper.vm.hasSilentError).toEqual(false)
@@ -252,9 +252,9 @@ describe('ResourceLoader', () => {
           apiState: {
             status: CwaResourceApiStatuses.ERROR,
             error: {
-              statusCode: 401
-            }
-          }
+              statusCode: 401,
+            },
+          },
         })
 
         expect(wrapper.vm.hasSilentError).toEqual(true)
@@ -267,8 +267,8 @@ describe('ResourceLoader', () => {
         const wrapper = createWrapper({
           data: null,
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
         }, CwaAuthStatus.SIGNED_IN, mockUiComponent)
 
         expect(wrapper.vm.resolvedComponent).toEqual(mockUiComponent)
@@ -321,8 +321,8 @@ describe('ResourceLoader', () => {
       const watchSpy = vue.watch
       const wrapper = createWrapper({
         apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS
-        }
+          status: CwaResourceApiStatuses.IN_PROGRESS,
+        },
       })
 
       expect(watchSpy.mock.calls[0][0]).toHaveLength(2)
@@ -353,8 +353,8 @@ describe('ResourceLoader', () => {
       const wrapper = createWrapper({
         data: null,
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -363,12 +363,12 @@ describe('ResourceLoader', () => {
     test('should match snapshot IF UI component is not resolved', () => {
       const wrapper = createWrapper({
         data: {
-          uiComponent: 'Mock'
+          uiComponent: 'Mock',
         },
         apiState: {
           status: CwaResourceApiStatuses.ERROR,
-          error: {}
-        }
+          error: {},
+        },
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -377,19 +377,19 @@ describe('ResourceLoader', () => {
     test('should match snapshot IF component is resolved from props', async () => {
       const wrapper = createWrapper({
         data: {
-          uiComponent: 'DummyComponent'
+          uiComponent: 'DummyComponent',
         },
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
       })
 
       await wrapper.setProps({
         uiComponent: {
           name: 'DummyComponent',
           template: '<div> test </div>',
-          props: ['iri']
-        }
+          props: ['iri'],
+        },
       })
 
       expect(wrapper.element).toMatchSnapshot()
@@ -398,14 +398,14 @@ describe('ResourceLoader', () => {
     test('should match snapshot IF global component name is resolved', async () => {
       const wrapper = createWrapper({
         data: {
-          uiComponent: 'GlobalComponent'
+          uiComponent: 'GlobalComponent',
         },
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
       })
       await wrapper.setProps({
-        componentPrefix: undefined
+        componentPrefix: undefined,
       })
 
       expect(wrapper.element).toMatchSnapshot()

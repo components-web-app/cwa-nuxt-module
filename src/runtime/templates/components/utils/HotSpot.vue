@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{
   iri?: string
 }>(), {
   screenReaderAction: 'Hot Spot Button',
-  iri: undefined
+  iri: undefined,
 })
 
 const $cwa = useCwa()

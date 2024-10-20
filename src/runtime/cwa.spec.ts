@@ -1,5 +1,4 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import * as nuxtApp from '#app/nuxt'
 import type { CwaModuleOptions } from '../module'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
@@ -14,16 +13,17 @@ import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import Auth from './api/auth'
+import * as nuxtApp from '#app/nuxt'
 
 vi.mock('#app/composables/cookie.js', () => {
   return {
-    useCookie: vi.fn((...args) => ([...args]))
+    useCookie: vi.fn((...args) => ([...args])),
   }
 })
 
 vi.mock('#app/nuxt', () => {
   return {
-    useRuntimeConfig: vi.fn(() => ({ public: { cwa: { apiUrl: '', apiUrlBrowser: '' } } }))
+    useRuntimeConfig: vi.fn(() => ({ public: { cwa: { apiUrl: '', apiUrlBrowser: '' } } })),
   }
 })
 
@@ -37,22 +37,22 @@ vi.mock('./storage/storage', () => {
         mercure: vi.fn(),
         admin: vi.fn(),
         auth: vi.fn(),
-        error: vi.fn()
-      }
-    }))
+        error: vi.fn(),
+      },
+    })),
   }
 })
 
 vi.mock('./api/fetcher/fetcher', () => {
   return {
-    default: vi.fn(() => ({ }))
+    default: vi.fn(() => ({ })),
   }
 })
 
 vi.mock('./api/mercure', () => {
   const MercureInstance = vi.fn(() => ({ name: 'MERCURE', setFetcher: vi.fn(), setRequestCount: vi.fn() }))
   return {
-    default: MercureInstance
+    default: MercureInstance,
   }
 })
 
@@ -62,59 +62,59 @@ vi.mock('./api/api-documentation', () => {
   })
   return {
     default: vi.fn(() => ({
-      getApiDocumentation
-    }))
+      getApiDocumentation,
+    })),
   }
 })
 vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
 vi.mock('./resources/resources-manager', () => {
   return {
-    ResourcesManager: vi.fn(() => ({ requestCount: 999 }))
+    ResourcesManager: vi.fn(() => ({ requestCount: 999 })),
   }
 })
 vi.mock('./resources/resources')
 vi.mock('./api/auth', () => {
   return {
-    default: vi.fn(() => ({ signedIn: 'am-i-signed-in?' }))
+    default: vi.fn(() => ({ signedIn: 'am-i-signed-in?' })),
   }
 })
 vi.mock('./api/forms')
 vi.mock('./admin/admin', () => {
   return {
-    default: vi.fn(() => ({ resourceManager: 'resourceManagerMockAsString' }))
+    default: vi.fn(() => ({ resourceManager: 'resourceManagerMockAsString' })),
   }
 })
 vi.mock('./admin/navigation-guard', () => {
   return {
     default: vi.fn(() => ({
-      adminNavigationGuardFn: vi.fn()
-    }))
+      adminNavigationGuardFn: vi.fn(),
+    })),
   }
 })
 
 const path = 'something'
 const storeName = 'dummystore'
 const $router = vi.fn()
-function createCwa ({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
+function createCwa({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
   vi.spyOn(nuxtApp, 'useRuntimeConfig').mockImplementation(() => ({
     public: {
       cwa: {
         apiUrlBrowser,
-        apiUrl
-      }
-    }
+        apiUrl,
+      },
+    },
   }))
   return new Cwa({
     _route: {
-      path
+      path,
     },
-    $router
+    $router,
   }, {
-    storeName
+    storeName,
   }, {
     version: 'abc',
-    name: 'named'
+    name: 'named',
   })
 }
 
@@ -124,7 +124,7 @@ describe('$cwa.apiUrl tests', () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
         isClient: true,
-        isServer: false
+        isServer: false,
       }
     })
 
@@ -143,7 +143,7 @@ describe('$cwa.apiUrl tests', () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
         isClient: false,
-        isServer: true
+        isServer: true,
       }
     })
 
@@ -230,7 +230,7 @@ describe('Cwa class test', () => {
       stores.auth,
       stores.resources,
       stores.fetcher,
-      ['cwa_auth', { sameSite: 'strict' }]
+      ['cwa_auth', { sameSite: 'strict' }],
     )
     expect($cwa.auth).toBe(Auth.mock.results[0].value)
   })

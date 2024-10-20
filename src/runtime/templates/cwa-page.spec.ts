@@ -7,18 +7,18 @@ import * as cwaComposable from '#cwa/runtime/composables/cwa'
 const defaultIri = '12345'
 
 describe('CWA page', () => {
-  function createWrapper (iri = defaultIri) {
-    // @ts-ignore
+  function createWrapper(iri = defaultIri) {
+    // @ts-expect-error
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
       resources: {
         pageIri: {
-          value: iri
-        }
-      }
+          value: iri,
+        },
+      },
     }))
 
     return mount(CwaPage, {
-      shallow: true
+      shallow: true,
     })
   }
 

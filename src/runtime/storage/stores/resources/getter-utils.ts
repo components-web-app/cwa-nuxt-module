@@ -4,11 +4,11 @@ import type { CwaResourcesStateInterface } from './state'
 export class ResourcesGetterUtils {
   private readonly resourcesState: CwaResourcesStateInterface
 
-  public constructor (resourcesState: CwaResourcesStateInterface) {
+  public constructor(resourcesState: CwaResourcesStateInterface) {
     this.resourcesState = resourcesState
   }
 
-  public resourcesApiStateIsPending (resources: string[]): boolean {
+  public resourcesApiStateIsPending(resources: string[]): boolean {
     for (const resource of resources) {
       const resourceData = this.resourcesState.current.byId[resource]
       if (!resourceData) {
@@ -23,7 +23,7 @@ export class ResourcesGetterUtils {
     return false
   }
 
-  public get totalResourcesPending (): number {
+  public get totalResourcesPending(): number {
     return this.resourcesState.current.currentIds.reduce((count, id) => {
       if (this.resourcesState.current.byId[id].apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
         return ++count

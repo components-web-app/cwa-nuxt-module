@@ -9,7 +9,7 @@ const props = defineProps<{
 const reactiveTabs = toRef(props, 'tabs')
 const selectedIndex = ref(0)
 
-function getOrderValue (meta: CwaResourceManagerTabOptions) {
+function getOrderValue(meta: CwaResourceManagerTabOptions) {
   return meta.order === undefined ? 0 : meta.order
 }
 const orderedTabs = computed(() => {
@@ -20,15 +20,15 @@ const orderedTabs = computed(() => {
   return tabsWithOriginalSort.filter(v => !v.disabled).sort((a, b) => (getOrderValue(a) - getOrderValue(b)))
 })
 
-function selectIndex (newIndex: number) {
+function selectIndex(newIndex: number) {
   selectedIndex.value = newIndex
 }
 
-function resetTabs (newIndex: number = 0) {
+function resetTabs(newIndex: number = 0) {
   selectedIndex.value = newIndex
 }
 
-const emit = defineEmits<{(e: 'click', index: number): void }>()
+const emit = defineEmits<{ (e: 'click', index: number): void }>()
 
 watchEffect(() => {
   const newIndex = orderedTabs.value[selectedIndex.value || 0]?._originalIndex || 0

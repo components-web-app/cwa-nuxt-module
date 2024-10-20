@@ -7,27 +7,27 @@ import state from './state'
 import getters from './getters'
 
 vi.mock('./state', () => ({
-  default: vi.fn(() => ({ stateKey: 'value' }))
+  default: vi.fn(() => ({ stateKey: 'value' })),
 }))
 
 vi.mock('./actions', () => ({
   default: vi.fn(() => ({
-    someFunction: vi.fn()
-  }))
+    someFunction: vi.fn(),
+  })),
 }))
 
 vi.mock('./getters')
 
 describe('ApiDocumentationStore tests', () => {
   const returnGetters = {
-    someGetter: vi.fn()
+    someGetter: vi.fn(),
   }
-  // @ts-ignore
+  // @ts-expect-error
   getters.mockImplementation(() => (returnGetters))
 
   beforeEach(() => {
     const pinia = createTestingPinia({
-      createSpy: vi.fn
+      createSpy: vi.fn,
     })
     setActivePinia(pinia)
     vi.clearAllMocks()
@@ -39,7 +39,7 @@ describe('ApiDocumentationStore tests', () => {
 
     expect(state).toBeCalledTimes(1)
 
-    // @ts-ignore
+    // @ts-expect-error
     expect(storeDefinition.stateKey).toBe('value')
 
     expect(actions).toBeCalledTimes(1)

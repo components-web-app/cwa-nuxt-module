@@ -1,19 +1,20 @@
 // @vitest-environment happy-dom
 import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
-import * as app from '#app'
-import { createCwaResourceError, CwaResourceError } from '../../../errors/cwa-resource-error'
+import type { CwaResourceError } from '../../../errors/cwa-resource-error'
+import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import * as ResourceUtils from '../../../resources/resource-utils'
 import type { CwaResourcesActionsInterface } from './actions'
 import actions from './actions'
 import type { CwaResourcesStateInterface } from './state'
 import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
+import * as app from '#app'
 
 vi.mock('../../../resources/resource-utils', async () => {
   const actual = await vi.importActual<any>('../../../resources/resource-utils')
   return {
     ...actual,
-    isCwaResourceSame: vi.fn(() => false)
+    isCwaResourceSame: vi.fn(() => false),
   }
 })
 
@@ -26,27 +27,27 @@ describe('Resources -> deleteResource', () => {
     resourcesState.current.byId = {
       '/to-delete': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/to-delete',
-          '@type': 'MyType'
-        }
-      }
+          '@type': 'MyType',
+        },
+      },
     }
     resourcesState.current.currentIds = ['/to-delete']
     resourcesState.current.allIds = ['/to-delete']
     resourcesActions.deleteResource({
-      resource: '/any-id'
+      resource: '/any-id',
     })
     expect(resourcesState.current.byId['/to-delete']).toStrictEqual({
       apiState: {
-        status: undefined
+        status: undefined,
       },
       data: {
         '@id': '/to-delete',
-        '@type': 'MyType'
-      }
+        '@type': 'MyType',
+      },
     })
     expect(resourcesState.current.allIds).toStrictEqual(['/to-delete'])
     expect(resourcesState.current.currentIds).toStrictEqual(['/to-delete'])
@@ -56,18 +57,18 @@ describe('Resources -> deleteResource', () => {
     resourcesState.current.byId = {
       '/to-delete': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/to-delete',
-          '@type': 'MyType'
-        }
-      }
+          '@type': 'MyType',
+        },
+      },
     }
     resourcesState.current.currentIds = ['/to-delete']
     resourcesState.current.allIds = ['/to-delete']
     resourcesActions.deleteResource({
-      resource: '/to-delete'
+      resource: '/to-delete',
     })
     expect(resourcesState.current.byId).not.toHaveProperty('/to-delete')
     expect(resourcesState.current.allIds).toStrictEqual([])
@@ -78,30 +79,30 @@ describe('Resources -> deleteResource', () => {
     resourcesState.current.byId = {
       '/_/component_positions/to-delete': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/_/component_positions/to-delete',
-          '@type': 'ComponentPosition'
-        }
+          '@type': 'ComponentPosition',
+        },
       },
       '/_/component_groups/group': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/_/component_groups/group',
-          componentPositions: [
+          'componentPositions': [
             '/_/component_positions/to-delete',
-            '/_/component_positions/to-keep'
-          ]
-        }
-      }
+            '/_/component_positions/to-keep',
+          ],
+        },
+      },
     }
     resourcesState.current.currentIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
     resourcesState.current.allIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
     resourcesActions.deleteResource({
-      resource: '/_/component_positions/to-delete'
+      resource: '/_/component_positions/to-delete',
     })
     expect(resourcesState.current.byId).not.toHaveProperty('/_/component_positions/to-delete')
     expect(resourcesState.current.allIds).toStrictEqual(['/_/component_groups/group'])
@@ -113,42 +114,42 @@ describe('Resources -> deleteResource', () => {
     resourcesState.current.byId = {
       '/component/to-delete': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/component/to-delete',
           '@type': 'Component',
-          componentPositions: [
+          'componentPositions': [
             '/_/component_positions/static',
-            '/_/component_positions/dynamic'
+            '/_/component_positions/dynamic',
           ],
-          _metadata: {}
-        }
+          '_metadata': {},
+        },
       },
       '/_/component_positions/static': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/_/component_positions/static',
-          component: '/component/to-delete'
-        }
+          'component': '/component/to-delete',
+        },
       },
       '/_/component_positions/dynamic': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/_/component_positions/dynamic',
-          component: '/component/to-delete',
-          pageDataProperty: 'anything'
-        }
-      }
+          'component': '/component/to-delete',
+          'pageDataProperty': 'anything',
+        },
+      },
     }
     resourcesState.current.currentIds = ['/component/to-delete', '/_/component_positions/static', '/_/component_positions/dynamic']
     resourcesState.current.allIds = ['/component/to-delete', '/_/component_positions/static', '/_/component_positions/dynamic']
     resourcesActions.deleteResource({
-      resource: '/component/to-delete'
+      resource: '/component/to-delete',
     })
     expect(resourcesState.current.byId).not.toHaveProperty('/component/to-delete')
     expect(resourcesState.current.byId).not.toHaveProperty('/_/component_positions/static')
@@ -176,21 +177,21 @@ describe('Resources -> mergeNewResources', () => {
     resourcesState.new.byId = {
       '/to-delete': {
         resource: {
-          '@id': '/to-delete'
+          '@id': '/to-delete',
         },
-        path: 'any'
-      }
+        path: 'any',
+      },
     }
     resourcesState.current.byId = {
       '/to-delete': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/to-delete',
-          '@type': 'MyType'
-        }
-      }
+          '@type': 'MyType',
+        },
+      },
     }
     resourcesState.new.allIds = ['/to-delete']
     resourcesState.current.allIds = ['/to-delete']
@@ -206,21 +207,21 @@ describe('Resources -> mergeNewResources', () => {
       '/to-add': {
         resource: {
           '@id': '/to-add',
-          something: 'a value'
+          'something': 'a value',
         },
-        path: 'any'
-      }
+        path: 'any',
+      },
     }
     resourcesState.current.byId = {
       '/resource': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/resource',
-          '@type': 'MyType'
-        }
-      }
+          '@type': 'MyType',
+        },
+      },
     }
     resourcesState.new.allIds = ['/to-add']
     resourcesState.current.allIds = ['/resource']
@@ -231,14 +232,14 @@ describe('Resources -> mergeNewResources', () => {
       apiState: {
         status: CwaResourceApiStatuses.SUCCESS,
         headers: {
-          path: 'any'
+          path: 'any',
         },
-        fetchedAt: fetchedAtDate.getTime()
+        fetchedAt: fetchedAtDate.getTime(),
       },
       data: {
         '@id': '/to-add',
-        something: 'a value'
-      }
+        'something': 'a value',
+      },
     })
     expect(resourcesState.current.allIds).toStrictEqual(['/resource', '/to-add'])
     expect(resourcesState.current.currentIds).toStrictEqual(['/resource', '/to-add'])
@@ -249,21 +250,21 @@ describe('Resources -> mergeNewResources', () => {
       '/resource': {
         resource: {
           '@id': '/resource',
-          something: 'a value'
+          'something': 'a value',
         },
-        path: 'any'
-      }
+        path: 'any',
+      },
     }
     resourcesState.current.byId = {
       '/resource': {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': '/resource',
-          '@type': 'MyType'
-        }
-      }
+          '@type': 'MyType',
+        },
+      },
     }
     resourcesState.new.allIds = ['/resource']
     resourcesState.current.allIds = ['/resource']
@@ -277,21 +278,21 @@ describe('Resources -> mergeNewResources', () => {
       apiState: {
         status: CwaResourceApiStatuses.SUCCESS,
         headers: {
-          path: 'any'
+          path: 'any',
         },
-        fetchedAt: date.getTime()
+        fetchedAt: date.getTime(),
       },
       data: {
         '@id': '/resource',
-        something: 'a value'
-      }
+        'something': 'a value',
+      },
     })
     expect(resourcesState.current.allIds).toStrictEqual(['/resource'])
     expect(resourcesState.current.currentIds).toStrictEqual(['/resource'])
 
     expect(resourcesState.new).toStrictEqual({
       byId: {},
-      allIds: []
+      allIds: [],
     })
   })
 })
@@ -312,7 +313,7 @@ describe('Resources -> resetCurrentResources', () => {
 
   test('We can reset current resources', () => {
     resourcesState.new.byId = {
-      id: {}
+      id: {},
     }
     resourcesState.new.allIds = ['id']
     resourcesState.current.currentIds = ['current']
@@ -324,19 +325,19 @@ describe('Resources -> resetCurrentResources', () => {
 
   test('We can reset current resources with new current IDs state', () => {
     resourcesState.new.byId = {
-      id: {}
+      id: {},
     }
     resourcesState.current.byId = {
       id: {
         apiState: {
-          status: undefined
-        }
+          status: undefined,
+        },
       },
       current: {
         apiState: {
-          status: undefined
-        }
-      }
+          status: undefined,
+        },
+      },
     }
     resourcesState.new.allIds = ['id', 'current']
     resourcesState.current.currentIds = ['current']
@@ -348,26 +349,26 @@ describe('Resources -> resetCurrentResources', () => {
 
   test('When we reset resources with new current IDs, non-errored resources and path reset', () => {
     resourcesState.new.byId = {
-      id: {}
+      id: {},
     }
     resourcesState.current.byId = {
       errored: {
         apiState: {
-          status: CwaResourceApiStatuses.ERROR
-        }
+          status: CwaResourceApiStatuses.ERROR,
+        },
       },
       inProgress: {
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS,
-          headers: { path: '1' }
-        }
+          headers: { path: '1' },
+        },
       },
       current: {
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
-          headers: {}
-        }
-      }
+          headers: {},
+        },
+      },
     }
     resourcesState.new.allIds = ['errored', 'inProgress']
     resourcesState.current.currentIds = ['current']
@@ -380,25 +381,25 @@ describe('Resources -> resetCurrentResources', () => {
       status: CwaResourceApiStatuses.SUCCESS,
       headers: { path: '1' },
       ssr: undefined,
-      fetchedAt: fetchedAtDate.getTime()
+      fetchedAt: fetchedAtDate.getTime(),
     })
   })
 
   test('If we try and reset current ids with a resource id that does not exist, we get an error and resources are not reset', () => {
     resourcesState.new.byId = {
-      id: {}
+      id: {},
     }
     resourcesState.current.byId = {
       id: {
         apiState: {
-          status: undefined
-        }
+          status: undefined,
+        },
       },
       current: {
         apiState: {
-          status: undefined
-        }
-      }
+          status: undefined,
+        },
+      },
     }
     resourcesState.new.allIds = ['id', 'current']
     resourcesState.current.currentIds = ['current']
@@ -406,7 +407,7 @@ describe('Resources -> resetCurrentResources', () => {
       resourcesActions.resetCurrentResources(['id', 'something-else'])
     }).toThrowError('Cannot set current resource ID \'something-else\'. It does not exist.')
     expect(resourcesState.new.byId).toStrictEqual({
-      id: {}
+      id: {},
     })
     expect(resourcesState.new.allIds).toStrictEqual(['id', 'current'])
     expect(resourcesState.current.currentIds).toStrictEqual(['current'])
@@ -435,7 +436,7 @@ describe('resources action -> setResourceFetchStatus', () => {
     expect(resourcesState.current.byId.id.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.IN_PROGRESS,
       headers: { path: 'my-path' },
-      ssr: false
+      ssr: false,
     })
   })
 
@@ -444,8 +445,8 @@ describe('resources action -> setResourceFetchStatus', () => {
       status: CwaResourceApiStatuses.ERROR,
       error: {
         statusCode: 101,
-        primaryMessage: 'any'
-      }
+        primaryMessage: 'any',
+      },
     }
     resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: true })
     expect(resourcesState.current.byId.id.apiState.status).toBe(CwaResourceApiStatuses.SUCCESS)
@@ -496,16 +497,16 @@ describe('resources action setResourceFetchError', () => {
   test.each([
     {
       showErrorPage: false,
-      error: null
+      error: null,
     },
     {
       showErrorPage: true,
-      error: null
+      error: null,
     },
     {
       showErrorPage: false,
-      error: createCwaResourceError({})
-    }
+      error: createCwaResourceError({}),
+    },
   ])('If the isPrimary param is $isPrimary and error is $error then we should NOT show an error page', ({ showErrorPage, error }) => {
     vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
     resourcesActions.setResourceFetchError({ showErrorPage, iri: 'id', error })
@@ -529,21 +530,21 @@ describe('resources action -> saveResource', () => {
     const resource = {
       '@id': 'id',
       '@type': 'type',
-      _metadata: {
-        persisted: false
+      '_metadata': {
+        persisted: false,
       },
-      action
+      action,
     }
     resourcesActions.saveResource({
       resource,
       isNew: true,
-      path: '/my-path'
+      path: '/my-path',
     })
     expect(resourcesState.new.byId).toStrictEqual({
       id: {
         path: '/my-path',
-        resource
-      }
+        resource,
+      },
     })
     expect(resourcesState.new.allIds).toStrictEqual(['id'])
   })
@@ -552,13 +553,13 @@ describe('resources action -> saveResource', () => {
     const resource = {
       '@id': 'id',
       '@type': 'type',
-      _metadata: {
-        persisted: false
+      '_metadata': {
+        persisted: false,
       },
-      action
+      action,
     }
     resourcesActions.saveResource({
-      resource
+      resource,
     })
     expect(resourcesState.current.byId.id.data).toStrictEqual(resource)
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
@@ -572,36 +573,36 @@ describe('resources action -> saveResource', () => {
 
     resourcesState.new = {
       byId: {},
-      allIds: []
+      allIds: [],
     }
     resourcesState.current.byId = {
       id: {
         apiState: {
-          status: undefined
+          status: undefined,
         },
         data: {
           '@id': 'id',
-          '@type': 'MyType'
-        }
-      }
+          '@type': 'MyType',
+        },
+      },
     }
     resourcesState.current.currentIds = ['id']
     const resource = {
       '@id': 'id',
       '@type': 'type',
-      _metadata: {
-        persisted: false
+      '_metadata': {
+        persisted: false,
       },
-      action: 'something new'
+      'action': 'something new',
     }
     resourcesActions.saveResource({
       resource,
       isNew: true,
-      path: '/my-path'
+      path: '/my-path',
     })
     expect(resourcesState.new).toStrictEqual({
       byId: {},
-      allIds: []
+      allIds: [],
     })
   })
 })

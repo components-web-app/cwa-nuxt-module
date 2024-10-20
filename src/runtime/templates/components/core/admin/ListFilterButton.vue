@@ -8,7 +8,10 @@
       type="checkbox"
       :value="value"
     >
-    <button :class="['cwa-transition-opacity', 'cwa-border-2', 'cwa-rounded', 'cwa-py-1', 'cwa-px-4', 'cwa-opacity-50', 'peer-checked/checkbox:cwa-opacity-100', backgroundColorClass, borderColorClass]" @click="toggleCheckbox">
+    <button
+      :class="['cwa-transition-opacity', 'cwa-border-2', 'cwa-rounded', 'cwa-py-1', 'cwa-px-4', 'cwa-opacity-50', 'peer-checked/checkbox:cwa-opacity-100', backgroundColorClass, borderColorClass]"
+      @click="toggleCheckbox"
+    >
       {{ label }}
     </button>
   </label>
@@ -19,7 +22,7 @@ import { ref, computed, defineEmits } from 'vue'
 import { useId } from '#app'
 
 const props = defineProps<{
-  modelValue: string[]|null
+  modelValue: string[] | null
   value: string
   label: string
   backgroundColorClass: string
@@ -30,7 +33,7 @@ const inputId = useId()
 const checkbox = ref()
 
 const emit = defineEmits(['update:modelValue'])
-function toggleCheckbox () {
+function toggleCheckbox() {
   if (isChecked.value) {
     if (model.value === null) {
       return
@@ -45,12 +48,12 @@ function toggleCheckbox () {
 }
 
 const model = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (value) {
+  set(value) {
     emit('update:modelValue', value)
-  }
+  },
 })
 
 const isChecked = computed(() => {

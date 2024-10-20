@@ -4,7 +4,10 @@
       {{ label }}
     </span>
     <div class="cwa-flex cwa-items-center cwa-space-x-4">
-      <span v-if="content" class="cwa-truncate">
+      <span
+        v-if="content"
+        class="cwa-truncate"
+      >
         {{ content }}
       </span>
       <slot />

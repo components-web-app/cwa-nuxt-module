@@ -16,15 +16,15 @@ import { CwaAuthForgotPasswordPage } from '#components'
 const { doSubmit, credentials, error, submitting, success } = useForgotPassword()
 
 definePageMeta({
-  cwa: false
+  cwa: false,
 })
 
 useHead({
   bodyAttrs: {
-    class: 'cwa-h-full'
+    class: 'cwa-h-full',
   },
   htmlAttrs: {
-    class: 'cwa-h-full cwa-bg-neutral-900'
-  }
+    class: 'cwa-h-full cwa-bg-neutral-900',
+  },
 })
 </script>

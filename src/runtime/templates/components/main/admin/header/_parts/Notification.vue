@@ -1,14 +1,25 @@
 <template>
-  <li class="cwa-pointer-events-auto cwa-w-full cwa-max-w-sm cwa-overflow-hidden cwa-rounded-lg cwa-dark-blur cwa-ring-2 cwa-ring-magenta" @mouseout="setEmitTimeout" @mouseover="clearEmitTimeout">
+  <li
+    class="cwa-pointer-events-auto cwa-w-full cwa-max-w-sm cwa-overflow-hidden cwa-rounded-lg cwa-dark-blur cwa-ring-2 cwa-ring-magenta"
+    @mouseout="setEmitTimeout"
+    @mouseover="clearEmitTimeout"
+  >
     <div class="cwa-p-4">
       <div class="cwa-flex cwa-items-start cwa-relative">
         <div class="cwa-ml-3 cwa-w-0 cwa-flex-1 cwa-pt-0.5">
           <slot />
         </div>
         <div class="cwa-ml-4 cwa-flex cwa-flex-shrink-0">
-          <button type="button" class="cwa-inline-flex cwa-rounded-md cwa-text-stone-400 hover:cwa-text-white cwa-transition" @click="$emit('clear')">
+          <button
+            type="button"
+            class="cwa-inline-flex cwa-rounded-md cwa-text-stone-400 hover:cwa-text-white cwa-transition"
+            @click="$emit('clear')"
+          >
             <span class="cwa-sr-only">Close</span>
-            <CwaUiIconXMarkIcon class="cwa-h-5 cwa-w-5" aria-hidden="true" />
+            <CwaUiIconXMarkIcon
+              class="cwa-h-5 cwa-w-5"
+              aria-hidden="true"
+            />
           </button>
         </div>
         <svg
@@ -34,16 +45,16 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-const emitTimeout = ref<undefined|ReturnType<typeof setTimeout>>()
+const emitTimeout = ref<undefined | ReturnType<typeof setTimeout>>()
 const emit = defineEmits(['clear'])
 
-function setEmitTimeout () {
+function setEmitTimeout() {
   emitTimeout.value = setTimeout(() => {
     emit('clear')
   }, 6000)
 }
 
-function clearEmitTimeout () {
+function clearEmitTimeout() {
   if (emitTimeout.value) {
     clearTimeout(emitTimeout.value)
     emitTimeout.value = undefined

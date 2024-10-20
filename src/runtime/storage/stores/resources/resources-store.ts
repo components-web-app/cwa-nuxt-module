@@ -1,10 +1,10 @@
 import {
-  defineStore
+  defineStore,
 } from 'pinia'
 import type {
   CwaPiniaStoreDefinitionInterface,
   CwaPiniaStoreInterface,
-  CwaStore
+  CwaStore,
 } from '../cwa-store-types'
 import type { CwaResourcesStateInterface } from './state'
 import type { CwaResourcesGettersInterface } from './getters'
@@ -17,8 +17,8 @@ import CwaResourcesActions from './actions'
  * Interface Definitions
  */
 export interface CwaResourcesInterface extends CwaResourcesStateInterface, CwaResourcesGettersInterface, CwaResourcesActionsInterface {}
-export interface CwaResourcesStoreDefinitionInterface extends CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface> {}
-export interface CwaResourcesStoreInterface extends CwaPiniaStoreInterface<`${string}.resources`, CwaResourcesInterface> {}
+export type CwaResourcesStoreDefinitionInterface = CwaPiniaStoreDefinitionInterface<`${string}.resources`, CwaResourcesInterface>
+export type CwaResourcesStoreInterface = CwaPiniaStoreInterface<`${string}.resources`, CwaResourcesInterface>
 
 /**
  * Main Store Class
@@ -26,19 +26,19 @@ export interface CwaResourcesStoreInterface extends CwaPiniaStoreInterface<`${st
 export class ResourcesStore implements CwaStore {
   private readonly storeDefinition: CwaResourcesStoreDefinitionInterface
 
-  constructor (storeName: string) {
+  constructor(storeName: string) {
     this.storeDefinition = defineStore(`${storeName}.resources`, (): CwaResourcesInterface => {
       const resourcesState = CwaResourcesState()
       const getters = CwaResourcesGetters(resourcesState)
       return {
         ...resourcesState,
         ...getters,
-        ...CwaResourcesActions(resourcesState, getters)
+        ...CwaResourcesActions(resourcesState, getters),
       }
     })
   }
 
-  public useStore (): CwaResourcesStoreInterface {
+  public useStore(): CwaResourcesStoreInterface {
     return this.storeDefinition()
   }
 }

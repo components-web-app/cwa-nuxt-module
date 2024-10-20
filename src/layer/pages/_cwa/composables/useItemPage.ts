@@ -5,19 +5,19 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
-type TempCwaResource = Omit<CwaResource, '@id'|'_metadata'>
+type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 
-type StartsWithHash = `#${string}`;
+type StartsWithHash = `#${string}`
 
 type UseItemOps = {
-  createEndpoint: string|Ref<string>
-  emit: ((evt: 'close') => void) & ((evt: 'reload') => void),
-  resourceType: string,
+  createEndpoint: string | Ref<string>
+  emit: ((evt: 'close') => void) & ((evt: 'reload') => void)
+  resourceType: string
   defaultResource: Omit<TempCwaResource, '@type'>
-  validate?: (data: any) => boolean|string
-  endpoint?: Ref<string|undefined>
+  validate?: (data: any) => boolean | string
+  endpoint?: Ref<string | undefined>
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
-  iri?: Ref<string|undefined>
+  iri?: Ref<string | undefined>
   excludeFields?: string[]
 }
 
@@ -32,49 +32,49 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
 
   const isLoading = ref(true)
   const isUpdating = ref(false)
-  const localResourceData = ref<TempCwaResource|CwaResource>()
+  const localResourceData = ref<TempCwaResource | CwaResource>()
 
   const isAdding = computed(() => endpoint.value === 'add')
   const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri?.value || endpoint.value).value?.data)
 
-  function formatDate (dateStr:string) {
+  function formatDate(dateStr: string) {
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
   }
 
-  function loadResource () {
+  function loadResource() {
     if (isAdding.value) {
       localResourceData.value = {
         '@type': resourceType,
-        ...defaultResource
+        ...defaultResource,
       }
       return localResourceData.value
     }
     return $cwa.fetchResource({
       path: endpoint.value,
       iri: iri?.value,
-      shallowFetch: true
+      shallowFetch: true,
     })
   }
 
-  async function deleteResource (refreshEndpoints?: string[]) {
+  async function deleteResource(refreshEndpoints?: string[]) {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
       endpoint: iri?.value || endpoint.value,
-      refreshEndpoints
+      refreshEndpoints,
     })
     emit('reload')
     emit('close')
     isUpdating.value = false
   }
 
-  function saveTitle () {
+  function saveTitle() {
     if (isAdding.value) {
       return
     }
     return saveResource()
   }
 
-  async function saveResource (close = false) {
+  async function saveResource(close = false) {
     if (!localResourceData.value) {
       return
     }
@@ -90,9 +90,9 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
             violations: [
               {
                 message: result,
-                property: 'plainPassword'
-              }
-            ]
+                property: 'plainPassword',
+              },
+            ],
           })
         }
         return
@@ -100,7 +100,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     }
     const doRequest = async () => {
       const data: { [key: string]: any } = {
-        ...localResourceData.value
+        ...localResourceData.value,
       }
       if (excludeFields) {
         for (const field of excludeFields) {
@@ -111,13 +111,14 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         const newResource = await $cwa.resourcesManager.createResource({
           endpoint: isRef(createEndpoint) ? createEndpoint.value : createEndpoint,
           data,
-          source: 'admin-modal'
+          source: 'admin-modal',
         })
         if (newResource) {
           emit('reload')
           if (close) {
             emit('close')
-          } else {
+          }
+          else {
             router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query, hash: routeHashAfterAdd?.value })
           }
         }
@@ -126,7 +127,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
 
       const updatedResource = await $cwa.resourcesManager.updateResource({
         endpoint: iri?.value || endpoint.value,
-        data
+        data,
       })
       if (close && updatedResource) {
         emit('close')
@@ -140,7 +141,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return resource
   }
 
-  function syncLocalResourceWithStore (newResource: TempCwaResource|undefined) {
+  function syncLocalResourceWithStore(newResource: TempCwaResource | undefined) {
     !isAdding.value && newResource && (localResourceData.value = { ...newResource })
   }
 
@@ -166,6 +167,6 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     deleteResource,
     saveTitle,
     saveResource,
-    loadResource
+    loadResource,
   }
 }

@@ -3,17 +3,17 @@ import { computed, ref } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 
 const props = withDefaults(defineProps<{
-  title: string,
+  title: string
   content: string
 }>(), {
   title: 'No Title Set',
-  content: 'No Content Set'
+  content: 'No Content Set',
 })
 
 const emit = defineEmits(['confirm', 'cancel'])
 const open = ref(true)
 
-function completeDialog (eventName: 'confirm'|'cancel') {
+function completeDialog(eventName: 'confirm' | 'cancel') {
   open.value = false
   setTimeout(() => {
     emit(eventName)
@@ -26,19 +26,23 @@ const buttons = computed<ActionButton[]>(() => {
       label: 'Ok',
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
-      callbackFn: () => (completeDialog('confirm'))
+      callbackFn: () => (completeDialog('confirm')),
     },
     {
       label: 'Cancel',
       color: 'grey',
-      callbackFn: () => (completeDialog('cancel'))
-    }
+      callbackFn: () => (completeDialog('cancel')),
+    },
   ]
 })
 </script>
 
 <template>
-  <DialogBox v-model="open" :title="title" :buttons="buttons">
+  <DialogBox
+    v-model="open"
+    :title="title"
+    :buttons="buttons"
+  >
     <div v-html="props.content" />
   </DialogBox>
 </template>

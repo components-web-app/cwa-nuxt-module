@@ -8,7 +8,11 @@
       data-placeholder="[Empty HTML Content Area]"
       :class="{ 'is-empty opacity-50 text-inherit': disableEditor && !htmlContent }"
     />
-    <div v-else ref="htmlContainer" v-html="htmlContent" />
+    <div
+      v-else
+      ref="htmlContainer"
+      v-html="htmlContent"
+    />
   </article>
 </template>
 
@@ -26,16 +30,16 @@ const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, {
   styles: {
     multiple: true,
     classes: {
-      'Big Text': ['text-2xl']
-    }
-  }
+      'Big Text': ['text-2xl'],
+    },
+  },
 })
 defineExpose(exposeMeta)
 
 const resource = getResource()
 
 // HTML Content composable, converting anchors to nuxt link and link enable/disable with editable status
-const htmlContainer = ref<null|HTMLElement>(null)
+const htmlContainer = ref<null | HTMLElement>(null)
 
 const htmlContent = computed<string>(() => resource.value?.data?.html)
 useHtmlContent(htmlContainer)

@@ -6,31 +6,31 @@ import { usePopper } from '#cwa/runtime/composables/popper'
 
 type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 export interface SelectOption {
-  label: string,
-  value: ModelValue,
+  label: string
+  value: ModelValue
   disabled?: boolean
 }
 
 export type SelectInputProps = {
-  options: SelectOption[],
-  modelValue: ModelValue,
+  options: SelectOption[]
+  modelValue: ModelValue
   popper?: PopperOptions
 }
 
 export const useCwaSelectInput = (inputProps: ComputedRef<SelectInputProps>, emit: (event: 'update:modelValue', ...args: any[]) => void) => {
   const value = computed({
-    get () {
+    get() {
       return inputProps.value.modelValue
     },
-    set (value) {
+    set(value) {
       emit('update:modelValue', value)
-    }
+    },
   })
 
   const ops = {
     popper: {
-      placement: 'bottom-start'
-    }
+      placement: 'bottom-start',
+    },
   }
 
   const selectedOption = computed(() => {
@@ -39,7 +39,7 @@ export const useCwaSelectInput = (inputProps: ComputedRef<SelectInputProps>, emi
   const popperOps = computed<PopperOptions>(() => defu({}, inputProps.value.popper, ops.popper as PopperOptions))
   const [trigger, container] = usePopper(popperOps.value)
 
-  function compareOptions (a: ModelValue, b: ModelValue) {
+  function compareOptions(a: ModelValue, b: ModelValue) {
     if (a === undefined && b === null) {
       return true
     }
@@ -51,6 +51,6 @@ export const useCwaSelectInput = (inputProps: ComputedRef<SelectInputProps>, emi
     compareOptions,
     selectedOption,
     trigger,
-    container
+    container,
   }
 }

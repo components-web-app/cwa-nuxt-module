@@ -1,19 +1,20 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { reactive } from 'vue'
-import { CwaResourceApiStatuses, CwaResourcesStateInterface } from './state'
+import type { CwaResourcesStateInterface } from './state'
+import { CwaResourceApiStatuses } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 
-function createState (): CwaResourcesStateInterface {
+function createState(): CwaResourcesStateInterface {
   return {
     current: reactive({
       byId: {},
       allIds: [],
-      currentIds: []
+      currentIds: [],
     }),
     new: reactive({
       byId: {},
-      allIds: []
-    })
+      allIds: [],
+    }),
   }
 }
 
@@ -30,9 +31,9 @@ describe('ResourcesStore Getter Utils -> resourcesApiStateIsPending', () => {
     const byId = {
       id: {
         apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS
-        }
-      }
+          status: CwaResourceApiStatuses.IN_PROGRESS,
+        },
+      },
     }
     state.current.currentIds = Object.keys(byId)
     state.current.byId = byId
@@ -45,9 +46,9 @@ describe('ResourcesStore Getter Utils -> resourcesApiStateIsPending', () => {
     const byId = {
       id: {
         apiState: {
-          status: CwaResourceApiStatuses.SUCCESS
-        }
-      }
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
+      },
     }
     state.current.currentIds = Object.keys(byId)
     state.current.byId = byId
@@ -58,9 +59,9 @@ describe('ResourcesStore Getter Utils -> resourcesApiStateIsPending', () => {
     const byId = {
       id: {
         apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS
-        }
-      }
+          status: CwaResourceApiStatuses.IN_PROGRESS,
+        },
+      },
     }
     state.current.currentIds = Object.keys(byId)
     state.current.byId = byId
@@ -82,22 +83,22 @@ describe('ResourcesStore Getter Utils -> totalResourcesPending', () => {
       byId: {
         id: {
           apiState: {
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          }
-        }
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          },
+        },
       },
-      total: 1
+      total: 1,
     },
     {
       byId: {
         id: {
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
+        },
       },
-      total: 0
-    }
+      total: 0,
+    },
   ])('Returns the correct number of pending resources', ({ byId, total }) => {
     state.current.currentIds = Object.keys(byId)
     state.current.byId = byId

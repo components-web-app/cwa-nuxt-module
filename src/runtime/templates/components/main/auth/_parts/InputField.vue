@@ -1,6 +1,9 @@
 <template>
   <div>
-    <label :for="id" class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300">{{ props.label }}</label>
+    <label
+      :for="id"
+      class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
+    >{{ props.label }}</label>
     <div class="cwa-mt-2">
       <input
         :id="id"
@@ -13,7 +16,11 @@
         @input="$emit('update:modelValue', $event.target?.value)"
       >
       <div v-if="errors">
-        <CwaUiAlertWarning v-for="(error, index) in errors" :key="`error-${id}-${index}`" class="cwa-mt-2">
+        <CwaUiAlertWarning
+          v-for="(error, index) in errors"
+          :key="`error-${id}-${index}`"
+          class="cwa-mt-2"
+        >
           {{ error }}
         </CwaUiAlertWarning>
       </div>
@@ -27,19 +34,19 @@ import { useId } from '#app'
 defineEmits(['update:modelValue'])
 
 const props = withDefaults(defineProps<{
-  name: string,
-  type?: string,
-  label: string,
-  autocomplete?: string,
-  required?: boolean,
-  modelValue: string,
+  name: string
+  type?: string
+  label: string
+  autocomplete?: string
+  required?: boolean
+  modelValue: string
   errors?: string[]
 }>(), {
   type: 'text',
   autocomplete: undefined,
   required: false,
   modelValue: '',
-  errors: undefined
+  errors: undefined,
 })
 
 const id = useId()

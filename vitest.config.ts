@@ -8,17 +8,17 @@ export default defineVitestConfig({
       provider: 'v8',
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
-      all: true
+      all: true,
     },
     environmentOptions: {
       nuxt: {
-        rootDir: fileURLToPath(new URL('./playground/', import.meta.url))
-      }
+        rootDir: fileURLToPath(new URL('./playground/', import.meta.url)),
+      },
     },
-    resolveSnapshotPath (path: string, extension: string) {
+    resolveSnapshotPath(path: string, extension: string) {
       return path + extension
     },
     setupFiles: ['./setup.ts'],
-    include: ['src/**/*.spec.ts']
-  }
+    include: ['src/**/*.spec.ts'],
+  },
 })

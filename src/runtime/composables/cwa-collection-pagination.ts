@@ -1,14 +1,14 @@
 import { computed } from 'vue'
 
 export type CwaPaginationProps = {
-  currentPage: number,
-  totalPages: number,
+  currentPage: number
+  totalPages: number
   maxPagesToDisplay: number
 }
 
 export type CwaPaginationEmits = {
-  next: [],
-  previous: [],
+  next: []
+  previous: []
   change: [value: number]
 }
 export const useCwaCollectionPagination = (props: CwaPaginationProps) => {
@@ -43,6 +43,6 @@ export const useCwaCollectionPagination = (props: CwaPaginationProps) => {
   })
 
   return {
-    pages
+    pages,
   }
 }

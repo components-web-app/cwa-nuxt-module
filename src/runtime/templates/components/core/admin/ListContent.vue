@@ -11,8 +11,15 @@
         leave-active-class="cwa-duration-200 cwa-ease-in"
         leave-to-class="cwa-transform cwa-opacity-0"
       >
-        <Spinner v-if="loading" class="cwa-absolute" :show="true" />
-        <div v-else-if="!items.length" class="cwa-flex cwa-justify-center">
+        <Spinner
+          v-if="loading"
+          class="cwa-absolute"
+          :show="true"
+        />
+        <div
+          v-else-if="!items.length"
+          class="cwa-flex cwa-justify-center"
+        >
           <div class="cwa-w-full cwa-max-w-xl cwa-text-center cwa-flex cwa-flex-col cwa-space-y-2 cwa-text-stone-400">
             <div class="cwa-flex cwa-justify-center">
               <CwaUiIconWarningIcon class="cwa-w-20" />
@@ -23,10 +30,20 @@
           </div>
         </div>
         <div v-else>
-          <ListPagination v-model:page.number="pageModel" v-model:per-page.number="perPageModel" :total-items="hydraData.totalItems || 0" />
+          <ListPagination
+            v-model:page.number="pageModel"
+            v-model:per-page.number="perPageModel"
+            :total-items="hydraData.totalItems || 0"
+          />
           <ul class="cwa-flex cwa-flex-col cwa-mb-8">
-            <li v-for="(item, index) in items" :key="`list-item-${index}`">
-              <slot name="item" v-bind="{ data: getItemFromStore(item), rawData: item }">
+            <li
+              v-for="(item, index) in items"
+              :key="`list-item-${index}`"
+            >
+              <slot
+                name="item"
+                v-bind="{ data: getItemFromStore(item), rawData: item }"
+              >
                 <div class="cwa-dark-blur cwa-p-2 cwa-border cwa-border-light/20">
                   <span class="cwa-font-bold">No list item template UI provided</span>
                   <pre class="cwa-text-xs cwa-p-2 cwa-max-h-40 cwa-overflow-auto">{{ item }}</pre>
@@ -34,7 +51,11 @@
               </slot>
             </li>
           </ul>
-          <ListPagination v-model:page.number="pageModel" v-model:per-page.number="perPageModel" :total-items="hydraData.totalItems || 0" />
+          <ListPagination
+            v-model:page.number="pageModel"
+            v-model:per-page.number="perPageModel"
+            :total-items="hydraData.totalItems || 0"
+          />
         </div>
       </Transition>
     </div>
@@ -60,7 +81,7 @@ watch(perPageModel, (newValue) => {
     perPageModel.value = 5
   }
 }, {
-  immediate: true
+  immediate: true,
 })
 
 const props = defineProps<{
@@ -72,7 +93,7 @@ const items = ref<any[]>([])
 const hydraData = ref()
 const currentRequestId = ref<number>(0)
 
-async function reloadItems () {
+async function reloadItems() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   loading.value = true
@@ -89,7 +110,7 @@ async function reloadItems () {
    */
   hydraData.value = {
     totalItems: data?.['hydra:totalItems'] || 0,
-    view: data?.['hydra:view']
+    view: data?.['hydra:view'],
   }
   if (thisRequestId === currentRequestId.value) {
     data && (items.value = data['hydra:member'])
@@ -97,7 +118,7 @@ async function reloadItems () {
   }
 }
 
-function getItemFromStore (item: CwaResource) {
+function getItemFromStore(item: CwaResource) {
   const storeItemData = $cwa.resources.getResource(item['@id']).value?.data
   return storeItemData || item
 }
@@ -115,7 +136,7 @@ watch(() => route.query, (newQuery, oldQuery) => {
     pageModel.value = 1
   }
 }, {
-  deep: true
+  deep: true,
 })
 
 watch(() => route.query, (oldQuery, newQuery) => {
@@ -130,6 +151,6 @@ onMounted(() => {
 })
 
 defineExpose({
-  reloadItems
+  reloadItems,
 })
 </script>

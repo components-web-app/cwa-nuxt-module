@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { consola } from 'consola'
-import { type CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
@@ -16,12 +16,12 @@ const addingMeta = computed(() => props.resource?._metadata.adding)
 const isPublishable = computed(() => addingMeta.value?.isPublishable)
 const isAdding = ref(false)
 
-const buttonLabel = computed<'Add Draft'|'Add'>(() => {
+const buttonLabel = computed<'Add Draft' | 'Add'>(() => {
   return isPublishable.value ? 'Add Draft' : 'Add'
 })
 
 const buttonOptions = computed(() => {
-  const ops: (ButtonOption|ButtonOption[])[] = []
+  const ops: (ButtonOption | ButtonOption[])[] = []
   ops.push({ label: 'Discard', value: 'add-discard' })
   if (isPublishable.value) {
     ops.push({ label: 'Add and Publish', value: 'add-publish' })
@@ -29,18 +29,19 @@ const buttonOptions = computed(() => {
   return ops
 })
 
-async function addResourceAction (publish?: boolean) {
+async function addResourceAction(publish?: boolean) {
   isAdding.value = true
   try {
     await $cwa.resourcesManager.addResourceAction(publish)
     $cwa.admin.emptyStack()
-  } catch (e) {
+  }
+  catch (e) {
     consola.error(e)
   }
   isAdding.value = false
 }
 
-async function handleManagerCtaClick (value?: ModelValue) {
+async function handleManagerCtaClick(value?: ModelValue) {
   if (!value) {
     await addResourceAction(buttonLabel.value !== 'Add Draft')
     return

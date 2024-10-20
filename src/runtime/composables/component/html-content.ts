@@ -6,8 +6,8 @@ import { useCwa } from '#cwa/runtime/composables/cwa'
 
 // Todo: work on the nuxt link replacement so external links are not clickable during editing - make into composable for dynamically  changing anchor links into components for internal routing and easier manipulation of disabling
 
-export const useHtmlContent = (container: Ref<null|HTMLElement>) => {
-  let watchStopHandle: undefined|WatchStopHandle
+export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
+  let watchStopHandle: undefined | WatchStopHandle
   const $cwa = useCwa()
 
   const isExternal = (props: any) => {
@@ -24,7 +24,7 @@ export const useHtmlContent = (container: Ref<null|HTMLElement>) => {
     $cwa.navigationDisabled && isExternal(props) && e.preventDefault()
   }
 
-  function convertAnchor (anchor: HTMLElement) {
+  function convertAnchor(anchor: HTMLElement) {
     const href = anchor.getAttribute('href')
     if (!href) {
       return
@@ -32,7 +32,7 @@ export const useHtmlContent = (container: Ref<null|HTMLElement>) => {
 
     const props: any = {
       to: href,
-      innerHTML: anchor.innerHTML
+      innerHTML: anchor.innerHTML,
     }
 
     for (const attr of anchor.attributes) {
@@ -53,7 +53,7 @@ export const useHtmlContent = (container: Ref<null|HTMLElement>) => {
     return app
   }
 
-  function replaceAnchors () {
+  function replaceAnchors() {
     if (!container.value) {
       return
     }
@@ -76,7 +76,7 @@ export const useHtmlContent = (container: Ref<null|HTMLElement>) => {
 
   onMounted(() => {
     watchStopHandle = watch(container, replaceAnchors, {
-      immediate: true
+      immediate: true,
     })
   })
 

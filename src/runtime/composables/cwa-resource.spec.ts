@@ -8,7 +8,7 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    onMounted: vi.fn(fn => fn())
+    onMounted: vi.fn(fn => fn()),
   }
 })
 
@@ -17,12 +17,12 @@ describe('CWA resources composable', () => {
   const mockCwa = {
     admin: {
       eventBus: {
-        emit: vi.fn()
-      }
+        emit: vi.fn(),
+      },
     },
     resources: {
-      getResource: vi.fn()
-    }
+      getResource: vi.fn(),
+    },
   }
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => mockCwa)
 
@@ -35,21 +35,21 @@ describe('CWA resources composable', () => {
     expect(result.exposeMeta).toEqual({
       cwaResource: {
         name,
-        styles
+        styles,
       },
-      disableManager: true
+      disableManager: true,
     })
   })
 
   test.each([
     {
       disabled: true,
-      eventName: 'componentMounted'
+      eventName: 'componentMounted',
     },
     {
       disabled: false,
-      eventName: 'manageableComponentMounted'
-    }
+      eventName: 'manageableComponentMounted',
+    },
   ])('should emit correct eventbus event on mounted if manager is disabled', ({ disabled, eventName }) => {
     vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
     const mockIri = ref('mock-iri')

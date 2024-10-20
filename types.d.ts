@@ -1,8 +1,8 @@
-import { isEqual as isEqualOriginal, mergeWith as mergeWithOriginal, isArray as isArrayOriginal } from '@types/lodash'
-import Cwa from '#cwa/runtime/cwa'
-import 'nuxt';
-import { Router } from 'vue-router'
-import { CwaResourcesMeta } from '#cwa/module'
+import type { isEqual as isEqualOriginal, mergeWith as mergeWithOriginal, isArray as isArrayOriginal } from '@types/lodash'
+import type { Router } from 'vue-router'
+import type Cwa from '#cwa/runtime/cwa'
+import 'nuxt'
+import type { CwaResourcesMeta } from '#cwa/module'
 
 interface CwaInjections {
   $cwa: Cwa
@@ -16,17 +16,17 @@ declare module '#app' {
 }
 
 declare module 'nuxt/dist/app/nuxt' {
-  interface NuxtApp extends CwaInjections {}
+  type NuxtApp = CwaInjections
 }
 
 declare module 'lodash/isEqual.js' {
-  interface isEqual extends isEqualOriginal {}
+  type isEqual = isEqualOriginal
 }
 
 declare module 'lodash/mergeWith.js' {
-  interface mergeWith extends mergeWithOriginal {}
+  type mergeWith = mergeWithOriginal
 }
 
 declare module 'lodash/isArray.js' {
-  interface isArray extends isArrayOriginal {}
+  type isArray = isArrayOriginal
 }

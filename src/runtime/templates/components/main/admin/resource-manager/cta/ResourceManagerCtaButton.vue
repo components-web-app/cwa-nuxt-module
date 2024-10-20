@@ -1,8 +1,16 @@
 <template>
   <template v-if="isAddingNew">
-    <NewResourceCta v-if="resource && currentIri" :current-iri="currentIri" :resource="resource" />
+    <NewResourceCta
+      v-if="resource && currentIri"
+      :current-iri="currentIri"
+      :resource="resource"
+    />
   </template>
-  <CurrentResourceCta v-else-if="resource && currentIri" :current-iri="currentIri" :resource="resource" />
+  <CurrentResourceCta
+    v-else-if="resource && currentIri"
+    :current-iri="currentIri"
+    :resource="resource"
+  />
 </template>
 
 <script lang="ts" setup>

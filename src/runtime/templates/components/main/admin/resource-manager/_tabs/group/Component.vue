@@ -4,7 +4,7 @@ import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 
 const { exposeMeta } = useCwaResourceManagerTab({
   name: 'Component',
-  order: DEFAULT_TAB_ORDER
+  order: DEFAULT_TAB_ORDER,
 })
 
 defineExpose(exposeMeta)

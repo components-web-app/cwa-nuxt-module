@@ -12,68 +12,69 @@ import { useCwa } from '../../../composables/cwa'
 const resourceTypeProperty = {
   [CwaResourceTypes.PAGE]: 'pages',
   [CwaResourceTypes.LAYOUT]: 'layouts',
-  [CwaResourceTypes.COMPONENT]: 'components'
+  [CwaResourceTypes.COMPONENT]: 'components',
 }
 
 interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
   fullReference: ComputedRef<string | undefined>
-  allowedComponents: string[]|null
+  allowedComponents: string[] | null
 }
 
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
   private readonly resources: Resources
   private readonly auth: Auth
-  private watchStopHandle: WatchStopHandle|undefined
+  private watchStopHandle: WatchStopHandle | undefined
 
-  constructor () {
+  constructor() {
     const { auth, resources, resourcesManager } = useCwa()
     this.resourcesManager = resourcesManager
     this.resources = resources
     this.auth = auth
   }
 
-  public createSyncWatcher (ops: SyncWatcherOps) {
+  public createSyncWatcher(ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
       [this.resources.isLoading, this.auth.signedIn, ops.resource],
       async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
           if (!resource) {
             await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
-          } else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
+          }
+          else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
             await this.updateAllowedComponents(ops.allowedComponents, resource)
           }
         }
       }, {
-        immediate: true
+        immediate: true,
       })
   }
 
-  public stopSyncWatcher () {
+  public stopSyncWatcher() {
     this.watchStopHandle?.()
   }
 
-  private async createComponentGroup (iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[]|null) {
+  private async createComponentGroup(iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null) {
     const locationResourceType = getResourceTypeFromIri(iri) as keyof typeof resourceTypeProperty
     const locationProperty = resourceTypeProperty[locationResourceType]
 
     const postData = {
       reference: fullReference.value,
       location: iri,
-      allowedComponents
+      allowedComponents,
     }
     if (locationProperty) {
       postData[locationProperty] = [iri]
     }
     await this.resourcesManager.createResource({
       endpoint: '/_/component_groups',
-      data: postData
+      data: postData,
     })
   }
 
-  private async updateAllowedComponents (allowedComponents: string[]|null, resource: any) {
+  private async updateAllowedComponents(allowedComponents: string[] | null, resource: any) {
     if (_isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
       return
     }
@@ -81,8 +82,8 @@ export class ComponentGroupUtilSynchronizer {
     await this.resourcesManager.updateResource({
       endpoint: resource?.data['@id'],
       data: {
-        allowedComponents
-      }
+        allowedComponents,
+      },
     })
   }
 }

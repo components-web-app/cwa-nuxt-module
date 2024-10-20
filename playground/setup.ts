@@ -8,8 +8,8 @@ config.plugins.createStubs = function ({ name, component }) {
   return defineComponent({
     name: `${componentName}`,
     props: component.props,
-    setup (props, { slots }) {
+    setup(props, { slots }) {
       return () => h(`${componentName}-stub`, props, slots?.default?.())
-    }
+    },
   })
 }

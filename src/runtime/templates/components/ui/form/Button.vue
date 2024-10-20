@@ -5,7 +5,7 @@ import { defu } from 'defu'
 import {
   Popover,
   PopoverButton,
-  PopoverPanel
+  PopoverPanel,
 } from '@headlessui/vue'
 import type { RouteLocationRaw } from 'vue-router'
 import type { PopperOptions } from '#cwa/runtime/types/popper'
@@ -14,37 +14,38 @@ import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/Button
 import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { NuxtLink } from '#components'
+
 const slots = useSlots()
 
 export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 
 export interface ButtonOption {
-  label: string,
+  label: string
   value: ModelValue
 }
 
 export type ButtonColor = 'blue' | 'grey' | 'dark' | 'error'
 
 const props = withDefaults(defineProps<
-{
-  color?: ButtonColor,
-  buttonClass?: string,
-  options?:(ButtonOption|ButtonOption[])[],
-  popper?: PopperOptions
-  disabled?: boolean
-  loading?: boolean
-  to?: RouteLocationRaw
-}>(), {
+  {
+    color?: ButtonColor
+    buttonClass?: string
+    options?: (ButtonOption | ButtonOption[])[]
+    popper?: PopperOptions
+    disabled?: boolean
+    loading?: boolean
+    to?: RouteLocationRaw
+  }>(), {
   color: 'grey',
   buttonClass: undefined,
   options: undefined,
   popper: undefined,
   disabled: false,
   loading: false,
-  to: undefined
+  to: undefined,
 })
 
-const emit = defineEmits<{(e: 'click', value?: ModelValue): void}>()
+const emit = defineEmits<{ (e: 'click', value?: ModelValue): void }>()
 
 const buttonColorClassNames = computed(() => {
   if (props.color === 'blue') {
@@ -72,22 +73,31 @@ const hasOptions = computed(() => {
   return props.options?.length
 })
 
-function handleOptionClick (value: ModelValue, close: () => void) {
+function handleOptionClick(value: ModelValue, close: () => void) {
   close()
   emit('click', value)
 }
 
-function hasSlotContent (slot: Slot|undefined, slotProps = {}): boolean {
-  if (!slot) { return false }
+function hasSlotContent(slot: Slot | undefined, slotProps = {}): boolean {
+  if (!slot) {
+    return false
+  }
 
   return slot(slotProps).some((vnode: VNode) => {
-    if (vnode.type === Comment) { return false }
+    if (vnode.type === Comment) {
+      return false
+    }
 
-    if (Array.isArray(vnode.children) && !vnode.children.length) { return false }
+    if (Array.isArray(vnode.children) && !vnode.children.length) {
+      return false
+    }
 
     return (
-      vnode.type !== Text ||
-      (typeof vnode.children === 'string' && vnode.children.trim() !== '')
+      vnode.type !== Text
+      || (
+        typeof vnode.children === 'string'
+        && vnode.children.trim() !== ''
+      )
     )
   })
 }
@@ -105,14 +115,17 @@ const bottomDotClassName = [...dotClassName, 'cwa-bottom-2']
 
 const enforcedOps: PopperOptions = {
   placement: 'top-start',
-  offsetDistance: 0
+  offsetDistance: 0,
 }
 const popperOps = computed<PopperOptions>(() => defu({}, props.popper, enforcedOps))
 const [trigger, container] = usePopper(popperOps.value)
 </script>
 
 <template>
-  <Popover v-slot="{ open }" class="cwa-flex cwa-space-x-1.5 relative">
+  <Popover
+    v-slot="{ open }"
+    class="cwa-flex cwa-space-x-1.5 relative"
+  >
     <component
       :is="to ? NuxtLink : 'button'"
       v-if="showButton"
@@ -121,22 +134,44 @@ const [trigger, container] = usePopper(popperOps.value)
       :disabled="loading || disabled || open"
       @click.prevent.stop="emit('click')"
     >
-      <div v-if="loading" class="cwa-flex cwa-w-full cwa-justify-center">
+      <div
+        v-if="loading"
+        class="cwa-flex cwa-w-full cwa-justify-center"
+      >
         <Spinner :show="true" />
       </div>
       <slot v-else />
     </component>
     <template v-if="hasOptions">
-      <PopoverButton ref="trigger" :class="buttonBaseClass" class="cwa-relative" :disabled="disabled || loading">
+      <PopoverButton
+        ref="trigger"
+        :class="buttonBaseClass"
+        class="cwa-relative"
+        :disabled="disabled || loading"
+      >
         &nbsp;
         <span :class="topDotClassName" />
         <span :class="middleDotClassName" />
         <span :class="bottomDotClassName" />
       </PopoverButton>
-      <PopoverPanel v-slot="{ close }" ref="container" class="cwa-absolute !cwa-min-w-[220px] cwa-max-w-[300px] cwa-bg-stone-700 cwa-py-1">
+      <PopoverPanel
+        v-slot="{ close }"
+        ref="container"
+        class="cwa-absolute !cwa-min-w-[220px] cwa-max-w-[300px] cwa-bg-stone-700 cwa-py-1"
+      >
         <template v-for="(option, index) of options">
-          <ButtonPopoverGroup v-if="Array.isArray(option)" :key="`popover-group-option-${index}`" :options="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
-          <ButtonPopoverItem v-else :key="`popover-item-option-${index}`" :option="option" @click="(value: ModelValue) => handleOptionClick(value, close)" />
+          <ButtonPopoverGroup
+            v-if="Array.isArray(option)"
+            :key="`popover-group-option-${index}`"
+            :options="option"
+            @click="(value: ModelValue) => handleOptionClick(value, close)"
+          />
+          <ButtonPopoverItem
+            v-else
+            :key="`popover-item-option-${index}`"
+            :option="option"
+            @click="(value: ModelValue) => handleOptionClick(value, close)"
+          />
         </template>
       </PopoverPanel>
     </template>

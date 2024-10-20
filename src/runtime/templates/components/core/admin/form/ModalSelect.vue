@@ -3,7 +3,7 @@ import {
   Listbox,
   ListboxButton,
   ListboxOptions,
-  ListboxOption, provideUseId, ListboxLabel
+  ListboxOption, provideUseId, ListboxLabel,
 } from '@headlessui/vue'
 
 import { computed } from 'vue'
@@ -25,7 +25,10 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
     :by="compareOptions"
   >
     <div class="cwa-relative cwa-w-full">
-      <div class="cwa-rounded-lg cwa-py-1.5 cwa-relative cwa-border" :class="[open ? 'cwa-bg-dark cwa-border-stone-600' : 'cwa-bg-dark/90 cwa-border-stone-700']">
+      <div
+        class="cwa-rounded-lg cwa-py-1.5 cwa-relative cwa-border"
+        :class="[open ? 'cwa-bg-dark cwa-border-stone-600' : 'cwa-bg-dark/90 cwa-border-stone-700']"
+      >
         <ListboxLabel class="cwa-px-4 cwa-text-stone-400 cwa-absolute">
           {{ label }}
         </ListboxLabel>
@@ -34,8 +37,18 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
           class="cwa-flex cwa-transition-colors cwa-relative cwa-px-4 cwa-text-left cwa-text-light cwa-w-full cwa-border-0 cwa-items-center"
         >
           <span class="cwa-block cwa-truncate cwa-flex-grow cwa-pt-6">{{ selectedOption?.label }}</span>
-          <svg class="-cwa-mr-1 cwa-h-6 cwa-w-6 cwa-transition-transform" :class="{ 'cwa-rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          <svg
+            class="-cwa-mr-1 cwa-h-6 cwa-w-6 cwa-transition-transform"
+            :class="{ 'cwa-rotate-180': open }"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+              clip-rule="evenodd"
+            />
           </svg>
         </ListboxButton>
       </div>

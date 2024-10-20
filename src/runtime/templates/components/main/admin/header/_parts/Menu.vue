@@ -1,6 +1,10 @@
 <template>
   <div class="cwa-flex cwa-relative cwa-h-full cwa-items-center cwa-z-50">
-    <CwaUiHamburger ref="hamburger" v-model="showMenu" class="cwa-relative cwa-z-20" />
+    <CwaUiHamburger
+      ref="hamburger"
+      v-model="showMenu"
+      class="cwa-relative cwa-z-20"
+    />
     <Transition
       enter-from-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
       enter-active-class="cwa-duration-200 cwa-ease-out"
@@ -9,7 +13,11 @@
       leave-active-class="cwa-duration-200 cwa-ease-in"
       leave-to-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
     >
-      <div v-show="showMenu" ref="menu" class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-pt-6 cwa-pb-12 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right">
+      <div
+        v-show="showMenu"
+        ref="menu"
+        class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-pt-6 cwa-pb-12 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right"
+      >
         <div class="cwa-text-light cwa-flex cwa-flex-col cwa-text-center cwa-space-y-2 cwa-mb-5">
           <div class="cwa-flex cwa-justify-center cwa-opacity-[.35]">
             <CwaLogo class="cwa-h-8 cwa-w-auto" />
@@ -23,27 +31,42 @@
             <div class="cwa-mt-2">
               <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-5">
                 <li>
-                  <MenuPrimaryLink label="Layouts" to="/_cwa/layouts">
+                  <MenuPrimaryLink
+                    label="Layouts"
+                    to="/_cwa/layouts"
+                  >
                     <IconLayouts class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Pages" to="/_cwa/pages">
+                  <MenuPrimaryLink
+                    label="Pages"
+                    to="/_cwa/pages"
+                  >
                     <IconPages class="cwa-w-5 cwa-mx-1" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Data" to="/_cwa/data">
+                  <MenuPrimaryLink
+                    label="Data"
+                    to="/_cwa/data"
+                  >
                     <IconData class="cwa-w-6 cwa-mx-0.5" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Routes" to="/_cwa/routes">
+                  <MenuPrimaryLink
+                    label="Routes"
+                    to="/_cwa/routes"
+                  >
                     <IconRoutes class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
-                  <MenuPrimaryLink label="Users" to="/_cwa/users">
+                  <MenuPrimaryLink
+                    label="Users"
+                    to="/_cwa/users"
+                  >
                     <IconUsers class="cwa-w-7" />
                   </MenuPrimaryLink>
                 </li>
@@ -69,17 +92,26 @@
                 <h3>CWA</h3>
                 <ul class="cwa-text-sm">
                   <li>
-                    <MenuLink to="https://cwa.rocks" target="_blank">
+                    <MenuLink
+                      to="https://cwa.rocks"
+                      target="_blank"
+                    >
                       About CWA
                     </MenuLink>
                   </li>
                   <li>
-                    <MenuLink :to="moduleLink" target="_blank">
+                    <MenuLink
+                      :to="moduleLink"
+                      target="_blank"
+                    >
                       App <span class="cwa-text-xs">{{ displayAppVersion }}</span>
                     </MenuLink>
                   </li>
                   <li>
-                    <MenuLink :to="$cwa.apiUrlBase" target="_blank">
+                    <MenuLink
+                      :to="$cwa.apiUrlBase"
+                      target="_blank"
+                    >
                       API <span class="cwa-text-xs">{{ displayApiVersion }}</span>
                     </MenuLink>
                   </li>
@@ -117,10 +149,10 @@ const hamburger = ref(null)
 onClickOutside(menu, () => {
   showMenu.value = false
 }, {
-  ignore: [hamburger]
+  ignore: [hamburger],
 })
 
-async function signOut () {
+async function signOut() {
   if ($cwa.navigationDisabled) {
     return
   }
@@ -131,7 +163,7 @@ const moduleLink = computed(() => {
   return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
 })
 
-async function setApiVersion () {
+async function setApiVersion() {
   const docs = await $cwa.getApiDocumentation()
   const version = docs?.docs?.info.version
   if (!version) {
@@ -141,7 +173,7 @@ async function setApiVersion () {
   apiVersion.value = matches ? matches[1] : version
 }
 
-function truncateVersion (version: string) {
+function truncateVersion(version: string) {
   return version.length > 9
     ? `${version.substring(0, 3)}..${version.substring(version.length - 4)}`
     : version
@@ -155,8 +187,8 @@ const displayApiVersion = computed(() => {
 const displayAppVersion = computed(() => {
   const unstablePostfix = $cwa.currentModulePackageInfo.name.substring($cwa.currentModulePackageInfo.name.length - 4) === 'edge' ? ' (unstable)' : ''
   return (
-    truncateVersion($cwa.currentModulePackageInfo.version) +
-    unstablePostfix
+    truncateVersion($cwa.currentModulePackageInfo.version)
+    + unstablePostfix
   )
 })
 
@@ -164,7 +196,7 @@ watch(
   () => route.path,
   () => {
     showMenu.value = false
-  }
+  },
 )
 
 onMounted(() => {

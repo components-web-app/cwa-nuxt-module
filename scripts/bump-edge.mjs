@@ -5,14 +5,16 @@ import { globby } from 'globby'
 
 // Temporary forked from nuxt/framework
 
-async function loadPackage (dir) {
+async function loadPackage(dir) {
   const pkgPath = resolve(dir, 'package.json')
   const data = JSON.parse(await fsp.readFile(pkgPath, 'utf-8').catch(() => '{}'))
   const save = () => fsp.writeFile(pkgPath, JSON.stringify(data, null, 2) + '\n')
 
   const updateDeps = (reviver) => {
     for (const type of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
-      if (!data[type]) { continue }
+      if (!data[type]) {
+        continue
+      }
       for (const e of Object.entries(data[type])) {
         const dep = { name: e[0], range: e[1], type }
         delete data[type][dep.name]
@@ -27,11 +29,11 @@ async function loadPackage (dir) {
     dir,
     data,
     save,
-    updateDeps
+    updateDeps,
   }
 }
 
-async function loadWorkspace (dir) {
+async function loadWorkspace(dir) {
   const workspacePkg = await loadPackage(dir)
   const pkgDirs = await globby(workspacePkg.data.workspaces || [], { onlyDirectories: true })
 
@@ -39,7 +41,9 @@ async function loadWorkspace (dir) {
 
   for (const pkgDir of pkgDirs) {
     const pkg = await loadPackage(pkgDir)
-    if (!pkg.data.name) { continue }
+    if (!pkg.data.name) {
+      continue
+    }
     packages.push(pkg)
   }
 
@@ -82,11 +86,11 @@ async function loadWorkspace (dir) {
     save,
     find,
     rename,
-    setVersion
+    setVersion,
   }
 }
 
-async function main () {
+async function main() {
   const workspace = await loadWorkspace(process.cwd())
 
   const commit = execSync('git rev-parse --short HEAD').toString('utf-8').trim()
@@ -101,7 +105,6 @@ async function main () {
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
   console.error(err)
   process.exit(1)
 })

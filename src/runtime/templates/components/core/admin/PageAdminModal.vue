@@ -11,7 +11,10 @@
     <template #title>
       <PageTypeSelect v-model="localResourceData.isTemplate" />
     </template>
-    <template v-if="!hideViewLink && !isAdding" #icons>
+    <template
+      v-if="!hideViewLink && !isAdding"
+      #icons
+    >
       <div>
         <NuxtLink :to="localResourceData['@id']">
           <CwaUiIconEyeIcon class="cwa-w-9" />
@@ -22,30 +25,59 @@
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalInput v-model="localResourceData.title" label="SEO Page Title" />
+            <ModalInput
+              v-model="localResourceData.title"
+              label="SEO Page Title"
+            />
           </div>
           <div>
-            <ModalInput v-model="localResourceData.metaDescription" label="SEO Meta Description" />
+            <ModalInput
+              v-model="localResourceData.metaDescription"
+              label="SEO Meta Description"
+            />
           </div>
           <div>
-            <ModalSelect v-model="localResourceData.layout" label="Layout" :options="layoutOptions" />
+            <ModalSelect
+              v-model="localResourceData.layout"
+              label="Layout"
+              :options="layoutOptions"
+            />
           </div>
           <div class="cwa-flex cwa-space-x-2">
             <div class="cwa-grow">
-              <ModalSelect v-model="localResourceData.uiComponent" label="Page UI" :options="pageComponentOptions" />
+              <ModalSelect
+                v-model="localResourceData.uiComponent"
+                label="Page UI"
+                :options="pageComponentOptions"
+              />
             </div>
-            <div v-if="pageStyleOptions.length" class="cwa-w-1/2">
-              <ModalSelect v-model="localResourceData.uiClassNames" label="Style" :options="pageStyleOptions" />
+            <div
+              v-if="pageStyleOptions.length"
+              class="cwa-w-1/2"
+            >
+              <ModalSelect
+                v-model="localResourceData.uiClassNames"
+                label="Style"
+                :options="pageStyleOptions"
+              />
             </div>
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div>
-              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
+              <CwaUiFormButton
+                color="dark"
+                :disabled="isUpdating"
+                @click="saveResource(true)"
+              >
                 {{ isAdding ? 'Add' : 'Save' }} & Close
               </CwaUiFormButton>
             </div>
             <div>
-              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(false)">
+              <CwaUiFormButton
+                color="blue"
+                :disabled="isUpdating"
+                @click="() => saveResource(false)"
+              >
                 {{ isAdding ? 'Add Now' : 'Save' }}
               </CwaUiFormButton>
             </div>
@@ -53,22 +85,38 @@
         </div>
       </template>
       <template #routes>
-        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" @reload="loadResource" />
+        <RoutesTab
+          v-if="resource && resource.hasOwnProperty('@id')"
+          :page-resource="resource as CwaResource"
+          @reload="loadResource"
+        />
       </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalInfo label="Created" :content="formatDate(localResourceData.createdAt)" />
+            <ModalInfo
+              label="Created"
+              :content="formatDate(localResourceData.createdAt)"
+            />
           </div>
           <div>
-            <ModalInfo label="Updated" :content="formatDate(localResourceData.updatedAt)" />
+            <ModalInfo
+              label="Updated"
+              :content="formatDate(localResourceData.updatedAt)"
+            />
           </div>
           <div>
-            <ModalInfo label="ID" :content="localResourceData['@id']" />
+            <ModalInfo
+              label="ID"
+              :content="localResourceData['@id']"
+            />
           </div>
           <div class="cwa-flex cwa-justify-start cwa-pt-6">
             <div>
-              <CwaUiFormButton :disabled="isUpdating" @click="deleteResource">
+              <CwaUiFormButton
+                :disabled="isUpdating"
+                @click="deleteResource"
+              >
                 Delete
               </CwaUiFormButton>
             </div>
@@ -95,7 +143,7 @@ import PageTypeSelect from '#cwa/runtime/templates/components/core/admin/form/Pa
 import RoutesTab from '#cwa/runtime/templates/components/core/admin/RoutesTab.vue'
 
 const emit = defineEmits<{
-  close: [],
+  close: []
   reload: []
 }>()
 const props = defineProps<{ iri?: string, hideViewLink?: boolean }>()
@@ -105,7 +153,7 @@ const pageComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaPage'))
 })
 
-function cleanUiName (componentName: string) {
+function cleanUiName(componentName: string) {
   return componentName.replace(/^CwaPage/, '')
 }
 
@@ -115,7 +163,7 @@ const pageComponentOptions = computed(() => {
     const cleanName = cleanUiName(componentName)
     options.push({
       label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
-      value: componentName
+      value: componentName,
     })
   }
   return options
@@ -133,13 +181,13 @@ const pageStyleOptions = computed(() => {
   const options: SelectOption[] = [
     {
       label: 'Default',
-      value: null
-    }
+      value: null,
+    },
   ]
   for (const [label, value] of Object.entries(configuredClasses)) {
     options.push({
       label,
-      value
+      value,
     })
   }
   return options
@@ -153,7 +201,7 @@ const layoutOptions = computed(() => {
   for (const layout of layouts.value) {
     options.push({
       label: layout.reference,
-      value: layout['@id']
+      value: layout['@id'],
     })
   }
   return options
@@ -165,27 +213,27 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   resourceType: 'Page',
   defaultResource: {
     isTemplate: false,
-    uiComponent: pageComponentOptions.value[0].value
+    uiComponent: pageComponentOptions.value[0].value,
   },
   endpoint: toRef(props, 'iri'),
-  routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes'))
+  routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes')),
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {
   const t: ResourceModalTab[] = [
     {
       label: 'Details',
-      id: 'details'
-    }
+      id: 'details',
+    },
   ]
   if (!isAdding.value) {
     t.push({
       label: 'Routes',
-      id: 'routes'
+      id: 'routes',
     })
     t.push({
       label: 'Info',
-      id: 'info'
+      id: 'info',
     })
   }
   return t
@@ -194,7 +242,7 @@ const tabs = computed<ResourceModalTab[]>(() => {
 const currentRequestId = ref(0)
 const layouts = ref<CwaResource[]>()
 
-async function loadLayoutOptions () {
+async function loadLayoutOptions() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   isLoading.value = true
@@ -214,7 +262,7 @@ async function loadLayoutOptions () {
   }
 }
 
-watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined|boolean, oldIsTemplate: undefined|boolean) => {
+watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolean, oldIsTemplate: undefined | boolean) => {
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 

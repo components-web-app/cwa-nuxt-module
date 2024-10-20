@@ -8,26 +8,29 @@ import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import {
-  FinishFetchManifestType,
+import type {
   ManifestErrorFetchEvent,
   ManifestSuccessFetchEvent,
-  StartFetchEvent
+  StartFetchEvent,
+} from '../../storage/stores/fetcher/actions'
+import {
+  FinishFetchManifestType,
 } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import { CwaCurrentResourceInterface, CwaResourceApiStatuses } from '../../storage/stores/resources/state'
+import type { CwaCurrentResourceInterface } from '../../storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import FetchStatusManager from './fetch-status-manager'
 
 vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
   FetcherStore: vi.fn(() => ({
-    useStore: vi.fn(() => {})
-  }))
+    useStore: vi.fn(() => {}),
+  })),
 }))
 vi.mock('../../storage/stores/resources/resources-store', () => {
   return {
     ResourcesStore: vi.fn(() => ({
-      useStore: vi.fn(() => {})
-    }))
+      useStore: vi.fn(() => {}),
+    })),
   }
 })
 vi.mock('../mercure')
@@ -44,21 +47,21 @@ vi.mock('vue', async () => {
       const stopWatch = actual.watchEffect(prop, fn)
       return vi.fn(() => stopWatch)
     }),
-    computed: vi.fn(fn => actual.computed(fn))
+    computed: vi.fn(fn => actual.computed(fn)),
   }
 })
 vi.mock('pinia', () => {
   return {
-    storeToRefs: vi.fn()
+    storeToRefs: vi.fn(),
   }
 })
 
 vi.mock('consola')
 
-function createFetchStatusManager (): FetchStatusManager {
+function createFetchStatusManager(): FetchStatusManager {
   const fetcherUseStoreResult = {
     isCurrentFetchingToken: vi.fn(() => true),
-    fetches: {}
+    fetches: {},
   }
   const resourcesUseStoreResult = {
     saveResource: vi.fn(),
@@ -69,11 +72,11 @@ function createFetchStatusManager (): FetchStatusManager {
       byId: {
         '/success-resource': {
           apiState: {
-            status: CwaResourceApiStatuses.SUCCESS
-          }
-        }
-      }
-    }
+            status: CwaResourceApiStatuses.SUCCESS,
+          },
+        },
+      },
+    },
   }
 
   const fetcherStore = new FetcherStore()
@@ -92,9 +95,9 @@ function createFetchStatusManager (): FetchStatusManager {
 const mockCwaResource = {
   '@id': '/another-resource',
   '@type': 'AnotherResourceType',
-  _metadata: {
-    persisted: true
-  }
+  '_metadata': {
+    persisted: true,
+  },
 }
 
 describe('FetchStatusManager -> getFetchedCurrentResource', () => {
@@ -104,11 +107,11 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
   beforeEach(() => {
     currentResource = reactive({
       apiState: {
-        status: CwaResourceApiStatuses.IN_PROGRESS
+        status: CwaResourceApiStatuses.IN_PROGRESS,
       },
       data: {
-        '@id': '/original-resource'
-      }
+        '@id': '/original-resource',
+      },
     })
     fetchStatusManager = createFetchStatusManager()
     storeToRefs.mockImplementation(() => {
@@ -116,10 +119,10 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
         current: {
           value: {
             byId: reactive({
-              '/some-resource': currentResource
-            })
-          }
-        }
+              '/some-resource': currentResource,
+            }),
+          },
+        },
       }
     })
   })
@@ -140,17 +143,17 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
     expect(vue.watchEffect.mock.results[0].value).not.toHaveBeenCalled()
 
     currentResource.data = {
-      '@id': '/resolved-id'
+      '@id': '/resolved-id',
     }
     currentResource.apiState = {
-      status: CwaResourceApiStatuses.SUCCESS
+      status: CwaResourceApiStatuses.SUCCESS,
     }
 
     const result = await promise
 
     expect(vue.watchEffect.mock.results[0].value).toHaveBeenCalledTimes(1)
     expect(result).toStrictEqual({
-      '@id': '/resolved-id'
+      '@id': '/resolved-id',
     })
   })
 
@@ -159,7 +162,7 @@ describe('FetchStatusManager -> getFetchedCurrentResource', () => {
     const result = await promise
     expect(vue.watchEffect.mock.results[0].value).toHaveBeenCalledTimes(1)
     expect(result).toStrictEqual({
-      '@id': '/original-resource'
+      '@id': '/original-resource',
     })
     expect(logger.warn).toHaveBeenCalledWith('Timed out 5ms waiting to fetch current resource \'/some-resource\' in pending API state.')
   })
@@ -180,19 +183,19 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
     const startFetchResponse = {
       continue: false,
       resources: [],
-      token: 'any'
+      token: 'any',
     }
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        startFetch: vi.fn(() => (startFetchResponse))
+        startFetch: vi.fn(() => (startFetchResponse)),
       }
     })
     vi.spyOn(fetchStatusManager, 'isCurrentSuccessResourcesResolved', 'get').mockImplementationOnce(() => {
       return 'customResponse'
     })
     const startFetchEvent: StartFetchEvent = {
-      path: '/fetch-path'
+      path: '/fetch-path',
     }
     const response = fetchStatusManager.startFetch(startFetchEvent)
     expect(fetcherStore.useStore.mock.results[0].value.startFetch).toHaveBeenCalledWith({ ...startFetchEvent, isCurrentSuccessResourcesResolved: 'customResponse' })
@@ -205,16 +208,16 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
     const startFetchResponse = {
       continue: true,
       resources: ['/some-resource'],
-      token: 'any'
+      token: 'any',
     }
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        startFetch: vi.fn(() => (startFetchResponse))
+        startFetch: vi.fn(() => (startFetchResponse)),
       }
     })
     const startFetchEvent: StartFetchEvent = {
       path: '/fetch-path',
-      isPrimary: true
+      isPrimary: true,
     }
     const response = fetchStatusManager.startFetch(startFetchEvent)
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.resetCurrentResources).toBeCalledWith(startFetchResponse.resources)
@@ -238,13 +241,13 @@ describe('FetchStatusManager -> startFetchResource', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        addFetchResource: vi.fn(() => false)
+        addFetchResource: vi.fn(() => false),
       }
     })
 
     const startFetchResourceEvent = {
       token: 'my-token',
-      resource: '/a-new-resource'
+      resource: '/a-new-resource',
     }
     const result = fetchStatusManager.startFetchResource(startFetchResourceEvent)
     expect(fetcherStore.useStore.mock.results[0].value.addFetchResource).toHaveBeenCalledWith(startFetchResourceEvent)
@@ -256,19 +259,19 @@ describe('FetchStatusManager -> startFetchResource', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        addFetchResource: vi.fn(() => true)
+        addFetchResource: vi.fn(() => true),
       }
     })
 
     const startFetchResourceEvent = {
       token: 'my-token',
-      resource: '/a-new-resource'
+      resource: '/a-new-resource',
     }
     const result = fetchStatusManager.startFetchResource(startFetchResourceEvent)
     expect(fetcherStore.useStore.mock.results[0].value.addFetchResource).toHaveBeenCalledWith(startFetchResourceEvent)
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).toHaveBeenCalledWith({
       iri: '/a-new-resource',
-      isComplete: false
+      isComplete: false,
     })
     expect(result).toBe(true)
   })
@@ -289,32 +292,32 @@ describe('FetchStatusManager -> finishFetchShowError', () => {
     {
       fetchStatus: undefined,
       resource: '',
-      expected: false
+      expected: false,
     },
     {
       fetchStatus: {
         isPrimary: true,
-        path: 'something'
+        path: 'something',
       },
       resource: 'something',
-      expected: true
+      expected: true,
     },
     {
       fetchStatus: {
         isPrimary: true,
-        path: 'something'
+        path: 'something',
       },
       resource: 'different',
-      expected: false
+      expected: false,
     },
     {
       fetchStatus: {
         isPrimary: false,
-        path: 'something'
+        path: 'something',
       },
       resource: 'something',
-      expected: false
-    }
+      expected: false,
+    },
   ])('If fetchStatus is $fetchStatus and resource is $resource finishFetchShowError should return $expected', ({ fetchStatus, resource, expected }) => {
     expect(fetchStatusManager.finishFetchShowError(fetchStatus, resource)).toBe(expected)
   })
@@ -339,9 +342,9 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       success: true,
       token: 'my-token',
       fetchResponse: {
-        _data: mockCwaResource
+        _data: mockCwaResource,
       },
-      headers: {}
+      headers: {},
     })
 
     expect(fetcherStore.useStore).not.toHaveBeenCalled()
@@ -354,9 +357,9 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       isCurrentFetchingToken: vi.fn(() => false),
       fetches: {
         'my-token': {
-          abort: true
-        }
-      }
+          abort: true,
+        },
+      },
     }
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return useStoreImplementation
@@ -367,9 +370,9 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       success: true,
       token: 'my-token',
       fetchResponse: {
-        _data: mockCwaResource
+        _data: mockCwaResource,
       },
-      headers: {}
+      headers: {},
     })
 
     expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
@@ -377,7 +380,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/some-resource',
       isCurrent: false,
-      error: createCwaResourceError(new Error("Not Saved. Fetching token 'my-token' has been aborted."))
+      error: createCwaResourceError(new Error('Not Saved. Fetching token \'my-token\' has been aborted.')),
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
     expect(response).toBeUndefined()
@@ -388,8 +391,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     const useStoreImplementation = {
       isCurrentFetchingToken: vi.fn(() => false),
       fetches: {
-        'my-token': {}
-      }
+        'my-token': {},
+      },
     }
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return useStoreImplementation
@@ -400,9 +403,9 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       success: true,
       token: 'my-token',
       fetchResponse: {
-        _data: mockCwaResource
+        _data: mockCwaResource,
       },
-      headers: {}
+      headers: {},
     })
 
     expect(fetcherStore.useStore.mock.results[0].value.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
@@ -410,7 +413,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/some-resource',
       isCurrent: false,
-      error: createCwaResourceError(new Error("Not Saved. Fetching token 'my-token' is no longer current."))
+      error: createCwaResourceError(new Error('Not Saved. Fetching token \'my-token\' is no longer current.')),
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
     expect(response).toBeUndefined()
@@ -427,8 +430,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       error: {
         name: 'CwaResourceError',
         statusCode: 100,
-        message: 'something'
-      }
+        message: 'something',
+      },
     })
 
     expect(fetcherStore.useStore).toHaveBeenCalledTimes(2)
@@ -439,9 +442,9 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       error: {
         name: 'CwaResourceError',
         statusCode: 100,
-        message: 'something'
+        message: 'something',
       },
-      showErrorPage: true
+      showErrorPage: true,
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
 
@@ -455,23 +458,23 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       token: 'a-token',
       fetchResponse: {
         _data: mockCwaResource,
-        headers: new Headers()
+        headers: new Headers(),
       },
       headers: {
-        path: 'something'
-      }
+        path: 'something',
+      },
     })
 
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.saveResource).toHaveBeenCalledWith({
-      resource: mockCwaResource
+      resource: mockCwaResource,
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[1].value.setResourceFetchStatus).toHaveBeenCalledWith({
       iri: '/another-resource',
       isComplete: true,
       headers: {
-        path: 'something'
-      }
+        path: 'something',
+      },
     })
 
     expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).not.toHaveBeenCalled()
@@ -487,12 +490,12 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       token: 'a-token',
       fetchResponse: {
         _data: mockCwaResource,
-        headers: new Headers()
+        headers: new Headers(),
       },
       headers: {
-        path: 'something'
+        path: 'something',
       },
-      noSave: true
+      noSave: true,
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.saveResource).not.toHaveBeenCalled()
     expect(response).toStrictEqual(mockCwaResource)
@@ -506,18 +509,18 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       token: 'a-token',
       fetchResponse: {
         _data: { not: 'a valid resource' },
-        headers: new Headers()
+        headers: new Headers(),
       },
       headers: {
-        path: 'something'
-      }
+        path: 'something',
+      },
     })
 
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
       iri: '/another-resource',
       error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource. (/another-resource)')),
       isCurrent: true,
-      showErrorPage: true
+      showErrorPage: true,
     })
 
     expect(response).toBeUndefined()
@@ -533,11 +536,11 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       token: 'a-token',
       fetchResponse: {
         _data: mockCwaResource,
-        headers
+        headers,
       },
       headers: {
-        path: 'something'
-      }
+        path: 'something',
+      },
     })
 
     expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).toHaveBeenCalledWith('my-link-header')
@@ -567,7 +570,7 @@ describe('FetchStatusManager -> computedFetchChainComplete', () => {
     { resolving: false, abort: true, result: true },
     { resolving: false, abort: false, resources: undefined, result: false },
     { resolving: false, abort: false, resources: [], resourcesApiStateIsPending: false, result: true },
-    { resolving: false, abort: false, resources: [], resourcesApiStateIsPending: true, result: false }
+    { resolving: false, abort: false, resources: [], resourcesApiStateIsPending: true, result: false },
   ])('Return $result if resolving is $resolving and abort is $abort and resources are $resources', ({ resolving, abort, resources, resourcesApiStateIsPending, result }) => {
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
@@ -575,14 +578,14 @@ describe('FetchStatusManager -> computedFetchChainComplete', () => {
           resolving,
           fetchStatus: {
             abort,
-            resources
-          }
-        }))
+            resources,
+          },
+        })),
       }
     })
     vi.spyOn(resourcesStore, 'useStore').mockImplementation(() => {
       return {
-        resourcesApiStateIsPending: vi.fn(() => resourcesApiStateIsPending)
+        resourcesApiStateIsPending: vi.fn(() => resourcesApiStateIsPending),
       }
     })
     const response = fetchStatusManager.computedFetchChainComplete('my-token')
@@ -591,7 +594,8 @@ describe('FetchStatusManager -> computedFetchChainComplete', () => {
       expect(resourcesStore.useStore).toHaveBeenCalledTimes(1)
       expect(resourcesStore.useStore.mock.results[0].value.resourcesApiStateIsPending).toHaveBeenCalledTimes(1)
       expect(resourcesStore.useStore.mock.results[0].value.resourcesApiStateIsPending).toHaveBeenCalledWith(resources)
-    } else {
+    }
+    else {
       expect(resourcesStore.useStore).not.toHaveBeenCalled()
     }
     expect(fetcherStore.useStore.mock.results[0].value.isFetchResolving).toHaveBeenCalledWith('my-token')
@@ -614,7 +618,7 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        finishFetch: vi.fn(() => Promise.resolve('anything'))
+        finishFetch: vi.fn(() => Promise.resolve('anything')),
       }
     })
     vi.spyOn(fetchStatusManager, 'computedFetchChainComplete').mockImplementation(() => {
@@ -622,7 +626,7 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
     })
 
     const result = await fetchStatusManager.finishFetch({
-      token: 'a-token'
+      token: 'a-token',
     })
 
     // expect(vue.computed).toHaveBeenCalledTimes(1)
@@ -656,13 +660,13 @@ describe('FetchStatusManager -> finishManifestFetch', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
-        finishManifestFetch: vi.fn(() => 'anything')
+        finishManifestFetch: vi.fn(() => 'anything'),
       }
     })
     const successEvent: ManifestSuccessFetchEvent = {
       type: FinishFetchManifestType.SUCCESS,
       token: 'a-token',
-      resources: ['/manifest-resource']
+      resources: ['/manifest-resource'],
     }
     fetchStatusManager.finishManifestFetch(successEvent)
     expect(fetcherStore.useStore.mock.results[0].value.finishManifestFetch).toHaveBeenCalledWith(successEvent)
@@ -672,7 +676,7 @@ describe('FetchStatusManager -> finishManifestFetch', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
-        finishManifestFetch: vi.fn(() => 'anything')
+        finishManifestFetch: vi.fn(() => 'anything'),
       }
     })
     const errorEvent: ManifestErrorFetchEvent = {
@@ -680,8 +684,8 @@ describe('FetchStatusManager -> finishManifestFetch', () => {
       token: 'a-token',
       error: {
         name: 'CwaResourceError',
-        message: 'My manifest error'
-      }
+        message: 'My manifest error',
+      },
     }
     fetchStatusManager.finishManifestFetch(errorEvent)
     expect(fetcherStore.useStore.mock.results[0].value.finishManifestFetch).toHaveBeenCalledWith(errorEvent)
@@ -703,7 +707,7 @@ describe('FetchStatusManager -> isCurrentFetchingToken', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
-        isCurrentFetchingToken: vi.fn(() => 'anything')
+        isCurrentFetchingToken: vi.fn(() => 'anything'),
       }
     })
     const result = fetchStatusManager.isCurrentFetchingToken('my-token')
@@ -727,7 +731,7 @@ describe('FetchStatusManager -> abortFetch', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
-        abortFetch: vi.fn(() => 'anything')
+        abortFetch: vi.fn(() => 'anything'),
       }
     })
     const result = fetchStatusManager.abortFetch('my-token')
@@ -751,7 +755,7 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
-        primaryFetchPath: 'anything'
+        primaryFetchPath: 'anything',
       }
     })
     expect(fetchStatusManager.primaryFetchPath).toBe('anything')
@@ -773,7 +777,7 @@ describe('FetchStatusManager -> isCurrentSuccessResourcesResolved', () => {
     const fetcherStore = FetcherStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementationOnce(() => {
       return {
-        resolvedSuccessFetchStatus: undefined
+        resolvedSuccessFetchStatus: undefined,
       }
     })
     expect(fetchStatusManager.isCurrentSuccessResourcesResolved).toBe(false)
@@ -784,14 +788,14 @@ describe('FetchStatusManager -> isCurrentSuccessResourcesResolved', () => {
     const resourcesStore = ResourcesStore.mock.results[0].value
     vi.spyOn(fetcherStore, 'useStore').mockImplementation(() => {
       return {
-        resolvedSuccessFetchStatus: 'something'
+        resolvedSuccessFetchStatus: 'something',
       }
     })
     vi.spyOn(resourcesStore, 'useStore').mockImplementationOnce(() => {
       return {
         isFetchStatusResourcesResolved: vi.fn(() => {
           return true
-        })
+        }),
       }
     })
     expect(fetchStatusManager.isCurrentSuccessResourcesResolved).toBe(true)

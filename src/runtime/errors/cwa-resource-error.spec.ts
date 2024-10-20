@@ -17,7 +17,7 @@ describe('Test creating cwa resource errors', () => {
       statusMessage: undefined,
       statusText: undefined,
       primaryMessage: 'My Error',
-      request: undefined
+      request: undefined,
     })
   })
 
@@ -28,7 +28,7 @@ describe('Test creating cwa resource errors', () => {
     { message: 'Some fetch error message', expectedMessage: 'Some fetch error message', statusCode: 401, statusMessage: undefined, statusText: undefined, primaryMessage: 'Some fetch error message', request: 'my-request' },
     { message: '', expectedMessage: 'An unknown error occurred', statusCode: 403, statusMessage: undefined, statusText: undefined, primaryMessage: 'An unknown error occurred', request: 'my-request' },
     { message: undefined, expectedMessage: 'An unknown error occurred', statusCode: 102, statusMessage: undefined, statusText: undefined, primaryMessage: 'An unknown error occurred', request: 'my-request' },
-    { message: undefined, expectedMessage: 'An unknown error occurred', statusCode: 100, statusMessage: 'My status message', statusText: undefined, primaryMessage: 'My status message', request: 'my-request' }
+    { message: undefined, expectedMessage: 'An unknown error occurred', statusCode: 100, statusMessage: 'My status message', statusText: undefined, primaryMessage: 'My status message', request: 'my-request' },
   ])('We can create a cwa resource error with a FetchError', ({ message, expectedMessage, statusCode, statusMessage, statusText, primaryMessage, request }) => {
     const fetchError = new FetchError(message)
     fetchError.statusCode = statusCode
@@ -50,7 +50,7 @@ describe('Test creating cwa resource errors', () => {
       statusMessage,
       statusText,
       primaryMessage,
-      request
+      request,
     })
   })
 })

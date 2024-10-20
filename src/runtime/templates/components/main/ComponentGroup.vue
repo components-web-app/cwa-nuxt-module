@@ -1,9 +1,12 @@
 <template>
-  <div v-if="showLoader" class="component-group-placeholder">
+  <div
+    v-if="showLoader"
+    class="component-group-placeholder"
+  >
     <Spinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
-    <!--CWA_MANAGER_START_GROUP-->
+    <!-- CWA_MANAGER_START_GROUP -->
     <ResourceLoader
       v-for="positionIri of componentPositions"
       :key="getResourceKey(positionIri)"
@@ -12,10 +15,16 @@
       :ui-component="ComponentPosition"
       :class="nestedClasses"
     />
-    <!--CWA_MANAGER_END_GROUP-->
+    <!-- CWA_MANAGER_END_GROUP -->
   </template>
-  <div v-else-if="signedInAndResourceExists" class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5">
-    <LazyHotSpot screen-reader-action="Add component position" :iri="iri" />
+  <div
+    v-else-if="signedInAndResourceExists"
+    class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5"
+  >
+    <LazyHotSpot
+      screen-reader-action="Add component position"
+      :iri="iri"
+    />
   </div>
 </template>
 
@@ -26,11 +35,11 @@ import {
   computed,
   onMounted,
   onBeforeUnmount,
-  defineAsyncComponent
+  defineAsyncComponent,
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
 import {
-  useComponentGroupPositions
+  useComponentGroupPositions,
 } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Positions'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader.vue'
@@ -38,17 +47,18 @@ import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/st
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+
 const LazyHotSpot = defineAsyncComponent({
   suspensible: false,
-  loader: () => import('#cwa/runtime/templates/components/utils/HotSpot.vue')
+  loader: () => import('#cwa/runtime/templates/components/utils/HotSpot.vue'),
 })
 
-const iri = computed<string|undefined>(() => resource.value?.data?.['@id'])
+const iri = computed<string | undefined>(() => resource.value?.data?.['@id'])
 const $cwa = useCwa()
 
 useCwaResourceManageable(iri)
 
-const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[]|null }>(), { allowedComponents: null })
+const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[] | null }>(), { allowedComponents: null })
 
 const fullReference = computed(() => {
   const locationResource = $cwa.resources.getResource(props.location)
@@ -95,7 +105,7 @@ const nestedClasses = computed(() => {
   return ['cwa-is-reordering']
 })
 
-function getResourceKey (positionIri: string) {
+function getResourceKey(positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
@@ -104,7 +114,7 @@ onMounted(() => {
     resource,
     location: props.location,
     fullReference,
-    allowedComponents: props.allowedComponents
+    allowedComponents: props.allowedComponents,
   })
 })
 

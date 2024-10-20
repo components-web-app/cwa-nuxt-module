@@ -1,6 +1,4 @@
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-import { useCookie } from '#app/composables/cookie.js'
-import { useRuntimeConfig, type NuxtApp } from '#app/nuxt'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
@@ -17,6 +15,8 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+import { useRuntimeConfig, type NuxtApp } from '#app/nuxt'
+import { useCookie } from '#app/composables/cookie.js'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -44,14 +44,15 @@ export default class Cwa {
 
   public readonly currentModulePackageInfo: { version: string, name: string }
 
-  constructor (nuxtApp: Pick<NuxtApp, '_route'|'_middleware'|'$router'|'cwaResources'>, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
+  constructor(nuxtApp: Pick<NuxtApp, '_route' | '_middleware' | '$router' | 'cwaResources'>, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
     const { isClient } = useProcess()
     const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
     const defaultApiUrl = 'https://api-url-not-set.com'
     if (isClient) {
       this.apiUrl = apiUrlBrowser || apiUrl || defaultApiUrl
-    } else {
+    }
+    else {
       this.apiUrl = apiUrl || apiUrlBrowser || defaultApiUrl
     }
 
@@ -73,7 +74,7 @@ export default class Cwa {
       this.storage.stores.auth,
       this.storage.stores.resources,
       this.storage.stores.fetcher,
-      useCookie('cwa_auth', { sameSite: 'strict' })
+      useCookie('cwa_auth', { sameSite: 'strict' }),
     )
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
@@ -81,72 +82,72 @@ export default class Cwa {
     this.adminNavGuard = new NavigationGuard(nuxtApp.$router as Router, this.storage.stores.admin)
   }
 
-  public get adminNavigationGuardFn () {
+  public get adminNavigationGuardFn() {
     return this.adminNavGuard.adminNavigationGuardFn
   }
 
-  public get navigationDisabled () {
+  public get navigationDisabled() {
     return this.adminNavGuard.navigationDisabled
   }
 
   // API Documentation service is private, exposing only function required by applications
-  public async getApiDocumentation (refresh = false): Promise<CwaApiDocumentationDataInterface|undefined> {
+  public async getApiDocumentation(refresh = false): Promise<CwaApiDocumentationDataInterface | undefined> {
     return await this.apiDocumentation.getApiDocumentation(refresh)
   }
 
-  public async getComponentMetadata (refresh = false, includePosition = false): Promise<undefined|ApiDocumentationComponentMetadataCollection> {
+  public async getComponentMetadata(refresh = false, includePosition = false): Promise<undefined | ApiDocumentationComponentMetadataCollection> {
     return await this.apiDocumentation.getComponentMetadata(refresh, includePosition)
   }
 
   // fetcher is private, exposing the only function required by applications
-  public fetchResource (event: FetchResourceEvent) {
+  public fetchResource(event: FetchResourceEvent) {
     return this.fetcher.fetchResource(event)
   }
 
-  public fetchRoute (route: RouteLocationNormalizedLoaded) {
+  public fetchRoute(route: RouteLocationNormalizedLoaded) {
     return this.fetcher.fetchRoute(route)
   }
 
-  public fetch (event: FetchEvent) {
+  public fetch(event: FetchEvent) {
     return this.fetcher.fetch(event)
   }
 
-  public clearPrimaryFetch () {
+  public clearPrimaryFetch() {
     this.fetchStatusManager.clearPrimaryFetch()
   }
 
   // Added as utility to bridge primary functionality of initialising 2 CWA services - this is not required by an application though, perhaps could be moved
-  public async initClientSide () {
+  public async initClientSide() {
     await this.auth.init()
     this.mercure.init()
   }
 
-  public get resourcesConfig (): CwaResourcesMeta {
+  public get resourcesConfig(): CwaResourcesMeta {
     return this.options.resources || {}
   }
 
   // @internal
-  public setResourceMeta (meta: CwaResourcesMeta) {
+  public setResourceMeta(meta: CwaResourcesMeta) {
     this.options.resources = meta
   }
 
-  public get layoutsConfig () {
+  public get layoutsConfig() {
     return this.options.layouts
   }
 
-  public get pagesConfig () {
+  public get pagesConfig() {
     return this.options.pages
   }
 
-  public get pageDataConfig () {
+  public get pageDataConfig() {
     return this.options.pageData
   }
 
-  public get appName (): string {
+  public get appName(): string {
     return this.options.appName
   }
 
-  public get apiUrlBase (): string {
+  public get apiUrlBase(): string {
     return this.apiUrl
   }
 }

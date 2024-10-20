@@ -20,20 +20,20 @@ const EventSource = vi.fn(() => ({
   readyState: 0,
   url: null,
   onmessage: undefined,
-  close: vi.fn()
+  close: vi.fn(),
 }))
 vi.stubGlobal('EventSource', EventSource)
 
 const MessageEvent = vi.fn((eventId = 'abc') => ({
   data: null,
-  lastEventId: eventId
+  lastEventId: eventId,
 }))
 vi.stubGlobal('MessageEvent', MessageEvent)
 
 let mercureStoreDef: MercureStore
 let resourcesStoreDef: ResourcesStore
 let fetcherStoreDef: FetcherStore
-function createMercure (): Mercure {
+function createMercure(): Mercure {
   mercureStoreDef = new MercureStore('storeName')
   resourcesStoreDef = new ResourcesStore('storeName')
   fetcherStoreDef = new FetcherStore('storeName', resourcesStoreDef)
@@ -60,7 +60,7 @@ describe('Mercure -> setMercureHubFromLinkHeader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     const pinia = createTestingPinia({
-      createSpy: vi.fn
+      createSpy: vi.fn,
     })
     setActivePinia(pinia)
     logger.mockTypes(() => vi.fn())
@@ -88,9 +88,9 @@ describe('Mercure -> setMercureHubFromLinkHeader', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.mercure': {
-          hub: 'https://someurl'
-        }
-      }
+          hub: 'https://someurl',
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -108,9 +108,9 @@ describe('Mercure -> init', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.mercure': {
-          hub: 'http://hub-url'
-        }
-      }
+          hub: 'http://hub-url',
+        },
+      },
     })
     setActivePinia(pinia)
     vi.clearAllMocks()
@@ -126,7 +126,7 @@ describe('Mercure -> init', () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
         isServer: true,
-        isClient: false
+        isClient: false,
       }
     })
     mercure.init()
@@ -138,7 +138,7 @@ describe('Mercure -> init', () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
         isServer: false,
-        isClient: true
+        isClient: true,
       }
     })
     vi.spyOn(mercure, 'hubUrl', 'get').mockImplementationOnce(() => {
@@ -156,7 +156,7 @@ describe('Mercure -> init', () => {
     eventSource.url = 'http://hub-url'
     mercure.eventSource = eventSource
     mercure.init()
-    expect(logger.debug).toHaveBeenCalledWith("Mercure already initialized 'http://hub-url'")
+    expect(logger.debug).toHaveBeenCalledWith('Mercure already initialized \'http://hub-url\'')
     expect(mercure.closeMercure).not.toHaveBeenCalled()
   })
 
@@ -165,7 +165,7 @@ describe('Mercure -> init', () => {
     vi.spyOn(mercure, 'handleMercureMessage').mockReturnValue('handleMercureMessageMock')
     mercure.init()
     expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
-    expect(logger.info).toHaveBeenCalledWith("Initializing Mercure 'http://hub-url'")
+    expect(logger.info).toHaveBeenCalledWith('Initializing Mercure \'http://hub-url\'')
     expect(EventSource).toHaveBeenCalledTimes(1)
     expect(EventSource).toHaveBeenCalledWith('http://hub-url', { withCredentials: true })
 
@@ -206,9 +206,9 @@ describe('Mercure -> hubUrl', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.mercure': {
-          hub: 'http://hub-url'
-        }
-      }
+          hub: 'http://hub-url',
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -221,9 +221,9 @@ describe('Mercure -> hubUrl', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.mercure': {
-          hub: undefined
-        }
-      }
+          hub: undefined,
+        },
+      },
     })
     setActivePinia(pinia)
     expect(mercure.hubUrl).toBeUndefined()
@@ -247,9 +247,9 @@ describe('Mercure -> handleMercureMessage', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.mercure': {
-          hub: 'http://hub-url'
-        }
-      }
+          hub: 'http://hub-url',
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -271,7 +271,7 @@ describe('Mercure -> handleMercureMessage', () => {
     mercure.handleMercureMessage(event)
     expect(mercure.isMessageForCurrentResource).toHaveBeenCalledWith({
       event,
-      data: {}
+      data: {},
     })
     expect(mercure.addMercureMessageToQueue).not.toHaveBeenCalled()
   })
@@ -282,7 +282,7 @@ describe('Mercure -> handleMercureMessage', () => {
     mercure.handleMercureMessage(event)
     expect(mercure.addMercureMessageToQueue).toHaveBeenCalledWith({
       event,
-      data: {}
+      data: {},
     })
     expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
   })
@@ -292,22 +292,22 @@ describe('Mercure -> handleMercureMessage', () => {
       byId: {
         id: {
           apiState: reactive({
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          })
-        }
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          }),
+        },
       },
-      currentIds: ['id']
+      currentIds: ['id'],
     }
     const pinia = createTestingPinia({
       createSpy: vi.fn,
       initialState: {
         'storeName.mercure': {
-          hub: 'http://hub-url'
+          hub: 'http://hub-url',
         },
         'storeName.resources': {
-          current
-        }
-      }
+          current,
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -316,7 +316,7 @@ describe('Mercure -> handleMercureMessage', () => {
     mercure.handleMercureMessage(event)
     expect(mercure.addMercureMessageToQueue).toHaveBeenCalledWith({
       event,
-      data: {}
+      data: {},
     })
 
     expect(mercure.processMessageQueue).not.toHaveBeenCalled()
@@ -336,19 +336,19 @@ describe('Mercure -> isMessageForCurrentResource', () => {
       byId: {
         id: {
           apiState: reactive({
-            status: CwaResourceApiStatuses.IN_PROGRESS
-          })
-        }
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          }),
+        },
       },
-      currentIds: ['id']
+      currentIds: ['id'],
     }
     const pinia = createTestingPinia({
       createSpy: vi.fn,
       initialState: {
         'storeName.resources': {
-          current
-        }
-      }
+          current,
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -360,8 +360,8 @@ describe('Mercure -> isMessageForCurrentResource', () => {
     const result = mercure.isMessageForCurrentResource({
       event: undefined,
       data: {
-        '@id': 'id'
-      }
+        '@id': 'id',
+      },
     })
     expect(result).toBe(true)
   })
@@ -369,10 +369,10 @@ describe('Mercure -> isMessageForCurrentResource', () => {
   test.each([
     { publishedResourceIriResult: 'id', result: true },
     { publishedResourceIriResult: undefined, result: false },
-    { publishedResourceIriResult: 'does-not-exist', result: false }
+    { publishedResourceIriResult: 'does-not-exist', result: false },
   ])('If the resource does not exist in current IDs, but the result of getPublishedResourceIri is $publishedResourceIriResult, then return $result', ({
     publishedResourceIriResult,
-    result
+    result,
   }) => {
     vi.spyOn(ResourceUtils, 'getPublishedResourceIri').mockImplementationOnce(() => {
       return publishedResourceIriResult
@@ -380,8 +380,8 @@ describe('Mercure -> isMessageForCurrentResource', () => {
     const response = mercure.isMessageForCurrentResource({
       event: undefined,
       data: {
-        '@id': 'random'
-      }
+        '@id': 'random',
+      },
     })
     expect(response).toBe(result)
   })
@@ -390,8 +390,8 @@ describe('Mercure -> isMessageForCurrentResource', () => {
     const result = mercure.isMessageForCurrentResource({
       event: undefined,
       data: {
-        '@id': 'random'
-      }
+        '@id': 'random',
+      },
     })
     expect(result).toBe(false)
   })
@@ -411,39 +411,39 @@ describe('Mercure -> addMercureMessageToQueue', () => {
         event: undefined,
         data: {
           '@id': 'id1',
-          key: 'value'
-        }
+          'key': 'value',
+        },
       },
       {
         event: undefined,
         data: {
           '@id': 'id2',
-          key: 'value'
-        }
-      }
+          'key': 'value',
+        },
+      },
     ]
     mercure.addMercureMessageToQueue({
       event: undefined,
       data: {
         '@id': 'id1',
-        somethingNew: 'my-value'
-      }
+        'somethingNew': 'my-value',
+      },
     })
     expect(mercure.mercureMessageQueue).toStrictEqual([
       {
         event: undefined,
         data: {
           '@id': 'id2',
-          key: 'value'
-        }
+          'key': 'value',
+        },
       },
       {
         event: undefined,
         data: {
           '@id': 'id1',
-          somethingNew: 'my-value'
-        }
-      }
+          'somethingNew': 'my-value',
+        },
+      },
     ])
   })
 })
@@ -456,19 +456,19 @@ describe('Mercure -> processMessageQueue', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.resources': {
-          current: {}
+          current: {},
         },
         'storeName.fetcher': {
           primaryFetch: {
-            fetchingToken: 'token'
+            fetchingToken: 'token',
           },
           fetches: {
             token: {
-              path: 'my-path'
-            }
-          }
-        }
-      }
+              path: 'my-path',
+            },
+          },
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -477,7 +477,7 @@ describe('Mercure -> processMessageQueue', () => {
     vi.spyOn(mercure, 'collectResourceActions').mockImplementation(() => {
       return {
         toSave: [{ '@id': '/save-id' }, { '@id': '/to-delete-id' }],
-        toFetch: ['/to-fetch-id']
+        toFetch: ['/to-fetch-id'],
       }
     })
     vi.spyOn(mercure, 'fetch').mockImplementation(() => {
@@ -492,9 +492,9 @@ describe('Mercure -> processMessageQueue', () => {
       {
         event: new MessageEvent(),
         data: {
-          '@id': 'anything'
-        }
-      }
+          '@id': 'anything',
+        },
+      },
     ]
     mercure.mercureMessageQueue = currentQueue
     await mercure.processMessageQueue()
@@ -505,24 +505,24 @@ describe('Mercure -> processMessageQueue', () => {
     expect(fetcherStore.primaryFetchPath).toBe('my-path')
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {
-        '@id': '/save-id'
+        '@id': '/save-id',
       },
       path: fetcherStore.primaryFetchPath,
-      isNew: true
+      isNew: true,
     })
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {
-        '@id': '/to-fetch-id'
+        '@id': '/to-fetch-id',
       },
       path: fetcherStore.primaryFetchPath,
-      isNew: true
+      isNew: true,
     })
     expect(resourcesStore.saveResource).toBeCalledWith({
       resource: {
-        '@id': '/to-delete-id'
+        '@id': '/to-delete-id',
       },
       path: fetcherStore.primaryFetchPath,
-      isNew: true
+      isNew: true,
     })
     expect(resourcesStore.saveResource).toBeCalledTimes(3)
   })
@@ -536,9 +536,9 @@ describe('Mercure -> collectResourceActions', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.resources': {
-          current: {}
-        }
-      }
+          current: {},
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -554,44 +554,44 @@ describe('Mercure -> collectResourceActions', () => {
       {
         event: new MessageEvent(),
         data: {
-          '@id': 'id-delete'
-        }
+          '@id': 'id-delete',
+        },
       },
       {
         event: new MessageEvent(),
         data: {
           '@id': 'id1',
-          key: 'value'
-        }
+          'key': 'value',
+        },
       },
       {
         event: new MessageEvent(),
         data: {
           '@id': 'id-not-current',
-          key: 'value'
-        }
+          'key': 'value',
+        },
       },
       {
         event: new MessageEvent('final-event-id'),
         data: {
           '@id': 'id-position',
           '@type': 'ComponentPosition',
-          key: 'value'
-        }
-      }
+          'key': 'value',
+        },
+      },
     ]
     const result = mercure.collectResourceActions(messages)
     expect(result).toStrictEqual({
       toSave: [
         {
-          '@id': 'id-delete'
+          '@id': 'id-delete',
         },
         {
           '@id': 'id1',
-          key: 'value'
-        }
+          'key': 'value',
+        },
       ],
-      toFetch: ['id-position']
+      toFetch: ['id-position'],
     })
 
     expect(mercure.isMessageForCurrentResource).toHaveBeenCalledTimes(4)
@@ -607,9 +607,9 @@ describe('Mercure -> fetch', () => {
       createSpy: vi.fn,
       initialState: {
         'storeName.resources': {
-          current: {}
-        }
-      }
+          current: {},
+        },
+      },
     })
     setActivePinia(pinia)
 
@@ -626,17 +626,17 @@ describe('Mercure -> fetch', () => {
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
       path: '/to-fetch-1',
       noSave: true,
-      shallowFetch: true
+      shallowFetch: true,
     })
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
       path: '/to-fetch-2',
       noSave: true,
-      shallowFetch: true
+      shallowFetch: true,
     })
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
       path: '/no-resource',
       noSave: true,
-      shallowFetch: true
+      shallowFetch: true,
     })
   })
 
@@ -648,11 +648,11 @@ describe('Mercure -> fetch', () => {
     const resources = await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
     expect(resources).toStrictEqual([
       {
-        '@id': '/to-fetch-1'
+        '@id': '/to-fetch-1',
       },
       {
-        '@id': '/to-fetch-2'
-      }
+        '@id': '/to-fetch-2',
+      },
     ])
   })
 

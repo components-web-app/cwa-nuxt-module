@@ -8,7 +8,7 @@ export const useDynamicPageLoader = () => {
   const currentRequestId = ref(0)
   const dynamicPages = ref<CwaResource[]>()
 
-  async function loadDynamicPageOptions () {
+  async function loadDynamicPageOptions() {
     const thisRequestId = currentRequestId.value + 1
     currentRequestId.value = thisRequestId
     loadingDynamicPages.value = true
@@ -23,6 +23,6 @@ export const useDynamicPageLoader = () => {
 
   return {
     loadDynamicPageOptions,
-    dynamicPages
+    dynamicPages,
   }
 }

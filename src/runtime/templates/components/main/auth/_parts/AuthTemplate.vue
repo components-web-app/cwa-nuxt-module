@@ -6,10 +6,17 @@
 
     <div class="cwa-mt-8 sm:cwa-mx-auto sm:cwa-w-full sm:cwa-max-w-md cwa-text-white">
       <div class="cwa-bg-neutral-800 cwa-py-8 cwa-px-4 cwa-shadow sm:cwa-px-10">
-        <CwaUiAlertWarning v-if="error" class="cwa-mb-4">
+        <CwaUiAlertWarning
+          v-if="error"
+          class="cwa-mb-4"
+        >
           {{ error }}
         </CwaUiAlertWarning>
-        <form action="#" class="cwa-space-y-6" @submit.prevent="$emit('submit')">
+        <form
+          action="#"
+          class="cwa-space-y-6"
+          @submit.prevent="$emit('submit')"
+        >
           <slot />
           <div>
             <button
@@ -30,8 +37,8 @@
 <script setup lang="ts">
 defineEmits(['submit'])
 defineProps<{
-  submitButtonText: string,
-  submitting: boolean,
+  submitButtonText: string
+  submitting: boolean
   error?: string
 }>()
 </script>

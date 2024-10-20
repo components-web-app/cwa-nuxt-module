@@ -1,6 +1,9 @@
 <template>
   <div class="cwa-rounded-lg cwa-py-1.5 cwa-relative cwa-border cwa-bg-dark/90 cwa-border-stone-700 focus-within:cwa-bg-dark focus-within:cwa-border-stone-600">
-    <label class="cwa-px-4 cwa-text-stone-400 cwa-absolute" :for="id">
+    <label
+      class="cwa-px-4 cwa-text-stone-400 cwa-absolute"
+      :for="id"
+    >
       {{ label }}
     </label>
     <input
@@ -19,5 +22,5 @@ import { useId } from '#app'
 
 const id = useId()
 const model = defineModel<string>()
-defineProps<{ label: string, type?: 'text'|'number'|'email'|'password', placeholder?: string, autocomplete?: string }>()
+defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password', placeholder?: string, autocomplete?: string }>()
 </script>

@@ -8,13 +8,13 @@
 import { toRef } from 'vue'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
 import {
-  useCwaResource
+  useCwaResource,
 } from '#imports'
 
 const props = defineProps<IriProp>()
 
-const { getResource, exposeMeta } =
-  useCwaResource(toRef(props, 'iri'))
+const { getResource, exposeMeta }
+  = useCwaResource(toRef(props, 'iri'))
 
 const resource = getResource()
 

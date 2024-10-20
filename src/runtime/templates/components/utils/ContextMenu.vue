@@ -1,6 +1,13 @@
 <template>
-  <div v-if="isOpen" ref="container" class="context-menu cwa-z-20">
-    <Transition appear v-bind="transitions.context">
+  <div
+    v-if="isOpen"
+    ref="container"
+    class="context-menu cwa-z-20"
+  >
+    <Transition
+      appear
+      v-bind="transitions.context"
+    >
       <div :class="[ops.base, ops.ring, ops.rounded, ops.shadow, ops.background]">
         <div :class="[ops.backgroundInner]">
           <slot />
@@ -31,8 +38,8 @@ const ops = {
   base: 'cwa-overflow-hidden focus:cwa-outline-none cwa-pt-2 cwa-px-1 cwa-pb-1',
   popper: {
     placement: 'bottom-start',
-    scroll: false
-  }
+    scroll: false,
+  },
 }
 
 const props = withDefaults(defineProps<{
@@ -41,7 +48,7 @@ const props = withDefaults(defineProps<{
   popper?: PopperOptions
 }>(), {
   modelValue: false,
-  popper: undefined
+  popper: undefined,
 })
 
 const emit = defineEmits(['update:modelValue', 'close'])
@@ -49,12 +56,12 @@ const emit = defineEmits(['update:modelValue', 'close'])
 const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper))
 
 const isOpen = computed({
-  get () {
+  get() {
     return props.modelValue
   },
-  set (value) {
+  set(value) {
     emit('update:modelValue', value)
-  }
+  },
 })
 
 const virtualElement = toRef(props, 'virtualElement') as Ref<VirtualElement>

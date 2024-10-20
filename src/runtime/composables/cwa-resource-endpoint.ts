@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
-export const useCwaResourceEndpoint = (iri: Ref<string|undefined>, postfix?: string) => {
+export const useCwaResourceEndpoint = (iri: Ref<string | undefined>, postfix?: string) => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
   const forcePublishedVersion = $cwa.admin.resourceStackManager.forcePublishedVersion
@@ -26,7 +26,7 @@ export const useCwaResourceEndpoint = (iri: Ref<string|undefined>, postfix?: str
     }
     query.value = (forcePublishedVersion.value || !$cwa.admin.isEditing) ? '?published=true' : '?published=false'
   }, {
-    immediate: true
+    immediate: true,
   })
 
   const endpoint = computed(() => `${iri.value}${postfix || ''}${query.value}`)
@@ -38,6 +38,6 @@ export const useCwaResourceEndpoint = (iri: Ref<string|undefined>, postfix?: str
 
   return {
     endpoint,
-    query
+    query,
   }
 }

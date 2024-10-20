@@ -5,14 +5,14 @@ import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
 const props = defineProps<{
-  iri: Ref<string|undefined>
+  iri: Ref<string | undefined>
   domElements: ComputedRef<HTMLElement[]>
 }>()
 const $cwa = useCwa()
 
 const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
-const canvas = ref<HTMLCanvasElement|undefined>()
+const canvas = ref<HTMLCanvasElement | undefined>()
 const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
 
 const resource = computed(() => {
@@ -35,7 +35,7 @@ const position = computed((): {
     left: 99999999999,
     width: 0,
     height: 0,
-    windowSize: windowSize.value
+    windowSize: windowSize.value,
   }
 
   for (const domElement of domElements.value) {
@@ -59,7 +59,7 @@ const position = computed((): {
     top: clearCoords.top,
     left: clearCoords.left,
     width: clearCoords.width,
-    height: clearCoords.height
+    height: clearCoords.height,
   }
 })
 
@@ -68,7 +68,7 @@ const cssStyle = computed(() => {
     top: `${position.value.top}px`,
     left: `${position.value.left}px`,
     width: `${position.value.width}px`,
-    height: `${position.value.height}px`
+    height: `${position.value.height}px`,
   }
 })
 
@@ -86,21 +86,21 @@ const borderColor = computed(() => {
   return iri.value?.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
 })
 
-function updateWindowSize () {
+function updateWindowSize() {
   windowSize.value = {
     width: window.innerWidth,
     height: window.innerHeight,
-    timestamp: (new Date()).getTime()
+    timestamp: (new Date()).getTime(),
   }
 }
 
-async function redraw () {
+async function redraw() {
   await nextTick()
   updateWindowSize()
   drawCanvas()
 }
 
-function drawCanvas () {
+function drawCanvas() {
   if (!canvas.value) {
     return
   }
@@ -123,7 +123,7 @@ function drawCanvas () {
   ctx.fill()
 }
 
-function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, width:number, height:number, radius:number) {
+function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
   ctx.moveTo(x, y + radius)
   ctx.arcTo(x, y + height, x + radius, y + height, radius)
   ctx.arcTo(x + width, y + height, x + width, y + height - radius, radius)
@@ -131,7 +131,7 @@ function drawRoundedRect (ctx: CanvasRenderingContext2D, x:number, y:number, wid
   ctx.arcTo(x, y, x, y + radius, radius)
 }
 
-let redrawInterval: number|undefined
+let redrawInterval: number | undefined
 onMounted(() => {
   $cwa.admin.eventBus.on('manageableComponentMounted', redraw)
   $cwa.admin.eventBus.on('redrawFocus', redraw)
@@ -164,13 +164,20 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({
-  redraw
+  redraw,
 })
 </script>
 
 <template>
   <client-only>
-    <canvas ref="canvas" class="cwa-z-100 cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0" />
-    <div :class="[borderColor]" :style="cssStyle" class="cwa-animate-pulse cwa-absolute cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded" />
+    <canvas
+      ref="canvas"
+      class="cwa-z-100 cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0"
+    />
+    <div
+      :class="[borderColor]"
+      :style="cssStyle"
+      class="cwa-animate-pulse cwa-absolute cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded"
+    />
   </client-only>
 </template>

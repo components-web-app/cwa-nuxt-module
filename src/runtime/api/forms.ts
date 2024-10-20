@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+
 interface ViewVars {
   full_name: string
   name: string
@@ -41,13 +42,13 @@ interface KeyedFormView {
 
 export default class Forms {
   private resourcesStoreDefinition: ResourcesStore
-  public constructor (
-    resourcesStoreDefinition: ResourcesStore
+  public constructor(
+    resourcesStoreDefinition: ResourcesStore,
   ) {
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
-  public getForm (iri: string): ComputedRef<KeyedFormView|undefined> {
+  public getForm(iri: string): ComputedRef<KeyedFormView | undefined> {
     return computed(() => {
       const resource = this.resourcesStore.current.byId[iri]
       if (resource?.data?.['@type'] !== 'Form') {
@@ -55,10 +56,10 @@ export default class Forms {
       }
       const createFormViewObject = (apiFormView: ApiFormView): KeyedFormView => {
         const structuredFormView: FormView = {
-          vars: Object.assign({}, apiFormView.vars)
+          vars: Object.assign({}, apiFormView.vars),
         }
         let data: KeyedFormView = {
-          [apiFormView.vars.full_name]: structuredFormView
+          [apiFormView.vars.full_name]: structuredFormView,
         }
         if (apiFormView.children) {
           for (const child of apiFormView.children) {
@@ -71,7 +72,7 @@ export default class Forms {
     })
   }
 
-  public getFormViewErrors (formIri: string, field: string) {
+  public getFormViewErrors(formIri: string, field: string) {
     return computed(() => {
       const form = this.getForm(formIri)
       const errors = form.value?.[field].vars.errors
@@ -79,7 +80,7 @@ export default class Forms {
     })
   }
 
-  private get resourcesStore () {
+  private get resourcesStore() {
     return this.resourcesStoreDefinition.useStore()
   }
 }

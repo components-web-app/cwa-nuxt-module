@@ -8,7 +8,10 @@
     @close="$emit('close')"
     @save="saveTitle"
   >
-    <template v-if="!hideViewLink && !isAdding" #icons>
+    <template
+      v-if="!hideViewLink && !isAdding"
+      #icons
+    >
       <div>
         <NuxtLink :to="localResourceData['@id']">
           <CwaUiIconEyeIcon class="cwa-w-9" />
@@ -19,19 +22,34 @@
       <template #details>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalInput v-model="localResourceData.metaDescription" label="SEO Meta Description" />
+            <ModalInput
+              v-model="localResourceData.metaDescription"
+              label="SEO Meta Description"
+            />
           </div>
           <div>
-            <ModalSelect v-model="localResourceData.page" label="Dynamic Page" :options="pageOptions" />
+            <ModalSelect
+              v-model="localResourceData.page"
+              label="Dynamic Page"
+              :options="pageOptions"
+            />
           </div>
           <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
             <div>
-              <CwaUiFormButton color="dark" :disabled="isUpdating" @click="saveResource(true)">
+              <CwaUiFormButton
+                color="dark"
+                :disabled="isUpdating"
+                @click="saveResource(true)"
+              >
                 {{ isAdding ? 'Add' : 'Save' }} & Close
               </CwaUiFormButton>
             </div>
             <div>
-              <CwaUiFormButton color="blue" :disabled="isUpdating" @click="() => saveResource(false)">
+              <CwaUiFormButton
+                color="blue"
+                :disabled="isUpdating"
+                @click="() => saveResource(false)"
+              >
                 {{ isAdding ? 'Add Now' : 'Save' }}
               </CwaUiFormButton>
             </div>
@@ -39,22 +57,38 @@
         </div>
       </template>
       <template #routes>
-        <RoutesTab v-if="resource && resource.hasOwnProperty('@id')" :page-resource="resource as CwaResource" @reload="loadResource" />
+        <RoutesTab
+          v-if="resource && resource.hasOwnProperty('@id')"
+          :page-resource="resource as CwaResource"
+          @reload="loadResource"
+        />
       </template>
       <template #info>
         <div class="cwa-flex cwa-flex-col cwa-space-y-2">
           <div>
-            <ModalInfo label="Created" :content="formatDate(localResourceData.createdAt)" />
+            <ModalInfo
+              label="Created"
+              :content="formatDate(localResourceData.createdAt)"
+            />
           </div>
           <div>
-            <ModalInfo label="Updated" :content="formatDate(localResourceData.updatedAt)" />
+            <ModalInfo
+              label="Updated"
+              :content="formatDate(localResourceData.updatedAt)"
+            />
           </div>
           <div>
-            <ModalInfo label="ID" :content="localResourceData['@id']" />
+            <ModalInfo
+              label="ID"
+              :content="localResourceData['@id']"
+            />
           </div>
           <div class="cwa-flex cwa-justify-start cwa-pt-6">
             <div>
-              <CwaUiFormButton :disabled="isUpdating" @click="deleteResource">
+              <CwaUiFormButton
+                :disabled="isUpdating"
+                @click="deleteResource"
+              >
                 Delete
               </CwaUiFormButton>
             </div>
@@ -83,7 +117,7 @@ import { useCwa } from '#imports'
 const $cwa = useCwa()
 
 const emit = defineEmits<{
-  close: [],
+  close: []
   reload: []
 }>()
 const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType: string }>()
@@ -97,24 +131,24 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   defaultResource: {
   },
   endpoint: iriRef,
-  routeHashAfterAdd: computed(() => ('#routes'))
+  routeHashAfterAdd: computed(() => ('#routes')),
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {
   const t: ResourceModalTab[] = [
     {
       label: 'Details',
-      id: 'details'
-    }
+      id: 'details',
+    },
   ]
   if (!isAdding.value) {
     t.push({
       label: 'Routes',
-      id: 'routes'
+      id: 'routes',
     })
     t.push({
       label: 'Info',
-      id: 'info'
+      id: 'info',
     })
   }
   return t
@@ -128,7 +162,7 @@ const pageOptions = computed<SelectOption[]>(() => {
   for (const page of dynamicPages.value) {
     options.push({
       label: page.reference,
-      value: page['@id']
+      value: page['@id'],
     })
   }
   return options
@@ -137,7 +171,7 @@ const pageOptions = computed<SelectOption[]>(() => {
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 const { fqcnToEntrypointKey } = useDataList()
 
-watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined|boolean, oldIsTemplate: undefined|boolean) => {
+watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolean, oldIsTemplate: undefined | boolean) => {
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 

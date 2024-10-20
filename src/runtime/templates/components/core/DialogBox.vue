@@ -1,6 +1,13 @@
 <template>
-  <TransitionRoot as="template" :show="isOpen">
-    <Dialog as="div" class="cwa-relative cwa-z-dialog" @close="setIsOpen">
+  <TransitionRoot
+    as="template"
+    :show="isOpen"
+  >
+    <Dialog
+      as="div"
+      class="cwa-relative cwa-z-dialog"
+      @close="setIsOpen"
+    >
       <TransitionChild
         as="template"
         enter="cwa-ease-out cwa-duration-300"
@@ -27,7 +34,10 @@
             <DialogPanel :class="panelClassName">
               <div class="sm:cwa-flex sm:cwa-items-start">
                 <div class="w-full">
-                  <DialogTitle as="h3" class="cwa-text-xl sm:cwa-text-4xl cwa-font-normal cwa-border-b cwa-border-stone-600 cwa-px-6 cwa-pb-4  cwa-dark-blur cwa-pt-5">
+                  <DialogTitle
+                    as="h3"
+                    class="cwa-text-xl sm:cwa-text-4xl cwa-font-normal cwa-border-b cwa-border-stone-600 cwa-px-6 cwa-pb-4  cwa-dark-blur cwa-pt-5"
+                  >
                     {{ title }}
                   </DialogTitle>
                   <div class="cwa-px-6 cwa-py-6 cwa-bg-dark">
@@ -73,8 +83,8 @@ export interface ActionButton {
 const isOpen = defineModel<boolean>({ default: false })
 
 withDefaults(defineProps<{
-  title: string,
-  buttons: ActionButton[],
+  title: string
+  buttons: ActionButton[]
   isLoading?: boolean
 }>(), {
   title: '',
@@ -82,17 +92,17 @@ withDefaults(defineProps<{
     {
       color: 'blue',
       buttonClass: 'cwa-min-w-[120px]',
-      label: 'Done'
+      label: 'Done',
     },
     {
       color: 'grey',
-      label: 'Cancel'
-    }
+      label: 'Cancel',
+    },
   ]),
-  isLoading: false
+  isLoading: false,
 })
 
-function setIsOpen (value?: boolean) {
+function setIsOpen(value?: boolean) {
   isOpen.value = !!value
 }
 

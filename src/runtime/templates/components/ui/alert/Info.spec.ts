@@ -3,11 +3,11 @@ import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import Info from './Info.vue'
 
-function createWrapper (content: string) {
+function createWrapper(content: string) {
   return shallowMount(Info, {
     slots: {
-      default: content
-    }
+      default: content,
+    },
   })
 }
 describe('Info', () => {

@@ -1,8 +1,16 @@
 <template>
-  <!--CWA_MANAGER_START_POSITION-->
-  <ResourceLoader v-if="componentIri" ref="resourceLoader" :iri="componentIri" component-prefix="CwaComponent" />
-  <ComponentPlaceholder v-else-if="$cwa.admin.isEditing" :iri="iri" />
-  <!--CWA_MANAGER_END_POSITION-->
+  <!-- CWA_MANAGER_START_POSITION -->
+  <ResourceLoader
+    v-if="componentIri"
+    ref="resourceLoader"
+    :iri="componentIri"
+    component-prefix="CwaComponent"
+  />
+  <ComponentPlaceholder
+    v-else-if="$cwa.admin.isEditing"
+    :iri="iri"
+  />
+  <!-- CWA_MANAGER_END_POSITION -->
 </template>
 
 <script setup lang="ts">

@@ -7,22 +7,23 @@ export const useForgotPassword = () => {
   const $cwa = useCwa()
 
   const credentials = reactive({
-    username: ''
+    username: '',
   })
 
-  const error = ref<string|null>(null)
+  const error = ref<string | null>(null)
   const submitting = ref(false)
   const success = ref(false)
 
-  function handleResetError (fetchError: FetchError) {
+  function handleResetError(fetchError: FetchError) {
     if (fetchError.status === 404) {
       error.value = 'Username not found'
-    } else {
+    }
+    else {
       error.value = fetchError.data?.message || fetchError.statusMessage || 'Unexpected error'
     }
   }
 
-  async function doSubmit () {
+  async function doSubmit() {
     if (success.value) {
       navigateTo('/login')
     }
@@ -35,7 +36,8 @@ export const useForgotPassword = () => {
     const response = await $cwa.auth.forgotPassword(credentials.username)
     if (response instanceof FetchError) {
       handleResetError(response)
-    } else {
+    }
+    else {
       success.value = true
     }
     submitting.value = false
@@ -46,6 +48,6 @@ export const useForgotPassword = () => {
     credentials,
     error,
     submitting,
-    success
+    success,
   }
 }

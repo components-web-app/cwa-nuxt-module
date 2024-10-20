@@ -1,53 +1,53 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
-import { useRoute } from '#app'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import Auth, { CwaAuthStatus } from './auth'
+import { useRoute } from '#app'
 import { ref } from '#imports'
 
-function createAuth () {
+function createAuth() {
   const mockUserData = {
     data: {
-      user: {}
-    }
+      user: {},
+    },
   }
   const mockResources = {
-    clearResources: vi.fn()
+    clearResources: vi.fn(),
   }
   const mockFetcherData = {
-    clearFetches: vi.fn()
+    clearFetches: vi.fn(),
   }
   const mockFetch = {
-    fetch: vi.fn()
+    fetch: vi.fn(),
   }
   const mockAuthStore = {
-    useStore () {
+    useStore() {
       return mockUserData
-    }
+    },
   }
   const mockResourcesStore = {
-    useStore () {
+    useStore() {
       return mockResources
-    }
+    },
   }
   const mockFetcherStore = {
-    useStore () {
+    useStore() {
       return mockFetcherData
-    }
+    },
   }
   const mockMercure = {
-    init: vi.fn()
+    init: vi.fn(),
   }
   const mockFetcher = {
-    fetchRoute: vi.fn()
+    fetchRoute: vi.fn(),
   }
   const mockAdmin = {
-    toggleEdit: vi.fn()
+    toggleEdit: vi.fn(),
   }
   const mockCookie = ref('0')
   const auth = new Auth(
-    // @ts-ignore
+    // @ts-expect-error
     mockFetch,
     mockMercure,
     mockFetcher,
@@ -55,7 +55,7 @@ function createAuth () {
     mockAuthStore,
     mockResourcesStore,
     mockFetcherStore,
-    mockCookie
+    mockCookie,
   )
 
   return {
@@ -67,7 +67,7 @@ function createAuth () {
     resourcesStore: mockResourcesStore,
     fetcher: mockFetcher,
     cookie: mockCookie,
-    admin: mockAdmin
+    admin: mockAdmin,
   }
 }
 
@@ -148,8 +148,8 @@ describe('Auth', () => {
       token: 'abcd1234',
       passwords: {
         first: 'new_pass',
-        second: 'new_pass'
-      }
+        second: 'new_pass',
+      },
     }
 
     test('should return error IF request fails', async () => {
@@ -167,9 +167,9 @@ describe('Auth', () => {
           password_update: {
             username: mockPayload.username,
             plainNewPasswordConfirmationToken: mockPayload.token,
-            plainPassword: mockPayload.passwords
-          }
-        }
+            plainPassword: mockPayload.passwords,
+          },
+        },
       })
     })
 
@@ -186,9 +186,9 @@ describe('Auth', () => {
           password_update: {
             username: mockPayload.username,
             plainNewPasswordConfirmationToken: mockPayload.token,
-            plainPassword: mockPayload.passwords
-          }
-        }
+            plainPassword: mockPayload.passwords,
+          },
+        },
       })
     })
 
@@ -207,9 +207,9 @@ describe('Auth', () => {
           password_update: {
             username: mockPayload.username,
             plainNewPasswordConfirmationToken: mockPayload.token,
-            plainPassword: mockPayload.passwords
-          }
-        }
+            plainPassword: mockPayload.passwords,
+          },
+        },
       })
     })
   })
@@ -244,7 +244,7 @@ describe('Auth', () => {
     test('should return result IF request succeeds AND do cleanup', async () => {
       const {
         auth,
-        cwaFetch
+        cwaFetch,
       } = createAuth()
       const mockResult = { success: true }
       const clearSessionSpy = vi.spyOn(auth, 'clearSession')
@@ -266,7 +266,7 @@ describe('Auth', () => {
         mercure,
         resourcesStore,
         fetcherStore,
-        fetcher
+        fetcher,
       } = createAuth()
       const mockError = new FetchError('oops')
 
@@ -296,7 +296,7 @@ describe('Auth', () => {
       const {
         auth,
         cwaFetch,
-        authStore
+        authStore,
       } = createAuth()
       const mockResult = { name: 'test', age: 23 }
 
@@ -346,7 +346,7 @@ describe('Auth', () => {
 
       const refreshSpy = vi.spyOn(auth, 'refreshUser').mockResolvedValue({})
 
-      // @ts-ignore
+      // @ts-expect-error
       authStore.useStore().data.user = undefined
       auth.hasCheckedMeEndpointForInit = true
 
@@ -371,7 +371,7 @@ describe('Auth', () => {
     test('should return nothing IF user is NOT defined', () => {
       const { auth, authStore } = createAuth()
 
-      // @ts-ignore
+      // @ts-expect-error
       authStore.useStore().data.user = undefined
 
       expect(auth.roles).toBeUndefined()
@@ -381,7 +381,7 @@ describe('Auth', () => {
       const { auth, authStore } = createAuth()
       const mockRoles = [CwaUserRoles.ADMIN, CwaUserRoles.SUPER_ADMIN]
       authStore.useStore().data.user = {
-        roles: mockRoles
+        roles: mockRoles,
       }
 
       expect(auth.roles).toEqual(mockRoles)
@@ -411,7 +411,7 @@ describe('Auth', () => {
       const { auth, authStore } = createAuth()
 
       authStore.useStore().data.user = {
-        roles: null
+        roles: null,
       }
 
       expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(false)
@@ -421,7 +421,7 @@ describe('Auth', () => {
       const { auth, authStore } = createAuth()
 
       authStore.useStore().data.user = {
-        roles: [CwaUserRoles.USER]
+        roles: [CwaUserRoles.USER],
       }
 
       expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(false)
@@ -431,7 +431,7 @@ describe('Auth', () => {
       const { auth, authStore } = createAuth()
 
       authStore.useStore().data.user = {
-        roles: [CwaUserRoles.ADMIN]
+        roles: [CwaUserRoles.ADMIN],
       }
 
       expect(auth.hasRole(CwaUserRoles.ADMIN)).toEqual(true)
@@ -475,7 +475,7 @@ describe('Auth', () => {
     test.each([
       { loading: true, authCookieValue: undefined, result: CwaAuthStatus.LOADING },
       { loading: false, authCookieValue: '1', result: CwaAuthStatus.SIGNED_IN },
-      { loading: false, authCookieValue: undefined, result: CwaAuthStatus.SIGNED_OUT }
+      { loading: false, authCookieValue: undefined, result: CwaAuthStatus.SIGNED_OUT },
     ])('If loading is %loading', ({ loading, authCookieValue, result }) => {
       const { auth } = createAuth()
       auth.loading.value = loading
@@ -493,7 +493,7 @@ describe('Auth', () => {
         fetcherStore,
         resourcesStore,
         fetcher,
-        admin
+        admin,
       } = createAuth()
 
       await auth.clearSession()

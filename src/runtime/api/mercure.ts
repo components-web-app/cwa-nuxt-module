@@ -2,19 +2,17 @@ import logger from 'consola'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import type { ComputedRef } from 'vue'
-import type { CwaMercureStoreInterface } from '../storage/stores/mercure/mercure-store'
-import { MercureStore } from '../storage/stores/mercure/mercure-store'
-import type { CwaResourcesStoreInterface } from '../storage/stores/resources/resources-store'
-import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { CwaResource } from '../resources/resource-utils'
 import { getPublishedResourceIri } from '../resources/resource-utils'
-import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
-import Fetcher from './fetcher/fetcher'
+import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import type Fetcher from './fetcher/fetcher'
 import { useProcess } from '#cwa/runtime/composables/process'
 import type { ResourcesManager } from '#cwa/runtime/resources/resources-manager'
 
 interface MercureMessageInterface {
-  event: MessageEvent,
+  event: MessageEvent
   data: CwaResource & { '@type'?: string }
 }
 
@@ -26,23 +24,22 @@ export default class Mercure {
   private requestCount?: ComputedRef<number>
   private resourcesManager?: ResourcesManager
 
-  // eslint-disable-next-line no-useless-constructor
-  constructor (
+  constructor(
     private mercureStoreDefinition: MercureStore,
     private resourcesStoreDefinition: ResourcesStore,
-    private fetcherStoreDefinition: FetcherStore
+    private fetcherStoreDefinition: FetcherStore,
   ) {
   }
 
-  public setFetcher (fetcher: Fetcher) {
+  public setFetcher(fetcher: Fetcher) {
     this.fetcher = fetcher
   }
 
-  public setRequestCount (requestCount: ComputedRef<number>) {
+  public setRequestCount(requestCount: ComputedRef<number>) {
     this.requestCount = requestCount
   }
 
-  public setMercureHubFromLinkHeader (linkHeader: string) {
+  public setMercureHubFromLinkHeader(linkHeader: string) {
     if (this.hub) {
       return
     }
@@ -58,7 +55,7 @@ export default class Mercure {
     logger.debug('Mercure hub set', this.hub)
   }
 
-  public init (forceRestart?: boolean): void {
+  public init(forceRestart?: boolean): void {
     const { isServer } = useProcess()
     if (isServer) {
       logger.debug('Mercure can only initialise on the client side')
@@ -85,26 +82,27 @@ export default class Mercure {
     this.eventSource.onmessage = (event: MessageEvent) => this.handleMercureMessage(event)
   }
 
-  public closeMercure () {
+  public closeMercure() {
     if (this.eventSource) {
       this.eventSource.close()
       logger.info('Mercure Event Source Closed')
-    } else {
+    }
+    else {
       logger.warn('No Mercure Event Source exists to close')
     }
   }
 
-  private get requestsInProgress () {
+  private get requestsInProgress() {
     const { currentResourcesApiStateIsPending } = storeToRefs(this.resourcesStore)
     return computed(() => {
       return (this.requestCount && this.requestCount?.value > 0) || currentResourcesApiStateIsPending.value
     })
   }
 
-  private handleMercureMessage (event: MessageEvent) {
+  private handleMercureMessage(event: MessageEvent) {
     const mercureMessage: MercureMessageInterface = {
       event,
-      data: JSON.parse(event.data)
+      data: JSON.parse(event.data),
     }
 
     if (!this.isMessageForCurrentResource(mercureMessage)) {
@@ -115,7 +113,8 @@ export default class Mercure {
 
     if (!this.requestsInProgress.value) {
       this.processMessageQueue()
-    } else {
+    }
+    else {
       const unwatch = watch(this.requestsInProgress, (inProgress) => {
         if (!inProgress) {
           this.processMessageQueue()
@@ -125,7 +124,7 @@ export default class Mercure {
     }
   }
 
-  private isMessageForCurrentResource (mercureMessage: MercureMessageInterface): boolean {
+  private isMessageForCurrentResource(mercureMessage: MercureMessageInterface): boolean {
     const currentResources = this.resourcesStore.current.currentIds
     const mercureMessageResource = mercureMessage.data
     if (!currentResources.includes(mercureMessageResource['@id'])) {
@@ -137,16 +136,16 @@ export default class Mercure {
     return true
   }
 
-  private addMercureMessageToQueue (mercureMessage: MercureMessageInterface) {
+  private addMercureMessageToQueue(mercureMessage: MercureMessageInterface) {
     this.mercureMessageQueue = [
       ...this.mercureMessageQueue.filter((existingMessage: MercureMessageInterface) => {
         return existingMessage.data['@id'] !== mercureMessage.data['@id']
       }),
-      mercureMessage
+      mercureMessage,
     ]
   }
 
-  private async processMessageQueue () {
+  private async processMessageQueue() {
     const messages = this.mercureMessageQueue
     this.mercureMessageQueue = []
     const path = this.fetcherStoreDefinition.useStore().primaryFetchPath
@@ -157,12 +156,12 @@ export default class Mercure {
       this.resourcesStore.saveResource({
         resource,
         path,
-        isNew: true
+        isNew: true,
       })
     }
   }
 
-  private collectResourceActions (messages: MercureMessageInterface[]) {
+  private collectResourceActions(messages: MercureMessageInterface[]) {
     const toSave = []
     const toFetch = []
     for (const message of messages) {
@@ -183,11 +182,11 @@ export default class Mercure {
     }
     return {
       toSave,
-      toFetch
+      toFetch,
     }
   }
 
-  private async fetch (paths: string[]) {
+  private async fetch(paths: string[]) {
     const resources: CwaResource[] = []
     // this is all so that we can set all the new resources in 1 batch and do not have a chance of the user getting further new resources for the same batch of new resources
     if (paths.length) {
@@ -201,7 +200,7 @@ export default class Mercure {
         const fetchPromise = this.fetcher.fetchResource({
           path,
           noSave: true,
-          shallowFetch: true
+          shallowFetch: true,
         })
         fetchPromises.push(fetchPromise)
       }
@@ -220,7 +219,7 @@ export default class Mercure {
     return resources
   }
 
-  private get hubUrl (): string|undefined {
+  private get hubUrl(): string | undefined {
     if (!this.hub) {
       return
     }
@@ -232,15 +231,15 @@ export default class Mercure {
     return hub.toString()
   }
 
-  private get hub () {
+  private get hub() {
     return this.mercureStore.hub
   }
 
-  private get mercureStore (): CwaMercureStoreInterface {
+  private get mercureStore(): CwaMercureStoreInterface {
     return this.mercureStoreDefinition.useStore()
   }
 
-  private get resourcesStore (): CwaResourcesStoreInterface {
+  private get resourcesStore(): CwaResourcesStoreInterface {
     return this.resourcesStoreDefinition.useStore()
   }
 }

@@ -31,13 +31,13 @@ interface CwaNetworkErrorEvent extends CwaBaseErrorEvent {
   statusCode: undefined
 }
 
-export type CwaErrorEvent = CwaNetworkErrorEvent|CwaResolvedErrorEvent
+export type CwaErrorEvent = CwaNetworkErrorEvent | CwaResolvedErrorEvent
 
 export interface CwaErrorStateInterface {
   byId: {
     [key: number]: CwaErrorEvent
-  },
-  allIds: Array<number>,
+  }
+  allIds: Array<number>
   allEndpoints: Map<string, number>
 }
 
@@ -45,6 +45,6 @@ export default function (): CwaErrorStateInterface {
   return reactive({
     byId: {},
     allIds: [],
-    allEndpoints: new Map()
+    allEndpoints: new Map(),
   })
 }
