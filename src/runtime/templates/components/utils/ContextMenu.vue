@@ -53,7 +53,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits(['update:modelValue', 'close'])
 
-const popperOps = computed<PopperOptions>(() => defu({}, props.popper, ops.popper))
+const popperOps = computed<PopperOptions>((): PopperOptions => defu({}, props.popper, ops.popper) as PopperOptions)
 
 const isOpen = computed({
   get() {

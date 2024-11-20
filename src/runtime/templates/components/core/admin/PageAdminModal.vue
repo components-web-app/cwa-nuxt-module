@@ -115,7 +115,7 @@
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"
-                @click="deleteResource"
+                @click="handleDeleteClick"
               >
                 Delete
               </CwaUiFormButton>
@@ -241,6 +241,10 @@ const tabs = computed<ResourceModalTab[]>(() => {
 
 const currentRequestId = ref(0)
 const layouts = ref<CwaResource[]>()
+
+function handleDeleteClick() {
+  deleteResource()
+}
 
 async function loadLayoutOptions() {
   const thisRequestId = currentRequestId.value + 1

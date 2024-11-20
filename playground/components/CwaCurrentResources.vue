@@ -12,11 +12,11 @@
         {{ index }}
       </div>
       <div class="path-header px-2 py-1 bg-slate-200">
-        {{ resource.apiState?.headers?.path || '--' }}
+        {{ resource.apiState.status === CwaResourceApiStatuses.ERROR ? '--' : resource.apiState?.headers?.path }}
       </div>
       <pre class="resource-code text-xs p-3 h-56 overflow-auto">{{ resource.data }}</pre>
       <div
-        v-if="resource.apiState.error?.message"
+        v-if="resource.apiState.status === CwaResourceApiStatuses.ERROR && resource.apiState.error?.message"
         class="resource-error absolute top-16 bottom-2 left-2 right-2 bg-red-200/95 p-3 overflow-auto"
       >
         <b>Status code:</b> {{ resource.apiState.error.statusCode || 'Unknown' }}<br>
@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import { useCwa } from '#imports'
+import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 const $cwa = useCwa()
 </script>

@@ -69,7 +69,7 @@
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"
-                @click="deleteResource"
+                @click="handleDeleteClick"
               >
                 Delete
               </CwaUiFormButton>
@@ -167,4 +167,8 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
     uiComponent: layoutComponentOptions.value[0].value,
   },
 })
+
+function handleDeleteClick() {
+  deleteResource()
+}
 </script>

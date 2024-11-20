@@ -3,7 +3,7 @@
     :error="inputErrors?.form || error"
     :submitting="submitting"
     :submit-button-text="success ? 'Go to Login' : 'Reset Password'"
-    @submit="resetPassword"
+    @submit="emitSubmit"
   >
     <div v-if="success">
       <h1 class="cwa-font-bold cwa-text-xl cwa-mb-2">
@@ -44,13 +44,22 @@ const props = defineProps<{
     first: string
     second: string
   }
-  error?: string
+  error: string | null
   inputErrors?: {
     form?: string[]
     password?: string[]
   }
   success: boolean
 }>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: typeof props.modelValue]
+  'submit': []
+}>()
+
+function emitSubmit() {
+  emit('submit')
+}
 
 const passwords = computed({
   get() {

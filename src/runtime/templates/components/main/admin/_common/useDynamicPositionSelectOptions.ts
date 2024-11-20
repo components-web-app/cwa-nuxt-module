@@ -1,4 +1,4 @@
-import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
+import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import type Cwa from '#cwa/runtime/cwa'
 
 export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {

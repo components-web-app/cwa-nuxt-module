@@ -9,7 +9,11 @@ import type { CwaCurrentResourceInterface } from '../../../storage/stores/resour
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '../../../composables/cwa'
 
-const resourceTypeProperty = {
+const resourceTypeProperty: {
+  [CwaResourceTypes.PAGE]: 'pages'
+  [CwaResourceTypes.LAYOUT]: 'layouts'
+  [CwaResourceTypes.COMPONENT]: 'components'
+} = {
   [CwaResourceTypes.PAGE]: 'pages',
   [CwaResourceTypes.LAYOUT]: 'layouts',
   [CwaResourceTypes.COMPONENT]: 'components',
@@ -60,7 +64,14 @@ export class ComponentGroupUtilSynchronizer {
     const locationResourceType = getResourceTypeFromIri(iri) as keyof typeof resourceTypeProperty
     const locationProperty = resourceTypeProperty[locationResourceType]
 
-    const postData = {
+    const postData: {
+      reference?: string
+      location: string
+      allowedComponents: string[] | null
+      pages?: string[]
+      layouts?: string[]
+      components?: string[]
+    } = {
       reference: fullReference.value,
       location: iri,
       allowedComponents,

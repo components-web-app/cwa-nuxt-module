@@ -7,9 +7,9 @@ import {
 import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
 import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
 import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
-import type { SelectOption } from '#cwa/runtime/templates/components/ui/form/Select.vue'
 import { useCwaSelect } from '#cwa/runtime/composables/cwa-select'
 import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataResolver'
+import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',

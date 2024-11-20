@@ -189,7 +189,7 @@ async function createDisplayData(): Promise<undefined | DisplayDataI> {
     return
   }
 
-  const allowedComponents = findAllowedComponents(event.closest.group)
+  const allowedComponents = event.closest.group ? findAllowedComponents(event.closest.group) : undefined
   const enableDynamicPosition = !$cwa.admin.resourceStackManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
   const availableComponents = await findAvailableComponents(allowedComponents, enableDynamicPosition)
   const displayAvailableComponents = { ...availableComponents }

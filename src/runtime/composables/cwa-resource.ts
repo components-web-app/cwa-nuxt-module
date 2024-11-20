@@ -26,7 +26,6 @@ export interface CwaResourceMeta {
 export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const $cwa = useCwa()
 
-  // @ts-expect-error-next-line
   const disableManager = !!ops?.manager?.disabled
 
   onMounted(() => {

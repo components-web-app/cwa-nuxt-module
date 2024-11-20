@@ -10,7 +10,7 @@ export const useForgotPassword = () => {
     username: '',
   })
 
-  const error = ref<string | null>(null)
+  const error = ref<string | undefined>()
   const submitting = ref(false)
   const success = ref(false)
 
@@ -32,7 +32,7 @@ export const useForgotPassword = () => {
       return
     }
     submitting.value = true
-    error.value = null
+    error.value = undefined
     const response = await $cwa.auth.forgotPassword(credentials.username)
     if (response instanceof FetchError) {
       handleResetError(response)

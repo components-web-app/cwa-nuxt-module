@@ -87,7 +87,7 @@
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"
-                @click="deleteResource"
+                @click="handleDeleteClick"
               >
                 Delete
               </CwaUiFormButton>
@@ -133,6 +133,10 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   endpoint: iriRef,
   routeHashAfterAdd: computed(() => ('#routes')),
 })
+
+function handleDeleteClick() {
+  deleteResource()
+}
 
 const tabs = computed<ResourceModalTab[]>(() => {
   const t: ResourceModalTab[] = [

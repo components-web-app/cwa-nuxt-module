@@ -8,7 +8,7 @@ export interface CwaResourceErrorObject {
 }
 
 export class CwaResourceError extends Error {
-  name = 'CwaResourceError' as const
+  override name = 'CwaResourceError' as const
   statusCode?: number
   statusMessage?: string
   statusText?: string

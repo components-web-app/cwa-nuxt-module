@@ -138,7 +138,7 @@
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"
-                @click="deleteResource"
+                @click="handleDeleteClick"
               >
                 Delete
               </CwaUiFormButton>
@@ -217,6 +217,10 @@ const tabs = computed<ResourceModalTab[]>(() => {
   }
   return t
 })
+
+function handleDeleteClick() {
+  deleteResource()
+}
 
 function getHighestRole() {
   const resourceRoles = localResourceData.value?.roles

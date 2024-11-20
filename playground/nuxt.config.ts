@@ -41,14 +41,16 @@ export default defineNuxtConfig({
     '/**': { isr: true },
   },
   typescript: {
+    typeCheck: true,
     // typeCheck: 'build',
     tsConfig: {
       include: [
-        '../src',
+        '../../src',
       ],
       exclude: [
-        '../**/*.spec.ts',
-        '../**/*.test.ts',
+        '../../dist',
+        '../../**/*.spec.ts',
+        '../../**/*.test.ts',
       ],
     },
   },

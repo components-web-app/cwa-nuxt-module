@@ -39,6 +39,6 @@ defineEmits(['submit'])
 defineProps<{
   submitButtonText: string
   submitting: boolean
-  error?: string
+  error?: string | null | string[]
 }>()
 </script>

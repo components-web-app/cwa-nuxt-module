@@ -86,7 +86,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       const positionResources = positions
         .filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
         .map((iri: string) => resourcesState.current.byId?.[iri]?.data)
-      // @ts-expect-error-next-line
+
       const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource | undefined) => resource !== undefined)
 
       const getSortNumber = (res: CwaResource | undefined) => {
