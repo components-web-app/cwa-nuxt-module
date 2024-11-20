@@ -8,7 +8,6 @@ const defaultIri = '12345'
 
 describe('CWA page', () => {
   function createWrapper(iri = defaultIri) {
-    // @ts-expect-error
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
       resources: {
         pageIri: {

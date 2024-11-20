@@ -7,10 +7,10 @@
       :update-delay="0"
       @contextmenu.stop
     >
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', { level: 1 })">
+      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
         H1
       </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', { level: 2 })">
+      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 2 }])">
         H2
       </BubbleMenuButton>
       <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleBold', 'bold')">
@@ -28,10 +28,10 @@
       :update-delay="0"
       @contextmenu.stop
     >
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', { level: 1 })">
+      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
         H1
       </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', { level: 2 })">
+      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 2 }])">
         H2
       </BubbleMenuButton>
       <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleBulletList', 'bulletList')">
@@ -52,8 +52,7 @@ import {
   FloatingMenu,
 } from '@tiptap/vue-3'
 import { computed, toRef, watch } from 'vue'
-import type { Editor } from '@tiptap/core'
-import type { UnionCommands } from '@tiptap/core/src/types'
+import type { Editor, UnionCommands } from '@tiptap/core'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
@@ -124,12 +123,12 @@ watch(disabledRef, () => {
 })
 
 // Common menu item props
-const buttonBubbleMenuProps = computed(() => (call: UnionCommands, isActiveName: string, attributes?: object) => {
+const buttonBubbleMenuProps = computed(() => (call: keyof UnionCommands, isActiveName: string, editorArgs?: (string | number | object)[]) => {
   return {
     editor: editor.value as Editor,
     editorFn: {
       call,
-      attributes,
+      arguments: editorArgs,
     },
     isActiveName,
   }

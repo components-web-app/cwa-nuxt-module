@@ -1,7 +1,7 @@
 <template>
   <button
     class="px-1.5 py-1 content-center items-center"
-    :class="[editor.isActive(isActiveName, attributes) ? bubbleMenuActiveClasses : null]"
+    :class="[editor.isActive(isActiveName, args) ? bubbleMenuActiveClasses : null]"
     @click="doEditorChain"
   >
     <slot />
@@ -9,13 +9,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { Editor } from '@tiptap/core'
-import type { UnionCommands } from '@tiptap/core/src/types'
+import type { Editor, UnionCommands } from '@tiptap/core'
 import { computed } from 'vue'
 
 type editorFnType = {
-  call: UnionCommands
-  attributes?: object
+  call: keyof UnionCommands
+  arguments?: (object | string | number)[]
 }
 
 const props = defineProps<{
@@ -26,11 +25,12 @@ const props = defineProps<{
 
 const bubbleMenuActiveClasses = ['bg-black text-white']
 
-const attributes = computed(() => {
-  return props.editorFn.attributes || []
+const args = computed(() => {
+  return props.editorFn.arguments || []
 })
 
 function doEditorChain() {
-  props.editor.chain().focus()[props.editorFn.call](attributes.value).run()
+  // @ts-expect-error-next-line the function called could have many different requirements for arguments
+  props.editor.chain().focus()[props.editorFn.call](...args.value).run()
 }
 </script>
