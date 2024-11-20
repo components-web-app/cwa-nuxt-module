@@ -17,4 +17,4 @@ fi
 
 # Release packages
 echo "Publishing package..."
-npm publish --access public --tolerate-republish
+npm publish --access public --tolerate-republish --otp=${NPM_OTP}

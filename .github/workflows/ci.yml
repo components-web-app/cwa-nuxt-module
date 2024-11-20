@@ -112,19 +112,21 @@ jobs:
           !contains(github.event.head_commit.message, '[skip-release]')
         run: node ./scripts/bump-edge.mjs
       # https://github.com/marketplace/actions/npm-otp-publish
-      - uses: mmarchini-oss/npm-otp-publish@v0
+      - uses: step-security/wait-for-secrets@v1
+        id: get-otp
         if: ${{ steps.bump.outcome == 'success' }}
         with:
-          npm_token: ${{ secrets.NPM_AUTH_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          # version_url: https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag_name }}
-          github_actor: ${{ github.actor }}
-#      - name: Release Edge
-#        if: ${{ steps.bump.outcome == 'success' }}
-#        run: ./scripts/release-edge.sh
-#        env:
-#          NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
-#          NPM_CONFIG_PROVENANCE: true
+          secrets: |
+            NPM_OTP:
+              name: 'NPM OTP'
+              description: 'Your OTP for NPM for publishing this package'
+      - name: Release Edge
+        if: ${{ steps.get-otp.outcome == 'success' }}
+        run: ./scripts/release-edge.sh
+        env:
+          NPM_OTP: ${{ steps.get-otp.outputs.NPM_OTP }}
+          NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
+          NPM_CONFIG_PROVENANCE: true
 
 #  e2e:
 #    runs-on: ubuntu-latest
