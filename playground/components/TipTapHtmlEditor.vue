@@ -52,7 +52,7 @@ import {
   FloatingMenu,
 } from '@tiptap/vue-3'
 import { computed, toRef, watch } from 'vue'
-import type { Editor, UnionCommands } from '@tiptap/core'
+import type { Editor, ChainedCommands } from '@tiptap/core'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
@@ -123,7 +123,7 @@ watch(disabledRef, () => {
 })
 
 // Common menu item props
-const buttonBubbleMenuProps = computed(() => (call: keyof UnionCommands, isActiveName: string, editorArgs?: (string | number | object)[]) => {
+const buttonBubbleMenuProps = computed(() => (call: keyof ChainedCommands, isActiveName: string, editorArgs?: (string | number | object)[]) => {
   return {
     editor: editor.value as Editor,
     editorFn: {

@@ -9,11 +9,11 @@
 </template>
 
 <script lang="ts" setup>
-import type { Editor, UnionCommands } from '@tiptap/core'
+import type { Editor, ChainedCommands } from '@tiptap/core'
 import { computed } from 'vue'
 
 type editorFnType = {
-  call: keyof UnionCommands
+  call: keyof ChainedCommands
   arguments?: (object | string | number)[]
 }
 
