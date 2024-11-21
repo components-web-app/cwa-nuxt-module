@@ -303,14 +303,19 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       config.optimizeDeps.include = config.optimizeDeps.include || []
       config.optimizeDeps.exclude = config.optimizeDeps.exclude || []
 
-      const lodashIndex
-        = config.optimizeDeps.exclude.indexOf('lodash')
-      if (lodashIndex > -1) {
-        config.optimizeDeps.exclude.splice(lodashIndex, 1)
-      }
+      const optimizeDepPackages = ['slugify', 'dayjs']
 
-      if (!config.optimizeDeps.include.includes('lodash')) {
-        config.optimizeDeps.include.push('lodash')
+      for (const opPkg of optimizeDepPackages) {
+        // does it exist in excludes? remove
+        const pkgIndex = config.optimizeDeps.exclude.indexOf(opPkg)
+        if (pkgIndex > -1) {
+          config.optimizeDeps.exclude.splice(pkgIndex, 1)
+        }
+
+        // if not already in the includes for optimising, add it
+        if (!config.optimizeDeps.include.includes(opPkg)) {
+          config.optimizeDeps.include.push(opPkg)
+        }
       }
     })
   },
