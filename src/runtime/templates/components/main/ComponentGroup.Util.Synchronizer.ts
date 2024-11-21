@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
-import _isEqual from 'lodash/isEqual.js'
+import { isEqual } from 'lodash-es'
 import type { ResourcesManager } from '../../../resources/resources-manager'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
@@ -86,7 +86,7 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   private async updateAllowedComponents(allowedComponents: string[] | null, resource: any) {
-    if (_isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
+    if (isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
       return
     }
 

@@ -1,8 +1,6 @@
 import { computed, type ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
 import type { FetchError } from 'ofetch'
-import { set, unset } from 'lodash-es'
-import _mergeWith from 'lodash/mergeWith.js'
-import _isArray from 'lodash/isArray.js'
+import { set, unset, mergeWith, isArray } from 'lodash-es'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { DateTime } from 'luxon'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -188,8 +186,8 @@ export class ResourcesManager {
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
     // it'll update anything visually until client-side refresh
     if (currentResource?._metadata.persisted === false) {
-      const newResource = _mergeWith(currentResource, event.data, (a, b) => {
-        if (_isArray(a)) {
+      const newResource = mergeWith(currentResource, event.data, (a, b) => {
+        if (isArray(a)) {
           return b.concat(a)
         }
       })

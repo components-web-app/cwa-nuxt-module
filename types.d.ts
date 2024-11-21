@@ -1,4 +1,3 @@
-import type { isEqual as isEqualOriginal, mergeWith as mergeWithOriginal, isArray as isArrayOriginal } from '@types/lodash'
 import type { Router } from 'vue-router'
 import type Cwa from '#cwa/runtime/cwa'
 import 'nuxt'
@@ -17,16 +16,4 @@ declare module '#app' {
 
 declare module 'nuxt/dist/app/nuxt' {
   type NuxtApp = CwaInjections
-}
-
-declare module 'lodash/isEqual.js' {
-  type isEqual = isEqualOriginal
-}
-
-declare module 'lodash/mergeWith.js' {
-  type mergeWith = mergeWithOriginal
-}
-
-declare module 'lodash/isArray.js' {
-  type isArray = isArrayOriginal
 }

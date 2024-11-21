@@ -2,8 +2,7 @@ import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
 import { defu } from 'defu'
-import _mergeWith from 'lodash/mergeWith.js'
-import _isArray from 'lodash/isArray.js'
+import { mergeWith, isArray } from 'lodash-es'
 import {
   addImportsDir,
   addPlugin,
@@ -213,8 +212,8 @@ export default defineNuxtModule<CwaModuleOptions>({
           ui,
         }
       }
-      const resources = _mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
-        if (_isArray(a)) {
+      const resources = mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
+        if (isArray(a)) {
           return b.concat(a)
         }
       })
