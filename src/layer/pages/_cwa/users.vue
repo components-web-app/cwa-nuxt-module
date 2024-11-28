@@ -1,35 +1,37 @@
 <template>
-  <ListHeading
-    title="Users"
-    @add="goToAdd"
-  />
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['emailAddress', 'username']"
-  />
-  <ListContent
-    ref="listContent"
-    fetch-url="/users"
-  >
-    <template #item="{ data }">
-      <div
-        class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center"
-        :class="{ 'cwa-opacity-50': !data.enabled }"
-      >
-        <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
-          <span class="cwa-text-xl">{{ data.username }} <span class="cwa-text-stone-400 cwa-text-sm">{{ getUserRole(data.roles) }}</span></span>
-          <span>{{ data.emailAddress }}</span>
+  <div>
+    <ListHeading
+      title="Users"
+      @add="goToAdd"
+    />
+    <ListFilter
+      :order-options="orderOptions"
+      :search-fields="['emailAddress', 'username']"
+    />
+    <ListContent
+      ref="listContent"
+      fetch-url="/users"
+    >
+      <template #item="{ data }">
+        <div
+          class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center"
+          :class="{ 'cwa-opacity-50': !data.enabled }"
+        >
+          <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
+            <span class="cwa-text-xl">{{ data.username }} <span class="cwa-text-stone-400 cwa-text-sm">{{ getUserRole(data.roles) }}</span></span>
+            <span>{{ data.emailAddress }}</span>
+          </div>
+          <div>
+            <CwaUiFormButton :to="computedItemLink(data['@id'])">
+              <CwaUiIconCogIcon class="cwa-w-6" />
+              <span class="cwa-sr-only">Settings</span>
+            </CwaUiFormButton>
+          </div>
         </div>
-        <div>
-          <CwaUiFormButton :to="computedItemLink(data['@id'])">
-            <CwaUiIconCogIcon class="cwa-w-6" />
-            <span class="cwa-sr-only">Settings</span>
-          </CwaUiFormButton>
-        </div>
-      </div>
-    </template>
-  </ListContent>
-  <ResourceModalOverlay @reload="triggerReload" />
+      </template>
+    </ListContent>
+    <ResourceModalOverlay @reload="triggerReload" />
+  </div>
 </template>
 
 <script lang="ts" setup>

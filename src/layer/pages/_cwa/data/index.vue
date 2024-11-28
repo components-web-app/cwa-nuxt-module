@@ -70,10 +70,15 @@ import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeadin
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import { definePageMeta } from '#imports'
 
 const { displayPageDataClassName, dataTypes, fqcnToEntrypointKey, isLoadingDataTypes } = useDataList()
 
 useHead({
   title: 'Page Data Categories',
+})
+
+definePageMeta({
+  pageTransition: false,
 })
 </script>

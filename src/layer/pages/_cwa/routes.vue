@@ -29,7 +29,7 @@ import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeadin
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
-import { useCwa } from '#imports'
+import { definePageMeta, useCwa } from '#imports'
 import RouteListRow from '#cwa/runtime/templates/components/core/admin/RouteListRow.vue'
 
 const $cwa = useCwa()
@@ -64,5 +64,9 @@ const orderOptions = [
 
 useHead({
   title: 'Routes',
+})
+
+definePageMeta({
+  pageTransition: false,
 })
 </script>

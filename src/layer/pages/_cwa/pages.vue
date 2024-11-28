@@ -79,7 +79,7 @@ import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form
 import ListFilterButton from '#cwa/runtime/templates/components/core/admin/ListFilterButton.vue'
 import { useQueryBoundModel } from '#cwa/runtime/composables/cwa-query-bound-model'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
-import { useCwa } from '#imports'
+import { definePageMeta, useCwa } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
@@ -121,5 +121,9 @@ function getDisplayPageUi(ui: string) {
 
 useHead({
   title: 'Pages',
+})
+
+definePageMeta({
+  pageTransition: false,
 })
 </script>

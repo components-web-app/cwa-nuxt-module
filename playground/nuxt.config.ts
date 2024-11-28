@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     enabled: true,
   },
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       titleTemplate: '%s - CWA Playground',
       charset: 'utf-8',

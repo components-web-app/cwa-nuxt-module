@@ -37,7 +37,7 @@ import ListContent from '#cwa/runtime/templates/components/core/admin/ListConten
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
-import { useCwa } from '#imports'
+import { definePageMeta, useCwa } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
@@ -69,5 +69,9 @@ function getDisplayLayoutUi(ui: string) {
 
 useHead({
   title: 'Layouts',
+})
+
+definePageMeta({
+  pageTransition: false,
 })
 </script>

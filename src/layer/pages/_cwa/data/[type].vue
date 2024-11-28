@@ -51,7 +51,7 @@ import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
-import { useCwa } from '#imports'
+import { definePageMeta, useCwa } from '#imports'
 import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
@@ -123,5 +123,9 @@ useHead({
   title: () => {
     return pageDataClassName.value + ' - Page Data'
   },
+})
+
+definePageMeta({
+  pageTransition: false,
 })
 </script>
