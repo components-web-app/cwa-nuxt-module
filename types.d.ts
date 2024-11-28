@@ -13,7 +13,7 @@ declare module '#app' {
     cwaResources: CwaResourcesMeta
   }
   interface PageMeta {
-    cwa: {
+    cwa?: {
       admin?: boolean
       disabled?: boolean
       staticLayout?: GlobalComponentNames

@@ -54,7 +54,7 @@ import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 
 const $cwa = useCwa()
-const { meta: { cwa: { staticLayout } } } = useRoute()
+const { meta: { cwa: cwaPageMeta } } = useRoute()
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
 const page = ref<null | HTMLDivElement>(null)
 const rootLayout = ref<null | HTMLDivElement>(null)
@@ -89,7 +89,7 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
+  return cwaPageMeta?.staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
