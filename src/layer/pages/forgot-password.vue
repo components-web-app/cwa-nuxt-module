@@ -16,7 +16,9 @@ import { CwaAuthForgotPasswordPage } from '#components'
 const { doSubmit, credentials, error, submitting, success } = useForgotPassword()
 
 definePageMeta({
-  cwa: false,
+  cwa: {
+    disabled: true,
+  },
 })
 
 useHead({

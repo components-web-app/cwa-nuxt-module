@@ -19,7 +19,9 @@ function createToRoute(cwa?: boolean | undefined): RouteLocationNormalizedLoaded
     matched: [],
     params: {},
     meta: {
-      cwa,
+      cwa: {
+        disabled: !cwa,
+      },
     },
     redirectedFrom: undefined,
   }

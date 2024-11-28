@@ -23,7 +23,9 @@ const {
 } = useResetPassword()
 
 definePageMeta({
-  cwa: false,
+  cwa: {
+    disabled: true,
+  },
 })
 
 useHead({

@@ -212,7 +212,7 @@ export default class Auth {
     this.resourcesStore.clearResources()
     this.fetcherStore.clearFetches()
     const route = useRoute()
-    if (route.meta.cwa_admin) {
+    if (route.meta.cwa?.admin) {
       const router = useRouter()
       router.replace('/')
       return

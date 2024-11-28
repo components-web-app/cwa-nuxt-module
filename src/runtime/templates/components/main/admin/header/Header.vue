@@ -166,7 +166,7 @@ const router = useRouter()
 const header = ref<undefined | HTMLElement>()
 const spacer = ref<undefined | HTMLElement>()
 
-const pageIsAdmin = computed(() => route.meta.cwa_admin)
+const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const showEditModal = ref(false)
 
 const isNavEnabled = computed({

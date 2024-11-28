@@ -82,7 +82,7 @@ export default class Fetcher {
   }
 
   public async fetchRoute(route: RouteLocationNormalizedLoaded): Promise<CwaResource | undefined> {
-    if (route.meta.cwa === false) {
+    if (route.meta.cwa?.disabled === true) {
       this.fetchStatusManager.clearPrimaryFetch()
       return
     }

@@ -30,7 +30,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     await nuxtApp.$cwa.initClientSide()
   }
 
-  if (to.meta.cwa !== true) {
+  if (to.meta.cwa?.disabled === true) {
     nuxtApp.$cwa.clearPrimaryFetch()
     return
   }

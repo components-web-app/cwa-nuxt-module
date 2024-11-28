@@ -16,7 +16,9 @@ import { definePageMeta, useLogin } from '#imports'
 const { error, submitting, signIn, credentials } = useLogin()
 
 definePageMeta({
-  cwa: false,
+  cwa: {
+    disabled: true,
+  },
 })
 
 useHead({

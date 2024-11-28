@@ -102,7 +102,7 @@ describe('Fetcher -> fetchRoute', () => {
     const fetchResourceSpy = vi.spyOn(fetcher, 'fetchResource')
 
     // @ts-expect-error
-    await fetcher.fetchRoute({ meta: { cwa: false } })
+    await fetcher.fetchRoute({ meta: { cwa: { disabled: true } } })
 
     expect(fetchResourceSpy).not.toHaveBeenCalled()
   })
