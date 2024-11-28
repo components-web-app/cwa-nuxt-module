@@ -58,6 +58,10 @@ const page = ref<null | HTMLDivElement>(null)
 const rootLayout = ref<null | HTMLDivElement>(null)
 const instance = getCurrentInstance()
 
+const props = defineProps<{
+  staticLayoutUi?: GlobalComponentNames
+}>()
+
 function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandler', e: MouseEvent, type: 'layout' | 'page') {
   resourceManager.value && resourceManager.value[handler](e, type)
 }
@@ -87,7 +91,7 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
+  return props.staticLayoutUi || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751

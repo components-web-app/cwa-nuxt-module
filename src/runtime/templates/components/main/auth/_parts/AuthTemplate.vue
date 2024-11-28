@@ -14,6 +14,7 @@
         </CwaUiAlertWarning>
         <form
           action="#"
+          method="post"
           class="cwa-space-y-6"
           @submit.prevent="$emit('submit')"
         >
