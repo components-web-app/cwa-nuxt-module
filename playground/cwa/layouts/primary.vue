@@ -10,7 +10,7 @@
       :show="$cwa.resources.isLoading.value"
       class="absolute top-4 right-4 z-50"
     />
-    <header v-if="$cwa.resources.layoutIri.value">
+    <header>
       <div class="relative">
         <div class="mx-auto flex max-w-7xl items-center p-6 md:justify-start lg:px-8">
           <nav class="space-x-5 flex w-full items-center">
@@ -23,6 +23,7 @@
               </div>
               <div class="flex-grow w-auto flex space-x-3 md:space-x-5 justify-end md:justify-start">
                 <CwaComponentGroup
+                  v-if="$cwa.resources.layoutIri.value"
                   reference="top"
                   :location="$cwa.resources.layoutIri.value"
                   :allowed-components="['/component/navigation_links']"
