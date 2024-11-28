@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance } from 'vue'
 import { DialogsWrapper } from 'vuejs-confirm-dialog'
+import { useRoute } from 'vue-router'
 import { useCwa } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
@@ -53,7 +54,7 @@ import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 
 const $cwa = useCwa()
-const { staticLayout } = useRoute()
+const { meta: { cwa: { staticLayout } } } = useRoute()
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
 const page = ref<null | HTMLDivElement>(null)
 const rootLayout = ref<null | HTMLDivElement>(null)

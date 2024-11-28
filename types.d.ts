@@ -13,7 +13,9 @@ declare module '#app' {
     cwaResources: CwaResourcesMeta
   }
   interface PageMeta {
-    staticLayout?: GlobalComponentNames
+    cwa?: {
+      staticLayout?: GlobalComponentNames
+    }
   }
 }
 
