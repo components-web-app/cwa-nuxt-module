@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance } from 'vue'
 import { DialogsWrapper } from 'vuejs-confirm-dialog'
-import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useCwa } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout } from '#components'
 import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
@@ -54,11 +54,15 @@ import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 
 const $cwa = useCwa()
-const { meta: { cwa: cwaPageMeta } } = useRoute()
+const currentRoute = useRouter().currentRoute
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
 const page = ref<null | HTMLDivElement>(null)
 const rootLayout = ref<null | HTMLDivElement>(null)
 const instance = getCurrentInstance()
+
+const cwaPageMeta = computed(() => {
+  return currentRoute.value.meta?.cwa
+})
 
 function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandler', e: MouseEvent, type: 'layout' | 'page') {
   resourceManager.value && resourceManager.value[handler](e, type)
@@ -89,7 +93,7 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return cwaPageMeta?.staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
+  return cwaPageMeta.value?.staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
