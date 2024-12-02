@@ -77,24 +77,27 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     pageModel.value = newPageNumber
   }
 
-  watch(() => route.query, async (newQuery, oldQuery) => {
-    const cleanPaginationFromQuery = (q: LocationQuery) => {
-      const cleanQuery = { ...q }
-      delete cleanQuery.perPage
-      delete cleanQuery.page
-      return cleanQuery
-    }
-    const cleanedOld = cleanPaginationFromQuery(oldQuery)
-    const cleanedNew = cleanPaginationFromQuery(newQuery)
-    if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
-      pageModel.value = 1
-    }
+  // so components can be loaded in background still for the component manager to get metadata
+  if (route) {
+    watch(() => route.query, async (newQuery, oldQuery) => {
+      const cleanPaginationFromQuery = (q: LocationQuery) => {
+        const cleanQuery = { ...q }
+        delete cleanQuery.perPage
+        delete cleanQuery.page
+        return cleanQuery
+      }
+      const cleanedOld = cleanPaginationFromQuery(oldQuery)
+      const cleanedNew = cleanPaginationFromQuery(newQuery)
+      if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
+        pageModel.value = 1
+      }
 
-    if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {
-      return
-    }
-    await reloadCollection()
-  })
+      if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {
+        return
+      }
+      await reloadCollection()
+    })
+  }
 
   populateCollectionData(resource.value?.data)
 
