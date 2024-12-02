@@ -15,6 +15,9 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
 
   const exp = new RegExp(`^${queryParam}\\[([a-zA-Z0-9]+)]$`, 'i')
   const matchingQueryParams = computed(() => {
+    if (!route) {
+      return []
+    }
     if (Array.isArray(queryParam)) {
       const foundParams: string[] = []
       for (const p of queryParam) {
@@ -31,7 +34,7 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
 
   const matchedQueryParamValue = computed(() => {
     const matchingParams = matchingQueryParams.value
-    if (!matchingParams || !matchingParams.length) {
+    if (!matchingParams || !matchingParams.length || !route) {
       return null
     }
     const normalizeValueAsArray = (valueIsArray: boolean, value: LocationQueryValue | LocationQueryValue[]) => {
@@ -79,6 +82,10 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
     // update the query params on model change
     if (debounced) {
       debounced.cancel()
+    }
+
+    if (!route) {
+      return
     }
 
     const filteredKeys = Object.keys(route.query).filter(key => !matchingQueryParams.value.includes(key))
