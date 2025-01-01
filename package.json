@@ -101,8 +101,7 @@
       "semver": ">=7.5.2",
       "ufo": ">=1.5",
       "rollup": ">=3.29.5",
-      "vue-tsc": ">=2.1.6",
-      "nanoid": ">=3.3.8"
+      "vue-tsc": ">=2.1.6"
     },
     "auditConfig": {
       "ignoreCves": []
@@ -113,8 +112,7 @@
     "semver": ">=7.5.2",
     "ufo": ">=1.5",
     "micromatch": ">=4.0.8",
-    "rollup": ">=3.29.5",
-    "nanoid": ">=3.3.8"
+    "rollup": ">=3.29.5"
   },
   "engines": {
     "pnpm": ">=9.7.0"
