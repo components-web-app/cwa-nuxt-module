@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, useSlots, Comment, Text } from 'vue'
+import { computed, defineSlots, Comment, Text } from 'vue'
 import type { VNode, Slot } from 'vue'
 import { defu } from 'defu'
 import {
@@ -14,8 +14,6 @@ import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/Button
 import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { NuxtLink } from '#components'
-
-const slots = useSlots()
 
 export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 
@@ -44,6 +42,10 @@ const props = withDefaults(defineProps<
   loading: false,
   to: undefined,
 })
+
+const slots = defineSlots<{
+  default(p: typeof props): any
+}>()
 
 const emit = defineEmits<{ (e: 'click', value?: ModelValue): void }>()
 
@@ -102,7 +104,7 @@ function hasSlotContent(slot: Slot | undefined, slotProps = {}): boolean {
   })
 }
 
-const showButton = computed<boolean>(() => {
+const showButton = computed<boolean>((): boolean => {
   const slotContent = slots.default?.(props)
   return hasSlotContent(slots.default, slotContent)
 })
@@ -140,7 +142,10 @@ const [trigger, container] = usePopper(popperOps.value)
       >
         <Spinner :show="true" />
       </div>
-      <slot v-else />
+      <slot
+        v-else
+        v-bind="props"
+      />
     </component>
     <template v-if="hasOptions">
       <PopoverButton
