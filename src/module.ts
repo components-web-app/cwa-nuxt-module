@@ -253,18 +253,17 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       addTypeTemplate({
         filename: 'types/cwa.d.ts',
         write: true,
-        getContents: () => /* ts */`
-          interface CwaRouteMeta {
-            admin?: boolean
-            disabled?: boolean
-            staticLayout?: GlobalComponentNames
-          }
-          export * from 'vue-router'
-          declare module 'vue-router' {
-            interface RouteMeta {
-              cwa?: CwaRouteMeta
-            }
-          }`,
+        getContents: () => /* ts */`interface CwaRouteMeta {
+  admin?: boolean
+  disabled?: boolean
+  staticLayout?: GlobalComponentNames
+}
+export * from 'vue-router'
+declare module 'vue-router' {
+  interface RouteMeta {
+    cwa?: CwaRouteMeta
+  }
+}`,
       })
       addPlugin({
         src: resolve('./runtime/plugin'),

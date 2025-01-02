@@ -10,6 +10,7 @@ vi.mock('@nuxt/kit', async () => {
     addPlugin: vi.fn(),
     addImportsDir: vi.fn(),
     addTemplate: vi.fn(),
+    addTypeTemplate: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
     installModule: vi.fn(),
@@ -185,6 +186,24 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
   "name": "@cwa/nuxt"
 }
 `)
+
+      expect((nuxtKit.addTypeTemplate as Mock)).toHaveBeenCalled()
+
+      const { lastCall: [{ filename: tFilename, write, getContents: tGetContents }] } = (nuxtKit.addTypeTemplate as Mock).mock
+
+      expect(tFilename).toEqual('types/cwa.d.ts')
+      expect(write).toEqual(true)
+      expect(await tGetContents()).toEqual(`interface CwaRouteMeta {
+  admin?: boolean
+  disabled?: boolean
+  staticLayout?: GlobalComponentNames
+}
+export * from 'vue-router'
+declare module 'vue-router' {
+  interface RouteMeta {
+    cwa?: CwaRouteMeta
+  }
+}`)
     })
 
     test('should add imports directory', async () => {
