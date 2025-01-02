@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, defineSlots, Comment, Text } from 'vue'
+import { computed, Comment, Text } from 'vue'
 import type { VNode, Slot } from 'vue'
 import { defu } from 'defu'
 import {
