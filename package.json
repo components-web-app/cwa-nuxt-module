@@ -1,5 +1,5 @@
 {
-  "packageManager": "pnpm@9.7.0",
+  "packageManager": "pnpm@9.15.2",
   "name": "@cwa/nuxt",
   "version": "1.0.0",
   "license": "MIT",
@@ -115,6 +115,6 @@
     "rollup": ">=3.29.5"
   },
   "engines": {
-    "pnpm": ">=9.7.0"
+    "pnpm": ">=9.15.2"
   }
 }
