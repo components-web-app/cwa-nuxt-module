@@ -1,11 +1,9 @@
-import type { Router } from 'vue-router'
 import type Cwa from '#cwa/runtime/cwa'
 import 'nuxt'
 import type { CwaResourcesMeta, GlobalComponentNames } from '#cwa/module'
 
 interface CwaInjections {
   $cwa: Cwa
-  $router: Router
 }
 
 interface CwaRouteMeta {
@@ -25,10 +23,4 @@ declare module '#app' {
 
 declare module 'nuxt/dist/app/nuxt' {
   type NuxtApp = CwaInjections
-}
-
-declare module 'vue-router' {
-  interface RouteMeta {
-    cwa?: CwaRouteMeta
-  }
 }

@@ -7,10 +7,14 @@ import {
   addImportsDir,
   addPlugin,
   addTemplate,
+  addTypeTemplate,
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule, resolveAlias, updateTemplates,
+  installModule,
+  resolveAlias,
+  updateTemplates,
+  useLogger,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
@@ -100,9 +104,11 @@ function createDefaultCwaPages(
   pages.push(pagesTree)
 }
 
+export const NAME = '@cwa/nuxt' as const
+
 export default defineNuxtModule<CwaModuleOptions>({
   meta: {
-    name: '@cwa/nuxt',
+    name: NAME,
     configKey: 'cwa',
     compatibility: {
       nuxt: '^3.6.5',
@@ -127,19 +133,24 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
   },
   async setup(options: CwaModuleOptions, nuxt) {
-    nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
-      apiUrl: options.apiUrl || options.apiUrlBrowser || '',
-      apiUrlBrowser: options.apiUrlBrowser || options.apiUrl || '',
-    })
-
+    const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
 
     const { version, name } = JSON.parse(
       readFileSync(resolve('../package.json'), 'utf8'),
     )
 
+    logger.info(`Adding ${NAME} module (${name}@${version})...`)
+
     // modules
+    logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
     await installModule('@pinia/nuxt')
+
+    logger.info(`Modifying Nuxt configuration options for ${NAME} module...`)
+    nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
+      apiUrl: options.apiUrl || options.apiUrlBrowser || '',
+      apiUrlBrowser: options.apiUrlBrowser || options.apiUrl || '',
+    })
 
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./')
@@ -149,20 +160,24 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // include css - dev can disable the base in options to allow usage of their own tailwind without conflict and duplication
     nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
-    options.tailwind?.base && nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
+    if (options.tailwind?.base) {
+      nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
+    }
 
-    // include auto-imports for composables
+    logger.info(`Configuring auto-imports for CWA composables...`)
     addImportsDir(resolve('./runtime/composables'))
     addImportsDir(resolve('./runtime/composables/component'))
 
+    logger.info(`Configuring CWA default pages and components...`)
     const vueTemplatesDir = resolve('./runtime/templates')
 
     extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3, options.layoutName)
     })
-
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
+
+    logger.info(`Registering user components for CWA...`)
     const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
@@ -221,9 +236,11 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     nuxt.hook('modules:done', () => {
+      logger.info(`Configuring template to propagate module options and adding plugin for ${NAME} module...`)
       // clear options no longer needed and add plugin
       delete options.pagesDepth
       delete options.tailwind
+
       addTemplate({
         filename: 'cwa-options.ts',
         getContents: ({ app }) => {
@@ -233,12 +250,29 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
 `
         },
       })
+      addTypeTemplate({
+        filename: 'types/cwa.d.ts',
+        write: true,
+        getContents: () => /* ts */`
+          interface CwaRouteMeta {
+            admin?: boolean
+            disabled?: boolean
+            staticLayout?: GlobalComponentNames
+          }
+          export * from 'vue-router'
+          declare module 'vue-router' {
+            interface RouteMeta {
+              cwa?: CwaRouteMeta
+            }
+          }`,
+      })
       addPlugin({
         src: resolve('./runtime/plugin'),
       })
     })
 
     nuxt.hook('components:dirs', (dirs) => {
+      logger.info(`Configuring component directories for ${NAME} module...`)
       // component dirs from module
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'main'),
@@ -287,6 +321,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
       if (!['add', 'unlink'].includes(event)) {
         return
       }
+      logger.info(`File added or removed - updating options for ${NAME} module...`)
       const path = resolve(nuxt.options.srcDir, relativePath)
       const cwaDirs = [userComponentsPath]
       if (cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
@@ -299,6 +334,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
     })
 
     nuxt.hook('vite:extendConfig', (config) => {
+      logger.info(`Extending Vite optimizeDeps config for ${NAME} module dependencies...`)
       config.optimizeDeps = config.optimizeDeps || {}
       config.optimizeDeps.include = config.optimizeDeps.include || []
       config.optimizeDeps.exclude = config.optimizeDeps.exclude || []
@@ -318,5 +354,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
         }
       }
     })
+
+    logger.success(`Added ${NAME} module successfully.`)
   },
 })
