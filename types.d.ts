@@ -8,19 +8,27 @@ interface CwaInjections {
   $router: Router
 }
 
+interface CwaRouteMeta {
+  admin?: boolean
+  disabled?: boolean
+  staticLayout?: GlobalComponentNames
+}
+
 declare module '#app' {
   interface Nuxt {
     cwaResources: CwaResourcesMeta
   }
   interface PageMeta {
-    cwa?: {
-      admin?: boolean
-      disabled?: boolean
-      staticLayout?: GlobalComponentNames
-    }
+    cwa?: CwaRouteMeta
   }
 }
 
 declare module 'nuxt/dist/app/nuxt' {
   type NuxtApp = CwaInjections
+}
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    cwa?: CwaRouteMeta
+  }
 }

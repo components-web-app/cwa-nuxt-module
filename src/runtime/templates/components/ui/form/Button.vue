@@ -102,7 +102,7 @@ function hasSlotContent(slot: Slot | undefined, slotProps = {}): boolean {
   })
 }
 
-const showButton = computed(() => {
+const showButton = computed<boolean>(() => {
   const slotContent = slots.default?.(props)
   return hasSlotContent(slots.default, slotContent)
 })
