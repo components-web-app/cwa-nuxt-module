@@ -9,7 +9,7 @@
     >
       <div class="cwa-flex cwa-justify-between cwa-items-center">
         <div class="cwa-absolute cwa-left-1/2 cwa-top-1/2 -cwa-translate-x-1/2 -cwa-translate-y-1/2 cwa-text-center cwa-text-gray-300 cwa-z-20">
-          <template v-if="!pageIsAdmin">
+          <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiFormButton
               v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data"
               color="dark"
@@ -83,7 +83,7 @@
           </template>
         </div>
         <div class="cwa-flex cwa-justify-start cwa-space-x-4">
-          <template v-if="!pageIsAdmin">
+          <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiFormButton
               class="cwa-min-w-[100px]"
               color="blue"
@@ -158,6 +158,7 @@ import PageAdminModal from '#cwa/runtime/templates/components/core/admin/PageAdm
 import PageDataAdminModal from '#cwa/runtime/templates/components/core/admin/PageDataAdminModal.vue'
 import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
+import { useError } from '#app/composables/error'
 
 const $cwa = useCwa()
 const route = useRoute()
@@ -166,7 +167,10 @@ const router = useRouter()
 const header = ref<undefined | HTMLElement>()
 const spacer = ref<undefined | HTMLElement>()
 
+const error = useError()
+
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
+const isErrorPage = computed(() => !!error.value)
 const showEditModal = ref(false)
 
 const isNavEnabled = computed({
