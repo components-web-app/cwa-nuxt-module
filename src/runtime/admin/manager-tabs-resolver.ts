@@ -16,8 +16,7 @@ export default class ManagerTabsResolver {
   }
 
   private* getComponentGroupTabs() {
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Component.vue'))
-    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Position.vue'))
+    yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/group/Group.vue'))
   }
 
   private* getComponentPositionTabs() {

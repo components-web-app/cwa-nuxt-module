@@ -18,7 +18,9 @@ async function handleDelete() {
     return
   }
   if (isAddingNew.value) {
-    await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.emptyStack()
+    if (await $cwa.resourcesManager.confirmDiscardAddingResource()) {
+      $cwa.admin.emptyStack()
+    }
     return
   }
 
