@@ -43,7 +43,7 @@
         </div>
       </div>
     </header>
-    <div class="bg-inherit">
+    <div class="bg-inherit grow flex">
       <slot />
     </div>
     <div v-if="$cwa.resources.layoutIri.value">

@@ -78,23 +78,25 @@ useHead({
           </div>
         </div>
       </div>
-      <div class="cwa-justify-center cwa-space-y-2 cwa-flex cwa-h-auto cwa-grow-0 cwa-flex-col cwa-text-center">
+      <div class="cwa-justify-center cwa-space-y-2 cwa-flex cwa-h-auto cwa-grow-0 cwa-flex-col cwa-text-center cwa-pb-2 cwa-pt-6">
         <div class="cwa-justify-center cwa-flex">
           <CwaLogo class="cwa-h-6 cwa-w-auto cwa-text-stone-300" />
         </div>
-        <div class="cwa-text-sm cwa-text-stone-400">
-          Are you the owner of this website?
-          <NuxtLink
-            v-if="$cwa.auth.hasRole('ROLE_ADMIN')"
-            to="/_cwa/layouts"
-            class="cwa-font-semibold hover:cwa-text-dark"
-          >Go to admin <span aria-hidden="true">&rarr;</span></NuxtLink>
-          <NuxtLink
-            v-else
-            to="/login"
-            class="cwa-font-semibold hover:cwa-text-dark"
-          >Sign in <span aria-hidden="true">&rarr;</span></NuxtLink>
-        </div>
+        <ClientOnly>
+          <div class="cwa-text-sm cwa-text-stone-400">
+            Are you the owner of this website?
+            <NuxtLink
+              v-if="$cwa.auth.hasRole('ROLE_ADMIN')"
+              to="/_cwa/layouts"
+              class="cwa-font-semibold hover:cwa-text-dark dark:hover:cwa-text-white"
+            >Go to admin <span aria-hidden="true">&rarr;</span></NuxtLink>
+            <NuxtLink
+              v-else
+              to="/login"
+              class="cwa-font-semibold hover:cwa-text-dark dark:hover:cwa-text-white"
+            >Sign in <span aria-hidden="true">&rarr;</span></NuxtLink>
+          </div>
+        </ClientOnly>
       </div>
     </main>
   </div>
