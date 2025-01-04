@@ -28,17 +28,19 @@
         <slot />
       </div>
     </component>
-    <ClientOnly v-if="showAdmin">
-      <LazyCwaAdminResourceManager ref="resourceManager" />
-      <LayoutPageOverlay
-        v-if="$cwa.admin.isEditing && page && rootLayout"
-        :page="page"
-        :layout="rootLayout"
-      />
-      <teleport to="body">
-        <DialogsWrapper />
-      </teleport>
-    </clientonly>
+    <ClientOnly>
+      <template v-if="showAdmin">
+        <LazyCwaAdminResourceManager ref="resourceManager" />
+        <LayoutPageOverlay
+          v-if="$cwa.admin.isEditing && page && rootLayout"
+          :page="page"
+          :layout="rootLayout"
+        />
+        <teleport to="body">
+          <DialogsWrapper />
+        </teleport>
+      </template>
+    </ClientOnly>
   </div>
 </template>
 

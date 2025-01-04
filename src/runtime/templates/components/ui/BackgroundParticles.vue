@@ -306,10 +306,10 @@ class ParticleProgram {
   private curl?: FBOType
   private pressure?: DoubleFBOType
   private programs: ParticlePrograms
-  private blit: (destination: WebGLFramebuffer | null) => void
+  private readonly blit: (destination: WebGLFramebuffer | null) => void
   private stopped: boolean = false
   private lastTime: number = 0
-  private canvas: HTMLCanvasElement
+  private readonly canvas: HTMLCanvasElement
   private container?: HTMLElement
 
   constructor(config: ParticleEffectConfig, glMeta: ParticleWebGLWithMeta, canvas: HTMLCanvasElement) {
