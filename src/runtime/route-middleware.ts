@@ -7,7 +7,7 @@ import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''
 
-export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => {
+export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, from: RouteLocationNormalized) => {
   const { isClient } = useProcess()
   middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()
@@ -77,7 +77,9 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
   const isFirstClientSideRun = nuxtApp.isHydrating && nuxtApp.payload.serverRendered
 
   // skip on first client side run as server-side will have completed
-  if (isFirstClientSideRun && !isInternalPath) {
+  // if a cwa disabled path redirects (e.g. what the admin pages to) it still detects as a first time client load
+  // we will still need to fetch the route data now for client-side. first loads, the from path is equal to the to path
+  if (isFirstClientSideRun && !isInternalPath && from.fullPath === to.fullPath) {
     return
   }
 
