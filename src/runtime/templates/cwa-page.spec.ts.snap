@@ -2,7 +2,7 @@
 
 exports[`CWA page > snapshots > should NOT display ResourceLoader IF pageIri is NOT defined 1`] = `
 <div
-  class="cwa-page cwa-min-h-full"
+  class="cwa-page cwa-h-full"
 >
   <!--v-if-->
 </div>
@@ -10,7 +10,7 @@ exports[`CWA page > snapshots > should NOT display ResourceLoader IF pageIri is 
 
 exports[`CWA page > snapshots > should display ResourceLoader component IF pageIri is defined 1`] = `
 <div
-  class="cwa-page cwa-min-h-full"
+  class="cwa-page cwa-h-full"
 >
   <resourceloader-stub
     componentprefix="CwaPage"
