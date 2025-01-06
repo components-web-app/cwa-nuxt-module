@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import logger from 'consola'
 import type { RouteLocationNormalized } from 'vue-router'
 import type { CwaResource } from './resources/resource-utils'
-import { abortNavigation, callWithNuxt, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
+import { abortNavigation, callWithNuxt, createError, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
 import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''
@@ -60,17 +60,33 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
     }
   }
 
+  const isInternalPath = to.path.startsWith('/_/')
+
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (!isClient) {
+    if (isInternalPath) {
+      // server-side for the internal paths are skipped until we know if the user is auth or not
+      return
+    }
     // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
     const resource = await nuxtApp.$cwa.fetchRoute(to)
     return handleRouteRedirect(resource)
   }
 
+  const isFirstClientSideRun = nuxtApp.isHydrating && nuxtApp.payload.serverRendered
+
   // skip on first client side run as server-side will have completed
-  if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
+  if (isFirstClientSideRun && !isInternalPath) {
     return
+  }
+
+  if (!nuxtApp.$cwa.auth.isAdmin.value && isInternalPath) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorised',
+      message: 'You are not authorised to load this resource',
+    })
   }
 
   const startedMiddlewareToken = middlewareToken

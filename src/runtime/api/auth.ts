@@ -161,7 +161,7 @@ export default class Auth {
     return this.roles.includes(role)
   }
 
-  public get showAdmin() {
+  public get isAdmin() {
     return computed(() => this.hasRole(CwaUserRoles.ADMIN))
   }
 

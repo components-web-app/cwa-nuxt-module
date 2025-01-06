@@ -109,5 +109,5 @@ const resolvedComponent = computed(() => {
   return layoutUiComponent.value
 })
 
-const showAdmin = $cwa.auth.showAdmin
+const showAdmin = $cwa.auth.isAdmin
 </script>
