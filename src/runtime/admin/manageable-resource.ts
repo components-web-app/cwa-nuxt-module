@@ -249,18 +249,23 @@ export default class ManageableResource {
       return [currentEl]
     }
 
-    let endCommentTag: undefined | string
+    let startTagCount = 0
 
     do {
-      if (!endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue.startsWith(' CWA_MANAGER_START_')) {
-        const startTag = currentEl.nodeValue
-        const startTagPostfix = startTag.replace(/^(CWA_MANAGER_START_)/, '')
-        endCommentTag = ` CWA_MANAGER_END_${startTagPostfix} `
+      if (currentEl.nodeType === Node.COMMENT_NODE) {
+        const nodeValue = currentEl.nodeValue.trim()
+        if (startTagCount && nodeValue === 'CWA_END') {
+          startTagCount--
+          if (startTagCount === 0) {
+            break
+          }
+        }
+        if (nodeValue === 'CWA_START') {
+          startTagCount++
+        }
+        continue
       }
-      if (endCommentTag && currentEl.nodeType === Node.COMMENT_NODE && currentEl.nodeValue === endCommentTag) {
-        break
-      }
-      currentEl.nodeType !== Node.TEXT_NODE && allSiblings.push(currentEl)
+      currentEl.nodeType === Node.ELEMENT_NODE && allSiblings.push(currentEl)
     } while ((currentEl = currentEl.nextSibling))
 
     return allSiblings

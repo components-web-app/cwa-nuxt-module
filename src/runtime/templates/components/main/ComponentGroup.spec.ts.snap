@@ -17,7 +17,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
   data-v-app=""
 >
   
-  <!-- CWA_MANAGER_START_GROUP -->
+  <!-- CWA_START -->
   
   <resourceloader-stub
     class=""
@@ -41,7 +41,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
     uicomponent="[object Object]"
   />
   
-  <!-- CWA_MANAGER_END_GROUP -->
+  <!-- CWA_END -->
   
 </div>
 `;

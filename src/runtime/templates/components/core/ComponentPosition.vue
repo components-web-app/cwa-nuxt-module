@@ -1,5 +1,5 @@
 <template>
-  <!-- CWA_MANAGER_START_POSITION -->
+  <!-- CWA_START -->
   <ResourceLoader
     v-if="componentIri"
     ref="resourceLoader"
@@ -10,7 +10,7 @@
     v-else-if="$cwa.admin.isEditing"
     :iri="iri"
   />
-  <!-- CWA_MANAGER_END_POSITION -->
+  <!-- CWA_END -->
 </template>
 
 <script setup lang="ts">

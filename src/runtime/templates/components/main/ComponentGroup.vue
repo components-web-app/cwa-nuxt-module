@@ -6,7 +6,7 @@
     <Spinner :show="true" />
   </div>
   <template v-else-if="componentPositions?.length">
-    <!-- CWA_MANAGER_START_GROUP -->
+    <!-- CWA_START -->
     <ResourceLoader
       v-for="positionIri of componentPositions"
       :key="getResourceKey(positionIri)"
@@ -15,7 +15,7 @@
       :ui-component="ComponentPosition"
       :class="nestedClasses"
     />
-    <!-- CWA_MANAGER_END_GROUP -->
+    <!-- CWA_END -->
   </template>
   <div
     v-else-if="signedInAndResourceExists"

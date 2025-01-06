@@ -319,7 +319,7 @@ describe('ManageableResource Class', () => {
       expect(elementsArray).toEqual([instance.component.$el])
     })
 
-    test('An array is returned of all siblings that do not have a nodeType of 3', () => {
+    test('An array is returned of all siblings that are element nodes', () => {
       const { instance } = createManageableResource()
       const rootElement = createDomElement(Node.ATTRIBUTE_NODE)
       rootElement.nextSibling = createDomElement(Node.TEXT_NODE)
@@ -329,10 +329,10 @@ describe('ManageableResource Class', () => {
       instance.component.$el = rootElement
       const elementsArray = instance.getAllEls()
       expect(elementsArray).toEqual([
-        rootElement,
+        // rootElement,
         // rootElement.nextSibling, - SHOULD BE EXCLUDED FOR NODE TYPE
         rootElement.nextSibling.nextSibling,
-        rootElement.nextSibling.nextSibling.nextSibling,
+        // rootElement.nextSibling.nextSibling.nextSibling,
       ])
     })
   })

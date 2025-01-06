@@ -50,7 +50,6 @@ import { DialogsWrapper } from 'vuejs-confirm-dialog'
 import { useRouter } from 'vue-router'
 import { useCwa } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout } from '#components'
-import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
@@ -110,7 +109,5 @@ const resolvedComponent = computed(() => {
   return layoutUiComponent.value
 })
 
-const showAdmin = computed(() => {
-  return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
-})
+const showAdmin = $cwa.auth.showAdmin
 </script>

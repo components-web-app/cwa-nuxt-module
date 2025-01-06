@@ -2,7 +2,7 @@ import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { AuthStore } from '../storage/stores/auth/auth-store'
-import type { CwaUserRoles } from '../storage/stores/auth/state'
+import { CwaUserRoles } from '../storage/stores/auth/state'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type CwaFetch from './fetcher/cwa-fetch'
@@ -159,6 +159,10 @@ export default class Auth {
       return false
     }
     return this.roles.includes(role)
+  }
+
+  public get showAdmin() {
+    return computed(() => this.hasRole(CwaUserRoles.ADMIN))
   }
 
   private async loginRequest(credentials: Credentials) {
