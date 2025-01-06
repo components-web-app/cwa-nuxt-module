@@ -27,8 +27,6 @@ export default class ManagerTabsResolver {
     if (this.cwa.resources.isDynamicPage.value) {
       yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/DynamicPage.vue'))
     }
-    // Should have had to have a static component already assigned - should not have data variable options, easy to select the component, no need for tab?
-    // yield defineAsyncComponent(() => import('#cwa/runtime/templates/components/main/admin/resource-manager/_tabs/position/Static.vue'))
   }
 
   private* getComponentTabs(resource: CwaCurrentResourceInterface) {

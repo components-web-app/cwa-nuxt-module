@@ -4,7 +4,6 @@
     ref="particlesContainer"
   >
     <canvas ref="canvasElement" />
-    <div class="particles-overlay" />
   </div>
 </template>
 
@@ -311,6 +310,7 @@ class ParticleProgram {
   private lastTime: number = 0
   private readonly canvas: HTMLCanvasElement
   private container?: HTMLElement
+  private splatStack: number[] = []
 
   constructor(config: ParticleEffectConfig, glMeta: ParticleWebGLWithMeta, canvas: HTMLCanvasElement) {
     this.config = config
@@ -830,7 +830,8 @@ class ParticleProgram {
 
     gl.viewport(0, 0, this.textureWidth, this.textureHeight)
 
-    // if (splatStack.length > 0) multipleSplats(splatStack.pop())
+    const nextSplatCount = this.splatStack.pop()
+    nextSplatCount && this.multipleSplats(nextSplatCount)
 
     if (this.velocity) {
       this.programs.advectionProgram.bind()
@@ -848,17 +849,17 @@ class ParticleProgram {
       )
       this.blit(this.velocity.write[1])
       this.velocity.swap()
-    }
 
-    if (this.velocity && this.density) {
-      gl.uniform1i(this.programs.advectionProgram.uniforms.uVelocity, this.velocity.read[2])
-      gl.uniform1i(this.programs.advectionProgram.uniforms.uSource, this.density.read[2])
-      gl.uniform1f(
-        this.programs.advectionProgram.uniforms.dissipation,
-        this.config.DENSITY_DISSIPATION,
-      )
-      this.blit(this.density.write[1])
-      this.density.swap()
+      if (this.density) {
+        gl.uniform1i(this.programs.advectionProgram.uniforms.uVelocity, this.velocity.read[2])
+        gl.uniform1i(this.programs.advectionProgram.uniforms.uSource, this.density.read[2])
+        gl.uniform1f(
+          this.programs.advectionProgram.uniforms.dissipation,
+          this.config.DENSITY_DISSIPATION,
+        )
+        this.blit(this.density.write[1])
+        this.density.swap()
+      }
     }
 
     for (let i = 0; i < this.pointers.length; i++) {
@@ -1061,7 +1062,8 @@ class ParticleProgram {
     this.pointers[0].down = false
   }
 
-  public multipleSplats(amount: number) {
+  private multipleSplats(amount: number) {
+    this.initFrameBuffers()
     for (let i = 0; i < amount; i++) {
       const color: [number, number, number] = [
         Math.random() * 10,
@@ -1078,13 +1080,16 @@ class ParticleProgram {
 
   stop() {
     this.stopped = true
+    const { gl } = this.glMeta
 
     const layout = document.body
     layout.removeEventListener('mousemove', this.mousemove)
     layout.removeEventListener('touchmove', this.touchmove)
     layout.removeEventListener('touchstart', this.touchstart)
     layout.removeEventListener('touchend', this.touchend)
+    // layout.removeEventListener('mousedown', this.click)
     window.removeEventListener('mouseleave', this.mouseleave)
+    gl.clear(gl.COLOR_BUFFER_BIT)
   }
 
   start(container: HTMLElement) {
@@ -1098,29 +1103,30 @@ class ParticleProgram {
     layout.addEventListener('touchmove', this.touchmove, { passive: true })
     layout.addEventListener('touchstart', this.touchstart, { passive: true })
     layout.addEventListener('touchend', this.touchend)
+    // layout.addEventListener('mousedown', this.click)
     window.addEventListener('mouseleave', this.mouseleave)
+
+    this.multipleSplats(Math.round(Math.random() * 20) + 5)
   }
 }
 
-// const splatStack = []
 let particles: ParticleProgram | undefined
 
 onMounted(() => {
   const metaFactory = new ParticleCanvasMetaFactory(canvasElement.value)
 
   const config: ParticleEffectConfig = {
-    TEXTURE_DOWNSAMPLE: 1,
+    TEXTURE_DOWNSAMPLE: 2,
     DENSITY_DISSIPATION: 0.98,
     VELOCITY_DISSIPATION: 0.99,
     PRESSURE_DISSIPATION: 0.8,
     PRESSURE_ITERATIONS: 25,
-    CURL: 28,
-    SPLAT_RADIUS: 0.004,
+    CURL: 35,
+    SPLAT_RADIUS: 0.002,
   }
 
   particles = new ParticleProgram(config, metaFactory.getMeta(), metaFactory.getCanvas())
   particles.start(particlesContainer.value)
-  particles.multipleSplats(Math.round(Math.random() * 20) + 5)
 })
 onBeforeUnmount(() => {
   particles?.stop()
@@ -1129,13 +1135,6 @@ onBeforeUnmount(() => {
 
 <style>
 #particles-container canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-#particles-container .particles-overlay {
   position: absolute;
   top: 0;
   left: 0;
