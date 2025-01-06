@@ -2,6 +2,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { RouteLocationNormalizedLoaded, RouteLocationRaw } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'
+import { computed } from 'vue'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
 import * as nuxt from '#app'
@@ -56,7 +57,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
         payload: {},
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource } },
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -155,7 +156,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource } },
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -174,7 +175,7 @@ describe('Test route middleware', () => {
     // @ts-expect-error
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource } },
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
