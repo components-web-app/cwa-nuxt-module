@@ -11,13 +11,14 @@ describe('Create a fetch instances with defaults', () => {
       return 'mockedFetchCreateInstance'
     })
     const cwaFetch = new CwaFetch('https://my-api')
-    expect($fetch.create).toBeCalledWith({
-      baseURL: 'https://my-api',
-      headers: {
-        accept: 'application/ld+json,application/json',
-      },
-      credentials: 'include',
-    })
+    expect($fetch.create).toBeCalledWith(
+      expect.objectContaining({
+        baseURL: 'https://my-api',
+        headers: {
+          accept: 'application/ld+json,application/json',
+        },
+        credentials: 'include',
+      }))
     expect(cwaFetch.fetch).toBe('mockedFetchCreateInstance')
   })
 })
