@@ -265,7 +265,7 @@ export default class ManageableResource {
         }
         continue
       }
-      currentEl.nodeType === Node.ELEMENT_NODE && allSiblings.push(currentEl)
+      currentEl.nodeType === Node.ELEMENT_NODE && startTagCount && allSiblings.push(currentEl)
     } while ((currentEl = currentEl.nextSibling))
 
     return allSiblings

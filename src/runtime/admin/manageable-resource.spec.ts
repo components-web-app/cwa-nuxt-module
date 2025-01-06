@@ -83,13 +83,15 @@ vi.mock('vue', async () => {
 })
 
 interface DummyDom {
+  nodeValue?: string
   nodeType: 1 | 2 | 3
   nextSibling?: DummyDom
   addEventListener?: Mock
 }
 
-function createDomElement(nodeType: 1 | 2 | 3): DummyDom {
+function createDomElement(nodeType: 1 | 2 | 3, nodeValue?: string): DummyDom {
   return {
+    nodeValue,
     nodeType,
     nextSibling: null,
   }
@@ -321,18 +323,42 @@ describe('ManageableResource Class', () => {
 
     test('An array is returned of all siblings that are element nodes', () => {
       const { instance } = createManageableResource()
-      const rootElement = createDomElement(Node.ATTRIBUTE_NODE)
-      rootElement.nextSibling = createDomElement(Node.TEXT_NODE)
-      rootElement.nextSibling.nextSibling = createDomElement(Node.ELEMENT_NODE)
-      rootElement.nextSibling.nextSibling.nextSibling = createDomElement(Node.ATTRIBUTE_NODE)
 
-      instance.component.$el = rootElement
+      const elements = [
+        createDomElement(Node.ELEMENT_NODE, 'EL0'),
+        createDomElement(Node.ELEMENT_NODE, 'EL1'),
+        createDomElement(Node.ELEMENT_NODE, 'EL2'),
+        createDomElement(Node.ELEMENT_NODE, 'EL3'),
+      ]
+
+      const siblings = [
+        createDomElement(Node.ATTRIBUTE_NODE, 'AN ATTR NODE'),
+        elements[0],
+        createDomElement(Node.COMMENT_NODE, 'CWA_START'),
+        createDomElement(Node.TEXT_NODE),
+        createDomElement(Node.COMMENT_NODE, 'CWA_START'),
+        elements[1],
+        createDomElement(Node.COMMENT_NODE, 'ANY COMMENT'),
+        createDomElement(Node.COMMENT_NODE, 'CWA_END'),
+        createDomElement(Node.ATTRIBUTE_NODE, 'AN ATTR NODE'),
+        elements[2],
+        createDomElement(Node.COMMENT_NODE, 'CWA_END'),
+        elements[3],
+      ]
+
+      let previousSibling: DummyDom
+      for (const sibling of siblings) {
+        if (previousSibling) {
+          previousSibling.nextSibling = sibling
+        }
+        previousSibling = sibling
+      }
+
+      instance.component.$el = siblings[0]
       const elementsArray = instance.getAllEls()
       expect(elementsArray).toEqual([
-        // rootElement,
-        // rootElement.nextSibling, - SHOULD BE EXCLUDED FOR NODE TYPE
-        rootElement.nextSibling.nextSibling,
-        // rootElement.nextSibling.nextSibling.nextSibling,
+        elements[1],
+        elements[2],
       ])
     })
   })
