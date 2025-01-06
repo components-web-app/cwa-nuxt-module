@@ -147,6 +147,7 @@ export default class FetchStatusManager {
         isCurrent,
         showErrorPage: this.finishFetchShowError(fetchStatus, event.resource),
       })
+      logger.error('[CWA FETCH ERROR]', event.resource, cwaResource)
       return
     }
 
