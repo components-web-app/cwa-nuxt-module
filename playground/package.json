@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@heroicons/vue": "^2.1.5",
-    "@nuxt/image": "1.8.1",
+    "@nuxt/image": "^1.10.0",
     "@tailwindcss/vite": "^4.1.7",
     "@tiptap/core": "^2.0.0",
     "@tiptap/extension-placeholder": "^2.1.12",

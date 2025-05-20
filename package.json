@@ -68,7 +68,7 @@
     "@headlessui/vue": "^1.7.23",
     "@nuxt/eslint-config": "^0.7.6",
     "@nuxt/kit": "^3.17.3",
-    "@nuxt/module-builder": "^0.8.4",
+    "@nuxt/module-builder": "^1.0.1",
     "@nuxt/schema": "^3.17.3",
     "@nuxt/test-utils": "^3.19.0",
     "@pinia/testing": "^0.1.7",
@@ -86,7 +86,7 @@
     "copyfiles": "^2.4.1",
     "eslint": "^9.27.0",
     "globby": "^14.1.0",
-    "happy-dom": "^17.4",
+    "happy-dom": "^17.4.7",
     "pathe": "^1.1.2",
     "playwright-core": "^1.52.0",
     "postcss": "^8.5.3",
@@ -103,7 +103,7 @@
       "semver": ">=7.5.2",
       "ufo": ">=1.5",
       "rollup": ">=3.29.5",
-      "vue-tsc": ">=2.1.6"
+      "tar-fs": ">=3.0.7"
     },
     "auditConfig": {
       "ignoreCves": []
@@ -117,8 +117,8 @@
     "vite": ">=5.1.7",
     "semver": ">=7.5.2",
     "ufo": ">=1.5",
-    "micromatch": ">=4.0.8",
-    "rollup": ">=3.29.5"
+    "rollup": ">=3.29.5",
+    "tar-fs": ">=3.0.7"
   },
   "engines": {
     "pnpm": ">=10.11.0"
