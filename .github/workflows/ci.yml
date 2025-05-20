@@ -14,11 +14,12 @@ jobs:
     strategy:
       matrix:
         node: [lts/*,latest]
+        pnpm: [ latest ]
         include:
           - node: latest
+            pnpm: latest
             coverage: true
             lint: true
-            pnpm: latest
       fail-fast: false
     steps:
       - name: Checkout
@@ -92,7 +93,8 @@ jobs:
     if: github.ref == 'refs/heads/nuxt3' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip-release]')
     strategy:
       matrix:
-        node: [ 20 ]
+        pnpm: [ latest ]
+        node: [ latest ]
     permissions:
       id-token: write
     steps:
