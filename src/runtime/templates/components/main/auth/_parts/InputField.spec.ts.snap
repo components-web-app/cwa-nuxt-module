@@ -20,7 +20,7 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
       value=""
     />
     <div>
-
+      
       <warning-stub
         class="cwa:mt-2"
       >
@@ -31,7 +31,7 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
       >
         Login cannot contain whitespaces
       </warning-stub>
-
+      
     </div>
   </div>
 </div>

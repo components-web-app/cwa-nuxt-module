@@ -4,12 +4,12 @@ exports[`Spinner > snapshots > should match snapshot IF spinner is NOT shown 1`]
 <transition-stub
   appear="false"
   css="true"
-  enteractiveclass="cwa-duration-300 cwa-ease-out"
-  enterfromclass="cwa-transform cwa-opacity-0"
-  entertoclass="cwa-opacity-100"
-  leaveactiveclass="cwa-duration-300 cwa-ease-in"
-  leavefromclass="cwa-opacity-100"
-  leavetoclass="cwa-transform cwa-opacity-0"
+  enteractiveclass="cwa:duration-300 cwa:ease-out"
+  enterfromclass="cwa:transform cwa:opacity-0"
+  entertoclass="cwa:opacity-100"
+  leaveactiveclass="cwa:duration-300 cwa:ease-in"
+  leavefromclass="cwa:opacity-100"
+  leavetoclass="cwa:transform cwa:opacity-0"
   persisted="false"
 >
   <!--v-if-->
@@ -20,12 +20,12 @@ exports[`Spinner > snapshots > should match snapshot IF spinner is shown 1`] = `
 <transition-stub
   appear="false"
   css="true"
-  enteractiveclass="cwa-duration-300 cwa-ease-out"
-  enterfromclass="cwa-transform cwa-opacity-0"
-  entertoclass="cwa-opacity-100"
-  leaveactiveclass="cwa-duration-300 cwa-ease-in"
-  leavefromclass="cwa-opacity-100"
-  leavetoclass="cwa-transform cwa-opacity-0"
+  enteractiveclass="cwa:duration-300 cwa:ease-out"
+  enterfromclass="cwa:transform cwa:opacity-0"
+  entertoclass="cwa:opacity-100"
+  leaveactiveclass="cwa:duration-300 cwa:ease-in"
+  leavefromclass="cwa:opacity-100"
+  leavetoclass="cwa:transform cwa:opacity-0"
   persisted="false"
 >
   <div
@@ -33,7 +33,7 @@ exports[`Spinner > snapshots > should match snapshot IF spinner is shown 1`] = `
   >
     <svg
       aria-hidden="true"
-      class="cwa-w-6 cwa-h-6 cwa-text-gray-300 cwa-animate-spin-fast cwa-fill-blue-600"
+      class="cwa:w-6 cwa:h-6 cwa:text-gray-300 cwa:animate-spin-spinner cwa:fill-blue-600"
       viewBox="0 0 100 101"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -47,7 +47,7 @@ exports[`Spinner > snapshots > should match snapshot IF spinner is shown 1`] = `
       />
     </svg>
     <span
-      class="cwa-sr-only"
+      class="cwa:sr-only"
     >
       Loading...
     </span>

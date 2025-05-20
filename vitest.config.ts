@@ -12,6 +12,10 @@ export default defineVitestConfig({
     },
     environmentOptions: {
       nuxt: {
+        mock: {
+          intersectionObserver: true,
+          indexedDb: false,
+        },
         rootDir: fileURLToPath(new URL('./playground/', import.meta.url)),
       },
     },

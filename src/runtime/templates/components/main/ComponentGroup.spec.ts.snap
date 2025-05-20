@@ -50,7 +50,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are no comp
 
 exports[`ComponentGroup > snapshots > should match snapshot IF user is logged in but there are no positions 1`] = `
 <div
-  class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5"
+  class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5"
 >
   <lazyhotspot-stub
     screen-reader-action="Add component position"

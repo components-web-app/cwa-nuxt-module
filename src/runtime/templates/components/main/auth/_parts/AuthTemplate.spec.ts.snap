@@ -5,7 +5,7 @@ exports[`LoginPage > snapshots > should match snapshot IF form has errors 1`] = 
   class="cwa:flex cwa:min-h-full cwa:flex-col cwa:justify-center cwa:py-12 cwa:sm:px-6 cwa:lg:px-8 cwa:bg-dark"
 >
   <div
-    class="cwa:sm:mx-auto cwa:sm:w-full cwa:sm:max-w-md"
+    class="cwa:sm:mx-autocwa:sm::w-full cwa:sm::max-w-md"
   >
     <logo-stub
       class="cwa:mx-auto cwa:h-12 cwa:w-auto cwa:text-neutral-400"
@@ -24,14 +24,14 @@ exports[`LoginPage > snapshots > should match snapshot IF form has errors 1`] = 
       </warning-stub>
       <form
         action="#"
-        class="cwa:gap-y-6"
+        class="cwa:flex cwa:flex-col cwa:gap-y-6"
         method="post"
       >
-
+        
         <div>
           Test form content
         </div>
-
+        
         <div>
           <button
             class="cwa:cursor-pointer cwa:flex cwa:w-full cwa:justify-center cwa:bg-neutral-600 cwa:py-2 cwa:px-3 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-neutral-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-neutral-600"
@@ -51,7 +51,7 @@ exports[`LoginPage > snapshots > should match snapshot IF form is submitting 1`]
   class="cwa:flex cwa:min-h-full cwa:flex-col cwa:justify-center cwa:py-12 cwa:sm:px-6 cwa:lg:px-8 cwa:bg-dark"
 >
   <div
-    class="cwa:sm:mx-auto cwa:sm:w-full cwa:sm:max-w-md"
+    class="cwa:sm:mx-autocwa:sm::w-full cwa:sm::max-w-md"
   >
     <logo-stub
       class="cwa:mx-auto cwa:h-12 cwa:w-auto cwa:text-neutral-400"
@@ -66,17 +66,17 @@ exports[`LoginPage > snapshots > should match snapshot IF form is submitting 1`]
       <!--v-if-->
       <form
         action="#"
-        class="cwa:gap-y-6"
+        class="cwa:flex cwa:flex-col cwa:gap-y-6"
         method="post"
       >
-
+        
         <div>
           Test form content
         </div>
-
+        
         <div>
           <button
-            class="cwa:cursor-pointer cwa:opacity-50 cwa:flex cwa:w-full cwa:justify-center cwa:bg-neutral-600 cwa:py-2 cwa:px-3 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-neutral-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-neutral-600"
+            class="cwa:opacity-50 cwa:cursor-pointer cwa:flex cwa:w-full cwa:justify-center cwa:bg-neutral-600 cwa:py-2 cwa:px-3 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-neutral-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-neutral-600"
             disabled=""
             type="submit"
           >

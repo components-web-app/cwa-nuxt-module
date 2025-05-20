@@ -25,10 +25,12 @@ vi.mock('@nuxt/kit', async () => {
 
 vi.mock('node:fs', () => {
   return {
-    statSync: vi.fn(() => ({
-      isDirectory: vi.fn(() => true),
-    })),
-    readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
+    default: {
+      statSync: vi.fn(() => ({
+        isDirectory: vi.fn(() => true),
+      })),
+      readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
+    },
   }
 })
 
@@ -39,7 +41,7 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
 
   const mockNuxt = Object.assign({ hook: vi.fn(), options: { runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
 
-  await setup(Object.assign({ tailwind: { base: true } }, options), mockNuxt)
+  await setup(options, mockNuxt)
 
   return mockNuxt
 }
