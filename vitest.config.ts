@@ -7,7 +7,7 @@ export default defineVitestConfig({
       reportsDirectory: '../coverage',
       provider: 'v8',
       include: ['src/**'],
-      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts'],
+      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*.d.mts'],
       all: true,
     },
     environmentOptions: {
