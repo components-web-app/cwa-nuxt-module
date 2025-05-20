@@ -154,16 +154,16 @@ defineExpose({
     class="relative"
   />
   <Transition
-    enter-from-class="cwa-transform cwa-translate-y-full"
-    enter-active-class="cwa-duration-200 cwa-ease-out"
-    enter-to-class="cwa-translate-y-0"
-    leave-from-class="cwa-translate-y-0"
-    leave-active-class="cwa-duration-200 cwa-ease-in"
-    leave-to-class="cwa-transform cwa-translate-y-full"
+    enter-from-class="cwa:transform cwa:translate-y-full"
+    enter-active-class="cwa:duration-200 cwa:ease-out"
+    enter-to-class="cwa:translate-y-0"
+    leave-from-class="cwa:translate-y-0"
+    leave-active-class="cwa:duration-200 cwa:ease-in"
+    leave-to-class="cwa:transform cwa:translate-y-full"
   >
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="fixed cwa-bottom-0 cwa-z-manager cwa-w-full cwa-text-white cwa-bg-dark/70"
+      class="fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/70"
       @click.stop
     >
       <div class="cwa-dark-blur">
@@ -171,26 +171,26 @@ defineExpose({
           v-if="allTabsMeta.length"
           ref="managerHolder"
         >
-          <ResourceLoadingIndicator class="cwa-absolute cwa-bottom-full cwa-left-0" />
-          <div class="cwa-flex">
-            <div class="cwa-flex-grow">
-              <div class="cwa-flex cwa-items-center cwa-pt-3 cwa-px-4 cwa-space-x-3">
-                <div class="cwa-flex-grow">
+          <ResourceLoadingIndicator class="cwa:absolute cwa:bottom-full cwa:left-0" />
+          <div class="cwa:flex">
+            <div class="cwa:grow">
+              <div class="cwa:flex cwa:items-center cwa:pt-3 cwa:px-4 cwa:gap-x-3">
+                <div class="cwa:grow">
                   <ManagerTabs
                     ref="managerTabs"
                     :tabs="allTabsMeta"
                     @click="selectTab"
                   />
                 </div>
-                <div class="cwa-flex cwa-light cwa-items-center cwa-content-center cwa-justify-center">
+                <div class="cwa:flex cwa-light cwa:items-center cwa:content-center cwa:justify-center">
                   <ResourceManagerCtaButton />
                 </div>
               </div>
-              <div class="cwa-p-4 cwa-min-h-[74px] cwa-flex cwa-items-center">
+              <div class="cwa:p-4 cwa:min-h-[74px] cwa:flex cwa:items-center">
                 <component
                   :is="selectedTab"
                   v-if="selectedTab"
-                  class="cwa-w-full"
+                  class="cwa:w-full"
                 />
               </div>
             </div>

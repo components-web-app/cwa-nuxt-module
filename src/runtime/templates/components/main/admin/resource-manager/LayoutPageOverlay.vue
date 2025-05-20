@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
     <canvas
       id="cwa-layout-page-overlay"
       ref="canvas"
-      class="cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0"
+      class="cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
     />
   </ClientOnly>
 </template>

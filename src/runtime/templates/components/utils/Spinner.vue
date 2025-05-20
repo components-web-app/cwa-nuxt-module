@@ -1,11 +1,11 @@
 <template>
   <Transition
-    enter-from-class="cwa-transform cwa-opacity-0"
-    enter-active-class="cwa-duration-300 cwa-ease-out"
-    enter-to-class="cwa-opacity-100"
-    leave-from-class="cwa-opacity-100"
-    leave-active-class="cwa-duration-300 cwa-ease-in"
-    leave-to-class="cwa-transform cwa-opacity-0"
+    enter-from-class="cwa:transform cwa:opacity-0"
+    enter-active-class="cwa:duration-300 cwa:ease-out"
+    enter-to-class="cwa:opacity-100"
+    leave-from-class="cwa:opacity-100"
+    leave-active-class="cwa:duration-300 cwa:ease-in"
+    leave-to-class="cwa:transform cwa:opacity-0"
   >
     <div
       v-if="props.show"
@@ -14,7 +14,7 @@
     >
       <svg
         aria-hidden="true"
-        class="cwa-w-6 cwa-h-6 cwa-text-gray-300 cwa-animate-spin-fast cwa-fill-blue-600"
+        class="cwa:w-6 cwa:h-6 cwa:text-gray-300 cwa:animate-spin-spinner cwa:fill-blue-600"
         viewBox="0 0 100 101"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -27,7 +27,7 @@
           fill="currentFill"
         />
       </svg>
-      <span class="cwa-sr-only">Loading...</span>
+      <span class="cwa:sr-only">Loading...</span>
     </div>
   </Transition>
 </template>

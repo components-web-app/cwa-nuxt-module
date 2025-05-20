@@ -3,12 +3,12 @@
     :title="pageDataClassName"
     @add="goToAdd"
   >
-    <div class="-cwa-mt-7 cwa-mb-5">
+    <div class="cwa:-mt-7 cwa:mb-5">
       <NuxtLink
         :to="{ name: '_cwa-data' }"
-        class="cwa-text-sm cwa-flex cwa-items-center cwa-transition-opacity cwa-space-x-1.5 cwa-opacity-70 hover:cwa-opacity-100"
+        class="cwa:text-sm cwa:flex cwa:items-center cwa:transition-opacity cwa:gap-x-1.5 cwa:opacity-70 cwa:hover:opacity-100"
       >
-        <CwaUiIconArrowIcon class="cwa-w-4 cwa-rotate-90 cwa-my-2" />
+        <CwaUiIconArrowIcon class="cwa:w-4 cwa:rotate-90 cwa:my-2" />
         <span>Page data categories</span>
       </NuxtLink>
     </div>
@@ -23,21 +23,21 @@
     :fetch-url="endpoint"
   >
     <template #item="{ data }">
-      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
-        <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
-          <div class="cwa-flex cwa-items-center cwa-space-x-3">
-            <span class="cwa-text-xl">{{ data.title }}</span><span :class="['cwa-outline', 'cwa-outline-1', 'cwa-outline-offset-2', 'cwa-w-2', 'cwa-h-2', 'cwa-rounded-full', data.route ? ['cwa-outline-green', 'cwa-bg-green'] : ['cwa-outline-orange', 'cwa-bg-orange']]" />
+      <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
+        <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
+          <div class="cwa:flex cwa:items-center cwa:gap-x-3">
+            <span class="cwa:text-xl">{{ data.title }}</span><span :class="['cwa:outline', 'cwa:outline-1', 'cwa:outline-offset-2', 'cwa:w-2', 'cwa:h-2', 'cwa:rounded-full', data.route ? ['cwa:outline-green', 'cwa:bg-green'] : ['cwa:outline-orange', 'cwa:bg-orange']]" />
           </div>
-          <span class="cwa-text-stone-400">{{ pageDataById[data.page]?.reference || data.page }}</span>
+          <span class="cwa:text-stone-400">{{ pageDataById[data.page]?.reference || data.page }}</span>
         </div>
-        <div class="cwa-flex cwa-space-x-2">
+        <div class="cwa:flex cwa:gap-x-2">
           <CwaUiFormButton :to="computedItemLink(data['@id'])">
-            <CwaUiIconCogIcon class="cwa-w-6" />
-            <span class="cwa-sr-only">Settings</span>
+            <CwaUiIconCogIcon class="cwa:w-6" />
+            <span class="cwa:sr-only">Settings</span>
           </CwaUiFormButton>
           <CwaUiFormButton @click="() => goToPage(data['@id'])">
-            <CwaUiIconEyeIcon class="cwa-h-5" />
-            <span class="cwa-sr-only">View</span>
+            <CwaUiIconEyeIcon class="cwa:h-5" />
+            <span class="cwa:sr-only">View</span>
           </CwaUiFormButton>
         </div>
       </div>

@@ -14,13 +14,13 @@
         :src="contentUrl"
         :width="displayMedia?.width"
         :height="displayMedia?.height"
-        class="object-contain object-left-top saturate-0"
+        class="object-contain object-top-left saturate-0"
         @load="handleLoad"
       />
     </Transition>
     <div
       data-placeholder="true"
-      class="absolute top-0 left-0 w-full h-full overflow-hidden bg-gray-200 pointer-events-none cwa-transition-opacity"
+      class="absolute top-0 left-0 w-full h-full overflow-hidden bg-gray-200 pointer-events-none cwa:transition-opacity"
       :class="{ 'opacity-0': loaded }"
     />
   </div>

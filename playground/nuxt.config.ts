@@ -1,4 +1,4 @@
-import { defineNuxtConfig } from 'nuxt/config'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   extends: [
@@ -6,7 +6,6 @@ export default defineNuxtConfig({
   ],
   modules: [
     '../src/module',
-    '@nuxtjs/tailwindcss',
     '@nuxt/image',
     '@nuxt/test-utils/module',
     '@vite-pwa/nuxt',
@@ -22,13 +21,12 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       htmlAttrs: {
         lang: 'en-GB',
-        class: 'bg-black',
-      },
-      bodyAttrs: {
-        class: 'bg-background',
       },
     },
   },
+  css: [
+    '~/assets/css/tailwind.css',
+  ],
   runtimeConfig: {
     public: {
       cwa: {
@@ -40,6 +38,11 @@ export default defineNuxtConfig({
   routeRules: {
     // '/': { prerender: true },
     '/**': { isr: true },
+  },
+  vite: {
+    plugins: [
+      tailwindcss(),
+    ],
   },
   typescript: {
     typeCheck: true,
@@ -63,7 +66,7 @@ export default defineNuxtConfig({
       },
       HtmlContent: {
         name: 'Body Text',
-        description: '<p>Easily create a body of text with the ability to style and format the content using themes in-keeping with your website.</p>',
+        description: '<p>Easily create a body of text with the ability to style and format the content using themes in keeping with your website.</p>',
       },
       Image: {
         instantAdd: true,
@@ -89,9 +92,6 @@ export default defineNuxtConfig({
       BlogArticleData: {
         name: 'Blog Articles',
       },
-    },
-    tailwind: {
-      base: false,
     },
   },
   pwa: {

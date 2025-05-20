@@ -3,35 +3,35 @@
 exports[`InputField > snapshots > should match snapshot IF errors are present 1`] = `
 <div>
   <label
-    class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
+    class="cwa:block cwa:text-sm cwa:font-medium cwa:leading-6 cwa:text-neutral-300"
     for="v-0"
   >
     Login
   </label>
   <div
-    class="cwa-mt-2"
+    class="cwa:mt-2"
   >
     <input
       autocomplete="login"
-      class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
+      class="cwa:block cwa:w-full cwa:border-0 cwa:py-1.5 cwa:text-neutral-900 cwa:shadow-sm cwa:ring-1 cwa:ring-inset cwa:ring-neutral-300 cwa:placeholder:text-neutral-400 cwa:focus:ring-2 cwa:focus:ring-inset cwa:focus:ring-neutral-600 cwa:sm:text-sm cwa:sm:leading-6"
       id="v-0"
       name="login"
       type="text"
       value=""
     />
     <div>
-      
+
       <warning-stub
-        class="cwa-mt-2"
+        class="cwa:mt-2"
       >
         Login should be minimum 6 characters long
       </warning-stub>
       <warning-stub
-        class="cwa-mt-2"
+        class="cwa:mt-2"
       >
         Login cannot contain whitespaces
       </warning-stub>
-      
+
     </div>
   </div>
 </div>
@@ -40,17 +40,17 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
 exports[`InputField > snapshots > should match snapshot IF input is marked as required 1`] = `
 <div>
   <label
-    class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
+    class="cwa:block cwa:text-sm cwa:font-medium cwa:leading-6 cwa:text-neutral-300"
     for="v-0"
   >
     Login
   </label>
   <div
-    class="cwa-mt-2"
+    class="cwa:mt-2"
   >
     <input
       autocomplete="login"
-      class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
+      class="cwa:block cwa:w-full cwa:border-0 cwa:py-1.5 cwa:text-neutral-900 cwa:shadow-sm cwa:ring-1 cwa:ring-inset cwa:ring-neutral-300 cwa:placeholder:text-neutral-400 cwa:focus:ring-2 cwa:focus:ring-inset cwa:focus:ring-neutral-600 cwa:sm:text-sm cwa:sm:leading-6"
       id="v-0"
       name="login"
       required=""
@@ -65,17 +65,17 @@ exports[`InputField > snapshots > should match snapshot IF input is marked as re
 exports[`InputField > snapshots > should match snapshot IF input is of type password 1`] = `
 <div>
   <label
-    class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
+    class="cwa:block cwa:text-sm cwa:font-medium cwa:leading-6 cwa:text-neutral-300"
     for="v-0"
   >
     Password
   </label>
   <div
-    class="cwa-mt-2"
+    class="cwa:mt-2"
   >
     <input
       autocomplete="password"
-      class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
+      class="cwa:block cwa:w-full cwa:border-0 cwa:py-1.5 cwa:text-neutral-900 cwa:shadow-sm cwa:ring-1 cwa:ring-inset cwa:ring-neutral-300 cwa:placeholder:text-neutral-400 cwa:focus:ring-2 cwa:focus:ring-inset cwa:focus:ring-neutral-600 cwa:sm:text-sm cwa:sm:leading-6"
       id="v-0"
       name="password"
       type="password"
@@ -89,17 +89,17 @@ exports[`InputField > snapshots > should match snapshot IF input is of type pass
 exports[`InputField > snapshots > should match snapshot with passed content 1`] = `
 <div>
   <label
-    class="cwa-block cwa-text-sm cwa-font-medium cwa-leading-6 cwa-text-neutral-300"
+    class="cwa:block cwa:text-sm cwa:font-medium cwa:leading-6 cwa:text-neutral-300"
     for="v-0"
   >
     Login
   </label>
   <div
-    class="cwa-mt-2"
+    class="cwa:mt-2"
   >
     <input
       autocomplete="login"
-      class="cwa-block cwa-w-full cwa-border-0 cwa-py-1.5 cwa-text-neutral-900 cwa-shadow-sm cwa-ring-1 cwa-ring-inset cwa-ring-neutral-300 placeholder:cwa-text-neutral-400 focus:cwa-ring-2 focus:cwa-ring-inset focus:cwa-ring-neutral-600 sm:cwa-text-sm sm:cwa-leading-6"
+      class="cwa:block cwa:w-full cwa:border-0 cwa:py-1.5 cwa:text-neutral-900 cwa:shadow-sm cwa:ring-1 cwa:ring-inset cwa:ring-neutral-300 cwa:placeholder:text-neutral-400 cwa:focus:ring-2 cwa:focus:ring-inset cwa:focus:ring-neutral-600 cwa:sm:text-sm cwa:sm:leading-6"
       id="v-0"
       name="login"
       type="text"

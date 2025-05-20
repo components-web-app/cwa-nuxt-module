@@ -9,8 +9,8 @@ defineProps<{
 
 <template>
   <button
-    class="cwa-py-1.5 cwa-px-3 cwa-transition cwa-rounded"
-    :class="[selected ? 'cwa-text-stone-100 cwa-bg-stone-700/80' : 'cwa-text-stone-400 hover:cwa-text-stone-300']"
+    class="cwa:py-1.5 cwa:px-3 cwa:transition cwa:rounded cwa:cursor-pointer"
+    :class="[selected ? 'cwa:text-stone-100 cwa:bg-stone-700/80' : 'cwa:text-stone-400 cwa:hover:text-stone-300']"
   >
     {{ tab.name }}
   </button>

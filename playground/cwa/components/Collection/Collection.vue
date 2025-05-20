@@ -21,7 +21,7 @@
           :iri="post.image"
           class="absolute inset-0 -z-10 h-full w-full object-cover"
         />
-        <div class="absolute inset-0 -z-10 bg-gradient-to-t from-black via-primary/10" />
+        <div class="absolute inset-0 -z-10 bg-linear-to-t from-black via-primary/10" />
         <div class="flex flex-wrap items-center gap-y-1 overflow-hidden text-sm leading-3 text-gray-300">
           <time
             :datetime="post.createdAt"

@@ -52,22 +52,22 @@ function moveDown() {
 
 <template>
   <div>
-    <div class="cwa-flex cwa-space-x-4">
+    <div class="cwa:flex cwa:gap-x-4">
       <CwaUiFormToggle
         v-model="reordering"
         label="Enable reordering"
       />
       <div
-        class="cwa-flex cwa-space-x-4"
-        :class="{ 'cwa-pointer-events-none cwa-opacity-30': !reordering || $cwa.resourcesManager.requestCount.value }"
+        class="cwa:flex cwa:gap-x-4"
+        :class="{ 'cwa:pointer-events-none cwa:opacity-30': !reordering || $cwa.resourcesManager.requestCount.value }"
       >
-        <div class="cwa-max-w-[100px]">
+        <div class="cwa:max-w-[100px]">
           <CwaUiFormInput
             v-model="orderValue"
             type="number"
           />
         </div>
-        <div class="cwa-flex cwa-space-x-2">
+        <div class="cwa:flex cwa:gap-x-2">
           <CwaUiFormButton @click="moveUp">
             Move Up
           </CwaUiFormButton>

@@ -33,7 +33,7 @@ defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div class="cwa-flex cwa-space-x-8">
+  <div class="cwa:flex cwa:space-x-8">
     <CwaUiFormToggle
       v-model="showInternalRoute"
       :label="toggleLabel"

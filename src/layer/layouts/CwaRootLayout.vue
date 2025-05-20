@@ -2,26 +2,26 @@
   <div
     id="cwa-root-layout"
     ref="rootLayout"
-    class="cwa-relative cwa-h-full cwa-flex cwa-flex-col"
+    class="cwa:relative cwa:h-full cwa:flex cwa:flex-col"
     @contextmenu="closeContextMenu"
   >
     <ClientOnly>
       <LazyCwaAdminHeader v-if="showAdmin" />
       <OutdatedContentNotice
         v-else
-        class="cwa-absolute cwa-top-0 cwa-mt-1.5 cwa-left-1/2 -cwa-translate-x-1/2 cwa-z-50"
+        class="cwa:absolute cwa:top-0 cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-50"
       />
     </ClientOnly>
     <component
       :is="resolvedComponent"
       v-if="resolvedComponent"
-      class="cwa-relative"
+      class="cwa:relative"
       @click.stop="onLayoutClick"
       @contextmenu.stop="onLayoutContextMenu"
     >
       <div
         ref="page"
-        class="cwa-grow"
+        class="cwa:grow"
         @click.stop="onPageClick"
         @contextmenu.stop="onPageContextMenu"
       >

@@ -17,7 +17,7 @@ export const useCwaCollectionPagination = (props: CwaPaginationProps) => {
       return []
     }
     const allPages = Array.from(Array(props.totalPages), (_, x) => x + 1)
-    const maxPagesToDisplay = 7
+    const maxPagesToDisplay = props.maxPagesToDisplay || 7
     if (allPages.length < maxPagesToDisplay) {
       return allPages
     }

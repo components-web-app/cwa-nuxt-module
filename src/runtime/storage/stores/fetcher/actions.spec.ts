@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, reactive } from 'vue'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherActionsInterface } from './actions'
 import actions, { FinishFetchManifestType } from './actions'

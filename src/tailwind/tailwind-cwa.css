@@ -1,0 +1,78 @@
+@import 'tailwindcss/theme' layer(theme) prefix(cwa);
+@import 'tailwindcss/utilities' prefix(cwa);
+
+@plugin "@tailwindcss/forms" {
+  strategy: base;
+}
+
+@theme {
+  --cwa-color-*: initial;
+  --color-stone-100: #f5f5f4;
+  --color-stone-300: #d6d3d1;
+  --color-stone-400: #a8a29e;
+  --color-stone-600: #57534e;
+  --color-stone-700: #44403c;
+  --color-stone-800: #292524;
+  --color-stone-900: #1c1917;
+
+  --color-blue-600: #2563eb;
+
+  --color-indigo-600: #4f46e5;
+
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-600: #525252;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+
+  --color-white: #fff;
+  --color-transparent: transparent;
+  --color-orange: #ffaa00;
+  --color-magenta: #e30a6c;
+  --color-green: #9cdd05;
+  --color-yellow: #fee600;
+  --color-black: #000;
+
+  --color-red-500: #ef4444;
+
+  --color-dark: #1c1917;
+  --color-light: #f5f5f4;
+  --color-medium: #a8a29e;
+
+  --animate-spin-spinner: spin 2s linear infinite;
+
+  --backdrop-blur-xs: 3px;
+
+  --transition-property-opacity-transform: opacity, transform, rotate;
+
+  --shadow-orange-bottom: 0 0 10px 1px #ffaa00;
+
+  --z-index-manager: 101;
+  --z-index-dialog: 102;
+  --z-index-notifications: 103;
+}
+
+@layer base {
+  .cwa\:dark {
+    @apply cwa:bg-dark cwa:text-light;
+  }
+  .cwa\:dark-blur {
+    @apply cwa:bg-dark/85 cwa:backdrop-blur-sm cwa:text-light
+  }
+  .cwa\:section {
+    @apply cwa:p-4;
+  }
+  .cwa\:is-reordering {
+    @apply cwa:relative cwa:z-100;
+  }
+  .cwa\:is-reordering:before {
+    @apply cwa:content-[''] cwa:absolute cwa:z-dialog cwa:top-0 cwa:left-0 cwa:right-0 cwa:bottom-0 cwa:outline-2 cwa:outline-dashed cwa:outline-magenta cwa:outline-offset-[7px] cwa:rounded-sm;
+  }
+  .cwa\:is-reordering:after {
+    @apply cwa:content-[attr(data-sort-value)] cwa:absolute cwa:z-dialog cwa:-top-4 cwa:-right-4 cwa:text-sm cwa:bg-magenta cwa:p-1 cwa:text-white cwa:rounded-full cwa:min-w-[25px] cwa:text-center
+  }
+}

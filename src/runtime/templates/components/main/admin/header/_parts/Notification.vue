@@ -1,36 +1,36 @@
 <template>
   <li
-    class="cwa-pointer-events-auto cwa-w-full cwa-max-w-sm cwa-overflow-hidden cwa-rounded-lg cwa-dark-blur cwa-ring-2 cwa-ring-magenta"
+    class="cwa:pointer-events-auto cwa:w-full cwa:max-w-sm cwa:overflow-hidden cwa:rounded-lg cwa:dark-blur cwa:ring-2 cwa:ring-magenta"
     @mouseout="setEmitTimeout"
     @mouseover="clearEmitTimeout"
   >
-    <div class="cwa-p-4">
-      <div class="cwa-flex cwa-items-start cwa-relative">
-        <div class="cwa-ml-3 cwa-w-0 cwa-flex-1 cwa-pt-0.5">
+    <div class="cwa:p-4">
+      <div class="cwa:flex cwa:items-start cwa:relative">
+        <div class="cwa:ml-3 cwa:w-0 cwa:flex-1 cwa:pt-0.5">
           <slot />
         </div>
-        <div class="cwa-ml-4 cwa-flex cwa-flex-shrink-0">
+        <div class="cwa:ml-4 cwa:flex cwa:shrink-0">
           <button
             type="button"
-            class="cwa-inline-flex cwa-rounded-md cwa-text-stone-400 hover:cwa-text-white cwa-transition"
+            class="cwa:inline-flex cwa:rounded-md cwa:text-stone-400 cwa:hover:text-white cwa:transition cwa:cursor-pointer"
             @click="$emit('clear')"
           >
-            <span class="cwa-sr-only">Close</span>
+            <span class="cwa:sr-only">Close</span>
             <CwaUiIconXMarkIcon
-              class="cwa-h-5 cwa-w-5"
+              class="cwa:h-5 cwa:w-5"
               aria-hidden="true"
             />
           </button>
         </div>
         <svg
-          class="cwa-absolute -cwa-top-0.5 -cwa-right-0.5 countdown-icon cwa-w-6 cwa-h-6 cwa-pointer-events-none"
+          class="cwa:absolute cwa:-top-0.5 cwa:-right-0.5 countdown-icon cwa:w-6 cwa:h-6 cwa:pointer-events-none"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 100 100"
           xml:space="preserve"
           :class="{ 'is-progressing': emitTimeout !== undefined }"
         >
           <circle
-            class="circle cwa-stroke-stone-400"
+            class="circle cwa:stroke-stone-400"
             cx="50"
             cy="50"
             r="44"

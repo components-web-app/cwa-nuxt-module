@@ -1,6 +1,6 @@
 import { describe, test, vi, beforeEach, expect, beforeAll } from 'vitest'
 import { setActivePinia } from 'pinia'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import { createTestingPinia } from '@pinia/testing'
 import { flushPromises } from '@vue/test-utils'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'

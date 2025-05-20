@@ -51,23 +51,23 @@ const emit = defineEmits<{ (e: 'click', value?: ModelValue): void }>()
 
 const buttonColorClassNames = computed(() => {
   if (props.color === 'blue') {
-    return 'cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-border-transparent'
+    return 'cwa:text-white cwa:bg-blue-600/90 cwa:hover:bg-blue-600 cwa:border-transparent'
   }
   if (props.color === 'dark') {
-    return 'cwa-text-light cwa-bg-dark/90 hover:cwa-bg-dark cwa-border-stone-400 hover:cwa-border-white hover:cwa-text-white'
+    return 'cwa:text-light cwa:bg-dark/90 cwa:hover:bg-dark cwa:border-stone-400 cwa:hover:border-white cwa:hover:text-white'
   }
   if (props.color === 'error') {
-    return 'cwa-text-light cwa-bg-magenta/80 hover:cwa-bg-magenta cwa-border-magenta hover:cwa-border-magenta hover:cwa-text-white'
+    return 'cwa:text-light cwa:bg-magenta/80 cwa:hover:bg-magenta cwa:border-magenta cwa:hover:border-magenta cwa:hover:text-white'
   }
-  return 'cwa-text-white cwa-bg-stone-700/90 hover:cwa-bg-stone-700 cwa-border-transparent'
+  return 'cwa:text-white cwa:bg-stone-700/90 cwa:hover:bg-stone-700 cwa:border-transparent'
 })
 
 const buttonBaseClass = computed(() => {
-  return `${buttonColorClassNames.value} cwa-py-1.5 cwa-px-3 md:cwa-px-4 cwa-border cwa-transition disabled:cwa-pointer-events-none disabled:cwa-opacity-70 disabled:cwa-saturate-[.4]`
+  return `${buttonColorClassNames.value} cwa:cursor-pointer cwa:py-1.5 cwa:px-3 cwa:md:px-4 cwa:border cwa:transition cwa:disabled:pointer-events-none cwa:disabled:opacity-70 cwa:disabled:saturate-[.4]`
 })
 
 const buttonClassNames = computed(() => {
-  const baseClass = `cwa-flex-grow ${buttonBaseClass.value} ${props.buttonClass}`
+  const baseClass = `cwa:grow ${buttonBaseClass.value} ${props.buttonClass}`
   return `${baseClass} ${buttonColorClassNames.value}`
 })
 
@@ -110,10 +110,10 @@ const showButton = computed<boolean>((): boolean => {
 })
 
 // dot classes
-const dotClassName = ['cwa-w-[0.3rem]', 'cwa-h-[0.3rem]', 'cwa-rounded-full', 'cwa-bg-white', 'cwa-absolute', 'cwa-left-1/2', '-cwa-translate-x-1/2']
-const middleDotClassName = [...dotClassName, 'cwa-top-1/2 -cwa-translate-y-1/2']
-const topDotClassName = [...dotClassName, 'cwa-top-2']
-const bottomDotClassName = [...dotClassName, 'cwa-bottom-2']
+const dotClassName = ['cwa:w-[0.3rem]', 'cwa:h-[0.3rem]', 'cwa:rounded-full', 'cwa:bg-white', 'cwa:absolute', 'cwa:left-1/2', 'cwa:-translate-x-1/2']
+const middleDotClassName = [...dotClassName, 'cwa:top-1/2 cwa:-translate-y-1/2']
+const topDotClassName = [...dotClassName, 'cwa:top-2']
+const bottomDotClassName = [...dotClassName, 'cwa:bottom-2']
 
 const enforcedOps: PopperOptions = {
   placement: 'top-start',
@@ -126,19 +126,19 @@ const [trigger, container] = usePopper(popperOps.value)
 <template>
   <Popover
     v-slot="{ open }"
-    class="cwa-flex cwa-space-x-1.5 relative"
+    class="cwa:flex cwa:gap-x-1.5 relative"
   >
     <component
       :is="to ? NuxtLink : 'button'"
       v-if="showButton"
       :to="to"
-      :class="[buttonClassNames, open ? 'cwa-opacity-50' : '']"
+      :class="[buttonClassNames, open ? 'cwa:opacity-50' : '']"
       :disabled="loading || disabled || open"
       @click.prevent.stop="emit('click')"
     >
       <div
         v-if="loading"
-        class="cwa-flex cwa-w-full cwa-justify-center"
+        class="cwa:flex cwa:w-full cwa:justify-center"
       >
         <Spinner :show="true" />
       </div>
@@ -151,7 +151,7 @@ const [trigger, container] = usePopper(popperOps.value)
       <PopoverButton
         ref="trigger"
         :class="buttonBaseClass"
-        class="cwa-relative"
+        class="cwa:relative"
         :disabled="disabled || loading"
       >
         &nbsp;
@@ -162,7 +162,7 @@ const [trigger, container] = usePopper(popperOps.value)
       <PopoverPanel
         v-slot="{ close }"
         ref="container"
-        class="cwa-absolute !cwa-min-w-[220px] cwa-max-w-[300px] cwa-bg-stone-700 cwa-py-1"
+        class="cwa:absolute !cwa:min-w-[220px] cwa:max-w-[300px] cwa:bg-stone-700 cwa:py-1"
       >
         <template v-for="(option, index) of options">
           <ButtonPopoverGroup

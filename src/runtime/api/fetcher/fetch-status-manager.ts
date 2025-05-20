@@ -1,6 +1,6 @@
 import { computed, watch, watchEffect } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import { storeToRefs } from 'pinia'
 import type Mercure from '../mercure'
 import type ApiDocumentation from '../api-documentation'

@@ -14,14 +14,14 @@
           label="Page Type"
           input-id="page-type"
         >
-          <div class="cwa-flex cwa-space-x-2">
+          <div class="cwa:flex cwa:gap-x-2">
             <div>
               <ListFilterButton
                 v-model="selectedTypesModel"
                 value="false"
                 label="Static"
-                background-color-class="cwa-bg-blue-600/20"
-                border-color-class="cwa-border-blue-600"
+                background-color-class="cwa:bg-blue-600/20"
+                border-color-class="cwa:border-blue-600"
               />
             </div>
             <div>
@@ -29,8 +29,8 @@
                 v-model="selectedTypesModel"
                 value="true"
                 label="Dynamic"
-                background-color-class="cwa-bg-yellow/20"
-                border-color-class="cwa-border-yellow"
+                background-color-class="cwa:bg-yellow/20"
+                border-color-class="cwa:border-yellow"
               />
             </div>
           </div>
@@ -43,21 +43,21 @@
     fetch-url="/_/pages"
   >
     <template #item="{ data }">
-      <div class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center">
-        <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
-          <div class="cwa-flex cwa-items-center cwa-space-x-3">
-            <span class="cwa-text-xl">{{ data.reference }}</span><span :class="['cwa-outline', 'cwa-outline-1', 'cwa-outline-offset-2', 'cwa-w-2', 'cwa-h-2', 'cwa-rounded-full', data.isTemplate ? 'cwa-outline-yellow cwa-bg-yellow' : 'cwa-outline-blue-600 cwa-bg-blue-600']" />
+      <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
+        <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
+          <div class="cwa:flex cwa:items-center cwa:gap-x-3">
+            <span class="cwa:text-xl">{{ data.reference }}</span><span :class="['cwa:outline', 'cwa:outline-1', 'cwa:outline-offset-2', 'cwa:w-2', 'cwa:h-2', 'cwa:rounded-full', data.isTemplate ? 'cwa:outline-yellow cwa:bg-yellow' : 'cwa:outline-blue-600 cwa:bg-blue-600']" />
           </div>
-          <span class="cwa-text-stone-400">UI: {{ data.uiComponent ? getDisplayPageUi(data.uiComponent) : 'Unknown' }}</span>
+          <span class="cwa:text-stone-400">UI: {{ data.uiComponent ? getDisplayPageUi(data.uiComponent) : 'Unknown' }}</span>
         </div>
-        <div class="cwa-flex cwa-space-x-2">
+        <div class="cwa:flex cwa:gap-x-2">
           <CwaUiFormButton :to="computedItemLink(data['@id'])">
-            <CwaUiIconCogIcon class="cwa-w-6" />
-            <span class="cwa-sr-only">Settings</span>
+            <CwaUiIconCogIcon class="cwa:w-6" />
+            <span class="cwa:sr-only">Settings</span>
           </CwaUiFormButton>
           <CwaUiFormButton @click="() => goToPage(data['@id'])">
-            <CwaUiIconEyeIcon class="cwa-h-5" />
-            <span class="cwa-sr-only">View</span>
+            <CwaUiIconEyeIcon class="cwa:h-5" />
+            <span class="cwa:sr-only">View</span>
           </CwaUiFormButton>
         </div>
       </div>

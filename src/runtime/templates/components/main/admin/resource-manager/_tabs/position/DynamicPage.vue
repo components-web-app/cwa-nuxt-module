@@ -43,7 +43,7 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    <div class="cwa-flex cwa-space-x-4 cwa-items-center">
+    <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
       <CwaUiFormSelect
         v-model="select.model.value"
         :options="select.options.value"

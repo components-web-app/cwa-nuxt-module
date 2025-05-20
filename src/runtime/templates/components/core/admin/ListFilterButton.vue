@@ -4,12 +4,12 @@
       :id="inputId"
       ref="checkbox"
       v-model="model"
-      class="cwa-sr-only cwa-peer/checkbox"
+      class="cwa:sr-only cwa:peer/checkbox"
       type="checkbox"
       :value="value"
     >
     <button
-      :class="['cwa-transition-opacity', 'cwa-border-2', 'cwa-rounded', 'cwa-py-1', 'cwa-px-4', 'cwa-opacity-50', 'peer-checked/checkbox:cwa-opacity-100', backgroundColorClass, borderColorClass]"
+      :class="['cwa:cursor-pointer', 'cwa:transition-opacity', 'cwa:border-2', 'cwa:rounded', 'cwa:py-1', 'cwa:px-4', 'cwa:opacity-50', 'cwa:peer-checked/checkbox:opacity-100', backgroundColorClass, borderColorClass]"
       @click="toggleCheckbox"
     >
       {{ label }}
@@ -18,8 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, defineEmits } from 'vue'
-import { useId } from '#app'
+import { ref, computed, useId } from 'vue'
 
 const props = defineProps<{
   modelValue: string[] | null

@@ -5,47 +5,47 @@
   >
     <Dialog
       as="div"
-      class="cwa-relative cwa-z-dialog"
+      class="cwa:relative cwa:z-dialog"
       @close="setIsOpen"
     >
       <TransitionChild
         as="template"
-        enter="cwa-ease-out cwa-duration-300"
-        enter-from="cwa-opacity-0"
-        enter-to="cwa-opacity-100"
-        leave="cwa-ease-in cwa-duration-200"
-        leave-from="cwa-opacity-100"
-        leave-to="cwa-opacity-0"
+        enter="cwa:ease-out cwa:duration-300"
+        enter-from="cwa:opacity-0"
+        enter-to="cwa:opacity-100"
+        leave="cwa:ease-in cwa:duration-200"
+        leave-from="cwa:opacity-100"
+        leave-to="cwa:opacity-0"
       >
-        <div class="cwa-fixed cwa-inset-0 cwa-dark-blur cwa-transition-opacity" />
+        <div class="cwa:fixed cwa:inset-0 cwa:dark-blur cwa:transition-opacity" />
       </TransitionChild>
 
-      <div class="cwa-fixed cwa-inset-0 cwa-z-10 cwa-w-screen cwa-overflow-y-auto">
-        <div class="cwa-flex cwa-min-h-full cwa-items-end cwa-justify-center cwa-p-4 cwa-text-center sm:cwa-items-center">
+      <div class="cwa:fixed cwa:inset-0 cwa:z-10 cwa:w-screen cwa:overflow-y-auto">
+        <div class="cwa:flex cwa:min-h-full cwa:items-end cwa:justify-center cwa:p-4 cwa:text-center cwa:sm:items-center">
           <TransitionChild
             as="template"
-            enter="cwa-ease-out cwa-duration-300"
-            enter-from="cwa-opacity-0 cwa-translate-y-4 sm:cwa-translate-y-0 sm:cwa-scale-95"
-            enter-to="cwa-opacity-100 cwa-translate-y-0 sm:cwa-scale-100"
-            leave="cwa-duration-0"
-            leave-from="cwa-opacity-100"
-            leave-to="cwa-opacity-0"
+            enter="cwa:ease-out cwa:duration-300"
+            enter-from="cwa:opacity-0 cwa:translate-y-4 cwa:sm:translate-y-0 cwa:sm:scale-95"
+            enter-to="cwa:opacity-100 cwa:translate-y-0 cwa:sm:scale-100"
+            leave="cwa:duration-0"
+            leave-from="cwa:opacity-100"
+            leave-to="cwa:opacity-0"
           >
             <DialogPanel :class="panelClassName">
-              <div class="sm:cwa-flex sm:cwa-items-start">
+              <div class="cwa:sm:flex cwa:sm:items-start">
                 <div class="w-full">
                   <DialogTitle
                     as="h3"
-                    class="cwa-text-xl sm:cwa-text-4xl cwa-font-normal cwa-border-b cwa-border-stone-600 cwa-px-6 cwa-pb-4  cwa-dark-blur cwa-pt-5"
+                    class="cwa:text-xl cwa:sm:text-4xl cwa:font-normal cwa:border-b cwa:border-stone-600 cwa:px-6 cwa:pb-4  cwa:dark-blur cwa:pt-5"
                   >
                     {{ title }}
                   </DialogTitle>
-                  <div class="cwa-px-6 cwa-py-6 cwa-bg-dark">
+                  <div class="cwa:px-6 cwa:py-6 cwa:bg-dark">
                     <slot />
                   </div>
                 </div>
               </div>
-              <div class="cwa-px-6 cwa-py-5 sm:cwa-flex sm:cwa-flex-row-reverse cwa-space-y-2 sm:cwa-space-y-0 sm:cwa-space-x-6 sm:cwa-space-x-reverse cwa-dark-blur cwa-border-t cwa-border-stone-600">
+              <div class="cwa:px-6 cwa:py-5 cwa:sm:flex cwa:sm:flex-row-reverse cwa:gap-y-2 cwa:sm:gap-y-0 cwa:sm:gap-x-6 cwa:sm:gap-x-reverse cwa:dark-blur cwa:border-t cwa:border-stone-600">
                 <slot name="buttons">
                   <CwaUiFormButton
                     v-for="button of buttons"
@@ -91,7 +91,7 @@ withDefaults(defineProps<{
   buttons: () => ([
     {
       color: 'blue',
-      buttonClass: 'cwa-min-w-[120px]',
+      buttonClass: 'cwa:min-w-[120px]',
       label: 'Done',
     },
     {
@@ -107,6 +107,6 @@ function setIsOpen(value?: boolean) {
 }
 
 const panelClassName = computed(() => {
-  return 'cwa-relative cwa-transform cwa-overflow-hidden cwa-rounded-xl cwa-text-white cwa-text-left cwa-shadow-xl cwa-transition-all sm:cwa-my-8 sm:cwa-w-full sm:cwa-max-w-3xl'
+  return 'cwa:relative cwa:transform cwa:overflow-hidden cwa:rounded-xl cwa:text-white cwa:text-left cwa:shadow-xl cwa:transition-all cwa:sm:my-8 cwa:sm:w-full cwa:sm:max-w-3xl'
 })
 </script>

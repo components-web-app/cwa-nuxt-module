@@ -173,30 +173,30 @@ onMounted(() => {
 </script>
 
 <template>
-  <Popover class="cwa-flex cwa-items-center cwa-space-x-2">
+  <Popover class="cwa:flex cwa:items-center cwa:gap-x-2">
     <div
       ref="trigger"
-      class="cwa-relative"
+      class="cwa:relative"
     >
       <CwaUiFormInput
         v-model="searchValue"
-        class="cwa-pr-8"
+        class="cwa:pr-8"
         :disabled="fetchingCurrentResource !== 0"
         @focus="focussed = true"
         @blur="unfocus"
       />
       <div
         v-if="fetchingCurrentResource !== 0"
-        class="cwa-absolute cwa-top-1/2 -cwa-translate-y-1/2 cwa-left-2"
+        class="cwa:absolute cwa:top-1/2 cwa:-translate-y-1/2 cwa:left-2"
       >
         <Spinner :show="true" />
       </div>
       <button
         v-if="!notNullable && !!resourcePropertyValue"
-        class="cwa-absolute cwa-right-1 cwa-top-1/2 -cwa-translate-y-1/2 cwa-opacity-50 hover:cwa-opacity-100 cwa-transition"
+        class="cwa:absolute cwa:right-1 cwa:top-1/2 cwa:-translate-y-1/2 cwa:opacity-50 cwa:hover:opacity-100 cwa:transition cwa:cursor-pointer"
         @click="clearResource"
       >
-        <CwaUiIconXMarkIcon class="cwa-w-6" />
+        <CwaUiIconXMarkIcon class="cwa:w-6" />
       </button>
     </div>
     <div v-if="open">
@@ -204,7 +204,7 @@ onMounted(() => {
         v-slot="{ close }"
         ref="container"
         static
-        class="cwa-absolute cwa-max-h-60 cwa-min-w-full cwa-max-w-[300px] cwa-overflow-auto cwa-dark-blur cwa-border-0 cwa-outline-dotted cwa-outline-1 cwa-outline-stone-400"
+        class="cwa:absolute cwa:max-h-60 cwa:min-w-full cwa:max-w-[300px] cwa:overflow-auto cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-400"
       >
         <div v-if="showLoadingIndicator">
           Loading...

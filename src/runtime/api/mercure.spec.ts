@@ -2,7 +2,7 @@
 import { beforeEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import { reactive } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'

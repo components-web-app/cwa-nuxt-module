@@ -4,7 +4,7 @@
     v-model="localResourceData.title"
     title-placeholder="No Title"
     :is-loading="isLoading"
-    :border-color-class="resource?.route ? 'cwa-border-b-green': 'cwa-border-b-orange'"
+    :border-color-class="resource?.route ? 'cwa:border-b-green': 'cwa:border-b-orange'"
     @close="$emit('close')"
     @save="saveTitle"
   >
@@ -14,13 +14,13 @@
     >
       <div>
         <NuxtLink :to="localResourceData['@id']">
-          <CwaUiIconEyeIcon class="cwa-w-9" />
+          <CwaUiIconEyeIcon class="cwa:w-9" />
         </NuxtLink>
       </div>
     </template>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <ModalInput
               v-model="localResourceData.metaDescription"
@@ -34,7 +34,7 @@
               :options="pageOptions"
             />
           </div>
-          <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
+          <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton
                 color="dark"
@@ -64,7 +64,7 @@
         />
       </template>
       <template #info>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <ModalInfo
               label="Created"
@@ -83,7 +83,7 @@
               :content="localResourceData['@id']"
             />
           </div>
-          <div class="cwa-flex cwa-justify-start cwa-pt-6">
+          <div class="cwa:flex cwa:justify-start cwa:pt-6">
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"

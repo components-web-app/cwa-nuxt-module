@@ -25,7 +25,7 @@ const buttons = computed<ActionButton[]>(() => {
     {
       label: 'Ok',
       color: 'blue',
-      buttonClass: 'cwa-min-w-[120px]',
+      buttonClass: 'cwa:min-w-[120px]',
       callbackFn: () => (completeDialog('confirm')),
     },
     {

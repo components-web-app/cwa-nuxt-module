@@ -4,7 +4,7 @@
     <CwaUiProgressBar
       :show="showPageLoadBar"
       :percent="percent"
-      class="page-progress-bar fixed left-0 top-0 z-[200]"
+      class="page-progress-bar fixed left-0 top-0 z-200"
     />
     <div class="bg-inherit">
       <slot />

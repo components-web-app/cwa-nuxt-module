@@ -19,8 +19,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <button class="cwa-hot-spot cwa-relative cwa-rounded-full cwa-bg-magenta cwa-w-10 cwa-h-10 cwa-m-4 cwa-outline-magenta">
-    <span class="cwa-sr-only">{{ screenReaderAction }}</span>
+  <button class="cwa-hot-spot cwa:relative cwa:rounded-full cwa:bg-magenta cwa:w-10 cwa:h-10 cwa:m-4 cwa:outline-magenta cwa:cursor-pointer">
+    <span class="cwa:sr-only">{{ screenReaderAction }}</span>
   </button>
 </template>
 

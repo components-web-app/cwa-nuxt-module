@@ -9,7 +9,7 @@
   >
     <ResourceModalTabs :tabs="tabs">
       <template #details>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <CwaUiFormToggle
               v-model="localResourceData.enabled"
@@ -50,7 +50,7 @@
               />
             </div>
           </template>
-          <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
+          <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton
                 color="dark"
@@ -73,7 +73,7 @@
         </div>
       </template>
       <template #password>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <ModalInput
               v-model="localResourceData.plainPassword"
@@ -92,7 +92,7 @@
               autocomplete="new-password"
             />
           </div>
-          <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
+          <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div v-if="!isAdding">
               <CwaUiFormButton
                 color="dark"
@@ -115,7 +115,7 @@
         </div>
       </template>
       <template #info>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <ModalInfo
               label="Created"
@@ -134,7 +134,7 @@
               :content="localResourceData['@id']"
             />
           </div>
-          <div class="cwa-flex cwa-justify-start cwa-pt-6">
+          <div class="cwa:flex cwa:justify-start cwa:pt-6">
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"

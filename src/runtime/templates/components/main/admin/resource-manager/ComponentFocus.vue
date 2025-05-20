@@ -77,13 +77,13 @@ const borderColor = computed(() => {
     return
   }
   if (resource.value.data?._metadata.adding) {
-    return 'cwa-outline-orange'
+    return 'cwa:outline-orange'
   }
   const publishedState = getPublishedResourceState(resource.value)
   if (publishedState !== undefined) {
-    return publishedState ? 'cwa-outline-green' : 'cwa-outline-orange'
+    return publishedState ? 'cwa:outline-green' : 'cwa:outline-orange'
   }
-  return iri.value?.startsWith('/_/') ? 'cwa-outline-magenta' : 'cwa-outline-green'
+  return iri.value?.startsWith('/_/') ? 'cwa:outline-magenta' : 'cwa:outline-green'
 })
 
 function updateWindowSize() {
@@ -172,12 +172,12 @@ defineExpose({
   <client-only>
     <canvas
       ref="canvas"
-      class="cwa-z-100 cwa-pointer-events-none cwa-absolute cwa-top-0 cwa-left-0"
+      class="cwa:z-100 cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
     />
     <div
       :class="[borderColor]"
       :style="cssStyle"
-      class="cwa-animate-pulse cwa-absolute cwa-outline-4 cwa-outline-offset-4 cwa-pointer-events-none cwa-outline cwa-rounded"
+      class="cwa:animate-pulse cwa:absolute cwa:outline-4 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded"
     />
   </client-only>
 </template>

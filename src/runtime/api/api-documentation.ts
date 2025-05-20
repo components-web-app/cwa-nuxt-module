@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import type { CwaApiDocumentationStoreInterface, ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
 import type {
   CwaApiDocumentationDataInterface,

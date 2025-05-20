@@ -4,19 +4,19 @@ exports[`ProgressBar > snapshots > should match snapshot IF progress bar has per
 <transition-stub
   appear="false"
   css="true"
-  enteractiveclass="cwa-duration-200 cwa-ease-out"
-  enterfromclass="cwa-transform cwa-opacity-0 cwa-w-0"
-  entertoclass="cwa-opacity-100"
-  leaveactiveclass="cwa-duration-300 cwa-ease-in cwa-delay-200"
-  leavefromclass="cwa-opacity-100"
-  leavetoclass="cwa-transform cwa-opacity-0"
+  enteractiveclass="cwa:duration-200 cwa:ease-out"
+  enterfromclass="cwa:transform cwa:opacity-0 cwa:w-0"
+  entertoclass="cwa:opacity-100"
+  leaveactiveclass="cwa:duration-300 cwa:ease-in cwa:delay-200"
+  leavefromclass="cwa:opacity-100"
+  leavetoclass="cwa:transform cwa:opacity-0"
   persisted="true"
 >
   <div
-    class="cwa-w-full cwa-h-0.5"
+    class="cwa:w-full cwa:h-0.5"
   >
     <div
-      class="cwa-bg-green cwa-h-0.5 cwa-transition-all cwa-duration-300"
+      class="cwa:bg-green cwa:h-0.5 cwa:transition-all cwa:duration-300"
       style="width: 75%;"
     />
   </div>
@@ -27,20 +27,20 @@ exports[`ProgressBar > snapshots > should match snapshot IF progress bar is NOT 
 <transition-stub
   appear="false"
   css="true"
-  enteractiveclass="cwa-duration-200 cwa-ease-out"
-  enterfromclass="cwa-transform cwa-opacity-0 cwa-w-0"
-  entertoclass="cwa-opacity-100"
-  leaveactiveclass="cwa-duration-300 cwa-ease-in cwa-delay-200"
-  leavefromclass="cwa-opacity-100"
-  leavetoclass="cwa-transform cwa-opacity-0"
+  enteractiveclass="cwa:duration-200 cwa:ease-out"
+  enterfromclass="cwa:transform cwa:opacity-0 cwa:w-0"
+  entertoclass="cwa:opacity-100"
+  leaveactiveclass="cwa:duration-300 cwa:ease-in cwa:delay-200"
+  leavefromclass="cwa:opacity-100"
+  leavetoclass="cwa:transform cwa:opacity-0"
   persisted="true"
 >
   <div
-    class="cwa-w-full cwa-h-0.5"
+    class="cwa:w-full cwa:h-0.5"
     style="display: none;"
   >
     <div
-      class="cwa-bg-green cwa-h-0.5 cwa-transition-all cwa-duration-300"
+      class="cwa:bg-green cwa:h-0.5 cwa:transition-all cwa:duration-300"
       style="width: 0%;"
     />
   </div>
@@ -51,19 +51,19 @@ exports[`ProgressBar > snapshots > should match snapshot IF progress bar is show
 <transition-stub
   appear="false"
   css="true"
-  enteractiveclass="cwa-duration-200 cwa-ease-out"
-  enterfromclass="cwa-transform cwa-opacity-0 cwa-w-0"
-  entertoclass="cwa-opacity-100"
-  leaveactiveclass="cwa-duration-300 cwa-ease-in cwa-delay-200"
-  leavefromclass="cwa-opacity-100"
-  leavetoclass="cwa-transform cwa-opacity-0"
+  enteractiveclass="cwa:duration-200 cwa:ease-out"
+  enterfromclass="cwa:transform cwa:opacity-0 cwa:w-0"
+  entertoclass="cwa:opacity-100"
+  leaveactiveclass="cwa:duration-300 cwa:ease-in cwa:delay-200"
+  leavefromclass="cwa:opacity-100"
+  leavetoclass="cwa:transform cwa:opacity-0"
   persisted="true"
 >
   <div
-    class="cwa-w-full cwa-h-0.5"
+    class="cwa:w-full cwa:h-0.5"
   >
     <div
-      class="cwa-bg-green cwa-h-0.5 cwa-transition-all cwa-duration-300"
+      class="cwa:bg-green cwa:h-0.5 cwa:transition-all cwa:duration-300"
       style="width: 0%;"
     />
   </div>

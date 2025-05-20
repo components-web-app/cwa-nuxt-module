@@ -76,9 +76,6 @@ describe('CWA module', () => {
             name: 'Group',
           },
         },
-        tailwind: {
-          base: true,
-        },
       })
     })
   })
@@ -103,14 +100,6 @@ describe('CWA module', () => {
 
       expect(mockResolver).toHaveBeenCalledWith('./runtime')
       expect(mockNuxt.options.build.transpile).toEqual([mockResolver('./runtime')])
-    })
-
-    test('should add css directory', async () => {
-      const mockNuxt = await prepareMockNuxt()
-      const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
-
-      expect(mockResolver).toHaveBeenCalledWith('./runtime/templates/assets/main.css')
-      expect(mockNuxt.options.css).toEqual([mockResolver('./runtime/templates/assets/base.css'), mockResolver('./runtime/templates/assets/main.css')])
     })
 
     test('should add template', async () => {

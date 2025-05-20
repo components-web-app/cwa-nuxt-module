@@ -107,7 +107,7 @@ function selectComponent() {
 
 <template>
   <div>
-    <div class="cwa-flex cwa-space-x-4 cwa-items-center">
+    <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
       <div v-if="!!resource?.data?._metadata.isDynamicPosition">
         <CwaUiFormButton
           v-if="hasDynamicComponent"
@@ -123,8 +123,8 @@ function selectComponent() {
           Add {{ dynamicComponentName }}
         </CwaUiFormButton>
       </div>
-      <div class="cwa-text-sm">
-        <span class="cwa-text-stone-400">Edit this position or fallback component?</span>
+      <div class="cwa:text-sm">
+        <span class="cwa:text-stone-400">Edit this position or fallback component?</span>
         <a
           href="#"
           @click.prevent="goToTemplate"

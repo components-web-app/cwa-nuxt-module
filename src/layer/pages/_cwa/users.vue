@@ -14,17 +14,17 @@
     >
       <template #item="{ data }">
         <div
-          class="cwa-flex cwa-border-b cwa-border-b-stone-700 cwa-py-6 cwa-space-x-4 cwa-items-center"
-          :class="{ 'cwa-opacity-50': !data.enabled }"
+          class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center"
+          :class="{ 'cwa:opacity-50': !data.enabled }"
         >
-          <div class="cwa-grow cwa-flex cwa-flex-col cwa-space-y-1">
-            <span class="cwa-text-xl">{{ data.username }} <span class="cwa-text-stone-400 cwa-text-sm">{{ getUserRole(data.roles) }}</span></span>
+          <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
+            <span class="cwa:text-xl">{{ data.username }} <span class="cwa:text-stone-400 cwa:text-sm">{{ getUserRole(data.roles) }}</span></span>
             <span>{{ data.emailAddress }}</span>
           </div>
           <div>
             <CwaUiFormButton :to="computedItemLink(data['@id'])">
-              <CwaUiIconCogIcon class="cwa-w-6" />
-              <span class="cwa-sr-only">Settings</span>
+              <CwaUiIconCogIcon class="cwa:w-6" />
+              <span class="cwa:sr-only">Settings</span>
             </CwaUiFormButton>
           </div>
         </div>

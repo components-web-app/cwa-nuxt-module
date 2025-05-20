@@ -48,14 +48,14 @@ const isAddingNew = computed(() => {
 </script>
 
 <template>
-  <div class="cwa-flex cwa-space-x-4 cwa-items-center">
-    <div class="cwa-text-sm">
+  <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
+    <div class="cwa:text-sm">
       {{ isAddingNew ? '[New Resource]' : iri }}
     </div>
     <div v-if="isDeleteEnabled">
       <CwaUiFormButton
         color="grey"
-        button-class="cwa-min-w-[100px]"
+        button-class="cwa:min-w-[100px]"
         :disabled="disableButton"
         @click="handleDelete"
       >

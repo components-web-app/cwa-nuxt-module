@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-flex cwa-justify-center cwa-border cwa-border-dashed cwa-border-gray-300 cwa-p-5 cwa-text-medium">
+  <div class="cwa:flex cwa:justify-center cwa:border cwa:border-dashed cwa:border-gray-300 cwa:p-5 cwa:text-medium">
     <ComponentIcon />
   </div>
 </template>

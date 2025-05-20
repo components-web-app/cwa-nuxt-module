@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="[&:not(:last-child)]:cwa-border-b cwa-border-solid cwa-border-stone-400">
+  <div class="cwa:not-last:border-b cwa:border-solid cwa:border-stone-400">
     <ButtonPopoverItem
       v-for="(option, index) of options"
       :key="`option-${index}-${option.label}`"

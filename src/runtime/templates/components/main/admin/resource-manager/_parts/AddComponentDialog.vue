@@ -10,8 +10,8 @@
       :show="true"
     />
     <template v-else-if="displayData">
-      <div class="cwa-flex cwa-space-x-4">
-        <div class="cwa-flex cwa-flex-col cwa-w-4/12 cwa-space-y-3 cwa-min-h-64">
+      <div class="cwa:flex cwa:gap-x-4">
+        <div class="cwa:flex cwa:flex-col cwa:w-4/12 cwa:gap-y-3 cwa:min-h-64">
           <button
             v-for="(component, name) of displayData.displayAvailableComponents"
             :key="`add-${name}`"
@@ -24,7 +24,7 @@
           <div v-if="displayData.enableDynamicPosition">
             <button
               :class="buttonClass"
-              class="cwa-border-yellow cwa-border-2"
+              class="cwa:border-yellow cwa:border-2 cwa:cursor-pointer"
               :aria-selected="selectedComponent === 'ComponentPosition'"
               @click="selectComponent('ComponentPosition')"
             >
@@ -32,9 +32,9 @@
             </button>
           </div>
         </div>
-        <div class="cwa-flex-grow cwa-w-8/12">
+        <div class="cwa:grow cwa:w-8/12">
           <div
-            class="cwa-mb-6 cwa-space-y-4"
+            class="cwa:mb-6 cwa:gap-y-4"
             v-html="resourceDescription"
           />
           <template v-if="selectedComponent === 'ComponentPosition'">
@@ -78,7 +78,7 @@ interface DisplayDataI {
   displayAvailableComponents: ComponentMetadataCollection
   enableDynamicPosition: boolean
 }
-const buttonClass = 'w-full cwa-rounded-lg cwa-py-3 cwa-px-4 cwa-text-white/70 cwa-bg-stone-800 hover:cwa-bg-stone-700 aria-selected:cwa-bg-stone-700 hover:cwa-text-white aria-selected:cwa-text-white cwa-transition cwa-border cwa-border-solid cwa-border-stone-700 cwa-border-opacity-50 hover:cwa-border-opacity-100 aria-selected:cwa-border-opacity-100'
+const buttonClass = 'w-full cwa:rounded-lg cwa:py-3 cwa:px-4 cwa:text-white/70 cwa:bg-stone-800 cwa:hover:bg-stone-700 cwa:aria-selected:bg-stone-700 cwa:hover:text-white cwa:aria-selected:text-white cwa:transition cwa:border cwa:border-solid cwa:border-stone-700 cwa:hover:border-opacity-100 cwa:cursor-pointer'
 
 const $cwa = useCwa()
 const { getOptions } = useDynamicPositionSelectOptions($cwa)
@@ -121,7 +121,7 @@ const buttons = computed<ActionButton[]>(() => {
     {
       label: instantAdd.value ? 'Add Now' : 'Insert',
       color: 'blue',
-      buttonClass: 'cwa-min-w-[120px]',
+      buttonClass: 'cwa:min-w-[120px]',
       callbackFn: handleAdd,
       disabled: !selectedComponent.value,
     },

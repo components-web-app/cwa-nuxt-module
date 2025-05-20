@@ -1,16 +1,17 @@
 <template>
-  <article class="prose prose-stone max-w-none">
+  <article>
     <TipTapHtmlEditor
       v-if="$cwa.admin.isEditing"
       ref="editorComponent"
       v-model="resourceModel.model.value"
       :disabled="disableEditor"
       data-placeholder="[Empty HTML Content Area]"
-      :class="{ 'is-empty opacity-50 text-inherit': disableEditor && !htmlContent }"
+      :class="[proseClasses, { 'is-empty opacity-50 text-inherit': disableEditor && !htmlContent }]"
     />
     <div
       v-else
       ref="htmlContainer"
+      :class="proseClasses"
       v-html="htmlContent"
     />
   </article>
@@ -46,6 +47,8 @@ useHtmlContent(htmlContainer)
 
 // This deals with the HTML editor
 const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef)
+
+const proseClasses = 'prose prose-invert prose-primary max-w-none'
 </script>
 
 <style>

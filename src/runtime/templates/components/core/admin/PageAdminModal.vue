@@ -4,7 +4,7 @@
     v-model="localResourceData.reference"
     title-placeholder="No Reference"
     :is-loading="isLoading"
-    :border-color-class="localResourceData.isTemplate ? 'cwa-border-b-yellow' : 'cwa-border-b-blue-600'"
+    :border-color-class="localResourceData.isTemplate ? 'cwa:border-b-yellow' : 'cwa:border-b-blue-600'"
     @close="$emit('close')"
     @save="saveTitle"
   >
@@ -17,13 +17,13 @@
     >
       <div>
         <NuxtLink :to="localResourceData['@id']">
-          <CwaUiIconEyeIcon class="cwa-w-9" />
+          <CwaUiIconEyeIcon class="cwa:w-9" />
         </NuxtLink>
       </div>
     </template>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <ModalInput
               v-model="localResourceData.title"
@@ -43,8 +43,8 @@
               :options="layoutOptions"
             />
           </div>
-          <div class="cwa-flex cwa-space-x-2">
-            <div class="cwa-grow">
+          <div class="cwa:flex cwa:gap-x-2">
+            <div class="cwa:grow">
               <ModalSelect
                 v-model="localResourceData.uiComponent"
                 label="Page UI"
@@ -53,7 +53,7 @@
             </div>
             <div
               v-if="pageStyleOptions.length"
-              class="cwa-w-1/2"
+              class="cwa:w-1/2"
             >
               <ModalSelect
                 v-model="localResourceData.uiClassNames"
@@ -62,7 +62,7 @@
               />
             </div>
           </div>
-          <div class="cwa-flex cwa-justify-end cwa-pt-2 cwa-space-x-2">
+          <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton
                 color="dark"
@@ -92,7 +92,7 @@
         />
       </template>
       <template #info>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-2">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <div>
             <ModalInfo
               label="Created"
@@ -111,7 +111,7 @@
               :content="localResourceData['@id']"
             />
           </div>
-          <div class="cwa-flex cwa-justify-start cwa-pt-6">
+          <div class="cwa:flex cwa:justify-start cwa:pt-6">
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"

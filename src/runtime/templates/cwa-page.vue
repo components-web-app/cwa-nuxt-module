@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa-page cwa-h-full">
+  <div class="cwa:page cwa:h-full">
     <ResourceLoader
       v-if="$cwa.resources.pageIri.value"
       :iri="$cwa.resources.pageIri.value"

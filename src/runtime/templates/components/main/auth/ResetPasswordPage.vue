@@ -6,7 +6,7 @@
     @submit="emitSubmit"
   >
     <div v-if="success">
-      <h1 class="cwa-font-bold cwa-text-xl cwa-mb-2">
+      <h1 class="cwa:font-bold cwa:text-xl cwa:mb-2">
         Password Reset
       </h1>
       <p>You have successfully reset your password.</p>

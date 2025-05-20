@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import type { RouteLocationNormalized } from 'vue-router'
 import type { CwaResource } from './resources/resource-utils'
 import { abortNavigation, callWithNuxt, createError, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'

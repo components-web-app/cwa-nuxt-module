@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="currentScreen === 'view'">
-      <div class="cwa-flex cwa-flex-col cwa-space-y-6">
+      <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
         <ModalInfo
           label="Route"
           :content="isLoadingRoute ? undefined : resource?.path"
@@ -18,18 +18,18 @@
             {{ resource?.path ? 'Edit' : 'Create New Route' }}
           </CwaUiFormButton>
         </ModalInfo>
-        <div class="cwa-dark-blur cwa-p-4 cwa-flex cwa-flex-col cwa-space-y-2.5 cwa-border cwa-rounded-xl cwa-border-stone-600">
-          <div class="cwa-flex cwa-space-x-4 cwa-items-center">
-            <h2 class="cwa-text-stone-400 cwa-text-2xl">
+        <div class="cwa:dark-blur cwa:p-4 cwa:flex cwa:flex-col cwa:gap-y-2.5 cwa:border cwa:rounded-xl cwa:border-stone-600">
+          <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
+            <h2 class="cwa:text-stone-400 cwa:text-2xl">
               Redirects
             </h2>
             <div>
               <button
-                class="cwa-text-white cwa-bg-blue-600/90 hover:cwa-bg-blue-600 cwa-border-transparent cwa-p-2.5"
+                class="cwa:text-white cwa:bg-blue-600/90 cwa:hover:bg-blue-600 cwa:border-transparent cwa:p-2.5 cwa:cursor-pointer"
                 @click="addRedirect"
               >
-                <CwaUiIconPlusIcon class="cwa-w-4 cwa-h-4" />
-                <span class="cwa-sr-only">Add</span>
+                <CwaUiIconPlusIcon class="cwa:w-4 cwa:h-4" />
+                <span class="cwa:sr-only">Add</span>
               </button>
             </div>
           </div>
@@ -45,7 +45,7 @@
             />
             <p
               v-else
-              class="cwa-text-lg cwa-font-bold cwa-text-stone-400 cwa-mb-2 cwa-mt-4"
+              class="cwa:text-lg cwa:font-bold cwa:text-stone-400 cwa:mb-2 cwa:mt-4"
             >
               You do not have any redirects
             </p>
@@ -54,13 +54,16 @@
       </div>
     </div>
     <div v-else-if="currentScreen === 'manage-route' && localResourceData">
-      <div class="cwa-flex cwa-flex-col cwa-space-y-8">
+      <div class="cwa:flex cwa:flex-col cwa:gap-y-8">
         <div>
-          <button @click="goBackToViewing">
+          <button
+            class="cwa:cursor-pointer"
+            @click="goBackToViewing"
+          >
             &lt; Back to Routes
           </button>
         </div>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
           <div>
             <ModalInput
               v-model="localResourceData.path"
@@ -69,11 +72,11 @@
             />
           </div>
           <div>
-            <p class="cwa-text-sm cwa-text-stone-300">
+            <p class="cwa:text-sm cwa:text-stone-300">
               When updating, we will automatically create a new redirect from the old path.
             </p>
           </div>
-          <div class="cwa-flex cwa-justify-between">
+          <div class="cwa:flex cwa:justify-between">
             <div>
               <CwaUiFormButton
                 color="blue"
@@ -95,18 +98,18 @@
           </div>
         </div>
         <template v-if="recommendedRoute !== resource?.path">
-          <div class="cwa-w-full cwa-border-b cwa-border-b-stone-600" />
-          <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+          <div class="cwa:w-full cwa:border-b cwa:border-b-stone-600" />
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <ModalInfo
               label="Recommended route path"
               :content="recommendedRoute"
             />
           </div>
-          <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
+          <div class="cwa:text-sm cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
             <p>This is based on your page title <b>`{{ pageResource.title }}`</b>.</p>
             <p>It is optimal for search engines to increase the relevance of the page to the title provided. Relevance of page content is important too.</p>
           </div>
-          <div class="cwa-flex cwa-justify-start">
+          <div class="cwa:flex cwa:justify-start">
             <CwaUiFormButton
               color="blue"
               :disabled="disableButtons"
@@ -119,13 +122,16 @@
       </div>
     </div>
     <div v-else-if="currentScreen === 'create-redirect'">
-      <div class="cwa-flex cwa-flex-col cwa-space-y-6">
+      <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
         <div>
-          <button @click="goBackToViewing">
+          <button
+            class="cwa:cursor-pointer"
+            @click="goBackToViewing"
+          >
             &lt; Back to Routes
           </button>
         </div>
-        <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
           <div>
             <ModalInput
               v-model="newRedirectPath"
@@ -133,13 +139,13 @@
               placeholder="/some-path"
             />
           </div>
-          <div class="cwa-text-sm cwa-text-stone-300 cwa-flex cwa-flex-col cwa-space-y-2">
+          <div class="cwa:text-sm cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
             <p v-if="newRedirectPath">
-              A user visiting <b class="cwa-bg-dark cwa-p-2">{{ finalPath }}</b> will be redirected to <b class="cwa-bg-dark cwa-p-2">{{ resource?.path }}</b>
+              A user visiting <b class="cwa:bg-dark cwa:p-2">{{ finalPath }}</b> will be redirected to <b class="cwa:bg-dark cwa:p-2">{{ resource?.path }}</b>
             </p>
           </div>
         </div>
-        <div class="cwa-flex cwa-justify-start">
+        <div class="cwa:flex cwa:justify-start">
           <CwaUiFormButton
             color="blue"
             :disabled="disableButtons"

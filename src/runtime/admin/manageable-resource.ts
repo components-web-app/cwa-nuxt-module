@@ -2,8 +2,7 @@ import {
   computed,
   markRaw,
   ref,
-  watch, type WatchHandle
-  ,
+  watch, type WatchHandle,
   type ComponentPublicInstance,
   type Ref,
   type WatchStopHandle,

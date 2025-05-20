@@ -3,7 +3,7 @@
     <nuxt-link
       :target="isExternal ? '_blank' : undefined"
       :to="resource?.data?.url || '#'"
-      exact-active-class="!underline !opacity-100"
+      exact-active-class="underline! opacity-100!"
       class="md:text-xl font-medium text-white opacity-80 transition hover:opacity-100 no-underline hover:underline underline-offset-8 decoration-2"
       @click="handleClick"
     >

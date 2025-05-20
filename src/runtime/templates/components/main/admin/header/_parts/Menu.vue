@@ -1,41 +1,41 @@
 <template>
-  <div class="cwa-flex cwa-relative cwa-h-full cwa-items-center cwa-z-50">
+  <div class="cwa:flex cwa:relative cwa:h-full cwa:items-center cwa:z-50">
     <CwaUiHamburger
       ref="hamburger"
       v-model="showMenu"
-      class="cwa-relative cwa-z-20"
+      class="cwa:relative cwa:z-20"
     />
     <Transition
-      enter-from-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
-      enter-active-class="cwa-duration-200 cwa-ease-out"
-      enter-to-class="cwa-opacity-100"
-      leave-from-class="cwa-opacity-100"
-      leave-active-class="cwa-duration-200 cwa-ease-in"
-      leave-to-class="cwa-transform cwa-opacity-0 cwa-scale-[0.97]"
+      enter-from-class="cwa:transform cwa:opacity-0 cwa:scale-[0.97]"
+      enter-active-class="cwa:duration-200 cwa:ease-out"
+      enter-to-class="cwa:opacity-100"
+      leave-from-class="cwa:opacity-100"
+      leave-active-class="cwa:duration-200 cwa:ease-in"
+      leave-to-class="cwa:transform cwa:opacity-0 cwa:scale-[0.97]"
     >
       <div
         v-show="showMenu"
         ref="menu"
-        class="cwa-absolute cwa-z-10 -cwa-top-1.5 -cwa-right-2 cwa-bg-dark cwa-pt-6 cwa-pb-12 cwa-px-12 cwa-w-[90vw] cwa-max-w-xl cwa-origin-top-right"
+        class="cwa:absolute cwa:z-10 cwa:-top-1.5 cwa:-right-2 cwa:bg-dark cwa:pt-6 cwa:pb-12 cwa:px-12 cwa:w-[90vw] cwa:max-w-xl cwa:origin-top-right"
       >
-        <div class="cwa-text-light cwa-flex cwa-flex-col cwa-text-center cwa-space-y-2 cwa-mb-5">
-          <div class="cwa-flex cwa-justify-center cwa-opacity-[.35]">
-            <CwaLogo class="cwa-h-8 cwa-w-auto" />
+        <div class="cwa:text-light cwa:flex cwa:flex-col cwa:text-center cwa:gap-y-2 cwa:mb-5">
+          <div class="cwa:flex cwa:justify-center cwa:opacity-[.35]">
+            <CwaLogo class="cwa:h-8 cwa:w-auto" />
           </div>
-          <h2 class="cwa-opacity-50 cwa-text-sm cwa-font-bold">
+          <h2 class="cwa:opacity-50 cwa:text-sm cwa:font-bold">
             {{ $cwa.appName }}
           </h2>
         </div>
-        <div class="cwa-flex cwa-justify-center">
-          <div class="cwa-flex cwa-justify-between cwa-w-full cwa-max-w-[400px]">
-            <div class="cwa-mt-2">
-              <ul class="cwa-text-xl cwa-flex cwa-flex-col cwa-space-y-5">
+        <div class="cwa:flex cwa:justify-center">
+          <div class="cwa:flex cwa:justify-between cwa:w-full cwa:max-w-[400px]">
+            <div class="cwa:mt-2">
+              <ul class="cwa:text-xl cwa:flex cwa:flex-col cwa:gap-y-5">
                 <li>
                   <MenuPrimaryLink
                     label="Layouts"
                     to="/_cwa/layouts"
                   >
-                    <IconLayouts class="cwa-w-7" />
+                    <IconLayouts class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
@@ -43,7 +43,7 @@
                     label="Pages"
                     to="/_cwa/pages"
                   >
-                    <IconPages class="cwa-w-5 cwa-mx-1" />
+                    <IconPages class="cwa:w-5 cwa:mx-1" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
@@ -51,7 +51,7 @@
                     label="Data"
                     to="/_cwa/data"
                   >
-                    <IconData class="cwa-w-6 cwa-mx-0.5" />
+                    <IconData class="cwa:w-6 cwa:mx-0.5" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
@@ -59,7 +59,7 @@
                     label="Routes"
                     to="/_cwa/routes"
                   >
-                    <IconRoutes class="cwa-w-7" />
+                    <IconRoutes class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
                 <li>
@@ -67,15 +67,15 @@
                     label="Users"
                     to="/_cwa/users"
                   >
-                    <IconUsers class="cwa-w-7" />
+                    <IconUsers class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
               </ul>
             </div>
-            <div class="cwa-flex cwa-flex-col cwa-space-y-4">
+            <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
               <div>
                 <h3>Account</h3>
-                <ul class="cwa-text-sm">
+                <ul class="cwa:text-sm">
                   <li>
                     <MenuLink>
                       My account
@@ -88,9 +88,9 @@
                   </li>
                 </ul>
               </div>
-              <div class="cwa-pr-8">
+              <div class="cwa:pr-8">
                 <h3>CWA</h3>
-                <ul class="cwa-text-sm">
+                <ul class="cwa:text-sm">
                   <li>
                     <MenuLink
                       to="https://cwa.rocks"
@@ -104,7 +104,7 @@
                       :to="moduleLink"
                       target="_blank"
                     >
-                      App <span class="cwa-text-xs">{{ displayAppVersion }}</span>
+                      App <span class="cwa:text-xs">{{ displayAppVersion }}</span>
                     </MenuLink>
                   </li>
                   <li>
@@ -112,7 +112,7 @@
                       :to="$cwa.apiUrlBase"
                       target="_blank"
                     >
-                      API <span class="cwa-text-xs">{{ displayApiVersion }}</span>
+                      API <span class="cwa:text-xs">{{ displayApiVersion }}</span>
                     </MenuLink>
                   </li>
                 </ul>

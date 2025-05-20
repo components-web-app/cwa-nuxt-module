@@ -10,7 +10,7 @@ defineProps<{
 
 <template>
   <button
-    class="cwa-block cwa-w-full cwa-py-2 cwa-px-5 hover:cwa-bg-dark cwa-text-left cwa-transition"
+    class="cwa:block cwa:w-full cwa:py-2 cwa:px-5 cwa:hover:bg-dark cwa:text-left cwa:transition cwa:cursor-pointer"
     @click.prevent.stop="emit('click', option.value)"
   >
     {{ option.label }}

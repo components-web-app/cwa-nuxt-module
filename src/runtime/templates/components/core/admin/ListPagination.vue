@@ -1,10 +1,10 @@
 <template>
-  <div class="cwa-flex cwa-justify-between cwa-items-center">
-    <div class="cwa-text-stone-400 cwa-py-1.5 cwa-text-sm">
+  <div class="cwa:flex cwa:justify-between cwa:items-center">
+    <div class="cwa:text-stone-400 cwa:py-1.5 cwa:text-sm">
       {{ showingFrom }} to {{ showingTo }} of {{ totalItems }} results
     </div>
     <div>
-      <ul class="cwa-flex cwa-bg-dark cwa-rounded-lg cwa-overflow-hidden cwa-border cwa-border-stone-600">
+      <ul class="cwa:flex cwa:bg-dark cwa:rounded-lg cwa:overflow-hidden cwa:border cwa:border-stone-600">
         <ListPaginationButton
           :disabled="isFirst"
           @click="pageModel--"

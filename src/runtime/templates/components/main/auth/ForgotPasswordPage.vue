@@ -6,7 +6,7 @@
     @submit="$emit('submit')"
   >
     <div v-if="success">
-      <h1 class="cwa-font-bold cwa-text-xl cwa-mb-2">
+      <h1 class="cwa:font-bold cwa:text-xl cwa:mb-2">
         Please check your inbox
       </h1>
       <p>We've sent you an email with a link to reset your password</p>
@@ -20,7 +20,7 @@
         autocomplete="username"
         :required="true"
       />
-      <div class="cwa-flex cwa-items-center cwa-justify-between">
+      <div class="cwa:flex cwa:items-center cwa:justify-between">
         <slot>
           <AuthPageLink
             link-to="/login"

@@ -4,19 +4,19 @@
     ref="pathSelector"
   >
     <div
-      class="cwa-py-1.5 cwa-px-3 cwa-bg-neutral-800 cwa-border cwa-border-dashed cwa-text-white"
-      :class="[isEnabled ? 'hover:cwa-bg-dark cwa-cursor-pointer' : '']"
+      class="cwa:py-1.5 cwa:px-3 cwa:bg-neutral-800 cwa:border cwa:border-dashed cwa:text-white"
+      :class="[isEnabled ? 'cwa:hover:bg-dark cwa:cursor-pointer' : '']"
       @click="openMenu"
     >
-      <span :class="{ 'cwa-opacity-0 cwa-duration-200': isOpen }">{{ stackItem.displayName }}</span>
+      <span :class="{ 'cwa:opacity-0 cwa:duration-200': isOpen }">{{ stackItem.displayName }}</span>
     </div>
     <Transition v-bind="transitions.context">
       <div
         v-if="isOpen"
-        class="cwa-absolute cwa-top-0 cwa-left-1/2 -cwa-translate-x-1/2 cwa-min-w-full cwa-box-content cwa-inline-block"
+        class="cwa:absolute cwa:top-0 cwa:left-1/2 cwa:-translate-x-1/2 cwa:min-w-full cwa:box-content cwa:inline-block"
         :style="{ marginTop: marginTop, transformOrigin: tOrig }"
       >
-        <div class="cwa-relative cwa-bg-dark cwa-inline-block">
+        <div class="cwa:relative cwa:bg-dark cwa:inline-block">
           <resource-context-item
             :index="stackSize - 1"
             :root-width="selectorWidth"

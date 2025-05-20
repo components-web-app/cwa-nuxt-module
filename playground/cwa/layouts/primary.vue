@@ -1,10 +1,10 @@
 <template>
-  <div :class="['relative', 'flex-grow', 'flex', 'flex-col', ...($cwa.resources.layout?.value?.data?.uiClassNames || [])]">
+  <div :class="['relative', 'grow', 'flex', 'flex-col', ...($cwa.resources.layout?.value?.data?.uiClassNames || [])]">
     <VitePwaManifest />
     <CwaUiProgressBar
       :show="showPageLoadBar"
       :percent="percent"
-      class="page-progress-bar fixed left-0 top-0 z-[200]"
+      class="page-progress-bar fixed left-0 top-0 z-200"
     />
     <Spinner
       :show="$cwa.resources.isLoading.value"
@@ -14,14 +14,14 @@
       <div class="relative">
         <div class="mx-auto flex max-w-7xl items-center p-6 md:justify-start lg:px-8">
           <nav class="space-x-5 flex w-full items-center">
-            <div class="space-x-5 md:space-x-5 flex items-center flex-grow w-auto">
+            <div class="space-x-5 md:space-x-5 flex items-center grow w-auto">
               <div>
                 <LazySvgoLogo
                   :font-controlled="false"
                   class="text-white h-6 md:h-8 opacity-80"
                 />
               </div>
-              <div class="flex-grow w-auto flex space-x-3 md:space-x-5 justify-end md:justify-start">
+              <div class="grow w-auto flex space-x-3 md:space-x-5 justify-end md:justify-start">
                 <CwaComponentGroup
                   v-if="$cwa.resources.layoutIri.value"
                   reference="top"
@@ -60,9 +60,19 @@ import { computed } from 'vue'
 import { CwaAuthStatus } from '#cwa/runtime/api/auth'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { useCwa } from '#imports'
+import { useHead } from '#app'
 
 const $cwa = useCwa()
 
 const percent = computed(() => $cwa.resources.pageLoadProgress.value.percent || 3)
 const showPageLoadBar = computed(() => percent.value < 100)
+
+useHead({
+  htmlAttrs: {
+    class: 'bg-black',
+  },
+  bodyAttrs: {
+    class: 'bg-background',
+  },
+})
 </script>

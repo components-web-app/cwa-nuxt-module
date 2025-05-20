@@ -1,7 +1,7 @@
 <template>
   <NuxtLink
     :to="to || '#'"
-    class="cwa-font-medium cwa-text-neutral-400 hover:cwa-text-white"
+    class="cwa:font-medium cwa:text-neutral-400 cwa:hover:text-white"
   >
     <slot />
   </NuxtLink>

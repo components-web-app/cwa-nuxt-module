@@ -19,7 +19,7 @@
   </template>
   <div
     v-else-if="signedInAndResourceExists"
-    class="cwa-flex cwa-justify-center cwa-border-2 cwa-border-dashed cwa-border-gray-200 cwa-p-5"
+    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5"
   >
     <LazyHotSpot
       screen-reader-action="Add component position"
@@ -30,7 +30,6 @@
 
 <script setup lang="ts">
 // Comments around the resource loaders is to allow component groups not to need to be wrapped in a dev and so we know when one cg ends
-
 import {
   computed,
   onMounted,
@@ -102,7 +101,7 @@ const nestedClasses = computed(() => {
   if (!groupIsReordering.value) {
     return
   }
-  return ['cwa-is-reordering']
+  return ['cwa:is-reordering']
 })
 
 function getResourceKey(positionIri: string) {

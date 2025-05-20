@@ -39,13 +39,13 @@ defineExpose({ resetTabs })
 </script>
 
 <template>
-  <div class="cwa-flex cwa-space-x-1 cwa-overflow-hidden cwa-items-center">
+  <div class="cwa:flex cwa:gap-x-1 cwa:overflow-hidden cwa:items-center">
     <ManagerTab
       v-for="(tab, index) of orderedTabs"
       :key="`tab_${index}_${tab.name}`"
       :tab="tab"
       :selected="index === selectedIndex"
-      class="-cwa-mb-[1px]"
+      class="cwa:-mb-px"
       @click="selectIndex(index)"
     />
   </div>

@@ -1,11 +1,11 @@
 <template>
   <label
-    class="cwa-block cwa-text-light/70"
+    class="cwa:block cwa:text-light/70"
     :for="inputId"
   >
     {{ label }}
   </label>
-  <span class="cwa-flex cwa-relative">
+  <span class="cwa:flex cwa:relative">
     <slot />
   </span>
 </template>

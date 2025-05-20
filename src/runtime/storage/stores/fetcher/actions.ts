@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherStateInterface, FetchStatus } from './state'
 import type { CwaFetcherGettersInterface } from './getters'

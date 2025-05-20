@@ -59,9 +59,6 @@ export interface CwaModuleOptions {
   pageData?: {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'>
   }
-  tailwind?: {
-    base?: boolean
-  }
   layoutName?: string
 }
 
@@ -130,9 +127,6 @@ export default defineNuxtModule<CwaModuleOptions>({
         name: 'Group',
       },
     },
-    tailwind: {
-      base: true,
-    },
   },
   async setup(options: CwaModuleOptions, nuxt) {
     const logger = useLogger(NAME)
@@ -159,12 +153,6 @@ export default defineNuxtModule<CwaModuleOptions>({
     // transpile runtime
     const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
-
-    // include css - dev can disable the base in options to allow usage of their own tailwind without conflict and duplication
-    nuxt.options.css.unshift(resolve('./runtime/templates/assets/main.css'))
-    if (options.tailwind?.base) {
-      nuxt.options.css.unshift(resolve('./runtime/templates/assets/base.css'))
-    }
 
     logger.info(`Configuring auto-imports for CWA composables...`)
     addImportsDir(resolve('./runtime/composables'))
@@ -241,7 +229,6 @@ export default defineNuxtModule<CwaModuleOptions>({
       logger.info(`Configuring template to propagate module options and adding plugin for ${NAME} module...`)
       // clear options no longer needed and add plugin
       delete options.pagesDepth
-      delete options.tailwind
 
       addTemplate({
         filename: 'cwa-options.ts',

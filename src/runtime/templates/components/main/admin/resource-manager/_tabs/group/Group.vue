@@ -27,7 +27,7 @@ function addEnd() {
 </script>
 
 <template>
-  <div class="cwa-flex cwa-space-x-4">
+  <div class="cwa:flex cwa:gap-x-4">
     <CwaUiFormButton @click="addStart">
       Add to start
     </CwaUiFormButton>

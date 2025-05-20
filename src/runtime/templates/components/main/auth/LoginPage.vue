@@ -23,7 +23,7 @@
       :required="true"
     />
     <slot name="footer">
-      <div class="cwa-flex cwa-items-center cwa-justify-between">
+      <div class="cwa:flex cwa:items-center cwa:justify-between">
         <AuthPageLink
           link-to="/"
           link-text="< Back to home"

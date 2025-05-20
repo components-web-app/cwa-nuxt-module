@@ -107,7 +107,7 @@ function handleManagerCtaClick(value?: ModelValue) {
 <template>
   <CwaUiFormButton
     color="grey"
-    button-class="cwa-min-w-[100px]"
+    button-class="cwa:min-w-[100px]"
     :options="buttonOptions"
     :disabled="publishing"
     @click="handleManagerCtaClick"

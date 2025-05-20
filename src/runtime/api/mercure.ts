@@ -1,4 +1,4 @@
-import logger from 'consola'
+import { consola as logger } from 'consola'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import type { ComputedRef } from 'vue'

@@ -8,15 +8,15 @@ const isPendingRef = toRef(props, 'isPending')
 
 const circleColor = computed(() => {
   if (isPendingRef.value) {
-    return 'cwa-stroke-orange cwa-fill-orange'
+    return 'cwa:stroke-orange cwa:fill-orange'
   }
-  return isLoadingRef.value ? 'cwa-stroke-orange' : ''
+  return isLoadingRef.value ? 'cwa:stroke-orange' : ''
 })
 </script>
 
 <template>
   <svg
-    class="spinner-tick cwa-w-6 cwa-h-6"
+    class="spinner-tick cwa:w-6 cwa:h-6"
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 100 100"
     xml:space="preserve"
@@ -31,7 +31,7 @@ const circleColor = computed(() => {
       :class="circleColor"
     />
     <polyline
-      class="tick cwa-stroke-green"
+      class="tick cwa:stroke-green"
       points="25,55 45,70 75,33"
       fill="transparent"
     />

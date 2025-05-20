@@ -23,10 +23,10 @@ definePageMeta({
 
 useHead({
   bodyAttrs: {
-    class: 'cwa-h-full',
+    class: 'cwa:h-full',
   },
   htmlAttrs: {
-    class: 'cwa-h-full cwa-bg-neutral-900',
+    class: 'cwa:h-full cwa:bg-neutral-900',
   },
 })
 </script>
