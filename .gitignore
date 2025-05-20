@@ -1,7 +1,6 @@
 # Dependencies
 node_modules
 package-lock.json
-yarn.lock
 
 # Logs
 *.log*
@@ -10,10 +9,6 @@ yarn.lock
 .temp
 .tmp
 .cache
-
-# Yarn
-**/.yarn/cache
-**/.yarn/*state*
 
 # Generated dirs
 dist
