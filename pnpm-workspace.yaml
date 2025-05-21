@@ -1,2 +1,4 @@
+shamefullyHoist: true
+strictPeerDependencies: false
 packages:
   - "playground"
