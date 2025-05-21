@@ -16,4 +16,4 @@ fi
 
 # Release packages
 echo "Publishing package..."
-pnpm publish --access public --tolerate-republish --otp=${NPM_OTP} --tag=edge
+pnpm publish --access public --otp=${NPM_OTP} --tag=edge
