@@ -18,4 +18,4 @@ fi
 
 # Release packages
 echo "Publishing package..."
-pnpm publish --no-git-checks --access public --otp=${NPM_OTP}
+pnpm publish --access public --otp=${NPM_OTP} --tag $TAG
