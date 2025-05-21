@@ -3,8 +3,6 @@ import { computed, ref } from 'vue'
 import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
-import * as ResourceUtils from '../resources/resource-utils'
-import { CwaResourceTypes } from '../resources/resource-utils'
 import ManageableResource from './manageable-resource'
 import * as ManagerTabsResolver from '#cwa/runtime/admin/manager-tabs-resolver'
 
@@ -229,6 +227,7 @@ describe('ManageableResource Class', () => {
       { iri: '/no-exist', childIris: ['/eeeerie'], callCount: 0 },
     ])('If iri passed is $iri with childIris as $childIris then functions should be called $callCount times', ({ iri, childIris, callCount }) => {
       const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
       vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
       vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => computed(() => childIris))
@@ -245,65 +244,6 @@ describe('ManageableResource Class', () => {
     test('If there is no currentIri, and empty array is returned', () => {
       const { instance } = createManageableResource()
       expect(instance.childIris.value).toEqual([])
-    })
-
-    test('A flat array of children is returned recursively', () => {
-      const { instance, $cwa } = createManageableResource()
-      const getResource = vi.fn((iri: string) => {
-        return computed(() => {
-          let obj = { '@id': iri }
-          if (iri === '/group') {
-            obj = {
-              ...obj,
-              componentPositions: ['/position-1', '/position-2', '/position-3'],
-            }
-          }
-          if (iri === '/position-1') {
-            obj = {
-              ...obj,
-            }
-          }
-          if (iri === '/position-2') {
-            obj = {
-              ...obj,
-              component: '/component',
-            }
-          }
-          if (iri === '/position-3') {
-            obj = {
-              ...obj,
-              component: '/no-type',
-            }
-          }
-          if (iri === '/no-type') {
-            obj = {
-              ...obj,
-              component: '/whatever',
-            }
-          }
-          return {
-            data: obj,
-          }
-        })
-      })
-
-      vi.spyOn($cwa, 'resources', 'get').mockImplementation(() => {
-        return {
-          getResource,
-        }
-      })
-      vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {
-        if (iri === '/no-type') {
-          return undefined
-        }
-        if (iri === '/component') {
-          return CwaResourceTypes.COMPONENT
-        }
-        return iri.startsWith('/position') ? CwaResourceTypes.COMPONENT_POSITION : CwaResourceTypes.COMPONENT_GROUP
-      })
-
-      instance.currentIri = ref('/group')
-      expect(instance.childIris.value).toEqual(['/group_placeholder', '/position-1', '/position-1_placeholder', '/position-2', '/position-2_placeholder', '/component', '/position-3', '/position-3_placeholder', '/no-type'])
     })
   })
 

@@ -16,9 +16,9 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
 <div
   data-v-app=""
 >
-
-  <!-- CWA_START -->
-
+  
+  <!--cwa-start-->
+  
   <resourceloader-stub
     class=""
     componentprefix=""
@@ -40,9 +40,9 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
     iri="pos3"
     uicomponent="[object Object]"
   />
-
+  
   <!--cwa-end-->
-
+  
 </div>
 `;
 

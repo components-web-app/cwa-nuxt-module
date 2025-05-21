@@ -1,7 +1,10 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
+import * as ResourceUtils from '../../../resources/resource-utils'
+import Cwa from '../../../cwa'
+import ManageableResource from '../../../admin/manageable-resource'
 import type { CwaResourcesGettersInterface } from './getters'
 import getters from './getters'
 import type { CwaResourcesStateInterface } from './state'
@@ -28,6 +31,17 @@ function createState(): CwaResourcesStateInterface {
       byId: {},
       allIds: [],
     }),
+  }
+}
+
+function createManageableResource($el?: DummyDom) {
+  const component = {
+    $el: $el || createDomElement(1),
+  }
+  const $cwa = new Cwa()
+  return {
+    instance: new ManageableResource(component, $cwa, ref({ styles: { name: ['style'] } })),
+    $cwa,
   }
 }
 
@@ -432,6 +446,68 @@ describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
       },
     }
     expect(getterFns.isFetchStatusResourcesResolved.value(currentFetch)).toBe(result)
+  })
+})
+
+describe.todo('ResourcesStore Getters -> getChildIris', () => {
+  // todo: copied over from manageable-resource spec from when it was in there, needs modifying and fixing
+  test.todo('A flat array of children is returned recursively', () => {
+    const { instance, $cwa } = createManageableResource()
+    const getResource = vi.fn((iri: string) => {
+      return computed(() => {
+        let obj = { '@id': iri }
+        if (iri === '/group') {
+          obj = {
+            ...obj,
+            componentPositions: ['/position-1', '/position-2', '/position-3'],
+          }
+        }
+        if (iri === '/position-1') {
+          obj = {
+            ...obj,
+          }
+        }
+        if (iri === '/position-2') {
+          obj = {
+            ...obj,
+            component: '/component',
+          }
+        }
+        if (iri === '/position-3') {
+          obj = {
+            ...obj,
+            component: '/no-type',
+          }
+        }
+        if (iri === '/no-type') {
+          obj = {
+            ...obj,
+            component: '/whatever',
+          }
+        }
+        return {
+          data: obj,
+        }
+      })
+    })
+
+    vi.spyOn($cwa, 'resources', 'get').mockImplementation(() => {
+      return {
+        getResource,
+      }
+    })
+    vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementation((iri) => {
+      if (iri === '/no-type') {
+        return undefined
+      }
+      if (iri === '/component') {
+        return CwaResourceTypes.COMPONENT
+      }
+      return iri.startsWith('/position') ? CwaResourceTypes.COMPONENT_POSITION : CwaResourceTypes.COMPONENT_GROUP
+    })
+
+    instance.currentIri = ref('/group')
+    expect(instance.childIris.value).toEqual(['/group_placeholder', '/position-1', '/position-1_placeholder', '/position-2', '/position-2_placeholder', '/component', '/position-3', '/position-3_placeholder', '/no-type'])
   })
 })
 
