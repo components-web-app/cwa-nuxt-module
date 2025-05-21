@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Components Web Apps Nuxt Module. UI for creating component-driven web apps with the API Components Bundle",
   "author": "Daniel West <daniel@silverback.is>",
-  "repository": "https://github.com/components-web-app/cwa-nuxt-module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/components-web-app/cwa-nuxt-module.git"
+  },
   "publishConfig": {
     "access": "public"
   },

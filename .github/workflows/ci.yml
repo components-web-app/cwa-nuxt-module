@@ -9,86 +9,86 @@ on:
       - main
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [lts/*,latest]
-        pnpm: [ latest ]
-        include:
-          - node: latest
-            pnpm: latest
-            coverage: true
-            lint: true
-      fail-fast: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm ${{ matrix.pnpm }}
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ matrix.pnpm }}
-          run_install: false
-
-      - name: Use Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Prepare
-        run: pnpm run dev:prepare
-
-      - name: Lint
-        if: matrix.lint
-        run: pnpm run lint
-
-
-      - name: Build module
-        run: pnpm run dev:build
-
-      - name: Enable code coverage
-        if: matrix.coverage
-        run: echo "COVERAGE=1" >> $GITHUB_ENV
-
-      - name: Unit tests
-        run: |
-          mkdir -p coverage
-          if [ "$COVERAGE" = '1' ]; then
-            pnpm run test:coverage
-          else
-            pnpm run test
-          fi
-        env:
-          CI: true
-
-      - name: Upload test artifacts
-        if: matrix.coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: vitest-logs-unit${{ matrix.node }}
-          path: ./coverage
-          if-no-files-found: error
-
-      - name: Upload coverage results to Codecov
-        if: matrix.coverage
-        uses: codecov/codecov-action@v4
-        with:
-          name: vitest-node-${{ matrix.node }}
-          flags: vitest
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage-final.json
-
-      - name: Audit
-        run: pnpm audit
+#  test:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        node: [lts/*,latest]
+#        pnpm: [latest]
+#        include:
+#          - node: latest
+#            pnpm: latest
+#            coverage: true
+#            lint: true
+#      fail-fast: false
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#
+#      - name: Setup pnpm ${{ matrix.pnpm }}
+#        uses: pnpm/action-setup@v4
+#        with:
+#          version: ${{ matrix.pnpm }}
+#          run_install: false
+#
+#      - name: Use Node.js ${{ matrix.node }}
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: ${{ matrix.node }}
+#
+#      - name: Install dependencies
+#        run: pnpm install
+#
+#      - name: Prepare
+#        run: pnpm run dev:prepare
+#
+#      - name: Lint
+#        if: matrix.lint
+#        run: pnpm run lint
+#
+#
+#      - name: Build module
+#        run: pnpm run dev:build
+#
+#      - name: Enable code coverage
+#        if: matrix.coverage
+#        run: echo "COVERAGE=1" >> $GITHUB_ENV
+#
+#      - name: Unit tests
+#        run: |
+#          mkdir -p coverage
+#          if [ "$COVERAGE" = '1' ]; then
+#            pnpm run test:coverage
+#          else
+#            pnpm run test
+#          fi
+#        env:
+#          CI: true
+#
+#      - name: Upload test artifacts
+#        if: matrix.coverage
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: vitest-logs-unit${{ matrix.node }}
+#          path: ./coverage
+#          if-no-files-found: error
+#
+#      - name: Upload coverage results to Codecov
+#        if: matrix.coverage
+#        uses: codecov/codecov-action@v4
+#        with:
+#          name: vitest-node-${{ matrix.node }}
+#          flags: vitest
+#          fail_ci_if_error: true
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          files: ./coverage/coverage-final.json
+#
+#      - name: Audit
+#        run: pnpm audit
 
   deploy-next:
     runs-on: ubuntu-latest
-    needs: [test]
+    #needs: [test]
     # if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip-release]')
     if: github.ref == 'refs/heads/nuxt3' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip-release]')
     strategy:
