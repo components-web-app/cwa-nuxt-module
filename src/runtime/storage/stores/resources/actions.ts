@@ -502,7 +502,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       if (showErrorPage && error) {
         // todo: this seems to cause `obj.hasOwnProperty is not a function` error on `shouldHydrate` in Pinia
-        showError({ statusCode: error.statusCode, message: error.message })
+        showError({ statusCode: error.statusCode, statusMessage: error.statusMessage, message: error.message })
       }
     },
     saveResource,
