@@ -6,7 +6,7 @@ import {
   type ComponentPublicInstance,
   type Ref,
   type WatchStopHandle,
-  type WatchSource,
+  type WatchSource, type ComputedRef,
 } from 'vue'
 import { consola } from 'consola'
 import {
@@ -104,15 +104,25 @@ export default class ManageableResource {
   // REFRESHING INITIALISATION
   private componentMountedListener(iri: string) {
     // to avoid firing the initialisation in the wrong order, where the component needs to be the first click event fired in the stack, we skip here and let the manageable composable call the initialisation of the click handler before emitting the componentMounted event
-    if (this.currentIri?.value === iri) {
+    const currentIri = this.currentIri?.value
+    if (!currentIri || this.currentIri?.value === iri) {
       return
     }
 
-    // is the component that was just mounted a child of this one?
-    const iris = this.$cwa.resources.findAllPublishableIris(iri)
     const childIris = this.childIris.value
+    const iris: string[] = []
+    if (iri.endsWith('_placeholder')) {
+      iris.push(iri)
+      iris.push(...this.$cwa.resources.findAllPublishableIris(iri.replace('_placeholder', '')))
+    }
+    else {
+      iris.push(...this.$cwa.resources.findAllPublishableIris(iri))
+    }
+
     const iriIsChild = () => {
+      // for each possible publishable IRI of the resource just mounted
       for (const iri of iris) {
+        // is it part of the calculated children of this resource
         if (childIris.includes(iri)) {
           return true
         }
@@ -126,6 +136,7 @@ export default class ManageableResource {
     if (isNewlyMountedIriAChild) {
       this.removeClickEventListeners()
       this.addClickEventListeners()
+      this.$cwa.admin.eventBus.emit('componentMounted', currentIri)
     }
   }
 
@@ -227,13 +238,20 @@ export default class ManageableResource {
     return getNestedChildren(currentIri)
   }
 
-  private get childIris(): Ref<string[]> {
-    if (this.childIrisRef) {
-      return this.childIrisRef
-    }
-
-    this.childIrisRef = ref(this.getChildren())
-    return this.childIrisRef
+  private get childIris(): ComputedRef<string[]> {
+    return computed(() => {
+      if (!this.currentIri?.value) {
+        return []
+      }
+      const addResourceEvent = this.$cwa.resourcesManager.addResourceEvent.value
+      return this.$cwa.resources.getChildIris(this.currentIri?.value, addResourceEvent)
+    })
+    // if (this.childIrisRef) {
+    //   return this.childIrisRef
+    // }
+    //
+    // this.childIrisRef = ref(this.getChildren())
+    // return this.childIrisRef
   }
 
   // GET DOM ELEMENTS TO ADD CLICK EVENTS TO
@@ -253,13 +271,13 @@ export default class ManageableResource {
     do {
       if (currentEl.nodeType === Node.COMMENT_NODE) {
         const nodeValue = currentEl.nodeValue.trim()
-        if (startTagCount && nodeValue === 'CWA_END') {
+        if (startTagCount && nodeValue === 'cwa-end') {
           startTagCount--
           if (startTagCount === 0) {
             break
           }
         }
-        if (nodeValue === 'CWA_START') {
+        if (nodeValue === 'cwa-start') {
           startTagCount++
         }
         continue

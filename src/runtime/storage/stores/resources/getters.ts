@@ -1,10 +1,12 @@
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
+import { consola } from 'consola'
 import {
   type CwaResource,
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
+  resourceTypeToNestedResourceProperties,
 } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
 import {
@@ -14,6 +16,7 @@ import {
   NEW_RESOURCE_IRI,
 } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
+import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 
 export interface ResourcesLoadStatusInterface {
   pending: number
@@ -34,6 +37,7 @@ export interface CwaResourcesGettersInterface {
   getOrderedPositionsForGroup: ComputedRef<(groupIri: string, includeNewIri?: boolean) => string[] | undefined>
   getPositionSortDisplayNumber: ComputedRef<(groupIri: string, includeNewIri?: boolean) => number | undefined>
   getResource: ComputedRef<(iri: string) => CwaCurrentResourceInterface | undefined>
+  getChildIris: ComputedRef<(iri: string, addResourceEvent: undefined | AddResourceEvent) => string[]>
   hasNewResources: ComputedRef<boolean>
   findPublishedComponentIri: ComputedRef<(iri: string) => string | undefined>
   findDraftComponentIri: ComputedRef<(iri: string) => string | undefined>
@@ -119,6 +123,77 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     }
   })
 
+  const getChildIris = computed(() => {
+    return (iri: string, addResourceEvent: undefined | AddResourceEvent) => {
+      const childIris: string[] = []
+      // New resources will not have any children mounting inside it
+      if (iri === NEW_RESOURCE_IRI) {
+        return childIris
+      }
+
+      // No resource, no children
+      const resource = resourcesState.current.byId?.[iri]
+      if (!resource) {
+        consola.warn(`Could not get children for '${iri}' - Resource not found`)
+        return childIris
+      }
+
+      // No resource type, we cannot calculate the properties which will count as children
+      const resourceType = getResourceTypeFromIri(iri)
+      if (!resourceType) {
+        return childIris
+      }
+
+      // There can be a placeholder in the positions and groups which should count as children
+      if (
+        resourceType === CwaResourceTypes.COMPONENT_POSITION
+        || resourceType === CwaResourceTypes.COMPONENT_GROUP
+      ) {
+        childIris.push(`${iri}_placeholder`)
+      }
+
+      // is this is a component position and there is a new resource being added within it, then the new resource is a child
+      if (addResourceEvent) {
+        if (
+          resourceType === CwaResourceTypes.COMPONENT_POSITION
+          && addResourceEvent.closest.position === iri
+          && addResourceEvent.targetIri === iri
+          && addResourceEvent.addAfter === null
+        ) {
+          childIris.push(NEW_RESOURCE_IRI)
+        }
+
+        if (
+          resourceType === CwaResourceTypes.COMPONENT_GROUP
+          && addResourceEvent.closest.group === iri
+        ) {
+          const childIri = `/_/component_positions/${NEW_RESOURCE_IRI}`
+          childIris.push(childIri)
+          childIris.push(...getChildIris.value(childIri, addResourceEvent))
+        }
+      }
+
+      // get the known properties for the resource type to hold children in the known structure
+      const propertiesWithChildIris = resourceTypeToNestedResourceProperties[resourceType]
+      for (const propWithChildIri of propertiesWithChildIris) {
+        const children: string | string[] = resource.data?.[propWithChildIri]
+        if (!children) {
+          continue
+        }
+
+        // detach the array from any object it is within
+        const childrenAsArray = Array.isArray(children) ? [...children] : [children]
+
+        for (const child of childrenAsArray) {
+          childIris.push(child)
+          childIris.push(...getChildIris.value(child, addResourceEvent))
+        }
+      }
+
+      return childIris
+    }
+  })
+
   return {
     getOrderedPositionsForGroup,
     getPositionSortDisplayNumber: computed(() => {
@@ -147,6 +222,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         return resourcesState.current.byId?.[id]
       }
     }),
+    getChildIris,
     hasNewResources: computed(() => resourcesState.new.allIds.length > 0),
     findPublishedComponentIri: computed(() => {
       return (iri: string) => {
@@ -183,8 +259,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return (iri: string) => {
         const iris = [iri]
         const relatedIri = draftToPublishedIris.value[iri] || publishedToDraftIris.value[iri]
-
-        relatedIri && iris.push(relatedIri)
+        if (relatedIri) iris.push(relatedIri)
         return iris
       }
     }),

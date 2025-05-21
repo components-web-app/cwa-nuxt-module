@@ -26,6 +26,11 @@ flatConfigComposer.override('nuxt/vue/rules', {
   rules: {
     'vue/multi-word-component-names': 'off',
     'vue/no-multiple-template-root': 'off',
+    'vue/html-comment-content-spacing': [
+      'error',
+      'always',
+      { exceptions: ['cwa-start', 'cwa-end'] },
+    ],
   },
 })
 

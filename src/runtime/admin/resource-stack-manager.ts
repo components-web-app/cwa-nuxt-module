@@ -145,8 +145,8 @@ export default class ResourceStackManager {
     return this._currentIri
   }
 
-  public resetStack(isContext?: boolean) {
-    if (isContext) {
+  public resetStack(clearContextStack?: boolean) {
+    if (clearContextStack) {
       this.lastContextTarget.value = null
       this.contextResourceStack.value = []
       return

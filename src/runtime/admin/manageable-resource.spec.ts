@@ -334,15 +334,15 @@ describe('ManageableResource Class', () => {
       const siblings = [
         createDomElement(Node.ATTRIBUTE_NODE, 'AN ATTR NODE'),
         elements[0],
-        createDomElement(Node.COMMENT_NODE, 'CWA_START'),
+        createDomElement(Node.COMMENT_NODE, 'cwa-start'),
         createDomElement(Node.TEXT_NODE),
-        createDomElement(Node.COMMENT_NODE, 'CWA_START'),
+        createDomElement(Node.COMMENT_NODE, 'cwa-start'),
         elements[1],
         createDomElement(Node.COMMENT_NODE, 'ANY COMMENT'),
-        createDomElement(Node.COMMENT_NODE, 'CWA_END'),
+        createDomElement(Node.COMMENT_NODE, 'cwa-end'),
         createDomElement(Node.ATTRIBUTE_NODE, 'AN ATTR NODE'),
         elements[2],
-        createDomElement(Node.COMMENT_NODE, 'CWA_END'),
+        createDomElement(Node.COMMENT_NODE, 'cwa-end'),
         elements[3],
       ]
 

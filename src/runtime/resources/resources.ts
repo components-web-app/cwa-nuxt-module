@@ -8,6 +8,7 @@ import {
   CwaResourceTypes,
   getResourceTypeFromIri,
 } from './resource-utils'
+import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 
 interface PageLoadStatus {
   resources: (string | undefined)[]
@@ -36,6 +37,10 @@ export class Resources {
     return computed(() => {
       return this.resourcesStore.getResource(id)
     })
+  }
+
+  public getChildIris(iri: string, addResourceEvent: undefined | AddResourceEvent) {
+    return this.resourcesStore.getChildIris(iri, addResourceEvent)
   }
 
   public get newResource() {
