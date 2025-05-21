@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "@nuxtjs/color-mode": "^3.5.2",
-    "@pinia/nuxt": "^0.9.0",
+    "@pinia/nuxt": "^0.11.0",
     "@popperjs/core": "^2.11.8",
     "@tailwindcss/vite": "^4.1.7",
     "@vueuse/core": "^12.8.2",
@@ -57,7 +57,7 @@
     "luxon": "^3.6.1",
     "mitt": "^3.0.1",
     "nuxt": "^3.17.3",
-    "pinia": "^2.3.1",
+    "pinia": "^3.0.2",
     "slugify": "^1.6.6",
     "uuid": "^11.1.0",
     "vue": "^3.5.14",
