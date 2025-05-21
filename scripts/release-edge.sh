@@ -16,6 +16,8 @@ if [[ ! -z ${NPM_AUTH_TOKEN} ]] ; then
   pnpm whoami
 fi
 
+echo "gitChecks: false" >> ~/pnpm-workspace.yaml
+
 # Release packages
 echo "Publishing package..."
 pnpm publish --access public --otp=${NPM_OTP} --tag $TAG

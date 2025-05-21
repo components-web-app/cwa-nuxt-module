@@ -1,5 +1,4 @@
 shamefullyHoist: true
 strictPeerDependencies: false
-gitChecks: false
 packages:
   - "playground"
