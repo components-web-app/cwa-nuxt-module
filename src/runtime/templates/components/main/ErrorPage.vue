@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { type NuxtError, useHead, useRoute } from '#app'
+import { onMounted, ref } from 'vue'
+import { clearError, type NuxtError, useHead, useRoute } from '#app'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const props = defineProps<{
@@ -35,6 +36,7 @@ const is404 = statusCode === 404
 const statusMessage = _error.statusMessage ?? (is404 ? 'Page Not Found' : 'Internal Server Error')
 const description = _error.message || _error.toString()
 const stack = import.meta.dev && !is404 ? description || `${stacktrace}` : undefined
+
 useHead({
   bodyAttrs: {
     class: 'cwa:h-full cwa:bg-white cwa:dark:bg-black',
@@ -43,10 +45,20 @@ useHead({
     class: 'cwa:h-full',
   },
 })
+
+const returnHome = () => clearError({ redirect: '/' })
+
+const showingErrorPage = ref(false)
+onMounted(() => {
+  showingErrorPage.value = true
+})
 </script>
 
 <template>
-  <div class="cwa:h-full cwa:relative cwa:z-10">
+  <div
+    class="cwa:h-full cwa:relative cwa:z-10 cwa:transition-opacity cwa:duration-300"
+    :class="[showingErrorPage ? 'cwa:opacity-100' : 'cwa:opacity-0']"
+  >
     <CwaUiBackgroundParticles class="cwa:absolute cwa:inset-0 cwa:-z-10 cwa:opacity-30 cwa:invert cwa:dark:invert-0" />
     <main class="cwa:h-full cwa:flex cwa:flex-col cwa:p-6 cwa:lg:p-8">
       <div class="cwa:flex cwa:justify-center cwa:grow cwa:h-full cwa:items-center">
@@ -70,11 +82,13 @@ useHead({
             />
           </div>
           <div class="cwa:mt-10 cwa:flex cwa:items-center cwa:justify-center cwa:gap-x-6">
-            <NuxtLink
+            <button
               v-if="$route.path !== '/'"
-              to="/"
-              class="cwa:rounded-md cwa:bg-blue-600 cwa:px-3.5 cwa:py-2.5 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
-            >Go back home</NuxtLink>
+              class="cwa:cursor-pointer cwa:rounded-md cwa:bg-blue-600 cwa:px-3.5 cwa:py-2.5 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
+              @click="returnHome"
+            >
+              Go back home
+            </button>
           </div>
         </div>
       </div>

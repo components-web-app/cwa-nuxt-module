@@ -19,6 +19,7 @@ import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 import type { FetchStatus } from '#cwa/runtime/storage/stores/fetcher/state'
+import { clearError, useError } from '#app'
 
 export interface FinishFetchResourceEvent {
   resource: string
@@ -124,11 +125,6 @@ export default class FetchStatusManager {
       return
     }
 
-    if (!event.success) {
-      this.resourcesStore.setResourceFetchError({ iri: event.resource, error: event.error, isCurrent, showErrorPage: this.finishFetchShowError(fetchStatus, event.resource) })
-      return
-    }
-
     if (!isCurrent) {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
@@ -138,17 +134,33 @@ export default class FetchStatusManager {
       return
     }
 
-    const cwaResource = event.fetchResponse._data
+    const showErrorPage = this.finishFetchShowError(fetchStatus, event.resource)
 
-    if (!isCwaResource(cwaResource)) {
+    const setFinalResourceFetchError = (error: CwaResourceError | undefined) => {
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
-        error: createCwaResourceError(new Error(`Not Saved. The response was not a valid CWA Resource. (${event.resource})`)),
+        error,
         isCurrent,
-        showErrorPage: this.finishFetchShowError(fetchStatus, event.resource),
+        showErrorPage,
       })
+    }
+
+    if (!event.success) {
+      setFinalResourceFetchError(event.error)
+      return
+    }
+
+    const cwaResource = event.fetchResponse._data
+    if (!isCwaResource(cwaResource)) {
+      const error = createCwaResourceError(new Error(`Not Saved. The response was not a valid CWA Resource. (${event.resource})`))
+      setFinalResourceFetchError(error)
       logger.error('[CWA FETCH ERROR]', event.resource, cwaResource)
       return
+    }
+
+    if (this.finishFetchShowError(fetchStatus, event.resource)) {
+      const currentError = useError()
+      if (currentError.value?.error) clearError()
     }
 
     const linkHeader = event.fetchResponse.headers.get('link')

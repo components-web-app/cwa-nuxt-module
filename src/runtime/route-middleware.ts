@@ -2,7 +2,14 @@ import { v4 as uuidv4 } from 'uuid'
 import { consola as logger } from 'consola'
 import type { RouteLocationNormalized } from 'vue-router'
 import type { CwaResource } from './resources/resource-utils'
-import { abortNavigation, callWithNuxt, createError, defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from '#app'
+import {
+  abortNavigation,
+  callWithNuxt,
+  createError,
+  defineNuxtRouteMiddleware,
+  navigateTo,
+  useNuxtApp,
+} from '#app'
 import { useProcess } from '#cwa/runtime/composables/process'
 
 let middlewareToken = ''
@@ -61,13 +68,20 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   }
 
   const isInternalPath = to.path.startsWith('/_/')
+  const throwInternalUnauthorisedError = () => {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorised',
+      message: 'You are not authorised to load this resource',
+    })
+  }
 
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (!isClient) {
     if (isInternalPath) {
       // server-side for the internal paths are skipped until we know if the user is auth or not
-      return
+      throwInternalUnauthorisedError()
     }
     // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
     const resource = await nuxtApp.$cwa.fetchRoute(to)
@@ -83,12 +97,12 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
     return
   }
 
-  if (!nuxtApp.$cwa.auth.isAdmin.value && isInternalPath) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorised',
-      message: 'You are not authorised to load this resource',
-    })
+  // we will not know if user is admin yet as the 'me' endpoint has not been fetched
+  if (isInternalPath) {
+    await nuxtApp.$cwa.auth.init()
+    if (!nuxtApp.$cwa.auth.isAdmin.value) {
+      return
+    }
   }
 
   const startedMiddlewareToken = middlewareToken
