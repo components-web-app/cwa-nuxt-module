@@ -2,22 +2,15 @@ import {
   computed,
   markRaw,
   ref,
-  watch, type WatchHandle,
+  watch,
   type ComponentPublicInstance,
   type Ref,
   type WatchStopHandle,
-  type WatchSource, type ComputedRef,
+  type ComputedRef,
 } from 'vue'
-import { consola } from 'consola'
-import {
-  CwaResourceTypes,
-  getResourceTypeFromIri,
-  resourceTypeToNestedResourceProperties,
-} from '../resources/resource-utils'
 import type Cwa from '../cwa'
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
-import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 export type StyleOptions = {
   multiple?: boolean
@@ -35,9 +28,6 @@ export default class ManageableResource {
   private unwatchCurrentIri: undefined | WatchStopHandle
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
-  private childIrisRef: Ref<string[]> | undefined
-  private watchRefs: Ref<WatchSource[]> | undefined
-  private unwatchChildRefs: WatchHandle | undefined
 
   constructor(
     private readonly component: ComponentPublicInstance,
@@ -146,98 +136,6 @@ export default class ManageableResource {
     }
   }
 
-  private initialiseChildrenWatchRefs() {
-    if (!this.watchRefs) {
-      this.watchRefs = ref([])
-    }
-    if (this.unwatchChildRefs) {
-      this.unwatchChildRefs()
-    }
-    this.watchRefs.value = [
-      this.$cwa.resourcesManager.addResourceEvent,
-      () => this.currentResource?.data,
-    ]
-  }
-
-  private getChildren() {
-    this.initialiseChildrenWatchRefs()
-    const currentIri = this.currentIri?.value
-    if (!currentIri) {
-      return []
-    }
-    const addResourceData = this.$cwa.resourcesManager.addResourceEvent.value
-
-    const getNestedChildren = (iri: string): string[] => {
-      const nested: string[] = []
-      if (iri === NEW_RESOURCE_IRI) {
-        return nested
-      }
-      const resource = this.$cwa.resources.getResource(iri)
-      this.watchRefs && this.watchRefs.value.push(resource)
-
-      const type = getResourceTypeFromIri(iri)
-      if (!resource.value) {
-        consola.warn(`Could not get children for '${iri}' - Resource not found`)
-        return nested
-      }
-      if (!type) {
-        return nested
-      }
-
-      // we don't have a real IRI for a placeholder - placeholders only currently used for positions
-      if (type === CwaResourceTypes.COMPONENT_POSITION || type === CwaResourceTypes.COMPONENT_GROUP) {
-        nested.push(`${iri}_placeholder`)
-      }
-
-      if (addResourceData && addResourceData.closest.position === iri && addResourceData.targetIri === iri && addResourceData.addAfter === null) {
-        nested.push(NEW_RESOURCE_IRI)
-      }
-
-      if (addResourceData?.closest.group === iri) {
-        const child = `/_/component_positions/${NEW_RESOURCE_IRI}`
-        nested.push(child)
-        nested.push(...getNestedChildren(child))
-      }
-
-      const properties = resourceTypeToNestedResourceProperties[type]
-
-      for (const prop of properties) {
-        let children: string | string[] = resource.value.data?.[prop]
-        if (!children) {
-          continue
-        }
-
-        if (Array.isArray(children)) {
-          // do not modify the original array in the object
-          children = [...children]
-        }
-        else {
-          children = [children]
-        }
-
-        for (const child of children) {
-          nested.push(child)
-          nested.push(...getNestedChildren(child))
-        }
-      }
-
-      return nested
-    }
-
-    if (this.watchRefs) {
-      this.unwatchChildRefs = watch(this.watchRefs, () => {
-        if (!this.childIrisRef) {
-          return
-        }
-        this.childIrisRef.value = this.getChildren()
-      }, {
-        immediate: true,
-      })
-    }
-
-    return getNestedChildren(currentIri)
-  }
-
   private get childIris(): ComputedRef<string[]> {
     return computed(() => {
       if (!this.currentIri?.value) {
@@ -246,12 +144,6 @@ export default class ManageableResource {
       const addResourceEvent = this.$cwa.resourcesManager.addResourceEvent.value
       return this.$cwa.resources.getChildIris(this.currentIri?.value, addResourceEvent)
     })
-    // if (this.childIrisRef) {
-    //   return this.childIrisRef
-    // }
-    //
-    // this.childIrisRef = ref(this.getChildren())
-    // return this.childIrisRef
   }
 
   // GET DOM ELEMENTS TO ADD CLICK EVENTS TO
