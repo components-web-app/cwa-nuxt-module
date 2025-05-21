@@ -89,7 +89,11 @@ jobs:
   deploy-next:
     runs-on: ubuntu-latest
     #needs: [test]
-    if: github.ref == 'refs/heads/nuxt3' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip-release]')
+    if: |
+      github.event_name == 'push' &&
+      github.repository_owner == 'components-web-app' &&
+      !contains(github.event.head_commit.message, '[skip-release]') &&
+      !startsWith(github.event.head_commit.message, 'docs')
     strategy:
       matrix:
         pnpm: [ latest ]
@@ -113,9 +117,10 @@ jobs:
       - uses: step-security/wait-for-secrets@v1
         id: get-otp
         if: |
-          github.ref == 'refs/heads/nuxt3' &&
           github.event_name == 'push' &&
-          !contains(github.event.head_commit.message, '[skip-release]')
+          github.repository_owner == 'components-web-app' &&
+          !contains(github.event.head_commit.message, '[skip-release]') &&
+          !startsWith(github.event.head_commit.message, 'docs')
         with:
           secrets: |
             NPM_OTP:
@@ -123,7 +128,7 @@ jobs:
               description: 'Your OTP for NPM for publishing this package'
       - name: Release Edge
         if: ${{ steps.get-otp.outcome == 'success' }}
-        run: ./scripts/release-edge.sh
+        run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/nuxt3' && 'latest' || 'dev' }}
         env:
           NPM_OTP: ${{ steps.get-otp.outputs.NPM_OTP }}
           NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}

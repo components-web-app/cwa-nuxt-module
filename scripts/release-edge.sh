@@ -4,6 +4,8 @@
 
 set -xe
 
+TAG=${1:-latest}
+
 # Bump versions to edge
 node ./scripts/bump-edge.mjs
 
@@ -16,4 +18,4 @@ fi
 
 # Release packages
 echo "Publishing package..."
-pnpm publish --access public --otp=${NPM_OTP} --tag=edge
+pnpm publish --no-git-checks --access public --otp=${NPM_OTP}
