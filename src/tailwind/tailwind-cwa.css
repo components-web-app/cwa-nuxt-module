@@ -1,3 +1,5 @@
+@layer theme, base, cwa, components, utilities;
+
 @import 'tailwindcss/theme' layer(theme) prefix(cwa);
 @import 'tailwindcss/utilities' prefix(cwa);
 
@@ -56,7 +58,7 @@
   --z-index-notifications: 103;
 }
 
-@layer base {
+@layer components {
   .cwa\:dark {
     @apply cwa:bg-dark cwa:text-light;
   }

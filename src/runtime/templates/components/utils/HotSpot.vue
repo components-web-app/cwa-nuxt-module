@@ -19,7 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <button class="cwa-hot-spot cwa:relative cwa:rounded-full cwa:bg-magenta cwa:w-10 cwa:h-10 cwa:m-4 cwa:outline-magenta cwa:cursor-pointer">
+  <button class="cwa:hot-spot cwa:relative cwa:rounded-full cwa:bg-magenta cwa:w-10 cwa:h-10 cwa:m-4 cwa:outline-magenta cwa:cursor-pointer">
     <span class="cwa:sr-only">{{ screenReaderAction }}</span>
   </button>
 </template>
@@ -51,7 +51,7 @@ onMounted(() => {
   }
 }
 
-.cwa-hot-spot {
+.cwa\:hot-spot {
   &:before {
     content: '';
     position: absolute;
@@ -61,7 +61,7 @@ onMounted(() => {
     height: 100%;
     background: inherit;
     border-radius: 100%;
-    opacity: .16;
+    opacity: .2;
     animation: large-expand 2s infinite;
   }
   &:after {
@@ -73,7 +73,7 @@ onMounted(() => {
     height: 100%;
     background: inherit;
     border-radius: 100%;
-    opacity: .38;
+    opacity: .55;
     animation: small-expand 2s infinite;
   }
 }

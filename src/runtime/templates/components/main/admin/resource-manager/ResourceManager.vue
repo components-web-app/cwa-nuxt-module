@@ -163,10 +163,10 @@ defineExpose({
   >
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/70"
+      class="fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/40"
       @click.stop
     >
-      <div class="cwa-dark-blur">
+      <div class="cwa:dark-blur">
         <div
           v-if="allTabsMeta.length"
           ref="managerHolder"
@@ -182,7 +182,7 @@ defineExpose({
                     @click="selectTab"
                   />
                 </div>
-                <div class="cwa:flex cwa-light cwa:items-center cwa:content-center cwa:justify-center">
+                <div class="cwa:flex cwa:light cwa:items-center cwa:content-center cwa:justify-center">
                   <ResourceManagerCtaButton />
                 </div>
               </div>
