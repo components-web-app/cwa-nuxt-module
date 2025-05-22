@@ -46,11 +46,27 @@
     <div class="bg-inherit grow flex">
       <slot />
     </div>
-    <div v-if="$cwa.resources.layoutIri.value">
-      <CwaComponentGroup
-        reference="bottom"
-        :location="$cwa.resources.layoutIri.value"
-      />
+    <div
+      v-if="$cwa.resources.layoutIri.value"
+      class="pt-12 pb-4 px-10 bg-black/40 flex flex-col gap-y-4"
+    >
+      <div class="flex justify-center">
+        <div>
+          <CwaComponentGroup
+            reference="bottom"
+            :location="$cwa.resources.layoutIri.value"
+            :allowed-components="['/component/navigation_links']"
+          />
+        </div>
+      </div>
+      <div class="text-white/50 text-xs flex justify-between">
+        <div>
+          &copy; {{ (new Date()).getFullYear() }}
+        </div>
+        <div>
+          <NuxtLink to="https://silverbackwebapps.com">site by Silverback Web Apps</NuxtLink>
+        </div>
+      </div>
     </div>
   </div>
 </template>
