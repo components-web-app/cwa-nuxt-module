@@ -24,7 +24,6 @@
   ],
   "scripts": {
     "build": "nuxt-module-build build && pnpm run tailwind:main && pnpm run tailwind:base && sleep 0.2 && pnpm run copy-layer",
-    "prepack": "pnpm build",
     "copy-layer": "copyfiles -u 1 \"./src/layer/**\" dist/",
     "dev": "concurrently --kill-others \"pnpm tailwind:watch\" \"pnpm dev:https\"",
     "dev:https": "nuxi dev playground --https",
