@@ -27,6 +27,11 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/tailwind.css',
   ],
+  vue: {
+    compilerOptions: {
+      comments: true,
+    },
+  },
   runtimeConfig: {
     public: {
       cwa: {

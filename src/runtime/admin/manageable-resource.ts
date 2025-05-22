@@ -130,6 +130,13 @@ export default class ManageableResource {
     }
   }
 
+  public mockChildMounted() {
+    const currentIri = this.currentIri?.value
+    this.removeClickEventListeners()
+    this.addClickEventListeners()
+    if (currentIri) this.$cwa.admin.eventBus.emit('componentMounted', currentIri)
+  }
+
   private selectResourceListener(iri: string) {
     if (iri === this.currentIri?.value) {
       this.triggerClick()
@@ -182,6 +189,7 @@ export default class ManageableResource {
 
   private addClickEventListeners() {
     this.domElements.value = this.getAllEls()
+    console.log(this.domElements.value)
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)
