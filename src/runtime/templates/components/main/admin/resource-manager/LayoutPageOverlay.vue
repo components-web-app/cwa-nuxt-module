@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const canvas = ref<HTMLCanvasElement | undefined>()
@@ -41,7 +41,7 @@ function getHatchCanvas() {
   const y1 = 18
   const offset = 32
 
-  pctx.strokeStyle = 'rgba(0,0,0,0.1)'
+  pctx.strokeStyle = 'rgba(120,120,120, .15)'
   pctx.lineWidth = 5
   pctx.beginPath()
   pctx.moveTo(x0, y0)
@@ -150,14 +150,71 @@ onBeforeUnmount(() => {
   $cwa.admin.eventBus.off('componentMounted', redraw)
   redrawInterval && window.clearInterval(redrawInterval)
 })
+
+type DivElementOverlayType = {
+  top: string
+  left: string
+  width: string
+  height: string
+}
+const divElementOverlays = computed<DivElementOverlayType[]>(() => {
+  const pageCoords = getPageCoords()
+
+  if ($cwa.admin.resourceStackManager.isEditingLayout.value) {
+    return [
+      {
+        top: pageCoords.top + 'px',
+        left: pageCoords.left + 'px',
+        width: pageCoords.width + 'px',
+        height: (pageCoords.height - pageCoords.top) + 'px',
+      },
+    ]
+  }
+
+  const [layoutRect] = getBoundingRect()
+  /*
+  ctx.moveTo(0, 0)
+  ctx.lineTo(layoutRect.width, 0)
+  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top)
+  ctx.lineTo(pageCoords.left, pageCoords.top)
+  ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
+  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
+  ctx.lineTo(layoutRect.width, layoutRect.height)
+  ctx.lineTo(0, layoutRect.height)
+   */
+  return [
+    {
+      top: '0',
+      left: '0',
+      width: layoutRect.width + 'px',
+      height: pageCoords.top + 'px',
+    },
+    {
+      top: (pageCoords.top + pageCoords.height) + 'px',
+      left: '0',
+      width: layoutRect.width + 'px',
+      height: (layoutRect.height - (pageCoords.top + pageCoords.height)) + 'px',
+    },
+  ]
+})
 </script>
 
 <template>
   <ClientOnly>
-    <canvas
-      id="cwa-layout-page-overlay"
-      ref="canvas"
-      class="cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
-    />
+    <div class="cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0">
+      <div
+        v-for="(overlay, index) of divElementOverlays"
+        :key="`cwa-admin-overlay-${index}`"
+        :style="overlay"
+        class="cwa:absolute cwa:backdrop-blur-[1.5px] cwa:pointer-events-none"
+      />
+      <canvas
+        id="cwa-layout-page-overlay"
+        ref="canvas"
+        class="cwa:absolute cwa:top-0 cwa:left-0 cwa:pointer-events-none"
+      />
+    </div>
   </ClientOnly>
 </template>

@@ -189,7 +189,6 @@ export default class ManageableResource {
 
   private addClickEventListeners() {
     this.domElements.value = this.getAllEls()
-    console.log(this.domElements.value)
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)
