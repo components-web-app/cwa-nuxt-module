@@ -20,4 +20,4 @@ node ./scripts/bump-edge.mjs
 
 # Release packages
 echo "Publishing package..."
-pnpm publish --access public --otp=${NPM_OTP} --tag $TAG
+pnpm publish --ignore-scripts --access public --otp=${NPM_OTP} --tag $TAG
