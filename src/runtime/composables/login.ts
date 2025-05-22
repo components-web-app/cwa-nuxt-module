@@ -19,7 +19,7 @@ export const useLogin = () => {
     error.value = undefined
     const user = await $cwa.auth.signIn(credentials)
     if (user instanceof FetchError) {
-      error.value = user.data?.message || user.statusMessage
+      error.value = user.data?.message || user.statusMessage || 'Unknown/Network Error'
     }
     else {
       navigateTo('/')
