@@ -146,7 +146,7 @@ defineExpose({
     <div
       :class="[borderColor]"
       :style="cssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-4 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded"
+      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline"
     />
   </client-only>
 </template>
