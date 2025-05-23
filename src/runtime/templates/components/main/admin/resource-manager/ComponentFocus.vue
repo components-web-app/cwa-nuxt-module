@@ -63,8 +63,6 @@ const position = computed((): {
       width: windowSize.width.value,
       height: windowSize.height.value,
     },
-    totalWidthAndHeight: totalWidthAndHeight.value,
-    reorderId: reorderId.value,
   }
 
   for (const domElement of domElements.value) {
