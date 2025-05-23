@@ -99,6 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     if: |
+      github.ref == 'refs/heads/dev' &&
       github.event_name == 'push' &&
       github.repository_owner == 'components-web-app' &&
       !contains(github.event.head_commit.message, '[skip-release]') &&
@@ -137,7 +138,7 @@ jobs:
               description: 'Your OTP for NPM for publishing this package'
       - name: Release Edge
         if: ${{ steps.get-otp.outcome == 'success' }}
-        run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || 'test' }}
+        run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || '1x' }}
         env:
           NPM_OTP: ${{ steps.get-otp.outputs.NPM_OTP }}
           NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
