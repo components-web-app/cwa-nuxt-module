@@ -3,10 +3,11 @@ name: ci
 on:
   push:
     branches:
-      - 'nuxt3'
+      - 'main'
+      - 'dev'
   pull_request:
     branches-ignore:
-      - main
+      - legacy
 
 jobs:
   test:
@@ -129,7 +130,7 @@ jobs:
               description: 'Your OTP for NPM for publishing this package'
       - name: Release Edge
         if: ${{ steps.get-otp.outcome == 'success' }}
-        run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/nuxt3' && 'latest' || 'dev' }}
+        run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || 'test' }}
         env:
           NPM_OTP: ${{ steps.get-otp.outputs.NPM_OTP }}
           NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
