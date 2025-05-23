@@ -69,13 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
 
 import { directive as vAutoWidth } from 'vue-input-autowidth'
 import ResourceLoadingIndicator from '#cwa/runtime/templates/components/main/admin/_common/ResourceLoadingIndicator.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 
-const referenceInput = ref<undefined | HTMLInputElement>()
+const referenceInput = useTemplateRef<undefined | HTMLInputElement>('referenceInput')
 
 // eslint-disable-next-line vue/require-prop-types
 const titleModel = defineModel()

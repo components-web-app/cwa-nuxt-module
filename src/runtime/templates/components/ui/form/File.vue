@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 const props = defineProps<{
   label: string
@@ -9,7 +9,7 @@ const props = defineProps<{
   disabled?: boolean
 }>()
 
-const fileInput = ref()
+const fileInput = useTemplateRef('fileInput')
 
 const emit = defineEmits(['update:modelValue', 'change', 'delete'])
 
@@ -28,11 +28,12 @@ function showFileSelect() {
     bubbles: true,
     cancelable: false,
   })
-  fileInput.value.dispatchEvent(clickEvent)
+  fileInput.value?.dispatchEvent(clickEvent)
 }
 
 function handleFileChange() {
-  const file = fileInput.value.files[0]
+  const file = fileInput.value?.files?.[0]
+  if (!file) return
   emit('change', file)
   value.value = file.name
 }

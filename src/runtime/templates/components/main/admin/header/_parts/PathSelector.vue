@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import ResourceContextItem from '../../_common/ResourceContextItem.vue'
 import { useCwa } from '#cwa/runtime/composables/cwa'
@@ -40,7 +40,7 @@ const $cwa = useCwa()
 const transitions = useTransitions()
 
 const isOpen = ref(false)
-const pathSelector = ref<HTMLElement | null>(null)
+const pathSelector = useTemplateRef<HTMLElement | null>('pathSelector')
 
 const stackSize = computed(() => $cwa.admin.resourceStackManager.resourceStack.value.length)
 const spacingStackSize = computed(() => stackSize.value - 1)

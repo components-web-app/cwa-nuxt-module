@@ -43,9 +43,9 @@ flatConfigComposer.override('nuxt/typescript/rules', {
       caughtErrors: 'none',
     }],
     '@typescript-eslint/no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
-    '@typescript-eslint/ban-ts-comment': 'warn',
+    '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-dynamic-delete': 'off',
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'off',
   },
 })
 

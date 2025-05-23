@@ -2,7 +2,7 @@
   <!--cwa-start-->
   <ResourceLoader
     v-if="componentIri"
-    ref="resourceLoader"
+    ref="resourceLoaderRef"
     :iri="componentIri"
     component-prefix="CwaComponent"
   />
@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef, watchEffect } from 'vue'
+import { computed, ref, toRef, useTemplateRef, watchEffect } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
@@ -24,7 +24,7 @@ import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()
-const resourceLoader = ref()
+const resourceLoaderRef = useTemplateRef('resourceLoaderRef')
 const resourceManagerOps: ManageableResourceOps = ref({})
 const iriRef = toRef(props, 'iri')
 const resource = useCwaResource(iriRef).getResource()
@@ -56,12 +56,12 @@ const componentIri = computed(() => {
 })
 
 watchEffect(() => {
-  const component = resourceLoader.value?.resourceComponent
+  const component = resourceLoaderRef.value?.resourceComponent
   if (!component) {
     return
   }
   resourceManagerOps.value.styles = component.cwaResource?.styles
-  resourceManagerOps.value.disabled = !!component?.disableManager
+  resourceManagerOps.value.disabled = !!component.disableManager
 })
 
 useCwaResourceManageable(componentIri, resourceManagerOps)

@@ -150,6 +150,10 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./')
+    // do not server-side render internal routes. USe with client-side auth values
+    nuxt.options.routeRules = Object.assign({
+      '/_/**': { ssr: false },
+    }, nuxt.options.routeRules || {})
     // transpile runtime
     const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
@@ -267,11 +271,6 @@ declare module 'vue-router' {
         prefix: 'Cwa',
         ignore: ['**/_*/*', '**/*.spec.{cts,mts,ts}'],
       })
-      // dirs.unshift({
-      //   path: join(cwaVueComponentsDir, 'utils'),
-      //   prefix: 'CwaUtils',
-      //   ignore: ['**/*.spec.{cts,mts,ts}']
-      // })
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'ui'),
         prefix: 'CwaUi',

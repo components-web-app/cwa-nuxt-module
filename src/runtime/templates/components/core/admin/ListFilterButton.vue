@@ -2,7 +2,6 @@
   <label :for="inputId">
     <input
       :id="inputId"
-      ref="checkbox"
       v-model="model"
       class="cwa:sr-only cwa:peer/checkbox"
       type="checkbox"
@@ -18,7 +17,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, useId } from 'vue'
+import { computed, useId } from 'vue'
 
 const props = defineProps<{
   modelValue: string[] | null
@@ -29,7 +28,6 @@ const props = defineProps<{
 }>()
 
 const inputId = useId()
-const checkbox = ref()
 
 const emit = defineEmits(['update:modelValue'])
 function toggleCheckbox() {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
+import { useWindowSize } from '@vueuse/core'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
@@ -12,8 +13,8 @@ const $cwa = useCwa()
 
 const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
-const canvas = ref<HTMLCanvasElement | undefined>()
-const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
+const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
+const windowSize = useWindowSize()
 
 const resource = computed(() => {
   if (!iri.value) {
@@ -35,7 +36,7 @@ const position = computed((): {
     left: 99999999999,
     width: 0,
     height: 0,
-    windowSize: windowSize.value,
+    windowSize,
   }
 
   for (const domElement of domElements.value) {
@@ -86,17 +87,7 @@ const borderColor = computed(() => {
   return iri.value?.startsWith('/_/') ? 'cwa:outline-magenta' : 'cwa:outline-green'
 })
 
-function updateWindowSize() {
-  windowSize.value = {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    timestamp: (new Date()).getTime(),
-  }
-}
-
 async function redraw() {
-  await nextTick()
-  updateWindowSize()
   drawCanvas()
 }
 
@@ -110,8 +101,8 @@ function drawCanvas() {
   }
 
   const offset = 7
-  const width = Math.max(windowSize.value.width, document.body.clientWidth)
-  const height = Math.max(windowSize.value.height, document.body.clientHeight)
+  const width = Math.max(windowSize.width.value, document.body.clientWidth)
+  const height = Math.max(windowSize.height.value, document.body.clientHeight)
   ctx.reset()
 
   canvas.value.width = width
@@ -131,36 +122,14 @@ function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, wi
   ctx.arcTo(x, y, x, y + radius, radius)
 }
 
-let redrawInterval: number | undefined
 onMounted(() => {
-  $cwa.admin.eventBus.on('manageableComponentMounted', redraw)
   $cwa.admin.eventBus.on('redrawFocus', redraw)
-  window.addEventListener('resize', redraw, false)
-  watch(resourceData, redraw, { deep: true, flush: 'post' })
+  watch(resourceData, $cwa.admin.emitRedraw, { deep: true, flush: 'post' })
   watch(canvas, newCanvas => newCanvas && redraw())
-
-  // fallbacks for if an image needs a short time to appear, or CLS
-  setTimeout(() => {
-    redraw()
-  }, 10)
-  setTimeout(() => {
-    redraw()
-  }, 100)
-  setTimeout(() => {
-    redraw()
-  }, 250)
-
-  // Periodic checks
-  redrawInterval = window.setInterval(() => {
-    redraw()
-  }, 1000)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', redraw)
-  $cwa.admin.eventBus.off('manageableComponentMounted', redraw)
   $cwa.admin.eventBus.off('redrawFocus', redraw)
-  redrawInterval && window.clearInterval(redrawInterval)
 })
 
 defineExpose({

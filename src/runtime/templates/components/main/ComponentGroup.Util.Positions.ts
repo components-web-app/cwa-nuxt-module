@@ -75,7 +75,8 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
         resource: currentResource,
       })
     }
-    $cwa.admin.eventBus.emit('redrawFocus', undefined)
+    // reordered, redraw
+    $cwa.admin.emitRedraw()
 
     if (updateRequests.value[event.positionIri] === undefined) {
       updateRequests.value[event.positionIri] = {}

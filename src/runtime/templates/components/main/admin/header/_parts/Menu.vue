@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
@@ -144,8 +144,8 @@ const route = useRoute()
 const showMenu = ref(false)
 const apiVersion = ref('')
 
-const menu = ref(null)
-const hamburger = ref(null)
+const menu = useTemplateRef('menu')
+const hamburger = ref()
 onClickOutside(menu, () => {
   showMenu.value = false
 }, {

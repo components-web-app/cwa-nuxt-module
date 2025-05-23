@@ -1,4 +1,6 @@
 import mitt, { type Emitter } from 'mitt'
+import { watch } from 'vue'
+import { throttle, type DebouncedFunc } from 'lodash-es'
 import type { AdminStore } from '../storage/stores/admin/admin-store'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { Resources } from '../resources/resources'
@@ -20,10 +22,13 @@ type Events = {
 export default class Admin {
   private readonly stackManagerInstance: ResourceStackManager
   private readonly emitter: Emitter<Events>
+  private throttledRedrawEmitFn: undefined | DebouncedFunc<() => void>
 
   public constructor(private readonly adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, resources: Resources) {
     this.emitter = mitt<Events>()
     this.stackManagerInstance = new ResourceStackManager(this.adminStoreDefinition, this.resourcesStoreDefinition, resources)
+    this.emitRedraw = this.emitRedraw.bind(this)
+    this.redrawListen()
   }
 
   public get eventBus() {
@@ -36,6 +41,7 @@ export default class Admin {
 
   public emptyStack() {
     this.resourceStackManager.completeStack({ clickTarget: window }, false)
+    this.resourceStackManager.showManager.value = false
   }
 
   public toggleEdit(editing?: boolean): void {
@@ -59,5 +65,28 @@ export default class Admin {
 
   private get adminStore() {
     return this.adminStoreDefinition.useStore()
+  }
+
+  private redrawListen() {
+    this.eventBus.on('componentMounted', this.emitRedraw)
+    this.eventBus.on('manageableComponentMounted', this.emitRedraw)
+    watch([
+      this.resourceStackManager.showManager,
+      this.resourceStackManager.isEditingLayout,
+    ], this.emitRedraw)
+  }
+
+  public emitRedraw() {
+    if (!this.throttledRedrawEmitFn) {
+      this.throttledRedrawEmitFn = throttle(this.doEmitRedraw, 40, {
+        leading: true,
+        trailing: true,
+      })
+    }
+    this.throttledRedrawEmitFn()
+  }
+
+  private doEmitRedraw() {
+    this.eventBus.emit('redrawFocus')
   }
 }

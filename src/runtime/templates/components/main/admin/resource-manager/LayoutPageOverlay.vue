@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { useWindowSize } from '@vueuse/core'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
-const canvas = ref<HTMLCanvasElement | undefined>()
-const windowSize = ref({ width: 0, height: 0, timestamp: 0 })
+const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
+const windowSize = useWindowSize()
 
 const $cwa = useCwa()
 
@@ -12,18 +13,9 @@ const props = defineProps<{
   layout: HTMLDivElement
 }>()
 
-function updateWindowSize() {
-  windowSize.value = {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    timestamp: (new Date()).getTime(),
-  }
-}
-
 async function redraw() {
-  await nextTick()
-  updateWindowSize()
   drawCanvas()
+  divElementOverlays.value = getDivElementOverlays()
 }
 
 function getHatchCanvas() {
@@ -41,7 +33,7 @@ function getHatchCanvas() {
   const y1 = 18
   const offset = 32
 
-  pctx.strokeStyle = 'rgba(120,120,120, .15)'
+  pctx.strokeStyle = 'rgba(255,255,255, .1)'
   pctx.lineWidth = 5
   pctx.beginPath()
   pctx.moveTo(x0, y0)
@@ -63,8 +55,8 @@ function drawCanvas() {
     return
   }
 
-  const width = Math.max(windowSize.value.width, document.body.clientWidth)
-  const height = Math.max(windowSize.value.height, document.body.clientHeight)
+  const width = Math.max(windowSize.width.value, document.body.clientWidth)
+  const height = Math.max(windowSize.height.value, document.body.clientHeight)
   ctx.reset()
 
   canvas.value.width = width
@@ -84,16 +76,28 @@ function drawCanvas() {
 function drawPageFocus(ctx: CanvasRenderingContext2D) {
   const [layoutRect] = getBoundingRect()
   const pageCoords = getPageCoords()
+
+  const rightPage = pageCoords.left + pageCoords.width
+  const bottomPage = pageCoords.top + pageCoords.height
+
+  const coordsThree = { x: layoutRect.width, y: bottomPage }
+  const pageFocusCoords: { x: number, y: number }[] = [
+    { x: layoutRect.width, y: 0 }, // 2
+    coordsThree, // 3
+    { x: rightPage, y: bottomPage }, // 4
+    { x: rightPage, y: pageCoords.top }, // 5
+    { x: pageCoords.left, y: pageCoords.top }, // 6
+    { x: pageCoords.left, y: bottomPage }, // 7
+    coordsThree, // 8
+    { x: layoutRect.width, y: layoutRect.height }, // 9
+    { x: 0, y: layoutRect.height }, // 10
+    // it will return to start automatically when finished 0:0
+  ]
+
   ctx.moveTo(0, 0)
-  ctx.lineTo(layoutRect.width, 0)
-  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
-  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top + pageCoords.height)
-  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top)
-  ctx.lineTo(pageCoords.left, pageCoords.top)
-  ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
-  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
-  ctx.lineTo(layoutRect.width, layoutRect.height)
-  ctx.lineTo(0, layoutRect.height)
+  for (const coords of pageFocusCoords) {
+    ctx.lineTo(coords.x, coords.y)
+  }
 }
 
 function drawLayoutFocus(ctx: CanvasRenderingContext2D) {
@@ -121,34 +125,13 @@ const getPageCoords = () => {
   }
 }
 
-let redrawInterval: number | undefined
 onMounted(() => {
-  $cwa.admin.eventBus.on('componentMounted', redraw)
-  window.addEventListener('resize', redraw, false)
+  $cwa.admin.eventBus.on('redrawFocus', redraw)
   watch(canvas, newCanvas => newCanvas && redraw())
-  watch($cwa.admin.resourceStackManager.isEditingLayout, () => (redraw()))
-
-  // fallbacks for if an image needs a short time to appear, or CLS
-  setTimeout(() => {
-    redraw()
-  }, 10)
-  setTimeout(() => {
-    redraw()
-  }, 100)
-  setTimeout(() => {
-    redraw()
-  }, 250)
-
-  // Periodic checks
-  redrawInterval = window.setInterval(() => {
-    redraw()
-  }, 1000)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', redraw)
-  $cwa.admin.eventBus.off('componentMounted', redraw)
-  redrawInterval && window.clearInterval(redrawInterval)
+  $cwa.admin.eventBus.off('redrawFocus', redraw)
 })
 
 type DivElementOverlayType = {
@@ -157,7 +140,8 @@ type DivElementOverlayType = {
   width: string
   height: string
 }
-const divElementOverlays = computed<DivElementOverlayType[]>(() => {
+
+function getDivElementOverlays() {
   const pageCoords = getPageCoords()
 
   if ($cwa.admin.resourceStackManager.isEditingLayout.value) {
@@ -172,33 +156,43 @@ const divElementOverlays = computed<DivElementOverlayType[]>(() => {
   }
 
   const [layoutRect] = getBoundingRect()
-  /*
-  ctx.moveTo(0, 0)
-  ctx.lineTo(layoutRect.width, 0)
-  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
-  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top + pageCoords.height)
-  ctx.lineTo(pageCoords.left + pageCoords.width, pageCoords.top)
-  ctx.lineTo(pageCoords.left, pageCoords.top)
-  ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
-  ctx.lineTo(layoutRect.width, pageCoords.top + pageCoords.height)
-  ctx.lineTo(layoutRect.width, layoutRect.height)
-  ctx.lineTo(0, layoutRect.height)
-   */
+
+  const rightPage = pageCoords.left + pageCoords.width
+  const bottomPage = pageCoords.top + pageCoords.height
+
+  const numberToPx = (size: number) => {
+    return `${size}px`
+  }
+
   return [
     {
       top: '0',
       left: '0',
-      width: layoutRect.width + 'px',
-      height: pageCoords.top + 'px',
+      width: numberToPx(layoutRect.width),
+      height: numberToPx(pageCoords.top),
     },
     {
-      top: (pageCoords.top + pageCoords.height) + 'px',
+      top: numberToPx(pageCoords.top),
       left: '0',
-      width: layoutRect.width + 'px',
-      height: (layoutRect.height - (pageCoords.top + pageCoords.height)) + 'px',
+      width: numberToPx(pageCoords.left),
+      height: numberToPx(pageCoords.height),
+    },
+    {
+      top: numberToPx(pageCoords.top),
+      left: numberToPx(rightPage),
+      width: numberToPx(layoutRect.width - rightPage),
+      height: numberToPx(pageCoords.height),
+    },
+    {
+      top: numberToPx(bottomPage),
+      left: '0',
+      width: numberToPx(layoutRect.width),
+      height: numberToPx(layoutRect.height - bottomPage),
     },
   ]
-})
+}
+
+const divElementOverlays = ref<DivElementOverlayType[]>(getDivElementOverlays())
 </script>
 
 <template>
@@ -208,7 +202,7 @@ const divElementOverlays = computed<DivElementOverlayType[]>(() => {
         v-for="(overlay, index) of divElementOverlays"
         :key="`cwa-admin-overlay-${index}`"
         :style="overlay"
-        class="cwa:absolute cwa:backdrop-blur-[1.5px] cwa:pointer-events-none"
+        class="cwa:absolute cwa:pointer-events-none cwa:backdrop-blur-[1.5px] cwa:bg-black/30"
       />
       <canvas
         id="cwa-layout-page-overlay"

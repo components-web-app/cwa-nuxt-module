@@ -9,9 +9,9 @@
 
 <script setup lang="ts">
 // effect from https://codepen.io/DedaloD/pen/PoJGKOb
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
-const particlesContainer = ref()
+const particlesContainer = useTemplateRef('particlesContainer')
 const canvasElement = ref()
 
 type ParticleCanvasContext =
@@ -1126,7 +1126,7 @@ onMounted(() => {
   }
 
   particles = new ParticleProgram(config, metaFactory.getMeta(), metaFactory.getCanvas())
-  particles.start(particlesContainer.value)
+  if (particlesContainer.value) particles.start(particlesContainer.value)
 })
 onBeforeUnmount(() => {
   particles?.stop()

@@ -62,4 +62,5 @@ src/runtime/templates/assets/*
 .stryker-tmp
 
 # ssl certs for running production node --env-file=.env ./playground/.output/server/index.mjs
+certs/
 *.pem

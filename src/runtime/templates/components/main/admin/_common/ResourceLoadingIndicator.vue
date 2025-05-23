@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useCwa } from '#imports'
 
 const $cwa = useCwa()
@@ -8,7 +8,7 @@ const requestsOngoing = computed(() => {
   return $cwa.resourcesManager.requestCount.value > 0
 })
 
-const holder = ref<undefined | HTMLElement>()
+const holder = useTemplateRef<undefined | HTMLElement>('holder')
 const currentIndicators = ref<number[]>([])
 const indicatorCount = ref()
 

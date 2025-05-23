@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -16,13 +16,13 @@ import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataR
 
 const $cwa = useCwa()
 const currentStackItem = $cwa.admin.resourceStackManager.currentStackItem
-const spacer = ref<HTMLElement | null>(null)
-const managerHolder = ref<HTMLElement | null>(null)
+const spacer = useTemplateRef<HTMLElement | null>('spacer')
+const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
 const isOpen = ref(false)
 const virtualElement = ref({ getBoundingClientRect: () => ({}) })
-const managerTabs = ref<typeof ManagerTabs | null>(null)
+const managerTabs = useTemplateRef<typeof ManagerTabs | null>('managerTabs')
 const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
 let mousedownTarget: null | EventTarget = null
@@ -97,7 +97,7 @@ const showAdmin = computed(() => {
 })
 
 const showSpacer = computed(() => {
-  return $cwa.admin.resourceStackManager.showManager.value && currentStackItem
+  return ($cwa.admin.resourceStackManager.showManager.value && !!currentStackItem)
 })
 
 const selectedTab = computed(() => {
@@ -110,6 +110,7 @@ watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () 
   }
   const newHeight = managerHolder.value.clientHeight
   spacer.value.style.height = `${newHeight}px`
+  nextTick().then(() => ($cwa.admin.emitRedraw()))
 }, {
   flush: 'post',
 })
@@ -119,6 +120,7 @@ const resolverProps = computed(() => {
     iri: currentStackItem.value?.iri,
   }
 })
+
 useDataResolver(allTabsMeta, {
   components: currentManagerTabs,
   props: resolverProps,
@@ -138,6 +140,11 @@ watch(currentStackItem, (newCurrent, oldCurrent) => {
 
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
+  window.addEventListener('resize', $cwa.admin.emitRedraw, false)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', $cwa.admin.emitRedraw)
 })
 
 defineExpose({

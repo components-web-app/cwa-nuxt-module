@@ -79,10 +79,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (!isClient) {
-    if (isInternalPath) {
-      // server-side for the internal paths are skipped until we know if the user is auth or not
-      throwInternalUnauthorisedError()
-    }
     // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
     const resource = await nuxtApp.$cwa.fetchRoute(to)
     return handleRouteRedirect(resource)
@@ -93,7 +89,11 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   // skip on first client side run as server-side will have completed
   // if a cwa disabled path redirects (e.g. what the admin pages to) it still detects as a first time client load
   // we will still need to fetch the route data now for client-side. first loads, the from path is equal to the to path
-  if (isFirstClientSideRun && !isInternalPath && from.fullPath === to.fullPath) {
+  if (
+    isFirstClientSideRun
+    && !isInternalPath
+    && from.fullPath === to.fullPath
+  ) {
     return
   }
 
@@ -101,6 +101,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   if (isInternalPath) {
     await nuxtApp.$cwa.auth.init()
     if (!nuxtApp.$cwa.auth.isAdmin.value) {
+      throwInternalUnauthorisedError()
       return
     }
   }

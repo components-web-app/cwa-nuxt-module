@@ -141,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
@@ -164,8 +164,8 @@ const $cwa = useCwa()
 const route = useRoute()
 const router = useRouter()
 
-const header = ref<undefined | HTMLElement>()
-const spacer = ref<undefined | HTMLElement>()
+const header = useTemplateRef<undefined | HTMLElement>('header')
+const spacer = useTemplateRef<undefined | HTMLElement>('spacer')
 
 const error = useError()
 

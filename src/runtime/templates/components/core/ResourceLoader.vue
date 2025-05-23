@@ -16,10 +16,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount } from 'vue'
+import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount, useTemplateRef } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import type { CwaResourceApiStateError } from '../../../storage/stores/resources/state'
-import { useCwa } from '#imports'
+import { type CwaResourceMeta, useCwa } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
 import {
   CwaResourceTypes,
@@ -40,7 +40,7 @@ const props = withDefaults(
 )
 
 const resource = computed(() => $cwa.resources.getResource(props.iri).value)
-const resourceComponent = ref()
+const resourceComponent = useTemplateRef<CwaResourceMeta>('resourceComponent')
 
 // Due to the nature of fetching down the tree of resources, a parent resource can know about a child IRI and place the resource loader immediately
 // This can happen a split second before the API request is started. We do not want to assume that the child will begin to be fetched. The application is
