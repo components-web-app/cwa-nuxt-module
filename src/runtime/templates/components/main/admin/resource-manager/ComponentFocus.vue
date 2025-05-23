@@ -36,7 +36,10 @@ const position = computed((): {
     left: 99999999999,
     width: 0,
     height: 0,
-    windowSize,
+    windowSize: {
+      width: windowSize.width.value,
+      height: windowSize.height.value,
+    },
   }
 
   for (const domElement of domElements.value) {
