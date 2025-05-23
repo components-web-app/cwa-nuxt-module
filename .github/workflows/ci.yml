@@ -2,12 +2,19 @@ name: ci
 
 on:
   push:
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
     branches:
       - 'main'
       - 'dev'
   pull_request:
-    branches-ignore:
-      - legacy
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+    branches:
+      - 'main'
+      - 'dev'
 
 jobs:
   test:
