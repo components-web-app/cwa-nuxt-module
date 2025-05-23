@@ -32,7 +32,9 @@ vi.mock('../storage/stores/admin/admin-store', () => {
 
 vi.mock('mitt', () => {
   return {
-    default: vi.fn(),
+    default: vi.fn(() => ({
+      on: vi.fn(),
+    })),
   }
 })
 
@@ -98,7 +100,7 @@ describe('Admin class', () => {
     expect(admin.adminStore).toBe(mockStore)
   })
   test('event bus was created AND accessible via getter', () => {
-    const mockMitt = { mock: 'mitt' }
+    const mockMitt = { mock: 'mitt', on: vi.fn() }
 
     mitt.mockReturnValueOnce(mockMitt)
 
