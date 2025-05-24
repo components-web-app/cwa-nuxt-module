@@ -108,8 +108,12 @@
       "ignoreCves": []
     },
     "onlyBuiltDependencies": [
+      "@parcel/watcher",
       "@tailwindcss/oxide",
-      "sharp"
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "vue-demi"
     ]
   },
   "overrides": {
