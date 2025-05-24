@@ -1,14 +1,14 @@
 <template>
   <div>
-    <nuxt-link
+    <NuxtLink
       :target="isExternal ? '_blank' : undefined"
       :to="resource?.data?.url || '#'"
       exact-active-class="text-white!"
-      class="hover:brightness-135 md:text-sm font-medium text-white/80 transition no-underline tracking-wide hover:opacity-100 hover:text-primary"
+      class="md:text-sm font-medium text-white/80 transition no-underline tracking-wide hover:opacity-100 hover:text-gurkha-200"
       @click="handleClick"
     >
       {{ resource?.data?.label || 'No Link Label' }}
-    </nuxt-link>
+    </NuxtLink>
   </div>
 </template>
 
