@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useWindowSize } from '@vueuse/core'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
@@ -14,8 +14,11 @@ const props = defineProps<{
 }>()
 
 async function redraw() {
-  drawCanvas()
-  divElementOverlays.value = getDivElementOverlays()
+  divElementOverlays.value = []
+  nextTick().then(() => {
+    drawCanvas()
+    divElementOverlays.value = getDivElementOverlays()
+  })
 }
 
 function getHatchCanvas() {

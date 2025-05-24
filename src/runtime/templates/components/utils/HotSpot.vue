@@ -19,7 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <button class="cwa:hot-spot cwa:relative cwa:rounded-full cwa:bg-magenta cwa:w-10 cwa:h-10 cwa:m-4 cwa:outline-magenta cwa:cursor-pointer">
+  <button class="cwa:hot-spot cwa:relative cwa:rounded-full cwa:bg-blue-600 cwa:size-6 cwa:m-0 cwa:cursor-pointer">
     <span class="cwa:sr-only">{{ screenReaderAction }}</span>
   </button>
 </template>
@@ -30,10 +30,10 @@ onMounted(() => {
     transform: scale(1.1);
   }
   37% {
-    transform: scale(1.5);
+    transform: scale(1.8);
   }
   40% {
-    transform: scale(1.5);
+    transform: scale(1.8);
   }
   100% {
     transform: scale(1.1);
@@ -43,8 +43,8 @@ onMounted(() => {
   12% {
     transform: scale(1);
   }
-  40% {
-    transform: scale(1.2);
+  45% {
+    transform: scale(1.4);
   }
   100% {
     transform: scale(1);
@@ -63,6 +63,7 @@ onMounted(() => {
     border-radius: 100%;
     opacity: .2;
     animation: large-expand 2s infinite;
+    z-index: 0;
   }
   &:after {
     content: '';
@@ -73,8 +74,9 @@ onMounted(() => {
     height: 100%;
     background: inherit;
     border-radius: 100%;
-    opacity: .55;
+    opacity: .45;
     animation: small-expand 2s infinite;
+    z-index: 0;
   }
 }
 </style>
