@@ -3,8 +3,8 @@
     <nuxt-link
       :target="isExternal ? '_blank' : undefined"
       :to="resource?.data?.url || '#'"
-      exact-active-class="underline! opacity-100!"
-      class="md:text-xl font-medium text-white opacity-80 transition hover:opacity-100 no-underline hover:underline underline-offset-8 decoration-2"
+      exact-active-class="text-white!"
+      class="hover:brightness-135 md:text-sm font-medium text-white/80 transition no-underline tracking-wide hover:opacity-100 hover:text-primary"
       @click="handleClick"
     >
       {{ resource?.data?.label || 'No Link Label' }}
