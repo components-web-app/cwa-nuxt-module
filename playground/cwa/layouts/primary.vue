@@ -10,7 +10,7 @@
       :show="$cwa.resources.isLoading.value"
       class="absolute top-4 right-4 z-50"
     />
-    <header class="relative bg-stone-900 border-b border-b-stone-700">
+    <header class="relative bg-stone-900 border-b border-b-stone-700 mb-5">
       <div class="mx-auto flex max-w-7xl items-center p-6 md:justify-start lg:px-8">
         <nav class="space-x-5 flex w-full items-center">
           <div class="space-x-5 md:space-x-5 flex items-center grow w-auto">
@@ -22,7 +22,7 @@
                 />
               </NuxtLink>
             </div>
-            <div class="grow w-auto flex gap-x-3 md:gap-x-5 justify-end items-center">
+            <div class="grow w-auto flex space-x-3 md:space-x-5 justify-center">
               <CwaComponentGroup
                 v-if="$cwa.resources.layoutIri.value"
                 reference="top"
@@ -30,6 +30,18 @@
                 :allowed-components="['/component/navigation_links']"
               />
               <TryAdminLink />
+            </div>
+            <div class="leading-0">
+              <NuxtLink
+                to="https://silverbackwebapps.com"
+                target="_blank"
+                class="inline-block text-white/80 hover:text-white transition h-6.5 md:h-6.5"
+              >
+                <LazySvgoLogoSwa
+                  :font-controlled="false"
+                  class="h-full"
+                />
+              </NuxtLink>
             </div>
           </div>
         </nav>
