@@ -145,6 +145,7 @@ async function findAvailableComponents(allowedComponents: undefined | string[], 
   if (!apiComponents) {
     throw new Error('Could not retrieve component metadata from the API')
   }
+  console.log('component metadata', apiComponents)
 
   const asEntries = Object.entries(apiComponents)
   const filteredAllowed = allowedComponents

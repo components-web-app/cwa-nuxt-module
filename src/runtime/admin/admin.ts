@@ -87,7 +87,6 @@ export default class Admin {
   }
 
   private doEmitRedraw() {
-    console.log('emitRedraw')
     this.eventBus.emit('redrawFocus')
   }
 }
