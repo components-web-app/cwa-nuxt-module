@@ -141,10 +141,11 @@ function selectComponent(name?: string) {
 }
 
 async function findAvailableComponents(allowedComponents: undefined | string[], includePosition = false): Promise<ComponentMetadataCollection> {
-  const apiComponents = await $cwa.getComponentMetadata(false, includePosition)
+  const apiComponents = await $cwa.getComponentMetadata(true, includePosition)
   if (!apiComponents) {
     throw new Error('Could not retrieve component metadata from the API')
   }
+  console.log('component metadata', apiComponents)
 
   const asEntries = Object.entries(apiComponents)
   const filtered = allowedComponents
