@@ -72,6 +72,8 @@
           <CwaLink
             to="https://silverbackwebapps.com"
             target="_blank"
+            :no-prefetch="undefined"
+            :prefetch="false"
           >
             site by Silverback Web Apps
           </CwaLink>
