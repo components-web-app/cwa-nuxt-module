@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
@@ -17,7 +16,6 @@ const iri = toRef(props, 'iri')
 const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
 const windowSize = useWindowSize()
 const elementSizeInstances = ref<ReturnType<typeof useElementSize>[]>([])
-const reorderId = ref<string>()
 
 watch(props.domElements, (newDomElements) => {
   for (const esInstance of elementSizeInstances.value) {
@@ -29,8 +27,6 @@ watch(props.domElements, (newDomElements) => {
     newInstances.push(useElementSize(el))
   }
   elementSizeInstances.value = newInstances
-}, {
-  immediate: true,
 })
 
 const totalWidthAndHeight = computed(() => {
@@ -63,6 +59,7 @@ const position = computed((): {
       width: windowSize.width.value,
       height: windowSize.height.value,
     },
+    totalWidthAndHeight: totalWidthAndHeight.value,
   }
 
   for (const domElement of domElements.value) {
@@ -157,6 +154,7 @@ onMounted(() => {
   $cwa.admin.eventBus.on('reorder', assignReorderId)
   watch([totalWidthAndHeight, position], $cwa.admin.emitRedraw)
   watch(canvas, newCanvas => newCanvas && redraw())
+  watch(totalWidthAndHeight, $cwa.admin.emitRedraw)
 })
 
 onBeforeUnmount(() => {
