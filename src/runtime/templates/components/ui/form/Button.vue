@@ -162,7 +162,7 @@ const [trigger, container] = usePopper(popperOps.value)
       <PopoverPanel
         v-slot="{ close }"
         ref="container"
-        class="cwa:absolute !cwa:min-w-[220px] cwa:max-w-[300px] cwa:bg-stone-700 cwa:py-1"
+        class="cwa:absolute cwa:!min-w-[220px] cwa:max-w-[300px] cwa:bg-stone-700 cwa:py-1"
       >
         <template v-for="(option, index) of options">
           <ButtonPopoverGroup
