@@ -69,7 +69,12 @@
           &copy; {{ (new Date()).getFullYear() }}
         </div>
         <div>
-          <NuxtLink to="https://silverbackwebapps.com">site by Silverback Web Apps</NuxtLink>
+          <CwaLink
+            to="https://silverbackwebapps.com"
+            target="_blank"
+          >
+            site by Silverback Web Apps
+          </CwaLink>
         </div>
       </div>
     </div>

@@ -1,15 +1,13 @@
 <template>
-  <div>
-    <NuxtLink
-      :target="isExternal ? '_blank' : undefined"
-      :to="resource?.data?.url || '#'"
-      exact-active-class="text-white!"
-      class="md:text-sm font-medium text-white/80 transition no-underline tracking-wide hover:opacity-100 hover:text-gurkha-200"
-      @click="handleClick"
-    >
-      {{ resource?.data?.label || 'No Link Label' }}
-    </NuxtLink>
-  </div>
+  <NuxtLink
+    :target="isExternal ? '_blank' : undefined"
+    :to="resource?.data?.url || '#'"
+    exact-active-class="text-white!"
+    class="md:text-sm font-medium text-white/80 transition no-underline tracking-wide hover:opacity-100 hover:text-gurkha-200"
+    @click="handleClick"
+  >
+    {{ resource?.data?.label || 'No Link Label' }}
+  </NuxtLink>
 </template>
 
 <script setup lang="ts">
