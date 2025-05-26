@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, toRef, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { useWindowSize } from '@vueuse/core'
+import { useElementSize, useWindowSize } from '@vueuse/core'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
@@ -15,6 +15,27 @@ const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
 const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
 const windowSize = useWindowSize()
+const elementSizeInstances = ref<ReturnType<typeof useElementSize>[]>([])
+
+watch(props.domElements, (newDomElements) => {
+  for (const esInstance of elementSizeInstances.value) {
+    esInstance.stop()
+  }
+  elementSizeInstances.value = []
+  const newInstances = []
+  for (const el of newDomElements) {
+    newInstances.push(useElementSize(el))
+  }
+  elementSizeInstances.value = newInstances
+})
+
+const totalWidthAndHeight = computed(() => {
+  let totalValue = 0
+  for (const esInstance of elementSizeInstances.value) {
+    totalValue += esInstance.width + esInstance.height
+  }
+  return totalValue
+})
 
 const resource = computed(() => {
   if (!iri.value) {
@@ -40,6 +61,7 @@ const position = computed((): {
       width: windowSize.width.value,
       height: windowSize.height.value,
     },
+    totalWidthAndHeight: totalWidthAndHeight.value,
   }
 
   for (const domElement of domElements.value) {
@@ -129,6 +151,7 @@ onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
   watch(resourceData, $cwa.admin.emitRedraw, { deep: true, flush: 'post' })
   watch(canvas, newCanvas => newCanvas && redraw())
+  watch(totalWidthAndHeight, $cwa.admin.emitRedraw)
 })
 
 onBeforeUnmount(() => {
