@@ -49,15 +49,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
 import { useCwa } from '#imports'
 import RoutesTabView from '#cwa/runtime/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/runtime/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/runtime/templates/components/core/admin/RoutesTabManage.vue'
-import { navigateTo, useRoute } from '#app'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
 
@@ -71,10 +69,8 @@ const emit = defineEmits<{
 }>()
 
 const $cwa = useCwa()
-const route = useRoute()
 
-const routeIriFromPage = computed(() => (props.pageResource.route))
-const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
+const endpoint = computed(() => props.pageResource.route ? `${props.pageResource.route}/redirects` : 'add')
 
 const disableButtons = computed(() => submitting.value || isUpdating.value)
 
@@ -83,7 +79,7 @@ const currentScreen = ref<'view' | 'manage-route' | 'create-redirect'>('view')
 
 function handleChangePage(screen: RouteScreens) {
   if (screen === 'manage-route') {
-    resetResource()
+    localResourceData.value = resource.value
   }
   currentScreen.value = screen
 }
@@ -132,23 +128,17 @@ async function handleSaveRoute() {
 }
 
 async function handleDeleteRoute() {
-  const deletingPath = resource.value?.path
-  const requestCompleteFn = (_?: CwaResource) => {
-    if (deletingPath === route.path) {
-      navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
-    }
-  }
-
-  await deleteResource(undefined, requestCompleteFn)
+  await deleteResource()
   emit('reload')
   handleChangePage('view')
 }
 
-async function handleRedirectDeleted() {
+async function handleRedirectDeleted(deletedRoute: CwaResource) {
+  console.log(deletedRoute)
   await loadResource()
 }
 
-watch(routeIriFromPage, async () => {
+watch(() => props.pageResource.route, async () => {
   await loadResource()
 })
 
@@ -179,16 +169,10 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
     return true
   },
   endpoint,
-  iri: routeIriFromPage,
+  iri: toRef(props.pageResource, 'route'),
   // exclude this field when updating the resource or creating
   excludeFields: ['redirectedFrom'],
 })
 
-// if the route resource is reloaded without the redirects postfix, we need to fix this.
-watch(apiState, (newState) => {
-  if (newState?.status === CwaResourceApiStatuses.SUCCESS && !newState?.path?.endsWith('/redirects')) {
-    isLoadingRoute.value = true
-    loadResource()
-  }
-})
+// todo: the issue on routes is likely because of the page resource iri perhaps not being immediately available... but this might not make sense as it failed to load when the details showed first before. Not when it came straight to routes tab
 </script>
