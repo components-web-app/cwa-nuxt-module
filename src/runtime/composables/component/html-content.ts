@@ -1,9 +1,7 @@
 import { type Ref, type WatchStopHandle, type App, createApp, onBeforeUnmount, onMounted, resolveComponent, watch } from 'vue'
 import { hasProtocol } from 'ufo'
-import { defineNuxtLink } from '#app'
 import { useCwa } from '#cwa/runtime/composables/cwa'
-
-// Todo: work on the nuxt link replacement so external links are not clickable during editing - make into composable for dynamically  changing anchor links into components for internal routing and easier manipulation of disabling
+import { CwaLink } from '#components'
 
 export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
   let watchStopHandle: undefined | WatchStopHandle
@@ -58,8 +56,7 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
       return
     }
 
-    const nlComponent = defineNuxtLink({})
-    const app = createApp(nlComponent, {
+    const app = createApp(CwaLink, {
       ...props,
       onClick: (e: PointerEvent) => linkClickHandler(e, props),
     })
