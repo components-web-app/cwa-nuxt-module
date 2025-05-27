@@ -27,6 +27,8 @@ watch(props.domElements, (newDomElements) => {
     newInstances.push(useElementSize(el))
   }
   elementSizeInstances.value = newInstances
+}, {
+  immediate: true,
 })
 
 const totalWidthAndHeight = computed(() => {

@@ -1,25 +1,8 @@
 import { type Ref, type WatchStopHandle, type App, createApp, onBeforeUnmount, onMounted, resolveComponent, watch } from 'vue'
-import { hasProtocol } from 'ufo'
-import { useCwa } from '#cwa/runtime/composables/cwa'
 import { CwaLink } from '#components'
 
 export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
   let watchStopHandle: undefined | WatchStopHandle
-  const $cwa = useCwa()
-
-  const isExternal = (props: any) => {
-    if (props.external) {
-      return true
-    }
-    if (props.target && props.target !== '_self') {
-      return true
-    }
-    return props.to === '' || hasProtocol(props.to, { acceptRelative: true })
-  }
-
-  const linkClickHandler = (e: PointerEvent, props: any) => {
-    $cwa.navigationDisabled && isExternal(props) && e.preventDefault()
-  }
 
   function convertAnchor(anchor: HTMLElement): App<Element> | undefined {
     const href = anchor.getAttribute('href')
@@ -40,6 +23,9 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
 
     const props: any = {
       to: hrefToUrl(href),
+      noPrefetch: undefined,
+      prefetch: false,
+      noRel: undefined,
       innerHTML: anchor.innerHTML,
     }
 
@@ -58,7 +44,6 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
 
     const app = createApp(CwaLink, {
       ...props,
-      onClick: (e: PointerEvent) => linkClickHandler(e, props),
     })
     app.component('RouterLink', rlComponent)
     return app
