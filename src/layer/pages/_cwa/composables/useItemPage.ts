@@ -5,7 +5,7 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
 
-type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
+export type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 
 type StartsWithHash = `#${string}`
 

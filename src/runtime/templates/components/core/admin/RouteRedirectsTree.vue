@@ -14,7 +14,7 @@
             <div>
               <button
                 class="cwa:opacity-60 cwa:hover:opacity-80 cwa:translate-y-0.5 cwa:cursor-pointer"
-                @click="deleteRoute(redirectRoute['@id'])"
+                @click="deleteRoute(redirectRoute)"
               >
                 <CwaUiIconBinIcon class="cwa:w-3.5" />
               </button>
@@ -28,7 +28,7 @@
           <RouteRedirectsTree
             v-if="redirectRoute.redirectedFrom"
             :redirects="redirectRoute.redirectedFrom"
-            @reload="$emit('reload')"
+            @delete="onDelete"
           />
         </div>
       </li>
@@ -42,16 +42,20 @@ import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 const emit = defineEmits<{
-  reload: []
+  deleted: [resource: CwaResource]
 }>()
 defineProps<{
   redirects: CwaResource[]
 }>()
 
-async function deleteRoute(iri: string) {
+function onDelete(resource: CwaResource) {
+  emit('deleted', resource)
+}
+
+async function deleteRoute(resource: CwaResource) {
   await $cwa.resourcesManager.deleteResource({
-    endpoint: iri,
+    endpoint: resource['@id'],
   })
-  emit('reload')
+  onDelete(resource)
 }
 </script>
