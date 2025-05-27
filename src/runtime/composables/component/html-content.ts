@@ -1,6 +1,4 @@
 import { type Ref, type WatchStopHandle, type App, createApp, onBeforeUnmount, onMounted, resolveComponent, watch } from 'vue'
-import { hasProtocol } from 'ufo'
-import { useCwa } from '#cwa/runtime/composables/cwa'
 import { CwaLink } from '#components'
 
 export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
