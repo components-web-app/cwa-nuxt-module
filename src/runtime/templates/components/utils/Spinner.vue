@@ -14,7 +14,7 @@
     >
       <svg
         aria-hidden="true"
-        class="cwa:w-6 cwa:h-6 cwa:text-gray-300 cwa:animate-spin-spinner cwa:fill-blue-600"
+        class="cwa:w-6 cwa:h-6 cwa:text-gray-300 cwa:animate-admin-spinner cwa:fill-blue-600"
         viewBox="0 0 100 101"
         xmlns="http://www.w3.org/2000/svg"
       >

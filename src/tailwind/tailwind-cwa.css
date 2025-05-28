@@ -8,6 +8,12 @@
 }
 
 @theme {
+  @keyframes cwa-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   --cwa-color-*: initial;
   --color-stone-100: #f5f5f4;
   --color-stone-300: #d6d3d1;
@@ -45,7 +51,7 @@
   --color-light: #f5f5f4;
   --color-medium: #a8a29e;
 
-  --animate-spin-spinner: spin 2s linear infinite;
+  --animate-admin-spinner: cwa-spin 1s linear infinite;
 
   --backdrop-blur-xs: 3px;
 
