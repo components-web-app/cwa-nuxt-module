@@ -214,7 +214,7 @@ export default class Fetcher {
     if (!type) {
       return
     }
-    const nestedIris = []
+    let nestedIris = []
     const nestedPropertiesToFetch = resourceTypeToNestedResourceProperties[type]
     for (const prop of nestedPropertiesToFetch) {
       let propIris = resource[prop]
@@ -234,7 +234,7 @@ export default class Fetcher {
     }
 
     if (onlyIfNoExist) {
-      nestedIris.filter(iri => !this.resourcesStore.current.currentIds.includes(iri))
+      nestedIris = nestedIris.filter(iri => !this.resourcesStore.current.currentIds.includes(iri))
       if (!nestedIris.length) {
         return
       }

@@ -110,10 +110,24 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           break
         }
 
-        const hasAlternativeVersion = resourcesGetters.findAllPublishableIris.value(event.resource).length > 1
-
-        if (!hasAlternativeVersion) {
-          const mappedPositions = [...(resource.data.componentPositions || []), ...(resourcesState.current.positionsByComponent[event.resource] || [])]
+        const alternativeVersions = resourcesGetters.findAllPublishableIris.value(event.resource)
+        const hasAlternativeVersion = alternativeVersions.length > 1
+        const mappedPositions = [...(resource.data.componentPositions || []), ...(resourcesState.current.positionsByComponent[event.resource] || [])]
+        if (hasAlternativeVersion) {
+          // nice to do even if we are refreshing the resource from the API to prevent possible delay and flickers?
+          const otherVersions = alternativeVersions.filter(altIri => altIri !== (event.resource))
+          if (otherVersions.length) {
+            const newPositionIri = otherVersions[0]
+            for (const positionIri of mappedPositions) {
+              const positionResource = resourcesState.current.byId[positionIri]
+              if (!positionResource?.data) {
+                continue
+              }
+              positionResource.data.component = newPositionIri
+            }
+          }
+        }
+        else {
           for (const positionIri of mappedPositions) {
             const positionResource = resourcesState.current.byId[positionIri]
             if (!positionResource?.data) {

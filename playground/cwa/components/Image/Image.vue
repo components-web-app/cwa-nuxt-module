@@ -3,7 +3,6 @@
     <div
       v-if="displayMedia"
       class="relative flex overflow-hidden max-w-[300px]"
-      :style="{ 'aspect-ratio': `${displayMedia.width} / ${displayMedia.height}` }"
     >
       <NuxtImg
         v-if="displayMedia"
@@ -11,7 +10,8 @@
         :src="contentUrl"
         :width="displayMedia?.width"
         :height="displayMedia?.height"
-        class="object-contain object-top-left"
+        class="max-w-full h-auto"
+        :style="{ 'aspect-ratio': `${displayMedia.width} / ${displayMedia.height}` }"
         @load="handleLoad"
       />
       <div
