@@ -70,7 +70,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
   return {
     abortFetch(event: AbortFetchEvent) {
-      console.log('abortFetch', event)
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
     },

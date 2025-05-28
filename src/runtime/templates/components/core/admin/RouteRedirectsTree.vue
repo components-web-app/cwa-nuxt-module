@@ -39,8 +39,10 @@
 <script lang="ts" setup>
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#imports'
+import { navigateTo, useRoute } from '#app'
 
 const $cwa = useCwa()
+const route = useRoute()
 const emit = defineEmits<{
   deleted: [resource: CwaResource]
 }>()
@@ -53,8 +55,15 @@ function onDelete(resource: CwaResource) {
 }
 
 async function deleteRoute(resource: CwaResource) {
+  const requestCompleteFn = (_?: CwaResource) => {
+    if (resource?.path === route.path) {
+      navigateTo($cwa.resources.pageIri.value)
+    }
+  }
+
   await $cwa.resourcesManager.deleteResource({
     endpoint: resource['@id'],
+    requestCompleteFn,
   })
   onDelete(resource)
 }

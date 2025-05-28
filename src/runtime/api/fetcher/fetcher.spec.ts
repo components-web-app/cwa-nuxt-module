@@ -176,6 +176,7 @@ describe('Fetcher -> fetchResource', () => {
     expect(fetcher.fetchManifest.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
 
     expect(FetchStatusManager.mock.instances[0].startFetchResource).toHaveBeenCalledWith({
+      path: '/new-path',
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
     })
@@ -225,6 +226,7 @@ describe('Fetcher -> fetchResource', () => {
     expect(fetcher.fetchManifest).not.toHaveBeenCalled()
 
     expect(FetchStatusManager.mock.instances[0].finishFetchResource).toHaveBeenCalledWith({
+      path: '/new-path',
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
       success: false,
@@ -257,6 +259,8 @@ describe('Fetcher -> fetchResource', () => {
       headers: {
         path: 'my-path',
       },
+      noSave: undefined,
+      path: '/new-path',
       fetchResponse: {
         '@id': '/some-resource',
       },
@@ -319,6 +323,7 @@ describe('Fetcher -> fetchResource', () => {
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
       noSave: fetchResourceEvent.noSave,
+      path: '/new-path',
       success: true,
       headers: {
         path: 'my-path',

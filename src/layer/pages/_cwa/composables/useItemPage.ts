@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
+import type { ApiResourceEvent } from '#cwa/runtime/resources/resources-manager'
 
 export type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 
@@ -59,11 +60,12 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return loadedResource
   }
 
-  async function deleteResource(refreshEndpoints?: string[]) {
+  async function deleteResource(refreshEndpoints?: string[] | undefined, requestCompleteFn?: ApiResourceEvent['requestCompleteFn']) {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
       endpoint: iri?.value || endpoint.value,
       refreshEndpoints,
+      requestCompleteFn,
     })
     emit('reload')
     emit('close')
