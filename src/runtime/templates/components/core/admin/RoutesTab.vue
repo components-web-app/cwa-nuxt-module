@@ -57,6 +57,7 @@ import RoutesTabView from '#cwa/runtime/templates/components/core/admin/RoutesTa
 import RoutesTabAddRedirect from '#cwa/runtime/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/runtime/templates/components/core/admin/RoutesTabManage.vue'
 import { navigateTo, useRoute } from '#app'
+import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
 
 export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
 
@@ -168,7 +169,7 @@ const defaultResource = computed(() => {
   return obj
 })
 
-const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource, resetResource } = useItemPage({
+const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource, resetResource, apiState } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
@@ -181,5 +182,13 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   iri: routeIriFromPage,
   // exclude this field when updating the resource or creating
   excludeFields: ['redirectedFrom'],
+})
+
+// if the route resource is reloaded without the redirects postfix, we need to fix this.
+watch(apiState, (newState) => {
+  if (newState?.status === CwaResourceApiStatuses.SUCCESS && !newState?.path?.endsWith('/redirects')) {
+    isLoadingRoute.value = true
+    loadResource()
+  }
 })
 </script>
