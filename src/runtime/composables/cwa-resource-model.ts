@@ -121,6 +121,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       },
       source,
     })
+    isSubmitting.value = false
 
     // todo: check on when second request made before initial is complete
     const newIriReturned = newResource?.['@id'] && newResource['@id'] !== submittingIri
