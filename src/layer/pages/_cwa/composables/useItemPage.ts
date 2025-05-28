@@ -42,7 +42,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
   }
 
-  function loadResource() {
+  async function loadResource() {
     if (isAdding.value) {
       localResourceData.value = {
         '@type': resourceType,
@@ -50,11 +50,13 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
       return localResourceData.value
     }
-    return $cwa.fetchResource({
+    const loadedResource = await $cwa.fetchResource({
       path: endpoint.value,
       iri: iri?.value,
       shallowFetch: true,
     })
+    isLoading.value = false
+    return loadedResource
   }
 
   async function deleteResource(refreshEndpoints?: string[]) {

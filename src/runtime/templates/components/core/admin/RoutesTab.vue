@@ -139,7 +139,7 @@ async function handleRedirectDeleted(deletedRoute: CwaResource) {
   await loadResource()
 }
 
-watch(() => props.pageResource.route, async () => {
+watch(routeIriFromPage, async () => {
   await loadResource()
 })
 
