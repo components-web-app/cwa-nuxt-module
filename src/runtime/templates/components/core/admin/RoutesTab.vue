@@ -135,7 +135,7 @@ async function handleDeleteRoute() {
   const deletingPath = resource.value?.path
   const requestCompleteFn = (_?: CwaResource) => {
     if (deletingPath === route.path) {
-      navigateTo($cwa.resources.pageIri.value)
+      navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
     }
   }
 

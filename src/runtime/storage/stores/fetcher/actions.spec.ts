@@ -210,7 +210,6 @@ describe('Fetcher store action -> startFetch', () => {
 
     for (const fetcherStateKey of Object.keys(fetcherState.fetches)) {
       if (fetcherStateKey !== 'existing-complete-primary-token') {
-        console.log(fetcherState.fetches[fetcherStateKey])
         expect(fetcherState.fetches[fetcherStateKey].abort).toBe(true)
       }
     }
