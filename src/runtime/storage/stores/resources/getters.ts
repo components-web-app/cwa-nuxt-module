@@ -1,6 +1,5 @@
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
-import { consola } from 'consola'
 import {
   type CwaResource,
   CwaResourceTypes,
@@ -133,8 +132,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
 
       // No resource, no children
       const resource = resourcesState.current.byId?.[iri]
+
       if (!resource) {
-        consola.warn(`Could not get children for '${iri}' - Resource not found`)
+        // resource may not be found if just deleted...
+        // consola.warn(`Could not get children for '${iri}' - Resource not found`)
         return childIris
       }
 
@@ -191,6 +192,15 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
 
       return childIris
+    }
+  })
+
+  const findAllPublishableIris = computed(() => {
+    return (iri: string) => {
+      const iris = [iri]
+      const relatedIri = draftToPublishedIris.value[iri] || publishedToDraftIris.value[iri]
+      if (relatedIri) iris.push(relatedIri)
+      return iris
     }
   })
 
@@ -255,14 +265,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         return [publishedToDraftIris.value[oldIri], draftToPublishedIris.value[oldIri]].includes(newIri)
       }
     }),
-    findAllPublishableIris: computed(() => {
-      return (iri: string) => {
-        const iris = [iri]
-        const relatedIri = draftToPublishedIris.value[iri] || publishedToDraftIris.value[iri]
-        if (relatedIri) iris.push(relatedIri)
-        return iris
-      }
-    }),
+    findAllPublishableIris,
     resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],
