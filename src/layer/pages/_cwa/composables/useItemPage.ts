@@ -141,8 +141,11 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return resource
   }
 
-  function syncLocalResourceWithStore(newResource: TempCwaResource | undefined) {
-    !isAdding.value && newResource && (localResourceData.value = { ...newResource })
+  function syncLocalResourceWithStore(newResource?: TempCwaResource | undefined) {
+    const storeResource = newResource || resource.value
+    if (!isAdding.value && storeResource) {
+      localResourceData.value = { ...storeResource }
+    }
   }
 
   watch(resource, syncLocalResourceWithStore)
@@ -168,5 +171,6 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     saveTitle,
     saveResource,
     loadResource,
+    resetResource: syncLocalResourceWithStore,
   }
 }
