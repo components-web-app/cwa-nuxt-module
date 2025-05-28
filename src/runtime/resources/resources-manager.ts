@@ -260,7 +260,8 @@ export class ResourcesManager {
 
     try {
       // not a fetch - is a post patch or delete so do not use fetcher
-      const resource = await this.cwaFetch.fetch<CwaResource>(...args)
+      // const resource = await this.cwaFetch.fetch<CwaResource>(...args)
+      const resource: any = {}
       const refreshEndpoints = event.refreshEndpoints || []
       if (args[1].method === 'POST') {
         // if we create a resource and have also created component position(s), we need to fetch those now
