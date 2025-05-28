@@ -33,9 +33,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const isLoading = ref(true)
   const isUpdating = ref(false)
   const localResourceData = ref<TempCwaResource | CwaResource>()
+  const resourceIri = computed(() => (iri?.value || endpoint.value))
 
   const isAdding = computed(() => endpoint.value === 'add')
-  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri?.value || endpoint.value).value?.data)
+  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(resourceIri.value).value?.data)
 
   function formatDate(dateStr: string) {
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
@@ -149,6 +150,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   }
 
   watch(resource, syncLocalResourceWithStore)
+  watch(endpoint, loadResource)
 
   onMounted(async () => {
     await loadResource()

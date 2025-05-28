@@ -27,15 +27,18 @@ export interface DeleteResourceEvent { resource: string, noCascade?: boolean }
 
 export interface SetResourceInProgressStatusEvent {
   iri: string
+  path: string
   isComplete: false
 }
 export interface SetResourceCompletedStatusEvent {
   iri: string
+  path?: string
   isComplete: true
   headers: CwaFetchRequestHeaders
 }
 export interface SetResourceResetStatusEvent {
   iri: string
+  path?: undefined
   isComplete: null
 }
 declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent | SetResourceCompletedStatusEvent | SetResourceResetStatusEvent
@@ -430,12 +433,14 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             throw new Error(`Cannot set current resource ID '${currentId}'. It does not exist.`)
           }
           const currentState = resourcesState.current.byId[currentId].apiState
+
           // not an error and has been successful in the past
           if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers) {
             resourcesState.current.byId[currentId].apiState = {
-              status: CwaResourceApiStatuses.SUCCESS,
+              status: currentState.status, // we had forced this to show as successful. when fetching route though with redirect, right on a tab change, tab changing url will trigger a reset, and then if this is success state, the fetch of redirects would fail with the postfix /redirects
               headers: currentState.headers,
               ssr: currentState.ssr,
+              path: currentState.path,
               fetchedAt: currentState.status === CwaResourceApiStatuses.SUCCESS ? currentState.fetchedAt : (new Date()).getTime(),
             }
           }
@@ -468,6 +473,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         data.apiState = {
           status: CwaResourceApiStatuses.SUCCESS,
           headers: event.headers,
+          path: event.path,
           // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
           ssr: import.meta.server,
           fetchedAt: (new Date()).getTime(),
@@ -479,6 +485,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       const newApiState: CwaResourceApiStateGeneral = {
         status: CwaResourceApiStatuses.IN_PROGRESS,
         ssr: import.meta.server,
+        path: event.path,
       }
       // if in progress, retain headers and final url from last success state
       if (data.apiState.status === CwaResourceApiStatuses.SUCCESS) {

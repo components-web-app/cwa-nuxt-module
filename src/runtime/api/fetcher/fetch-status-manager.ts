@@ -25,6 +25,7 @@ export interface FinishFetchResourceEvent {
   resource: string
   success: boolean
   token: string
+  path: string
 }
 
 export interface FinishFetchResourceSuccessEvent extends FinishFetchResourceEvent {
@@ -101,7 +102,7 @@ export default class FetchStatusManager {
   public startFetchResource(event: AddFetchResourceEvent): boolean {
     const addedToFetcherResources = this.fetcherStore.addFetchResource(event)
     if (addedToFetcherResources) {
-      this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false })
+      this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false, path: event.path })
     }
     return addedToFetcherResources
   }
@@ -109,9 +110,16 @@ export default class FetchStatusManager {
   public finishFetchResource(event: FinishFetchResourceSuccessEvent | FinishFetchResourceErrorEvent): CwaResource | undefined {
     // if resource is already in success state, leave it alone, we may have already been fetching, we can set it as an error if token old and new one will save it.
     // What if order of api responses is different? Then it'd be a success already and skipped for error.
-    if (this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+
+    // when we are fetching 1 resource but with a different endpoint, the apiState will not have been updated from the SUCCESS status during the fetch
+    // e.g. on routes tab, we re-fetch the route with `/redirects` postfix to the URL to get more data into the resource
+    if (
+      this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS
+      && this.resourcesStore.current.byId?.[event.resource]?.apiState.path === event.path
+    ) {
       return this.resourcesStore.current.byId?.[event.resource].data
     }
+
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
     const fetchStatus = this.fetcherStore.fetches[event.token]
 
@@ -151,6 +159,7 @@ export default class FetchStatusManager {
     }
 
     const cwaResource = event.fetchResponse._data
+
     if (!isCwaResource(cwaResource)) {
       const error = createCwaResourceError(new Error(`Not Saved. The response was not a valid CWA Resource. (${event.resource})`))
       setFinalResourceFetchError(error)
@@ -175,7 +184,7 @@ export default class FetchStatusManager {
       })
     }
 
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers })
+    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers, path: event.path })
 
     return cwaResource
   }

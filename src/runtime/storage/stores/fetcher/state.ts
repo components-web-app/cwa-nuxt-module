@@ -13,6 +13,7 @@ export interface FetchStatus {
   resources: string[]
   manifest?: FetchManifestInterface
   abort?: true
+  timestamp: number
 }
 
 export interface FetcherChainInterface {

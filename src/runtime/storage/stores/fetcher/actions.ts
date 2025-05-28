@@ -20,6 +20,7 @@ export interface FinishFetchEvent {
 export interface AddFetchResourceEvent {
   token: string
   resource: string
+  path: string
 }
 
 export interface StartFetchResponse {
@@ -69,6 +70,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
   return {
     abortFetch(event: AbortFetchEvent) {
+      console.log('abortFetch', event)
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
     },
@@ -92,6 +94,8 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       }
     },
     startFetch(event: StartFetchEvent): StartFetchResponse {
+      const timestamp = (new Date()).getTime()
+
       if (event.token) {
         try {
           const existingFetchStatus = getFetchStatusFromToken(event.token)
@@ -120,9 +124,15 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         if (lastSuccessState?.path === event.path && event.isCurrentSuccessResourcesResolved) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
+
           for (const existingToken of Object.keys(fetcherState.fetches)) {
             if (existingToken !== fetcherState.primaryFetch.successToken) {
-              fetcherState.fetches[existingToken].abort = true
+              const secondsDifference = (timestamp - fetcherState.fetches[existingToken].timestamp) / 1000
+              // abort old requests or previous primary fetches
+              const abortRequest = fetcherState.fetches[existingToken].isPrimary || secondsDifference >= 1
+              if (abortRequest) {
+                fetcherState.fetches[existingToken].abort = true
+              }
             }
           }
 
@@ -142,6 +152,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         path: event.path,
         resources: [],
         isPrimary: !!event.isPrimary,
+        timestamp,
       })
       if (event.manifestPath) {
         initialState.manifest = {
@@ -200,6 +211,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       return true
     },
     clearFetches() {
+      console.log('!!!!clearFetches')
       fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = undefined
       for (const token of Object.keys(fetcherState.fetches)) {

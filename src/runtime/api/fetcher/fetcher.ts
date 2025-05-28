@@ -112,6 +112,7 @@ export default class Fetcher {
       isPrimary,
       manifestPath,
     })
+
     if (!startFetchResult.continue) {
       return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
@@ -123,7 +124,9 @@ export default class Fetcher {
     const continueToFetchResource = this.fetchStatusManager.startFetchResource({
       resource: iri,
       token: startFetchResult.token,
+      path: path,
     })
+
     if (!continueToFetchResource) {
       return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
@@ -146,6 +149,7 @@ export default class Fetcher {
         fetchResponse,
         headers: cwaFetchRaw.headers,
         noSave,
+        path: path,
       })
     }
     catch (error: any) {
@@ -154,6 +158,7 @@ export default class Fetcher {
         ...finishFetchResourceEvent,
         success: false,
         error: createCwaResourceError(error),
+        path: path,
       })
     }
 
