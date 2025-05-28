@@ -55,8 +55,15 @@ function onDelete(resource: CwaResource) {
 }
 
 async function deleteRoute(resource: CwaResource) {
+  const requestCompleteFn = (_?: CwaResource) => {
+    if (resource?.path === route.path) {
+      navigateTo($cwa.resources.pageIri.value)
+    }
+  }
+
   await $cwa.resourcesManager.deleteResource({
     endpoint: resource['@id'],
+    requestCompleteFn,
   })
   onDelete(resource)
 }

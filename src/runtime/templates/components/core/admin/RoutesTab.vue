@@ -56,6 +56,7 @@ import { useCwa } from '#imports'
 import RoutesTabView from '#cwa/runtime/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/runtime/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/runtime/templates/components/core/admin/RoutesTabManage.vue'
+import { navigateTo, useRoute } from '#app'
 
 export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
 
@@ -69,6 +70,7 @@ const emit = defineEmits<{
 }>()
 
 const $cwa = useCwa()
+const route = useRoute()
 
 const routeIriFromPage = computed(() => (props.pageResource.route))
 const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
@@ -129,13 +131,19 @@ async function handleSaveRoute() {
 }
 
 async function handleDeleteRoute() {
-  await deleteResource()
+  const deletingPath = resource.value?.path
+  const requestCompleteFn = (_?: CwaResource) => {
+    if (deletingPath === route.path) {
+      navigateTo($cwa.resources.pageIri.value)
+    }
+  }
+
+  await deleteResource(undefined, requestCompleteFn)
   emit('reload')
   handleChangePage('view')
 }
 
-async function handleRedirectDeleted(deletedRoute: CwaResource) {
-  console.log(deletedRoute)
+async function handleRedirectDeleted() {
   await loadResource()
 }
 
