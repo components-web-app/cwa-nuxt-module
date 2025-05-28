@@ -210,7 +210,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       return true
     },
     clearFetches() {
-      console.log('!!!!clearFetches')
       fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = undefined
       for (const token of Object.keys(fetcherState.fetches)) {
