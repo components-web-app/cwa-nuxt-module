@@ -451,7 +451,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           // not an error and has been successful in the past
           if (currentState.status !== CwaResourceApiStatuses.ERROR && currentState.headers) {
             resourcesState.current.byId[currentId].apiState = {
-              status: currentState.path === currentId ? CwaResourceApiStatuses.SUCCESS : currentState.status, // we had forced this to show as successful. when fetching route though with redirect, right on a tab change, tab changing url will trigger a reset, and then if this is success state, the fetch of redirects would fail with the postfix /redirects
+              status: currentState.status, // we had forced this to show as successful. when fetching route though with redirect, right on a tab change, tab changing url will trigger a reset, and then if this is success state, the fetch of redirects would fail with the postfix /redirects
               headers: currentState.headers,
               ssr: currentState.ssr,
               path: currentState.path,

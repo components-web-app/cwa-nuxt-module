@@ -70,6 +70,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
 
   return {
     abortFetch(event: AbortFetchEvent) {
+      console.log('abortFetch', event)
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
     },
@@ -210,6 +211,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       return true
     },
     clearFetches() {
+      console.log('!!!!clearFetches')
       fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = undefined
       for (const token of Object.keys(fetcherState.fetches)) {

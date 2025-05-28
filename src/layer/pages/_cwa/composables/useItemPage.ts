@@ -37,7 +37,6 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const resourceIri = computed(() => (iri?.value || endpoint.value))
 
   const isAdding = computed(() => endpoint.value === 'add')
-  const apiState = computed(() => (isAdding.value ? undefined : $cwa.resources.getResource(resourceIri.value).value?.apiState))
   const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(resourceIri.value).value?.data)
 
   function formatDate(dateStr: string) {

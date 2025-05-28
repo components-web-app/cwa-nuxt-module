@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, toRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
 import { useCwa } from '#imports'
@@ -70,7 +70,8 @@ const emit = defineEmits<{
 
 const $cwa = useCwa()
 
-const endpoint = computed(() => props.pageResource.route ? `${props.pageResource.route}/redirects` : 'add')
+const routeIriFromPage = computed(() => (props.pageResource.route))
+const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
 
 const disableButtons = computed(() => submitting.value || isUpdating.value)
 
@@ -169,7 +170,7 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
     return true
   },
   endpoint,
-  iri: toRef(props.pageResource, 'route'),
+  iri: routeIriFromPage,
   // exclude this field when updating the resource or creating
   excludeFields: ['redirectedFrom'],
 })
