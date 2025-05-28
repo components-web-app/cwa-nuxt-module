@@ -79,7 +79,7 @@ const currentScreen = ref<'view' | 'manage-route' | 'create-redirect'>('view')
 
 function handleChangePage(screen: RouteScreens) {
   if (screen === 'manage-route') {
-    localResourceData.value = resource.value
+    resetResource()
   }
   currentScreen.value = screen
 }
@@ -159,7 +159,7 @@ const defaultResource = computed(() => {
   return obj
 })
 
-const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource, resetResource, apiState } = useItemPage({
+const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource, resetResource } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
@@ -173,6 +173,4 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   // exclude this field when updating the resource or creating
   excludeFields: ['redirectedFrom'],
 })
-
-// todo: the issue on routes is likely because of the page resource iri perhaps not being immediately available... but this might not make sense as it failed to load when the details showed first before. Not when it came straight to routes tab
 </script>
