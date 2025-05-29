@@ -124,6 +124,8 @@
         <CwaUiFormButton
           color="blue"
           :disabled="!isDataChanged || isLoading"
+          type="button"
+          @click="processChanges"
         >
           Save Changes
         </CwaUiFormButton>
@@ -133,7 +135,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { definePageMeta, useCwa } from '#imports'
@@ -178,7 +180,6 @@ const defaultSettings: SiteConfigParams = {
 }
 
 const allSettings = ref<SiteConfigParams>({ ...defaultSettings })
-const cachedSettings = ref<SiteConfigParams>({ ...allSettings.value })
 const loadedSettings = ref<Partial<SiteConfigParams>>({})
 
 async function loadSettings() {
@@ -207,12 +208,6 @@ const isDataChanged = computed(() => {
   return JSON.stringify(allSettings.value) !== JSON.stringify(loadedSettings.value)
 })
 
-function updateSettingKeys(keys: (keyof SiteConfigParams)[]) {
-  for (const changedKey of keys) {
-    console.log('update', changedKey, allSettings.value[changedKey])
-  }
-}
-
 const moduleLink = computed(() => {
   return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
 })
@@ -220,7 +215,6 @@ const moduleLink = computed(() => {
 async function setApiVersion() {
   const docs = await $cwa.getApiDocumentation()
   const version = docs?.docs?.info.version
-  console.log('version', version)
   if (!version) {
     return
   }
@@ -252,19 +246,20 @@ const displayAppVersion = computed(() => {
   )
 })
 
-watch(allSettings, (newSettings) => {
-  const oldSettings = cachedSettings.value
+function processChanges() {
+  const newSettings = allSettings.value
+  const oldSettings = loadedSettings.value
   const changedKeys: (keyof SiteConfigParams)[] = []
   for (const [newKey, newValue] of Object.entries(newSettings) as [keyof SiteConfigParams, any][]) {
     if (oldSettings[newKey] === undefined || newValue !== oldSettings[newKey]) {
       changedKeys.push(newKey)
     }
   }
-  updateSettingKeys(changedKeys)
-  cachedSettings.value = { ...newSettings }
-}, {
-  deep: true,
-})
+
+  for (const changedKey of changedKeys) {
+    console.log('update', changedKey, allSettings.value[changedKey])
+  }
+}
 
 onMounted(() => {
   loadSettings()

@@ -21,6 +21,7 @@ function createAuth() {
   const mockFetch = {
     fetch: vi.fn(),
   }
+  mockFetch.fetch.raw = vi.fn()
   const mockAuthStore = {
     useStore() {
       return mockUserData
@@ -38,12 +39,16 @@ function createAuth() {
   }
   const mockMercure = {
     init: vi.fn(),
+    setMercureHubFromLinkHeader: vi.fn(),
   }
   const mockFetcher = {
     fetchRoute: vi.fn(),
   }
   const mockAdmin = {
     toggleEdit: vi.fn(),
+  }
+  const mockApiDocumentation = {
+    setDocsPathFromLinkHeader: vi.fn(),
   }
   const mockCookie = ref('0')
   const auth = new Auth(
@@ -52,6 +57,7 @@ function createAuth() {
     mockMercure,
     mockFetcher,
     mockAdmin,
+    mockApiDocumentation,
     mockAuthStore,
     mockResourcesStore,
     mockFetcherStore,
@@ -68,6 +74,7 @@ function createAuth() {
     fetcher: mockFetcher,
     cookie: mockCookie,
     admin: mockAdmin,
+    apiDocumentation: mockApiDocumentation,
   }
 }
 
@@ -124,6 +131,7 @@ describe('Auth', () => {
       const mockError = new Error('oops')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      cwaFetch.fetch.raw = vi.fn()
 
       await expect(auth.forgotPassword(mockUserName)).rejects.toThrow(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`)
@@ -178,6 +186,7 @@ describe('Auth', () => {
       const mockError = new Error('oops')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      cwaFetch.fetch.raw = vi.fn()
 
       await expect(auth.resetPassword(mockPayload)).rejects.toThrow(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/component/forms/password_reset/submit', {
@@ -235,6 +244,7 @@ describe('Auth', () => {
       const clearSessionSpy = vi.spyOn(auth, 'clearSession')
 
       cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      cwaFetch.fetch.raw = vi.fn()
 
       await expect(auth.signOut()).rejects.toThrow(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
@@ -270,12 +280,12 @@ describe('Auth', () => {
       } = createAuth()
       const mockError = new FetchError('oops')
 
-      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      cwaFetch.fetch.raw = vi.fn().mockRejectedValue(mockError)
 
       const result = await auth.refreshUser()
 
       expect(result).toEqual(mockError)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/me')
+      expect(cwaFetch.fetch.raw).toHaveBeenCalledWith('/me')
       expect(mercure.init).toHaveBeenCalledWith(true)
       expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
       expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
@@ -286,10 +296,11 @@ describe('Auth', () => {
       const { auth, cwaFetch } = createAuth()
       const mockError = new Error('oops')
 
-      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      // cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+      cwaFetch.fetch.raw = vi.fn().mockRejectedValue(mockError)
 
       await expect(auth.refreshUser()).rejects.toThrow(mockError)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/me')
+      expect(cwaFetch.fetch.raw).toHaveBeenCalledWith('/me')
     })
 
     test('should return result AND assign it to user store IF request succeeds', async () => {
@@ -297,16 +308,21 @@ describe('Auth', () => {
         auth,
         cwaFetch,
         authStore,
+        apiDocumentation,
+        mercure,
       } = createAuth()
-      const mockResult = { name: 'test', age: 23 }
+      const mockResult = { _data: { name: 'test', age: 23 }, headers: { get: vi.fn(() => 'link_header') } }
 
-      cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+      cwaFetch.fetch = { raw: vi.fn().mockResolvedValue(mockResult) }
 
       const result = await auth.refreshUser()
 
-      expect(result).toEqual(mockResult)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/me')
-      expect(authStore.useStore().data.user).toEqual(mockResult)
+      expect(result).toEqual(mockResult._data)
+      expect(cwaFetch.fetch.raw).toHaveBeenCalledWith('/me')
+      expect(mockResult.headers.get).toHaveBeenCalledWith('link')
+      expect(mercure.setMercureHubFromLinkHeader).toHaveBeenCalledWith('link_header')
+      expect(apiDocumentation.setDocsPathFromLinkHeader).toHaveBeenCalledWith('link_header')
+      expect(authStore.useStore().data.user).toEqual(mockResult._data)
     })
   })
 

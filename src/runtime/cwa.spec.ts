@@ -227,6 +227,7 @@ describe('Cwa class test', () => {
       Mercure.mock.results[0].value,
       Fetcher.mock.results[0].value,
       Admin.mock.results[0].value,
+      ApiDocumentation.mock.results[0].value,
       stores.auth,
       stores.resources,
       stores.fetcher,

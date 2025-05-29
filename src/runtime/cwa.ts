@@ -71,6 +71,7 @@ export default class Cwa {
       this.mercure,
       this.fetcher,
       this.admin,
+      this.apiDocumentation,
       this.storage.stores.auth,
       this.storage.stores.resources,
       this.storage.stores.fetcher,
