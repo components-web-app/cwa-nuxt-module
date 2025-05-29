@@ -43,6 +43,7 @@ import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
 import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
+import { definePageMeta } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
@@ -79,6 +80,10 @@ function getUserRole(roles: CwaUserRoles[]) {
   }
   return 'Unknown'
 }
+
+definePageMeta({
+  name: '_cwa-users-user',
+})
 
 useHead({
   title: 'Users',

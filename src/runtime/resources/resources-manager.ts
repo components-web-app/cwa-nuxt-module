@@ -78,7 +78,8 @@ export class ResourcesManager {
   }
 
   public mergeNewResources() {
-    return this.resourcesStore.mergeNewResources()
+    this.resourcesStore.mergeNewResources()
+    this.admin.emitRedraw()
   }
 
   public get requestCount() {

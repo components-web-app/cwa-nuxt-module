@@ -16,7 +16,7 @@
       <div
         v-show="showMenu"
         ref="menu"
-        class="cwa:absolute cwa:z-10 cwa:-top-1.5 cwa:-right-2 cwa:bg-dark cwa:pt-6 cwa:pb-12 cwa:px-12 cwa:w-[90vw] cwa:max-w-xl cwa:origin-top-right"
+        class="cwa:absolute cwa:z-10 cwa:-top-1.5 cwa:-right-2 cwa:bg-dark cwa:pt-6 cwa:pb-12 cwa:px-12 cwa:w-[90vw] cwa:max-w-lg cwa:origin-top-right"
       >
         <div class="cwa:text-light cwa:flex cwa:flex-col cwa:text-center cwa:gap-y-2 cwa:mb-5">
           <div class="cwa:flex cwa:justify-center cwa:opacity-[.35]">
@@ -27,7 +27,7 @@
           </h2>
         </div>
         <div class="cwa:flex cwa:justify-center">
-          <div class="cwa:flex cwa:justify-between cwa:w-full cwa:max-w-[400px]">
+          <div class="cwa:flex cwa:justify-between cwa:w-full cwa:max-w-[350px]">
             <div class="cwa:mt-2">
               <ul class="cwa:text-xl cwa:flex cwa:flex-col cwa:gap-y-5">
                 <li>
@@ -65,7 +65,7 @@
                 <li>
                   <MenuPrimaryLink
                     label="Users"
-                    to="/_cwa/users"
+                    :to="{ name: '_cwa-users-user' }"
                   >
                     <IconUsers class="cwa:w-7" />
                   </MenuPrimaryLink>
@@ -74,10 +74,20 @@
             </div>
             <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
               <div>
+                <h3>General</h3>
+                <ul class="cwa:text-sm">
+                  <li>
+                    <MenuLink :to="{ name: '_cwa-settings' }">
+                      Site settings
+                    </MenuLink>
+                  </li>
+                </ul>
+              </div>
+              <div>
                 <h3>Account</h3>
                 <ul class="cwa:text-sm">
                   <li>
-                    <MenuLink>
+                    <MenuLink :to="{ name: '_cwa-users-user-iri', params: { iri: '/me' } }">
                       My account
                     </MenuLink>
                   </li>
@@ -88,30 +98,23 @@
                   </li>
                 </ul>
               </div>
-              <div class="cwa:pr-8">
+              <div class="cwa:py-2 cwa:rounded-lg">
                 <h3>CWA</h3>
                 <ul class="cwa:text-sm">
                   <li>
                     <MenuLink
                       to="https://cwa.rocks"
-                      target="_blank"
                     >
-                      About CWA
+                      About the CWA
                     </MenuLink>
                   </li>
-                  <li>
-                    <MenuLink
-                      :to="moduleLink"
-                      target="_blank"
-                    >
+                  <li v-if="false">
+                    <MenuLink :to="moduleLink">
                       App <span class="cwa:text-xs">{{ displayAppVersion }}</span>
                     </MenuLink>
                   </li>
-                  <li>
-                    <MenuLink
-                      :to="$cwa.apiUrlBase"
-                      target="_blank"
-                    >
+                  <li v-if="false">
+                    <MenuLink :to="apiPackagistLink">
                       API <span class="cwa:text-xs">{{ displayApiVersion }}</span>
                     </MenuLink>
                   </li>
@@ -182,6 +185,11 @@ function truncateVersion(version: string) {
 const displayApiVersion = computed(() => {
   const unstablePostfix = apiVersion.value.substring(0, 3) === 'dev' ? ' (unstable)' : ''
   return truncateVersion(apiVersion.value) + unstablePostfix
+})
+
+const apiPackagistLink = computed(() => {
+  const versionParts = apiVersion.value.split('@')
+  return `https://packagist.org/packages/components-web-app/api-components-bundle#${versionParts[0]}`
 })
 
 const displayAppVersion = computed(() => {
