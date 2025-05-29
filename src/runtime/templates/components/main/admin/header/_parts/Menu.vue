@@ -108,16 +108,6 @@
                       About the CWA
                     </MenuLink>
                   </li>
-                  <li v-if="false">
-                    <MenuLink :to="moduleLink">
-                      App <span class="cwa:text-xs">{{ displayAppVersion }}</span>
-                    </MenuLink>
-                  </li>
-                  <li v-if="false">
-                    <MenuLink :to="apiPackagistLink">
-                      API <span class="cwa:text-xs">{{ displayApiVersion }}</span>
-                    </MenuLink>
-                  </li>
                 </ul>
               </div>
             </div>
@@ -160,44 +150,6 @@ async function signOut() {
   }
   await $cwa.auth.signOut()
 }
-
-const moduleLink = computed(() => {
-  return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
-})
-
-async function setApiVersion() {
-  const docs = await $cwa.getApiDocumentation()
-  const version = docs?.docs?.info.version
-  if (!version) {
-    return
-  }
-  const matches = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
-  apiVersion.value = matches ? matches[1] : version
-}
-
-function truncateVersion(version: string) {
-  return version.length > 9
-    ? `${version.substring(0, 3)}..${version.substring(version.length - 4)}`
-    : version
-}
-
-const displayApiVersion = computed(() => {
-  const unstablePostfix = apiVersion.value.substring(0, 3) === 'dev' ? ' (unstable)' : ''
-  return truncateVersion(apiVersion.value) + unstablePostfix
-})
-
-const apiPackagistLink = computed(() => {
-  const versionParts = apiVersion.value.split('@')
-  return `https://packagist.org/packages/components-web-app/api-components-bundle#${versionParts[0]}`
-})
-
-const displayAppVersion = computed(() => {
-  const unstablePostfix = $cwa.currentModulePackageInfo.name.substring($cwa.currentModulePackageInfo.name.length - 4) === 'edge' ? ' (unstable)' : ''
-  return (
-    truncateVersion($cwa.currentModulePackageInfo.version)
-    + unstablePostfix
-  )
-})
 
 watch(
   () => route.path,
