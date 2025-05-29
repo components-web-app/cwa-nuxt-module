@@ -147,12 +147,14 @@ async function findAvailableComponents(allowedComponents: undefined | string[], 
   }
 
   const asEntries = Object.entries(apiComponents)
-  const filtered = allowedComponents
+  const filteredAllowed = allowedComponents
     ? asEntries.filter(
         ([_, value]) => (allowedComponents.includes(value.endpoint)),
       )
     : asEntries
-  const mapped = filtered.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig?.[name] }]))
+  // if no config, the front-end component does not exist to add
+  const filteredHasResourceConfig = filteredAllowed.filter(([name]) => $cwa.resourcesConfig?.[name])
+  const mapped = filteredHasResourceConfig.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig[name] }]))
   return Object.fromEntries(mapped)
 }
 
