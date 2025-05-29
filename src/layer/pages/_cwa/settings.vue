@@ -102,6 +102,24 @@
         </div>
       </div>
       <hr class="cwa:my-8 cwa:text-stone-600">
+      <div>
+        <h2 class="cwa:text-bas cwa:mb-4">
+          CWA Version Info
+        </h2>
+        <div class="cwa:flex cwa:flex-col cwa:gap-y-2 text-sm">
+          <div>
+            <MenuLink :to="moduleLink">
+              App: <span class="cwa:text-xs">{{ displayAppVersion }}</span>
+            </MenuLink>
+          </div>
+          <div>
+            <MenuLink :to="apiPackagistLink">
+              API: <span class="cwa:text-xs">{{ displayApiVersion }}</span>
+            </MenuLink>
+          </div>
+        </div>
+      </div>
+      <hr class="cwa:my-8 cwa:text-stone-600">
       <div class="flex">
         <CwaUiFormButton
           color="blue"
@@ -122,9 +140,11 @@ import { definePageMeta, useCwa } from '#imports'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
+import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 
 const $cwa = useCwa()
 const isLoading = ref(false)
+const apiVersion = ref('')
 
 useHead({
   title: 'Site Settings',
@@ -193,6 +213,45 @@ function updateSettingKeys(keys: (keyof SiteConfigParams)[]) {
   }
 }
 
+const moduleLink = computed(() => {
+  return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
+})
+
+async function setApiVersion() {
+  const docs = await $cwa.getApiDocumentation()
+  const version = docs?.docs?.info.version
+  console.log('version', version)
+  if (!version) {
+    return
+  }
+  const matches = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
+  apiVersion.value = matches ? matches[1] : version
+}
+
+function truncateVersion(version: string) {
+  return version.length > 9
+    ? `${version.substring(0, 3)}..${version.substring(version.length - 4)}`
+    : version
+}
+
+const displayApiVersion = computed(() => {
+  const unstablePostfix = apiVersion.value.substring(0, 3) === 'dev' ? ' (unstable)' : ''
+  return truncateVersion(apiVersion.value) + unstablePostfix
+})
+
+const apiPackagistLink = computed(() => {
+  const versionParts = apiVersion.value.split('@')
+  return `https://packagist.org/packages/components-web-app/api-components-bundle#${versionParts[0]}`
+})
+
+const displayAppVersion = computed(() => {
+  const unstablePostfix = $cwa.currentModulePackageInfo.name.substring($cwa.currentModulePackageInfo.name.length - 4) === 'edge' ? ' (unstable)' : ''
+  return (
+    truncateVersion($cwa.currentModulePackageInfo.version)
+    + unstablePostfix
+  )
+})
+
 watch(allSettings, (newSettings) => {
   const oldSettings = cachedSettings.value
   const changedKeys: (keyof SiteConfigParams)[] = []
@@ -209,5 +268,6 @@ watch(allSettings, (newSettings) => {
 
 onMounted(() => {
   loadSettings()
+  setApiVersion()
 })
 </script>
