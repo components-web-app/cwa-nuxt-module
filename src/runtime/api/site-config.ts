@@ -61,16 +61,16 @@ export default class SiteConfig {
 
     const allRequests: Promise<CwaResource | undefined>[] = []
     for (const changedKey of changedKeys) {
-      console.log(changedKey, this.savedSiteConfig[changedKey])
       const isCreatingConfigKey = this.savedSiteConfig[changedKey] === undefined
       const method = isCreatingConfigKey ? 'POST' : 'PATCH'
       const path = isCreatingConfigKey ? `/_/site_config_parameters` : `/_/site_config_parameters/${changedKey}`
+      const value = typeof newConfig[changedKey] === 'boolean' ? JSON.stringify(newConfig[changedKey]) : newConfig[changedKey]
       const body: {
         key: keyof SiteConfigParams
         value: any
       } = {
         key: changedKey,
-        value: JSON.stringify(newConfig[changedKey]),
+        value,
       }
 
       // @ts-expect-error Better typing for headers in this response from getRequestOptions
