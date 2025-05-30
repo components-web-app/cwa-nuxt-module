@@ -7,13 +7,13 @@ export interface CwaErrorsGettersInterface {
   getErrors: ComputedRef<CwaErrorEvent[]>
 }
 
-export default function (resourcesState: CwaErrorStateInterface): CwaErrorsGettersInterface {
+export default function (errorsState: CwaErrorStateInterface): CwaErrorsGettersInterface {
   return {
     hasErrors: computed<boolean>(() => {
-      return resourcesState.allIds.length > 0
+      return errorsState.allIds.length > 0
     }),
     getErrors: computed<CwaErrorEvent[]>(() => {
-      return resourcesState.allIds.map(e => resourcesState.byId[e])
+      return errorsState.allIds.map(e => errorsState.byId[e])
     }),
   }
 }

@@ -17,6 +17,7 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { useRuntimeConfig, type NuxtApp } from '#app/nuxt'
 import { useCookie } from '#app/composables/cookie.js'
+import SiteConfig from '#cwa/runtime/api/site-config'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -27,6 +28,8 @@ export default class Cwa {
   private readonly fetcher: Fetcher
   private readonly fetchStatusManager: FetchStatusManager
   private readonly cwaFetch: CwaFetch
+
+  public readonly siteConfig: SiteConfig
 
   // public resources repository and utility getters
   public readonly resources: Resources
@@ -59,6 +62,7 @@ export default class Cwa {
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
     this.storage = new Storage(this.options.storeName)
+    this.siteConfig = new SiteConfig(this.cwaFetch, this.storage.stores.siteConfig)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)

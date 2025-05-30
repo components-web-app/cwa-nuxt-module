@@ -13,7 +13,7 @@ import { usePopper } from '#cwa/runtime/composables/popper'
 import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
 import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
-import { NuxtLink } from '#components'
+import { CwaLink } from '#components'
 
 export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 
@@ -129,7 +129,7 @@ const [trigger, container] = usePopper(popperOps.value)
     class="cwa:flex cwa:gap-x-1.5 relative"
   >
     <component
-      :is="to ? NuxtLink : 'button'"
+      :is="to ? CwaLink : 'button'"
       v-if="showButton"
       :to="to"
       :class="[buttonClassNames, open ? 'cwa:opacity-50' : '']"

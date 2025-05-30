@@ -35,6 +35,7 @@ definePageMeta({
   },
   layout: 'cwa-root-layout',
 })
+
 useHead({
   bodyAttrs: {
     class: 'cwa:bg-stone-800',

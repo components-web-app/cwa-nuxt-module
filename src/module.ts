@@ -6,6 +6,8 @@ import { mergeWith, isArray } from 'lodash-es'
 import {
   addImportsDir,
   addPlugin,
+  addServerHandler,
+  addServerTemplate,
   addTemplate,
   addTypeTemplate,
   createResolver,
@@ -261,6 +263,17 @@ declare module 'vue-router' {
       addPlugin({
         src: resolve('./runtime/plugin'),
       })
+
+      addServerTemplate({
+        filename: '#cwa/server-options.ts',
+        getContents: () => {
+          return `export const options = ${JSON.stringify(options, undefined, 2)}
+`
+        },
+      })
+      addServerHandler({
+        handler: resolve('./runtime/server-middleware'),
+      })
     })
 
     nuxt.hook('components:dirs', (dirs) => {
@@ -315,6 +328,7 @@ declare module 'vue-router' {
         await updateTemplates({
           filter: template => [
             'cwa-options.ts',
+            '#cwa/server-options.ts',
           ].includes(template.filename),
         })
       }
