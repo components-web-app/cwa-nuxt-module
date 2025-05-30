@@ -1,5 +1,5 @@
 import type { CwaSiteConfigStateInterface } from '#cwa/runtime/storage/stores/site-config/state'
-import type { SiteConfigParams } from '#cwa/runtime/storage/stores/site-config/getters'
+import type { SiteConfigParams } from '#cwa/module'
 
 export interface CwaSiteConfigActionsInterface {
   setConfigParameters(configuration: { key: string, value: string }[]): void

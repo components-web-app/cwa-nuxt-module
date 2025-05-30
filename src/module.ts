@@ -20,6 +20,7 @@ import {
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
+import { defaultSiteConfig } from '#cwa/runtime/composables/useCwaSiteConfig'
 
 export type GlobalComponentNames = keyof GlobalComponents
 
@@ -45,6 +46,20 @@ export interface CwaUiMeta {
   }
 }
 
+export type SiteConfigParams = {
+  indexable: boolean
+  robotsAllowSearchEngineCrawlers: boolean
+  robotsAllowAiBots: boolean
+  robotsText: string
+  robotsRemoveSitemap: boolean
+  sitemapEnabled: boolean
+  siteName: string
+  fallbackTitle: boolean
+  concatTitle: boolean
+  maintenanceModeEnabled: boolean
+  sitemapXml: string
+}
+
 export interface CwaModuleOptions {
   appName: string
   storeName: string
@@ -62,6 +77,7 @@ export interface CwaModuleOptions {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'>
   }
   layoutName?: string
+  siteConfig?: SiteConfigParams
 }
 
 declare module '@nuxt/schema' {
@@ -129,6 +145,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         name: 'Group',
       },
     },
+    siteConfig: defaultSiteConfig,
   },
   async setup(options: CwaModuleOptions, nuxt) {
     const logger = useLogger(NAME)
@@ -245,6 +262,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
 `
         },
       })
+
       addTypeTemplate({
         filename: 'types/cwa.d.ts',
         write: true,

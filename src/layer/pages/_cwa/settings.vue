@@ -75,13 +75,19 @@
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <CwaUiFormToggle
-              v-model="allSettings.robotsAllowSearchEngineCrawlers"
-              label="Allow Search Engine Crawlers"
+              v-model="allSettings.indexable"
+              label="Allow your website to be indexed"
             />
-            <CwaUiFormToggle
-              v-model="allSettings.robotsAllowAiBots"
-              label="Allow Artificial Intelligence Bots"
-            />
+            <template v-if="allSettings.indexable">
+              <CwaUiFormToggle
+                v-model="allSettings.robotsAllowSearchEngineCrawlers"
+                label="Allow Search Engine Crawlers"
+              />
+              <CwaUiFormToggle
+                v-model="allSettings.robotsAllowAiBots"
+                label="Allow Artificial Intelligence Bots"
+              />
+            </template>
             <CwaUiFormToggle
               v-model="allSettings.robotsRemoveSitemap"
               label="Remove sitemap.xml from robots.txt"
