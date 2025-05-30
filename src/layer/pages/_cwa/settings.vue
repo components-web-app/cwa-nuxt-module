@@ -15,7 +15,7 @@
       v-else
       class="cwa:flex cwa:flex-col"
     >
-      <div :class="{ 'cwa:pointer-events-none cwa:opacity-50': $cwa.siteConfig.totalRequests.value > 0 }">
+      <div :class="{ 'cwa:pointer-events-none cwa:opacity-50 cwa:transition': showUpdateProgress }">
         <div>
           <h2 class="cwa:text-xl cwa:mb-4">
             General
@@ -273,7 +273,7 @@ const displayAppVersion = computed(() => {
 watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
   showUpdateProgress.value = newTotal > 0
 }, {
-  debounce: 500,
+  debounce: 300,
 })
 
 async function processChanges() {
