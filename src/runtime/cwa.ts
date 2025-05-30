@@ -62,7 +62,7 @@ export default class Cwa {
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
     this.storage = new Storage(this.options.storeName)
-    this.siteConfig = new SiteConfig(this.cwaFetch, this.storage.stores.siteConfig)
+    this.siteConfig = new SiteConfig(this.cwaFetch, this.storage.stores.siteConfig, this.options.siteConfig)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)

@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { CwaSiteConfigStateInterface } from './state'
 import type { SiteConfigParams } from '#cwa/module'
-import { defaultSiteConfig } from '#cwa/runtime/composables/useCwaSiteConfig'
+import { useCwaSiteConfig } from '#imports'
 
 export interface CwaSiteConfigGettersInterface {
   getConfig: ComputedRef<SiteConfigParams>
@@ -11,7 +11,8 @@ export interface CwaSiteConfigGettersInterface {
 export default function (siteConfigState: CwaSiteConfigStateInterface): CwaSiteConfigGettersInterface {
   return {
     getConfig: computed<SiteConfigParams>(() => {
-      return Object.assign({}, defaultSiteConfig, siteConfigState.config)
+      const { mergeConfig } = useCwaSiteConfig()
+      return mergeConfig(siteConfigState.config.value)
     }),
   }
 }

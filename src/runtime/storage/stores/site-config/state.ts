@@ -1,4 +1,4 @@
-import { reactive, type Ref, ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import type { CwaResource } from '../../../resources/resource-utils'
 import type { SiteConfigParams } from '#cwa/module'
 
@@ -9,14 +9,12 @@ export interface CwaSiteConfigParameter extends CwaResource {
 
 export interface CwaSiteConfigStateInterface {
   isLoading: Ref<boolean>
-  config: {
-    [key: string]: string | undefined
-  }
+  config: Ref<Partial<SiteConfigParams>>
 }
 
 export default function (): CwaSiteConfigStateInterface {
   return {
     isLoading: ref(false),
-    config: reactive({}),
+    config: ref<Partial<SiteConfigParams>>({}),
   }
 }

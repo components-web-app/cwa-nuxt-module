@@ -5,14 +5,16 @@
   />
   <ListContainer class="cwa:relative cwa:py-10">
     <Spinner
-      v-if="isLoading"
+      v-if="$cwa.siteConfig.isLoading || allSettings === undefined"
       :show="true"
     />
+    <CwaUiAlertWarning v-else-if="!allSettings">
+      Sorry, there was an error loading the settings
+    </CwaUiAlertWarning>
     <div
       v-else
       class="cwa:flex cwa:flex-col"
     >
-      {{ allSettings }}
       <div :class="{ 'cwa:pointer-events-none cwa:opacity-50': requestTotal }">
         <div>
           <h2 class="cwa:text-xl cwa:mb-4">
@@ -71,6 +73,24 @@
         <hr class="cwa:my-8 cwa:text-stone-600">
         <div>
           <h2 class="cwa:text-xl cwa:mb-4">
+            Sitemap
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <CwaUiFormToggle
+              v-model="allSettings.sitemapEnabled"
+              label="Auto-generate sitemap.xml"
+            />
+            <ModalInput
+              v-if="!allSettings.sitemapEnabled"
+              v-model="allSettings.sitemapXml"
+              label="Custom sitemap.xml"
+              type="textarea"
+            />
+          </div>
+        </div>
+        <hr class="cwa:my-8 cwa:text-stone-600">
+        <div>
+          <h2 class="cwa:text-xl cwa:mb-4">
             SEO Indexing
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
@@ -95,24 +115,6 @@
             <ModalInput
               v-model="allSettings.robotsText"
               label="Additional custom robots.txt"
-              type="textarea"
-            />
-          </div>
-        </div>
-        <hr class="cwa:my-8 cwa:text-stone-600">
-        <div>
-          <h2 class="cwa:text-xl cwa:mb-4">
-            Sitemap
-          </h2>
-          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-            <CwaUiFormToggle
-              v-model="allSettings.sitemapEnabled"
-              label="Auto-generate sitemap.xml"
-            />
-            <ModalInput
-              v-if="!allSettings.sitemapEnabled"
-              v-model="allSettings.sitemapXml"
-              label="Custom sitemap.xml"
               type="textarea"
             />
           </div>
@@ -188,7 +190,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
@@ -201,9 +203,13 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 const $cwa = useCwa()
 
-const isLoading = ref(false)
+const allSettings = ref()
+watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
+  allSettings.value = { ...newConfig }
+}, {
+  deep: true,
+})
 
-const allSettings = ref($cwa.siteConfig.siteConfig)
 const submitDisabled = ref(false)
 
 // const allSettings = ref<SiteConfigParams>({ ...defaultSettings })
@@ -344,7 +350,7 @@ async function processChanges() {
 }
 
 onMounted(() => {
-  // loadSettings()
+  $cwa.siteConfig.loadConfig()
   setApiVersion()
 })
 </script>

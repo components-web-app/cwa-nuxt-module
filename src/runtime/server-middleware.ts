@@ -7,7 +7,7 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import useCwaSiteConfig from '#cwa/runtime/composables/useCwaSiteConfig'
 
 export default defineEventHandler(async () => {
-  const { validateConfigResponse, siteConfigResponseDataToConfig } = useCwaSiteConfig()
+  const { mergeConfig, responseToConfig } = useCwaSiteConfig()
   const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
   const resolvedUrl = apiUrl || apiUrlBrowser || options.apiUrl || options.apiUrlBrowser || ''
   const fetcher = $fetch.create({
@@ -19,15 +19,11 @@ export default defineEventHandler(async () => {
   })
   try {
     const data = await fetcher<CwaResource>('/_/site_config_parameters')
-    const configRows = validateConfigResponse(data)
-    if (configRows) {
-      const serverConfig = siteConfigResponseDataToConfig(configRows)
-      const resolvedConfig = Object.assign({}, options.siteConfig, serverConfig)
-      updateSiteConfig({
-        name: resolvedConfig.siteName,
-        indexable: resolvedConfig.indexable,
-      })
-    }
+    const resolvedConfig = mergeConfig(options.siteConfig, responseToConfig(data))
+    updateSiteConfig({
+      name: resolvedConfig.siteName,
+      indexable: resolvedConfig.indexable,
+    })
   }
   catch (e) {
     return

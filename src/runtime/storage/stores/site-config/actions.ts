@@ -16,7 +16,7 @@ function processApiValue(configValue: any) {
 
 export default function (siteConfigState: CwaSiteConfigStateInterface): CwaSiteConfigActionsInterface {
   function setConfigParameter(key: keyof SiteConfigParams, value: string) {
-    siteConfigState.config[key] = processApiValue(value)
+    siteConfigState.config.value[key] = processApiValue(value)
   }
 
   return {

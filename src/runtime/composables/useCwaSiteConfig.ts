@@ -25,7 +25,7 @@ export function useCwaSiteConfig() {
     return value
   }
 
-  function validateConfigResponse(data: CwaResource) {
+  function getRowsFromResponse(data: CwaResource) {
     const configRows = data['hydra:member']
     if (!configRows || !Array.isArray(configRows)) {
       return
@@ -33,7 +33,7 @@ export function useCwaSiteConfig() {
     return configRows as CwaSiteConfigParameter[]
   }
 
-  function siteConfigResponseDataToConfig(configRows: CwaSiteConfigParameter[]) {
+  function siteConfigRowsToConfig(configRows: CwaSiteConfigParameter[]) {
     const configData: Partial<SiteConfigParams> = {}
     for (const configRow of configRows) {
       const configKey = configRow.key as keyof SiteConfigParams
@@ -42,10 +42,22 @@ export function useCwaSiteConfig() {
     return configData
   }
 
+  function mergeConfig(...configs: Partial<SiteConfigParams>[]): SiteConfigParams {
+    return Object.assign({}, defaultSiteConfig, ...configs)
+  }
+
+  function responseToConfig(data: CwaResource) {
+    const rows = getRowsFromResponse(data)
+    if (!rows) {
+      return {}
+    }
+    return mergeConfig(siteConfigRowsToConfig(rows))
+  }
+
   return {
     defaultSiteConfig,
-    validateConfigResponse,
-    siteConfigResponseDataToConfig,
+    responseToConfig,
+    mergeConfig,
   }
 }
 

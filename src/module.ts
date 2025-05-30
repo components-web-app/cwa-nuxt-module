@@ -77,7 +77,7 @@ export interface CwaModuleOptions {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'>
   }
   layoutName?: string
-  siteConfig?: SiteConfigParams
+  siteConfig: SiteConfigParams
 }
 
 declare module '@nuxt/schema' {
