@@ -10,11 +10,13 @@ export interface CwaSiteConfigParameter extends CwaResource {
 export interface CwaSiteConfigStateInterface {
   isLoading: Ref<boolean>
   config: Ref<Partial<SiteConfigParams>>
+  serverConfig: Ref<undefined | Partial<SiteConfigParams>>
 }
 
 export default function (): CwaSiteConfigStateInterface {
   return {
     isLoading: ref(false),
     config: ref<Partial<SiteConfigParams>>({}),
+    serverConfig: ref<Partial<SiteConfigParams>>(),
   }
 }

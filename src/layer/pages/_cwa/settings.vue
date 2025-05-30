@@ -15,7 +15,7 @@
       v-else
       class="cwa:flex cwa:flex-col"
     >
-      <div :class="{ 'cwa:pointer-events-none cwa:opacity-50': requestTotal }">
+      <div :class="{ 'cwa:pointer-events-none cwa:opacity-50': $cwa.siteConfig.totalRequests.value > 0 }">
         <div>
           <h2 class="cwa:text-xl cwa:mb-4">
             General
@@ -165,7 +165,7 @@
 
       <div class="flex">
         <CwaUiFormButton
-          :color="hasError ? 'error' : 'blue'"
+          :color="$cwa.siteConfig.apiState.hasError.value ? 'error' : 'blue'"
           :disabled="submitDisabled"
           type="button"
           @click="processChanges"
@@ -174,7 +174,7 @@
         </CwaUiFormButton>
       </div>
       <div
-        v-if="hasError"
+        v-if="$cwa.siteConfig.apiState.hasError.value"
         class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-red-500 cwa:font-bold"
       >
         <p>An error occurred while saving your changes</p>
@@ -183,7 +183,7 @@
         :class="[showUpdateProgress ? 'opacity-100' : 'opacity-0']"
         class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition"
       >
-        <Spinner show /><p>Processing updates {{ updatingCount - requestTotal }} / {{ updatingCount }}</p>
+        <Spinner show /><p>Processing updates {{ updatingCount - $cwa.siteConfig.totalRequests.value }} / {{ updatingCount }}</p>
       </div>
     </div>
   </ListContainer>
@@ -192,6 +192,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { watchDebounced } from '@vueuse/core'
+import { isEqual } from 'lodash-es'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { definePageMeta, useCwa } from '#imports'
@@ -199,35 +200,28 @@ import ListContainer from '#cwa/runtime/templates/components/core/admin/ListCont
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { SiteConfigParams } from '#cwa/module'
 
 const $cwa = useCwa()
 
-const allSettings = ref()
+const allSettings = ref<SiteConfigParams>()
 watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
   allSettings.value = { ...newConfig }
 }, {
   deep: true,
 })
 
-const submitDisabled = ref(false)
+const isDataChanged = computed(() => {
+  return !isEqual(allSettings.value, $cwa.siteConfig.siteConfig)
+})
 
-// const allSettings = ref<SiteConfigParams>({ ...defaultSettings })
-// const loadedSettings = ref<Partial<SiteConfigParams>>({})
-// const isDataChanged = computed(() => {
-//   return !isEqual(allSettings.value, loadedSettings.value)
-// })
-// const submitDisabled = computed(() => {
-//   return !isDataChanged.value || isLoading.value || requestTotal.value > 0
-// })
+const submitDisabled = computed(() => {
+  return !isDataChanged.value || $cwa.siteConfig.isLoading || $cwa.siteConfig.totalRequests.value > 0
+})
 
 const apiVersion = ref('')
 const showUpdateProgress = ref(false)
-
-const requests = ref<Promise<CwaResource | undefined>[]>([])
 const updatingCount = ref(0)
-const requestTotal = computed(() => requests.value.length)
-const hasError = ref(false)
 
 const moduleLink = computed(() => {
   return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
@@ -276,77 +270,17 @@ const displayAppVersion = computed(() => {
   )
 })
 
-watchDebounced(requestTotal, () => {
-  showUpdateProgress.value = requestTotal.value > 0
+watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
+  showUpdateProgress.value = newTotal > 0
 }, {
   debounce: 500,
 })
 
 async function processChanges() {
-  // hasError.value = false
-  // if (submitDisabled.value) {
-  //   return
-  // }
-  //
-  // requests.value = []
-  //
-  // const newSettings = allSettings.value
-  // const oldSettings = loadedSettings.value
-  // const changedKeys: (keyof SiteConfigParams)[] = []
-  // for (const [newKey, newValue] of Object.entries(newSettings) as [keyof SiteConfigParams, any][]) {
-  //   if (oldSettings[newKey] === undefined || newValue !== oldSettings[newKey]) {
-  //     changedKeys.push(newKey)
-  //   }
-  // }
-  // if (!changedKeys.length) {
-  //   return
-  // }
-  //
-  // showUpdateProgress.value = true
-  // updatingCount.value = changedKeys.length
-  //
-  // for (const changedKey of changedKeys) {
-  //   const isCreatingConfig = loadedSettings.value[changedKey] === undefined
-  //
-  //   const iri = isCreatingConfig ? `/_/site_config_parameters` : `/_/site_config_parameters/${changedKey}`
-  //   const data: {
-  //     key: keyof SiteConfigParams
-  //     value: any
-  //   } = {
-  //     key: changedKey,
-  //     value: JSON.stringify(allSettings.value[changedKey]),
-  //   }
-  //   const request = $cwa.fetcher.fetch({
-  //     path: iri,
-  //     body: data,
-  //     headers: {
-  //       method: isCreatingConfig ? 'POST' : 'PATCH',
-  //     },
-  //   })
-  //
-  //   requests.value.push(request)
-  // }
-
-  // try {
-  //   const responses = await Promise.all(requests.value)
-  //   if (responses.filter(r => r === undefined).length) {
-  //     hasError.value = true
-  //   }
-  //
-  //   for (const response of responses) {
-  //     if (!response) {
-  //       continue
-  //     }
-  //     const configKey = response.key as keyof SiteConfigParams
-  //     loadedSettings.value[configKey] = processApiValue(response.value)
-  //     console.log(response.key, loadedSettings.value[configKey])
-  //   }
-  // }
-  // catch (e) {
-  //   hasError.value = true
-  //   throw e
-  // }
-  // requests.value = []
+  if (!allSettings.value) return
+  showUpdateProgress.value = true
+  const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
+  updatingCount.value = totalConfigsChanged
 }
 
 onMounted(() => {

@@ -19,8 +19,8 @@ export const defaultSiteConfig: SiteConfigParams = {
 export function useCwaSiteConfig() {
   function processApiConfigValue(configValue: any) {
     let value = configValue
-    if (configValue === '1' || configValue === 'false') {
-      value = Boolean(value)
+    if (configValue === '0' || configValue === '1' || configValue === 'false' || configValue === 'true') {
+      value = Boolean(JSON.parse(configValue))
     }
     return value
   }
@@ -46,10 +46,13 @@ export function useCwaSiteConfig() {
     return Object.assign({}, defaultSiteConfig, ...configs)
   }
 
-  function responseToConfig(data: CwaResource) {
+  function responseToConfig(data: CwaResource, noMerge?: boolean) {
     const rows = getRowsFromResponse(data)
     if (!rows) {
       return {}
+    }
+    if (noMerge) {
+      return siteConfigRowsToConfig(rows)
     }
     return mergeConfig(siteConfigRowsToConfig(rows))
   }
@@ -58,6 +61,7 @@ export function useCwaSiteConfig() {
     defaultSiteConfig,
     responseToConfig,
     mergeConfig,
+    processApiConfigValue,
   }
 }
 
