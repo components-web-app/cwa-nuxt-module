@@ -6,7 +6,7 @@ import { mergeWith, isArray } from 'lodash-es'
 import {
   addImportsDir,
   addPlugin,
-  addServerPlugin,
+  addServerHandler,
   addServerTemplate,
   addTemplate,
   addTypeTemplate,
@@ -294,7 +294,9 @@ declare module 'vue-router' {
 `
         },
       })
-      addServerPlugin(resolve('./runtime/server-plugin'))
+      addServerHandler({
+        handler: resolve('./runtime/server-middleware'),
+      })
     })
 
     nuxt.hook('components:dirs', (dirs) => {
