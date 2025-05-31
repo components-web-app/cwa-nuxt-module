@@ -168,7 +168,7 @@ describe('CWA module', () => {
 `)
 
       expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith({
-        handler: './server/server-middleware',
+        handler: './runtime/server/server-middleware',
       })
     })
 
