@@ -20,6 +20,7 @@ export default defineEventHandler(async (e) => {
   try {
     const data = await fetcher<CwaResource>('/_/site_config_parameters')
     const resolvedConfig = mergeConfig(options.siteConfig, responseToConfig(data))
+    // @ts-expect-error updateSiteConfig from #imports is for app not server in this resolution
     updateSiteConfig(e, {
       name: resolvedConfig.siteName,
       indexable: resolvedConfig.indexable,
