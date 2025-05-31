@@ -5,137 +5,194 @@
   />
   <ListContainer class="cwa:relative cwa:py-10">
     <Spinner
-      v-if="isLoading"
+      v-if="$cwa.siteConfig.isLoading || allSettings === undefined"
       :show="true"
     />
+    <CwaUiAlertWarning v-else-if="!allSettings">
+      Sorry, there was an error loading the settings
+    </CwaUiAlertWarning>
     <div
       v-else
       class="cwa:flex cwa:flex-col"
     >
-      <div>
-        <h2 class="cwa:text-xl cwa:mb-4">
-          General
-        </h2>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-          <div>
+      <div :class="{ 'cwa:pointer-events-none cwa:opacity-50 cwa:transition': showUpdateProgress }">
+        <div>
+          <h2 class="cwa:text-xl cwa:mb-4">
+            General
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <div>
+              <ModalInput
+                v-model="allSettings.siteName"
+                label="Site name"
+                type="text"
+              />
+            </div>
+            <div>
+              <CwaUiFormToggle
+                v-model="allSettings.fallbackTitle"
+                label="Fallback page titles to site name"
+              />
+              <div
+                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
+              >
+                <p v-if="allSettings.fallbackTitle">
+                  If you do not specify a page title, your site name will be used instead
+                </p>
+                <p
+                  v-else
+                  class="cwa:text-red-500 cwa:font-bold"
+                >
+                  If you do not specify a page title, no page title will be used
+                </p>
+              </div>
+            </div>
+            <div>
+              <CwaUiFormToggle
+                v-model="allSettings.concatTitle"
+                label="Extend page titles with the default title"
+              />
+              <div
+                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
+              >
+                <p>
+                  <span>Page titles will be formatted as</span>
+                  <b
+                    v-if="allSettings.concatTitle"
+                    class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5"
+                  >[Page title] | [Site name]</b>
+                  <b
+                    v-else
+                    class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5"
+                  >[Page title]</b>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="cwa:my-8 cwa:text-stone-600">
+        <div>
+          <h2 class="cwa:text-xl cwa:mb-4">
+            Sitemap
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <CwaUiFormToggle
+              v-model="allSettings.sitemapEnabled"
+              label="Auto-generate sitemap.xml"
+            />
             <ModalInput
-              v-model="allSettings.defaultTitle"
-              label="Default page title"
-              type="text"
+              v-if="!allSettings.sitemapEnabled"
+              v-model="allSettings.sitemapXml"
+              label="Custom sitemap.xml"
+              type="textarea"
             />
-            <div
-              v-if="!allSettings.concatTitle"
-              class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
-            >
-              <p>If you do not specify a page title, your default page title will be used instead</p>
-            </div>
           </div>
-          <div>
+        </div>
+        <hr class="cwa:my-8 cwa:text-stone-600">
+        <div>
+          <h2 class="cwa:text-xl cwa:mb-4">
+            SEO Indexing
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <CwaUiFormToggle
-              v-model="allSettings.concatTitle"
-              label="Extend page titles with the default title"
+              v-model="allSettings.indexable"
+              label="Allow your website to be indexed"
             />
-            <div
-              v-if="allSettings.concatTitle"
-              class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
-            >
-              <p><span>Page titles will be formatted as</span> <b class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5">[Page title]: [Default title]</b></p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <hr class="cwa:my-8 cwa:text-stone-600">
-      <div>
-        <h2 class="cwa:text-xl cwa:mb-4">
-          SEO Indexing
-        </h2>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-          <CwaUiFormToggle
-            v-model="allSettings.robotsAllowSearchEngineCrawlers"
-            label="Allow Search Engine Crawlers"
-          />
-          <CwaUiFormToggle
-            v-model="allSettings.robotsAllowAiBots"
-            label="Allow Artificial Intelligence Bots"
-          />
-          <CwaUiFormToggle
-            v-model="allSettings.robotsRemoveSitemap"
-            label="Remove sitemap.xml from robots.txt"
-          />
-          <ModalInput
-            v-model="allSettings.robotsText"
-            label="Custom robots.txt"
-            type="textarea"
-          />
-        </div>
-      </div>
-      <hr class="cwa:my-8 cwa:text-stone-600">
-      <div>
-        <h2 class="cwa:text-xl cwa:mb-4">
-          Sitemap
-        </h2>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-          <CwaUiFormToggle
-            v-model="allSettings.sitemapEnabled"
-            label="Auto-generate sitemap.xml"
-          />
-        </div>
-      </div>
-      <hr class="cwa:my-8 cwa:text-stone-600"><div>
-        <h2 class="cwa:text-xl cwa:mb-4">
-          Advanced
-        </h2>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-          <div>
+            <template v-if="allSettings.indexable">
+              <CwaUiFormToggle
+                v-model="allSettings.robotsAllowSearchEngineCrawlers"
+                label="Allow Search Engine Crawlers"
+              />
+              <CwaUiFormToggle
+                v-model="allSettings.robotsAllowAiBots"
+                label="Allow Artificial Intelligence Bots"
+              />
+            </template>
             <CwaUiFormToggle
-              v-model="allSettings.maintenanceModeEnabled"
-              label="Enable maintenance mode"
+              v-model="allSettings.robotsRemoveSitemap"
+              label="Remove sitemap.xml from robots.txt"
             />
-            <div
-              v-if="allSettings.maintenanceModeEnabled"
-              class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
-            >
-              <p>Website visitors will be redirected to a 'website under maintenance page'</p>
-              <p>Crawlers will receive an HTTP status code so they know this is not permanent</p>
+            <ModalInput
+              v-model="allSettings.robotsText"
+              label="Additional custom robots.txt"
+              type="textarea"
+            />
+          </div>
+        </div>
+        <hr class="cwa:my-8 cwa:text-stone-600"><div>
+          <h2 class="cwa:text-xl cwa:mb-4">
+            Advanced
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <div>
+              <CwaUiFormToggle
+                v-model="allSettings.maintenanceModeEnabled"
+                label="Enable maintenance mode"
+              />
+              <div
+                v-if="allSettings.maintenanceModeEnabled"
+                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
+              >
+                <p>Website visitors will be redirected to a 'website under maintenance page'</p>
+                <p>Crawlers will receive an HTTP status code so they know this is not permanent</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <hr class="cwa:my-8 cwa:text-stone-600">
-      <div>
-        <h2 class="cwa:text-bas cwa:mb-4">
-          CWA Version Info
-        </h2>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-2 text-sm">
-          <div>
-            <MenuLink :to="moduleLink">
-              App: <span class="cwa:text-xs">{{ displayAppVersion }}</span>
-            </MenuLink>
-          </div>
-          <div>
-            <MenuLink :to="apiPackagistLink">
-              API: <span class="cwa:text-xs">{{ displayApiVersion }}</span>
-            </MenuLink>
+        <hr class="cwa:my-8 cwa:text-stone-600">
+        <div>
+          <h2 class="cwa:text-bas cwa:mb-4">
+            CWA Version Info
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-2 text-sm">
+            <div>
+              <MenuLink :to="moduleLink">
+                App: <span class="cwa:text-xs">{{ displayAppVersion }}</span>
+              </MenuLink>
+            </div>
+            <div>
+              <MenuLink
+                :to="apiPackagistLink"
+                title="Hello"
+              >
+                API: <span class="cwa:text-xs">{{ displayApiVersion }}</span>
+              </MenuLink>
+            </div>
           </div>
         </div>
+        <hr class="cwa:my-8 cwa:text-stone-600">
       </div>
-      <hr class="cwa:my-8 cwa:text-stone-600">
+
       <div class="flex">
         <CwaUiFormButton
-          color="blue"
-          :disabled="!isDataChanged || isLoading"
+          :color="$cwa.siteConfig.apiState.hasError.value ? 'error' : 'blue'"
+          :disabled="submitDisabled"
           type="button"
           @click="processChanges"
         >
           Save Changes
         </CwaUiFormButton>
       </div>
+      <div
+        v-if="$cwa.siteConfig.apiState.hasError.value"
+        class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-red-500 cwa:font-bold"
+      >
+        <p>An error occurred while saving your changes</p>
+      </div>
+      <div
+        :class="[showUpdateProgress ? 'opacity-100' : 'opacity-0']"
+        class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition"
+      >
+        <Spinner show /><p>Processing updates {{ updatingCount - $cwa.siteConfig.totalRequests.value }} / {{ updatingCount }}</p>
+      </div>
     </div>
   </ListContainer>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { watchDebounced } from '@vueuse/core'
+import { isEqual } from 'lodash-es'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { definePageMeta, useCwa } from '#imports'
@@ -143,10 +200,32 @@ import ListContainer from '#cwa/runtime/templates/components/core/admin/ListCont
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
+import type { SiteConfigParams } from '#cwa/module'
 
 const $cwa = useCwa()
-const isLoading = ref(false)
+
+const allSettings = ref<SiteConfigParams>()
+watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
+  allSettings.value = { ...newConfig }
+}, {
+  deep: true,
+})
+
+const isDataChanged = computed(() => {
+  return !isEqual(allSettings.value, $cwa.siteConfig.siteConfig)
+})
+
+const submitDisabled = computed(() => {
+  return !isDataChanged.value || $cwa.siteConfig.isLoading || $cwa.siteConfig.totalRequests.value > 0
+})
+
 const apiVersion = ref('')
+const showUpdateProgress = ref(false)
+const updatingCount = ref(0)
+
+const moduleLink = computed(() => {
+  return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
+})
 
 useHead({
   title: 'Site Settings',
@@ -155,61 +234,6 @@ useHead({
 definePageMeta({
   name: '_cwa-settings',
   pageTransition: false,
-})
-
-type SiteConfigParams = {
-  robotsAllowSearchEngineCrawlers: boolean
-  robotsAllowAiBots: boolean
-  robotsText: string
-  robotsRemoveSitemap: boolean
-  sitemapEnabled: boolean
-  defaultTitle: string
-  concatTitle: boolean
-  maintenanceModeEnabled: boolean
-}
-
-const defaultSettings: SiteConfigParams = {
-  robotsAllowSearchEngineCrawlers: true,
-  robotsAllowAiBots: true,
-  robotsText: '',
-  robotsRemoveSitemap: false,
-  sitemapEnabled: true,
-  defaultTitle: '',
-  concatTitle: true,
-  maintenanceModeEnabled: false,
-}
-
-const allSettings = ref<SiteConfigParams>({ ...defaultSettings })
-const loadedSettings = ref<Partial<SiteConfigParams>>({})
-
-async function loadSettings() {
-  isLoading.value = true
-  try {
-    const { response } = $cwa.fetch({ path: '/_/site_config_parameters' })
-    const { _data: data } = await response
-    if (data) {
-      if (data['hydra:member'] && Array.isArray(data['hydra:member'])) {
-        const loadedConfig: Partial<SiteConfigParams> = {}
-        for (const configParam of data['hydra:member']) {
-          loadedConfig[configParam.key as keyof SiteConfigParams] = configParam.value
-        }
-        loadedSettings.value = { ...loadedConfig }
-        allSettings.value = Object.assign({}, defaultSettings, loadedConfig)
-      }
-    }
-  }
-  catch (e) {
-    console.error(e)
-  }
-  isLoading.value = false
-}
-
-const isDataChanged = computed(() => {
-  return JSON.stringify(allSettings.value) !== JSON.stringify(loadedSettings.value)
-})
-
-const moduleLink = computed(() => {
-  return `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`
 })
 
 async function setApiVersion() {
@@ -246,23 +270,21 @@ const displayAppVersion = computed(() => {
   )
 })
 
-function processChanges() {
-  const newSettings = allSettings.value
-  const oldSettings = loadedSettings.value
-  const changedKeys: (keyof SiteConfigParams)[] = []
-  for (const [newKey, newValue] of Object.entries(newSettings) as [keyof SiteConfigParams, any][]) {
-    if (oldSettings[newKey] === undefined || newValue !== oldSettings[newKey]) {
-      changedKeys.push(newKey)
-    }
-  }
+watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
+  showUpdateProgress.value = newTotal > 0
+}, {
+  debounce: 300,
+})
 
-  for (const changedKey of changedKeys) {
-    console.log('update', changedKey, allSettings.value[changedKey])
-  }
+async function processChanges() {
+  if (!allSettings.value) return
+  showUpdateProgress.value = true
+  const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
+  updatingCount.value = totalConfigsChanged
 }
 
 onMounted(() => {
-  loadSettings()
+  $cwa.siteConfig.loadConfig()
   setApiVersion()
 })
 </script>

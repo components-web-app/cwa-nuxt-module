@@ -163,7 +163,7 @@ const pageComponentOptions = computed(() => {
     const cleanName = cleanUiName(componentName)
     options.push({
       label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
-      value: componentName,
+      value: cleanName,
     })
   }
   return options

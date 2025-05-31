@@ -6,6 +6,8 @@ import { mergeWith, isArray } from 'lodash-es'
 import {
   addImportsDir,
   addPlugin,
+  addServerHandler,
+  addServerTemplate,
   addTemplate,
   addTypeTemplate,
   createResolver,
@@ -18,6 +20,7 @@ import {
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
+import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 
 export type GlobalComponentNames = keyof GlobalComponents
 
@@ -43,6 +46,20 @@ export interface CwaUiMeta {
   }
 }
 
+export type SiteConfigParams = {
+  indexable: boolean
+  robotsAllowSearchEngineCrawlers: boolean
+  robotsAllowAiBots: boolean
+  robotsText: string
+  robotsRemoveSitemap: boolean
+  sitemapEnabled: boolean
+  siteName: string
+  fallbackTitle: boolean
+  concatTitle: boolean
+  maintenanceModeEnabled: boolean
+  sitemapXml: string
+}
+
 export interface CwaModuleOptions {
   appName: string
   storeName: string
@@ -60,6 +77,7 @@ export interface CwaModuleOptions {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'>
   }
   layoutName?: string
+  siteConfig: SiteConfigParams
 }
 
 declare module '@nuxt/schema' {
@@ -127,6 +145,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         name: 'Group',
       },
     },
+    siteConfig: defaultSiteConfig,
   },
   async setup(options: CwaModuleOptions, nuxt) {
     const logger = useLogger(NAME)
@@ -243,6 +262,7 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
 `
         },
       })
+
       addTypeTemplate({
         filename: 'types/cwa.d.ts',
         write: true,
@@ -260,6 +280,22 @@ declare module 'vue-router' {
       })
       addPlugin({
         src: resolve('./runtime/plugin'),
+      })
+
+      addServerTemplate({
+        filename: '#cwa/server-options.ts',
+        getContents: () => {
+          const serverOps = {
+            apiUrl: options.apiUrl,
+            apiUrlBrowser: options.apiUrlBrowser,
+            siteConfig: options.siteConfig,
+          }
+          return `export const options = ${JSON.stringify(serverOps, undefined, 2)}
+`
+        },
+      })
+      addServerHandler({
+        handler: resolve('./runtime/server-middleware'),
       })
     })
 
@@ -315,6 +351,7 @@ declare module 'vue-router' {
         await updateTemplates({
           filter: template => [
             'cwa-options.ts',
+            '#cwa/server-options.ts',
           ].includes(template.filename),
         })
       }

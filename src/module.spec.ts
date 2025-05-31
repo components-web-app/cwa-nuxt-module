@@ -10,6 +10,8 @@ vi.mock('@nuxt/kit', async () => {
     addPlugin: vi.fn(),
     addImportsDir: vi.fn(),
     addTemplate: vi.fn(),
+    addServerTemplate: vi.fn(),
+    addServerHandler: vi.fn(),
     addTypeTemplate: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
@@ -78,6 +80,19 @@ describe('CWA module', () => {
             name: 'Group',
           },
         },
+        siteConfig: {
+          indexable: true,
+          robotsAllowSearchEngineCrawlers: true,
+          robotsAllowAiBots: true,
+          robotsText: '',
+          robotsRemoveSitemap: false,
+          sitemapEnabled: true,
+          siteName: '',
+          fallbackTitle: true,
+          concatTitle: true,
+          maintenanceModeEnabled: false,
+          sitemapXml: '',
+        },
       })
     })
   })
@@ -102,6 +117,57 @@ describe('CWA module', () => {
 
       expect(mockResolver).toHaveBeenCalledWith('./runtime')
       expect(mockNuxt.options.build.transpile).toEqual([mockResolver('./runtime')])
+    })
+
+    test('should add server template add server handler', async () => {
+      const mockResolver = vi.fn(path => path)
+      vi.spyOn(nuxtKit, 'createResolver').mockReturnValueOnce({
+        resolve: mockResolver,
+        resolvePath: vi.fn(),
+      })
+
+      const mockOptions = {
+        mock: true,
+        foo: 'bar',
+        apiUrl: 'api-url',
+        apiUrlBrowser: 'api-url-browser',
+        siteConfig: {
+          opA: 'valA',
+        },
+      }
+      await prepareMockNuxt(mockOptions, {
+        hook: vi.fn((hookName, callback) => {
+          if (hookName === 'modules:done') {
+            callback()
+          }
+        }),
+        options: {
+          runtimeConfig: { public: { cwa: {} } },
+          alias: {},
+          css: [],
+          build: {
+            transpile: [],
+          },
+          srcDir: '',
+        },
+      })
+
+      expect((nuxtKit.addServerTemplate as Mock)).toHaveBeenCalled()
+
+      const { lastCall: [{ filename, getContents }] } = (nuxtKit.addServerTemplate as Mock).mock
+
+      expect(filename).toEqual('#cwa/server-options.ts')
+
+      expect(getContents()).toEqual(`export const options = {
+  "apiUrl": "api-url",
+  "apiUrlBrowser": "api-url-browser",
+  "siteConfig": {
+    "opA": "valA"
+  }
+}
+`)
+
+      expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith({ handler: './runtime/server-middleware' })
     })
 
     test('should add template', async () => {
