@@ -295,7 +295,7 @@ declare module 'vue-router' {
         },
       })
       addServerHandler({
-        handler: resolve('./runtime/server-middleware'),
+        handler: resolve('./server/server-middleware'),
       })
     })
 
