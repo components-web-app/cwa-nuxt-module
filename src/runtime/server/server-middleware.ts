@@ -2,10 +2,9 @@ import { defineEventHandler } from 'h3'
 import { $fetch } from 'ofetch'
 // @ts-expect-error this is a file built in the module
 import { options } from '#cwa/server-options.ts'
-import { useRuntimeConfig } from '#imports'
+import { useRuntimeConfig, updateSiteConfig } from '#imports'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import useCwaSiteConfig from '#cwa/runtime/composables/useCwaSiteConfig'
-import { updateSiteConfig } from '#site-config/server/composables'
 
 export default defineEventHandler(async (e) => {
   const { mergeConfig, responseToConfig } = useCwaSiteConfig()
