@@ -11,7 +11,7 @@ vi.mock('@nuxt/kit', async () => {
     addImportsDir: vi.fn(),
     addTemplate: vi.fn(),
     addServerTemplate: vi.fn(),
-    addServerHandler: vi.fn(),
+    addServerPlugin: vi.fn(),
     addTypeTemplate: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
@@ -167,7 +167,7 @@ describe('CWA module', () => {
 }
 `)
 
-      expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith({ handler: './runtime/server-middleware' })
+      expect(nuxtKit.addServerPlugin as Mock).toHaveBeenCalledWith('./runtime/server-plugin')
     })
 
     test('should add template', async () => {
