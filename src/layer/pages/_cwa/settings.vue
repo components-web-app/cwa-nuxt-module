@@ -205,11 +205,6 @@ import type { SiteConfigParams } from '#cwa/module'
 const $cwa = useCwa()
 
 const allSettings = ref<SiteConfigParams>()
-watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
-  allSettings.value = { ...newConfig }
-}, {
-  deep: true,
-})
 
 const isDataChanged = computed(() => {
   return !isEqual(allSettings.value, $cwa.siteConfig.siteConfig)
@@ -282,9 +277,13 @@ async function processChanges() {
   const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
   updatingCount.value = totalConfigsChanged
 }
-
-onMounted(() => {
-  $cwa.siteConfig.loadConfig()
+onMounted(async () => {
   setApiVersion()
+  allSettings.value = await $cwa.siteConfig.loadConfig()
+  watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
+    allSettings.value = { ...newConfig }
+  }, {
+    deep: true,
+  })
 })
 </script>
