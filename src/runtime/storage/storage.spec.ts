@@ -8,6 +8,7 @@ import { ApiDocumentationStore } from './stores/api-documentation/api-documentat
 import { AuthStore } from './stores/auth/auth-store'
 import { AdminStore } from './stores/admin/admin-store'
 import { ErrorStore } from './stores/error/error-store'
+import { SiteConfigStore } from './stores/site-config/site-config-store'
 
 type TestStore = { name: string }
 type StoreMock = SpyFn<[], TestStore>
@@ -51,6 +52,12 @@ vi.mock('./stores/error/error-store', () => {
   }
 })
 
+vi.mock('./stores/site-config/site-config-store', () => {
+  return {
+    SiteConfigStore: vi.fn<[], TestStore>(() => ({ name: 'SiteConfigStore' })),
+  }
+})
+
 describe('Storage is initialised properly', () => {
   test('Stores are initialised', () => {
     const storeName = 'mystore'
@@ -70,6 +77,8 @@ describe('Storage is initialised properly', () => {
     const adminStoreMock: StoreMock = AdminStore
     // @ts-expect-error
     const errorStoreMock: StoreMock = ErrorStore
+    // @ts-expect-error
+    const siteConfigStoreMock: StoreMock = SiteConfigStore
 
     expect(resourcesStoreMock).toBeCalledWith(storeName)
     expect(fetcherStoreMock).toBeCalledWith(storeName)
@@ -77,6 +86,7 @@ describe('Storage is initialised properly', () => {
     expect(apiDocumentationStoreMock).toBeCalledWith(storeName)
     expect(authStoreMock).toBeCalledWith(storeName)
     expect(errorStoreMock).toBeCalledWith(storeName)
+    expect(siteConfigStoreMock).toBeCalledWith(storeName)
 
     expect(storage.stores).toStrictEqual({
       resources: resourcesStoreMock.mock.results[0].value,
@@ -86,6 +96,7 @@ describe('Storage is initialised properly', () => {
       auth: authStoreMock.mock.results[0].value,
       admin: adminStoreMock.mock.results[0].value,
       error: errorStoreMock.mock.results[0].value,
+      siteConfig: siteConfigStoreMock.mock.results[0].value,
     })
   })
 })

@@ -153,7 +153,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useItemPage } from '../composables/useItemPage'
-import type { SelectOption } from '#imports'
+import { definePageMeta, type SelectOption } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -244,5 +244,9 @@ watch(selectRole, (newRole) => {
     return
   }
   localResourceData.value.roles = [newRole]
+})
+
+definePageMeta({
+  name: '_cwa-users-user-iri',
 })
 </script>

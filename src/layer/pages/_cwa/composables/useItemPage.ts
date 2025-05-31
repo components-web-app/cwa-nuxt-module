@@ -4,8 +4,9 @@ import dayjs from 'dayjs'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
+import type { ApiResourceEvent } from '#cwa/runtime/resources/resources-manager'
 
-type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
+export type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 
 type StartsWithHash = `#${string}`
 
@@ -33,15 +34,17 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const isLoading = ref(true)
   const isUpdating = ref(false)
   const localResourceData = ref<TempCwaResource | CwaResource>()
+  const resourceIri = computed(() => (iri?.value || endpoint.value))
 
   const isAdding = computed(() => endpoint.value === 'add')
-  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(iri?.value || endpoint.value).value?.data)
+  const apiState = computed(() => (isAdding.value ? undefined : $cwa.resources.getResource(resourceIri.value).value?.apiState))
+  const resource = computed(() => isAdding.value ? localResourceData.value : $cwa.resources.getResource(resourceIri.value).value?.data)
 
   function formatDate(dateStr: string) {
     return dayjs(dateStr).format('DD/MM/YY @ HH:mm UTCZ')
   }
 
-  function loadResource() {
+  async function loadResource() {
     if (isAdding.value) {
       localResourceData.value = {
         '@type': resourceType,
@@ -49,18 +52,21 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
       return localResourceData.value
     }
-    return $cwa.fetchResource({
+    const loadedResource = await $cwa.fetchResource({
       path: endpoint.value,
       iri: iri?.value,
       shallowFetch: true,
     })
+    isLoading.value = false
+    return loadedResource
   }
 
-  async function deleteResource(refreshEndpoints?: string[]) {
+  async function deleteResource(refreshEndpoints?: string[] | undefined, requestCompleteFn?: ApiResourceEvent['requestCompleteFn']) {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
       endpoint: iri?.value || endpoint.value,
       refreshEndpoints,
+      requestCompleteFn,
     })
     emit('reload')
     emit('close')
@@ -141,11 +147,15 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return resource
   }
 
-  function syncLocalResourceWithStore(newResource: TempCwaResource | undefined) {
-    !isAdding.value && newResource && (localResourceData.value = { ...newResource })
+  function syncLocalResourceWithStore(newResource?: TempCwaResource | undefined) {
+    const storeResource = newResource || resource.value
+    if (!isAdding.value && storeResource) {
+      localResourceData.value = { ...storeResource }
+    }
   }
 
   watch(resource, syncLocalResourceWithStore)
+  watch(endpoint, loadResource)
 
   onMounted(async () => {
     await loadResource()
@@ -163,10 +173,12 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     resource,
     localResourceData,
     isAdding,
+    apiState,
     formatDate,
     deleteResource,
     saveTitle,
     saveResource,
     loadResource,
+    resetResource: syncLocalResourceWithStore,
   }
 }

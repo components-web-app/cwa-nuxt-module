@@ -2,7 +2,7 @@
   <div
     v-if="isOpen"
     ref="container"
-    class="context-menu cwa:z-20"
+    class="context-menu cwa:z-context"
   >
     <Transition
       appear

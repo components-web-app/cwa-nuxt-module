@@ -13,6 +13,7 @@ export enum CwaResourceApiStatuses {
 
 interface SsrApiState {
   ssr?: boolean
+  path?: string
 }
 
 export interface CwaResourceApiStateGeneral extends SsrApiState {

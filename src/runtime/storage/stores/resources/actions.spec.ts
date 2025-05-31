@@ -361,6 +361,7 @@ describe('Resources -> resetCurrentResources', () => {
         apiState: {
           status: CwaResourceApiStatuses.IN_PROGRESS,
           headers: { path: '1' },
+          path: 'inProgress', // match the ID to set it as successful again.
         },
       },
       current: {
@@ -380,6 +381,7 @@ describe('Resources -> resetCurrentResources', () => {
     expect(resourcesState.current.byId.inProgress.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.SUCCESS,
       headers: { path: '1' },
+      path: 'inProgress',
       ssr: undefined,
       fetchedAt: fetchedAtDate.getTime(),
     })
@@ -432,10 +434,11 @@ describe('resources action -> setResourceFetchStatus', () => {
   })
 
   test('If we set a successful status to in progress, we retain the headers and path data', () => {
-    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false })
+    resourcesActions.setResourceFetchStatus({ iri: 'id', isComplete: false, path: '/hello' })
     expect(resourcesState.current.byId.id.apiState).toStrictEqual({
       status: CwaResourceApiStatuses.IN_PROGRESS,
       headers: { path: 'my-path' },
+      path: '/hello',
       ssr: false,
     })
   })

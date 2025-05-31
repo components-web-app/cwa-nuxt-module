@@ -2,7 +2,7 @@ import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { AuthStore } from '../storage/stores/auth/auth-store'
-import { CwaUserRoles } from '../storage/stores/auth/state'
+import { type CwaUser, CwaUserRoles } from '../storage/stores/auth/state'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type CwaFetch from './fetcher/cwa-fetch'
@@ -11,6 +11,7 @@ import type Fetcher from './fetcher/fetcher'
 import type { CookieRef } from '#app'
 import { useNuxtApp, useRoute, useRouter } from '#app'
 import type Admin from '#cwa/runtime/admin/admin'
+import type ApiDocumentation from '#cwa/runtime/api/api-documentation'
 
 interface Credentials {
   username: string
@@ -41,6 +42,7 @@ export default class Auth {
     private readonly mercure: Mercure,
     private readonly fetcher: Fetcher,
     private readonly admin: Admin,
+    private readonly apiDocumentation: ApiDocumentation,
     private readonly authStoreDefinition: AuthStore,
     private readonly resourcesStoreDefinition: ResourcesStore,
     private readonly fetcherStoreDefinition: FetcherStore,
@@ -114,7 +116,14 @@ export default class Auth {
   public async refreshUser() {
     this.loading.value = true
     try {
-      const user = await this.cwaFetch.fetch('/me')
+      const { headers, _data: user } = await this.cwaFetch.fetch.raw<CwaUser>('/me')
+
+      const linkHeader = headers.get('link')
+      if (linkHeader) {
+        this.mercure.setMercureHubFromLinkHeader(linkHeader)
+        this.apiDocumentation.setDocsPathFromLinkHeader(linkHeader)
+      }
+
       this.authCookie.value = '1'
       this.authStore.data.user = user
       return user

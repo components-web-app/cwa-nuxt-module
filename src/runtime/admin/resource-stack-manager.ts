@@ -415,7 +415,12 @@ export default class ResourceStackManager {
   private isElementOutsideViewport(el: HTMLElement) {
     const { top, left, bottom, right } = el.getBoundingClientRect()
     const { innerHeight, innerWidth } = window
-    return top < this.yOffset || left < 0 || bottom > innerHeight || right > innerWidth
+    let visibleHeight = innerHeight
+    const managerSpacer = document.getElementById('cwa-manager-spacer')
+    if (managerSpacer) {
+      visibleHeight -= managerSpacer.offsetHeight
+    }
+    return top < this.yOffset || left < 0 || bottom > visibleHeight || right > innerWidth
   }
 
   private listenEditModeChange(isEditing: boolean) {

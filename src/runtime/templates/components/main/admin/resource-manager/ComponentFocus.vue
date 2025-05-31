@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, toRef, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { useWindowSize } from '@vueuse/core'
+import { useElementSize, useWindowSize } from '@vueuse/core'
+import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
 
@@ -15,6 +16,30 @@ const domElements = toRef(props, 'domElements')
 const iri = toRef(props, 'iri')
 const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
 const windowSize = useWindowSize()
+const elementSizeInstances = ref<ReturnType<typeof useElementSize>[]>([])
+const reorderId = ref<string>()
+
+watch(props.domElements, (newDomElements) => {
+  for (const esInstance of elementSizeInstances.value) {
+    esInstance.stop()
+  }
+  elementSizeInstances.value = []
+  const newInstances = []
+  for (const el of newDomElements) {
+    newInstances.push(useElementSize(el))
+  }
+  elementSizeInstances.value = newInstances
+}, {
+  immediate: true,
+})
+
+const totalWidthAndHeight = computed(() => {
+  let totalValue = 0
+  for (const esInstance of elementSizeInstances.value) {
+    totalValue += esInstance.width + esInstance.height
+  }
+  return totalValue
+})
 
 const resource = computed(() => {
   if (!iri.value) {
@@ -22,8 +47,6 @@ const resource = computed(() => {
   }
   return $cwa.resources.getResource(iri.value).value
 })
-
-const resourceData = computed(() => resource.value?.data)
 
 const position = computed((): {
   top: number
@@ -36,7 +59,12 @@ const position = computed((): {
     left: 99999999999,
     width: 0,
     height: 0,
-    windowSize,
+    windowSize: {
+      width: windowSize.width.value,
+      height: windowSize.height.value,
+    },
+    totalWidthAndHeight: totalWidthAndHeight.value,
+    reorderId: reorderId.value,
   }
 
   for (const domElement of domElements.value) {
@@ -122,14 +150,20 @@ function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, wi
   ctx.arcTo(x, y, x, y + radius, radius)
 }
 
+function assignReorderId() {
+  reorderId.value = uuidv4()
+}
+
 onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
-  watch(resourceData, $cwa.admin.emitRedraw, { deep: true, flush: 'post' })
+  $cwa.admin.eventBus.on('reorder', assignReorderId)
+  watch([totalWidthAndHeight, position], $cwa.admin.emitRedraw)
   watch(canvas, newCanvas => newCanvas && redraw())
 })
 
 onBeforeUnmount(() => {
   $cwa.admin.eventBus.off('redrawFocus', redraw)
+  $cwa.admin.eventBus.off('reorder', assignReorderId)
 })
 
 defineExpose({
@@ -146,7 +180,7 @@ defineExpose({
     <div
       :class="[borderColor]"
       :style="cssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-4 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded"
+      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline"
     />
   </client-only>
 </template>

@@ -1,10 +1,10 @@
 <template>
-  <NuxtLink
+  <CwaLink
     :to="to || '#'"
-    class="cwa:font-medium cwa:text-neutral-400 cwa:hover:text-white"
+    class="cwa:transition cwa:font-medium cwa:text-neutral-400 cwa:hover:text-white"
   >
     <slot />
-  </NuxtLink>
+  </CwaLink>
 </template>
 
 <script setup lang="ts">

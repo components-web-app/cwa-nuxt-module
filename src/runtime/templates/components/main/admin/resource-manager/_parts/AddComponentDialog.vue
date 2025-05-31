@@ -141,18 +141,20 @@ function selectComponent(name?: string) {
 }
 
 async function findAvailableComponents(allowedComponents: undefined | string[], includePosition = false): Promise<ComponentMetadataCollection> {
-  const apiComponents = await $cwa.getComponentMetadata(false, includePosition)
+  const apiComponents = await $cwa.getComponentMetadata(true, includePosition)
   if (!apiComponents) {
     throw new Error('Could not retrieve component metadata from the API')
   }
 
   const asEntries = Object.entries(apiComponents)
-  const filtered = allowedComponents
+  const filteredAllowed = allowedComponents
     ? asEntries.filter(
         ([_, value]) => (allowedComponents.includes(value.endpoint)),
       )
     : asEntries
-  const mapped = filtered.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig?.[name] }]))
+  // if no config, the front-end component does not exist to add
+  const filteredHasResourceConfig = filteredAllowed.filter(([name]) => $cwa.resourcesConfig?.[name])
+  const mapped = filteredHasResourceConfig.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig[name] }]))
   return Object.fromEntries(mapped)
 }
 

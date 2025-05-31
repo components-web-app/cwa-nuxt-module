@@ -67,9 +67,9 @@ const buttonOptions = computed(() => {
     }
   }
 
-  if (resourceType.value === CwaResourceTypes.COMPONENT) {
-    ops.push({ label: 'Clone', value: 'clone' })
-  }
+  // if (resourceType.value === CwaResourceTypes.COMPONENT) {
+  //   ops.push({ label: 'Clone', value: 'clone' })
+  // }
 
   return ops
 })

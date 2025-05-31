@@ -45,9 +45,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, getCurrentInstance } from 'vue'
+import { computed, ref, getCurrentInstance, watch, nextTick } from 'vue'
 import { DialogsWrapper } from 'vuejs-confirm-dialog'
 import { useRouter } from 'vue-router'
+import { useWindowScroll } from '@vueuse/core'
 import { useCwa } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout } from '#components'
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
@@ -107,6 +108,32 @@ const resolvedComponent = computed(() => {
     return LazyCwaDefaultLayout
   }
   return layoutUiComponent.value
+})
+
+const cachedWindowScroll = ref<{ x: number, y: number }>()
+const windowScroll = useWindowScroll()
+
+watch(() => $cwa.admin.isEditing, () => {
+  cachedWindowScroll.value = {
+    x: windowScroll.x.value,
+    y: windowScroll.y.value,
+  }
+}, {
+  flush: 'pre',
+})
+
+watch(() => $cwa.admin.isEditing, async () => {
+  // when lots of elements on the page are replaced with drafts, it can cause the scroll to revert to the top of the page. Prevent this.
+  // we may need to wait for other components to have loaded in from drafts... todo: have a think about draft component loading and taking some time.
+  await nextTick()
+  setTimeout(() => {
+    if (cachedWindowScroll.value) {
+      window.scrollTo(cachedWindowScroll.value.x, cachedWindowScroll.value.y)
+      cachedWindowScroll.value = undefined
+    }
+  }, 10)
+}, {
+  flush: 'post',
 })
 
 const showAdmin = $cwa.auth.isAdmin

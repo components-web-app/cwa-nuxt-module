@@ -9,6 +9,7 @@ import {
 import { AuthStore } from './stores/auth/auth-store'
 import { AdminStore } from './stores/admin/admin-store'
 import { ErrorStore } from './stores/error/error-store'
+import { SiteConfigStore } from '#cwa/runtime/storage/stores/site-config/site-config-store'
 
 export interface CwaStores {
   resources: ResourcesStore
@@ -18,6 +19,7 @@ export interface CwaStores {
   auth: AuthStore
   admin: AdminStore
   error: ErrorStore
+  siteConfig: SiteConfigStore
 }
 
 export class Storage {
@@ -32,6 +34,7 @@ export class Storage {
       auth: new AuthStore(storeName),
       admin: new AdminStore(storeName),
       error: new ErrorStore(storeName),
+      siteConfig: new SiteConfigStore(storeName),
     }
   }
 }

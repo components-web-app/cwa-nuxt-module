@@ -8,7 +8,7 @@ export enum CwaUserRoles {
   USER = 'ROLE_USER',
 }
 
-interface CwaUser extends CwaResource {
+export interface CwaUser extends CwaResource {
   emailAddress: string
   enabled: boolean
   roles: (string | CwaUserRoles)[]

@@ -78,7 +78,8 @@ export class ResourcesManager {
   }
 
   public mergeNewResources() {
-    return this.resourcesStore.mergeNewResources()
+    this.resourcesStore.mergeNewResources()
+    this.admin.emitRedraw()
   }
 
   public get requestCount() {
@@ -482,22 +483,42 @@ export class ResourcesManager {
         addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
 
         const getPositionSortValue = () => {
-          let targetPosition: string | undefined
+          let existingSortValue: number | undefined
+
           if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
-            const groupResource = this.resourcesStore.getResource(addEvent.targetIri)?.data
+            // we are adding to start or end of group
+            const groupIri = addEvent.targetIri
+            const groupResource = this.resourcesStore.getResource(groupIri)?.data
             if (!groupResource?.componentPositions || groupResource?.componentPositions.length === 0) {
               return 0
             }
-            targetPosition = addEvent.addAfter ? groupResource.componentPositions[groupResource.componentPositions.length - 1] : groupResource.componentPositions[0]
+
+            const positionsWithoutNew = groupResource.componentPositions.filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
+            if (positionsWithoutNew.length === 0) {
+              // new is the only resource in the group
+              return 0
+            }
+
+            const targetPosition: string | undefined = addEvent.addAfter ? positionsWithoutNew[positionsWithoutNew.length - 1] : positionsWithoutNew[0]
+            if (!targetPosition) {
+              return 0
+            }
+
+            existingSortValue = this.resourcesStore.getResource(targetPosition)?.data?.sortValue
           }
           else {
-            targetPosition = addEvent.closest.position
+            // adding before or after a resource
+            if (!addEvent.closest.position) {
+              return 0
+            }
+            const positionResource = this.resourcesStore.getResource(addEvent.closest.position)?.data
+            if (!positionResource) {
+              return 0
+            }
+            existingSortValue = positionResource.sortValue
           }
-          if (!targetPosition) {
-            return 0
-          }
-          const sortValue = this.resourcesStore.getResource(targetPosition)?.data?.sortValue
-          return sortValue !== undefined ? (addEvent.addAfter ? sortValue + 1 : sortValue) : 0
+
+          return existingSortValue !== undefined ? (addEvent.addAfter ? existingSortValue + 1 : existingSortValue) : 0
         }
 
         const positionIri = this.resourcesStore.adding.position
@@ -516,8 +537,10 @@ export class ResourcesManager {
           ...this.resourcesStore.getResource(positionIri)?.data,
           '@id': undefined,
           '@type': undefined,
+          'component': undefined,
           'sortValue': getPositionSortValue(),
         }
+
         resource.componentPositions = [
           positionPostData,
         ]
@@ -539,19 +562,17 @@ export class ResourcesManager {
     }
 
     const postData: Omit<CwaResource, '@id' | '@type'> = { ...resource, '@id': undefined, '@type': undefined }
-
     const requestCompleteFn = () => {
       this.clearAddResource()
     }
-
-    const newResource = await this.createResource({
+    const createResourceEvent = {
       endpoint: addingMeta.endpoint,
       data: postData,
       refreshEndpoints,
-      requestCompleteFn: () => {
-        this.clearAddResource()
-      },
-    })
+      requestCompleteFn,
+    }
+
+    const newResource = await this.createResource(createResourceEvent)
 
     if (newResource && addEvent.pageDataProperty) {
       await this.updateResource({
@@ -578,7 +599,7 @@ export class ResourcesManager {
         if (index !== -1) {
           const positionsAfterInsert = groupPositions.slice(index)
           if (positionsAfterInsert && positionsAfterInsert.length) {
-            refreshPositions.push(...positionsAfterInsert)
+            refreshPositions.push(...positionsAfterInsert.filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI)))
           }
         }
       }

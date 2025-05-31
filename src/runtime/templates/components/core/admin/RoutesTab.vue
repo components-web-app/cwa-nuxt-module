@@ -1,158 +1,47 @@
 <template>
   <div>
     <div v-if="currentScreen === 'view'">
-      <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
-        <ModalInfo
-          label="Route"
-          :content="isLoadingRoute ? undefined : resource?.path"
-        >
-          <Spinner
-            v-if="isLoadingRoute"
-            :show="true"
-          />
-          <CwaUiFormButton
-            v-else
-            :color="resource?.path ? 'dark' : 'blue'"
-            @click="goToManageRoute"
-          >
-            {{ resource?.path ? 'Edit' : 'Create New Route' }}
-          </CwaUiFormButton>
-        </ModalInfo>
-        <div class="cwa:dark-blur cwa:p-4 cwa:flex cwa:flex-col cwa:gap-y-2.5 cwa:border cwa:rounded-xl cwa:border-stone-600">
-          <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
-            <h2 class="cwa:text-stone-400 cwa:text-2xl">
-              Redirects
-            </h2>
-            <div>
-              <button
-                class="cwa:text-white cwa:bg-blue-600/90 cwa:hover:bg-blue-600 cwa:border-transparent cwa:p-2.5 cwa:cursor-pointer"
-                @click="addRedirect"
-              >
-                <CwaUiIconPlusIcon class="cwa:w-4 cwa:h-4" />
-                <span class="cwa:sr-only">Add</span>
-              </button>
-            </div>
-          </div>
-          <div>
-            <Spinner
-              v-if="isLoadingRoute"
-              :show="true"
-            />
-            <RouteRedirectsTree
-              v-else-if="resource?.redirectedFrom?.length"
-              :redirects="resource.redirectedFrom"
-              @reload="loadResource"
-            />
-            <p
-              v-else
-              class="cwa:text-lg cwa:font-bold cwa:text-stone-400 cwa:mb-2 cwa:mt-4"
-            >
-              You do not have any redirects
-            </p>
-          </div>
-        </div>
-      </div>
+      <RoutesTabView
+        :resource="resource"
+        :is-loading="isLoadingRoute"
+        @deleted="handleRedirectDeleted"
+        @change-page="handleChangePage"
+      />
     </div>
-    <div v-else-if="currentScreen === 'manage-route' && localResourceData">
+    <div v-else-if="resource">
       <div class="cwa:flex cwa:flex-col cwa:gap-y-8">
         <div>
           <button
             class="cwa:cursor-pointer"
-            @click="goBackToViewing"
+            type="button"
+            @click="handleChangePage('view')"
           >
             &lt; Back to Routes
           </button>
         </div>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-          <div>
-            <ModalInput
-              v-model="localResourceData.path"
-              label="Route path"
-              :placeholder="recommendedRoute"
-            />
-          </div>
-          <div>
-            <p class="cwa:text-sm cwa:text-stone-300">
-              When updating, we will automatically create a new redirect from the old path.
-            </p>
-          </div>
-          <div class="cwa:flex cwa:justify-between">
-            <div>
-              <CwaUiFormButton
-                color="blue"
-                :disabled="disableButtons"
-                @click="saveRoute"
-              >
-                Save Route
-              </CwaUiFormButton>
-            </div>
-            <div v-if="!!routeIri">
-              <CwaUiFormButton
-                color="grey"
-                :disabled="disableButtons"
-                @click="deleteRoute"
-              >
-                Delete Route
-              </CwaUiFormButton>
-            </div>
-          </div>
+
+        <div v-if="currentScreen === 'manage-route'">
+          <CwaUiAlertWarning v-if="!localResourceData">
+            Critical Errors: Local Resource Data has not been propagated.
+          </CwaUiAlertWarning>
+          <RoutesTabManage
+            v-else
+            v-model="localResourceData.path"
+            :current-path="resource.path"
+            :disable-buttons="disableButtons"
+            :page-resource="pageResource"
+            @save="handleSaveRoute"
+            @generate="handleGenerateRoute"
+            @delete="handleDeleteRoute"
+          />
         </div>
-        <template v-if="recommendedRoute !== resource?.path">
-          <div class="cwa:w-full cwa:border-b cwa:border-b-stone-600" />
-          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-            <ModalInfo
-              label="Recommended route path"
-              :content="recommendedRoute"
-            />
-          </div>
-          <div class="cwa:text-sm cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
-            <p>This is based on your page title <b>`{{ pageResource.title }}`</b>.</p>
-            <p>It is optimal for search engines to increase the relevance of the page to the title provided. Relevance of page content is important too.</p>
-          </div>
-          <div class="cwa:flex cwa:justify-start">
-            <CwaUiFormButton
-              color="blue"
-              :disabled="disableButtons"
-              @click="generateRoute"
-            >
-              Use Recommended Route
-            </CwaUiFormButton>
-          </div>
-        </template>
-      </div>
-    </div>
-    <div v-else-if="currentScreen === 'create-redirect'">
-      <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
-        <div>
-          <button
-            class="cwa:cursor-pointer"
-            @click="goBackToViewing"
-          >
-            &lt; Back to Routes
-          </button>
-        </div>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-          <div>
-            <ModalInput
-              v-model="newRedirectPath"
-              label="Redirect from path"
-              placeholder="/some-path"
-            />
-          </div>
-          <div class="cwa:text-sm cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
-            <p v-if="newRedirectPath">
-              A user visiting <b class="cwa:bg-dark cwa:p-2">{{ finalPath }}</b> will be redirected to <b class="cwa:bg-dark cwa:p-2">{{ resource?.path }}</b>
-            </p>
-          </div>
-        </div>
-        <div class="cwa:flex cwa:justify-start">
-          <CwaUiFormButton
-            color="blue"
-            :disabled="disableButtons"
-            @click="createRedirect"
-          >
-            Create Redirect
-          </CwaUiFormButton>
+
+        <div v-if="currentScreen === 'create-redirect'">
+          <RoutesTabAddRedirect
+            :disable-buttons="disableButtons"
+            :route-path="resource.path"
+            @create="handleCreateRedirect"
+          />
         </div>
       </div>
     </div>
@@ -160,15 +49,17 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, toRef, watch } from 'vue'
-import slugify from 'slugify'
+import { computed, ref, watch } from 'vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
-import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import { useCwa } from '#imports'
-import RouteRedirectsTree from '#cwa/runtime/templates/components/core/admin/RouteRedirectsTree.vue'
+import RoutesTabView from '#cwa/runtime/templates/components/core/admin/RoutesTabView.vue'
+import RoutesTabAddRedirect from '#cwa/runtime/templates/components/core/admin/RoutesTabAddRedirect.vue'
+import RoutesTabManage from '#cwa/runtime/templates/components/core/admin/RoutesTabManage.vue'
+import { navigateTo, useRoute } from '#app'
+import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+
+export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
 
 const props = defineProps<{
   pageResource: CwaResource
@@ -180,56 +71,41 @@ const emit = defineEmits<{
 }>()
 
 const $cwa = useCwa()
-const pageResource = toRef(props, 'pageResource')
-const routeIri = computed(() => pageResource.value?.route)
-const endpoint = computed(() => routeIri.value ? `${routeIri.value}/redirects` : 'add')
+const route = useRoute()
+
+const routeIriFromPage = computed(() => (props.pageResource.route))
+const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
+
 const disableButtons = computed(() => submitting.value || isUpdating.value)
 
 const submitting = ref(false)
-const newRedirectPath = ref<string>()
 const currentScreen = ref<'view' | 'manage-route' | 'create-redirect'>('view')
 
-const recommendedRoute = computed(() => {
-  if (!props.pageResource.title) {
-    return
+function handleChangePage(screen: RouteScreens) {
+  if (screen === 'manage-route') {
+    resetResource()
   }
-  return '/' + slugify(props.pageResource.title.toLowerCase())
-})
-
-function goToManageRoute() {
-  currentScreen.value = 'manage-route'
-}
-function goBackToViewing() {
-  newRedirectPath.value = ''
-  currentScreen.value = 'view'
+  currentScreen.value = screen
 }
 
-function addRedirect() {
-  currentScreen.value = 'create-redirect'
-}
-
-const finalPath = computed(() => {
-  return newRedirectPath.value?.startsWith('/') ? newRedirectPath.value : `/${newRedirectPath.value}`
-})
-
-async function createRedirect() {
+async function handleCreateRedirect(path: string) {
   submitting.value = true
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes',
     data: {
-      name: newRedirectPath.value,
-      path: finalPath.value,
-      redirect: routeIri.value,
+      name: path,
+      path: path,
+      redirect: props.pageResource.route,
     },
   })
   submitting.value = false
   if (newResource) {
-    goBackToViewing()
+    handleChangePage('view')
     await loadResource()
   }
 }
 
-async function generateRoute() {
+async function handleGenerateRoute() {
   submitting.value = true
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes/generate',
@@ -241,26 +117,38 @@ async function generateRoute() {
   submitting.value = false
   if (newResource) {
     emit('reload')
-    goBackToViewing()
+    handleChangePage('view')
   }
 }
 
-async function saveRoute() {
-  const resource = await saveResource(true)
+async function handleSaveRoute() {
+  const resource = await saveResource(false)
   if (resource) {
-    await loadResource()
+    isLoadingRoute.value = true
+    // reload the parent, because the route IRI/ID will have changed so we need to reference the updated route
     emit('reload')
-    goBackToViewing()
+    handleChangePage('view')
   }
 }
 
-async function deleteRoute() {
-  await deleteResource()
+async function handleDeleteRoute() {
+  const deletingPath = resource.value?.path
+  const requestCompleteFn = (_?: CwaResource) => {
+    if (deletingPath === route.path) {
+      navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
+    }
+  }
+
+  await deleteResource(undefined, requestCompleteFn)
   emit('reload')
-  goBackToViewing()
+  handleChangePage('view')
 }
 
-watch(routeIri, async () => {
+async function handleRedirectDeleted() {
+  await loadResource()
+}
+
+watch(routeIriFromPage, async () => {
   await loadResource()
 })
 
@@ -272,16 +160,16 @@ const defaultResource = computed(() => {
   } = {
     path: '',
   }
-  if (pageResource.value['@type'] === 'Page') {
-    obj.page = pageResource.value['@id']
+  if (props.pageResource['@type'] === 'Page') {
+    obj.page = props.pageResource['@id']
   }
   else {
-    obj.pageData = pageResource.value['@id']
+    obj.pageData = props.pageResource['@id']
   }
   return obj
 })
 
-const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource } = useItemPage({
+const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, loadResource, deleteResource, saveResource, resetResource, apiState } = useItemPage({
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
@@ -291,7 +179,16 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
     return true
   },
   endpoint,
-  iri: routeIri,
+  iri: routeIriFromPage,
+  // exclude this field when updating the resource or creating
   excludeFields: ['redirectedFrom'],
+})
+
+// if the route resource is reloaded without the redirects postfix, we need to fix this.
+watch(apiState, (newState) => {
+  if (newState?.status === CwaResourceApiStatuses.SUCCESS && !newState?.path?.endsWith('/redirects')) {
+    isLoadingRoute.value = true
+    loadResource()
+  }
 })
 </script>

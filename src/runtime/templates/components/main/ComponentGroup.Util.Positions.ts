@@ -75,7 +75,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
         resource: currentResource,
       })
     }
-    // reordered, redraw
+
     $cwa.admin.emitRedraw()
 
     if (updateRequests.value[event.positionIri] === undefined) {

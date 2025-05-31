@@ -29,6 +29,7 @@ describe('Fetcher store action -> abortFetch', () => {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
+      timestamp: 0,
     }
     fetcherState = state()
     fetcherState.fetches['existing-token'] = reactive(existingFetchState)
@@ -70,16 +71,19 @@ describe('Fetcher store action -> startFetch', () => {
       path: '/existing-incomplete-primary-path',
       resources: ['/existing-path', '/in-progress-resource'],
       isPrimary: true,
+      timestamp: 0,
     }
     existingCompletedPrimaryFetchState = {
       path: '/existing-complete-primary-path',
       resources: ['/existing-primary-path', '/existing-path'],
       isPrimary: true,
+      timestamp: 0,
     }
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
+      timestamp: 0,
     }
     fetcherState = state()
     fetcherState.primaryFetch.successToken = 'existing-token'
@@ -122,6 +126,7 @@ describe('Fetcher store action -> startFetch', () => {
   })
 
   test('A token is generated to start a new fetch chain', () => {
+    vi.useFakeTimers()
     const startFetchEvent = {
       path: 'my-path',
     }
@@ -129,6 +134,7 @@ describe('Fetcher store action -> startFetch', () => {
       path: startFetchEvent.path,
       resources: [],
       isPrimary: false,
+      timestamp: (vi.getMockedSystemTime()).getTime(),
     }
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(uuidv4).toHaveBeenCalledTimes(1)
@@ -139,9 +145,11 @@ describe('Fetcher store action -> startFetch', () => {
       resources: expectedFetchChain.resources,
       token: 'mock-uuid-token',
     })
+    vi.useRealTimers()
   })
 
   test('A manifest path is populated', () => {
+    vi.useFakeTimers()
     const startFetchEvent = {
       path: 'my-path',
       manifestPath: '/manifest-path',
@@ -153,6 +161,7 @@ describe('Fetcher store action -> startFetch', () => {
       manifest: {
         path: '/manifest-path',
       },
+      timestamp: (vi.getMockedSystemTime()).getTime(),
     }
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(fetcherState.fetches['mock-uuid-token']).toStrictEqual(expectedFetchChain)
@@ -161,9 +170,11 @@ describe('Fetcher store action -> startFetch', () => {
       resources: expectedFetchChain.resources,
       token: 'mock-uuid-token',
     })
+    vi.useRealTimers()
   })
 
   test('Primary fetches will set primaryFetch.fetchingToken', () => {
+    vi.useFakeTimers()
     const startFetchEvent = {
       path: 'my-path',
       isPrimary: true,
@@ -172,6 +183,7 @@ describe('Fetcher store action -> startFetch', () => {
       path: startFetchEvent.path,
       resources: [],
       isPrimary: true,
+      timestamp: (vi.getMockedSystemTime()).getTime(),
     }
     const response = fetcherActions.startFetch(startFetchEvent)
     expect(response).toStrictEqual({
@@ -181,6 +193,7 @@ describe('Fetcher store action -> startFetch', () => {
     })
     expect(fetcherState.primaryFetch.fetchingToken).toBe('mock-uuid-token')
     expect(fetcherState.fetches['mock-uuid-token']).toStrictEqual(expectedFetchChain)
+    vi.useRealTimers()
   })
 
   test('If there is already a successful and completed primary fetch with the same path as a new primary fetch we return the last successful fetch token and clear any possible pending primary fetch', () => {
@@ -240,11 +253,13 @@ describe('Fetcher store action -> finishFetch', () => {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: true,
+      timestamp: 0,
     }
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
+      timestamp: 0,
     }
     fetcherState = state()
     fetcherState.fetches['existing-primary-token'] = reactive(existingPrimaryFetchState)
@@ -321,16 +336,19 @@ describe('Fetcher store action -> addFetchResource', () => {
       path: '/existing-incomplete-primary-path',
       resources: ['/existing-path', '/in-progress-resource'],
       isPrimary: true,
+      timestamp: 0,
     }
     existingCompletedPrimaryFetchState = {
       path: '/existing-complete-primary-path',
       resources: ['/existing-primary-path', '/existing-path'],
       isPrimary: true,
+      timestamp: 0,
     }
     existingFetchState = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
+      timestamp: 0,
     }
     fetcherState = state()
     fetcherState.fetches['existing-incomplete-primary-token'] = reactive(existingIncompletePrimaryFetchState)
@@ -433,11 +451,13 @@ describe('Fetcher store action -> finishManifestFetch', () => {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
+      timestamp: 0,
     }
     const existingManifestFetchState: FetchStatus = {
       path: '/existing-path',
       resources: ['/existing-path', '/errored-resource'],
       isPrimary: false,
+      timestamp: 0,
       manifest: {
         path: '/some-manifest-path',
       },

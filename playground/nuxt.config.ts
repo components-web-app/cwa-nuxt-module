@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     '../src/module',
     '@nuxt/image',
     '@nuxt/test-utils/module',
+    '@nuxtjs/seo',
     '@vite-pwa/nuxt',
     'nuxt-svgo',
   ],
@@ -17,7 +18,6 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
-      titleTemplate: '%s - CWA Playground',
       charset: 'utf-8',
       htmlAttrs: {
         lang: 'en-GB',

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useWindowSize } from '@vueuse/core'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
@@ -14,8 +14,11 @@ const props = defineProps<{
 }>()
 
 async function redraw() {
-  drawCanvas()
-  divElementOverlays.value = getDivElementOverlays()
+  divElementOverlays.value = []
+  nextTick().then(() => {
+    drawCanvas()
+    divElementOverlays.value = getDivElementOverlays()
+  })
 }
 
 function getHatchCanvas() {
@@ -144,13 +147,17 @@ type DivElementOverlayType = {
 function getDivElementOverlays() {
   const pageCoords = getPageCoords()
 
+  const numberToPx = (size: number) => {
+    return `${size}px`
+  }
+
   if ($cwa.admin.resourceStackManager.isEditingLayout.value) {
     return [
       {
-        top: pageCoords.top + 'px',
-        left: pageCoords.left + 'px',
-        width: pageCoords.width + 'px',
-        height: (pageCoords.height - pageCoords.top) + 'px',
+        top: numberToPx(pageCoords.top),
+        left: numberToPx(pageCoords.left),
+        width: numberToPx(pageCoords.width),
+        height: numberToPx(pageCoords.height),
       },
     ]
   }
@@ -159,10 +166,6 @@ function getDivElementOverlays() {
 
   const rightPage = pageCoords.left + pageCoords.width
   const bottomPage = pageCoords.top + pageCoords.height
-
-  const numberToPx = (size: number) => {
-    return `${size}px`
-  }
 
   return [
     {

@@ -157,6 +157,7 @@ defineExpose({
 <template>
   <div
     v-if="showSpacer"
+    id="cwa-manager-spacer"
     ref="spacer"
     class="relative"
   />
