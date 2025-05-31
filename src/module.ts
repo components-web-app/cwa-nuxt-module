@@ -160,6 +160,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     // modules
     logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
     await installModule('@pinia/nuxt')
+    logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
+    await installModule('@nuxtjs/seo')
 
     logger.info(`Modifying Nuxt configuration options for ${NAME} module...`)
     nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
