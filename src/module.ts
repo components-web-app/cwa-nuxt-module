@@ -20,7 +20,7 @@ import {
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
-import { defaultSiteConfig } from '#cwa/runtime/composables/useCwaSiteConfig'
+import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 
 export type GlobalComponentNames = keyof GlobalComponents
 
@@ -285,7 +285,12 @@ declare module 'vue-router' {
       addServerTemplate({
         filename: '#cwa/server-options.ts',
         getContents: () => {
-          return `export const options = ${JSON.stringify(options, undefined, 2)}
+          const serverOps = {
+            apiUrl: options.apiUrl,
+            apiUrlBrowser: options.apiUrlBrowser,
+            siteConfig: options.siteConfig,
+          }
+          return `export const options = ${JSON.stringify(serverOps, undefined, 2)}
 `
         },
       })

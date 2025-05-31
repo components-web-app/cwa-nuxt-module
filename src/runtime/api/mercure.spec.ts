@@ -391,6 +391,10 @@ describe('Mercure -> isMessageForCurrentResource', () => {
       event: undefined,
       data: {
         '@id': 'random',
+        '@type': 'Something',
+        '_metadata': {
+          persisted: true,
+        },
       },
     })
     expect(result).toBe(false)
