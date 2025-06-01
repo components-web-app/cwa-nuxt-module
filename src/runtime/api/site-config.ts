@@ -104,7 +104,7 @@ export default class SiteConfig {
 
         this.store.$patch({
           isLoading: false,
-          config: this.utils.mergeConfig(this.siteConfig, updatedConfig),
+          config: this.utils.mergeConfig(this.config, updatedConfig),
           serverConfig: this.utils.mergeConfig(this.savedSiteConfig || {}, updatedConfig),
         })
 
@@ -139,7 +139,7 @@ export default class SiteConfig {
     return this.store.serverConfig
   }
 
-  public get siteConfig() {
+  public get config() {
     return this.store.getConfig
   }
 

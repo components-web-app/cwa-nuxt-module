@@ -63,7 +63,6 @@ export default defineNuxtConfig({
     },
   },
   cwa: {
-    appName: 'CWA Module Test Playground',
     resources: {
       NavigationLink: {
         name: 'Link',
@@ -97,6 +96,9 @@ export default defineNuxtConfig({
       BlogArticleData: {
         name: 'Blog Articles',
       },
+    },
+    siteConfig: {
+      siteName: 'CWA Module Test Playground',
     },
   },
   pwa: {

@@ -9,7 +9,7 @@ export const defaultSiteConfig: SiteConfigParams = {
   robotsText: '',
   robotsRemoveSitemap: false,
   sitemapEnabled: true,
-  siteName: '',
+  siteName: 'CWA Web App',
   fallbackTitle: true,
   concatTitle: true,
   maintenanceModeEnabled: false,
@@ -43,7 +43,22 @@ export function useCwaSiteConfig() {
   }
 
   function mergeConfig(...configs: Partial<SiteConfigParams>[]): SiteConfigParams {
-    return Object.assign({}, defaultSiteConfig, ...configs)
+    const filteredConfigs = configs
+      .filter(c => (c !== undefined))
+      .map((c) => {
+        return Object.entries(c).reduce((obj: Partial<SiteConfigParams>, [key, value]) => {
+          if (value !== undefined && value !== '') {
+            // @ts-expect-error key as any?
+            obj[key] = value
+          }
+          return obj
+        }, {} as Partial<SiteConfigParams>)
+      })
+    return Object.assign(
+      {},
+      defaultSiteConfig,
+      ...filteredConfigs,
+    )
   }
 
   function responseToConfig(data: CwaResource, noMerge?: boolean) {

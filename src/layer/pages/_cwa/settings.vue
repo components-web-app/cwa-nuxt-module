@@ -207,7 +207,7 @@ const $cwa = useCwa()
 const allSettings = ref<SiteConfigParams>()
 
 const isDataChanged = computed(() => {
-  return !isEqual(allSettings.value, $cwa.siteConfig.siteConfig)
+  return !isEqual(allSettings.value, $cwa.siteConfig.config)
 })
 
 const submitDisabled = computed(() => {
@@ -280,7 +280,7 @@ async function processChanges() {
 onMounted(async () => {
   setApiVersion()
   allSettings.value = await $cwa.siteConfig.loadConfig()
-  watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
+  watch(() => $cwa.siteConfig.config, (newConfig) => {
     allSettings.value = { ...newConfig }
   }, {
     deep: true,

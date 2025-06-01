@@ -61,12 +61,12 @@ export type SiteConfigParams = {
 }
 
 export interface CwaModuleOptions {
-  appName: string
   storeName: string
+  siteConfig: Partial<SiteConfigParams>
+  resources: CwaResourcesMeta
   apiUrl?: string
   apiUrlBrowser?: string
   pagesDepth?: number
-  resources?: CwaResourcesMeta
   layouts?: {
     [type: string]: CwaUiMeta
   }
@@ -77,7 +77,6 @@ export interface CwaModuleOptions {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'>
   }
   layoutName?: string
-  siteConfig: SiteConfigParams
 }
 
 declare module '@nuxt/schema' {
@@ -133,7 +132,6 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
   },
   defaults: {
-    appName: 'CWA Web App',
     storeName: 'cwa',
     resources: {
       ComponentPosition: {
@@ -147,7 +145,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
     siteConfig: defaultSiteConfig,
   },
-  async setup(options: CwaModuleOptions, nuxt) {
+  async setup(options, nuxt) {
     const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
 
