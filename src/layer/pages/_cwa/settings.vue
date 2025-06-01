@@ -30,14 +30,35 @@
             </div>
             <div>
               <CwaUiFormToggle
+                v-model="allSettings.concatTitle"
+                label="Extend page titles with the default title"
+              />
+              <div
+                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
+              >
+                <p>
+                  <span>Page titles will be formatted as</span>&nbsp;
+                  <CwaCode v-if="allSettings.concatTitle">
+                    [Page title] | [Site name]
+                  </CwaCode>
+                  <CwaCode
+                    v-else
+                  >
+                    [Page title]
+                  </CwaCode>
+                </p>
+              </div>
+            </div>
+            <div>
+              <CwaUiFormToggle
                 v-model="allSettings.fallbackTitle"
-                label="Fallback page titles to site name"
+                label="Smart fallback page titles"
               />
               <div
                 class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
               >
                 <p v-if="allSettings.fallbackTitle">
-                  If you do not specify a page title, your site name will be used instead
+                  Fallback title based on URL. Eg. <CwaCode>/blog-articles</CwaCode> becomes <CwaCode>Blog Articles</CwaCode>
                 </p>
                 <p
                   v-else
@@ -48,25 +69,12 @@
               </div>
             </div>
             <div>
-              <CwaUiFormToggle
-                v-model="allSettings.concatTitle"
-                label="Extend page titles with the default title"
+              <ModalInput
+                v-model="allSettings.canonicalUrl"
+                label="Canonical URL"
+                type="url"
+                placeholder="https://your-site-domain.com"
               />
-              <div
-                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
-              >
-                <p>
-                  <span>Page titles will be formatted as</span>
-                  <b
-                    v-if="allSettings.concatTitle"
-                    class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5"
-                  >[Page title] | [Site name]</b>
-                  <b
-                    v-else
-                    class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5"
-                  >[Page title]</b>
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -201,6 +209,7 @@ import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 import type { SiteConfigParams } from '#cwa/module'
+import CwaCode from '#cwa/runtime/templates/components/core/admin/CwaCode.vue'
 
 const $cwa = useCwa()
 

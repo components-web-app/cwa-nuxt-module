@@ -10,7 +10,7 @@ import useCwaSiteConfig from '#cwa/runtime/composables/useCwaSiteConfig'
 import { updateSiteConfig } from '#site-config/server/composables'
 
 export default defineEventHandler(async (e) => {
-  const { mergeConfig, responseToConfig } = useCwaSiteConfig()
+  const { mergeConfig, responseToConfig, resolvedConfigToSiteConfig } = useCwaSiteConfig()
   const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
   const resolvedUrl = apiUrl || apiUrlBrowser || options.apiUrl || options.apiUrlBrowser || ''
   const fetcher = $fetch.create({
@@ -22,11 +22,8 @@ export default defineEventHandler(async (e) => {
   })
   try {
     const data = await fetcher<CwaResource>('/_/site_config_parameters')
-    const resolvedConfig = mergeConfig(options.config, responseToConfig(data))
-    updateSiteConfig(e, {
-      name: resolvedConfig.siteName,
-      indexable: resolvedConfig.indexable,
-    })
+    const resolvedConfig = mergeConfig(options.siteConfig, responseToConfig(data, true))
+    updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
   }
   catch (e) {
     consola.error(e)

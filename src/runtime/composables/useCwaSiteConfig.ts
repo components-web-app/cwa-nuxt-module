@@ -14,6 +14,7 @@ export const defaultSiteConfig: SiteConfigParams = {
   concatTitle: true,
   maintenanceModeEnabled: false,
   sitemapXml: '',
+  canonicalUrl: '',
 }
 
 export function useCwaSiteConfig() {
@@ -72,11 +73,20 @@ export function useCwaSiteConfig() {
     return mergeConfig(siteConfigRowsToConfig(rows))
   }
 
+  function resolvedConfigToSiteConfig(config: SiteConfigParams) {
+    return {
+      name: config.siteName,
+      indexable: config.indexable,
+      url: config.canonicalUrl,
+    }
+  }
+
   return {
     defaultSiteConfig,
     responseToConfig,
     mergeConfig,
     processApiConfigValue,
+    resolvedConfigToSiteConfig,
   }
 }
 

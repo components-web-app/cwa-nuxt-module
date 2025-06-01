@@ -17,6 +17,7 @@ import {
   resolveAlias,
   updateTemplates,
   useLogger,
+  hasNuxtModule,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
@@ -58,6 +59,7 @@ export type SiteConfigParams = {
   concatTitle: boolean
   maintenanceModeEnabled: boolean
   sitemapXml: string
+  canonicalUrl: string
 }
 
 export interface CwaModuleOptions {
@@ -157,9 +159,30 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // modules
     logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
-    await installModule('@pinia/nuxt')
+    if (!hasNuxtModule('@pinia/nuxt')) {
+      await installModule('@pinia/nuxt')
+    }
+
     logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
-    await installModule('@nuxtjs/seo')
+    await installModule('@nuxtjs/seo', {
+      enabled: true,
+    })
+
+    // for (const module of SeoModules) {
+    //   if (module.npm !== '@nuxtjs/seo') {
+    //     if (!hasNuxtModule(module.npm)) {
+    //       logger.info(`Installing ${module.npm} for ${NAME} module...`)
+    //       if (module.npm === 'nuxt-seo-utils') {
+    //         await installModule('nuxt-seo-utils', {
+    //           fallbackTitle: true,
+    //         })
+    //       }
+    //       else {
+    //         await installModule(module.npm, {})
+    //       }
+    //     }
+    //   }
+    // }
 
     logger.info(`Modifying Nuxt configuration options for ${NAME} module...`)
     nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {

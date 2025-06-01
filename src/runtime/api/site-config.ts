@@ -4,7 +4,7 @@ import type {
   SiteConfigStore,
 } from '#cwa/runtime/storage/stores/site-config/site-config-store'
 import type CwaFetch from '#cwa/runtime/api/fetcher/cwa-fetch'
-import { useCwaSiteConfig } from '#imports'
+import { useCwaSiteConfig, updateSiteConfig } from '#imports'
 import type { SiteConfigParams } from '#cwa/module'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
@@ -102,13 +102,16 @@ export default class SiteConfig {
           updatedConfig[configKey] = this.utils.processApiConfigValue(response.value)
         }
 
+        const config = this.utils.mergeConfig(this.config, updatedConfig)
+
         this.store.$patch({
           isLoading: false,
-          config: this.utils.mergeConfig(this.config, updatedConfig),
+          config,
           serverConfig: this.utils.mergeConfig(this.savedSiteConfig || {}, updatedConfig),
         })
 
         this._apiState.requests.value = []
+        updateSiteConfig(this.utils.resolvedConfigToSiteConfig(config))
       })
       .catch((err) => {
         console.error(err)
