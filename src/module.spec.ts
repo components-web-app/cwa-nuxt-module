@@ -16,6 +16,7 @@ vi.mock('@nuxt/kit', async () => {
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
     installModule: vi.fn(),
+    hasNuxtModule: vi.fn(() => false),
     createResolver: vi.fn().mockReturnValue({ resolvePath: vi.fn(), resolve: vi.fn(function (...args) { return join(...args) }) }),
   }
 
@@ -80,6 +81,7 @@ describe('CWA module', () => {
           },
         },
         siteConfig: {
+          canonicalUrl: '',
           indexable: true,
           robotsAllowSearchEngineCrawlers: true,
           robotsAllowAiBots: true,
@@ -101,6 +103,7 @@ describe('CWA module', () => {
       await prepareMockNuxt()
 
       expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@pinia/nuxt')
+      expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@nuxtjs/seo')
     })
 
     test('should add aliases with result of resolved paths', async () => {

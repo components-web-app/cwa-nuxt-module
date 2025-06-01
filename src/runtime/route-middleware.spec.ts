@@ -57,7 +57,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
         payload: {},
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn() } },
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -156,7 +156,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn() } },
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {

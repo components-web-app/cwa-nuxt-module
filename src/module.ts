@@ -164,9 +164,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
-    await installModule('@nuxtjs/seo', {
-      enabled: true,
-    })
+    await installModule('@nuxtjs/seo')
 
     // for (const module of SeoModules) {
     //   if (module.npm !== '@nuxtjs/seo') {

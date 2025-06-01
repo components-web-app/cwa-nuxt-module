@@ -14,6 +14,11 @@ describe('CWA page', () => {
           value: iri,
         },
       },
+      siteConfig: {
+        config: {
+          fallbackTitle: true,
+        },
+      },
     }))
 
     return mount(CwaPage, {
