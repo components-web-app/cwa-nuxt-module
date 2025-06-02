@@ -75,6 +75,12 @@
                 type="url"
                 placeholder="https://your-site-domain.com"
               />
+              <p
+                v-if="canonicalMismatch"
+                class="cwa:text-red-500 cwa:font-bold cwa:text-sm cwa:mt-2"
+              >
+                You are loading this page via <CwaCode>{{ currentHostDomain }}</CwaCode>&nbsp;which is different to the URL you have specified. Please ensure the canonical URL above is your primary domain and does not have redirects.
+              </p>
             </div>
           </div>
         </div>
@@ -207,7 +213,7 @@ import { watchDebounced } from '@vueuse/core'
 import { isEqual } from 'lodash-es'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta, useCwa, useRequestURL } from '#imports'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
@@ -278,6 +284,19 @@ const displayAppVersion = computed(() => {
   )
 })
 
+const url = useRequestURL()
+const currentHostDomain = computed(() => {
+  return url.origin
+})
+
+const canonicalMismatch = computed(() => {
+  const canonical = $cwa.siteConfig.config?.canonicalUrl
+  if (!canonical) {
+    return false
+  }
+  return canonical !== currentHostDomain.value
+})
+
 watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
   showUpdateProgress.value = newTotal > 0
 }, {
@@ -290,6 +309,7 @@ async function processChanges() {
   showUpdateProgress.value = totalConfigsChanged > 0
   updatingCount.value = totalConfigsChanged
 }
+
 onMounted(async () => {
   setApiVersion()
   allSettings.value = await $cwa.siteConfig.loadConfig()
