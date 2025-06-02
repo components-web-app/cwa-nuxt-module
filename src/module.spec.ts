@@ -18,6 +18,7 @@ vi.mock('@nuxt/kit', async () => {
     installModule: vi.fn(),
     hasNuxtModule: vi.fn(() => false),
     createResolver: vi.fn().mockReturnValue({ resolvePath: vi.fn(), resolve: vi.fn(function (...args) { return join(...args) }) }),
+    extendRouteRules: vi.fn(),
   }
 
   return {
