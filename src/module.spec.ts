@@ -44,7 +44,8 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = Object.assign({ hook: vi.fn(), options: { runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
+  const mockNuxt = Object.assign({ hook: vi.fn(), options: {
+    sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
 
   await setup(options, mockNuxt)
 
@@ -153,6 +154,7 @@ describe('CWA module', () => {
             transpile: [],
           },
           srcDir: '',
+          sitemap: {},
         },
       })
 
@@ -195,6 +197,7 @@ describe('CWA module', () => {
             transpile: [],
           },
           srcDir: '',
+          sitemap: {},
         },
       })
 
@@ -305,6 +308,7 @@ declare module 'vue-router' {
               transpile: [],
             },
             srcDir: './mock',
+            sitemap: {},
           },
         })
 
@@ -337,6 +341,7 @@ declare module 'vue-router' {
               transpile: [],
             },
             srcDir: './mock',
+            sitemap: {},
           },
         })
 
