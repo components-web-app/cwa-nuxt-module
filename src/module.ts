@@ -18,7 +18,7 @@ import {
   updateTemplates,
   useLogger,
   hasNuxtModule,
-  extendRouteRules,
+  extendRouteRules, addServerPlugin,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
@@ -159,29 +159,33 @@ export default defineNuxtModule<CwaModuleOptions>({
     logger.info(`Adding ${NAME} module (${name}@${version})...`)
 
     // modules
-    logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
     if (!hasNuxtModule('@pinia/nuxt')) {
+      logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
       await installModule('@pinia/nuxt')
     }
 
-    logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
-    await installModule('@nuxtjs/seo')
+    /*
+    route: '/__sitemap__/cwa-urls',
+        handler: resolve('./runtime/server/cwa-urls.get'),
+      })
+      addServerHandler({
+        route: '/__sitemap__/cwa-custom.xml',
+     */
 
-    // for (const module of SeoModules) {
-    //   if (module.npm !== '@nuxtjs/seo') {
-    //     if (!hasNuxtModule(module.npm)) {
-    //       logger.info(`Installing ${module.npm} for ${NAME} module...`)
-    //       if (module.npm === 'nuxt-seo-utils') {
-    //         await installModule('nuxt-seo-utils', {
-    //           fallbackTitle: true,
-    //         })
-    //       }
-    //       else {
-    //         await installModule(module.npm, {})
-    //       }
-    //     }
-    //   }
-    // }
+    const cwaSitemap = {
+      sources: ['/__sitemap__/cwa-urls'],
+      chunks: true,
+    }
+    const initialSitemaps = nuxt.options.sitemap.sitemaps
+    const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
+    nuxt.options.sitemap.sitemaps = Object.assign({}, extendSitemaps, {
+      cwa: cwaSitemap,
+    })
+
+    if (!hasNuxtModule('@nuxtjs/seo')) {
+      logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
+      await installModule('@nuxtjs/seo')
+    }
 
     logger.info(`Modifying Nuxt configuration options for ${NAME} module...`)
     nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
@@ -319,6 +323,7 @@ declare module 'vue-router' {
       addServerHandler({
         handler: resolve('./runtime/server/server-middleware'),
       })
+      addServerPlugin(resolve('./runtime/server/server-plugin'))
 
       addServerHandler({
         route: '/__sitemap__/cwa-urls',

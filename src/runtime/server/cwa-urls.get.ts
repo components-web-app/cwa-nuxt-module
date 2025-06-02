@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import useFetcher, { resolveConfigEventHandler } from './useFetcher'
 import type { SitemapUrlInput } from '#sitemap/types'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-// @ts-expect-error not resolving correct #imports alias from local tsconfig.json
+// @ts-ignore-next-line only error in vue-tsc though not resolving correct #imports alias from local tsconfig.json
 import { defineSitemapEventHandler } from '#imports'
 
 // this route can be used as a source of data for sitemaps to return the cwa routes

@@ -44,6 +44,20 @@ export default defineNuxtConfig({
     // '/': { prerender: true },
     '/**': { isr: true },
   },
+  nitro: {
+    typescript: {
+      tsConfig: {
+        include: [
+          '../../src/**/*',
+        ],
+        exclude: [
+          '../../dist',
+          '../../**/*.spec.ts',
+          '../../**/*.test.ts',
+        ],
+      },
+    },
+  },
   vite: {
     plugins: [
       tailwindcss(),
@@ -59,6 +73,7 @@ export default defineNuxtConfig({
         '../../dist',
         '../../**/*.spec.ts',
         '../../**/*.test.ts',
+        './../../src/runtime/server/**/*',
       ],
     },
   },

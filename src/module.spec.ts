@@ -12,6 +12,7 @@ vi.mock('@nuxt/kit', async () => {
     addTemplate: vi.fn(),
     addServerTemplate: vi.fn(),
     addServerHandler: vi.fn(),
+    addServerPlugin: vi.fn(),
     addTypeTemplate: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
