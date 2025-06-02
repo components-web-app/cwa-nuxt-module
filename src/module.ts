@@ -18,6 +18,7 @@ import {
   updateTemplates,
   useLogger,
   hasNuxtModule,
+  extendRouteRules,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
@@ -191,10 +192,9 @@ export default defineNuxtModule<CwaModuleOptions>({
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./')
     // do not server-side render internal routes. Use with client-side auth values
-    nuxt.options.routeRules = Object.assign({
-      '/_/**': { ssr: false },
-      '/_cwa/**': { ssr: false, robots: false },
-    }, nuxt.options.routeRules || {})
+    extendRouteRules('/_/**', { ssr: false })
+    extendRouteRules('/_cwa/**', { ssr: false, robots: false })
+
     // transpile runtime
     const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
@@ -318,6 +318,15 @@ declare module 'vue-router' {
       })
       addServerHandler({
         handler: resolve('./runtime/server/server-middleware'),
+      })
+
+      addServerHandler({
+        route: '/__sitemap__/cwa-urls',
+        handler: resolve('./runtime/server/cwa-urls.get'),
+      })
+      addServerHandler({
+        route: '/__sitemap__/cwa-custom.xml',
+        handler: resolve('./runtime/server/cwa-custom-sitemap.get'),
       })
     })
 

@@ -1,4 +1,6 @@
 import { computed, ref } from 'vue'
+import { XMLValidator } from 'fast-xml-parser'
+import { consola } from 'consola'
 import type {
   CwaSiteConfigStoreInterface,
   SiteConfigStore,
@@ -41,6 +43,19 @@ export default class SiteConfig {
   public saveConfig(newConfig: Partial<SiteConfigParams>) {
     const returnData = {
       totalConfigsChanged: 0,
+    }
+
+    if (newConfig.sitemapXml) {
+      const validationResult = XMLValidator.validate(newConfig.sitemapXml)
+      if (validationResult !== true) {
+        consola.error(validationResult)
+        this.store.$patch({
+          isLoading: false,
+        })
+        this._apiState.hasError.value = true
+        this._apiState.requests.value = []
+        return returnData
+      }
     }
 
     // only allow one update at a time
@@ -119,7 +134,6 @@ export default class SiteConfig {
         this.store.$patch({
           isLoading: false,
         })
-
         this._apiState.requests.value = []
       })
 

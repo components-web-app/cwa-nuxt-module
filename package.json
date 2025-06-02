@@ -55,6 +55,7 @@
     "consola": "^3.4.2",
     "dayjs": "^1.11.13",
     "defu": "^6.1.4",
+    "fast-xml-parser": "^5.2.3",
     "lodash-es": "^4.17.21",
     "luxon": "^3.6.1",
     "mitt": "^3.0.1",

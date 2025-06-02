@@ -84,14 +84,18 @@
             Sitemap
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <div class="cwa:pb-4">
+              <p class="cwa:text-sm cwa:text-stone-400">
+                <strong>Please note:</strong><br>A sitemap will be created automatically for any pages (if any) which are not created within the CWA
+              </p>
+            </div>
             <CwaUiFormToggle
               v-model="allSettings.sitemapEnabled"
-              label="Auto-generate sitemap.xml"
+              label="Add CWA URLs to your sitemap"
             />
             <ModalInput
-              v-if="!allSettings.sitemapEnabled"
               v-model="allSettings.sitemapXml"
-              label="Custom sitemap.xml"
+              label="Custom sitemap.xml (advanced)"
               type="textarea"
             />
           </div>
@@ -129,7 +133,7 @@
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600"><div>
           <h2 class="cwa:text-xl cwa:mb-4">
-            Advanced
+            Maintenance
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <div>
@@ -282,8 +286,8 @@ watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
 
 async function processChanges() {
   if (!allSettings.value) return
-  showUpdateProgress.value = true
   const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
+  showUpdateProgress.value = totalConfigsChanged > 0
   updatingCount.value = totalConfigsChanged
 }
 onMounted(async () => {
