@@ -86,7 +86,7 @@
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <div class="cwa:pb-4">
               <p class="cwa:text-sm cwa:text-stone-400">
-                <strong>Please note:</strong><br>A sitemap will be created automatically for any pages (if any) which are not created within the CWA
+                <strong>Please note:</strong><br>A sitemap will be created automatically for any pages (if any) which are not created within the CWA. You should submit <CwaCode>/sitemap_index.xml</CwaCode> in your chosen search engine search consoles
               </p>
             </div>
             <CwaUiFormToggle
@@ -95,7 +95,7 @@
             />
             <ModalInput
               v-model="allSettings.sitemapXml"
-              label="Custom sitemap.xml (advanced)"
+              label="Additional custom XML sitemap"
               type="textarea"
             />
           </div>
