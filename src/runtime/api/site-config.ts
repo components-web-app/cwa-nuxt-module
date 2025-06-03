@@ -1,10 +1,12 @@
 import { computed, ref } from 'vue'
+import { XMLValidator } from 'fast-xml-parser'
+import { consola } from 'consola'
 import type {
   CwaSiteConfigStoreInterface,
   SiteConfigStore,
 } from '#cwa/runtime/storage/stores/site-config/site-config-store'
 import type CwaFetch from '#cwa/runtime/api/fetcher/cwa-fetch'
-import { useCwaSiteConfig } from '#imports'
+import { useCwaSiteConfig, updateSiteConfig } from '#imports'
 import type { SiteConfigParams } from '#cwa/module'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
@@ -41,6 +43,19 @@ export default class SiteConfig {
   public saveConfig(newConfig: Partial<SiteConfigParams>) {
     const returnData = {
       totalConfigsChanged: 0,
+    }
+
+    if (newConfig.sitemapXml) {
+      const validationResult = XMLValidator.validate(newConfig.sitemapXml)
+      if (validationResult !== true) {
+        consola.error(validationResult)
+        this.store.$patch({
+          isLoading: false,
+        })
+        this._apiState.hasError.value = true
+        this._apiState.requests.value = []
+        return returnData
+      }
     }
 
     // only allow one update at a time
@@ -102,13 +117,16 @@ export default class SiteConfig {
           updatedConfig[configKey] = this.utils.processApiConfigValue(response.value)
         }
 
+        const config = this.utils.mergeConfig(this.config, updatedConfig)
+
         this.store.$patch({
           isLoading: false,
-          config: this.utils.mergeConfig(this.siteConfig, updatedConfig),
+          config,
           serverConfig: this.utils.mergeConfig(this.savedSiteConfig || {}, updatedConfig),
         })
 
         this._apiState.requests.value = []
+        updateSiteConfig(this.utils.resolvedConfigToSiteConfig(config))
       })
       .catch((err) => {
         console.error(err)
@@ -116,7 +134,6 @@ export default class SiteConfig {
         this.store.$patch({
           isLoading: false,
         })
-
         this._apiState.requests.value = []
       })
 
@@ -139,7 +156,7 @@ export default class SiteConfig {
     return this.store.serverConfig
   }
 
-  public get siteConfig() {
+  public get config() {
     return this.store.getConfig
   }
 

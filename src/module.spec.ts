@@ -12,11 +12,14 @@ vi.mock('@nuxt/kit', async () => {
     addTemplate: vi.fn(),
     addServerTemplate: vi.fn(),
     addServerHandler: vi.fn(),
+    addServerPlugin: vi.fn(),
     addTypeTemplate: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
     installModule: vi.fn(),
+    hasNuxtModule: vi.fn(() => false),
     createResolver: vi.fn().mockReturnValue({ resolvePath: vi.fn(), resolve: vi.fn(function (...args) { return join(...args) }) }),
+    extendRouteRules: vi.fn(),
   }
 
   return {
@@ -41,7 +44,8 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = Object.assign({ hook: vi.fn(), options: { runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
+  const mockNuxt = Object.assign({ hook: vi.fn(), options: {
+    sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
 
   await setup(options, mockNuxt)
 
@@ -68,7 +72,6 @@ describe('CWA module', () => {
       const [{ defaults }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
       expect(defaults).toEqual({
-        appName: 'CWA Web App',
         storeName: 'cwa',
         resources: {
           ComponentPosition: {
@@ -81,13 +84,14 @@ describe('CWA module', () => {
           },
         },
         siteConfig: {
+          canonicalUrl: '',
           indexable: true,
           robotsAllowSearchEngineCrawlers: true,
           robotsAllowAiBots: true,
           robotsText: '',
           robotsRemoveSitemap: false,
           sitemapEnabled: true,
-          siteName: '',
+          siteName: 'CWA Web App',
           fallbackTitle: true,
           concatTitle: true,
           maintenanceModeEnabled: false,
@@ -102,6 +106,7 @@ describe('CWA module', () => {
       await prepareMockNuxt()
 
       expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@pinia/nuxt')
+      expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@nuxtjs/seo')
     })
 
     test('should add aliases with result of resolved paths', async () => {
@@ -149,6 +154,7 @@ describe('CWA module', () => {
             transpile: [],
           },
           srcDir: '',
+          sitemap: {},
         },
       })
 
@@ -167,7 +173,9 @@ describe('CWA module', () => {
 }
 `)
 
-      expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith({ handler: './runtime/server-middleware' })
+      expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith({
+        handler: './runtime/server/server-middleware',
+      })
     })
 
     test('should add template', async () => {
@@ -189,6 +197,7 @@ describe('CWA module', () => {
             transpile: [],
           },
           srcDir: '',
+          sitemap: {},
         },
       })
 
@@ -299,6 +308,7 @@ declare module 'vue-router' {
               transpile: [],
             },
             srcDir: './mock',
+            sitemap: {},
           },
         })
 
@@ -331,6 +341,7 @@ declare module 'vue-router' {
               transpile: [],
             },
             srcDir: './mock',
+            sitemap: {},
           },
         })
 

@@ -34,7 +34,7 @@ import { useTextareaAutosize } from '@vueuse/core'
 
 const id = useId()
 const model = defineModel<string>()
-const { type } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea', placeholder?: string, autocomplete?: string }>()
+const { type } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'url', placeholder?: string, autocomplete?: string }>()
 
 const { textarea, input } = useTextareaAutosize({
   // @ts-expect-error MaybeRef expected instead of ModelRef but they should behave the same

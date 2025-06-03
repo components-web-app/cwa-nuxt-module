@@ -30,14 +30,35 @@
             </div>
             <div>
               <CwaUiFormToggle
+                v-model="allSettings.concatTitle"
+                label="Extend page titles with the default title"
+              />
+              <div
+                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
+              >
+                <p>
+                  <span>Page titles will be formatted as</span>&nbsp;
+                  <CwaCode v-if="allSettings.concatTitle">
+                    [Page title] | [Site name]
+                  </CwaCode>
+                  <CwaCode
+                    v-else
+                  >
+                    [Page title]
+                  </CwaCode>
+                </p>
+              </div>
+            </div>
+            <div>
+              <CwaUiFormToggle
                 v-model="allSettings.fallbackTitle"
-                label="Fallback page titles to site name"
+                label="Smart fallback page titles"
               />
               <div
                 class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
               >
                 <p v-if="allSettings.fallbackTitle">
-                  If you do not specify a page title, your site name will be used instead
+                  Fallback title based on URL. Eg. <CwaCode>/blog-articles</CwaCode> becomes <CwaCode>Blog Articles</CwaCode>
                 </p>
                 <p
                   v-else
@@ -48,25 +69,18 @@
               </div>
             </div>
             <div>
-              <CwaUiFormToggle
-                v-model="allSettings.concatTitle"
-                label="Extend page titles with the default title"
+              <ModalInput
+                v-model="allSettings.canonicalUrl"
+                label="Canonical URL"
+                type="url"
+                placeholder="https://your-site-domain.com"
               />
-              <div
-                class="cwa:text-sm cwa:font-normal cwa:mt-2.5 cwa:text-stone-300"
+              <p
+                v-if="canonicalMismatch"
+                class="cwa:text-red-500 cwa:font-bold cwa:text-sm cwa:mt-2"
               >
-                <p>
-                  <span>Page titles will be formatted as</span>
-                  <b
-                    v-if="allSettings.concatTitle"
-                    class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5"
-                  >[Page title] | [Site name]</b>
-                  <b
-                    v-else
-                    class="cwa:border cwa:bg-dark/90 cwa:border-stone-700 cwa:rounded-lg cwa:px-1.5 cwa:py-1.5"
-                  >[Page title]</b>
-                </p>
-              </div>
+                You are loading this page via <CwaCode>{{ currentHostDomain }}</CwaCode>&nbsp;which is different to the URL you have specified. Please ensure the canonical URL above is your primary domain and does not have redirects.
+              </p>
             </div>
           </div>
         </div>
@@ -76,14 +90,18 @@
             Sitemap
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <div class="cwa:pb-4">
+              <p class="cwa:text-sm cwa:text-stone-400">
+                <strong>Please note:</strong><br>A sitemap will be created automatically for any pages (if any) which are not created within the CWA. You should submit <CwaCode>/sitemap_index.xml</CwaCode> in your chosen search engine search consoles
+              </p>
+            </div>
             <CwaUiFormToggle
               v-model="allSettings.sitemapEnabled"
-              label="Auto-generate sitemap.xml"
+              label="Add CWA URLs to your sitemap"
             />
             <ModalInput
-              v-if="!allSettings.sitemapEnabled"
               v-model="allSettings.sitemapXml"
-              label="Custom sitemap.xml"
+              label="Additional custom XML sitemap"
               type="textarea"
             />
           </div>
@@ -121,7 +139,7 @@
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600"><div>
           <h2 class="cwa:text-xl cwa:mb-4">
-            Advanced
+            Maintenance
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <div>
@@ -195,24 +213,20 @@ import { watchDebounced } from '@vueuse/core'
 import { isEqual } from 'lodash-es'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta, useCwa, useRequestURL } from '#imports'
 import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
 import type { SiteConfigParams } from '#cwa/module'
+import CwaCode from '#cwa/runtime/templates/components/core/admin/CwaCode.vue'
 
 const $cwa = useCwa()
 
 const allSettings = ref<SiteConfigParams>()
-watch(() => $cwa.siteConfig.siteConfig, (newConfig) => {
-  allSettings.value = { ...newConfig }
-}, {
-  deep: true,
-})
 
 const isDataChanged = computed(() => {
-  return !isEqual(allSettings.value, $cwa.siteConfig.siteConfig)
+  return !isEqual(allSettings.value, $cwa.siteConfig.config)
 })
 
 const submitDisabled = computed(() => {
@@ -270,6 +284,19 @@ const displayAppVersion = computed(() => {
   )
 })
 
+const url = useRequestURL()
+const currentHostDomain = computed(() => {
+  return url.origin
+})
+
+const canonicalMismatch = computed(() => {
+  const canonical = $cwa.siteConfig.config?.canonicalUrl
+  if (!canonical) {
+    return false
+  }
+  return canonical !== currentHostDomain.value
+})
+
 watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
   showUpdateProgress.value = newTotal > 0
 }, {
@@ -278,13 +305,18 @@ watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
 
 async function processChanges() {
   if (!allSettings.value) return
-  showUpdateProgress.value = true
   const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
+  showUpdateProgress.value = totalConfigsChanged > 0
   updatingCount.value = totalConfigsChanged
 }
 
-onMounted(() => {
-  $cwa.siteConfig.loadConfig()
+onMounted(async () => {
   setApiVersion()
+  allSettings.value = await $cwa.siteConfig.loadConfig()
+  watch(() => $cwa.siteConfig.config, (newConfig) => {
+    allSettings.value = { ...newConfig }
+  }, {
+    deep: true,
+  })
 })
 </script>

@@ -80,6 +80,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   // need to await this, but if we do then returning to original page will not be triggered
   if (!isClient) {
     // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
+    nuxtApp.$cwa.siteConfig.loadConfig()
     const resource = await nuxtApp.$cwa.fetchRoute(to)
     return handleRouteRedirect(resource)
   }

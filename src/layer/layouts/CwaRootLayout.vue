@@ -54,6 +54,7 @@ import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout }
 import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/module'
 import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
+import { useHead } from '#app'
 
 const $cwa = useCwa()
 const currentRoute = useRouter().currentRoute
@@ -137,4 +138,13 @@ watch(() => $cwa.admin.isEditing, async () => {
 })
 
 const showAdmin = $cwa.auth.isAdmin
+
+useHead({
+  titleTemplate: () => {
+    if ($cwa.siteConfig.config.concatTitle) {
+      return '%s %separator %siteName'
+    }
+    return '%s'
+  },
+})
 </script>

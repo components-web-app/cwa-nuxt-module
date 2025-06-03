@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 
+// @ts-ignore excessive stack with tailwind issues in dev, not building on server
 export default defineNuxtConfig({
   extends: [
     '../src/layer',
@@ -44,8 +45,23 @@ export default defineNuxtConfig({
     // '/': { prerender: true },
     '/**': { isr: true },
   },
+  nitro: {
+    typescript: {
+      tsConfig: {
+        include: [
+          '../../src/**/*',
+        ],
+        exclude: [
+          '../../dist',
+          '../../**/*.spec.ts',
+          '../../**/*.test.ts',
+        ],
+      },
+    },
+  },
   vite: {
     plugins: [
+      // @ts-ignore - builds with this bit errors here sometimes but not in prod
       tailwindcss(),
     ],
   },
@@ -59,11 +75,11 @@ export default defineNuxtConfig({
         '../../dist',
         '../../**/*.spec.ts',
         '../../**/*.test.ts',
+        './../../src/runtime/server',
       ],
     },
   },
   cwa: {
-    appName: 'CWA Module Test Playground',
     resources: {
       NavigationLink: {
         name: 'Link',
@@ -97,6 +113,9 @@ export default defineNuxtConfig({
       BlogArticleData: {
         name: 'Blog Articles',
       },
+    },
+    siteConfig: {
+      siteName: 'CWA Module Test Playground',
     },
   },
   pwa: {

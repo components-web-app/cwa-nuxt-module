@@ -17,6 +17,8 @@ import {
   resolveAlias,
   updateTemplates,
   useLogger,
+  hasNuxtModule,
+  extendRouteRules, addServerPlugin,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import type { DefineComponent, GlobalComponents } from 'vue'
@@ -58,15 +60,16 @@ export type SiteConfigParams = {
   concatTitle: boolean
   maintenanceModeEnabled: boolean
   sitemapXml: string
+  canonicalUrl: string
 }
 
 export interface CwaModuleOptions {
-  appName: string
   storeName: string
+  siteConfig: Partial<SiteConfigParams>
+  resources: CwaResourcesMeta
   apiUrl?: string
   apiUrlBrowser?: string
   pagesDepth?: number
-  resources?: CwaResourcesMeta
   layouts?: {
     [type: string]: CwaUiMeta
   }
@@ -77,7 +80,6 @@ export interface CwaModuleOptions {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'>
   }
   layoutName?: string
-  siteConfig: SiteConfigParams
 }
 
 declare module '@nuxt/schema' {
@@ -133,7 +135,6 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
   },
   defaults: {
-    appName: 'CWA Web App',
     storeName: 'cwa',
     resources: {
       ComponentPosition: {
@@ -147,7 +148,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
     siteConfig: defaultSiteConfig,
   },
-  async setup(options: CwaModuleOptions, nuxt) {
+  async setup(options, nuxt) {
     const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
 
@@ -158,8 +159,33 @@ export default defineNuxtModule<CwaModuleOptions>({
     logger.info(`Adding ${NAME} module (${name}@${version})...`)
 
     // modules
-    logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
-    await installModule('@pinia/nuxt')
+    if (!hasNuxtModule('@pinia/nuxt')) {
+      logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
+      await installModule('@pinia/nuxt')
+    }
+
+    const cwaSitemap = {
+      sources: ['/__sitemap__/cwa-urls'],
+      chunks: true,
+    }
+
+    if (!hasNuxtModule('@nuxtjs/sitemap')) {
+      logger.info(`Installing @nuxtjs/sitemap for ${NAME} module...`)
+
+      const initialSitemaps = nuxt.options.sitemap?.sitemaps
+      const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
+
+      await installModule('@nuxtjs/sitemap', {
+        sitemaps: Object.assign({}, extendSitemaps, {
+          cwa: cwaSitemap,
+        }),
+      })
+    }
+
+    if (!hasNuxtModule('@nuxtjs/seo')) {
+      logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
+      await installModule('@nuxtjs/seo')
+    }
 
     logger.info(`Modifying Nuxt configuration options for ${NAME} module...`)
     nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
@@ -169,10 +195,10 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./')
-    // do not server-side render internal routes. USe with client-side auth values
-    nuxt.options.routeRules = Object.assign({
-      '/_/**': { ssr: false },
-    }, nuxt.options.routeRules || {})
+    // do not server-side render internal routes. Use with client-side auth values
+    extendRouteRules('/_/**', { ssr: false })
+    extendRouteRules('/_cwa/**', { ssr: false, robots: false })
+
     // transpile runtime
     const runtimeDir = resolve('./runtime')
     nuxt.options.build.transpile.push(runtimeDir)
@@ -295,7 +321,17 @@ declare module 'vue-router' {
         },
       })
       addServerHandler({
-        handler: resolve('./runtime/server-middleware'),
+        handler: resolve('./runtime/server/server-middleware'),
+      })
+      addServerPlugin(resolve('./runtime/server/server-plugin'))
+
+      addServerHandler({
+        route: '/__sitemap__/cwa-urls',
+        handler: resolve('./runtime/server/cwa-urls.get'),
+      })
+      addServerHandler({
+        route: '/__sitemap__/cwa-custom.xml',
+        handler: resolve('./runtime/server/cwa-custom-sitemap.get'),
       })
     })
 

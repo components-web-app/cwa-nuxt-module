@@ -148,8 +148,8 @@ export default class Cwa {
     return this.options.pageData
   }
 
-  public get appName(): string {
-    return this.options.appName
+  public get config() {
+    return this.siteConfig.config
   }
 
   public get apiUrlBase(): string {

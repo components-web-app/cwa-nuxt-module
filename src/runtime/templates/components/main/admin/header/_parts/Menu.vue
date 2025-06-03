@@ -23,7 +23,7 @@
             <CwaLogo class="cwa:h-8 cwa:w-auto" />
           </div>
           <h2 class="cwa:opacity-50 cwa:text-sm cwa:font-bold">
-            {{ $cwa.appName }}
+            {{ $cwa.config.siteName }}
           </h2>
         </div>
         <div class="cwa:flex cwa:justify-center">

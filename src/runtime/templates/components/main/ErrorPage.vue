@@ -70,7 +70,7 @@ onMounted(() => {
             {{ statusMessage }}
           </h1>
           <p class="cwa:mt-6 cwa:text-pretty cwa:text-lg cwa:font-medium cwa:text-stone-400 sm:text-xl/8">
-            {{ description }}
+            {{ statusMessage === description ? '' : description }}
           </p>
           <div
             v-if="stack"
