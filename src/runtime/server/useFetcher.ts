@@ -1,6 +1,5 @@
 import { $fetch } from 'ofetch'
 import { consola } from 'consola'
-import { defineEventHandler } from 'h3'
 import { useRuntimeConfig } from '#imports'
 // @ts-expect-error this is a file built in the module
 import { options } from '#cwa/server-options.ts'
@@ -23,7 +22,7 @@ export const useFetcher = () => {
   }
 }
 
-export const resolveConfigEventHandler = defineEventHandler(async () => {
+export const resolveConfigEventHandler = async () => {
   const { mergeConfig, responseToConfig } = useCwaSiteConfig()
   const { fetcher, options } = useFetcher()
   try {
@@ -34,6 +33,6 @@ export const resolveConfigEventHandler = defineEventHandler(async () => {
     consola.error(e)
     return
   }
-})
+}
 
 export default useFetcher

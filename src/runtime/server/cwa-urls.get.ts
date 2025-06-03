@@ -1,4 +1,3 @@
-import type { H3Event } from 'h3'
 import useFetcher, { resolveConfigEventHandler } from './useFetcher'
 import type { SitemapUrlInput } from '#sitemap/types'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
@@ -6,8 +5,8 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { defineSitemapEventHandler } from '#imports'
 
 // this route can be used as a source of data for sitemaps to return the cwa routes
-export default defineSitemapEventHandler(async (e: H3Event<Request>): Promise<SitemapUrlInput[]> => {
-  const resolvedConfig = await resolveConfigEventHandler(e)
+export default defineSitemapEventHandler(async (): Promise<SitemapUrlInput[]> => {
+  const resolvedConfig = await resolveConfigEventHandler()
   if (!resolvedConfig || !resolvedConfig.sitemapEnabled) {
     return []
   }

@@ -4,7 +4,7 @@ import { updateSiteConfig } from '#site-config/server/composables'
 import { resolveConfigEventHandler } from '#cwa/runtime/server/useFetcher'
 
 export default defineEventHandler(async (e) => {
-  const resolvedConfig = await resolveConfigEventHandler(e)
+  const resolvedConfig = await resolveConfigEventHandler()
   if (resolvedConfig) {
     const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
     updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
