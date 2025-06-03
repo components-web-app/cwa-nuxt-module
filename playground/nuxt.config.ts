@@ -75,7 +75,7 @@ export default defineNuxtConfig({
         '../../dist',
         '../../**/*.spec.ts',
         '../../**/*.test.ts',
-        './../../src/runtime/server/**/*',
+        './../../src/runtime/server',
       ],
     },
   },
