@@ -43,7 +43,7 @@ const ops = {
 }
 
 const props = withDefaults(defineProps<{
-  modelValue: boolean
+  modelValue?: boolean
   virtualElement: any
   popper?: PopperOptions
 }>(), {

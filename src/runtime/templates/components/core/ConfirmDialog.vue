@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 
 const props = withDefaults(defineProps<{
-  title: string
-  content: string
+  title?: string
+  content?: string
 }>(), {
   title: 'No Title Set',
   content: 'No Content Set',

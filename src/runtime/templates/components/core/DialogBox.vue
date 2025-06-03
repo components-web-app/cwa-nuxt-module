@@ -83,8 +83,8 @@ export interface ActionButton {
 const isOpen = defineModel<boolean>({ default: false })
 
 withDefaults(defineProps<{
-  title: string
-  buttons: ActionButton[]
+  title?: string
+  buttons?: ActionButton[]
   isLoading?: boolean
 }>(), {
   title: '',
