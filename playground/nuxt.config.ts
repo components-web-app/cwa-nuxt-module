@@ -1,12 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
-import type { PluginOption } from 'vite'
 
-// @ts-expect-error some error for some reason
-const vitePlugins: PluginOption[] = [
-  // @ts-expect-error - builds with this bit errors here sometimes
-  tailwindcss(),
-]
-
+// @ts-ignore excessive stack with tailwind issues in dev, not building on server
 export default defineNuxtConfig({
   extends: [
     '../src/layer',
@@ -66,7 +60,10 @@ export default defineNuxtConfig({
     },
   },
   vite: {
-    plugins: vitePlugins,
+    plugins: [
+      // @ts-ignore - builds with this bit errors here sometimes but not in prod
+      tailwindcss(),
+    ],
   },
   typescript: {
     typeCheck: true,
