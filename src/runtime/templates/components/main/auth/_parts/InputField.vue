@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<{
   label: string
   autocomplete?: string
   required?: boolean
-  modelValue: string
+  modelValue?: string
   errors?: string[]
 }>(), {
   type: 'text',
