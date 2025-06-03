@@ -3,7 +3,8 @@ import type { PluginOption } from 'vite'
 
 // @ts-expect-error some error for some reason
 const vitePlugins: PluginOption[] = [
-  ...tailwindcss(),
+  // @ts-expect-error - builds with this bit errors here sometimes
+  tailwindcss(),
 ]
 
 export default defineNuxtConfig({
