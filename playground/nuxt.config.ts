@@ -1,4 +1,10 @@
 import tailwindcss from '@tailwindcss/vite'
+import type { PluginOption } from 'vite'
+
+// @ts-expect-error some error for some reason
+const vitePlugins: PluginOption[] = [
+  ...tailwindcss(),
+]
 
 export default defineNuxtConfig({
   extends: [
@@ -59,9 +65,7 @@ export default defineNuxtConfig({
     },
   },
   vite: {
-    plugins: [
-      tailwindcss(),
-    ],
+    plugins: vitePlugins,
   },
   typescript: {
     typeCheck: true,
@@ -157,9 +161,6 @@ export default defineNuxtConfig({
       navigateFallbackAllowlist: [/^\/$/],
       type: 'module',
     },
-  },
-  sitemap: {
-
   },
   svgo: {
     autoImportPath: './assets/svg/',

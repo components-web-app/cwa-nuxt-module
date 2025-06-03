@@ -164,23 +164,23 @@ export default defineNuxtModule<CwaModuleOptions>({
       await installModule('@pinia/nuxt')
     }
 
-    /*
-    route: '/__sitemap__/cwa-urls',
-        handler: resolve('./runtime/server/cwa-urls.get'),
-      })
-      addServerHandler({
-        route: '/__sitemap__/cwa-custom.xml',
-     */
-
     const cwaSitemap = {
       sources: ['/__sitemap__/cwa-urls'],
       chunks: true,
     }
-    const initialSitemaps = nuxt.options.sitemap.sitemaps
-    const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
-    nuxt.options.sitemap.sitemaps = Object.assign({}, extendSitemaps, {
-      cwa: cwaSitemap,
-    })
+
+    if (!hasNuxtModule('@nuxtjs/sitemap')) {
+      logger.info(`Installing @nuxtjs/sitemap for ${NAME} module...`)
+
+      const initialSitemaps = nuxt.options.sitemap?.sitemaps
+      const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
+
+      await installModule('@nuxtjs/sitemap', {
+        sitemaps: Object.assign({}, extendSitemaps, {
+          cwa: cwaSitemap,
+        }),
+      })
+    }
 
     if (!hasNuxtModule('@nuxtjs/seo')) {
       logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
