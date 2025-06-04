@@ -8,8 +8,14 @@
       <article
         v-for="post of collectionItems"
         :key="post['@id']"
-        class="relative z-0 isolate flex flex-col justify-end overflow-hidden bg-black/50 px-8 pb-8 pt-80 sm:pt-48 lg:pt-60"
+        class="relative z-0 isolate flex flex-col justify-end bg-black/50 px-8 pb-8 pt-80 sm:pt-48 lg:pt-60"
       >
+        <div
+          v-if="!post.routePath"
+          class="size-3 cwa:bg-orange rounded-full absolute top-0 left-0 -translate-1/2"
+        >
+          <span class="sr-only">Draft entry</span>
+        </div>
         <div
           v-if="!post.image"
           class="absolute inset-0 -z-10 h-full w-full text-white flex justify-center items-center font-bold"
@@ -29,7 +35,7 @@
           >{{ formatDate(post.createdAt) }}</time>
         </div>
         <h3 class="mt-3 text-lg font-semibold leading-6 text-white">
-          <NuxtLink :to="post.routePath">
+          <NuxtLink :to="post.routePath || post['@id']">
             <span class="absolute inset-0" />
             {{ post.title }}
           </NuxtLink>
