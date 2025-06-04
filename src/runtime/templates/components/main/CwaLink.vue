@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { hashMode } from '#build/router.options.mjs'
 import { defineNuxtLink, type NuxtLinkProps } from '#app'
 import { useCwa } from '#imports'
 
@@ -18,11 +19,15 @@ const target = computed(() => {
   return cwaLink.isExternal.value ? '_blank' : '_self'
 })
 
+function isHashLinkWithoutHashMode(link: NuxtLinkProps['to']) {
+  return !hashMode && typeof link === 'string' && link.startsWith('#')
+}
+
 function handleClick(e: MouseEvent) {
-  if (!cwaLink.isExternal.value) {
+  if (!cwaLink.isExternal.value && !isHashLinkWithoutHashMode(cwaLink.to.value)) {
     return
   }
-  $cwa.navigationDisabled && e.preventDefault()
+  if ($cwa.navigationDisabled) e.preventDefault()
 }
 </script>
 

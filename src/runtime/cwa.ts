@@ -1,4 +1,4 @@
-import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
@@ -84,7 +84,7 @@ export default class Cwa {
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)
-    this.adminNavGuard = new NavigationGuard(nuxtApp.$router as Router, this.storage.stores.admin)
+    this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
   }
 
   public get adminNavigationGuardFn() {
