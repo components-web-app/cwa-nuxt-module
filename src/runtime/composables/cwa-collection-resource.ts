@@ -101,6 +101,12 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
 
   populateCollectionData(resource.value?.data)
 
+  watch(() => resource.value?.data, (newData) => {
+    if (newData) {
+      populateCollectionData(newData)
+    }
+  })
+
   return {
     ...cwaResource,
     resource,

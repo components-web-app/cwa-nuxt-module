@@ -1,24 +1,17 @@
-import type {
-  CwaResource,
-} from '../../../resources/resource-utils'
+import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
+import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import {
-  CwaResourceTypes, getPublishedResourceState,
+  type CwaResource,
+  CwaResourceTypes,
+  getPublishedResourceState,
   getResourceTypeFromIri,
   isCwaResourceSame,
 } from '../../../resources/resource-utils'
-import type { CwaResourceError } from '../../../errors/cwa-resource-error'
-import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
-import type {
-  CwaCurrentResourceInterface,
-  CwaResourceApiStateGeneral,
-  CwaResourcesStateInterface,
-} from './state'
-import {
-  CwaResourceApiStatuses, NEW_RESOURCE_IRI,
-} from './state'
 import type { CwaResourcesGettersInterface } from './getters'
-import { showError } from '#app'
+import type { CwaCurrentResourceInterface, CwaResourceApiStateGeneral, CwaResourcesStateInterface } from './state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
+import { showError } from '#app'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -89,6 +82,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const resourceType = getResourceTypeFromIri(event.resource)
 
     switch (resourceType) {
+      case CwaResourceTypes.PAGE_DATA: {
+        // if a page data is deleted, we should also check for its existence in collections
+        break
+      }
       case CwaResourceTypes.COMPONENT_POSITION: {
         if (event.noCascade) {
           break
