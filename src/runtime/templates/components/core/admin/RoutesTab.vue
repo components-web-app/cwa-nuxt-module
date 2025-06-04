@@ -135,12 +135,13 @@ async function handleDeleteRoute() {
   const deletingPath = resource.value?.path
   const requestCompleteFn = (_?: CwaResource) => {
     if (deletingPath === route.path) {
+      // if we are viewing the page via the route, reload the page via the direct IRI now the route no longer exists
       navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
     }
   }
 
   await deleteResource(undefined, requestCompleteFn)
-  emit('reload')
+
   handleChangePage('view')
 }
 

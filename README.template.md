@@ -1,4 +1,4 @@
-# CWA Nuxt 3 Module (in development)
+# CWA Nuxt 3 Module
 
 [![codecov](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/{{ current.branch }}/graph/badge.svg?token=Z6GQJN413O)](https://app.codecov.io/gh/components-web-app/cwa-nuxt-module/tree/{{ current.branch }})
 
@@ -7,7 +7,7 @@ This module is designed to work with the [API Component Bundle](https://github.c
 ## CWA Module in Action
 
 ### Template using this module for front-end and API Components Bundle for back-end
-https://github.com/components-web-app/components-web-app/tree/v3
+https://github.com/components-web-app/components-web-app
 
 ## Development
 

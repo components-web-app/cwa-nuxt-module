@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, toRef, watch, watchEffect } from 'vue'
+import { navigateTo } from '#app'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
@@ -134,8 +135,21 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   routeHashAfterAdd: computed(() => ('#routes')),
 })
 
+const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
+const { fqcnToEntrypointKey } = useDataList()
+
+const pageDataTypeNuxtLinkParams = computed(() => {
+  const type = $cwa.resources.pageData?.value?.data?.['@type']
+  if (!type) {
+    return { name: '_cwa-data' }
+  }
+  return { name: '_cwa-data-type', params: { type: fqcnToEntrypointKey(type) } }
+})
+
 function handleDeleteClick() {
-  deleteResource()
+  deleteResource(undefined, async () => {
+    await navigateTo(pageDataTypeNuxtLinkParams.value)
+  })
 }
 
 const tabs = computed<ResourceModalTab[]>(() => {
@@ -171,9 +185,6 @@ const pageOptions = computed<SelectOption[]>(() => {
   }
   return options
 })
-
-const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
-const { fqcnToEntrypointKey } = useDataList()
 
 watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolean, oldIsTemplate: undefined | boolean) => {
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)

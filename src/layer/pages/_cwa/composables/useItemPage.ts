@@ -67,9 +67,12 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       endpoint: iri?.value || endpoint.value,
       refreshEndpoints,
       requestCompleteFn,
+      saveCompleteFn: () => {
+        // if in cwa view
+        emit('reload')
+        emit('close')
+      },
     })
-    emit('reload')
-    emit('close')
     isUpdating.value = false
   }
 
