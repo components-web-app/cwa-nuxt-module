@@ -1,17 +1,11 @@
-import { defineEventHandler } from 'h3'
-import pkg from '~/package.json'
+import { defineEventHandler, setResponseHeaders } from 'h3'
 
-const startTime = new Date()
-
-export default defineEventHandler(() => {
+export default defineEventHandler((event) => {
+  setResponseHeaders(event, {
+    'cache-control': 'no-cache',
+    'x-robots-tag': 'noindex, nofollow',
+  })
   return {
     status: 'OK',
-    uptime: process.uptime(),
-    started: startTime,
-    serverTime: new Date(),
-    service: {
-      name: pkg.name,
-      version: pkg.version,
-    },
   }
 })
