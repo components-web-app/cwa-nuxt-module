@@ -16,6 +16,7 @@ export default defineNitroPlugin(async (nitroApp) => {
       sitemap: 'https://localhost:3000/__sitemap__/cwa-custom.xml',
     })
   })
+
   nitroApp.hooks.hook('robots:config', async (ctx: HookRobotsConfigContext) => {
     const resolvedConfig = await resolveConfigEventHandler()
     if (!resolvedConfig) {

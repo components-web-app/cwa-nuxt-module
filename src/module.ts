@@ -174,12 +174,10 @@ export default defineNuxtModule<CwaModuleOptions>({
 
       const initialSitemaps = nuxt.options.sitemap?.sitemaps
       const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
-
-      await installModule('@nuxtjs/sitemap', {
-        sitemaps: Object.assign({}, extendSitemaps, {
-          cwa: cwaSitemap,
-        }),
+      const sitemaps = Object.assign({}, extendSitemaps, {
+        cwa: cwaSitemap,
       })
+      await installModule('@nuxtjs/sitemap', { sitemaps })
     }
 
     if (!hasNuxtModule('@nuxtjs/seo')) {

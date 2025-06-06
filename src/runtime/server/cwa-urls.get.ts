@@ -15,7 +15,6 @@ export default defineSitemapEventHandler(async (): Promise<SitemapUrlInput[]> =>
   const data = await fetcher<CwaResource>('/_/routes')
   return data['hydra:member'].map((r: CwaResource) => {
     return {
-      _sitemap: 'cwa',
       loc: r.path,
     } as SitemapUrlInput
   })

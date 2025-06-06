@@ -160,6 +160,9 @@ export default defineNuxtConfig({
       type: 'module',
     },
   },
+  sitemap: {
+    debug: true,
+  },
   svgo: {
     autoImportPath: './assets/svg/',
   },
