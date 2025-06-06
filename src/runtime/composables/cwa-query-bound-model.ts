@@ -1,6 +1,6 @@
 import { useRouter, useRoute, type LocationQueryValue } from 'vue-router'
 import { computed, ref, watch } from 'vue'
-import { debounce } from 'lodash-es'
+import debounce from 'lodash-es/debounce'
 
 type ModelOps = {
   defaultValue?: any

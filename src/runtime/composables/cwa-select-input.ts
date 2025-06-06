@@ -1,5 +1,5 @@
 import { computed, type ComputedRef } from 'vue'
-import { isEqual } from 'lodash-es'
+import isEqual from 'lodash-es/isEqual'
 import { defu } from 'defu'
 import type { PopperOptions } from '#cwa/runtime/types/popper'
 import { usePopper } from '#cwa/runtime/composables/popper'

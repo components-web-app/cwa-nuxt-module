@@ -1,6 +1,7 @@
 import mitt, { type Emitter } from 'mitt'
 import { watch } from 'vue'
-import { throttle, type DebouncedFunc } from 'lodash-es'
+import throttle from 'lodash-es/throttle'
+import type { DebouncedFunc } from 'lodash-es/debounce'
 import type { AdminStore } from '../storage/stores/admin/admin-store'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { Resources } from '../resources/resources'

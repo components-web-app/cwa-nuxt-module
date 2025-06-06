@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { debounce } from 'lodash-es'
+import debounce from 'lodash-es/debounce'
 import { Popover, PopoverPanel } from '@headlessui/vue'
 import CwaUiFormInput from './Input.vue'
 import { useCwa, usePopper } from '#imports'

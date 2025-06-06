@@ -1,6 +1,6 @@
 import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
-import { isEqual } from 'lodash-es'
+import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'

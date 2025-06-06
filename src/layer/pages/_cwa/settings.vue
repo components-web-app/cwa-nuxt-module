@@ -210,7 +210,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { watchDebounced } from '@vueuse/core'
-import { isEqual } from 'lodash-es'
+import isEqual from 'lodash-es/isEqual'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { definePageMeta, useCwa, useRequestURL } from '#imports'

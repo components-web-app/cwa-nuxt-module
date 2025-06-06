@@ -1,5 +1,5 @@
 import { type Ref, ref, watch } from 'vue'
-import { isEqual } from 'lodash-es'
+import isEqual from 'lodash-es/isEqual'
 import type { SelectOption } from './cwa-select-input'
 import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 

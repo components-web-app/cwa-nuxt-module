@@ -1,6 +1,9 @@
 import { computed, getCurrentInstance, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import { debounce, get, isObject, set } from 'lodash-es'
+import debounce from 'lodash-es/debounce'
+import get from 'lodash-es/get'
+import isObject from 'lodash-es/isObject'
+import set from 'lodash-es/set'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 

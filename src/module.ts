@@ -2,7 +2,8 @@ import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
 import { defu } from 'defu'
-import { mergeWith, isArray } from 'lodash-es'
+import mergeWith from 'lodash-es/mergeWith'
+import isArray from 'lodash-es/isArray'
 import {
   addImportsDir,
   addPlugin,
