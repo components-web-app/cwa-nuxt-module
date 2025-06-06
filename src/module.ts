@@ -333,6 +333,10 @@ declare module 'vue-router' {
         route: '/__sitemap__/cwa-custom.xml',
         handler: resolve('./runtime/server/cwa-custom-sitemap.get'),
       })
+      addServerHandler({
+        route: '/cwa-healthcheck',
+        handler: resolve('./runtime/server/cwa-healthcheck.get'),
+      })
     })
 
     nuxt.hook('components:dirs', (dirs) => {

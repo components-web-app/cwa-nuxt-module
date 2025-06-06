@@ -21,6 +21,14 @@ export default defineNitroPlugin(async (nitroApp) => {
     if (!resolvedConfig) {
       return
     }
+
+    ctx.groups.push({
+      userAgent: ['*'],
+      comment: ['Block all from operational endpoints'],
+      allow: [],
+      disallow: ['/cwa-healthcheck', '/logout', '/me'],
+    })
+
     const NonHelpfulBots = [
       'Nuclei',
       'WikiDo',
@@ -53,6 +61,7 @@ export default defineNitroPlugin(async (nitroApp) => {
       'OmigiliBot',
       'Omigili',
     ]
+
     if (!resolvedConfig.robotsAllowSearchEngineCrawlers) {
       // credits to yoast.com/robots.txt
       ctx.groups.push({

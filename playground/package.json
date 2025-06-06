@@ -2,6 +2,7 @@
   "private": true,
   "name": "nuxt-cwa-module-playground",
   "type": "module",
+  "version": "0.0.0",
   "devDependencies": {
     "@headlessui/vue": "^1.7.23",
     "@tailwindcss/typography": "^0.5.15",
