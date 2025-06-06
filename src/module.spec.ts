@@ -86,7 +86,7 @@ describe('CWA module', () => {
         siteConfig: {
           canonicalUrl: '',
           indexable: true,
-          robotsAllowSearchEngineCrawlers: true,
+          robotsAllowNonSeoCrawlers: true,
           robotsAllowAiBots: true,
           robotsText: '',
           robotsRemoveSitemap: false,

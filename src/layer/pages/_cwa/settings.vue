@@ -118,8 +118,8 @@
             />
             <template v-if="allSettings.indexable">
               <CwaUiFormToggle
-                v-model="allSettings.robotsAllowSearchEngineCrawlers"
-                label="Allow Search Engine Crawlers"
+                v-model="allSettings.robotsAllowNonSeoCrawlers"
+                label="Allow Non-SEO Crawlers (Web Scrapers etc.)"
               />
               <CwaUiFormToggle
                 v-model="allSettings.robotsAllowAiBots"

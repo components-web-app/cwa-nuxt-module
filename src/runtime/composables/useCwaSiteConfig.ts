@@ -4,7 +4,7 @@ import type { SiteConfigParams } from '#cwa/module'
 
 export const defaultSiteConfig: SiteConfigParams = {
   indexable: true,
-  robotsAllowSearchEngineCrawlers: true,
+  robotsAllowNonSeoCrawlers: true,
   robotsAllowAiBots: true,
   robotsText: '',
   robotsRemoveSitemap: false,

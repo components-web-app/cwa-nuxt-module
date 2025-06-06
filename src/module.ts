@@ -50,7 +50,7 @@ export interface CwaUiMeta {
 
 export type SiteConfigParams = {
   indexable: boolean
-  robotsAllowSearchEngineCrawlers: boolean
+  robotsAllowNonSeoCrawlers: boolean
   robotsAllowAiBots: boolean
   robotsText: string
   robotsRemoveSitemap: boolean

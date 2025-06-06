@@ -62,7 +62,7 @@ export default defineNitroPlugin(async (nitroApp) => {
       'Omigili',
     ]
 
-    if (!resolvedConfig.robotsAllowSearchEngineCrawlers) {
+    if (!resolvedConfig.robotsAllowNonSeoCrawlers) {
       // credits to yoast.com/robots.txt
       ctx.groups.push({
         userAgent: NonHelpfulBots,
