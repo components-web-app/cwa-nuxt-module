@@ -233,7 +233,9 @@ describe('Auth', () => {
 
       const result = await auth.signOut()
 
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout', {
+        method: 'POST',
+      })
       expect(clearSessionSpy).not.toHaveBeenCalled()
       expect(result).toEqual(mockError)
     })
@@ -247,7 +249,9 @@ describe('Auth', () => {
       cwaFetch.fetch.raw = vi.fn()
 
       await expect(auth.signOut()).rejects.toThrow(mockError)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout', {
+        method: 'POST',
+      })
       expect(clearSessionSpy).not.toHaveBeenCalled()
     })
 
@@ -262,7 +266,9 @@ describe('Auth', () => {
       cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
 
       const result = await auth.signOut()
-      expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout')
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/logout', {
+        method: 'POST',
+      })
       expect(clearSessionSpy).toHaveBeenCalled()
       expect(result).toEqual(mockResult)
     })

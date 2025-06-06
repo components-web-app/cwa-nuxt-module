@@ -98,7 +98,9 @@ export default class Auth {
   public async signOut() {
     this.loading.value = true
     try {
-      const result = await this.cwaFetch.fetch('/logout')
+      const result = await this.cwaFetch.fetch('/logout', {
+        method: 'POST',
+      })
       await this.clearSession()
       return result
     }
