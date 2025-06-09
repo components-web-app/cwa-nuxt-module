@@ -10,6 +10,7 @@ import type { ComponentUi, ManagerTab } from '#cwa/module'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
 import type { Resources } from '#cwa/runtime/resources/resources'
+import { useNuxtApp } from '#imports'
 
 interface _ResourceStackItem {
   iri: string
@@ -362,8 +363,9 @@ export default class ResourceStackManager {
     })
 
     this.focusWrapper = document.createElement('div')
-    this.focusWrapper.className = 'cwa:absolute cwa:z-10'
-    document.body.appendChild(this.focusWrapper)
+    this.focusWrapper.className = 'cwa:absolute cwa:z-10 cwa:top-0 cwa:left-0'
+
+    useNuxtApp().vueApp._container?.appendChild(this.focusWrapper)
 
     this.focusProxy = this.focusComponent.mount(this.focusWrapper)
   }

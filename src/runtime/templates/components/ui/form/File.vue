@@ -72,7 +72,7 @@ function handleDeleteClick() {
         button-class="cwa:min-w-[100px]"
         @click="handleDeleteClick"
       >
-        Delete
+        Remove File
       </CwaUiFormButton>
     </span>
   </div>
