@@ -1,8 +1,8 @@
 import { computed, type Ref, onMounted, ref } from 'vue'
-import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
-import { useCwaResource } from '#imports'
+import { type CwaResourceUtilsOps, useCwaResource } from './cwa-resource'
+import { useCwaResourceEndpoint } from './cwa-resource-endpoint'
 
-export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string) => {
+export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string, ops?: CwaResourceUtilsOps) => {
   type MediaFile = {
     contentUrl: string
     fileSize: number
@@ -13,7 +13,7 @@ export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string) => {
     height?: number
   }
 
-  const cwaResource = useCwaResource(iri)
+  const cwaResource = useCwaResource(iri, ops)
   const { query } = useCwaResourceEndpoint(iri)
   const resource = cwaResource.getResource()
 
