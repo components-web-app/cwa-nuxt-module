@@ -67,7 +67,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
     }
   }
 
-  const isInternalPath = to.path.startsWith('/_/')
+  const isInternalPath = to.path.startsWith('/_/') || to.path.startsWith('/page_data/')
   const throwInternalUnauthorisedError = () => {
     throw createError({
       statusCode: 401,
