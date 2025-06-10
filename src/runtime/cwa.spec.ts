@@ -189,7 +189,7 @@ describe('Cwa class test', () => {
   test('Fetcher is initialised', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, stores.resources)
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, $router, stores.resources)
   })
 
   test('Resources is initialised and accessible', () => {

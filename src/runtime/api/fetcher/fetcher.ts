@@ -1,6 +1,5 @@
-import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { FetchResponse } from 'ofetch'
-import { useRoute } from 'vue-router'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri,
@@ -65,18 +64,12 @@ interface FetchNestedResourcesEvent {
 }
 
 export default class Fetcher {
-  private readonly cwaFetch: CwaFetch
-  private fetchStatusManager: FetchStatusManager
-  private resourcesStoreDefinition: ResourcesStore
-
   constructor(
-    cwaFetch: CwaFetch,
-    fetchStatusManager: FetchStatusManager,
-    resourcesStoreDefinition: ResourcesStore,
+    private readonly cwaFetch: CwaFetch,
+    private fetchStatusManager: FetchStatusManager,
+    private router: Router,
+    private resourcesStoreDefinition: ResourcesStore,
   ) {
-    this.cwaFetch = cwaFetch
-    this.fetchStatusManager = fetchStatusManager
-    this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
   public async fetchRoute(route: RouteLocationNormalizedLoaded): Promise<CwaResource | undefined> {
@@ -271,7 +264,7 @@ export default class Fetcher {
   }
 
   private appendQueryToPath(path: string): string {
-    const queryObj = useRoute().query
+    const queryObj = this.router.currentRoute.value?.query
     if (!queryObj) {
       return path
     }

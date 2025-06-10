@@ -36,7 +36,7 @@ vi.mock('../mercure')
 vi.mock('../api-documentation')
 vi.mock('vue-router', () => {
   return {
-    useRoute: vi.fn(() => {}),
+    currentRoute: vi.fn(() => {}),
   }
 })
 
@@ -52,9 +52,10 @@ function createFetcher(query?: { [key: string]: string }): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
-  vi.spyOn(vueRouter, 'useRoute').mockImplementation(() => ({ path: '/current-path', query }))
 
-  return new Fetcher(cwaFetch, statusManager, resourcesStore)
+  vi.spyOn(vueRouter, 'currentRoute', 'get').mockImplementation(() => ({ value: { path: '/current-path', query } }))
+
+  return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore)
 }
 
 const validCwaResource = {
