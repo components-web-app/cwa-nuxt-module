@@ -128,6 +128,10 @@ async function handleSaveRoute() {
     // reload the parent, because the route IRI/ID will have changed so we need to reference the updated route
     emit('reload')
     handleChangePage('view')
+
+    if (routeIriFromPage.value === resource['@id']) {
+      await loadResource()
+    }
   }
 }
 
@@ -146,6 +150,7 @@ async function handleDeleteRoute() {
 }
 
 async function handleRedirectDeleted() {
+  isLoadingRoute.value = true
   await loadResource()
 }
 

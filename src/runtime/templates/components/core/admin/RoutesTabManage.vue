@@ -67,27 +67,30 @@ const pageResourceRouteIri = computed(() => pageResource.route)
         </div>
       </div>
     </div>
-    <template v-if="recommendedRoute && recommendedRoute !== currentPath">
-      <div class="cwa:w-full cwa:border-b cwa:border-b-stone-600" />
+    <div
+      v-if="recommendedRoute"
+      class="cwa:p-4 cwa:bg-dark/80 cwa:rounded-lg cwa:flex cwa:flex-col cwa:gap-y-2 cwa:text-sm"
+    >
       <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
         <ModalInfo
-          label="Recommended route path"
+          label="SEO recommendation"
+          class="cwa:font-bold"
           :content="recommendedRoute"
         />
       </div>
-      <div class="cwa:text-sm cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
-        <p>Your current route <span>{{ currentPath }} is not recommended based on your page title <b>`{{ pageResource.title }}`</b>.</span></p>
-        <p>It is optimal for search engines to increase the relevance of the page to the title provided.</p>
-      </div>
       <div class="cwa:flex cwa:justify-start">
         <CwaUiFormButton
-          color="blue"
-          :disabled="disableButtons"
+          :color="recommendedRoute === currentPath ? 'grey' : 'blue'"
+          :disabled="disableButtons || recommendedRoute === currentPath"
+          class="cwa:text-sm"
           @click="$emit('generate')"
         >
-          Use Recommended Route
+          {{ recommendedRoute === currentPath ? 'You are using the recommended route' : 'Apply' }}
         </CwaUiFormButton>
       </div>
-    </template>
+      <div class="cwa:text-xs cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
+        <p>Recommended route is based on your page title <b>`{{ pageResource.title }}`</b>.</p>
+      </div>
+    </div>
   </div>
 </template>

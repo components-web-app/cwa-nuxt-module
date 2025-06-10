@@ -50,7 +50,7 @@ function selectTab(index: number) {
   // replicated by opening data in admin on details tab, clicking to view the data page, opening data modal, clicking to the routes tab
   // does not resolve, but it does stop the error from preventing the routes to load
   setTimeout(() => {
-    router.replace({ ...route, hash: `#${selectedTabId.value}` })
+    router.replace({ name: route.name, params: route.params, query: route.query, hash: `#${selectedTabId.value}` })
   }, 100)
 }
 
