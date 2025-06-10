@@ -27,7 +27,7 @@ export default defineNitroPlugin(async (nitroApp) => {
       userAgent: ['*'],
       comment: ['Block all from operational endpoints'],
       allow: [],
-      disallow: ['/cwa-healthcheck', '/logout', '/me'],
+      disallow: ['/cwa-healthcheck', '/logout', '/me', '/_/*', '/page_data/*'],
     })
 
     const NonHelpfulBots = [
