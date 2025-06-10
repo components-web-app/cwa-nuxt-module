@@ -93,7 +93,6 @@ vi.mock('./admin/navigation-guard', () => {
   }
 })
 
-const path = 'something'
 const storeName = 'dummystore'
 const $router = vi.fn()
 function createCwa({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
@@ -106,9 +105,6 @@ function createCwa({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
     },
   }))
   return new Cwa({
-    _route: {
-      path,
-    },
     $router,
   }, {
     storeName,
@@ -193,7 +189,7 @@ describe('Cwa class test', () => {
   test('Fetcher is initialised', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, { path }, stores.resources)
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, stores.resources)
   })
 
   test('Resources is initialised and accessible', () => {

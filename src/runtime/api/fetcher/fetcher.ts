@@ -1,5 +1,6 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import type { FetchResponse } from 'ofetch'
+import { useRoute } from 'vue-router'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri,
@@ -14,7 +15,6 @@ import type { ResourcesStore } from '../../storage/stores/resources/resources-st
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
-import { useRoute } from '#imports'
 
 export interface FetchResourceEvent {
   path: string
@@ -67,18 +67,15 @@ interface FetchNestedResourcesEvent {
 export default class Fetcher {
   private readonly cwaFetch: CwaFetch
   private fetchStatusManager: FetchStatusManager
-  private currentRoute: RouteLocationNormalizedLoaded
   private resourcesStoreDefinition: ResourcesStore
 
   constructor(
     cwaFetch: CwaFetch,
     fetchStatusManager: FetchStatusManager,
-    currentRoute: RouteLocationNormalizedLoaded,
     resourcesStoreDefinition: ResourcesStore,
   ) {
     this.cwaFetch = cwaFetch
     this.fetchStatusManager = fetchStatusManager
-    this.currentRoute = currentRoute
     this.resourcesStoreDefinition = resourcesStoreDefinition
   }
 
