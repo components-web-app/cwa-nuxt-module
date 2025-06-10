@@ -30,14 +30,13 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from '#imports'
+import { useRoute } from '#imports'
 
 export type ResourceModalTab = {
   id: string
   label: string
 }
 
-const router = useRouter()
 const route = useRoute()
 
 const props = defineProps<{
@@ -50,7 +49,8 @@ function selectTab(index: number) {
   // replicated by opening data in admin on details tab, clicking to view the data page, opening data modal, clicking to the routes tab
   // does not resolve, but it does stop the error from preventing the routes to load
   setTimeout(() => {
-    router.replace({ name: route.name, params: route.params, query: route.query, hash: `#${selectedTabId.value}` })
+    window.history.replaceState(null, '', `#${selectedTabId.value}`)
+    // router.replace({ name: route.name, params: route.params, query: route.query, hash: `#${selectedTabId.value}` })
   }, 100)
 }
 
