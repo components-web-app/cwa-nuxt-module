@@ -260,6 +260,22 @@ export class Resources {
     return this.getResource(this.pageIri.value)
   }
 
+  public get displayPageIri() {
+    return computed(() => {
+      if (this.isDataPage.value) {
+        return this.pageDataIri.value
+      }
+      return this.pageIri.value
+    })
+  }
+
+  public get displayPage() {
+    if (!this.displayPageIri.value) {
+      return
+    }
+    return this.getResource(this.displayPageIri.value)
+  }
+
   public get layoutIri(): ComputedRef<string | undefined> {
     return computed(() => this.getLayoutIriByFetchStatus(this.displayFetchStatus))
   }
