@@ -2,7 +2,7 @@
   <div
     id="cwa-root-layout"
     ref="rootLayout"
-    class="cwa:relative cwa:min-h-full cwa:flex cwa:flex-col"
+    class="cwa:relative cwa:h-full cwa:flex cwa:flex-col"
     @contextmenu="closeContextMenu"
   >
     <ClientOnly>
