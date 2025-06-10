@@ -7,7 +7,7 @@
       v-if="name"
       class="cwa:flex cwa:justify-center cwa:mt-2"
     >
-      <span class="cwa:text-xs cwa:py-1 cwa:px-3 cwa:bg-stone-800/80 cwa:rounded-lg cwa:font-bold">{{ name }}</span>
+      <span class="cwa:text-xs cwa:py-0.5 cwa:px-3 cwa:bg-stone-200/10 cwa:rounded-full cwa:font-bold cwa:tracking-wide">{{ name }}</span>
     </div>
   </div>
 </template>
