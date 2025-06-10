@@ -14,6 +14,7 @@ import type { ResourcesStore } from '../../storage/stores/resources/resources-st
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
+import { useRoute } from '#imports'
 
 export interface FetchResourceEvent {
   path: string
@@ -273,7 +274,7 @@ export default class Fetcher {
   }
 
   private appendQueryToPath(path: string): string {
-    const queryObj = this.currentRoute.query
+    const queryObj = useRoute().query
     if (!queryObj) {
       return path
     }

@@ -97,6 +97,7 @@ async function reloadItems() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   loading.value = true
+
   const { response } = $cwa.fetch({ path: props.fetchUrl })
   const { _data: data } = await response
   /*
