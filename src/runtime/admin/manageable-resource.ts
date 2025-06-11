@@ -1,3 +1,5 @@
+import { watchOnce } from '@vueuse/core'
+import { consola } from 'consola'
 import {
   computed,
   markRaw,
@@ -195,8 +197,28 @@ export default class ManageableResource {
     }
   }
 
-  private triggerClick() {
+  private async triggerClick() {
+    await new Promise<void>((resolve) => {
+      if (this.domElements.value.length) {
+        resolve()
+        return
+      }
+      const timeout = setTimeout(() => {
+        stopWatch()
+        clearTimeout(timeout)
+      }, 1000)
+      const stopWatch = watchOnce(this.domElements, (newDomEls) => {
+        if (newDomEls.length) {
+          resolve()
+          clearTimeout(timeout)
+        }
+      })
+    })
     const firstDomElement = this.domElements.value[0]
+    if (!firstDomElement) {
+      consola.error('Manageable resource listener called to select component, but no dom elements found.', this.currentIri?.value)
+      return
+    }
     const clickEvent = new Event('click', { bubbles: true })
     firstDomElement.dispatchEvent(clickEvent)
   }
