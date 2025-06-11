@@ -103,11 +103,10 @@
     "vitest-environment-nuxt": "^1.0.1"
   },
   "pnpm": {
-    "overrides": {
-      "tar-fs": ">=3.0.9"
-    },
     "auditConfig": {
-      "ignoreCves": []
+      "ignoreCves": [
+        "CVE-2025-5889"
+      ]
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
@@ -117,9 +116,6 @@
       "unrs-resolver",
       "vue-demi"
     ]
-  },
-  "overrides": {
-    "tar-fs": ">=3.0.9"
   },
   "engines": {
     "pnpm": ">=10.11.0"
