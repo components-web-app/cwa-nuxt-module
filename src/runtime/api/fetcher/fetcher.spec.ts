@@ -184,6 +184,9 @@ describe('Fetcher -> fetchResource', () => {
     expect(fetcher.fetchManifest.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].startFetch.mock.invocationCallOrder[0])
 
     expect(FetchStatusManager.mock.instances[0].startFetchResource).toHaveBeenCalledWith({
+      headers: {
+        path: '/primary-fetch-path',
+      },
       path: '/new-path',
       resource: fetchResourceEvent.path,
       token: fetchResourceEvent.token,
@@ -389,6 +392,7 @@ describe('Fetcher -> fetchManifest', () => {
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => true)
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
   })
 
   afterEach(() => {
@@ -768,6 +772,8 @@ describe('Fetcher -> fetchBatch', () => {
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetch.mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => true)
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/primary-fetch-path')
+
     vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
       if (event.path !== '/my-manifest') {
         return Promise.resolve()
