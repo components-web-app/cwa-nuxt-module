@@ -102,7 +102,7 @@ export default class FetchStatusManager {
   public startFetchResource(event: AddFetchResourceEvent): boolean {
     const addedToFetcherResources = this.fetcherStore.addFetchResource(event)
     if (addedToFetcherResources) {
-      this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false, path: event.path })
+      this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false, path: event.path, headers: event.headers })
     }
     return addedToFetcherResources
   }

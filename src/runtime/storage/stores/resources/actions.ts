@@ -8,7 +8,12 @@ import {
   isCwaResourceSame,
 } from '../../../resources/resource-utils'
 import type { CwaResourcesGettersInterface } from './getters'
-import type { CwaCurrentResourceInterface, CwaResourceApiStateGeneral, CwaResourcesStateInterface } from './state'
+import type {
+  CwaCurrentResourceInterface,
+  CwaResourceApiState,
+  CwaResourceApiStateGeneral,
+  CwaResourcesStateInterface,
+} from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import { showError } from '#app'
@@ -22,6 +27,7 @@ export interface SetResourceInProgressStatusEvent {
   iri: string
   path: string
   isComplete: false
+  headers?: CwaFetchRequestHeaders
 }
 export interface SetResourceCompletedStatusEvent {
   iri: string
@@ -479,6 +485,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         iri: event.iri,
         isCurrent: true,
       })
+      const originalApiState = { ...data.apiState }
 
       if (event.isComplete) {
         data.apiState = {
@@ -498,11 +505,28 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         ssr: import.meta.server,
         path: event.path,
       }
+      if ('headers' in event) {
+        newApiState.headers = event.headers
+      }
       // if in progress, retain headers and final url from last success state
       if (data.apiState.status === CwaResourceApiStatuses.SUCCESS) {
         newApiState.headers = data.apiState.headers
         newApiState.ssr = data.apiState.ssr
       }
+      // existing data and apiState for the resource we are fetching. Check if we need to clear it because we do not
+      // want to show old data as it is refreshing on data pages if dynamic position
+      if (getResourceTypeFromIri(event.iri) === CwaResourceTypes.COMPONENT_POSITION && data.data && data.apiState && data.data?._metadata?.isDynamicPosition === true) {
+        const getHeaders = (apiState: CwaResourceApiState | SetResourceStatusEvent) => {
+          if (!('headers' in apiState)) {
+            return {}
+          }
+          return apiState.headers || {}
+        }
+        if (getHeaders(event).path !== getHeaders(originalApiState).path) {
+          data.data = undefined
+        }
+      }
+
       data.apiState = newApiState
     },
     setResourceFetchError({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): void {

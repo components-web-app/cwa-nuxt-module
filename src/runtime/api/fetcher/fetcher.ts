@@ -112,10 +112,16 @@ export default class Fetcher {
       this.fetchManifest({ token: startFetchResult.token, manifestPath }).then(() => {})
     }
 
+    const fetchEvent = {
+      path,
+      preload,
+    }
+
     const continueToFetchResource = this.fetchStatusManager.startFetchResource({
       resource: iri,
       token: startFetchResult.token,
       path: path,
+      headers: this.createRequestHeaders(fetchEvent),
     })
 
     if (!continueToFetchResource) {
@@ -129,10 +135,7 @@ export default class Fetcher {
     let cwaFetchRaw: CwaFetchResponseRaw
     let resource: CwaResource | undefined
     try {
-      cwaFetchRaw = this.fetch({
-        path,
-        preload,
-      })
+      cwaFetchRaw = this.fetch(fetchEvent)
       const fetchResponse = await cwaFetchRaw.response
       resource = this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,

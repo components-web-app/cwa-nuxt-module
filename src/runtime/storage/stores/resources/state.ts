@@ -33,7 +33,7 @@ export interface CwaResourceApiStateSuccess extends SsrApiState {
   fetchedAt: number
 }
 
-declare type CwaResourceApiState = CwaResourceApiStateGeneral | CwaResourceApiStateError | CwaResourceApiStateSuccess
+export declare type CwaResourceApiState = CwaResourceApiStateGeneral | CwaResourceApiStateError | CwaResourceApiStateSuccess
 
 export interface CwaCurrentResourceInterface {
   data?: CwaResource
