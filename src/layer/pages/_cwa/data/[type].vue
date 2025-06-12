@@ -92,7 +92,7 @@ const orderOptions = [
 ]
 
 function goToPage(page: string) {
-  router.push(page)
+  router.push(`/_resource${page}`)
 }
 
 // to force the loading of api documentation

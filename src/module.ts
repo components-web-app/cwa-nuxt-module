@@ -189,6 +189,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     extendRouteRules('/page_data/**', { ssr: false })
     extendRouteRules('/_/**', { ssr: false })
     extendRouteRules('/_cwa/**', { ssr: false, robots: false })
+    extendRouteRules('/_resource/**', { ssr: false })
 
     // transpile runtime
     const runtimeDir = resolve('./runtime')

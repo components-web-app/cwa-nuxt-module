@@ -112,7 +112,7 @@ const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
 })
 
 function goToPage(page: string) {
-  router.push(page)
+  router.push(`/_resource${page}`)
 }
 
 function getDisplayPageUi(ui: string) {
