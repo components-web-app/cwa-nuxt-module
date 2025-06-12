@@ -54,14 +54,30 @@ const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
   [CwaResourceTypes.COMPONENT]: '/component/',
 }
 
-export function getResourceTypeFromIri(iri: string): CwaResourceTypes | undefined {
-  for (const type of Object.values(CwaResourceTypes)) {
-    const prefix: string = resourceTypeToIriPrefix[type]
-    if (iri.startsWith(prefix) || iri === prefix.slice(0, -1)) {
-      return type
+export class ResourceTypeFromIriCls extends Function {
+  private pathPrefix: string | undefined
+
+  setPathPrefix(prefix?: string) {
+    this.pathPrefix = prefix
+  }
+
+  getPathPrefix() {
+    return this.pathPrefix
+  }
+
+  _call(iri: string): CwaResourceTypes | undefined {
+    const iriToCompare = this.pathPrefix ? iri.replace(this.pathPrefix, '') : iri
+    for (const type of Object.values(CwaResourceTypes)) {
+      const prefix: string = resourceTypeToIriPrefix[type]
+      if (iriToCompare.startsWith(prefix) || iriToCompare === prefix.slice(0, -1)) {
+        return type
+      }
     }
   }
 }
+
+export const ResourceTypeFromIri = new ResourceTypeFromIriCls()
+export const getResourceTypeFromIri = ResourceTypeFromIri._call.bind(ResourceTypeFromIri)
 
 export function getPublishedResourceState(resource: Pick<CwaCurrentResourceInterface, 'data'>): undefined | boolean {
   const publishableMeta = resource.data?._metadata.publishable

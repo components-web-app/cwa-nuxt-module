@@ -1,7 +1,6 @@
 import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
-import { defu } from 'defu'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
 import {
@@ -68,8 +67,6 @@ export interface CwaModuleOptions {
   storeName: string
   siteConfig: Partial<SiteConfigParams>
   resources: CwaResourcesMeta
-  apiUrl?: string
-  apiUrlBrowser?: string
   pagesDepth?: number
   layouts?: {
     [type: string]: CwaUiMeta
@@ -185,12 +182,6 @@ export default defineNuxtModule<CwaModuleOptions>({
       logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
       await installModule('@nuxtjs/seo')
     }
-
-    logger.info(`Modifying Nuxt configuration options for ${NAME} module...`)
-    nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
-      apiUrl: options.apiUrl || options.apiUrlBrowser || '',
-      apiUrlBrowser: options.apiUrlBrowser || options.apiUrl || '',
-    })
 
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./')
@@ -312,8 +303,6 @@ declare module 'vue-router' {
         filename: '#cwa/server-options.ts',
         getContents: () => {
           const serverOps = {
-            apiUrl: options.apiUrl,
-            apiUrlBrowser: options.apiUrlBrowser,
             siteConfig: options.siteConfig,
           }
           return `export const options = ${JSON.stringify(serverOps, undefined, 2)}

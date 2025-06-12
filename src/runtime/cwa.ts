@@ -15,6 +15,7 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+import { ResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
 import { useRuntimeConfig, type NuxtApp } from '#app/nuxt'
 import { useCookie } from '#app/composables/cookie.js'
 import SiteConfig from '#cwa/runtime/api/site-config'
@@ -58,6 +59,9 @@ export default class Cwa {
     else {
       this.apiUrl = apiUrl || apiUrlBrowser || defaultApiUrl
     }
+    if (this.apiUrl) {
+      ResourceTypeFromIri.setPathPrefix((new URL(this.apiUrl)).pathname)
+    }
 
     this.cwaFetch = new CwaFetch(this.apiUrl)
     this.options = options
@@ -68,6 +72,7 @@ export default class Cwa {
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
 
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, nuxtApp.$router, this.storage.stores.resources)
+
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources)
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher, this.admin, this.resources)

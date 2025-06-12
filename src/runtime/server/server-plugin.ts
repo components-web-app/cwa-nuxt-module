@@ -13,7 +13,7 @@ export default defineNitroPlugin(async (nitroApp) => {
     }
     ctx.sitemaps.push({
       _sitemapName: 'cwa-custom',
-      sitemap: 'https://localhost:3000/__sitemap__/cwa-custom.xml',
+      sitemap: '/__sitemap__/cwa-custom.xml',
     })
   })
 

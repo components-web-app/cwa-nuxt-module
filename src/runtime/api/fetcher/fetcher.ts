@@ -2,7 +2,7 @@ import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { FetchResponse } from 'ofetch'
 import {
   CwaResourceTypes,
-  getResourceTypeFromIri,
+  getResourceTypeFromIri, ResourceTypeFromIri,
   resourceTypeToNestedResourceProperties,
 } from '../../resources/resource-utils'
 import type {
@@ -85,9 +85,11 @@ export default class Fetcher {
     const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
 
     if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
-      iri = `/_/routes/${route.path}`
-      manifestPath = `/_/routes_manifest/${route.path}`
+      const prefix = ResourceTypeFromIri.getPathPrefix()
+      iri = `${prefix}/_/routes/${route.path}`
+      manifestPath = `${prefix}/_/routes_manifest/${route.path}`
     }
+
     return await this.fetchResource({
       path: iri,
       isPrimary: true,

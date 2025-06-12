@@ -8,7 +8,7 @@ import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
 export const useFetcher = () => {
   const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
-  const resolvedUrl = apiUrl || apiUrlBrowser || options.apiUrl || options.apiUrlBrowser || ''
+  const resolvedUrl = apiUrl || apiUrlBrowser || ''
   const fetcher = $fetch.create({
     baseURL: resolvedUrl,
     headers: {

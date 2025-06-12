@@ -141,7 +141,7 @@ export default class ApiDocumentation {
       return await this.awaitApiDocPromise()
     }
     this.apiDocPromise = Promise.all([
-      this.doRequest('/.jsonld'),
+      this.doRequest('/'),
       this.doRequest(docsPath),
       this.doRequest('/_/page_data_metadatas'),
     ]).then((responses) => {

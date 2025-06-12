@@ -19,6 +19,22 @@ export default class CwaFetch {
       },
       credentials: 'include',
       onRequest(ctx) {
+        const baseUrlObj = new URL(baseURL)
+        const prefix = baseUrlObj.pathname
+
+        const checkRequestForPrefix = (reqPath: string) => {
+          if (reqPath.startsWith(prefix)) {
+            ctx.options.baseURL = baseUrlObj.origin
+          }
+        }
+
+        if (typeof ctx.request === 'string') {
+          checkRequestForPrefix(ctx.request)
+        }
+        else {
+          checkRequestForPrefix(ctx.request.url)
+        }
+
         if (import.meta.server) {
           const { cookie } = useRequestHeaders(['cookie'])
           cookie && ctx.options.headers.append('cookie', cookie)
