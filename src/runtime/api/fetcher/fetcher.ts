@@ -85,7 +85,7 @@ export default class Fetcher {
     const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
 
     if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
-      const prefix = ResourceTypeFromIri.getPathPrefix()
+      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       iri = `${prefix}/_/routes/${route.path}`
       manifestPath = `${prefix}/_/routes_manifest/${route.path}`
     }

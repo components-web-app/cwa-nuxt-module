@@ -98,7 +98,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
 
   const apiDocsObject = {
     docs: 'response from https://some-domain/docs.jsonld',
-    entrypoint: 'response from /.jsonld',
+    entrypoint: 'response from /',
     pageDataMetadata: 'response from /_/page_data_metadatas',
   }
   beforeAll(() => {
@@ -121,7 +121,7 @@ describe('API Documentation getApiDocumentation functionality', () => {
     apiDocumentation.setDocsPathFromLinkHeader(validLinkHeader)
     vi.clearAllMocks()
     await flushPromises()
-    expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('/.jsonld')
+    expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('/')
     expect(cwaFetchInstance.fetch).toHaveBeenCalledWith('https://some-domain/docs.jsonld')
     await delay(mockedFetchResponseTime)
     const piniaStore = apiDocumentationStore.useStore()

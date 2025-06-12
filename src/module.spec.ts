@@ -165,8 +165,6 @@ describe('CWA module', () => {
       expect(filename).toEqual('#cwa/server-options.ts')
 
       expect(getContents()).toEqual(`export const options = {
-  "apiUrl": "api-url",
-  "apiUrlBrowser": "api-url-browser",
   "siteConfig": {
     "opA": "valA"
   }
