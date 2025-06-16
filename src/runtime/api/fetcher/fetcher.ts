@@ -83,7 +83,6 @@ export default class Fetcher {
     // todo: test that we can get the iri from the route
     iri = Array.isArray(routeParam) ? '/' + routeParam.join('/') : routeParam
 
-    console.log('FETCH', iri)
     const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
 
     if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
