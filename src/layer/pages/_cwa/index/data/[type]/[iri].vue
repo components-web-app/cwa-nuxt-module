@@ -7,7 +7,7 @@
 
 <script lang="ts" setup>
 import PageDataAdminModal from '#cwa/runtime/templates/components/core/admin/PageDataAdminModal.vue'
-import { useDataType } from '#cwa/layer/pages/_cwa/composables/useDataType'
+import { useDataType } from '#cwa/layer/pages/_cwa/index/composables/useDataType'
 
 const { dataTypeClassName } = useDataType()
 

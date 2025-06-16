@@ -36,7 +36,7 @@ import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeadin
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
-import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
+import { useListPage } from '#cwa/layer/pages/_cwa/index/composables/useListPage'
 import { definePageMeta, useCwa } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)

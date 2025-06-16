@@ -28,7 +28,7 @@ import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
-import { useListPage } from '#cwa/layer/pages/_cwa/composables/useListPage'
+import { useListPage } from '#cwa/layer/pages/_cwa/index/composables/useListPage'
 import { definePageMeta, useCwa } from '#imports'
 import RouteListRow from '#cwa/runtime/templates/components/core/admin/RouteListRow.vue'
 

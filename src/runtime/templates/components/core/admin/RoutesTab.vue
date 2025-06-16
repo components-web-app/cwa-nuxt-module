@@ -59,7 +59,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
+import { useItemPage } from '#cwa/layer/pages/_cwa/index/composables/useItemPage'
 import { useCwa } from '#imports'
 import RoutesTabView from '#cwa/runtime/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/runtime/templates/components/core/admin/RoutesTabAddRedirect.vue'

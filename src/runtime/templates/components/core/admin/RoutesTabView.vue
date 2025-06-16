@@ -3,7 +3,7 @@ import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalIn
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import RouteRedirectsTree from '#cwa/runtime/templates/components/core/admin/RouteRedirectsTree.vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import type { TempCwaResource } from '#cwa/layer/pages/_cwa/composables/useItemPage'
+import type { TempCwaResource } from '#cwa/layer/pages/_cwa/index/composables/useItemPage'
 import type { RouteScreens } from '#cwa/runtime/templates/components/core/admin/RoutesTab.vue'
 
 defineProps<{

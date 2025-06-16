@@ -16,14 +16,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeMount } from 'vue'
 import { navigateTo, useHead } from '#app'
 import { definePageMeta, useCwa } from '#imports'
 
 const $cwa = useCwa()
-const route = useRoute()
-const isResourcePage = computed(() => (route.name === '_cwa-resource-page'))
 
 onBeforeMount(async () => {
   if (!$cwa.auth.isAdmin.value) {
@@ -36,22 +33,12 @@ definePageMeta({
     disabled: true,
     admin: true,
   },
-  layout: computed(() => {
-    if (isResourcePage.value) {
-      return false
-    }
-    return 'cwa-root-layout'
-  }),
+  layout: 'cwa-root-layout',
 })
 
 useHead({
   bodyAttrs: {
-    class: computed(() => {
-      if (isResourcePage.value) {
-        return
-      }
-      return { class: 'cwa:bg-stone-800' }
-    }),
+    class: 'cwa:bg-stone-800',
   },
 })
 </script>

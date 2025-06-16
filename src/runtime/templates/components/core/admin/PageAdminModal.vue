@@ -133,7 +133,7 @@ import ResourceModal from '#cwa/runtime/templates/components/core/admin/Resource
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
-import { useItemPage } from '#cwa/layer/pages/_cwa/composables/useItemPage'
+import { useItemPage } from '#cwa/layer/pages/_cwa/index/composables/useItemPage'
 import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import { useCwa } from '#imports'

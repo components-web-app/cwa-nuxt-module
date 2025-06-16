@@ -62,7 +62,7 @@ import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.v
 import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
-import { useDataList } from '#cwa/layer/pages/_cwa/composables/useDataList'
+import { useDataList } from '#cwa/layer/pages/_cwa/index/composables/useDataList'
 
 const { fqcnToEntrypointKey } = useDataList()
 
