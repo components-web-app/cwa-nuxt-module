@@ -8,7 +8,15 @@
         @change-page="handleChangePage"
       />
     </div>
-    <div v-else-if="resource">
+    <div
+      v-else-if="!resource"
+      class="p-4"
+    >
+      <CwaUiAlertWarning>
+        Internal Error: No Route Resource Loaded.
+      </CwaUiAlertWarning>
+    </div>
+    <div v-else>
       <div class="cwa:flex cwa:flex-col cwa:gap-y-8">
         <div>
           <button

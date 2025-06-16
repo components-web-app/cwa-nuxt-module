@@ -52,11 +52,12 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
       return localResourceData.value
     }
-    const loadedResource = await $cwa.fetchResource({
+    const fetchProps = {
       path: endpoint.value,
       iri: iri?.value,
       shallowFetch: true,
-    })
+    }
+    const loadedResource = await $cwa.fetchResource(fetchProps)
     isLoading.value = false
     return loadedResource
   }

@@ -135,6 +135,7 @@ export default class Fetcher {
 
     const finishFetchResourceEvent = {
       resource: iri,
+      userProvidedIri,
       token: startFetchResult.token,
     }
     let cwaFetchRaw: CwaFetchResponseRaw

@@ -23,6 +23,7 @@ import { clearError, useError } from '#app'
 
 export interface FinishFetchResourceEvent {
   resource: string
+  userProvidedIri?: string
   success: boolean
   token: string
   path: string
@@ -179,6 +180,13 @@ export default class FetchStatusManager {
     }
 
     if (!event.noSave) {
+      // we may be fetching a resource but with a postfix. E.g. routes//contact/redirects - this can extend the response
+      // however the iri returned should really still be the one that we wanted it to be
+      // In other circumstances, we want the different IRI that is returned to be saved as such
+      // for example, fetching a live resource, but a draft is available.
+      if (event.userProvidedIri) {
+        cwaResource['@id'] = event.userProvidedIri
+      }
       this.resourcesStore.saveResource({
         resource: cwaResource,
       })
