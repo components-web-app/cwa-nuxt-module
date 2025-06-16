@@ -308,7 +308,15 @@ export default class Fetcher {
     const requestHeaders: Record<string, string> = {}
     if (this.fetchStatusManager.primaryFetchPath) {
       // todo: test we replace the /_/routes prefix
-      requestHeaders.path = this.fetchStatusManager.primaryFetchPath.replace(/^\/_\/routes\//, '')
+      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+      const routePathPrefix = `${prefix}/_/routes/`
+      const primaryFetchPath = this.fetchStatusManager.primaryFetchPath
+      if (primaryFetchPath.indexOf(routePathPrefix) === 0) {
+        requestHeaders.path = primaryFetchPath.substring(routePathPrefix.length)
+      }
+      else {
+        requestHeaders.path = primaryFetchPath
+      }
     }
     if (preload) {
       requestHeaders.preload = preload.join(',')
