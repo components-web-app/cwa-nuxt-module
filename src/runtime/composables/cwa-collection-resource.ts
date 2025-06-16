@@ -107,6 +107,19 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     }
   })
 
+  function resolveResourceLink(resource: CwaResource, property: string) {
+    return resource[property] || getInternalResourceLink(resource['@id'])
+  }
+
+  function getInternalResourceLink(iri: string) {
+    return {
+      name: '_cwa-resource-page',
+      params: {
+        cwaPage0: iri,
+      },
+    }
+  }
+
   return {
     ...cwaResource,
     resource,
@@ -117,5 +130,6 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     goToNextPage,
     goToPreviousPage,
     changePage,
+    resolveResourceLink,
   }
 }

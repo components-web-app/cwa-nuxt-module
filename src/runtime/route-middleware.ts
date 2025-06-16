@@ -5,7 +5,6 @@ import type { CwaResource } from './resources/resource-utils'
 import {
   abortNavigation,
   callWithNuxt,
-  createError,
   defineNuxtRouteMiddleware,
   navigateTo,
   useNuxtApp,
@@ -67,15 +66,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
     }
   }
 
-  const isInternalPath = to.path.startsWith('/_/') || to.path.startsWith('/page_data/') || to.path.startsWith('/_resource/')
-  const throwInternalUnauthorisedError = () => {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorised',
-      message: 'You are not authorised to load this resource',
-    })
-  }
-
   // todo: pending https://github.com/nuxt/framework/issues/9705
   // need to await this, but if we do then returning to original page will not be triggered
   if (!isClient) {
@@ -92,19 +82,9 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   // we will still need to fetch the route data now for client-side. first loads, the from path is equal to the to path
   if (
     isFirstClientSideRun
-    && !isInternalPath
     && from.fullPath === to.fullPath
   ) {
     return
-  }
-
-  // we will not know if user is admin yet as the 'me' endpoint has not been fetched
-  if (isInternalPath) {
-    await nuxtApp.$cwa.auth.init()
-    if (!nuxtApp.$cwa.auth.isAdmin.value) {
-      throwInternalUnauthorisedError()
-      return
-    }
   }
 
   const startedMiddlewareToken = middlewareToken

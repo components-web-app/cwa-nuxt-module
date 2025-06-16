@@ -112,7 +112,12 @@ const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
 })
 
 function goToPage(page: string) {
-  router.push(`/_resource${page}`)
+  router.push({
+    name: '_cwa-resource-page',
+    params: {
+      cwaPage0: page,
+    },
+  })
 }
 
 function getDisplayPageUi(ui: string) {

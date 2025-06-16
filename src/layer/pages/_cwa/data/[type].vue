@@ -92,7 +92,12 @@ const orderOptions = [
 ]
 
 function goToPage(page: string) {
-  router.push(`/_resource${page}`)
+  router.push({
+    name: '_cwa-resource-page',
+    params: {
+      cwaPage0: page,
+    },
+  })
 }
 
 // to force the loading of api documentation

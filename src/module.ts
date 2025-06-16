@@ -186,10 +186,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./')
     // do not server-side render internal routes. Use with client-side auth values
-    extendRouteRules('/page_data/**', { ssr: false })
-    extendRouteRules('/_/**', { ssr: false })
     extendRouteRules('/_cwa/**', { ssr: false, robots: false })
-    extendRouteRules('/_resource/**', { ssr: false })
 
     // transpile runtime
     const runtimeDir = resolve('./runtime')
