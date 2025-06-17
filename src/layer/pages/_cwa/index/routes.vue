@@ -67,6 +67,7 @@ useHead({
 })
 
 definePageMeta({
+  name: '_cwa-routes',
   pageTransition: false,
 })
 </script>

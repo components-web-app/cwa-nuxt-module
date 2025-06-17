@@ -72,6 +72,7 @@ useHead({
 })
 
 definePageMeta({
+  name: '_cwa-layouts',
   pageTransition: false,
 })
 </script>

@@ -79,6 +79,7 @@ useHead({
 })
 
 definePageMeta({
+  name: '_cwa-data',
   pageTransition: false,
 })
 </script>

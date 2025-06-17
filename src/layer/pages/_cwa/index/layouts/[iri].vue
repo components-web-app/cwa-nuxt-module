@@ -84,12 +84,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useItemPage } from '../composables/useItemPage'
-import { type SelectOption, useCwa } from '#imports'
+import { definePageMeta, type SelectOption, useCwa } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
 import { componentNames } from '#components'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
+
+definePageMeta({
+  name: '_cwa-layouts-iri',
+})
 
 const emit = defineEmits<{
   close: []
