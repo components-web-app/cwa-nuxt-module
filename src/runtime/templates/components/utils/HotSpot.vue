@@ -5,9 +5,11 @@ import { useCwa } from '#cwa/runtime/composables/cwa'
 const props = withDefaults(defineProps<{
   screenReaderAction?: string
   iri?: string
+  disabled?: boolean
 }>(), {
   screenReaderAction: 'Hot Spot Button',
   iri: undefined,
+  disabled: false,
 })
 
 const $cwa = useCwa()
@@ -19,7 +21,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <button class="cwa:hot-spot cwa:relative cwa:rounded-full cwa:bg-blue-600 cwa:size-6 cwa:m-0 cwa:cursor-pointer">
+  <button
+    class="cwa:relative cwa:rounded-full  cwa:size-6 cwa:m-0 cwa:cursor-pointer"
+    :class="[disabled ? 'cwa:bg-stone-600' : 'cwa:bg-blue-600 cwa:hot-spot']"
+  >
     <span class="cwa:sr-only">{{ screenReaderAction }}</span>
   </button>
 </template>

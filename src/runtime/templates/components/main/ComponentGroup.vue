@@ -18,6 +18,19 @@
     <!--cwa-end-->
   </template>
   <div
+    v-else-if="isNewPosition"
+    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative"
+  >
+    <LazyHotSpot
+      screen-reader-action="Add component position"
+      :iri="iri"
+      disabled
+    />
+    <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
+      Add the component to populate this component group
+    </span>
+  </div>
+  <div
     v-else-if="signedInAndResourceExists"
     class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5"
   >
@@ -42,7 +55,7 @@ import {
 } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Positions'
 import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
 import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader.vue'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
@@ -104,11 +117,18 @@ const nestedClasses = computed(() => {
   return ['cwa:is-reordering']
 })
 
+const isNewPosition = computed(() => {
+  return props.location === NEW_RESOURCE_IRI
+})
+
 function getResourceKey(positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
 onMounted(() => {
+  if (isNewPosition.value) {
+    return
+  }
   componentGroupSynchronizer.createSyncWatcher({
     resource,
     location: props.location,
