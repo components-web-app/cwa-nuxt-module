@@ -9,7 +9,7 @@
       <h1 class="cwa:font-bold cwa:text-xl cwa:mb-2">
         Please check your inbox
       </h1>
-      <p>We've sent you an email with a link to reset your password</p>
+      <p>If this user exists, we've sent an email with a link to reset your password.</p>
     </div>
     <template v-else>
       <InputField

@@ -14,6 +14,7 @@ export default class CwaFetch {
   constructor(baseURL: string) {
     this.fetch = $fetch.create({
       baseURL,
+      retryDelay: 200,
       headers: {
         accept: 'application/ld+json,application/json',
       },

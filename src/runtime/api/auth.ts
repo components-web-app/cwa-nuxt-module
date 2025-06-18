@@ -64,7 +64,9 @@ export default class Auth {
     try {
       return await this.cwaFetch.fetch(`/password/reset/request/${encodeURIComponent(
         username,
-      )}`)
+      )}`, {
+        retry: 0,
+      })
     }
     catch (error) {
       if (!(error instanceof FetchError)) {
