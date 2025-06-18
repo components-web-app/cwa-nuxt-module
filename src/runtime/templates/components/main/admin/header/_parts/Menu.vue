@@ -86,8 +86,8 @@
               <div>
                 <h3>Account</h3>
                 <ul class="cwa:text-sm">
-                  <li>
-                    <MenuLink :to="{ name: '_cwa-users-user-iri', params: { iri: '/me' } }">
+                  <li v-if="$cwa.auth.user">
+                    <MenuLink :to="{ name: '_cwa-users-user-iri', params: { iri: $cwa.auth.user['@id'] } }">
                       My account
                     </MenuLink>
                   </li>
