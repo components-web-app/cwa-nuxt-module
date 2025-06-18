@@ -135,6 +135,28 @@
               label="Additional custom robots.txt"
               type="textarea"
             />
+            <div
+              v-if="showErrors && formErrors.robotsText"
+              class="cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-red-500 cwa:font-bold"
+            >
+              <p
+                v-for="(error, index) of formErrors.robotsText"
+                :key="`rtxterr-${index}`"
+              >
+                {{ error }}
+              </p>
+            </div>
+            <div
+              v-if="formWarnings.robotsText"
+              class="cwa:text-sm cwa:flex-col cwa:items-center cwa:gap-y-2 cwa:transition cwa:text-yellow-500 cwa:font-bold"
+            >
+              <p
+                v-for="(warning, index) of formWarnings.robotsText"
+                :key="`rtxtwarn-${index}`"
+              >
+                {{ warning }}
+              </p>
+            </div>
           </div>
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600"><div>
@@ -183,7 +205,7 @@
 
       <div class="flex">
         <CwaUiFormButton
-          :color="$cwa.siteConfig.apiState.hasError.value ? 'error' : 'blue'"
+          :color="showSubmitErrorState ? 'error' : 'blue'"
           :disabled="submitDisabled"
           type="button"
           @click="processChanges"
@@ -192,7 +214,7 @@
         </CwaUiFormButton>
       </div>
       <div
-        v-if="$cwa.siteConfig.apiState.hasError.value"
+        v-if="showSubmitErrorState"
         class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-red-500 cwa:font-bold"
       >
         <p>An error occurred while saving your changes</p>
@@ -208,9 +230,11 @@
 </template>
 
 <script lang="ts" setup>
+import { consola } from 'consola'
 import { computed, onMounted, ref, watch } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import isEqual from 'lodash-es/isEqual'
+import { asArray, parseRobotsTxt, validateRobots } from '#robots/util'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
 import { definePageMeta, useCwa, useRequestURL } from '#imports'
@@ -303,8 +327,56 @@ watchDebounced($cwa.siteConfig.totalRequests, (newTotal) => {
   debounce: 300,
 })
 
+const showErrors = ref(false)
+const formErrors = ref<{ [property: string]: string[] }>({})
+const formWarnings = ref<{ [property: string]: string[] }>({})
+
+function validateRobotsTxt(robotsText: string) {
+  clearErrorsAndWarnings('robotsText')
+  const parsedRobotsTxt = parseRobotsTxt(robotsText)
+  const { errors } = validateRobots(parsedRobotsTxt)
+  if (errors.length > 0) {
+    formErrors.value.robotsText = errors
+  }
+  // check if the robots.txt is blocking indexing
+  const wildCardGroups = parsedRobotsTxt.groups.filter((group: any) => asArray(group.userAgent).includes('*'))
+  if (wildCardGroups.some((group: any) => asArray(group.disallow).includes('/'))) {
+    formWarnings.value.robotsText = [
+      `The user defined robots.txt is blocking indexing for all environments.`,
+      'It\'s recommended to use the `indexable` Site Config to toggle this instead.',
+    ]
+  }
+}
+
+function clearErrorsAndWarnings(prop: string) {
+  delete formErrors.value[prop]
+  delete formWarnings.value[prop]
+}
+
+watch(() => allSettings.value?.robotsText, (robotsText: string | undefined) => {
+  if (!robotsText) {
+    clearErrorsAndWarnings('robotsText')
+    return
+  }
+  validateRobotsTxt(robotsText)
+}, {
+  immediate: true,
+})
+
+const hasClientSideErrors = computed(() => {
+  return Object.values(formErrors.value).length > 0
+})
+const showSubmitErrorState = computed(() => {
+  return $cwa.siteConfig.apiState.hasError.value || (showErrors.value && hasClientSideErrors.value)
+})
+
 async function processChanges() {
   if (!allSettings.value) return
+  if (hasClientSideErrors.value) {
+    showErrors.value = true
+    consola.error(formErrors.value)
+    return
+  }
   const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
   showUpdateProgress.value = totalConfigsChanged > 0
   updatingCount.value = totalConfigsChanged
