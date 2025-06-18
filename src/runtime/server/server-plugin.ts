@@ -2,7 +2,7 @@ import { consola } from 'consola'
 import { defineNitroPlugin, updateSiteConfig } from '#imports'
 import type { SitemapIndexRenderCtx } from '#sitemap/types'
 import type { HookRobotsConfigContext } from '#robots/types'
-import { parseRobotsTxt, validateRobots, asArray } from '#robots/util'
+import { parseRobotsTxt, validateRobots, asArray, NonHelpfulBots, AiBots } from '#robots/util'
 import { resolveConfigEventHandler } from '#cwa/runtime/server/useFetcher'
 
 export default defineNitroPlugin(async (nitroApp) => {
@@ -29,39 +29,6 @@ export default defineNitroPlugin(async (nitroApp) => {
       allow: [],
       disallow: ['/cwa-healthcheck', '/logout', '/me', '/_/*', '/page_data/*'],
     })
-
-    const NonHelpfulBots = [
-      'Nuclei',
-      'WikiDo',
-      'Riddler',
-      'PetalBot',
-      'Zoominfobot',
-      'Go-http-client',
-      'Node/simplecrawler',
-      'CazoodleBot',
-      'dotbot/1.0',
-      'Gigabot',
-      'Barkrowler',
-      'BLEXBot',
-      'magpie-crawler',
-    ]
-    const AiBots = [
-      'GPTBot',
-      'ChatGPT-User',
-      'Claude-Web',
-      'anthropic-ai',
-      'Applebot-Extended',
-      'Bytespider',
-      'CCBot',
-      'cohere-ai',
-      'Diffbot',
-      'FacebookBot',
-      'Google-Extended',
-      'ImagesiftBot',
-      'PerplexityBot',
-      'OmigiliBot',
-      'Omigili',
-    ]
 
     if (!resolvedConfig.robotsAllowNonSeoCrawlers) {
       // credits to yoast.com/robots.txt
