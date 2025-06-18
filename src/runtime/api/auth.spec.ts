@@ -123,7 +123,9 @@ describe('Auth', () => {
       const result = await auth.forgotPassword(mockUserName)
 
       expect(result).toEqual(mockError)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`, {
+        retry: 0,
+      })
     })
 
     test('should throw error IF request fails AND error is not instance of FetchError', async () => {
@@ -134,7 +136,9 @@ describe('Auth', () => {
       cwaFetch.fetch.raw = vi.fn()
 
       await expect(auth.forgotPassword(mockUserName)).rejects.toThrow(mockError)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`, {
+        retry: 0,
+      })
     })
 
     test('should return result IF request succeeds', async () => {
@@ -146,7 +150,9 @@ describe('Auth', () => {
       const result = await auth.forgotPassword(mockUserName)
 
       expect(result).toEqual(mockResult)
-      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/password/reset/request/${mockUserName}`, {
+        retry: 0,
+      })
     })
   })
 
