@@ -1,4 +1,4 @@
-// @vitest-environment nuxt
+// @vitest-environment happy-dom
 import { beforeEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
@@ -624,8 +624,11 @@ describe('Mercure -> fetch', () => {
   })
 
   test('Fetcher fetchResource is called the correct number of times with the correct arguments', async () => {
-    await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
     const fetcher = Fetcher.mock.instances[0]
+    vi.spyOn(fetcher, 'fetchResource').mockReturnValue(new Promise((resolve) => {
+      resolve([{ '@id': '/abc' }])
+    }))
+    await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
     expect(fetcher.fetchResource).toHaveBeenCalledTimes(3)
     expect(fetcher.fetchResource).toHaveBeenCalledWith({
       path: '/to-fetch-1',

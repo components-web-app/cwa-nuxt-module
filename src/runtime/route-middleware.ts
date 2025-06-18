@@ -88,6 +88,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   }
 
   const startedMiddlewareToken = middlewareToken
+
   nuxtApp.$cwa.fetchRoute(to)
     .then(async (resource: CwaResource | undefined) => {
       // check if the request finishing is still current to perform redirect

@@ -1,4 +1,4 @@
-// @vitest-environment nuxt
+// @vitest-environment happy-dom
 import { describe, expect, test } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import Spinner from './Spinner.vue'
