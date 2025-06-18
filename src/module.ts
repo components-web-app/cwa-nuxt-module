@@ -321,7 +321,7 @@ declare module 'vue-router' {
         handler: resolve('./runtime/server/cwa-custom-sitemap.get'),
       })
       addServerHandler({
-        route: '/cwa-healthcheck',
+        route: '/_cwa/healthcheck',
         handler: resolve('./runtime/server/cwa-healthcheck.get'),
       })
     })
