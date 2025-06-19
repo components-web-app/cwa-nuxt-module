@@ -41,7 +41,7 @@ onMounted(() => {
       <div v-if="success">
         New email address confirmed
       </div>
-      <div v-if="!submitting">
+      <div v-else-if="!submitting">
         Verify your new email address <span class="cwa:font-bold">{{ getStringFromParam('newEmail') }}</span>
       </div>
     </div>

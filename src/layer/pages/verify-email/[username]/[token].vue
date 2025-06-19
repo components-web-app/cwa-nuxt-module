@@ -40,7 +40,7 @@ onMounted(() => {
       <div v-if="success">
         Your email address is now verified
       </div>
-      <div v-if="!submitting">
+      <div v-else-if="!submitting">
         Verify your email address
       </div>
     </div>
