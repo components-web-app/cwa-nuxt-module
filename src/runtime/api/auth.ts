@@ -76,6 +76,38 @@ export default class Auth {
     }
   }
 
+  public async resendVerifyEmail(username: string) {
+    try {
+      return await this.cwaFetch.fetch(`/resend-verify-email/${encodeURIComponent(
+        username,
+      )}`, {
+        retry: 0,
+      })
+    }
+    catch (error) {
+      if (!(error instanceof FetchError)) {
+        throw error
+      }
+      return error
+    }
+  }
+
+  public async resendVerifyNewEmail(username: string) {
+    try {
+      return await this.cwaFetch.fetch(`/resend-verify-new-email/${encodeURIComponent(
+        username,
+      )}`, {
+        retry: 0,
+      })
+    }
+    catch (error) {
+      if (!(error instanceof FetchError)) {
+        throw error
+      }
+      return error
+    }
+  }
+
   public async resetPassword(event: ResetPasswordEvent) {
     try {
       return await this.cwaFetch.fetch('/component/forms/password_reset/submit', {

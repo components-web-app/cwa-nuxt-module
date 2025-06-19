@@ -14,7 +14,8 @@
     >
       <svg
         aria-hidden="true"
-        class="cwa:w-6 cwa:h-6 cwa:text-gray-300 cwa:animate-admin-spinner cwa:fill-blue-600"
+        :class="[size || 'cwa:size-6']"
+        class="cwa:text-gray-300 cwa:animate-admin-spinner cwa:fill-blue-600"
         viewBox="0 0 100 101"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -33,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ show: boolean }>()
+const props = defineProps<{ show: boolean, size?: `cwa:size-${number}` }>()
 defineOptions({
   inheritAttrs: false,
 })

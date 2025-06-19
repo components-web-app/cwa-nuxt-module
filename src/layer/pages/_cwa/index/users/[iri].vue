@@ -1,6 +1,6 @@
 <template>
   <ResourceModal
-    v-if="localResourceData"
+    v-if="localResourceData && resource"
     v-model="localResourceData.username"
     title-placeholder="No Username"
     :is-loading="isLoading"
@@ -18,10 +18,43 @@
           </div>
           <div>
             <ModalInput
-              v-model="localResourceData.emailAddress"
+              v-model="emailAddress"
               label="Email"
               type="email"
             />
+          </div>
+          <div
+            v-if="localResourceData.newEmailAddress"
+            class="cwa:mb-4 cwa:text-sm"
+          >
+            <p>You have requested to change the email address to {{ localResourceData.newEmailAddress }}.</p>
+            <TextButton
+              :disabled="requestingEmail"
+              @click="resendVerifyEmail(resource.username, 'new')"
+            >
+              <span class="cwa:group-disabled:opacity-50">Resend email verification</span>
+              <span>
+                <Spinner
+                  :show="requestingEmail"
+                  size="cwa:size-4"
+                />
+              </span>
+            </TextButton>
+          </div>
+          <div v-else-if="!localResourceData.emailAddressVerified">
+            <p>Email not verified.</p>
+            <TextButton
+              :disabled="requestingEmail"
+              @click="resendVerifyEmail(resource.username, 'current')"
+            >
+              <span class="cwa:group-disabled:opacity-50">Resend email verification</span>
+              <span>
+                <Spinner
+                  :show="requestingEmail"
+                  size="cwa:size-4"
+                />
+              </span>
+            </TextButton>
           </div>
           <div>
             <ModalSelect
@@ -153,6 +186,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useItemPage } from '../composables/useItemPage'
+import { useResendVerifyEmail } from '#cwa/runtime/composables/useResendVerifyEmail'
+import TextButton from '#cwa/layer/_components/TextButton.vue'
+import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { definePageMeta, type SelectOption } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
@@ -165,7 +201,19 @@ const emit = defineEmits<{
   reload: []
 }>()
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
+const emailAddress = computed({
+  get() {
+    return localResourceData.value?.newEmailAddress || localResourceData.value?.emailAddress
+  },
+  set(newEmailAddress: string) {
+    if (!localResourceData.value) {
+      return
+    }
+    localResourceData.value.newEmailAddress = newEmailAddress
+  },
+})
+
+const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle, resource } = useItemPage({
   createEndpoint: '/users',
   emit,
   resourceType: 'User',
@@ -221,6 +269,11 @@ const tabs = computed<ResourceModalTab[]>(() => {
 function handleDeleteClick() {
   deleteResource()
 }
+
+const {
+  resendVerifyEmail,
+  submitting: requestingEmail,
+} = useResendVerifyEmail()
 
 function getHighestRole() {
   const resourceRoles = localResourceData.value?.roles
