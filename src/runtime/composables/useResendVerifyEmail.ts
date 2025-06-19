@@ -31,7 +31,7 @@ export const useResendVerifyEmail = () => {
       }
       return $cwa.auth.resendVerifyNewEmail(username)
     }
-    const response = callFunction(type)
+    const response = await callFunction(type)
     if (response instanceof FetchError) {
       handleResetError(response)
     }

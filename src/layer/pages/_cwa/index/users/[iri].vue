@@ -27,15 +27,19 @@
             v-if="localResourceData.newEmailAddress"
             class="cwa:mb-4 cwa:text-sm"
           >
-            <p>You have requested to change the email address to {{ localResourceData.newEmailAddress }}.</p>
+            <p>You have requested to change the email address to <span class="cwa:font-bold">{{ localResourceData.newEmailAddress }}</span></p>
             <TextButton
               :disabled="requestingEmail"
               @click="resendVerifyEmail(resource.username, 'new')"
             >
               <span class="cwa:group-disabled:opacity-50">Resend email verification</span>
-              <span>
-                <Spinner
-                  :show="requestingEmail"
+              <span
+                class="cwa:transition-opacity"
+                :class="{ 'cwa:opacity-0': !showSpinnerTick }"
+              >
+                <SpinnerTick
+                  :is-loading="requestingEmail"
+                  :is-pending="!!requestError"
                   size="cwa:size-4"
                 />
               </span>
@@ -48,9 +52,13 @@
               @click="resendVerifyEmail(resource.username, 'current')"
             >
               <span class="cwa:group-disabled:opacity-50">Resend email verification</span>
-              <span>
-                <Spinner
-                  :show="requestingEmail"
+              <span
+                class="cwa:transition-opacity"
+                :class="{ 'cwa:opacity-0': !showSpinnerTick }"
+              >
+                <SpinnerTick
+                  :is-loading="requestingEmail"
+                  :is-pending="!!requestError"
                   size="cwa:size-4"
                 />
               </span>
@@ -184,11 +192,12 @@
 </template>
 
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useItemPage } from '../composables/useItemPage'
+import SpinnerTick from '#cwa/runtime/templates/components/utils/SpinnerTick.vue'
 import { useResendVerifyEmail } from '#cwa/runtime/composables/useResendVerifyEmail'
 import TextButton from '#cwa/layer/_components/TextButton.vue'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
 import { definePageMeta, type SelectOption } from '#imports'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
@@ -273,7 +282,23 @@ function handleDeleteClick() {
 const {
   resendVerifyEmail,
   submitting: requestingEmail,
+  error: requestError,
 } = useResendVerifyEmail()
+
+const debouncedHideSpinner = useDebounceFn(() => {
+  if (!requestingEmail.value) {
+    showSpinnerTick.value = false
+  }
+}, 5000)
+
+const showSpinnerTick = ref(false)
+watch(requestingEmail, (isRequesting) => {
+  if (isRequesting) {
+    showSpinnerTick.value = true
+    return
+  }
+  debouncedHideSpinner()
+})
 
 function getHighestRole() {
   const resourceRoles = localResourceData.value?.roles
