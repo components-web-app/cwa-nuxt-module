@@ -24,10 +24,10 @@
             />
           </div>
           <div
-            v-if="localResourceData.newEmailAddress"
+            v-if="!!resource.newEmailAddress"
             class="cwa:mb-4 cwa:text-sm"
           >
-            <p>You have requested to change the email address to <span class="cwa:font-bold">{{ localResourceData.newEmailAddress }}</span></p>
+            <p>You have requested to change the email address to <span class="cwa:font-bold">{{ resource.newEmailAddress }}</span></p>
             <TextButton
               :disabled="requestingEmail"
               @click="resendVerifyEmail(resource.username, 'new')"
@@ -45,7 +45,7 @@
               </span>
             </TextButton>
           </div>
-          <div v-else-if="!localResourceData.emailAddressVerified">
+          <div v-else-if="localResourceData.emailAddressVerified === false">
             <p>Email not verified.</p>
             <TextButton
               :disabled="requestingEmail"
@@ -218,7 +218,12 @@ const emailAddress = computed({
     if (!localResourceData.value) {
       return
     }
-    localResourceData.value.newEmailAddress = newEmailAddress
+    if (isAdding.value) {
+      localResourceData.value.emailAddress = newEmailAddress
+    }
+    else {
+      localResourceData.value.newEmailAddress = newEmailAddress
+    }
   },
 })
 
