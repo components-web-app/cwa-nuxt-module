@@ -24,7 +24,16 @@ export enum CwaAuthStatus {
   SIGNED_IN = 2,
 }
 
-interface ResetPasswordEvent {
+interface BaseTokenUserEvent {
+  username: string
+  token: string
+}
+
+interface ConfirmNewEmailEvent extends BaseTokenUserEvent {
+  newEmail: string
+}
+
+interface ResetPasswordEvent extends BaseTokenUserEvent {
   username: string
   token: string
   passwords: {
@@ -96,6 +105,44 @@ export default class Auth {
     try {
       return await this.cwaFetch.fetch(`/resend-verify-new-email/${encodeURIComponent(
         username,
+      )}`, {
+        retry: 0,
+      })
+    }
+    catch (error) {
+      if (!(error instanceof FetchError)) {
+        throw error
+      }
+      return error
+    }
+  }
+
+  public async confirmEmail(event: ConfirmNewEmailEvent) {
+    try {
+      return await this.cwaFetch.fetch(`/confirm-email/${encodeURIComponent(
+        event.username,
+      )}/${encodeURIComponent(
+        event.newEmail,
+      )}/${encodeURIComponent(
+        event.token,
+      )}`, {
+        retry: 0,
+      })
+    }
+    catch (error) {
+      if (!(error instanceof FetchError)) {
+        throw error
+      }
+      return error
+    }
+  }
+
+  public async verifyEmail(event: BaseTokenUserEvent) {
+    try {
+      return await this.cwaFetch.fetch(`/verify-email/${encodeURIComponent(
+        event.username,
+      )}/${encodeURIComponent(
+        event.token,
       )}`, {
         retry: 0,
       })

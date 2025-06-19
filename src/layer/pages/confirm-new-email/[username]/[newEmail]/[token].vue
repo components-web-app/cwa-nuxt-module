@@ -11,14 +11,15 @@ definePageMeta({
 })
 
 const {
-  verifyEmail,
+  confirmEmail,
   error,
   submitting,
   success,
+  getStringFromParam,
 } = useVerifyEmail()
 
 onMounted(() => {
-  verifyEmail()
+  confirmEmail()
 })
 </script>
 
@@ -28,7 +29,7 @@ onMounted(() => {
     submit-button-text="Verify Email"
     :error="error"
     :hide-submit="!!(success || error)"
-    @submit="verifyEmail"
+    @submit="confirmEmail"
   >
     <div
       v-if="!error"
@@ -38,10 +39,10 @@ onMounted(() => {
         <SpinnerTick :is-loading="submitting" />
       </div>
       <div v-if="success">
-        Your email address is now verified
+        New email address confirmed
       </div>
       <div v-if="!submitting">
-        Verify your email address
+        Verify your new email address <span class="cwa:font-bold">{{ getStringFromParam('newEmail') }}</span>
       </div>
     </div>
   </AuthTemplate>

@@ -13,13 +13,14 @@
           {{ error }}
         </CwaUiAlertWarning>
         <form
+          ref="form"
           action="#"
           method="post"
           class="cwa:flex cwa:flex-col cwa:gap-y-6"
           @submit.prevent="$emit('submit')"
         >
           <slot />
-          <div>
+          <div v-if="!hideSubmit">
             <button
               type="submit"
               :disabled="submitting"
@@ -36,10 +37,26 @@
 </template>
 
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
+
 defineEmits(['submit'])
 defineProps<{
   submitButtonText: string
   submitting: boolean
   error?: string | null | string[]
+  hideSubmit?: boolean
 }>()
+
+const form = useTemplateRef('form')
+
+function submitForm() {
+  if (!form.value) {
+    return
+  }
+  form.value.submit()
+}
+
+defineExpose({
+  submitForm,
+})
 </script>
