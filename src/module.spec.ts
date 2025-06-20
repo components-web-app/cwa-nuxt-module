@@ -392,7 +392,7 @@ declare module 'vue-router' {
       expect(mockPages).toEqual([
         {
           name: 'cwaPage0',
-          path: '/:cwaPage0',
+          path: '/',
           meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
           file: mockResolver('./runtime/templates'),
           children: [
@@ -413,6 +413,14 @@ declare module 'vue-router' {
                       path: ':cwaPage3',
                       meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
                       file: mockResolver('./runtime/templates'),
+                      children: [
+                        {
+                          name: 'cwaPage4',
+                          path: ':cwaPage4',
+                          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
+                          file: mockResolver('./runtime/templates'),
+                        },
+                      ],
                     },
                   ],
                 },

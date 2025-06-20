@@ -108,7 +108,7 @@ function createDefaultCwaPages(
       },
     }
     if (currentDepth === 0) {
-      page.path = '/:cwaPage0'
+      page.path = '/'
     }
 
     if (currentDepth < maxDepth) {
@@ -201,7 +201,7 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
-      createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 3, options.layoutName)
+      createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 4, options.layoutName)
     })
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 
