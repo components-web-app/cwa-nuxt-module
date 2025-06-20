@@ -95,10 +95,10 @@ function createDefaultCwaPages(
   maxDepth: number,
   layout?: string | undefined,
 ) {
-  function create(currentDepth = 0) {
-    const page: NuxtPage = {
+  function getPage(currentDepth: number): NuxtPage {
+    return {
       name: `cwaPage${currentDepth}`,
-      path: `:cwaPage${currentDepth}`,
+      path: currentDepth === 0 ? '/' : `:cwaPage${currentDepth}`,
       file: pageComponentFilePath,
       meta: {
         cwa: {
@@ -106,19 +106,20 @@ function createDefaultCwaPages(
         },
         layout: layout || 'cwa-root-layout',
       },
+      children: [] as NuxtPage[],
     }
-    if (currentDepth === 0) {
-      page.path = '/'
-    }
+  }
 
+  function createTree(currentDepth: number) {
+    const page = getPage(currentDepth)
     if (currentDepth < maxDepth) {
-      const child = create(++currentDepth)
+      const child = createTree(++currentDepth)
       page.children = [child]
     }
     return page
   }
-  const pagesTree = create()
-  pages.push(pagesTree)
+  // pages.push(getPage(0))
+  pages.push(createTree(0))
 }
 
 export const NAME = '@cwa/nuxt' as const

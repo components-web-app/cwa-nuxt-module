@@ -419,6 +419,7 @@ declare module 'vue-router' {
                           path: ':cwaPage4',
                           meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
                           file: mockResolver('./runtime/templates'),
+                          children: [],
                         },
                       ],
                     },
