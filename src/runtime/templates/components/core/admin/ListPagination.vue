@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import ListPaginationButton from './ListPaginationButton.vue'
 
 const props = defineProps<{
@@ -40,6 +40,14 @@ const props = defineProps<{
 
 const pageModel = defineModel<number>('page', { required: true })
 const perPageModel = defineModel<number>('perPage', { required: true })
+
+watch(pageModel, () => {
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: 'smooth',
+  })
+})
 
 const showingFrom = computed(() => {
   return 1 + ((pageModel.value - 1) * perPageModel.value)

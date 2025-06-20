@@ -98,7 +98,7 @@ function createDefaultCwaPages(
   function create(currentDepth = 0) {
     const page: NuxtPage = {
       name: `cwaPage${currentDepth}`,
-      path: `:cwaPage${currentDepth}*`,
+      path: `:cwaPage${currentDepth}`,
       file: pageComponentFilePath,
       meta: {
         cwa: {
@@ -108,7 +108,7 @@ function createDefaultCwaPages(
       },
     }
     if (currentDepth === 0) {
-      page.path = '/:cwaPage0*'
+      page.path = '/:cwaPage0'
     }
 
     if (currentDepth < maxDepth) {

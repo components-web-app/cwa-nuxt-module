@@ -75,6 +75,11 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
 
   function changePage(newPageNumber: number) {
     pageModel.value = newPageNumber
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth',
+    })
   }
 
   // so components can be loaded in background still for the component manager to get metadata
