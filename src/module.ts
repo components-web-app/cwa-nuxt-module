@@ -105,6 +105,7 @@ function createDefaultCwaPages(
           disabled: false,
         },
         layout: layout || 'cwa-root-layout',
+        scrollToTop: true,
       },
       children: [] as NuxtPage[],
     }
