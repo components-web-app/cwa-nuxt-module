@@ -1,3 +1,4 @@
+import { consola } from 'consola'
 import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import {
@@ -543,7 +544,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
 
       if (showErrorPage && error) {
-        showError({ statusCode: error.statusCode, statusMessage: error.statusMessage, message: error.message })
+        // , message: error.message - when the error reated to a primary fetch of a resource - it's a bit verbose for
+        // users to see this on the error page - especially for the 404 endpoint
+        showError({ statusCode: error.statusCode, statusMessage: error.statusMessage })
+        consola.info(error.message)
       }
     },
     saveResource,

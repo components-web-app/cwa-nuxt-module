@@ -10,7 +10,6 @@ export default defineEventHandler(async (e) => {
   if (resolvedConfig) {
     const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
     updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
-
     if (resolvedConfig.maintenanceModeEnabled) {
       const isUserAllowedToBypassMaintenance = () => {
         const cookies = parseCookies(e)
@@ -49,7 +48,7 @@ export default defineEventHandler(async (e) => {
 
       const url = getRequestURL(e)
       const allowedPaths = ['/__nuxt_error', '/login']
-      if (!allowedPaths.includes(url.pathname) && !url.pathname.startsWith('/_cwa') && !url.pathname.startsWith('/_/')) {
+      if (!allowedPaths.includes(url.pathname) && !url.pathname.startsWith('/_cwa')) {
         const maintenanceError = createError({
           statusCode: 503,
           statusMessage: 'Website under maintenance',

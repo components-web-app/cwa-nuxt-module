@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { clearError, type NuxtError, useHead, useRoute } from '#app'
+import { clearError, navigateTo, type NuxtError, useHead, useRoute } from '#app'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const props = defineProps<{
@@ -46,7 +46,11 @@ useHead({
   },
 })
 
-const returnHome = () => clearError({ redirect: '/' })
+const returnHome = async () => {
+  // using the redirect option, the error still exists in the middleware so it is skipped when home page trying to load.
+  await clearError()
+  navigateTo('/')
+}
 
 const showingErrorPage = ref(false)
 onMounted(() => {

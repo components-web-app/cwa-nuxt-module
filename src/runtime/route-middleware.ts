@@ -6,7 +6,7 @@ import {
   abortNavigation,
   callWithNuxt,
   defineNuxtRouteMiddleware,
-  navigateTo,
+  navigateTo, useError,
   useNuxtApp,
 } from '#app'
 import { useProcess } from '#cwa/runtime/composables/process'
@@ -14,6 +14,16 @@ import { useProcess } from '#cwa/runtime/composables/process'
 let middlewareToken = ''
 
 export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, from: RouteLocationNormalized) => {
+  const err = useError()
+
+  // this line is because when we clearError and redirect from the error page, the error still seems to exist at the
+  // time this middleware is being called. So instead we must not use the clearError and redirect option or keep this fix
+  // our error page will clear error first and then redirect.
+  // @ts-expect-error - not sure what the type is being used for the error which include the URL
+  if (err.value && err.value.url === to.fullPath) {
+    return
+  }
+
   const { isClient } = useProcess()
   middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()

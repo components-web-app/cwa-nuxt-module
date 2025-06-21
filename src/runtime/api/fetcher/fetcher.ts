@@ -151,7 +151,6 @@ export default class Fetcher {
       })
     }
     catch (error: any) {
-      // useError
       this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
         success: false,
