@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment nuxt
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { RouteLocationNormalizedLoaded, RouteLocationRaw } from 'vue-router'
 import { flushPromises } from '@vue/test-utils'

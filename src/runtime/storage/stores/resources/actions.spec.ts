@@ -520,7 +520,7 @@ describe('resources action setResourceFetchError', () => {
     vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
     const error = createCwaResourceError({ message: 'my message' })
     resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
-    expect(app.showError).toHaveBeenCalledWith({ statusCode: error.statusCode, message: error.message })
+    expect(app.showError).toHaveBeenCalledWith({ statusCode: error.statusCode })
   })
 })
 
