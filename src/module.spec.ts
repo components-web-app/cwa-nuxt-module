@@ -393,31 +393,31 @@ declare module 'vue-router' {
         {
           name: 'cwaPage0',
           path: '/',
-          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout', scrollToTop: true },
+          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
           file: mockResolver('./runtime/templates'),
           children: [
             {
               name: 'cwaPage1',
               path: ':cwaPage1',
-              meta: { cwa: { disabled: false }, layout: 'cwa-root-layout', scrollToTop: true },
+              meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
               file: mockResolver('./runtime/templates'),
               children: [
                 {
                   name: 'cwaPage2',
                   path: ':cwaPage2',
-                  meta: { cwa: { disabled: false }, layout: 'cwa-root-layout', scrollToTop: true },
+                  meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
                   file: mockResolver('./runtime/templates'),
                   children: [
                     {
                       name: 'cwaPage3',
                       path: ':cwaPage3',
-                      meta: { cwa: { disabled: false }, layout: 'cwa-root-layout', scrollToTop: true },
+                      meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
                       file: mockResolver('./runtime/templates'),
                       children: [
                         {
                           name: 'cwaPage4',
                           path: ':cwaPage4',
-                          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout', scrollToTop: true },
+                          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
                           file: mockResolver('./runtime/templates'),
                           children: [],
                         },
