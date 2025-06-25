@@ -165,7 +165,7 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     const cwaSitemap = {
       sources: ['/__sitemap__/cwa-urls'],
-      chunks: true,
+      // chunks: true,
     }
 
     if (!hasNuxtModule('@nuxtjs/sitemap')) {

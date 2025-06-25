@@ -48,6 +48,7 @@
   "dependencies": {
     "@nuxtjs/color-mode": "^3.5.2",
     "@nuxtjs/robots": "^5.2.11",
+    "@nuxtjs/sitemap": "^7.4.2",
     "@nuxtjs/seo": "^3.0.3",
     "@pinia/nuxt": "^0.11.1",
     "@popperjs/core": "^2.11.8",
