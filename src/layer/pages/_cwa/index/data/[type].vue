@@ -51,7 +51,7 @@ import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '#app'
 import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta, useCwa, useCwaResourceRoute } from '#imports'
 import { useDataList } from '#cwa/layer/pages/_cwa/index/composables/useDataList'
 import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
@@ -69,6 +69,7 @@ const { pageDataClassName, dataType } = useDataType()
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const { loadDynamicPageOptions, dynamicPages } = useDynamicPageLoader()
+const { getInternalResourceLink } = useCwaResourceRoute()
 
 const endpoint = ref<string>()
 
@@ -92,12 +93,7 @@ const orderOptions = [
 ]
 
 function goToPage(page: string) {
-  router.push({
-    name: '_cwa-resource-page',
-    params: {
-      cwaPage0: page,
-    },
-  })
+  router.push(getInternalResourceLink(page))
 }
 
 // to force the loading of api documentation

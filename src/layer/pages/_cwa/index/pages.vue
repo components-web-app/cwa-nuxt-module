@@ -79,12 +79,13 @@ import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form
 import ListFilterButton from '#cwa/runtime/templates/components/core/admin/ListFilterButton.vue'
 import { useQueryBoundModel } from '#cwa/runtime/composables/cwa-query-bound-model'
 import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta, useCwa, useCwaResourceRoute } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
+const { getInternalResourceLink } = useCwaResourceRoute()
 
 const router = useRouter()
 
@@ -112,12 +113,7 @@ const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
 })
 
 function goToPage(page: string) {
-  router.push({
-    name: '_cwa-resource-page',
-    params: {
-      cwaPage0: page,
-    },
-  })
+  router.push(getInternalResourceLink(page))
 }
 
 function getDisplayPageUi(ui: string) {
