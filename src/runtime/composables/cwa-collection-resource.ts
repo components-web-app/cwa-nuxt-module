@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { type LocationQuery, useRoute } from 'vue-router'
 import type { CwaResourceUtilsOps } from './cwa-resource'
+import { useCwaResourceRoute } from '#cwa/runtime/composables/useCwaResourceRoute'
 import { useCwa, useCwaResource, useQueryBoundModel } from '#imports'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 
@@ -112,18 +113,7 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     }
   })
 
-  function resolveResourceLink(resource: CwaResource, property: string) {
-    return resource[property] || getInternalResourceLink(resource['@id'])
-  }
-
-  function getInternalResourceLink(iri: string) {
-    return {
-      name: '_cwa-resource-page',
-      params: {
-        cwaPage0: iri,
-      },
-    }
-  }
+  const { getResourceRoute } = useCwaResourceRoute()
 
   return {
     ...cwaResource,
@@ -135,6 +125,6 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
     goToNextPage,
     goToPreviousPage,
     changePage,
-    resolveResourceLink,
+    resolveResourceLink: getResourceRoute,
   }
 }

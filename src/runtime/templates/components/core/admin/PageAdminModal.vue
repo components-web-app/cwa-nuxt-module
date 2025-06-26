@@ -16,7 +16,7 @@
       #icons
     >
       <div>
-        <NuxtLink :to="localResourceData['@id']">
+        <NuxtLink :to="getInternalResourceLink(localResourceData['@id'])">
           <CwaUiIconEyeIcon class="cwa:w-9" />
         </NuxtLink>
       </div>
@@ -207,7 +207,7 @@ const layoutOptions = computed(() => {
   return options
 })
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource, getInternalResourceLink } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',

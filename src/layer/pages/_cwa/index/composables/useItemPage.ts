@@ -1,6 +1,7 @@
 import { computed, type ComputedRef, isRef, onMounted, type Ref, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
+import { useCwaResourceRoute } from '#cwa/runtime/composables/useCwaResourceRoute'
 import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
@@ -171,6 +172,8 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     isLoading.value = false
   })
 
+  const { getInternalResourceLink } = useCwaResourceRoute()
+
   return {
     isLoading,
     isUpdating,
@@ -184,5 +187,6 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     saveResource,
     loadResource,
     resetResource: syncLocalResourceWithStore,
+    getInternalResourceLink,
   }
 }
