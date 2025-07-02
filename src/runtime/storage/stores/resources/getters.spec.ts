@@ -1,3 +1,5 @@
+// @vitest-environment nuxt
+
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { computed, reactive, ref } from 'vue'
 import { CwaResourceTypes } from '../../../resources/resource-utils'

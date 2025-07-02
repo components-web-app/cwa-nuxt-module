@@ -1,3 +1,5 @@
+// @vitest-environment nuxt
+
 import { join } from 'path'
 import { describe, expect, test, vi } from 'vitest'
 import type { Mock } from 'vitest'

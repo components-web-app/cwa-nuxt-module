@@ -1,3 +1,5 @@
+// @vitest-environment nuxt
+
 import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'
 import { Headers } from 'ofetch'

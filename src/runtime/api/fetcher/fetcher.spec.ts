@@ -1,3 +1,5 @@
+// @vitest-environment nuxt
+
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
 import { flushPromises } from '@vue/test-utils'
