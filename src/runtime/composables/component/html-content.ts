@@ -1,4 +1,5 @@
-import { type Ref, type WatchStopHandle, type App, createApp, onBeforeUnmount, onMounted, resolveComponent, watch } from 'vue'
+import { createApp, onBeforeUnmount, onMounted, resolveComponent, watch } from 'vue'
+import type { Ref, WatchStopHandle, App } from 'vue'
 import { CwaLink } from '#components'
 
 export const useHtmlContent = (container: Ref<null | HTMLElement>) => {

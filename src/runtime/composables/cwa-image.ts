@@ -1,5 +1,7 @@
-import { computed, type Ref, onMounted, ref } from 'vue'
-import { type CwaResourceUtilsOps, useCwaResource } from './cwa-resource'
+import { computed, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import { useCwaResource } from './cwa-resource'
+import type { CwaResourceUtilsOps } from './cwa-resource'
 import { useCwaResourceEndpoint } from './cwa-resource-endpoint'
 
 export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string, ops?: CwaResourceUtilsOps) => {

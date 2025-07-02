@@ -1,4 +1,5 @@
-import { computed, type ComputedRef } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import { defu } from 'defu'
 import type { PopperOptions } from '#cwa/runtime/types/popper'

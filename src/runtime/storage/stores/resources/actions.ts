@@ -2,12 +2,13 @@ import { consola } from 'consola'
 import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import {
-  type CwaResource,
+
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
   isCwaResourceSame,
 } from '../../../resources/resource-utils'
+import type { CwaResource } from '../../../resources/resource-utils'
 import type { CwaResourcesGettersInterface } from './getters'
 import type {
   CwaCurrentResourceInterface,

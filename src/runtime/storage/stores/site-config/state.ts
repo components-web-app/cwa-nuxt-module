@@ -1,4 +1,5 @@
-import { type Ref, ref } from 'vue'
+import { ref } from 'vue'
+import type { Ref } from 'vue'
 import type { CwaResource } from '../../../resources/resource-utils'
 import type { SiteConfigParams } from '#cwa/module'
 

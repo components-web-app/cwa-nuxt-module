@@ -2,11 +2,12 @@
 import { computed, ref } from 'vue'
 import { DateTime } from 'luxon'
 import {
-  type CwaResource,
+
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
 } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 

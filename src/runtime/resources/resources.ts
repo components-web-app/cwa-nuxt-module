@@ -1,4 +1,5 @@
-import { computed, type ComputedRef } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'

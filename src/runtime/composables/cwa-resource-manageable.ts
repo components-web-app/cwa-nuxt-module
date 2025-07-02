@@ -3,9 +3,9 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
-  type ComponentPublicInstance,
-  type Ref,
+
 } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 import type { ManageableResourceOps } from '../admin/manageable-resource'
 import ManageableResource from '../admin/manageable-resource'
 import { useCwa } from './cwa'

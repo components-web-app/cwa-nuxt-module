@@ -1,4 +1,5 @@
-import { reactive, type Ref, ref } from 'vue'
+import { reactive, ref } from 'vue'
+import type { Ref } from 'vue'
 import type { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
 import type { CwaFetchRequestHeaders } from '../../../api/fetcher/fetcher'
 import type { CwaResource } from '../../../resources/resource-utils'

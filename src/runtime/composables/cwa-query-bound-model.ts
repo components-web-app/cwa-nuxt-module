@@ -1,4 +1,5 @@
-import { useRouter, useRoute, type LocationQueryValue } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import type { LocationQueryValue } from 'vue-router'
 import { computed, ref, watch } from 'vue'
 import debounce from 'lodash-es/debounce'
 

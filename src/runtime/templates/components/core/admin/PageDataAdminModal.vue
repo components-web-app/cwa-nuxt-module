@@ -13,7 +13,10 @@
       #icons
     >
       <div>
-        <NuxtLink :to="getInternalResourceLink(localResourceData['@id'])">
+        <NuxtLink
+          v-if="resource"
+          :to="getInternalResourceLink(resource['@id'])"
+        >
           <CwaUiIconEyeIcon class="cwa:w-9" />
         </NuxtLink>
       </div>
@@ -103,7 +106,8 @@
 import { computed, onMounted, ref, toRef, watch, watchEffect } from 'vue'
 import { navigateTo } from '#app'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
-import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
+import ResourceModalTabs from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
+import type { ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/index/composables/useItemPage'
@@ -139,6 +143,8 @@ const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 const { fqcnToEntrypointKey } = useDataList()
 
 const pageDataTypeNuxtLinkParams = computed(() => {
+  // should do to the individual type when deleting the data from the admin pages, not just when the current page is page data loaded....
+  // save the type from the resource and have it cached locally in the component before the resource is deleted
   const type = $cwa.resources.pageData?.value?.data?.['@type']
   if (!type) {
     return { name: '_cwa-data' }

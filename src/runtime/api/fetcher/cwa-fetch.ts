@@ -1,4 +1,5 @@
-import { $fetch, type $Fetch } from 'ofetch'
+import { $fetch } from 'ofetch'
+import type { $Fetch } from 'ofetch'
 import type { RequestHeaders } from 'h3'
 import { useRequestHeaders } from '#imports'
 

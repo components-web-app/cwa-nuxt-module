@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi, beforeEach, type Mock } from 'vitest'
+import { describe, expect, test, vi, beforeEach } from 'vitest'
+import type { Mock } from 'vitest'
 import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'

@@ -1,4 +1,5 @@
-import { computed, type ComputedRef, isRef, onMounted, type Ref, ref, watch } from 'vue'
+import { computed, isRef, onMounted, ref, watch } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import { useCwaResourceRoute } from '#cwa/runtime/composables/useCwaResourceRoute'

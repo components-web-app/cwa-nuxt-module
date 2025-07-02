@@ -1,4 +1,5 @@
-import { computed, type ComputedRef, nextTick, reactive, type Ref, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import type { FetchError } from 'ofetch'
 import set from 'lodash-es/set'
 import unset from 'lodash-es/unset'
@@ -13,12 +14,13 @@ import type { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } fro
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import {
-  type CwaResource,
+
   CwaResourceTypes,
   getPublishedResourceIri,
   getPublishedResourceState,
   getResourceTypeFromIri,
 } from './resource-utils'
+import type { CwaResource } from './resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
 import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
 import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'

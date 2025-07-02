@@ -51,7 +51,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
+import DialogBox from '#cwa/runtime/templates/components/core/DialogBox.vue'
+import type { ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 import { useCwa, useCwaSelect } from '#imports'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import type {

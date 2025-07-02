@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import DialogBox, { type ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
+import DialogBox from '#cwa/runtime/templates/components/core/DialogBox.vue'
+import type { ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
 
 const props = withDefaults(defineProps<{
   title?: string

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { hashMode } from '#build/router.options.mjs'
-import { defineNuxtLink, type NuxtLinkProps } from '#app'
+import { defineNuxtLink } from '#app'
+import type { NuxtLinkProps } from '#app'
 import { useCwa } from '#imports'
 
 const props = defineProps<NuxtLinkProps>()

@@ -19,7 +19,8 @@
 import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount, useTemplateRef } from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import type { CwaResourceApiStateError } from '../../../storage/stores/resources/state'
-import { type CwaResourceMeta, useCwa } from '#imports'
+import { useCwa } from '#imports'
+import type { CwaResourceMeta } from '#imports'
 import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
 import {
   CwaResourceTypes,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { clearError, navigateTo, type NuxtError, useHead, useRoute } from '#app'
+import { clearError, navigateTo, useHead, useRoute } from '#app'
+import type { NuxtError } from '#app'
 import { useCwa } from '#cwa/runtime/composables/cwa'
 
 const props = defineProps<{

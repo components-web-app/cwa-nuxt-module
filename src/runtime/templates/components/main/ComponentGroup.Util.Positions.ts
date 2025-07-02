@@ -1,4 +1,5 @@
-import { computed, type ComputedRef, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import debounce from 'lodash-es/debounce'
 import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
 import type Cwa from '#cwa/runtime/cwa'

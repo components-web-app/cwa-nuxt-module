@@ -7,7 +7,8 @@ import {
 } from '@headlessui/vue'
 
 import { computed } from 'vue'
-import { type SelectInputProps, type SelectOption, useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
+import { useCwaSelectInput } from '#cwa/runtime/composables/cwa-select-input'
+import type { SelectInputProps, SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<Omit<SelectInputProps, 'options'>>()

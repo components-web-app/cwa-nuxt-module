@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
-import { type LocationQuery, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
+import type { LocationQuery } from 'vue-router'
 import type { CwaResourceUtilsOps } from './cwa-resource'
 import { useCwaResourceRoute } from '#cwa/runtime/composables/useCwaResourceRoute'
 import { useCwa, useCwaResource, useQueryBoundModel } from '#imports'

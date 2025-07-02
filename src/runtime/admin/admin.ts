@@ -1,4 +1,5 @@
-import mitt, { type Emitter } from 'mitt'
+import mitt from 'mitt'
+import type { Emitter } from 'mitt'
 import { watch } from 'vue'
 import throttle from 'lodash-es/throttle'
 import type { DebouncedFunc } from 'lodash-es/debounce'

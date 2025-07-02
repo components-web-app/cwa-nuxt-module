@@ -130,7 +130,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
-import ResourceModalTabs, { type ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
+import ResourceModalTabs from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
+import type { ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa/layer/pages/_cwa/index/composables/useItemPage'

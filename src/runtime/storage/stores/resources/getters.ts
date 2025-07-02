@@ -1,19 +1,21 @@
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
 import {
-  type CwaResource,
+
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
   resourceTypeToNestedResourceProperties,
 } from '../../../resources/resource-utils'
+import type { CwaResource } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
 import {
-  type CwaCurrentResourceInterface,
+
   CwaResourceApiStatuses,
-  type CwaResourcesStateInterface,
+
   NEW_RESOURCE_IRI,
 } from './state'
+import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 

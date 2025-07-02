@@ -64,7 +64,8 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { type LocationQuery, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
+import type { LocationQuery } from 'vue-router'
 import ListContainer from './ListContainer.vue'
 import ListPagination from './ListPagination.vue'
 import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'

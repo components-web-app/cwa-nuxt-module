@@ -33,6 +33,9 @@ export default defineNuxtConfig({
       comments: true,
     },
   },
+  site: {
+    indexable: true,
+  },
   runtimeConfig: {
     public: {
       cwa: {
@@ -115,6 +118,7 @@ export default defineNuxtConfig({
       },
     },
     siteConfig: {
+      indexable: true,
       siteName: 'CWA Module Test Playground',
     },
   },

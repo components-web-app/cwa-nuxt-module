@@ -26,7 +26,9 @@ export const resolveConfigEventHandler = async () => {
   const { mergeConfig, responseToConfig } = useCwaSiteConfig()
   const { fetcher, options } = useFetcher()
   try {
+    console.log('Fetching site_config_parameters with default config', options.siteConfig)
     const data = await fetcher<CwaResource>('/_/site_config_parameters')
+    console.log('site_config_parameters RESULT ', data)
     return mergeConfig(options.siteConfig, responseToConfig(data, true))
   }
   catch (e) {

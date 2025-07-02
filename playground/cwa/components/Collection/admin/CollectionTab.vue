@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { type SelectOption, useCwaResourceManagerTab, useCwaResourceModel, useCwaSelect } from '#imports'
+import { useCwaResourceManagerTab, useCwaResourceModel, useCwaSelect } from '#imports'
+import type { SelectOption } from '#imports'
 
 const { exposeMeta, iri } = useCwaResourceManagerTab({
   name: 'Collection',

@@ -7,9 +7,12 @@ import type {
   CwaStore,
 } from '../cwa-store-types'
 
-import CwaSiteConfigState, { type CwaSiteConfigStateInterface } from './state'
-import CwaSiteConfigGetters, { type CwaSiteConfigGettersInterface } from './getters'
-import CwaSiteConfigActions, { type CwaSiteConfigActionsInterface } from './actions'
+import CwaSiteConfigState from './state'
+import type { CwaSiteConfigStateInterface } from './state'
+import CwaSiteConfigGetters from './getters'
+import type { CwaSiteConfigGettersInterface } from './getters'
+import CwaSiteConfigActions from './actions'
+import type { CwaSiteConfigActionsInterface } from './actions'
 
 /**
  * Interface Definitions

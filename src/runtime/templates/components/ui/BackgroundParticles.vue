@@ -14,10 +14,10 @@ import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 const particlesContainer = useTemplateRef('particlesContainer')
 const canvasElement = ref()
 
-type ParticleCanvasContext =
-  { gl: WebGLRenderingContext, isWebGL2: false } |
-  { gl: WebGL2RenderingContext, isWebGL2: true } |
-  undefined
+type ParticleCanvasContext
+  = { gl: WebGLRenderingContext, isWebGL2: false }
+    | { gl: WebGL2RenderingContext, isWebGL2: true }
+    | undefined
 
 type ParticleRenderingContext = WebGL2RenderingContext | WebGLRenderingContext
 type ParticleWebGLMeta = {

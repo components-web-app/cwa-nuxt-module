@@ -1,5 +1,6 @@
 import { join } from 'path'
-import { describe, expect, type Mock, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 
 vi.mock('@nuxt/kit', async () => {

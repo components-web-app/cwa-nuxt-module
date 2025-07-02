@@ -1,13 +1,14 @@
 import {
   createApp,
-  type defineAsyncComponent,
+
   defineComponent,
   h, onBeforeUnmount, onMounted,
   ref,
-  type Ref,
+
   watch,
-  type WatchStopHandle,
+
 } from 'vue'
+import type { defineAsyncComponent, Ref, WatchStopHandle } from 'vue'
 import { useNuxtApp } from '#app'
 import type { ManagerTab } from '#cwa/module.js'
 

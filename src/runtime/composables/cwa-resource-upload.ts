@@ -1,4 +1,5 @@
-import { computed, type ComputedRef, ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { ComputedRef } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/runtime/composables/cwa'

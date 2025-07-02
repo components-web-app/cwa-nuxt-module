@@ -74,9 +74,14 @@ export function useCwaSiteConfig() {
   }
 
   function resolvedConfigToSiteConfig(config: SiteConfigParams) {
+    if (!config.indexable) {
+      console.error('Indexable was not true. Debugging how this can happen')
+      console.trace()
+      console.log(config)
+    }
     return {
       name: config.siteName,
-      indexable: config.indexable,
+      indexable: true,
       url: config.canonicalUrl,
     }
   }
