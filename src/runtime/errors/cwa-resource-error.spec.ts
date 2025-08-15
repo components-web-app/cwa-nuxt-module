@@ -18,6 +18,7 @@ describe('Test creating cwa resource errors', () => {
       statusText: undefined,
       primaryMessage: 'My Error',
       request: undefined,
+      setCookieHeaders: undefined,
     })
   })
 
@@ -44,6 +45,7 @@ describe('Test creating cwa resource errors', () => {
     expect(cwaResourceError.statusText).toBe(statusText)
     expect(cwaResourceError.request).toBe(request)
     expect(cwaResourceError.primaryMessage).toBe(primaryMessage)
+    expect(cwaResourceError.setCookieHeaders).toBeUndefined()
     expect(cwaResourceError.asObject).toStrictEqual({
       message: expectedMessage,
       statusCode,
@@ -51,6 +53,7 @@ describe('Test creating cwa resource errors', () => {
       statusText,
       primaryMessage,
       request,
+      setCookieHeaders: undefined,
     })
   })
 })
