@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
   const { fetcher, options } = useFetcher()
   const { mergeConfig, responseToConfig } = useCwaSiteConfig()
   try {
-    const data = await fetcher<CwaResource>('/_/site_config_parameters')
+    const data = await fetcher<CwaResource>('/_/site_config_parameters', {
+      credentials: 'omit',
+    })
     const resolvedConfig = mergeConfig(options.siteConfig, responseToConfig(data, true))
 
     defaultContentType(event, 'application/xml')

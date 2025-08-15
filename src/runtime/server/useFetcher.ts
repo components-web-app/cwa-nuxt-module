@@ -26,7 +26,9 @@ export const resolveConfigEventHandler = async () => {
   const { mergeConfig, responseToConfig } = useCwaSiteConfig()
   const { fetcher, options } = useFetcher()
   try {
-    const data = await fetcher<CwaResource>('/_/site_config_parameters')
+    const data = await fetcher<CwaResource>('/_/site_config_parameters', {
+      credentials: 'omit',
+    })
     return mergeConfig(options.siteConfig, responseToConfig(data, true))
   }
   catch (e) {

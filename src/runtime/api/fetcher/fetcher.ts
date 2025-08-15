@@ -151,10 +151,14 @@ export default class Fetcher {
       })
     }
     catch (error: any) {
+      // if (error instanceof FetchError) {
+      //   console.log('error!!!...', error.response)
+      // }
+      const cwaError = createCwaResourceError(error)
       this.fetchStatusManager.finishFetchResource({
         ...finishFetchResourceEvent,
         success: false,
-        error: createCwaResourceError(error),
+        error: cwaError,
         path: path,
       })
     }

@@ -5,6 +5,7 @@ export interface CwaResourceErrorObject {
   statusText?: string
   request?: string
   primaryMessage: string
+  setCookieHeaders?: string[]
 }
 
 export class CwaResourceError extends Error {
@@ -14,6 +15,7 @@ export class CwaResourceError extends Error {
   statusText?: string
   request?: string
   primaryMessage?: string
+  setCookieHeaders?: string[]
   asObject?: CwaResourceErrorObject
 }
 
@@ -48,6 +50,13 @@ export function createCwaResourceError(error: any) {
       return error?.statusText || error?.statusMessage || message
     },
   })
+
+  Object.defineProperty(cwaResourceError, 'setCookieHeaders', {
+    get(): string[] {
+      return error?.response?.headers.getSetCookie()
+    },
+  })
+
   Object.defineProperty(cwaResourceError, 'asObject', {
     get(): CwaResourceErrorObject {
       return {
@@ -57,6 +66,7 @@ export function createCwaResourceError(error: any) {
         statusText: this.statusText,
         primaryMessage: this.primaryMessage,
         request: this.request,
+        setCookieHeaders: this.setCookieHeaders,
       }
     },
   })

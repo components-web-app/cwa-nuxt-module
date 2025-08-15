@@ -18,7 +18,9 @@ import type {
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
-import { showError } from '#app'
+import { showError, useResponseHeader } from '#app'
+import SetCookieParser from 'set-cookie-parser'
+import libCookie, { type SerializeOptions } from 'cookie'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -545,7 +547,17 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
 
       if (showErrorPage && error) {
-        // , message: error.message - when the error reated to a primary fetch of a resource - it's a bit verbose for
+        // forward the ser-cookie headers as if a user is unauthorized the API will send cookies to log them out for the next load
+        if (error?.setCookieHeaders) {
+          const parsedSetCookiesHeaders = SetCookieParser.parse(error.setCookieHeaders)
+
+          const currentSetCookieHeader = useResponseHeader('Set-Cookie')
+          currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
+            return libCookie.serialize(cookie.name, cookie.value, cookie as SerializeOptions)
+          })
+        }
+
+        // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
         // users to see this on the error page - especially for the 404 endpoint
         showError({ statusCode: error.statusCode, statusMessage: error.statusMessage })
         consola.info(error.message)
