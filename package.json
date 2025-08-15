@@ -120,7 +120,11 @@
       "sharp",
       "unrs-resolver",
       "vue-demi"
-    ]
+    ],
+    "overrides": {
+      "linkifyjs@<4.3.2": ">=4.3.2",
+      "ipx@>=2.0.0-0 <2.1.1": ">=2.1.1"
+    }
   },
   "engines": {
     "pnpm": ">=10.11.0"
