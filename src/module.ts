@@ -391,7 +391,7 @@ declare module 'vue-router' {
       config.optimizeDeps.include = config.optimizeDeps.include || []
       config.optimizeDeps.exclude = config.optimizeDeps.exclude || []
 
-      const optimizeDepPackages = ['slugify', 'dayjs']
+      const optimizeDepPackages = ['slugify', 'dayjs', 'cookie', 'set-cookie-parser']
 
       for (const opPkg of optimizeDepPackages) {
         // does it exist in excludes? remove
