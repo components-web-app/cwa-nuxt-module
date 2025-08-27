@@ -19,8 +19,8 @@ import type {
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
 import { showError, useResponseHeader } from '#app'
-import SetCookieParser from 'set-cookie-parser'
-import libCookie, { type SerializeOptions } from 'cookie'
+import { parse as parseCookie } from 'set-cookie-parser'
+import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -549,11 +549,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       if (showErrorPage && error) {
         // forward the ser-cookie headers as if a user is unauthorized the API will send cookies to log them out for the next load
         if (error?.setCookieHeaders) {
-          const parsedSetCookiesHeaders = SetCookieParser.parse(error.setCookieHeaders)
+          const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
 
           const currentSetCookieHeader = useResponseHeader('Set-Cookie')
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
-            return libCookie.serialize(cookie.name, cookie.value, cookie as SerializeOptions)
+            return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
           })
         }
 
