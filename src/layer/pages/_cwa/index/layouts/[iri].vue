@@ -85,7 +85,7 @@
 import { computed } from 'vue'
 import { useItemPage } from '../composables/useItemPage'
 import { definePageMeta, useCwa } from '#imports'
-import type { SelectOption } from '#imports'
+import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'

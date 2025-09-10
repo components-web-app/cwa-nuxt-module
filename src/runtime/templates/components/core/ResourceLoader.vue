@@ -20,7 +20,7 @@ import { computed, onMounted, watch, getCurrentInstance, ref, onBeforeMount, use
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import type { CwaResourceApiStateError } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
-import type { CwaResourceMeta } from '#imports'
+import type { CwaResourceMeta } from '#cwa/composables/cwa-resource'
 import type { IriProp } from '#cwa/composables/cwa-resource.js'
 import {
   CwaResourceTypes,
