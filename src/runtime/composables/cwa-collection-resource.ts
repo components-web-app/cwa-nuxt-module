@@ -3,9 +3,9 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
 import type { CwaResourceUtilsOps } from './cwa-resource'
-import { useCwaResourceRoute } from '#cwa/runtime/composables/useCwaResourceRoute'
+import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { useCwa, useCwaResource, useQueryBoundModel } from '#imports'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const cwaResource = useCwaResource(iri, ops)

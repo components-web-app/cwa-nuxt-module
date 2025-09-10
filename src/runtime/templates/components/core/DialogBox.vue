@@ -70,7 +70,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import type { ButtonColor } from '#cwa/runtime/templates/components/ui/form/Button.vue'
+import type { ButtonColor } from '#cwa/templates/components/ui/form/Button.vue'
 
 export interface ActionButton {
   label: string

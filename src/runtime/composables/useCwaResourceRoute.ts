@@ -1,4 +1,4 @@
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export const useCwaResourceRoute = () => {
   function getInternalResourceLink(iri: string) {

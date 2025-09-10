@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { clearError, navigateTo, useHead, useRoute } from '#app'
 import type { NuxtError } from '#app'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 const props = defineProps<{
   error: NuxtError

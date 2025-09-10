@@ -1,9 +1,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import debounce from 'lodash-es/debounce'
-import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
-import type Cwa from '#cwa/runtime/cwa'
-import type { ReorderEvent } from '#cwa/runtime/admin/admin'
+import { CwaResourceTypes } from '#cwa/resources/resource-utils'
+import type Cwa from '#cwa/cwa'
+import type { ReorderEvent } from '#cwa/admin/admin'
 
 const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
   const startIndex = fromIndex < 0 ? array.length + fromIndex : fromIndex

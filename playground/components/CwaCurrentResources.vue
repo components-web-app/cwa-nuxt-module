@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { useCwa } from '#imports'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
+import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 const $cwa = useCwa()
 </script>

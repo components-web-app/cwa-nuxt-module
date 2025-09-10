@@ -2,7 +2,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CwaPage from './cwa-page.vue'
-import * as cwaComposable from '#cwa/runtime/composables/cwa'
+import * as cwaComposable from '#cwa/composables/cwa'
 
 const defaultIri = '12345'
 

@@ -18,7 +18,7 @@ import { isCwaResource } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
-import type { FetchStatus } from '#cwa/runtime/storage/stores/fetcher/state'
+import type { FetchStatus } from '#cwa/storage/stores/fetcher/state'
 import { clearError, useError } from '#app'
 
 export interface FinishFetchResourceEvent {

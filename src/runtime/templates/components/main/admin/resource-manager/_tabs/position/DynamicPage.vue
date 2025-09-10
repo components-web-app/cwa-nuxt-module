@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { onMounted } from 'vue'
-import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
-import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
-import { useCwaSelect } from '#cwa/runtime/composables/cwa-select'
+import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
+import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
+import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
+import { useCwaSelect } from '#cwa/composables/cwa-select'
 import {
   useDynamicPositionSelectOptions,
-} from '#cwa/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
+} from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 
 const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
   name: 'Dynamic Component',

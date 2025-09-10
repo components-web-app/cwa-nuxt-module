@@ -129,19 +129,19 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, toRef, watch } from 'vue'
-import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
-import ResourceModalTabs from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
-import type { ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
-import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
-import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
-import { useItemPage } from '#cwa/layer/pages/_cwa/index/composables/useItemPage'
+import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
+import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
+import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
+import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
+import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
 import { componentNames } from '#components'
-import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
+import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import { useCwa } from '#imports'
-import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import PageTypeSelect from '#cwa/runtime/templates/components/core/admin/form/PageTypeSelect.vue'
-import RoutesTab from '#cwa/runtime/templates/components/core/admin/RoutesTab.vue'
+import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
+import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 
 const emit = defineEmits<{
   close: []

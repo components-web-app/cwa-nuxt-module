@@ -1,6 +1,6 @@
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import type { CwaSiteConfigParameter } from '#cwa/runtime/storage/stores/site-config/state'
-import type { SiteConfigParams } from '#cwa/module'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import type { CwaSiteConfigParameter } from '#cwa/storage/stores/site-config/state'
+import type { SiteConfigParams } from '#cwa/types'
 
 export const defaultSiteConfig: SiteConfigParams = {
   indexable: true,

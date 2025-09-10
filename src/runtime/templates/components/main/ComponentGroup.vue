@@ -49,20 +49,20 @@ import {
   onBeforeUnmount,
   defineAsyncComponent,
 } from 'vue'
-import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
+import { ComponentGroupUtilSynchronizer } from '#cwa/templates/components/main/ComponentGroup.Util.Synchronizer'
 import {
   useComponentGroupPositions,
-} from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Positions'
-import ComponentPosition from '#cwa/runtime/templates/components/core/ComponentPosition.vue'
-import ResourceLoader from '#cwa/runtime/templates/components/core/ResourceLoader.vue'
-import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+} from '#cwa/templates/components/main/ComponentGroup.Util.Positions'
+import ComponentPosition from '#cwa/templates/components/core/ComponentPosition.vue'
+import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
+import { useCwa } from '#cwa/composables/cwa'
+import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageable'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 
 const LazyHotSpot = defineAsyncComponent({
   suspensible: false,
-  loader: () => import('#cwa/runtime/templates/components/utils/HotSpot.vue'),
+  loader: () => import('#cwa/templates/components/utils/HotSpot.vue'),
 })
 
 const iri = computed<string | undefined>(() => resource.value?.data?.['@id'])

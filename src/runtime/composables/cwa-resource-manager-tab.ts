@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 export interface CwaResourceManagerTabOptions {
   name: string

@@ -51,18 +51,18 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import DialogBox from '#cwa/runtime/templates/components/core/DialogBox.vue'
-import type { ActionButton } from '#cwa/runtime/templates/components/core/DialogBox.vue'
+import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
+import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 import { useCwa, useCwaSelect } from '#imports'
-import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
+import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 import type {
   ApiDocumentationComponentMetadata,
-} from '#cwa/runtime/api/api-documentation'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
-import type { CwaResourceMeta } from '#cwa/module'
+} from '#cwa/api/api-documentation'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import type { CwaResourceMeta } from '#cwa/types'
 import {
   useDynamicPositionSelectOptions,
-} from '#cwa/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
+} from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadata

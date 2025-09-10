@@ -2,7 +2,7 @@ import { defineNitroPlugin } from '#imports'
 import type { SitemapIndexRenderCtx } from '#sitemap/types'
 import type { HookRobotsConfigContext } from '#robots/types'
 import { parseRobotsTxt, NonHelpfulBots, AiBots } from '#robots/util'
-import { resolveConfigEventHandler } from '#cwa/runtime/server/useFetcher'
+import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
 
 export default defineNitroPlugin(async (nitroApp) => {
   nitroApp.hooks.hook('sitemap:index-resolved', async (ctx: SitemapIndexRenderCtx) => {

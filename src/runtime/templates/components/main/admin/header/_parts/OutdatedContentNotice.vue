@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 const $cwa = useCwa()
 </script>

@@ -1,8 +1,8 @@
 import { defineEventHandler } from 'h3'
 import { jwtDecode } from 'jwt-decode'
-import useCwaSiteConfig from '#cwa/runtime/composables/useCwaSiteConfig'
+import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import { updateSiteConfig } from '#site-config/server/composables'
-import { resolveConfigEventHandler } from '#cwa/runtime/server/useFetcher'
+import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
 import { getRequestURL, createError, parseCookies } from '#imports'
 
 export default defineEventHandler(async (e) => {

@@ -4,11 +4,11 @@ import { consola } from 'consola'
 import type {
   CwaSiteConfigStoreInterface,
   SiteConfigStore,
-} from '#cwa/runtime/storage/stores/site-config/site-config-store'
-import type CwaFetch from '#cwa/runtime/api/fetcher/cwa-fetch'
+} from '#cwa/storage/stores/site-config/site-config-store'
+import type CwaFetch from '#cwa/api/fetcher/cwa-fetch'
 import { useCwaSiteConfig, updateSiteConfig } from '#imports'
-import type { SiteConfigParams } from '#cwa/module'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { SiteConfigParams } from '#cwa/types'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export default class SiteConfig {
   private utils: ReturnType<typeof useCwaSiteConfig>

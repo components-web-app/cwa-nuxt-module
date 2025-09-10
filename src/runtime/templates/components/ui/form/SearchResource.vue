@@ -4,11 +4,11 @@ import debounce from 'lodash-es/debounce'
 import { Popover, PopoverPanel } from '@headlessui/vue'
 import CwaUiFormInput from './Input.vue'
 import { useCwa, usePopper } from '#imports'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
-import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
-import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
-import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import ButtonPopoverItem from '#cwa/templates/components/ui/form/ButtonPopoverItem.vue'
+import ButtonPopoverGroup from '#cwa/templates/components/ui/form/ButtonPopoverGroup.vue'
+import type { ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
 const props = defineProps<{
   modelValue: ModelValue

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
-import { CwaResourceTypes } from '#cwa/runtime/resources/resource-utils'
+import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
+import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
+import { CwaResourceTypes } from '#cwa/resources/resource-utils'
 
 const { exposeMeta, createComputedState, $cwa } = useCwaResourceManagerTab({
   name: 'Order',

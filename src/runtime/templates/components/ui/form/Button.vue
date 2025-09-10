@@ -8,11 +8,11 @@ import {
   PopoverPanel,
 } from '@headlessui/vue'
 import type { RouteLocationRaw } from 'vue-router'
-import type { PopperOptions } from '#cwa/runtime/types/popper'
-import { usePopper } from '#cwa/runtime/composables/popper'
-import ButtonPopoverGroup from '#cwa/runtime/templates/components/ui/form/ButtonPopoverGroup.vue'
-import ButtonPopoverItem from '#cwa/runtime/templates/components/ui/form/ButtonPopoverItem.vue'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import type { PopperOptions } from '#cwa/types/popper'
+import { usePopper } from '#cwa/composables/popper'
+import ButtonPopoverGroup from '#cwa/templates/components/ui/form/ButtonPopoverGroup.vue'
+import ButtonPopoverItem from '#cwa/templates/components/ui/form/ButtonPopoverItem.vue'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { CwaLink } from '#components'
 
 export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]

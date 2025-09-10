@@ -5,11 +5,11 @@ import * as vue from 'vue'
 import { computed, ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import { ComponentGroupUtilSynchronizer } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Synchronizer'
-import * as cwaComposables from '#cwa/runtime/composables/cwa'
-import * as cwaResourceManageableComposables from '#cwa/runtime/composables/cwa-resource-manageable'
-import { useComponentGroupPositions } from '#cwa/runtime/templates/components/main/ComponentGroup.Util.Positions'
+import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
+import { ComponentGroupUtilSynchronizer } from '#cwa/templates/components/main/ComponentGroup.Util.Synchronizer'
+import * as cwaComposables from '#cwa/composables/cwa'
+import * as cwaResourceManageableComposables from '#cwa/composables/cwa-resource-manageable'
+import { useComponentGroupPositions } from '#cwa/templates/components/main/ComponentGroup.Util.Positions'
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {

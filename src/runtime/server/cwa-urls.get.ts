@@ -1,6 +1,6 @@
 import useFetcher, { resolveConfigEventHandler } from './useFetcher'
 import type { SitemapUrlInput } from '#sitemap/types'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 // @ts-ignore-next-line only error in vue-tsc though not resolving correct #imports alias from local tsconfig.json
 import { defineSitemapEventHandler } from '#imports'
 

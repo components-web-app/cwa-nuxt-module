@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import AuthTemplate from '#cwa/runtime/templates/components/main/auth/_parts/AuthTemplate.vue'
-import SpinnerTick from '#cwa/runtime/templates/components/utils/SpinnerTick.vue'
+import AuthTemplate from '#cwa/templates/components/main/auth/_parts/AuthTemplate.vue'
+import SpinnerTick from '#cwa/templates/components/utils/SpinnerTick.vue'
 import { definePageMeta, useVerifyEmail } from '#imports'
 
 definePageMeta({

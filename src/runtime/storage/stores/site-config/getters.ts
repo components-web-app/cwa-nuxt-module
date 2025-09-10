@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { CwaSiteConfigStateInterface } from './state'
-import type { SiteConfigParams } from '#cwa/module'
+import type { SiteConfigParams } from '#cwa/types'
 import { useCwaSiteConfig } from '#imports'
 
 export interface CwaSiteConfigGettersInterface {

@@ -11,8 +11,8 @@ import type Mercure from './mercure'
 import type Fetcher from './fetcher/fetcher'
 import type { CookieRef } from '#app'
 import { useNuxtApp, useRoute, useRouter } from '#app'
-import type Admin from '#cwa/runtime/admin/admin'
-import type ApiDocumentation from '#cwa/runtime/api/api-documentation'
+import type Admin from '#cwa/admin/admin'
+import type ApiDocumentation from '#cwa/api/api-documentation'
 
 interface Credentials {
   username: string

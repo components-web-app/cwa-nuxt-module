@@ -1,6 +1,6 @@
 import { onMounted, ref } from 'vue'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import type { PageDataMetadataResource } from '#cwa/runtime/storage/stores/api-documentation/state'
+import { useCwa } from '#cwa/composables/cwa'
+import type { PageDataMetadataResource } from '#cwa/storage/stores/api-documentation/state'
 
 export const useDataList = () => {
   const $cwa = useCwa()

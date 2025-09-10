@@ -1,5 +1,5 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
-import type { CwaModuleOptions, CwaResourcesMeta } from '../module'
+import type { CwaModuleOptions, CwaResourcesMeta } from '#cwa/types'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
 import Fetcher from './api/fetcher/fetcher'
@@ -16,11 +16,11 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
-import { ResourceTypeFromIri } from '#cwa/runtime/resources/resource-utils'
+import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { useRuntimeConfig } from '#app/nuxt'
 import type { NuxtApp } from '#app/nuxt'
 import { useCookie } from '#app/composables/cookie.js'
-import SiteConfig from '#cwa/runtime/api/site-config'
+import SiteConfig from '#cwa/api/site-config'
 
 export default class Cwa {
   private readonly apiUrl: string

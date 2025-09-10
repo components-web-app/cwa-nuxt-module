@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
-import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
+import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
+import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const { exposeMeta, iri, $cwa } = useCwaResourceManagerTab({
   name: 'Info',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
+import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 
 defineProps<{
   disableButtons: boolean

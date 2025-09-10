@@ -1,8 +1,8 @@
 import { describe, test, expect, vi } from 'vitest'
 import { computed } from 'vue'
 import { Resources } from './resources'
-import { CwaResourceApiStatuses } from '#cwa/runtime/storage/stores/resources/state'
-import * as utils from '#cwa/runtime/resources/resource-utils'
+import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
+import * as utils from '#cwa/resources/resource-utils'
 
 function createResources() {
   const mockResourcesStore = {

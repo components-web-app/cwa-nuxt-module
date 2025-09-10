@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import ComponentIcon from './assets/IconComponents.vue'
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
+import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwa } from '#imports'
 
 const props = defineProps<IriProp & {

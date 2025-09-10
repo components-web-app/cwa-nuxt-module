@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export interface PageDataMetadataResource extends CwaResource {
   '@type': 'PageDataMetadata'

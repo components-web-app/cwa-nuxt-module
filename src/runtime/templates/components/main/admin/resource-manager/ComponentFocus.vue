@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
-import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
+import { getPublishedResourceState } from '#cwa/resources/resource-utils'
 
 const props = defineProps<{
   iri: Ref<string | undefined>

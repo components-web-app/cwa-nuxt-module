@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
-import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { getPublishedResourceState } from '#cwa/resources/resource-utils'
+import { useCwa } from '#cwa/composables/cwa'
 
 export const useCwaResourceEndpoint = (iri: Ref<string | undefined>, postfix?: string) => {
   const $cwa = useCwa()

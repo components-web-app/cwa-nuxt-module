@@ -19,9 +19,9 @@ import { computed, ref, toRef, useTemplateRef, watchEffect } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
 import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource'
-import type { ManageableResourceOps } from '#cwa/runtime/admin/manageable-resource'
-import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
+import type { IriProp } from '#cwa/composables/cwa-resource'
+import type { ManageableResourceOps } from '#cwa/admin/manageable-resource'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()

@@ -3,8 +3,8 @@ import { consola } from 'consola'
 import { useRuntimeConfig } from '#imports'
 // @ts-expect-error this is a file built in the module
 import { options } from '#cwa/server-options.ts'
-import useCwaSiteConfig from '#cwa/runtime/composables/useCwaSiteConfig'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export const useFetcher = () => {
   const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()

@@ -51,9 +51,9 @@ import { useRouter } from 'vue-router'
 import { useWindowScroll } from '@vueuse/core'
 import { useCwa } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaDefaultLayout } from '#components'
-import OutdatedContentNotice from '#cwa/runtime/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
-import type { GlobalComponentNames } from '#cwa/module'
-import LayoutPageOverlay from '#cwa/runtime/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
+import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
+import type { GlobalComponentNames } from '#cwa/types'
+import LayoutPageOverlay from '#cwa/templates/components/main/admin/resource-manager/LayoutPageOverlay.vue'
 import { useHead } from '#app'
 
 const $cwa = useCwa()

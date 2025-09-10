@@ -32,9 +32,9 @@
 </template>
 
 <script setup lang="ts">
-import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
-import FilterFormWrapper from '#cwa/runtime/templates/components/core/admin/form/FilterFormWrapper.vue'
-import FilterSelect from '#cwa/runtime/templates/components/core/admin/form/FilterSelect.vue'
+import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
+import FilterFormWrapper from '#cwa/templates/components/core/admin/form/FilterFormWrapper.vue'
+import FilterSelect from '#cwa/templates/components/core/admin/form/FilterSelect.vue'
 import { useQueryBoundModel } from '#imports'
 
 const props = defineProps<{

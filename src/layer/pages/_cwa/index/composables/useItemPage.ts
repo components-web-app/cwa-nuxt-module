@@ -2,11 +2,11 @@ import { computed, isRef, onMounted, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
-import { useCwaResourceRoute } from '#cwa/runtime/composables/useCwaResourceRoute'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
-import type { ApiResourceEvent } from '#cwa/runtime/resources/resources-manager'
+import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import { useCwa } from '#cwa/composables/cwa'
+import { ErrorType } from '#cwa/storage/stores/error/state'
+import type { ApiResourceEvent } from '#cwa/resources/resources-manager'
 
 export type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 

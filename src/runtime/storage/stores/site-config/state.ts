@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { CwaResource } from '../../../resources/resource-utils'
-import type { SiteConfigParams } from '#cwa/module'
+import type { SiteConfigParams } from '#cwa/types'
 
 export interface CwaSiteConfigParameter extends CwaResource {
   key: keyof SiteConfigParams

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { vi, describe, test, expect } from 'vitest'
 import * as nuxt from '#app/nuxt'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 describe('CWA composable', () => {
   test('should return $cwa', () => {

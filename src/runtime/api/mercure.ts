@@ -8,8 +8,8 @@ import type { CwaResource } from '../resources/resource-utils'
 import { getPublishedResourceIri } from '../resources/resource-utils'
 import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
-import { useProcess } from '#cwa/runtime/composables/process'
-import type { ResourcesManager } from '#cwa/runtime/resources/resources-manager'
+import { useProcess } from '#cwa/composables/process'
+import type { ResourcesManager } from '#cwa/resources/resources-manager'
 
 interface MercureMessageInterface {
   event: MessageEvent

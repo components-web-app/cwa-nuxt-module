@@ -21,12 +21,12 @@ import {
   getResourceTypeFromIri,
 } from './resource-utils'
 import type { CwaResource } from './resource-utils'
-import { NEW_RESOURCE_IRI } from '#cwa/runtime/storage/stores/resources/state'
-import type Fetcher from '#cwa/runtime/api/fetcher/fetcher'
-import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
-import type { AddResourceEvent, ResourceStackItem } from '#cwa/runtime/admin/resource-stack-manager'
-import type Admin from '#cwa/runtime/admin/admin'
-import type { Resources } from '#cwa/runtime/resources/resources'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
+import type Fetcher from '#cwa/api/fetcher/fetcher'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import type { AddResourceEvent, ResourceStackItem } from '#cwa/admin/resource-stack-manager'
+import type Admin from '#cwa/admin/admin'
+import type { Resources } from '#cwa/resources/resources'
 
 interface DeleteApiResourceEvent {
   iri?: string

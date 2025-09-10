@@ -86,12 +86,12 @@ import { computed } from 'vue'
 import { useItemPage } from '../composables/useItemPage'
 import { definePageMeta, useCwa } from '#imports'
 import type { SelectOption } from '#imports'
-import ResourceModal from '#cwa/runtime/templates/components/core/admin/ResourceModal.vue'
-import ResourceModalTabs from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
-import type { ResourceModalTab } from '#cwa/runtime/templates/components/core/admin/ResourceModalTabs.vue'
-import ModalSelect from '#cwa/runtime/templates/components/core/admin/form/ModalSelect.vue'
+import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
+import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
+import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
+import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import { componentNames } from '#components'
-import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
+import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 
 definePageMeta({
   name: '_cwa-layouts-iri',

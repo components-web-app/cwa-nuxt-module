@@ -10,7 +10,7 @@ import {
 import type { ComponentPublicInstance, Ref, WatchStopHandle, ComputedRef } from 'vue'
 import type Cwa from '../cwa'
 import ManagerTabsResolver from './manager-tabs-resolver'
-import type { CwaCurrentResourceInterface } from '#cwa/runtime/storage/stores/resources/state'
+import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
 
 export type StyleOptions = {
   multiple?: boolean

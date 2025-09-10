@@ -68,9 +68,9 @@ import { useRoute } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
 import ListContainer from './ListContainer.vue'
 import ListPagination from './ListPagination.vue'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { useCwa, useQueryBoundModel } from '#imports'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const $cwa = useCwa()
 const route = useRoute()

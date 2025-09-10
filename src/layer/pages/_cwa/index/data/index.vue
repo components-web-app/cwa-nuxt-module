@@ -66,10 +66,10 @@
 
 <script setup lang="ts">
 import { useHead } from '#app'
-import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
-import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
-import { useDataList } from '#cwa/layer/pages/_cwa/index/composables/useDataList'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
+import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
+import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { definePageMeta } from '#imports'
 
 const { displayPageDataClassName, dataTypes, fqcnToEntrypointKey, isLoadingDataTypes } = useDataList()

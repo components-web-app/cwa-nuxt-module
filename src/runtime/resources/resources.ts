@@ -9,7 +9,7 @@ import {
   CwaResourceTypes,
   getResourceTypeFromIri,
 } from './resource-utils'
-import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
+import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 
 interface PageLoadStatus {
   resources: (string | undefined)[]

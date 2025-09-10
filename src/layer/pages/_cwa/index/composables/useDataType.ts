@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 export const useDataType = () => {
   const $cwa = useCwa()

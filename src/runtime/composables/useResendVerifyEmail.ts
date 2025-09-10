@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { FetchError } from 'ofetch'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 export const useResendVerifyEmail = () => {
   const $cwa = useCwa()

@@ -1,6 +1,6 @@
-import type Cwa from '#cwa/runtime/cwa'
+import type Cwa from '#cwa/cwa'
 import 'nuxt'
-import type { CwaResourcesMeta, GlobalComponentNames } from '#cwa/module'
+import type { CwaResourcesMeta, GlobalComponentNames } from '#cwa/types'
 
 interface CwaInjections {
   $cwa: Cwa

@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import ListContainer from '#cwa/runtime/templates/components/core/admin/ListContainer.vue'
+import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
 
 defineProps<{
   title: string

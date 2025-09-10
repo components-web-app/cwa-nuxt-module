@@ -1,9 +1,9 @@
 import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import ConfirmDialog from '#cwa/runtime/templates/components/core/ConfirmDialog.vue'
+import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
+import { useCwa } from '#cwa/composables/cwa'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 
 export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>) => {
   const $cwa = useCwa()

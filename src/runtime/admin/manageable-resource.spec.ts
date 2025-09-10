@@ -4,7 +4,7 @@ import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
 import ManageableResource from './manageable-resource'
-import * as ManagerTabsResolver from '#cwa/runtime/admin/manager-tabs-resolver'
+import * as ManagerTabsResolver from '#cwa/admin/manager-tabs-resolver'
 
 const Node = {
   ELEMENT_NODE: 1,

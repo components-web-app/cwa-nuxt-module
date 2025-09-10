@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 import { useRoute, useRouter } from 'vue-router'
-import ResourceModalOverlayTemplate from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
+import ResourceModalOverlayTemplate from '#cwa/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
 
 defineEmits<{
   reload: []

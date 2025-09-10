@@ -3,13 +3,13 @@ import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { watchOnce } from '@vueuse/core'
 import {
   useCwaResourceManagerTab,
-} from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
-import type { CwaResourceMeta } from '#cwa/runtime/composables/cwa-resource'
-import { useCwaResourceModel } from '#cwa/runtime/composables/cwa-resource-model'
-import { useCwaSelect } from '#cwa/runtime/composables/cwa-select'
-import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataResolver'
-import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
+} from '#cwa/composables/cwa-resource-manager-tab'
+import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
+import type { CwaResourceMeta } from '#cwa/composables/cwa-resource'
+import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
+import { useCwaSelect } from '#cwa/composables/cwa-select'
+import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
+import type { SelectOption } from '#cwa/composables/cwa-select-input'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',

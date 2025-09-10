@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Notification from './Notification.vue'
 import { useCwa } from '#imports'
-import { ErrorType } from '#cwa/runtime/storage/stores/error/state'
+import { ErrorType } from '#cwa/storage/stores/error/state'
 
 const $cwa = useCwa()
 

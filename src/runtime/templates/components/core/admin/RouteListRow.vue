@@ -58,11 +58,11 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
 import { computed } from 'vue'
-import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
-import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
-import { useDataList } from '#cwa/layer/pages/_cwa/index/composables/useDataList'
+import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
+import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import IconData from '#cwa/templates/components/core/assets/IconData.vue'
+import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
 
 const { fqcnToEntrypointKey } = useDataList()
 

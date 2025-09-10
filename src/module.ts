@@ -1,4 +1,3 @@
-import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
@@ -22,71 +21,8 @@ import {
   extendRouteRules, addServerPlugin,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
-import type { DefineComponent, GlobalComponents } from 'vue'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
-
-export type GlobalComponentNames = keyof GlobalComponents
-
-export type ManagerTab = GlobalComponentNames | DefineComponent<object, object, any>
-export type ComponentUi = GlobalComponentNames
-
-export interface CwaResourceMeta {
-  name?: string
-  description?: string
-  instantAdd?: boolean
-  managerTabs?: ManagerTab[]
-  ui?: ComponentUi[]
-}
-
-export interface CwaResourcesMeta {
-  [type: string]: CwaResourceMeta
-}
-
-export interface CwaUiMeta {
-  name?: string
-  classes?: {
-    [name: string]: string[] | string
-  }
-}
-
-export type SiteConfigParams = {
-  indexable: boolean
-  robotsAllowNonSeoCrawlers: boolean
-  robotsAllowAiBots: boolean
-  robotsText: string
-  robotsRemoveSitemap: boolean
-  sitemapEnabled: boolean
-  siteName: string
-  fallbackTitle: boolean
-  concatTitle: boolean
-  maintenanceModeEnabled: boolean
-  sitemapXml: string
-  canonicalUrl: string
-}
-
-export interface CwaModuleOptions {
-  storeName: string
-  siteConfig: Partial<SiteConfigParams>
-  resources: CwaResourcesMeta
-  pagesDepth?: number
-  layouts?: {
-    [type: string]: CwaUiMeta
-  }
-  pages?: {
-    [type: string]: CwaUiMeta
-  }
-  pageData?: {
-    [resourceClass: string]: Pick<CwaUiMeta, 'name'> & {
-      metaFields?: {
-        field: string
-        type: 'input' | 'select'
-        label: string
-        options?: SelectOption[]
-      }[]
-    }
-  }
-  layoutName?: string
-}
+import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
 declare module '@nuxt/schema' {
   interface PublicRuntimeConfig {
@@ -158,6 +94,9 @@ export default defineNuxtModule<CwaModuleOptions>({
   async setup(options, nuxt) {
     const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
+    // common alias due to releasing different package names
+    nuxt.options.alias['#cwa'] = resolve('./runtime')
+    nuxt.options.alias['#cwa-layer'] = resolve('./layer')
 
     const { version, name } = JSON.parse(
       readFileSync(resolve('../package.json'), 'utf8'),
@@ -192,8 +131,6 @@ export default defineNuxtModule<CwaModuleOptions>({
       await installModule('@nuxtjs/seo')
     }
 
-    // common alias due to releasing different package names
-    nuxt.options.alias['#cwa'] = resolve('./')
     // do not server-side render internal routes. Use with client-side auth values
     extendRouteRules('/_cwa/**', { ssr: false, robots: false })
 
@@ -280,7 +217,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       addTemplate({
         filename: 'cwa-options.ts',
         getContents: ({ app }) => {
-          return `import type { CwaModuleOptions } from '#cwa/module';
+          return `import type { CwaModuleOptions } from '#cwa/types';
 export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
 export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `

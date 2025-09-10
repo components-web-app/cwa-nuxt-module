@@ -2,7 +2,7 @@
 import { DateFormatter, getLocalTimeZone, parseDate } from '@internationalized/date'
 import { computed } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const df = new DateFormatter('en-GB', {
   dateStyle: 'medium',

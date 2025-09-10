@@ -32,11 +32,11 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { useHead } from '#app'
-import ListHeading from '#cwa/runtime/templates/components/core/admin/ListHeading.vue'
-import ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
-import ListFilter from '#cwa/runtime/templates/components/core/admin/ListFilter.vue'
-import ResourceModalOverlay from '#cwa/runtime/templates/components/core/admin/ResourceModalOverlay.vue'
-import { useListPage } from '#cwa/layer/pages/_cwa/index/composables/useListPage'
+import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
+import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
+import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
+import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
+import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
 import { definePageMeta, useCwa } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)

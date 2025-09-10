@@ -4,8 +4,8 @@ import debounce from 'lodash-es/debounce'
 import get from 'lodash-es/get'
 import isObject from 'lodash-es/isObject'
 import set from 'lodash-es/set'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import { useCwaResourceEndpoint } from '#cwa/runtime/composables/cwa-resource-endpoint'
+import { useCwa } from '#cwa/composables/cwa'
+import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 
 interface ResourceModelOps {
   longWaitThreshold?: number

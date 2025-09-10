@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
 import { navigateTo, useRoute } from '#app'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 export const useResetPassword = () => {
   const route = useRoute()

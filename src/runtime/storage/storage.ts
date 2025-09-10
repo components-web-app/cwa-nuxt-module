@@ -9,7 +9,7 @@ import {
 import { AuthStore } from './stores/auth/auth-store'
 import { AdminStore } from './stores/admin/admin-store'
 import { ErrorStore } from './stores/error/error-store'
-import { SiteConfigStore } from '#cwa/runtime/storage/stores/site-config/site-config-store'
+import { SiteConfigStore } from '#cwa/storage/stores/site-config/site-config-store'
 
 export interface CwaStores {
   resources: ResourcesStore

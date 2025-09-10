@@ -2,7 +2,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import type { Ref } from 'vue'
 import { computed } from 'vue'
-import type ListContent from '#cwa/runtime/templates/components/core/admin/ListContent.vue'
+import type ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 
 export const useListPage = (listContent: Ref<InstanceType<typeof ListContent> | null>, clearPageNumberQuery?: boolean) => {
   const router = useRouter()

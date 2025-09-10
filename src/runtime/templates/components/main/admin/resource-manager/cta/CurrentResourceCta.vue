@@ -6,10 +6,10 @@ import {
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
-} from '#cwa/runtime/resources/resource-utils'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
+} from '#cwa/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import { useCwa } from '#cwa/composables/cwa'
+import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
 const props = defineProps<{
   currentIri: string

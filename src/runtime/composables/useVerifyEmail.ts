@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { FetchError } from 'ofetch'
 import { useRoute } from '#app'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 export const useVerifyEmail = () => {
   const route = useRoute()

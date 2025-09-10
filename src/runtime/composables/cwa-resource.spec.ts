@@ -1,8 +1,8 @@
 import { describe, expect, vi, test } from 'vitest'
 import { ref } from 'vue'
-import * as cwaComposable from '#cwa/runtime/composables/cwa'
-import * as cwaResourceManageable from '#cwa/runtime/composables/cwa-resource-manageable'
-import { useCwaResource } from '#cwa/runtime/composables/cwa-resource'
+import * as cwaComposable from '#cwa/composables/cwa'
+import * as cwaResourceManageable from '#cwa/composables/cwa-resource-manageable'
+import { useCwaResource } from '#cwa/composables/cwa-resource'
 
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')

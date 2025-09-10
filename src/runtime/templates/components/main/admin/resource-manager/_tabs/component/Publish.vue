@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { useCwaResourceManagerTab } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import { DEFAULT_TAB_ORDER } from '#cwa/runtime/admin/manager-tabs-resolver'
-import { getPublishedResourceState } from '#cwa/runtime/resources/resource-utils'
+import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
+import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
+import { getPublishedResourceState } from '#cwa/resources/resource-utils'
 
 const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Publish',

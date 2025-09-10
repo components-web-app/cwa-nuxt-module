@@ -1,8 +1,8 @@
 import { defaultContentType, defineEventHandler } from 'h3'
 import { consola } from 'consola'
-import useFetcher from '#cwa/runtime/server/useFetcher'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import useCwaSiteConfig from '#cwa/runtime/composables/useCwaSiteConfig'
+import useFetcher from '#cwa/server/useFetcher'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import { createError } from '#imports'
 
 // this endpoint will return a sitemap as defined by a user in the settings page

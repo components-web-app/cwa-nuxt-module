@@ -46,8 +46,8 @@ import { ArrowLongLeftIcon, ArrowLongRightIcon } from '@heroicons/vue/20/solid'
 import {
 
   useCwaCollectionPagination,
-} from '#cwa/runtime/composables/cwa-collection-pagination'
-import type { CwaPaginationEmits, CwaPaginationProps } from '#cwa/runtime/composables/cwa-collection-pagination'
+} from '#cwa/composables/cwa-collection-pagination'
+import type { CwaPaginationEmits, CwaPaginationProps } from '#cwa/composables/cwa-collection-pagination'
 
 const pageClass = 'border-transparent text-gray-300 hover:border-gray-300 hover:text-white transition'
 const selectedPageClass = 'border-primary text-primary'

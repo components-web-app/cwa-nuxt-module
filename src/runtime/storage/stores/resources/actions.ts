@@ -17,7 +17,7 @@ import type {
   CwaResourcesStateInterface,
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
-import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
+import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 import { showError, useResponseHeader } from '#app'
 import { parse as parseCookie } from 'set-cookie-parser'
 import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'

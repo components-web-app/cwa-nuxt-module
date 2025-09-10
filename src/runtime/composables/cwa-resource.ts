@@ -1,7 +1,7 @@
 import { computed, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from './cwa'
-import type { StyleOptions } from '#cwa/runtime/admin/manageable-resource'
+import type { StyleOptions } from '#cwa/admin/manageable-resource'
 
 export type IriProp = {
   iri: string

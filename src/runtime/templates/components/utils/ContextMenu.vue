@@ -25,7 +25,7 @@ import type { VirtualElement } from '@popperjs/core'
 import { defu } from 'defu'
 import type { PopperOptions } from '../../../types/popper'
 import { usePopper } from '#imports'
-import { useTransitions } from '#cwa/runtime/composables/transitions'
+import { useTransitions } from '#cwa/composables/transitions'
 
 const transitions = useTransitions()
 

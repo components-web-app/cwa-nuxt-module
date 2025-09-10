@@ -4,7 +4,7 @@ import { consola as logger } from 'consola'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherStateInterface, FetchStatus } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
-import type { CwaFetchRequestHeaders } from '#cwa/runtime/api/fetcher/fetcher'
+import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
 export interface StartFetchEvent {
   token?: string

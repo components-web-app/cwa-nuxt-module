@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { useProcess } from '#cwa/runtime/composables/process'
+import { useProcess } from '#cwa/composables/process'
 
 describe('process composable', () => {
   test('should return correct values for client/server flags IF env is client-side', () => {

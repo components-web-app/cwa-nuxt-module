@@ -9,7 +9,7 @@ import {
   navigateTo, useError,
   useNuxtApp,
 } from '#app'
-import { useProcess } from '#cwa/runtime/composables/process'
+import { useProcess } from '#cwa/composables/process'
 
 let middlewareToken = ''
 

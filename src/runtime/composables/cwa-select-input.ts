@@ -2,8 +2,8 @@ import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import { defu } from 'defu'
-import type { PopperOptions } from '#cwa/runtime/types/popper'
-import { usePopper } from '#cwa/runtime/composables/popper'
+import type { PopperOptions } from '#cwa/types/popper'
+import { usePopper } from '#cwa/composables/popper'
 
 type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
 export interface SelectOption {

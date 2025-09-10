@@ -33,8 +33,8 @@
 import { computed, ref, useTemplateRef } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import ResourceContextItem from '../../_common/ResourceContextItem.vue'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import { useTransitions } from '#cwa/runtime/composables/transitions'
+import { useCwa } from '#cwa/composables/cwa'
+import { useTransitions } from '#cwa/composables/transitions'
 
 const $cwa = useCwa()
 const transitions = useTransitions()

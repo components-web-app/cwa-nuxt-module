@@ -2,8 +2,8 @@ import { describe, expect, vi, test, beforeEach } from 'vitest'
 import * as vue from 'vue'
 import { ref } from 'vue'
 import ManageableResource from '../admin/manageable-resource'
-import * as cwaComposable from '#cwa/runtime/composables/cwa'
-import { useCwaResourceManageable } from '#cwa/runtime/composables/cwa-resource-manageable'
+import * as cwaComposable from '#cwa/composables/cwa'
+import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageable'
 
 vi.mock('../admin/manageable-resource', () => {
   return {

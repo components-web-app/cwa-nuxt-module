@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#imports'
 
 export const useDynamicPageLoader = () => {

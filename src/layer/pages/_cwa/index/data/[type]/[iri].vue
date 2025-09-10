@@ -6,8 +6,8 @@
 </template>
 
 <script lang="ts" setup>
-import PageDataAdminModal from '#cwa/runtime/templates/components/core/admin/PageDataAdminModal.vue'
-import { useDataType } from '#cwa/layer/pages/_cwa/index/composables/useDataType'
+import PageDataAdminModal from '#cwa/templates/components/core/admin/PageDataAdminModal.vue'
+import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
 import { definePageMeta } from '#imports'
 
 const { dataTypeClassName } = useDataType()

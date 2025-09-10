@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import type { CwaModuleOptions } from '../module'
+import type { CwaModuleOptions } from '#cwa/types'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
 import ApiDocumentation from './api/api-documentation'

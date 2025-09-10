@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { useCwaImage } from '#cwa/runtime/composables/cwa-image'
+import { useCwaImage } from '#cwa/composables/cwa-image'
 import { useCwa } from '#imports'
 
 const props = defineProps<{

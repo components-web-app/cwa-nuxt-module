@@ -21,13 +21,13 @@ import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import type { CwaResourceApiStateError } from '../../../storage/stores/resources/state'
 import { useCwa } from '#imports'
 import type { CwaResourceMeta } from '#imports'
-import type { IriProp } from '#cwa/runtime/composables/cwa-resource.js'
+import type { IriProp } from '#cwa/composables/cwa-resource.js'
 import {
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
-} from '#cwa/runtime/resources/resource-utils'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+} from '#cwa/resources/resource-utils'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 
 const $cwa = useCwa()
 const instance = getCurrentInstance()

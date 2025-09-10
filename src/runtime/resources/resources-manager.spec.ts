@@ -2,7 +2,7 @@
 
 import { describe, vi, test, expect } from 'vitest'
 import { ResourcesManager } from './resources-manager'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 function createResourcesManager() {
   const mockCwaFetch = {

@@ -72,8 +72,8 @@
 import { nextTick, ref, useTemplateRef } from 'vue'
 
 import { directive as vAutoWidth } from 'vue-input-autowidth'
-import ResourceLoadingIndicator from '#cwa/runtime/templates/components/main/admin/_common/ResourceLoadingIndicator.vue'
-import Spinner from '#cwa/runtime/templates/components/utils/Spinner.vue'
+import ResourceLoadingIndicator from '#cwa/templates/components/main/admin/_common/ResourceLoadingIndicator.vue'
+import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 
 const referenceInput = useTemplateRef<undefined | HTMLInputElement>('referenceInput')
 

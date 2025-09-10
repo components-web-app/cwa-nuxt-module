@@ -17,7 +17,7 @@ import {
 } from './state'
 import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
-import type { AddResourceEvent } from '#cwa/runtime/admin/resource-stack-manager'
+import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 
 export interface ResourcesLoadStatusInterface {
   pending: number

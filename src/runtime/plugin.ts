@@ -1,6 +1,6 @@
 import { addRouteMiddleware, defineNuxtPlugin } from '#app'
-import CwaRouteMiddleware from '#cwa/runtime/route-middleware'
-import Cwa from '#cwa/runtime/cwa'
+import CwaRouteMiddleware from '#cwa/route-middleware'
+import Cwa from '#cwa/cwa'
 // @ts-expect-error-next-line
 import { options, currentModulePackageInfo } from '#build/cwa-options'
 

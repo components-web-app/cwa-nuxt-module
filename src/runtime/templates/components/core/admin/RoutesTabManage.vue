@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import slugify from 'slugify'
-import ModalInfo from '#cwa/runtime/templates/components/core/admin/form/ModalInfo.vue'
-import ModalInput from '#cwa/runtime/templates/components/core/admin/form/ModalInput.vue'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
+import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
+import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const { pageResource } = defineProps<{
   disableButtons: boolean

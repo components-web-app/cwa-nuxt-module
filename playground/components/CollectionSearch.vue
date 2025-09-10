@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { useQueryBoundModel } from '#cwa/runtime/composables/cwa-query-bound-model'
+import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 
 const { model: searchModel } = useQueryBoundModel(['title'], {
   delay: 250,

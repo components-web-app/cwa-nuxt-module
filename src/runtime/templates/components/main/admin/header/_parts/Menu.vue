@@ -122,14 +122,14 @@
 import { ref, useTemplateRef, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
-import CwaLogo from '#cwa/runtime/templates/components/core/assets/CwaLogo.vue'
+import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
 import { useCwa, useRoute } from '#imports'
-import IconLayouts from '#cwa/runtime/templates/components/core/assets/IconLayouts.vue'
-import IconPages from '#cwa/runtime/templates/components/core/assets/IconPages.vue'
-import IconUsers from '#cwa/runtime/templates/components/core/assets/IconUsers.vue'
-import MenuLink from '#cwa/runtime/templates/components/main/admin/header/_parts/MenuLink.vue'
-import IconRoutes from '#cwa/runtime/templates/components/core/assets/IconRoutes.vue'
-import IconData from '#cwa/runtime/templates/components/core/assets/IconData.vue'
+import IconLayouts from '#cwa/templates/components/core/assets/IconLayouts.vue'
+import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
+import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
+import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
+import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
+import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 
 const $cwa = useCwa()
 const route = useRoute()

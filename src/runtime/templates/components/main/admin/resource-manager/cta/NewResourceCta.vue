@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { consola } from 'consola'
-import type { CwaResource } from '#cwa/runtime/resources/resource-utils'
-import { useCwa } from '#cwa/runtime/composables/cwa'
-import type { ButtonOption, ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import { useCwa } from '#cwa/composables/cwa'
+import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
 const props = defineProps<{
   currentIri: string

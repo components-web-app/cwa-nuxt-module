@@ -1,5 +1,5 @@
-import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
-import type Cwa from '#cwa/runtime/cwa'
+import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type Cwa from '#cwa/cwa'
 
 export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
   async function getOptions() {

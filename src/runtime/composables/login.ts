@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
 import { navigateTo } from '#app'
-import { useCwa } from '#cwa/runtime/composables/cwa'
+import { useCwa } from '#cwa/composables/cwa'
 
 export const useLogin = () => {
   const $cwa = useCwa()

@@ -5,14 +5,14 @@ import ResourceLoadingIndicator
 import ManagerTabs from './_parts/ManagerTabs.vue'
 import CwaAdminResourceManagerContextMenu from './_parts/CwaResourceManagerContextMenu.vue'
 import { useCwa } from '#imports'
-import type { CwaResourceManagerTabOptions } from '#cwa/runtime/composables/cwa-resource-manager-tab'
-import { CwaUserRoles } from '#cwa/runtime/storage/stores/auth/state'
-import type { ManagerTab } from '#cwa/module'
+import type { CwaResourceManagerTabOptions } from '#cwa/composables/cwa-resource-manager-tab'
+import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
+import type { ManagerTab } from '#cwa/types'
 import ResourceManagerCtaButton
-  from '#cwa/runtime/templates/components/main/admin/resource-manager/cta/ResourceManagerCtaButton.vue'
+  from '#cwa/templates/components/main/admin/resource-manager/cta/ResourceManagerCtaButton.vue'
 import AddComponentDialog
-  from '#cwa/runtime/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
-import { useDataResolver } from '#cwa/runtime/templates/components/core/useDataResolver'
+  from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
+import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 
 const $cwa = useCwa()
 const currentStackItem = $cwa.admin.resourceStackManager.currentStackItem
