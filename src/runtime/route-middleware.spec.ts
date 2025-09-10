@@ -121,7 +121,8 @@ describe('Test route middleware', () => {
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
   })
 
-  test('Test we await promise for server-side requests.', async () => {
+  // todo: put back when we have server-side fetches in place again
+  test.todo('Test we await promise for server-side requests.', async () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
         isClient: false,
@@ -152,7 +153,8 @@ describe('Test route middleware', () => {
     expect(fetchRouteRedirectResolved).toBe(false)
   })
 
-  test('Server-side redirects', async () => {
+  // todo: re-instate on server re-implementation
+  test.todo('Server-side redirects', async () => {
     // @ts-expect-error
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
