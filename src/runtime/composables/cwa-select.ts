@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import isEqual from 'lodash-es/isEqual'
-import type { SelectOption } from './cwa-select-input'
+import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import type { ModelValue } from '#cwa/runtime/templates/components/ui/form/Button.vue'
 
 export const useCwaSelect = (model: Ref<ModelValue>, ops: SelectOption[] = []) => {
