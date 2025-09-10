@@ -359,7 +359,10 @@ declare module 'vue-router' {
           path: join(mockNuxt.options.srcDir, 'cwa', 'pages'),
           prefix: 'CwaPage',
           global: true,
-          ignore: ['**/*.spec.{cts,mts,ts}'],
+          ignore: [
+            '**/admin/*',
+            '**/*.spec.{cts,mts,ts}',
+          ],
         })
         expect(mockDirs).toContainEqual({
           path: join(mockResolver('./runtime/templates'), 'components', 'ui'),

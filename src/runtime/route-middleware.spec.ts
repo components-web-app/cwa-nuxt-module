@@ -133,7 +133,8 @@ describe('Test route middleware', () => {
     expect(fetchRouteFn).toHaveBeenCalledTimes(1)
     expect(fetchRouteFn).toHaveBeenCalledWith(toRoute)
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
-    expect(fetchRouteRedirectResolved).toBe(true)
+    // todo: put test back when server-side re-instated
+    // expect(fetchRouteRedirectResolved).toBe(true)
   })
 
   test('Test we do not await promise for client-side requests. See notes on middleware file re returning to original page if new page fetch not complete.', async () => {
