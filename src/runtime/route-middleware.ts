@@ -83,6 +83,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
     // nuxtApp.$cwa.siteConfig.loadConfig()
     // const resource = await nuxtApp.$cwa.fetchRoute(to)
     // return handleRouteRedirect(resource)
+    return
   }
 
   const isFirstClientSideRun = nuxtApp.isHydrating && nuxtApp.payload.serverRendered
