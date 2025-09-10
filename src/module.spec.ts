@@ -115,8 +115,10 @@ describe('CWA module', () => {
     test('should add aliases with result of resolved paths', async () => {
       const mockNuxt = await prepareMockNuxt()
       const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
-      expect(mockResolver).toHaveBeenCalledWith('./')
-      expect(mockNuxt.options.alias['#cwa']).toEqual(mockResolver('./'))
+      expect(mockResolver).toHaveBeenCalledWith('./runtime')
+      expect(mockResolver).toHaveBeenCalledWith('./layer')
+      expect(mockNuxt.options.alias['#cwa']).toEqual(mockResolver('./runtime'))
+      expect(mockNuxt.options.alias['#cwa-layer']).toEqual(mockResolver('./layer'))
     })
 
     test('should add transpile directory', async () => {
