@@ -80,13 +80,14 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   // need to await this, but if we do then returning to original page will not be triggered
   if (!isClient) {
     // the promise will be returned fast and nested fetches/manifest resource fetches not waited for if we are redirecting
-    nuxtApp.$cwa.siteConfig.loadConfig()
-    const resource = await nuxtApp.$cwa.fetchRoute(to)
-    return handleRouteRedirect(resource)
+    // nuxtApp.$cwa.siteConfig.loadConfig()
+    // const resource = await nuxtApp.$cwa.fetchRoute(to)
+    // return handleRouteRedirect(resource)
   }
 
   const isFirstClientSideRun = nuxtApp.isHydrating && nuxtApp.payload.serverRendered
 
+  // TODO: skip the first client side load - skip again when we have fixed the server-side data leakage
   // skip on first client side run as server-side will have completed
   // if a cwa disabled path redirects (e.g. what the admin pages to) it still detects as a first time client load
   // we will still need to fetch the route data now for client-side. first loads, the from path is equal to the to path
@@ -94,7 +95,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
     isFirstClientSideRun
     && from.fullPath === to.fullPath
   ) {
-    return
+    // return
   }
 
   const startedMiddlewareToken = middlewareToken

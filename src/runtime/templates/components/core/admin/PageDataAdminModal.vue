@@ -37,6 +37,9 @@
               :options="pageOptions"
             />
           </div>
+          <div>
+            Extra fields here... {{ localResourceData }}
+          </div>
           <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton

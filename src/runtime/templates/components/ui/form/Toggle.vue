@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
+import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
-defineProps<{
+const { modelValue } = defineProps<{
   label: string
-  modelValue: boolean
+  modelValue: boolean | undefined | null
 }>()
+
+const valueAsBoolean = computed<boolean>({
+  get() {
+    return !!modelValue
+  },
+  set(value) {
+    handleSwitchInput(value)
+  },
+})
 
 function handleSwitchInput(newValue: boolean) {
   emit('update:modelValue', newValue)
@@ -18,7 +28,7 @@ function handleSwitchInput(newValue: boolean) {
     class="cwa:flex cwa:items-center"
   >
     <Switch
-      :model-value="modelValue"
+      :model-value="valueAsBoolean"
       :class="[
         modelValue ? 'cwa:bg-indigo-600' : 'cwa:bg-gray-200', 'cwa:relative cwa:inline-flex cwa:h-6 cwa:w-11 cwa:shrink-0 cwa:cursor-pointer cwa:border-2 cwa:border-transparent cwa:transition-colors cwa:duration-200 cwa:ease-in-out cwa:rounded-full',
       ]"

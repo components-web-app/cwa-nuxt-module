@@ -112,6 +112,14 @@ export default defineNuxtConfig({
     pageData: {
       BlogArticleData: {
         name: 'Blog Articles',
+        metaFields: [
+          {
+            field: 'isHidden',
+            type: 'select',
+            label: 'Show in collections?',
+            options: [{ label: 'Yes', value: false }, { label: 'No', value: true }],
+          },
+        ],
       },
     },
     siteConfig: {

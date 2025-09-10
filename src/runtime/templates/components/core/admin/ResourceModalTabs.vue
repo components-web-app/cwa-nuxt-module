@@ -24,6 +24,10 @@
       >
         No tab content provided for tab index `{{ selectedTabIndex }}`- ID: `{{ tabs[selectedTabIndex].id }}`
       </slot>
+      <slot
+        name="default"
+        v-bind="tabs[selectedTabIndex]"
+      />
     </div>
   </div>
 </template>

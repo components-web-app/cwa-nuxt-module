@@ -1,3 +1,4 @@
+import type { SelectOption } from '#cwa/runtime/composables/cwa-select-input'
 import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
@@ -75,7 +76,14 @@ export interface CwaModuleOptions {
     [type: string]: CwaUiMeta
   }
   pageData?: {
-    [resourceClass: string]: Pick<CwaUiMeta, 'name'>
+    [resourceClass: string]: Pick<CwaUiMeta, 'name'> & {
+      metaFields?: {
+        field: string
+        type: 'input' | 'select'
+        label: string
+        options?: SelectOption[]
+      }[]
+    }
   }
   layoutName?: string
 }
@@ -355,7 +363,7 @@ declare module 'vue-router' {
         path: join(nuxt.options.srcDir, 'cwa', 'pages'),
         prefix: 'CwaPage',
         global: true,
-        ignore: ['**/*.spec.{cts,mts,ts}'],
+        ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'],
       })
 
       dirs.unshift({
