@@ -79,7 +79,8 @@ export default class ApiDocumentation {
     // Discover all properties for a resource that are available - perhaps overkill as so far we just need to know if publishable
     const properties = docs['supportedClass'].reduce(
       (obj, supportedClass) => {
-        obj[supportedClass['rdfs:label']] = supportedClass['supportedProperty'].map(supportedProperty => supportedProperty['title'])
+        // note: was rdfs:label - APIP4 seems to miss this
+        obj[supportedClass['title']] = supportedClass['supportedProperty'].map(supportedProperty => supportedProperty['title'])
         return obj
       },
       {} as { [key: string]: string[] },
@@ -99,7 +100,7 @@ export default class ApiDocumentation {
         // if (!getUiComponent(resourceName)) {
         //   continue
         // }
-        const isPublishable = properties?.[resourceName].includes('publishedAt') || false
+        const isPublishable = properties?.[resourceName]?.includes('publishedAt') || false
         metadata[resourceName] = {
           resourceName,
           endpoint,

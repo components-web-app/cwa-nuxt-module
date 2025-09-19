@@ -26,13 +26,11 @@ export interface CwaApiDocumentationDataInterface {
       '@id': string
       '@type': string
       'title': string
-      'rdfs:label': string
       'description': string
       'supportedOperation': Array<{
         '@type': Array<string> | string
         'method': string
         'title': string
-        'rdfs:label': string
         'returns': string
       }>
       'supportedProperty': Array<{
@@ -44,7 +42,6 @@ export interface CwaApiDocumentationDataInterface {
         'property': Array<{
           '@id': string
           '@type': string
-          'rdfs:label': string
           'domain': string
           'range': string
         }>
