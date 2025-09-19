@@ -111,11 +111,11 @@ async function reloadItems() {
     hydra:next: "/_/routes?perPage=5&page=2"
    */
   hydraData.value = {
-    totalItems: data?.['hydra:totalItems'] || 0,
-    view: data?.['hydra:view'],
+    totalItems: data?.['totalItems'] || 0,
+    view: data?.['view'],
   }
   if (thisRequestId === currentRequestId.value) {
-    data && (items.value = data['hydra:member'])
+    data && (items.value = data['member'])
     loading.value = false
   }
 }

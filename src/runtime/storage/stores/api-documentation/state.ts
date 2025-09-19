@@ -18,30 +18,30 @@ export interface CwaApiDocumentationDataInterface {
   docs?: {
     '@context': any
     '@id': string
-    '@type': 'hydra:ApiDocumentation'
-    'hydra:title': string
-    'hydra:description': string
-    'hydra:entrypoint': string
-    'hydra:supportedClass': Array<{
+    '@type': 'ApiDocumentation'
+    'title': string
+    'description': string
+    'entrypoint': string
+    'supportedClass': Array<{
       '@id': string
       '@type': string
-      'hydra:title': string
+      'title': string
       'rdfs:label': string
-      'hydra:description': string
-      'hydra:supportedOperation': Array<{
+      'description': string
+      'supportedOperation': Array<{
         '@type': Array<string> | string
-        'hydra:method': string
-        'hydra:title': string
+        'method': string
+        'title': string
         'rdfs:label': string
         'returns': string
       }>
-      'hydra:supportedProperty': Array<{
-        '@type': 'hydra:SupportedProperty'
-        'hydra:title': string
-        'hydra:required': boolean
-        'hydra:readable': boolean
-        'hydra:writeable': boolean
-        'hydra:property': Array<{
+      'supportedProperty': Array<{
+        '@type': 'SupportedProperty'
+        'title': string
+        'required': boolean
+        'readable': boolean
+        'writeable': boolean
+        'property': Array<{
           '@id': string
           '@type': string
           'rdfs:label': string
@@ -61,8 +61,8 @@ export interface CwaApiDocumentationDataInterface {
       'properties': 'PageDataMetadata/properties'
     }
     '@id': '/_/page_data_metadatas'
-    '@type': 'hydra:Collection'
-    'hydra:member': PageDataMetadataResource[]
+    '@type': 'Collection'
+    'member': PageDataMetadataResource[]
   }
 }
 

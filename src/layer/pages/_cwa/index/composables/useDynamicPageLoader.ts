@@ -15,7 +15,7 @@ export const useDynamicPageLoader = () => {
     const { response } = $cwa.fetch({ path: '/_/pages?isTemplate=true', noQuery: true })
     const { _data: data } = await response
     if (thisRequestId === currentRequestId.value) {
-      data && (dynamicPages.value = data['hydra:member'])
+      data && (dynamicPages.value = data['member'])
       loadingDynamicPages.value = false
     }
     return dynamicPages

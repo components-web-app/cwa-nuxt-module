@@ -21,7 +21,7 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
   const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
 
   const collectionItems = computed<CwaResource[] | undefined>(() => {
-    return fetchedCollectionItems.value || resource.value?.data?.collection?.['hydra:member']
+    return fetchedCollectionItems.value || resource.value?.data?.collection?.['member']
   })
 
   const dataResourceIri = computed(() => {
@@ -30,10 +30,10 @@ export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtil
 
   const totalPages = ref(1)
 
-  function populateCollectionData(resource?: { collection?: { 'hydra:member': CwaResource[], 'hydra:view': { 'hydra:last': string } } } & CwaResource) {
-    if (resource?.collection?.['hydra:member']) {
-      fetchedCollectionItems.value = resource?.collection?.['hydra:member']
-      const lastPagePath = resource?.collection?.['hydra:view']?.['hydra:last']
+  function populateCollectionData(resource?: { collection?: { member: CwaResource[], view: { last: string } } } & CwaResource) {
+    if (resource?.collection?.['member']) {
+      fetchedCollectionItems.value = resource?.collection?.['member']
+      const lastPagePath = resource?.collection?.['view']?.['last']
       if (!lastPagePath) {
         totalPages.value = 1
       }

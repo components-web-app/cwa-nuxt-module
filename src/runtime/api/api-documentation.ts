@@ -77,9 +77,9 @@ export default class ApiDocumentation {
     }
 
     // Discover all properties for a resource that are available - perhaps overkill as so far we just need to know if publishable
-    const properties = docs['hydra:supportedClass'].reduce(
+    const properties = docs['supportedClass'].reduce(
       (obj, supportedClass) => {
-        obj[supportedClass['rdfs:label']] = supportedClass['hydra:supportedProperty'].map(supportedProperty => supportedProperty['hydra:title'])
+        obj[supportedClass['rdfs:label']] = supportedClass['supportedProperty'].map(supportedProperty => supportedProperty['title'])
         return obj
       },
       {} as { [key: string]: string[] },

@@ -119,7 +119,7 @@ async function search() {
   const result = await fetch.response
   if (searchValue.value === fetchingSearchValue.value) {
     fetchingSearchResults.value = false
-    searchResults.value = result._data?.['hydra:member']
+    searchResults.value = result._data?.['member']
   }
 }
 

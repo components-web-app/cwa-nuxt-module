@@ -13,7 +13,7 @@ export interface CwaErrorActionsInterface {
 
 function getErrorType(type: string): ErrorType {
   switch (type) {
-    case 'hydra:Error':
+    case 'Error':
       return ErrorType.SERVER
     case 'TypeError':
       return ErrorType.NETWORK
@@ -35,10 +35,10 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
         err.type = getErrorType(error.cause.constructor.name)
         err.detail = (error.cause as Error).message
       }
-      else if (error.data?.['hydra:description']) {
+      else if (error.data?.['description']) {
         err.type = getErrorType(error.data['@type'])
         // todo: hydra:description deprecated in favour of error.data.detail
-        err.detail = error.data['hydra:description']
+        err.detail = error.data['description']
         err.violations = error.data.violations?.map((e: any) => ({ property: e.propertyPath, message: e.message }))
       }
       else {

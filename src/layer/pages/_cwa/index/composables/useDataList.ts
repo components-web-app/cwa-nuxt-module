@@ -32,7 +32,7 @@ export const useDataList = () => {
       path: $cwa.auth.user?.['@id'],
     })
     const docs = await $cwa.getApiDocumentation()
-    const allMetadata = docs?.pageDataMetadata?.['hydra:member']
+    const allMetadata = docs?.pageDataMetadata?.['member']
     if (!allMetadata) {
       isLoadingDataTypes.value = false
       return

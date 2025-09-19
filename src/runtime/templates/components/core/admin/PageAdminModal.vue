@@ -254,7 +254,7 @@ async function loadLayoutOptions() {
   const { response } = $cwa.fetch({ path: '/_/layouts', noQuery: true })
   const { _data: data } = await response
   if (thisRequestId === currentRequestId.value) {
-    data && (layouts.value = data['hydra:member'])
+    data && (layouts.value = data['member'])
     isLoading.value = false
   }
   if (!layouts.value?.length) {

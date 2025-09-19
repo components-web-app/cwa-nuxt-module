@@ -27,7 +27,7 @@ export function useCwaSiteConfig() {
   }
 
   function getRowsFromResponse(data: CwaResource) {
-    const configRows = data['hydra:member']
+    const configRows = data['member']
     if (!configRows || !Array.isArray(configRows)) {
       return
     }
