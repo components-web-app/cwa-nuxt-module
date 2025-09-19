@@ -12,22 +12,24 @@
         class="cwa:absolute cwa:top-0 cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-50"
       />
     </ClientOnly>
-    <component
-      :is="resolvedComponent"
-      v-if="resolvedComponent"
-      class="cwa:relative"
-      @click.stop="onLayoutClick"
-      @contextmenu.stop="onLayoutContextMenu"
-    >
-      <div
-        ref="page"
-        class="cwa:grow"
-        @click.stop="onPageClick"
-        @contextmenu.stop="onPageContextMenu"
+    <ClientOnly data-temp-fix>
+      <component
+        :is="resolvedComponent"
+        v-if="resolvedComponent"
+        class="cwa:relative"
+        @click.stop="onLayoutClick"
+        @contextmenu.stop="onLayoutContextMenu"
       >
-        <slot />
-      </div>
-    </component>
+        <div
+          ref="page"
+          class="cwa:grow"
+          @click.stop="onPageClick"
+          @contextmenu.stop="onPageContextMenu"
+        >
+          <slot />
+        </div>
+      </component>
+    </ClientOnly>
     <ClientOnly>
       <template v-if="showAdmin">
         <LazyCwaAdminResourceManager ref="resourceManager" />
