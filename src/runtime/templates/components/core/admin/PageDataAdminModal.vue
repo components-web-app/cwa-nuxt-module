@@ -37,8 +37,14 @@
               :options="pageOptions"
             />
           </div>
-          <div>
-            Extra fields here... {{ localResourceData }}
+          <div v-if="pageDataConfig?.metaFields">
+            <ModalSelect
+              v-for="field of pageDataConfig.metaFields"
+              :key="`field-${field.field}`"
+              v-model="localResourceData[field.field]"
+              :label="field.label"
+              :options="field.options || []"
+            />
           </div>
           <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
@@ -106,6 +112,7 @@
 </template>
 
 <script setup lang="ts">
+import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
 import { computed, onMounted, ref, toRef, watch, watchEffect } from 'vue'
 import { navigateTo } from '#app'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
@@ -144,6 +151,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
 
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 const { fqcnToEntrypointKey } = useDataList()
+const { pageDataConfig } = useDataType(computed(() => resource.value?.['@type']))
 
 const pageDataTypeNuxtLinkParams = computed(() => {
   // should do to the individual type when deleting the data from the admin pages, not just when the current page is page data loaded....
