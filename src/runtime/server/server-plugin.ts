@@ -26,7 +26,7 @@ export default defineNitroPlugin(async (nitroApp) => {
       userAgent: ['*'],
       comment: ['Block all from operational endpoints'],
       allow: [],
-      disallow: ['/_api/*', '/_cwa/*'],
+      disallow: ['/_cwa/*'], // _api was disallowed but is needed when client only '/_api/*',
     })
 
     if (!resolvedConfig.robotsAllowNonSeoCrawlers) {
