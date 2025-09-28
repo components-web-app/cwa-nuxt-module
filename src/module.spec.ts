@@ -48,7 +48,7 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
   const mockNuxt = Object.assign({ hook: vi.fn(), options: {
-    sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, srcDir: '' } }, nuxt || {})
+    sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, appDir: '' } }, nuxt || {})
 
   await setup(options, mockNuxt)
 
@@ -194,7 +194,7 @@ describe('CWA module', () => {
           build: {
             transpile: [],
           },
-          srcDir: '',
+          appDir: '',
           sitemap: {},
         },
       })
@@ -235,7 +235,7 @@ describe('CWA module', () => {
           build: {
             transpile: [],
           },
-          srcDir: '',
+          appDir: '',
           sitemap: {},
         },
       })
@@ -346,7 +346,7 @@ declare module 'vue-router' {
             build: {
               transpile: [],
             },
-            srcDir: './mock',
+            appDir: './mock',
             sitemap: {},
           },
         })
@@ -379,7 +379,7 @@ declare module 'vue-router' {
             build: {
               transpile: [],
             },
-            srcDir: './mock',
+            appDir: './mock',
             sitemap: {},
           },
         })
@@ -388,13 +388,13 @@ declare module 'vue-router' {
 
         expect(hookCall).toBeDefined()
         expect(mockDirs).toContainEqual({
-          path: join(mockNuxt.options.srcDir, 'cwa', 'components'),
+          path: join(mockNuxt.options.appDir, 'cwa', 'components'),
           prefix: 'CwaComponent',
           global: true,
           ignore: ['**/*.spec.{cts,mts,ts}'],
         })
         expect(mockDirs).toContainEqual({
-          path: join(mockNuxt.options.srcDir, 'cwa', 'pages'),
+          path: join(mockNuxt.options.appDir, 'cwa', 'pages'),
           prefix: 'CwaPage',
           global: true,
           ignore: [

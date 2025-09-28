@@ -80,10 +80,10 @@ export default defineNuxtModule<CwaModuleOptions>({
       optional: false,
       defaults: {
         sitemaps: {
-          // cwa: {
-          //   sources: ['/__sitemap__/cwa-urls'],
-          //   chunks: true,
-          // },
+          cwa: {
+            sources: ['/__sitemap__/cwa-urls'],
+            chunks: true,
+          },
         },
       },
     },
@@ -295,14 +295,14 @@ declare module 'vue-router' {
       // todo: components do not need to be global and can be imported using import.meta.glob("~/components/modal/*.vue"); to reduce bundle size
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
-        path: join(nuxt.options.srcDir, 'cwa', 'layouts'),
+        path: join(nuxt.options.appDir, 'cwa', 'layouts'),
         prefix: 'CwaLayout',
         global: true,
         ignore: ['**/*.spec.{cts,mts,ts}'],
       })
 
       dirs.unshift({
-        path: join(nuxt.options.srcDir, 'cwa', 'pages'),
+        path: join(nuxt.options.appDir, 'cwa', 'pages'),
         prefix: 'CwaPage',
         global: true,
         ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'],
@@ -323,7 +323,7 @@ declare module 'vue-router' {
         return
       }
       logger.info(`File added or removed - updating options for ${NAME} module...`)
-      const path = resolve(nuxt.options.srcDir, relativePath)
+      const path = resolve(nuxt.options.appDir, relativePath)
       const cwaDirs = [userComponentsPath]
       if (cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         await updateTemplates({
