@@ -92,10 +92,10 @@ export default class ApiDocumentation {
       typeCheckArray.push(CwaResourceTypes.COMPONENT_POSITION)
     }
 
-    for (const [key, endpoint] of Object.entries(entrypoint) as string[][]) {
+    for (const [key, endpoint] of Object.entries(entrypoint)) {
       const rType = getResourceTypeFromIri(endpoint)
       if (rType && typeCheckArray.includes(rType)) {
-        const resourceName = key[0].toUpperCase() + key.slice(1)
+        const resourceName = key.charAt(0).toUpperCase() + key.slice(1)
         // should check whether we have configured a front-end component for this API resource
         // if (!getUiComponent(resourceName)) {
         //   continue

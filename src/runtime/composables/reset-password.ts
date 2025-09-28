@@ -32,7 +32,7 @@ export const useResetPassword = () => {
 
   function getStringFromParam(paramName: string): string {
     const paramValue = route.params[paramName]
-    return Array.isArray(paramValue) ? paramValue[0] : paramValue
+    return (Array.isArray(paramValue) ? paramValue[0] : paramValue) || ''
   }
 
   function handleResetError(fetchError: FetchError) {

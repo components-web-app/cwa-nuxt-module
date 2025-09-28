@@ -28,7 +28,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
     (props: { component: ManagerTab, cProps: any }, { expose }) => {
       const metadata = ref<T | null>(null)
       const resolved = ref(false)
-      const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent>
+      const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent> | undefined
         = typeof props.component === 'string'
           ? globalComponents[props.component]
           : props.component

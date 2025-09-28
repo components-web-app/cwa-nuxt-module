@@ -25,7 +25,7 @@ export class ResourcesGetterUtils {
 
   public get totalResourcesPending(): number {
     return this.resourcesState.current.currentIds.reduce((count, id) => {
-      if (this.resourcesState.current.byId[id].apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
+      if (this.resourcesState.current.byId[id]?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {
         return ++count
       }
       return count

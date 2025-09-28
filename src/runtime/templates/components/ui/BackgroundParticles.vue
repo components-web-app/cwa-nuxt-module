@@ -836,14 +836,22 @@ class ParticleProgram {
     if (this.velocity) {
       this.programs.advectionProgram.bind()
       gl.uniform2f(
+        // @ts-ignore
         this.programs.advectionProgram.uniforms.texelSize,
         1.0 / this.textureWidth,
         1.0 / this.textureHeight,
       )
-      gl.uniform1i(this.programs.advectionProgram.uniforms.uVelocity, this.velocity.read[2])
-      gl.uniform1i(this.programs.advectionProgram.uniforms.uSource, this.velocity.read[2])
-      gl.uniform1f(this.programs.advectionProgram.uniforms.dt, dt)
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.advectionProgram.uniforms.uVelocity, this.velocity.read[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.advectionProgram.uniforms.uSource, this.velocity.read[2])
       gl.uniform1f(
+        // @ts-ignore
+        this.programs.advectionProgram.uniforms.dt, dt)
+      gl.uniform1f(
+        // @ts-ignore
         this.programs.advectionProgram.uniforms.dissipation,
         this.config.VELOCITY_DISSIPATION,
       )
@@ -851,9 +859,14 @@ class ParticleProgram {
       this.velocity.swap()
 
       if (this.density) {
-        gl.uniform1i(this.programs.advectionProgram.uniforms.uVelocity, this.velocity.read[2])
-        gl.uniform1i(this.programs.advectionProgram.uniforms.uSource, this.density.read[2])
+        gl.uniform1i(
+          // @ts-ignore
+          this.programs.advectionProgram.uniforms.uVelocity, this.velocity.read[2])
+        gl.uniform1i(
+          // @ts-ignore
+          this.programs.advectionProgram.uniforms.uSource, this.density.read[2])
         gl.uniform1f(
+          // @ts-ignore
           this.programs.advectionProgram.uniforms.dissipation,
           this.config.DENSITY_DISSIPATION,
         )
@@ -864,7 +877,7 @@ class ParticleProgram {
 
     for (let i = 0; i < this.pointers.length; i++) {
       const pointer = this.pointers[i]
-      if (pointer.moved) {
+      if (pointer?.moved) {
         this.splat(pointer.x, pointer.y, pointer.dx, pointer.dy, pointer.color)
         pointer.moved = false
       }
@@ -873,25 +886,37 @@ class ParticleProgram {
     if (this.velocity && this.curl) {
       this.programs.curlProgram.bind()
       gl.uniform2f(
+        // @ts-ignore
         this.programs.curlProgram.uniforms.texelSize,
         1.0 / this.textureWidth,
         1.0 / this.textureHeight,
       )
-      gl.uniform1i(this.programs.curlProgram.uniforms.uVelocity, this.velocity.read[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.curlProgram.uniforms.uVelocity, this.velocity.read[2])
       this.blit(this.curl[1])
     }
 
     if (this.velocity && this.curl) {
       this.programs.vorticityProgram.bind()
       gl.uniform2f(
+        // @ts-ignore
         this.programs.vorticityProgram.uniforms.texelSize,
         1.0 / this.textureWidth,
         1.0 / this.textureHeight,
       )
-      gl.uniform1i(this.programs.vorticityProgram.uniforms.uVelocity, this.velocity.read[2])
-      gl.uniform1i(this.programs.vorticityProgram.uniforms.uCurl, this.curl[2])
-      gl.uniform1f(this.programs.vorticityProgram.uniforms.curl, this.config.CURL)
-      gl.uniform1f(this.programs.vorticityProgram.uniforms.dt, dt)
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.vorticityProgram.uniforms.uVelocity, this.velocity.read[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.vorticityProgram.uniforms.uCurl, this.curl[2])
+      gl.uniform1f(
+        // @ts-ignore
+        this.programs.vorticityProgram.uniforms.curl, this.config.CURL)
+      gl.uniform1f(
+        // @ts-ignore
+        this.programs.vorticityProgram.uniforms.dt, dt)
       this.blit(this.velocity.write[1])
       this.velocity.swap()
     }
@@ -899,11 +924,15 @@ class ParticleProgram {
     if (this.velocity && this.divergence) {
       this.programs.divergenceProgram.bind()
       gl.uniform2f(
+        // @ts-ignore
         this.programs.divergenceProgram.uniforms.texelSize,
         1.0 / this.textureWidth,
         1.0 / this.textureHeight,
       )
-      gl.uniform1i(this.programs.divergenceProgram.uniforms.uVelocity, this.velocity.read[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.divergenceProgram.uniforms.uVelocity,
+        this.velocity.read[2])
       this.blit(this.divergence[1])
     }
 
@@ -912,8 +941,14 @@ class ParticleProgram {
       const pressureTexId = this.pressure.read[2]
       gl.activeTexture(gl.TEXTURE0 + pressureTexId)
       gl.bindTexture(gl.TEXTURE_2D, this.pressure.read[0])
-      gl.uniform1i(this.programs.clearProgram.uniforms.uTexture, pressureTexId)
-      gl.uniform1f(this.programs.clearProgram.uniforms.value, this.config.PRESSURE_DISSIPATION)
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.clearProgram.uniforms.uTexture,
+        pressureTexId)
+      gl.uniform1f(
+        // @ts-ignore
+        this.programs.clearProgram.uniforms.value,
+        this.config.PRESSURE_DISSIPATION)
       this.blit(this.pressure.write[1])
       this.pressure.swap()
     }
@@ -921,13 +956,22 @@ class ParticleProgram {
     if (this.divergence && this.pressure) {
       this.programs.pressureProgram.bind()
       gl.uniform2f(
+        // @ts-ignore
         this.programs.pressureProgram.uniforms.texelSize,
         1.0 / this.textureWidth,
         1.0 / this.textureHeight,
       )
-      gl.uniform1i(this.programs.pressureProgram.uniforms.uDivergence, this.divergence[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.pressureProgram.uniforms.uDivergence,
+        this.divergence[2],
+      )
       const pressureTexId = this.pressure.read[2]
-      gl.uniform1i(this.programs.pressureProgram.uniforms.uPressure, pressureTexId)
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.pressureProgram.uniforms.uPressure,
+        pressureTexId,
+      )
       gl.activeTexture(gl.TEXTURE0 + pressureTexId)
       for (let i = 0; i < this.config.PRESSURE_ITERATIONS; i++) {
         gl.bindTexture(gl.TEXTURE_2D, this.pressure.read[0])
@@ -939,12 +983,21 @@ class ParticleProgram {
     if (this.pressure && this.velocity) {
       this.programs.gradientSubtractProgram.bind()
       gl.uniform2f(
+        // @ts-ignore
         this.programs.gradientSubtractProgram.uniforms.texelSize,
         1.0 / this.textureWidth,
         1.0 / this.textureHeight,
       )
-      gl.uniform1i(this.programs.gradientSubtractProgram.uniforms.uPressure, this.pressure.read[2])
-      gl.uniform1i(this.programs.gradientSubtractProgram.uniforms.uVelocity, this.velocity.read[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.gradientSubtractProgram.uniforms.uPressure,
+        this.pressure.read[2],
+      )
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.gradientSubtractProgram.uniforms.uVelocity,
+        this.velocity.read[2],
+      )
       this.blit(this.velocity.write[1])
       this.velocity.swap()
     }
@@ -952,7 +1005,11 @@ class ParticleProgram {
     if (this.density) {
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight)
       this.programs.displayProgram.bind()
-      gl.uniform1i(this.programs.displayProgram.uniforms.uTexture, this.density.read[2])
+      gl.uniform1i(
+        // @ts-ignore
+        this.programs.displayProgram.uniforms.uTexture,
+        this.density.read[2],
+      )
       this.blit(null)
     }
 
@@ -970,29 +1027,48 @@ class ParticleProgram {
     }
   }
 
+  /* @ts-ignore */
   private splat(x: number, y: number, dx: number, dy: number, color: [number, number, number]) {
     if (!this.velocity || !this.density) {
       return
     }
     const { gl } = this.glMeta
     this.programs.splatProgram.bind()
+    // @ts-ignore
     gl.uniform1i(this.programs.splatProgram.uniforms.uTarget, this.velocity.read[2])
     gl.uniform1f(
+      // @ts-ignore
       this.programs.splatProgram.uniforms.aspectRatio,
       this.canvas.width / this.canvas.height,
     )
     gl.uniform2f(
+      // @ts-ignore
       this.programs.splatProgram.uniforms.point,
       x / this.canvas.width,
       1.0 - y / this.canvas.height,
     )
-    gl.uniform3f(this.programs.splatProgram.uniforms.color, dx, -dy, 1.0)
-    gl.uniform1f(this.programs.splatProgram.uniforms.radius, this.config.SPLAT_RADIUS)
+    gl.uniform3f(
+      // @ts-ignore
+      this.programs.splatProgram.uniforms.color,
+      dx,
+      -dy,
+      1.0,
+    )
+    gl.uniform1f(
+      // @ts-ignore
+      this.programs.splatProgram.uniforms.radius,
+      this.config.SPLAT_RADIUS,
+    )
     this.blit(this.velocity.write[1])
     this.velocity.swap()
 
-    gl.uniform1i(this.programs.splatProgram.uniforms.uTarget, this.density.read[2])
+    gl.uniform1i(
+      // @ts-ignore
+      this.programs.splatProgram.uniforms.uTarget,
+      this.density.read[2],
+    )
     gl.uniform3f(
+      // @ts-ignore
       this.programs.splatProgram.uniforms.color,
       color[0] * 0.3,
       color[1] * 0.3,
@@ -1008,14 +1084,17 @@ class ParticleProgram {
     }
     const yOffset = this.container.getBoundingClientRect().top
     const eventClientY = e.clientY - yOffset
-    this.pointers[0].moved = this.pointers[0].down
-    this.pointers[0].dx = (e.clientX - this.pointers[0].x) * 10.0
-    this.pointers[0].dy = (eventClientY - this.pointers[0].y) * 10.0
-    this.pointers[0].x = e.clientX
-    this.pointers[0].y = eventClientY
+    const pointer = this.pointers[0]
+    if (!pointer) return
 
-    this.pointers[0].down = true
-    this.pointers[0].color = [
+    pointer.moved = pointer.down
+    pointer.dx = (e.clientX - pointer.x) * 10.0
+    pointer.dy = (eventClientY - pointer.y) * 10.0
+    pointer.x = e.clientX
+    pointer.y = eventClientY
+
+    pointer.down = true
+    pointer.color = [
       Math.random() + 0.2,
       Math.random() + 0.2,
       Math.random() + 0.2,
@@ -1026,24 +1105,32 @@ class ParticleProgram {
     const touches = e.targetTouches
     for (let i = 0; i < touches.length; i++) {
       const pointer = this.pointers[i]
+      const touch = touches[i]
+      if (!pointer || !touch) continue
       pointer.moved = pointer.down
-      pointer.dx = (touches[i].clientX - pointer.x) * 10.0
-      pointer.dy = (touches[i].clientY - pointer.y) * 10.0
-      pointer.x = touches[i].clientX
-      pointer.y = touches[i].clientY
+      pointer.dx = (touch.clientX - pointer.x) * 10.0
+      pointer.dy = (touch.clientY - pointer.y) * 10.0
+      pointer.x = touch.clientX
+      pointer.y = touch.clientY
     }
   }
 
   private touchstart(e: TouchEvent) {
     const touches = e.targetTouches
+    if (!touches) return
+
     for (let i = 0; i < touches.length; i++) {
       if (i >= this.pointers.length) this.pointers.push(new PointerPrototype())
 
-      this.pointers[i].id = touches[i].identifier
-      this.pointers[i].down = true
-      this.pointers[i].x = touches[i].clientX
-      this.pointers[i].y = touches[i].clientY
-      this.pointers[i].color = [
+      const pointer = this.pointers[i]
+      const touch = touches[i]
+      if (!pointer || !touch) continue
+
+      pointer.id = touch.identifier
+      pointer.down = true
+      pointer.x = touch.clientX
+      pointer.y = touch.clientY
+      pointer.color = [
         Math.random() + 0.2,
         Math.random() + 0.2,
         Math.random() + 0.2,
@@ -1054,11 +1141,16 @@ class ParticleProgram {
   private touchend(e: TouchEvent) {
     const touches = e.changedTouches
     for (let i = 0; i < touches.length; i++)
-      for (let j = 0; j < this.pointers.length; j++)
-        if (touches[i].identifier === this.pointers[j].id) this.pointers[j].down = false
+      for (let j = 0; j < this.pointers.length; j++) {
+        const pointer = this.pointers[j]
+        const touch = touches[i]
+        if (!pointer || !touch) continue
+        if (touch.identifier === pointer.id) pointer.down = false
+      }
   }
 
   private mouseleave() {
+    if (!this.pointers[0]) return
     this.pointers[0].down = false
   }
 

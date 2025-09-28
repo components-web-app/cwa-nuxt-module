@@ -61,7 +61,7 @@ import {
 } from '@tiptap/vue-3'
 import { computed, toRef, watch } from 'vue'
 import type { Editor, ChainedCommands } from '@tiptap/core'
-import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
+import BubbleMenuButton from '~/app/components/TipTap/BubbleMenuButton.vue'
 
 const props = defineProps<{
   modelValue: string | null | undefined

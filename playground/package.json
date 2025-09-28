@@ -3,25 +3,29 @@
   "name": "nuxt-cwa-module-playground",
   "type": "module",
   "version": "0.0.0",
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build",
+    "generate": "nuxi generate"
+  },
   "devDependencies": {
     "@headlessui/vue": "^1.7.23",
     "@tailwindcss/typography": "^0.5.15",
+    "@tailwindcss/vite": "^4.1.7",
     "@vite-pwa/nuxt": "^0.10.6",
-    "typescript": "^5.7.2",
-    "vue-tsc": "^2.2.0"
+    "tailwindcss": "^4.1.7"
   },
   "dependencies": {
+    "nuxt": "^4.1.2",
     "@heroicons/vue": "^2.1.5",
     "@internationalized/date": "^3.8.2",
     "@nuxt/image": "^1.10.0",
-    "@tailwindcss/vite": "^4.1.7",
     "@tiptap/core": "^2.0.0",
     "@tiptap/extension-link": "^2.12.0",
     "@tiptap/extension-placeholder": "^2.11.0",
     "@tiptap/pm": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
     "@tiptap/vue-3": "^2.11.0",
-    "nuxt-svgo": "^4.0.10",
-    "tailwindcss": "^4.1.7"
+    "nuxt-svgo": "^4.0.10"
   }
 }

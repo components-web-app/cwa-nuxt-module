@@ -5,10 +5,15 @@ import { useCwa } from '#cwa/composables/cwa'
 export const useDataType = (dataClass: MaybeRef<string> | undefined = undefined) => {
   const $cwa = useCwa()
   const route = useRoute()
-  const dataType = computed(() => {
+  // todo: getStringFromParam is a function used localised in a few places, generalise it
+  function getStringFromParam(paramName: string): string {
+    const paramValue = route.params[paramName]
+    return (Array.isArray(paramValue) ? paramValue[0] : paramValue) || ''
+  }
+
+  const dataType = computed<string>(() => {
     if (dataClass) return toValue(dataClass)
-    const typeParam = route.params.type
-    return Array.isArray(typeParam) ? typeParam[0] : typeParam
+    return getStringFromParam('type')
   })
   const dataTypeClassName = computed(() => {
     if (!dataType.value) {
@@ -20,7 +25,7 @@ export const useDataType = (dataClass: MaybeRef<string> | undefined = undefined)
     if (!dataTypeClassName.value) return
     return $cwa.pageDataConfig?.[dataTypeClassName.value]
   })
-  const pageDataClassName = computed(() => {
+  const pageDataClassName = computed<string>(() => {
     if (!dataTypeClassName.value) {
       return 'Unknown'
     }

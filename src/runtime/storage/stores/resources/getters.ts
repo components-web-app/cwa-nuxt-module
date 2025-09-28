@@ -83,7 +83,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   const getOrderedPositionsForGroup = computed(() => {
     return (groupIri: string, includeNewIri: boolean = true) => {
       const groupResource = resourcesState.current.byId?.[groupIri]
-      const positions: string[] | undefined = groupResource.data?.componentPositions
+      const positions: string[] | undefined = groupResource?.data?.componentPositions
       if (!positions) {
         return
       }

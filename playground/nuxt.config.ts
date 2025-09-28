@@ -48,13 +48,9 @@ export default defineNuxtConfig({
   nitro: {
     typescript: {
       tsConfig: {
-        include: [
-          '../../src/**/*',
-        ],
         exclude: [
-          '../../dist',
-          '../../**/*.spec.ts',
-          '../../**/*.test.ts',
+          '../../src/**/*.spec.ts',
+          '../../src/**/*.test.ts',
         ],
       },
     },
@@ -68,14 +64,9 @@ export default defineNuxtConfig({
   typescript: {
     typeCheck: true,
     tsConfig: {
-      include: [
-        '../../src',
-      ],
       exclude: [
-        '../../dist',
-        '../../**/*.spec.ts',
-        '../../**/*.test.ts',
-        './../../src/runtime/server',
+        '../../src/**/*.spec.ts',
+        '../../src/**/*.test.ts',
       ],
     },
   },

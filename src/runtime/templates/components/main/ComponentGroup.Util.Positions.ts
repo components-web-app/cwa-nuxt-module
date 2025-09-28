@@ -12,12 +12,13 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
     const endIndex = toIndex < 0 ? array.length + toIndex : toIndex
 
     const [item] = array.splice(fromIndex, 1)
-    array.splice(endIndex, 0, item)
+    if (item) array.splice(endIndex, 0, item)
   }
 }
 
 export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>, $cwa: Cwa) => {
-  const updateRequests: Ref<{ [iri: string]: { debounced?: any, apiRequest?: any } }> = ref({})
+  type UpdateRequest = { debounced?: any, apiRequest?: any }
+  const updateRequests: Ref<{ [iri: string]: UpdateRequest }> = ref({})
 
   const groupIsReordering = computed(() => {
     if (!iri.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
@@ -79,25 +80,27 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
 
     $cwa.admin.emitRedraw()
 
-    if (updateRequests.value[event.positionIri] === undefined) {
-      updateRequests.value[event.positionIri] = {}
-    }
-    if (updateRequests.value[event.positionIri].debounced) {
-      updateRequests.value[event.positionIri].debounced.cancel()
-    }
-    updateRequests.value[event.positionIri].debounced = debounce(async () => {
-      if (!oldPositions) {
-        return
+    function doSomething(updateRequest: UpdateRequest): UpdateRequest {
+      if (updateRequest.debounced) {
+        updateRequest.debounced.cancel()
       }
-      const savedPositions = oldPositions
-      oldPositions = undefined
-      if (updateRequests.value[event.positionIri].apiRequest) {
-        await updateRequests.value[event.positionIri].apiRequest
-      }
+      updateRequest.debounced = debounce(async () => {
+        if (!oldPositions) {
+          return
+        }
+        const savedPositions = oldPositions
+        oldPositions = undefined
+        if (updateRequest.apiRequest) {
+          await updateRequest.apiRequest
+        }
 
-      componentPositions.value && sendUpdatePositionRequest(event.positionIri, componentPositions.value, savedPositions)
-    }, 1000)
-    updateRequests.value[event.positionIri].debounced()
+        componentPositions.value && sendUpdatePositionRequest(event.positionIri, componentPositions.value, savedPositions)
+      }, 1000)
+      updateRequest.debounced()
+      return updateRequest
+    }
+
+    updateRequests.value[event.positionIri] = doSomething(updateRequests.value[event.positionIri] || {})
   }
 
   function sendUpdatePositionRequest(iri: string, newPositions: string[], oldPositions: string[]) {
@@ -127,6 +130,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
     }
 
     updateRequests.value[iri].apiRequest = new Promise<void>((resolve) => {
+      if (!updateRequests.value[iri]) return
       updateRequests.value[iri].apiRequest = $cwa.resourcesManager.updateResource({
         endpoint: iri,
         data: {

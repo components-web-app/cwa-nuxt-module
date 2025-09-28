@@ -47,6 +47,6 @@ const { model: searchModel } = useQueryBoundModel(props.searchFields, {
 })
 
 const { model: orderModel } = useQueryBoundModel('order', {
-  defaultValue: props.orderOptions[0].value,
+  defaultValue: props.orderOptions[0]?.value,
 })
 </script>

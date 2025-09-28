@@ -214,7 +214,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   resourceType: 'Page',
   defaultResource: {
     isTemplate: false,
-    uiComponent: pageComponentOptions.value[0].value,
+    uiComponent: pageComponentOptions.value[0]?.value,
   },
   endpoint: toRef(props, 'iri'),
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes')),
@@ -263,7 +263,7 @@ async function loadLayoutOptions() {
   }
 
   if (isAdding.value && localResourceData.value && !localResourceData.value.layout) {
-    localResourceData.value.layout = layoutOptions.value[0].value
+    localResourceData.value.layout = layoutOptions.value[0]?.value
   }
 }
 

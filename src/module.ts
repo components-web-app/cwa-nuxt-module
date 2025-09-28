@@ -107,8 +107,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     name: NAME,
     configKey: 'cwa',
     compatibility: {
-      nuxt: '^3',
-      bridge: false,
+      nuxt: '>=3.16',
     },
   },
   defaults: {

@@ -126,13 +126,13 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
 
-          for (const existingToken of Object.keys(fetcherState.fetches)) {
+          for (const [existingToken, existingValue] of Object.entries(fetcherState.fetches)) {
             if (existingToken !== fetcherState.primaryFetch.successToken) {
-              const secondsDifference = (timestamp - fetcherState.fetches[existingToken].timestamp) / 1000
+              const secondsDifference = (timestamp - existingValue.timestamp) / 1000
               // abort old requests or previous primary fetches
-              const abortRequest = fetcherState.fetches[existingToken].isPrimary || secondsDifference >= 1
+              const abortRequest = existingValue.isPrimary || secondsDifference >= 1
               if (abortRequest) {
-                fetcherState.fetches[existingToken].abort = true
+                existingValue.abort = true
               }
             }
           }

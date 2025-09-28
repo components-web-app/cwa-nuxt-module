@@ -38,7 +38,7 @@ const nextIndex = computed(() => (props.index - 1))
       @click="childIndex => $emit('click', childIndex)"
     />
     <button class="cwa:px-1.5 cwa:py-0.5 cwa:w-auto cwa:min-w-full cwa:cursor-pointer">
-      {{ stackItem.displayName || stackItem.iri }}
+      {{ stackItem ? (stackItem.displayName || stackItem.iri) : 'Error: no stack item' }}
     </button>
   </div>
 </template>

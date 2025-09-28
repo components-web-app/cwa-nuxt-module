@@ -23,9 +23,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const storeValue = computed<T | undefined>(() => (resource.value?.data ? get(resource.value.data, property) : undefined))
   const rootProperty = computed(() => {
     if (Array.isArray(property)) {
-      return property[0]
+      return property[0] || ''
     }
-    return property.split('.')[0].split('[')[0]
+    return property.split('.')[0]?.split('[')[0] || ''
   })
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
 

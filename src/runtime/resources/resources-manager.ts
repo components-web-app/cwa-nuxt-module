@@ -174,7 +174,8 @@ export class ResourcesManager {
   public async updateResource(event: DataApiResourceEvent) {
     // we can add an iri in the event optionally - this is because for files we could be adding
     // more postfixes for upload/download, so instead of endless complicated normalization, if the endpoint is getting complete we just provide the IRI so we can do comparisons on returned IRI and other features
-    const iri = (event.iri || event.endpoint).split('?')[0]
+    const iri = (event.iri || event.endpoint).split('?')[0] as string
+
     const currentResource = this.resourcesStore.getResource(iri)?.data
 
     const reqOps = {
@@ -258,7 +259,8 @@ export class ResourcesManager {
   private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
-    const iri = (event.iri || event.endpoint).split('?')[0]
+    const eventIriOrEndpoint: string = (event.iri || event.endpoint)
+    const iri = eventIriOrEndpoint.split('?')[0] as string
 
     set(this.requestsInProgress, [source, id], { event, args })
 

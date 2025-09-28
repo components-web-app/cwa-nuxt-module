@@ -1,3 +1,4 @@
+import { updateSiteConfig } from '#imports'
 import { computed, ref } from 'vue'
 import { XMLValidator } from 'fast-xml-parser'
 import { consola } from 'consola'
@@ -6,7 +7,7 @@ import type {
   SiteConfigStore,
 } from '#cwa/storage/stores/site-config/site-config-store'
 import type CwaFetch from '#cwa/api/fetcher/cwa-fetch'
-import { useCwaSiteConfig, updateSiteConfig } from '#imports'
+import { useCwaSiteConfig } from '#cwa/composables/useCwaSiteConfig'
 import type { SiteConfigParams } from '#cwa/types'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 

@@ -75,7 +75,7 @@ export default class Forms {
   public getFormViewErrors(formIri: string, field: string) {
     return computed(() => {
       const form = this.getForm(formIri)
-      const errors = form.value?.[field].vars.errors
+      const errors = form.value?.[field]?.vars.errors
       return errors && errors.length ? errors : undefined
     })
   }

@@ -1,11 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`ResourceLoader > snapshots > should match snapshot IF UI component is not resolved 1`] = `
-<warning-stub>
+<cwauialertwarning-stub>
   <p>
     The component 'TestComponentMock' for resource 'testIri' cannot be resolved
   </p>
-</warning-stub>
+</cwauialertwarning-stub>
 `;
 
 exports[`ResourceLoader > snapshots > should match snapshot IF component is resolved from props 1`] = `
@@ -23,11 +23,11 @@ exports[`ResourceLoader > snapshots > should match snapshot IF global component 
 exports[`ResourceLoader > snapshots > should match snapshot IF resource data is not resolved 1`] = `<!--v-if-->`;
 
 exports[`ResourceLoader > snapshots > should match snapshot IF resource does not exist after loading 1`] = `
-<warning-stub>
+<cwauialertwarning-stub>
   <p>
     Resource 'testIri' has not been requested
   </p>
-</warning-stub>
+</cwauialertwarning-stub>
 `;
 
 exports[`ResourceLoader > snapshots > should match snapshot IF resource is loading 1`] = `

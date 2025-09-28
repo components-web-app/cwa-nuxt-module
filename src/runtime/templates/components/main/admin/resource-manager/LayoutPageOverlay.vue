@@ -111,20 +111,20 @@ function drawLayoutFocus(ctx: CanvasRenderingContext2D) {
   ctx.lineTo(pageCoords.left, pageCoords.top + pageCoords.height)
 }
 
-function getBoundingRect() {
+function getBoundingRect(): [DOMRect, DOMRect] {
   return [
-    props.layout.getBoundingClientRect(),
-    props.page.getBoundingClientRect(),
+    (props.layout.getBoundingClientRect() || { width: 0, height: 0, top: 0, left: 0 }),
+    (props.page.getBoundingClientRect() || { width: 0, height: 0, top: 0, left: 0 }),
   ]
 }
 
 const getPageCoords = () => {
   const [layoutRect, pageRect] = getBoundingRect()
   return {
-    top: pageRect.top - layoutRect.top,
-    left: pageRect.left - layoutRect.left,
-    width: pageRect.width,
-    height: pageRect.height,
+    top: (pageRect?.top || 0) - (layoutRect?.top || 0),
+    left: (pageRect?.left || 0) - (layoutRect?.left || 0),
+    width: pageRect?.width || 0,
+    height: pageRect?.height || 0,
   }
 }
 
@@ -164,6 +164,10 @@ function getDivElementOverlays() {
 
   const [layoutRect] = getBoundingRect()
 
+  if (!layoutRect) {
+    return
+  }
+
   const rightPage = pageCoords.left + pageCoords.width
   const bottomPage = pageCoords.top + pageCoords.height
 
@@ -195,7 +199,7 @@ function getDivElementOverlays() {
   ]
 }
 
-const divElementOverlays = ref<DivElementOverlayType[]>(getDivElementOverlays())
+const divElementOverlays = ref<DivElementOverlayType[] | undefined>(getDivElementOverlays())
 </script>
 
 <template>

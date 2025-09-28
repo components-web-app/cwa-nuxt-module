@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { definePageMeta } from '#imports'
 import CwaPage from '#cwa/templates/cwa-page.vue'
-// @ts-expect-error-next-line
 import { options } from '#build/cwa-options'
 
 definePageMeta({

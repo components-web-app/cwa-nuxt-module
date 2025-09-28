@@ -21,16 +21,16 @@ exports[`InputField > snapshots > should match snapshot IF errors are present 1`
     />
     <div>
       
-      <warning-stub
+      <cwauialertwarning-stub
         class="cwa:mt-2"
       >
         Login should be minimum 6 characters long
-      </warning-stub>
-      <warning-stub
+      </cwauialertwarning-stub>
+      <cwauialertwarning-stub
         class="cwa:mt-2"
       >
         Login cannot contain whitespaces
-      </warning-stub>
+      </cwauialertwarning-stub>
       
     </div>
   </div>

@@ -28,7 +28,13 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
-  const endpoint = computed(() => userDefinedEndpoint?.value || (Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri))
+
+  function getStringFromParam(paramName: string): string {
+    const paramValue = route.params[paramName]
+    return (Array.isArray(paramValue) ? paramValue[0] : paramValue) || ''
+  }
+
+  const endpoint = computed(() => userDefinedEndpoint?.value || getStringFromParam('iri'))
   if (!endpoint.value) {
     throw new Error('No Endpoint Found For useItemPage composable')
   }

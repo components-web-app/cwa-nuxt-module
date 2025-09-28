@@ -221,7 +221,7 @@ onMounted(async () => {
     return
   }
   if (isAdding.value && localResourceData.value && !localResourceData.value.page) {
-    localResourceData.value.page = pageOptions.value[0].value
+    localResourceData.value.page = pageOptions.value[0]?.value
   }
 })
 </script>

@@ -7,7 +7,7 @@ exports[`LoginPage > snapshots > should match snapshot IF form has errors 1`] = 
   <div
     class="cwa:sm:mx-autocwa:sm::w-full cwa:sm::max-w-md"
   >
-    <logo-stub
+    <cwalogo-stub
       class="cwa:mx-auto cwa:h-12 cwa:w-auto cwa:text-neutral-400"
     />
   </div>
@@ -17,11 +17,11 @@ exports[`LoginPage > snapshots > should match snapshot IF form has errors 1`] = 
     <div
       class="cwa:bg-neutral-800 cwa:py-8 cwa:px-4 cwa:shadow cwa:sm:px-10"
     >
-      <warning-stub
+      <cwauialertwarning-stub
         class="cwa:mb-4"
       >
         Something went wrong, try submitting form again
-      </warning-stub>
+      </cwauialertwarning-stub>
       <form
         action="#"
         class="cwa:flex cwa:flex-col cwa:gap-y-6"
@@ -53,7 +53,7 @@ exports[`LoginPage > snapshots > should match snapshot IF form is submitting 1`]
   <div
     class="cwa:sm:mx-autocwa:sm::w-full cwa:sm::max-w-md"
   >
-    <logo-stub
+    <cwalogo-stub
       class="cwa:mx-auto cwa:h-12 cwa:w-auto cwa:text-neutral-400"
     />
   </div>

@@ -38,6 +38,7 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
     if (!matchingParams || !matchingParams.length || !route) {
       return null
     }
+    const matchedParam = matchingParams[0] as typeof matchingQueryParams.value[0]
     const normalizeValueAsArray = (valueIsArray: boolean, value: LocationQueryValue | LocationQueryValue[]) => {
       if (Array.isArray(value)) {
         return value
@@ -61,13 +62,13 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
       return normalizeValueAsArray(valueIsArray, route.query[queryParam])
     }
 
-    const matches = matchingParams[0].match(exp)
+    const matches = matchedParam.match(exp)
     if (!matches || matches.length < 2) {
       return null
     }
     const matchingObjectKey = matches[1]
     if (matchingParams.length && matchingObjectKey) {
-      return { [matchingObjectKey]: route.query[matchingParams[0]] }
+      return { [matchingObjectKey]: route.query[matchedParam] }
     }
     return null
   })
@@ -90,7 +91,7 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
     }
 
     const filteredKeys = Object.keys(route.query).filter(key => !matchingQueryParams.value.includes(key))
-    const newQuery: { [key: string]: LocationQueryValue | LocationQueryValue[] } = {}
+    const newQuery: { [key: string]: LocationQueryValue | LocationQueryValue[] | undefined } = {}
     for (const retainedKey of filteredKeys) {
       newQuery[retainedKey] = route.query[retainedKey]
     }

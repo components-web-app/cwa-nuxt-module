@@ -170,7 +170,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
   resourceType: 'Layout',
   defaultResource: {
     reference: null,
-    uiComponent: layoutComponentOptions.value[0].value,
+    uiComponent: layoutComponentOptions.value[0]?.value,
   },
 })
 

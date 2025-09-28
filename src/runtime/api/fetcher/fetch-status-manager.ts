@@ -118,7 +118,7 @@ export default class FetchStatusManager {
       this.resourcesStore.current.byId?.[event.resource]?.apiState.status === CwaResourceApiStatuses.SUCCESS
       && this.resourcesStore.current.byId?.[event.resource]?.apiState.path === event.path
     ) {
-      return this.resourcesStore.current.byId?.[event.resource].data
+      return this.resourcesStore.current.byId?.[event.resource]?.data
     }
 
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)

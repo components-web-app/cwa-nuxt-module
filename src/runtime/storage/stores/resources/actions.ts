@@ -410,6 +410,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     mergeNewResources(): void {
       for (const newId of resourcesState.new.allIds) {
         const newResource = resourcesState.new.byId[newId]
+        if (!newResource?.resource) continue
 
         // if empty resource, it should be deleted
         if (Object.keys(newResource.resource).length === 1 && newResource.resource['@id']) {

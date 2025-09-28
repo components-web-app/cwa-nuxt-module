@@ -13,7 +13,7 @@ export default function (errorsState: CwaErrorStateInterface): CwaErrorsGettersI
       return errorsState.allIds.length > 0
     }),
     getErrors: computed<CwaErrorEvent[]>(() => {
-      return errorsState.allIds.map(e => errorsState.byId[e])
+      return errorsState.allIds.map(e => errorsState.byId[e]).filter(e => e !== undefined)
     }),
   }
 }

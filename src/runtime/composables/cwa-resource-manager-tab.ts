@@ -8,7 +8,7 @@ export interface CwaResourceManagerTabOptions {
   disabled?: boolean
 }
 
-interface CwaResourceManagerTabMeta extends Pick<CwaResourceManagerTabOptions, 'name' | 'order'> {
+export interface CwaResourceManagerTabMeta extends Pick<CwaResourceManagerTabOptions, 'name' | 'order'> {
   disabled: Ref<boolean>
 }
 

@@ -22,7 +22,7 @@
         v-if="tabs[selectedTabIndex]?.id"
         :name="tabs[selectedTabIndex]?.id"
       >
-        No tab content provided for tab index `{{ selectedTabIndex }}`- ID: `{{ tabs[selectedTabIndex].id }}`
+        No tab content provided for tab index `{{ selectedTabIndex }}`- ID: `{{ tabs[selectedTabIndex]?.id || 'unknown ID' }}`
       </slot>
       <slot
         name="default"

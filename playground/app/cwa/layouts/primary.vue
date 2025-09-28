@@ -15,7 +15,7 @@
         <nav class="space-x-5 flex w-full items-center">
           <div class="space-x-5 md:space-x-5 flex items-center grow w-auto">
             <div>
-              <NuxtLink to="/">
+              <NuxtLink to="/playground/public">
                 <LazySvgoLogo
                   :font-controlled="false"
                   class="text-white h-6 md:h-6"

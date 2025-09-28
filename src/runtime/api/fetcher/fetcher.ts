@@ -79,9 +79,9 @@ export default class Fetcher {
     }
     let iri: string
     let manifestPath: string | undefined
-    const routeParam = route.params.cwaPage0
+    const routeParam = route.params.cwaPage0 || ''
     // todo: test that we can get the iri from the route
-    iri = Array.isArray(routeParam) ? '/' + routeParam.join('/') : routeParam
+    iri = Array.isArray(routeParam) ? `/${routeParam.join('/')}` : routeParam
 
     const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
 
@@ -99,7 +99,7 @@ export default class Fetcher {
   }
 
   public async fetchResource({ path, token, manifestPath, preload, shallowFetch, noSave, isPrimary, iri: userProvidedIri }: FetchResourceEvent): Promise<CwaResource | undefined> {
-    const iri = userProvidedIri || path.split('?')[0]
+    const iri = (userProvidedIri || path.split('?')[0]) as string
     const startFetchResult = this.fetchStatusManager.startFetch({
       path,
       token,

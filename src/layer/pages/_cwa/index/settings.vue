@@ -278,10 +278,15 @@ async function setApiVersion() {
   const docs = await $cwa.getApiDocumentation()
   const version = docs?.docs?.info.version
   if (!version) {
+    apiVersion.value = ''
     return
   }
-  const matches = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
-  apiVersion.value = matches ? matches[1] : version
+  const matches: RegExpMatchArray | null = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
+  if (!matches) {
+    apiVersion.value = version
+    return
+  }
+  apiVersion.value = matches[1] || version
 }
 
 function truncateVersion(version: string) {
