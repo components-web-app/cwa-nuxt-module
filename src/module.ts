@@ -136,6 +136,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./runtime')
     nuxt.options.alias['#cwa-layer'] = resolve('./layer')
+    const appDir = '~' // nuxt.options.appDir
 
     // do not server-side render internal routes. Use with client-side auth values
     extendRouteRules('/_cwa/**', { ssr: false, robots: false })
@@ -158,7 +159,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 
     logger.info(`Registering user components for CWA...`)
-    const userComponentsPath = join(nuxt.options.appDir, 'cwa', 'components')
+    const userComponentsPath = join(appDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
     function extendCwaOptions(components: Component[]) {
@@ -295,14 +296,14 @@ declare module 'vue-router' {
       // todo: components do not need to be global and can be imported using import.meta.glob("~/components/modal/*.vue"); to reduce bundle size
       // component dirs to be configured by application - global, so they are split and can be loaded dynamically
       dirs.unshift({
-        path: join(nuxt.options.appDir, 'cwa', 'layouts'),
+        path: join(appDir, 'cwa', 'layouts'),
         prefix: 'CwaLayout',
         global: true,
         ignore: ['**/*.spec.{cts,mts,ts}'],
       })
 
       dirs.unshift({
-        path: join(nuxt.options.appDir, 'cwa', 'pages'),
+        path: join(appDir, 'cwa', 'pages'),
         prefix: 'CwaPage',
         global: true,
         ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'],
@@ -323,7 +324,7 @@ declare module 'vue-router' {
         return
       }
       logger.info(`File added or removed - updating options for ${NAME} module...`)
-      const path = resolve(nuxt.options.appDir, relativePath)
+      const path = resolve(appDir, relativePath)
       const cwaDirs = [userComponentsPath]
       if (cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         await updateTemplates({
