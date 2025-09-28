@@ -102,16 +102,52 @@ describe('CWA module', () => {
         },
       })
     })
+
+    test('should require correct dependent modules', async () => {
+      await import('./module')
+
+      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+
+      expect(moduleDependencies).toEqual({
+        '@pinia/nuxt': {
+          version: '^0.11.2',
+          optional: false,
+        },
+        '@nuxtjs/robots': {
+          version: '^5.5',
+        },
+        '@nuxtjs/sitemap': {
+          version: '^7.4',
+          optional: false,
+          defaults: {
+            sitemaps: {
+              cwa: {
+                sources: ['/__sitemap__/cwa-urls'],
+                chunks: true,
+              },
+            },
+          },
+        },
+        'nuxt-link-checker': {
+          version: '^4.3',
+        },
+        'nuxt-og-image': {
+          version: '^5.1',
+        },
+        'nuxt-schema-org': {
+          version: '^5.0',
+        },
+        'nuxt-seo-utils': {
+          version: '^7.0',
+        },
+        'nuxt-site-config': {
+          version: '^3.2',
+        },
+      })
+    })
   })
 
   describe('setup', () => {
-    test('should install additional modules', async () => {
-      await prepareMockNuxt()
-
-      expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@pinia/nuxt')
-      expect((nuxtKit.installModule as Mock)).toHaveBeenCalledWith('@nuxtjs/seo')
-    })
-
     test('should add aliases with result of resolved paths', async () => {
       const mockNuxt = await prepareMockNuxt()
       const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
