@@ -13,11 +13,9 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule,
   resolveAlias,
   updateTemplates,
   useLogger,
-  hasNuxtModule,
   extendRouteRules, addServerPlugin,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
@@ -130,46 +128,41 @@ export default defineNuxtModule<CwaModuleOptions>({
   async setup(options, nuxt) {
     const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
-    // common alias due to releasing different package names
-    nuxt.options.alias['#cwa'] = resolve('./runtime')
-    nuxt.options.alias['#cwa-layer'] = resolve('./layer')
 
     const { version, name } = JSON.parse(
       readFileSync(resolve('../package.json'), 'utf8'),
     )
-
     logger.info(`Adding ${NAME} module (${name}@${version})...`)
 
-    // modules
-    if (!hasNuxtModule('@pinia/nuxt')) {
-      logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
-      await installModule('@pinia/nuxt')
-    }
+    // common alias due to releasing different package names
+    nuxt.options.alias['#cwa'] = resolve('./runtime')
+    nuxt.options.alias['#cwa-layer'] = resolve('./layer')
 
-    const cwaSitemap = {
-      sources: ['/__sitemap__/cwa-urls'],
-      // chunks: true,
-    }
-
-    if (!hasNuxtModule('@nuxtjs/sitemap')) {
-      logger.info(`Installing @nuxtjs/sitemap for ${NAME} module...`)
-
-      const initialSitemaps = nuxt.options.sitemap?.sitemaps
-      const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
-      const sitemaps = Object.assign({}, extendSitemaps, {
-        cwa: cwaSitemap,
-      })
-      await installModule('@nuxtjs/sitemap', { sitemaps })
-    }
-
-    if (!hasNuxtModule('@nuxtjs/robots')) {
-      await installModule('@nuxtjs/robots')
-    }
-
-    if (!hasNuxtModule('@nuxtjs/seo')) {
-      logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
-      await installModule('@nuxtjs/seo')
-    }
+    // modules - deprecated, moved to options property
+    // if (!hasNuxtModule('@pinia/nuxt')) {
+    //   logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
+    //   await installModule('@pinia/nuxt')
+    // }
+    // const cwaSitemap = {
+    //   sources: ['/__sitemap__/cwa-urls'],
+    //   // chunks: true,
+    // }
+    //
+    // if (!hasNuxtModule('@nuxtjs/sitemap')) {
+    //   logger.info(`Installing @nuxtjs/sitemap for ${NAME} module...`)
+    //
+    //   const initialSitemaps = nuxt.options.sitemap?.sitemaps
+    //   const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
+    //   const sitemaps = Object.assign({}, extendSitemaps, {
+    //     cwa: cwaSitemap,
+    //   })
+    //   await installModule('@nuxtjs/sitemap', { sitemaps })
+    // }
+    //
+    // if (!hasNuxtModule('@nuxtjs/seo')) {
+    //   logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
+    //   await installModule('@nuxtjs/seo')
+    // }
 
     // do not server-side render internal routes. Use with client-side auth values
     extendRouteRules('/_cwa/**', { ssr: false, robots: false })
