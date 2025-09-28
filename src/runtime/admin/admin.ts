@@ -72,10 +72,10 @@ export default class Admin {
   private redrawListen() {
     this.eventBus.on('componentMounted', this.emitRedraw)
     this.eventBus.on('manageableComponentMounted', this.emitRedraw)
-    watch([
-      this.resourceStackManager.showManager,
-      this.resourceStackManager.isEditingLayout,
-    ], this.emitRedraw)
+    watch(() => ([
+      this.resourceStackManager.showManager.value,
+      this.resourceStackManager.isEditingLayout.value,
+    ]), this.emitRedraw)
   }
 
   public emitRedraw() {

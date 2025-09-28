@@ -15,7 +15,14 @@ vi.mock('./resource-manager', () => {
 })
 
 vi.mock('../resources/resources')
-vi.mock('./resource-stack-manager')
+vi.mock('./resource-stack-manager', () => {
+  return {
+    default: vi.fn(() => ({
+      showManager: { value: '' },
+      isEditingLayout: { value: '' },
+    })),
+  }
+})
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {

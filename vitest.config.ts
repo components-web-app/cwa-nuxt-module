@@ -5,7 +5,7 @@ export default defineVitestConfig({
   test: {
     environment: 'nuxt',
     coverage: {
-      reportsDirectory: '../coverage',
+      reportsDirectory: '../../coverage',
       provider: 'v8',
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*.d.mts'],
