@@ -54,7 +54,9 @@ const fallbackTitle = computed(() => {
   const lastSegment = path.split('/').pop()
   return lastSegment ? titleCase(lastSegment) : null
 })
-
+const metaDescription = computed(() => {
+  return $cwa.resources.pageData?.value?.data?.metaDescription || $cwa.resources.page?.value?.data?.metaDescription
+})
 useHead({
   title: () => {
     const userDefinedTitle = $cwa.resources.pageData?.value?.data?.title || $cwa.resources.page?.value?.data?.title
@@ -64,7 +66,7 @@ useHead({
     return userDefinedTitle
   },
   meta: [
-    { name: 'description', content: () => $cwa.resources.pageData?.value?.data?.metaDescription || $cwa.resources.page?.value?.data?.metaDescription },
+    { name: 'description', content: metaDescription },
   ],
 }, minimalPriority)
 </script>
