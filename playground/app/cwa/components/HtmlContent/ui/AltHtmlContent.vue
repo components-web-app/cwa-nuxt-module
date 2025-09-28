@@ -24,8 +24,8 @@
 import { computed, ref, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwaResource, useHtmlContent } from '#imports'
-import TipTapHtmlEditor from '~app/components/TipTapHtmlEditor.vue'
-import { useCustomHtmlComponent } from '~app/composables/useCustomHtmlComponent'
+import TipTapHtmlEditor from '../../../../components/TipTapHtmlEditor.vue'
+import { useCustomHtmlComponent } from '../../../../composables/useCustomHtmlComponent'
 
 // Setup the resource
 const props = defineProps<IriProp>()

@@ -184,7 +184,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 
     logger.info(`Registering user components for CWA...`)
-    const userComponentsPath = join(nuxt.options.srcDir, 'cwa', 'components')
+    const userComponentsPath = join(nuxt.options.appDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
     function extendCwaOptions(components: Component[]) {

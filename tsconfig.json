@@ -4,6 +4,6 @@
     "dist",
     "node_modules",
     "playground",
-    "./src/**/*.spec.ts"
+    "**/*.spec.ts"
   ]
 }

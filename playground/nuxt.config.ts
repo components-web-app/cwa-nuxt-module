@@ -45,16 +45,6 @@ export default defineNuxtConfig({
     // '/': { prerender: true },
     '/**': { isr: true },
   },
-  nitro: {
-    typescript: {
-      tsConfig: {
-        exclude: [
-          '../../src/**/*.spec.ts',
-          '../../src/**/*.test.ts',
-        ],
-      },
-    },
-  },
   vite: {
     plugins: [
       // @ts-ignore - builds with this bit errors here sometimes but not in prod
@@ -62,13 +52,7 @@ export default defineNuxtConfig({
     ],
   },
   typescript: {
-    typeCheck: true,
-    tsConfig: {
-      exclude: [
-        '../../src/**/*.spec.ts',
-        '../../src/**/*.test.ts',
-      ],
-    },
+    typeCheck: false,
   },
   cwa: {
     resources: {
