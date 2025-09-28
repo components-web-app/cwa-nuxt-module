@@ -82,7 +82,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         sitemaps: {
           cwa: {
             sources: ['/__sitemap__/cwa-urls'],
-            chunks: true,
+            chunks: false,
           },
         },
       },

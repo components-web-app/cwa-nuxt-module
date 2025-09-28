@@ -123,7 +123,7 @@ describe('CWA module', () => {
             sitemaps: {
               cwa: {
                 sources: ['/__sitemap__/cwa-urls'],
-                chunks: true,
+                chunks: false,
               },
             },
           },
