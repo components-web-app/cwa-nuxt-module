@@ -162,6 +162,10 @@ export default defineNuxtModule<CwaModuleOptions>({
       await installModule('@nuxtjs/sitemap', { sitemaps })
     }
 
+    if (!hasNuxtModule('@nuxtjs/robots')) {
+      await installModule('@nuxtjs/robots')
+    }
+
     if (!hasNuxtModule('@nuxtjs/seo')) {
       logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
       await installModule('@nuxtjs/seo')
