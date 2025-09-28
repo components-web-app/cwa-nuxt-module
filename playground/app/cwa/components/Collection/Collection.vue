@@ -119,7 +119,7 @@ import dayjs from 'dayjs'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwaCollectionResource } from '#imports'
-import JournalItem from '~/app/components/JournalItem.vue'
+import JournalItem from '~/components/JournalItem.vue'
 
 const props = defineProps<IriProp>()
 
