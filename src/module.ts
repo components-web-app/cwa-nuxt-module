@@ -80,10 +80,10 @@ export default defineNuxtModule<CwaModuleOptions>({
       optional: false,
       defaults: {
         sitemaps: {
-          cwa: {
-            sources: ['/__sitemap__/cwa-urls'],
-            chunks: true,
-          },
+          // cwa: {
+          //   sources: ['/__sitemap__/cwa-urls'],
+          //   chunks: true,
+          // },
         },
       },
     },
@@ -136,32 +136,6 @@ export default defineNuxtModule<CwaModuleOptions>({
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./runtime')
     nuxt.options.alias['#cwa-layer'] = resolve('./layer')
-
-    // modules - deprecated, moved to options property
-    // if (!hasNuxtModule('@pinia/nuxt')) {
-    //   logger.info(`Installing @pinia/nuxt for ${NAME} module...`)
-    //   await installModule('@pinia/nuxt')
-    // }
-    // const cwaSitemap = {
-    //   sources: ['/__sitemap__/cwa-urls'],
-    //   // chunks: true,
-    // }
-    //
-    // if (!hasNuxtModule('@nuxtjs/sitemap')) {
-    //   logger.info(`Installing @nuxtjs/sitemap for ${NAME} module...`)
-    //
-    //   const initialSitemaps = nuxt.options.sitemap?.sitemaps
-    //   const extendSitemaps = initialSitemaps === true || !initialSitemaps ? {} : initialSitemaps
-    //   const sitemaps = Object.assign({}, extendSitemaps, {
-    //     cwa: cwaSitemap,
-    //   })
-    //   await installModule('@nuxtjs/sitemap', { sitemaps })
-    // }
-    //
-    // if (!hasNuxtModule('@nuxtjs/seo')) {
-    //   logger.info(`Installing @nuxtjs/seo for ${NAME} module...`)
-    //   await installModule('@nuxtjs/seo')
-    // }
 
     // do not server-side render internal routes. Use with client-side auth values
     extendRouteRules('/_cwa/**', { ssr: false, robots: false })
@@ -289,7 +263,6 @@ declare module 'vue-router' {
         handler: resolve('./runtime/server/server-middleware'),
       })
       addServerPlugin(resolve('./runtime/server/server-plugin'))
-
       addServerHandler({
         route: '/__sitemap__/cwa-urls',
         handler: resolve('./runtime/server/cwa-urls.get'),

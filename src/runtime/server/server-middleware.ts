@@ -1,5 +1,4 @@
-import { createError } from '#app/composables/error'
-import { defineEventHandler, parseCookies, getRequestURL } from 'h3'
+import { defineEventHandler, parseCookies, getRequestURL, createError } from 'h3'
 import { jwtDecode } from 'jwt-decode'
 import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import { updateSiteConfig } from '#site-config/server/composables'
