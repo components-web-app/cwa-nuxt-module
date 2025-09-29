@@ -17,7 +17,9 @@ import type {
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
-import { showError } from '#app'
+import { showError, useResponseHeader } from '#app'
+import { parse as parseCookie } from 'set-cookie-parser'
+import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -546,14 +548,15 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       if (showErrorPage && error) {
         // forward the set-cookie headers as if a user is unauthorized, the API will send cookies to log them out for the next load
-        // todo: could this be the cause of users getting randomly logged in?
-        // if (error?.setCookieHeaders) {
-        //   const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
-        //   const currentSetCookieHeader = useResponseHeader('Set-Cookie')
-        //   currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
-        //     return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
-        //   })
-        // }
+        // todo: could this be the cause of users getting randomly logged in? server-plugin will remove all set cookie headers from the nitro site again for now
+        if (error?.setCookieHeaders) {
+          const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
+          const currentSetCookieHeader = useResponseHeader('Set-Cookie')
+          currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
+            return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
+          })
+          consola.warn('-- SET COOKIE CALLED FROM ACTIONS -- ', currentSetCookieHeader.value)
+        }
 
         // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
         // users to see this on the error page - especially for the 404 endpoint
