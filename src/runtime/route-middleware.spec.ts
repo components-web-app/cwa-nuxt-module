@@ -53,7 +53,6 @@ describe('Test route middleware', () => {
   const clearPrimaryFetch = vi.fn()
 
   beforeAll(() => {
-    // @ts-expect-error
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
         payload: {},
@@ -152,7 +151,6 @@ describe('Test route middleware', () => {
   })
 
   test('Server-side redirects', async () => {
-    // @ts-expect-error
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
@@ -172,7 +170,6 @@ describe('Test route middleware', () => {
   })
 
   test('Client-side redirects', async () => {
-    // @ts-expect-error
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
