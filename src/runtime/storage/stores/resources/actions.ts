@@ -548,10 +548,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
 
       if (showErrorPage && error) {
-        // forward the ser-cookie headers as if a user is unauthorized the API will send cookies to log them out for the next load
+        // forward the set-cookie headers as if a user is unauthorized the API will send cookies to log them out for the next load
         if (error?.setCookieHeaders) {
           const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
-
           const currentSetCookieHeader = useResponseHeader('Set-Cookie')
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
             return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
