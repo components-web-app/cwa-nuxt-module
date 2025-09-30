@@ -1,14 +1,13 @@
 import type * as nuxtKit from '@nuxt/kit'
-import { join } from 'path'
 import { vi, describe, test, expect } from 'vitest'
 import * as nuxt from 'nuxt/config'
 
-vi.mock('@nuxt/kit', async () => {
+vi.mock('node:url', async () => {
   const actual = await vi.importActual<typeof nuxtKit>('@nuxt/kit')
 
   const newModule = {
     ...actual,
-    createResolver: vi.fn().mockReturnValue({ resolvePath: vi.fn(), resolve: vi.fn(function (...args) { return join(...args) }) }),
+    fileURLToPath: vi.fn().mockReturnValue('mock-module-url'),
   }
 
   return {
@@ -23,7 +22,7 @@ describe('defineNuxtConfig called with correct object', () => {
     await import('./nuxt.config')
     expect(nuxt.defineNuxtConfig).toHaveBeenCalledWith({
       modules: [
-        '../module',
+        'mock-module-url',
       ],
     })
   })
