@@ -157,6 +157,11 @@ defineExpose({
 })
 
 defineSlots<{
-  item(): any
+  item(
+    props: {
+      data: ReturnType<typeof getItemFromStore>
+      rawData: typeof items.value[0]
+    }
+  ): any
 }>()
 </script>
