@@ -55,6 +55,11 @@ const props = defineProps<{
   error?: string
 }>()
 
+defineSlots<{
+  header: []
+  footer: []
+}>()
+
 const credentials = computed({
   get() {
     return props.modelValue
