@@ -8,10 +8,6 @@ export default defineEventHandler(async (e) => {
   const resolvedConfig = await resolveConfigEventHandler()
   if (resolvedConfig) {
     const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
-    if (typeof resolvedConfig.indexable !== 'undefined' && String(resolvedConfig.indexable) !== 'true') {
-      console.error('Indexable was not true. Debugging how this can happen.In `resolvedConfig`', resolvedConfig.indexable)
-      console.trace()
-    }
     updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
     if (resolvedConfig.maintenanceModeEnabled) {
       const isUserAllowedToBypassMaintenance = () => {
