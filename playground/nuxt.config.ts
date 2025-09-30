@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 // @ts-ignore excessive stack with tailwind issues in dev, not building on server
 export default defineNuxtConfig({
   extends: [
-    '../src/layer',
+    './../src/layer',
   ],
   modules: [
     '@nuxt/image',
