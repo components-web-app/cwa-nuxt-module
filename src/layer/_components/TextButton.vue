@@ -5,3 +5,9 @@
     <slot />
   </button>
 </template>
+
+<script lang="ts" setup>
+defineSlots<{
+  default(): any
+}>()
+</script>

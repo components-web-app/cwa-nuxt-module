@@ -13,4 +13,8 @@ import type { RouteLocationRaw } from 'vue-router'
 defineProps<{
   to?: RouteLocationRaw
 }>()
+
+defineSlots<{
+  default(): any
+}>()
 </script>

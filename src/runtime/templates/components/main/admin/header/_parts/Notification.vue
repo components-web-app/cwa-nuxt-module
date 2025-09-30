@@ -48,6 +48,10 @@ import { onMounted, ref } from 'vue'
 const emitTimeout = ref<undefined | ReturnType<typeof setTimeout>>()
 const emit = defineEmits(['clear'])
 
+defineSlots<{
+  default(): any
+}>()
+
 function setEmitTimeout() {
   emitTimeout.value = setTimeout(() => {
     emit('clear')

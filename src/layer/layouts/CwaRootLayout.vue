@@ -149,4 +149,8 @@ useHead({
     return '%s'
   },
 })
+
+defineSlots<{
+  default(): any
+}>()
 </script>

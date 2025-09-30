@@ -6,6 +6,9 @@ import type { NuxtLinkProps } from '#app'
 import { useCwa } from '#imports'
 
 const props = defineProps<NuxtLinkProps>()
+defineSlots<{
+  default(): any
+}>()
 
 const $cwa = useCwa()
 const CwaLinkComponent = defineNuxtLink({

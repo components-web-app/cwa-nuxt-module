@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<
 })
 
 const slots = defineSlots<{
-  default(p: typeof props): any
+  default?: (p: typeof props) => any
 }>()
 
 const emit = defineEmits<{ (e: 'click', value?: ModelValue): void }>()

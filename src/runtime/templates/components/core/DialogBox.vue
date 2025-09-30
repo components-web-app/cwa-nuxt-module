@@ -109,4 +109,9 @@ function setIsOpen(value?: boolean) {
 const panelClassName = computed(() => {
   return 'cwa:relative cwa:transform cwa:overflow-hidden cwa:rounded-xl cwa:text-white cwa:text-left cwa:shadow-xl cwa:transition-all cwa:sm:my-8 cwa:sm:w-full cwa:sm:max-w-3xl'
 })
+
+defineSlots<{
+  default(): any
+  buttons(): any
+}>()
 </script>

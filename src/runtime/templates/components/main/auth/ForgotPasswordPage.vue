@@ -57,4 +57,8 @@ const credentials = computed({
     emit('update:modelValue', newValue)
   },
 })
+
+defineSlots<{
+  default(): any
+}>()
 </script>

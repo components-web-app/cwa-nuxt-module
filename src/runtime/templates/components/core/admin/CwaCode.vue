@@ -1,5 +1,7 @@
-<script setup lang="ts">
-
+<script lang="ts" setup>
+defineSlots<{
+  default(): any
+}>()
 </script>
 
 <template>

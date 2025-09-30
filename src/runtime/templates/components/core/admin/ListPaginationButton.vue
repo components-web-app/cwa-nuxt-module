@@ -15,4 +15,7 @@ defineProps<{
   disabled?: boolean
   selected?: boolean
 }>()
+defineSlots<{
+  default(): any
+}>()
 </script>

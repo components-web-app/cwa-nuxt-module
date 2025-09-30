@@ -59,4 +59,7 @@ function submitForm() {
 defineExpose({
   submitForm,
 })
+defineSlots<{
+  default(): any
+}>()
 </script>

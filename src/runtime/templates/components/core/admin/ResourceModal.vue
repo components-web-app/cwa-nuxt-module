@@ -107,4 +107,10 @@ async function triggerEditTitle() {
     referenceInput.value.focus()
   }
 }
+
+defineSlots<{
+  default(): any
+  icons(): any
+  title(): any
+}>()
 </script>

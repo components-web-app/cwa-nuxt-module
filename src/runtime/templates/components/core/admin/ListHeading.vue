@@ -32,4 +32,7 @@ defineProps<{
 defineEmits<{
   add: []
 }>()
+defineSlots<{
+  default(): any
+}>()
 </script>

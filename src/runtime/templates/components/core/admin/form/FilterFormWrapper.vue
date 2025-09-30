@@ -15,4 +15,7 @@ defineProps<{
   label: string
   inputId?: string
 }>()
+defineSlots<{
+  default(): any
+}>()
 </script>

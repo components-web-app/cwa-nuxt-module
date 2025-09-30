@@ -155,4 +155,8 @@ onMounted(() => {
 defineExpose({
   reloadItems,
 })
+
+defineSlots<{
+  item(): any
+}>()
 </script>

@@ -95,4 +95,13 @@ watch(indexAndId, (newValues, oldValues) => {
     selectedTabIndex.value = getIndexFromId(oldValues.id)
   }
 })
+
+type TabId = typeof props.tabs[number]['id']
+defineSlots<
+  {
+    [K in TabId as K extends string ? `${K}` : never]?: () => any
+  } & {
+    default?: () => any
+  }
+>()
 </script>

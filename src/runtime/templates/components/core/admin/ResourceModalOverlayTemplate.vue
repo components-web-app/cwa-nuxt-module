@@ -20,4 +20,7 @@
 defineProps<{
   show: boolean
 }>()
+defineSlots<{
+  default(): any
+}>()
 </script>

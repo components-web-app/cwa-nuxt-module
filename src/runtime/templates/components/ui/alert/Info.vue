@@ -1,3 +1,9 @@
+<script lang="ts" setup>
+defineSlots<{
+  default(): any
+}>()
+</script>
+
 <template>
   <div
     class="cwa:flex cwa:items-center cwa:bg-blue-500 cwa:text-white cwa:text-sm cwa:font-bold cwa:px-4 cwa:py-3"

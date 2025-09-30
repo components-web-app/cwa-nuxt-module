@@ -71,4 +71,7 @@ const [, container] = usePopper(popperOps.value, virtualElement)
 onClickOutside(container, () => {
   isOpen.value = false
 })
+defineSlots<{
+  default(): any
+}>()
 </script>

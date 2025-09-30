@@ -20,4 +20,7 @@ defineProps<{
   label: string
   content?: string
 }>()
+defineSlots<{
+  default(): any
+}>()
 </script>

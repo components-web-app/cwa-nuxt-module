@@ -56,8 +56,8 @@ const props = defineProps<{
 }>()
 
 defineSlots<{
-  header: []
-  footer: []
+  header(): any
+  footer(): any
 }>()
 
 const credentials = computed({
