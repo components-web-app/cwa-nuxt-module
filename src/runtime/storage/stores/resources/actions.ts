@@ -549,7 +549,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       if (showErrorPage && error) {
         // forward the set-cookie headers as if a user is unauthorized, the API will send cookies to log them out for the next load
         // todo: could this be the cause of users getting randomly logged in? server-plugin will remove all set cookie headers from the nitro site again for now
-        if (error?.setCookieHeaders) {
+        if (error?.setCookieHeaders && error.setCookieHeaders.length) {
           const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
           const currentSetCookieHeader = useResponseHeader('Set-Cookie')
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {

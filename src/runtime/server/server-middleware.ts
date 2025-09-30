@@ -34,11 +34,7 @@ export default defineEventHandler(async (e) => {
           }
           const expiry = new Date(decoded.exp * 1000)
           const expired = (new Date()).getTime() >= expiry.getTime()
-          if (expired) {
-            return false
-          }
-
-          return true
+          return !expired
         }
         catch (e) {
           // failed to decode, show the error page, invalid, ta
