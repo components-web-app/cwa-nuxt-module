@@ -6,7 +6,6 @@ export default defineNuxtConfig({
     '../src/layer',
   ],
   modules: [
-    '../src/module',
     '@nuxt/image',
     '@nuxt/test-utils/module',
     '@nuxtjs/seo',

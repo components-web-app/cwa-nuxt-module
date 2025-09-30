@@ -16,7 +16,8 @@ import {
   resolveAlias,
   updateTemplates,
   useLogger,
-  extendRouteRules, addServerPlugin,
+  extendRouteRules,
+  addServerPlugin,
 } from '@nuxt/kit'
 import type { Component, NuxtPage } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
