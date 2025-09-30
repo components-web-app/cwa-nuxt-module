@@ -19,6 +19,9 @@
     }
   },
   "main": "./dist/module.mjs",
+  "directories": {
+    "layer": "./dist/layer"
+  },
   "typesVersions": {
     "*": {
       ".": [
