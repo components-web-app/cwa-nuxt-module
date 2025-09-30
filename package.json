@@ -30,9 +30,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "nuxt-module-build build && pnpm run tailwind:main && pnpm run tailwind:base && sleep 0.2 && pnpm run copy-layer",
+    "build": "pnpm run clean-dist && pnpm run copy-layer && nuxt-module-build build && pnpm run tailwind:main && pnpm run tailwind:base",
     "prepack": "pnpm build",
-    "copy-layer": "copyfiles -e \"./src/layer/**/*.spec.*\"  -u 1 \"./src/layer/**\" dist/",
+    "clean-dist": "del dist/",
+    "copy-layer": "copyfiles -e \"./src/layer/**/*.spec.*\" -u 1 \"./src/layer/**\" dist/",
     "dev": "concurrently --kill-others \"pnpm tailwind:watch\" \"pnpm dev:https\"",
     "dev:https": "pnpm run dev:prepare && nuxi dev playground --https",
     "dev:http": "pnpm run dev:prepare && nuxi dev playground",
@@ -103,6 +104,7 @@
     "@vue/test-utils": "^2.4.6",
     "concurrently": "^9.2.1",
     "copyfiles": "^2.4.1",
+    "del-cli": "^7.0.0",
     "eslint": "^9.36.0",
     "globby": "^14.1.0",
     "happy-dom": "^18.0.1",
