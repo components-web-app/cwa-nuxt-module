@@ -74,8 +74,8 @@ export function useCwaSiteConfig() {
   }
 
   function resolvedConfigToSiteConfig(config: SiteConfigParams) {
-    if (!config.indexable) {
-      console.error('Indexable was not true. Debugging how this can happen')
+    if (typeof config.indexable !== 'undefined' && String(config.indexable) !== 'true') {
+      console.error('Indexable was not true. Debugging how this can happen.In `resolvedConfigToSiteConfig::config`', config.indexable)
       console.trace()
       console.log(config)
     }

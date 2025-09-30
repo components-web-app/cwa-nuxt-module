@@ -555,7 +555,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
             return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
           })
-          consola.warn('-- SET COOKIE CALLED FROM ACTIONS -- ', currentSetCookieHeader.value)
+          consola.warn('-- SET COOKIE CALLED FROM ACTIONS -- ', parsedSetCookiesHeaders, currentSetCookieHeader.value)
         }
 
         // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
