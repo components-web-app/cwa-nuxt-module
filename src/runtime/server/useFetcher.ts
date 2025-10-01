@@ -1,3 +1,4 @@
+import type { H3Event } from 'h3'
 import { $fetch } from 'ofetch'
 import { consola } from 'consola'
 import { useRuntimeConfig } from '#imports'
@@ -22,14 +23,23 @@ export const useFetcher = () => {
   }
 }
 
-export const resolveConfigEventHandler = async () => {
+export const resolveConfigEventHandler = async (e?: H3Event) => {
+  if (e?.context.cwaSiteConfig) {
+    return e.context.cwaSiteConfig
+  }
   const { mergeConfig, responseToConfig } = useCwaSiteConfig()
   const { fetcher, options } = useFetcher()
   try {
     const data = await fetcher<CwaResource>('/_/site_config_parameters', {
       credentials: 'omit',
     })
-    return mergeConfig(options.siteConfig, responseToConfig(data, true))
+
+    const config = mergeConfig(options.siteConfig, responseToConfig(data, true))
+
+    if (e)
+      e.context.cwaSiteConfig = config
+
+    return config
   }
   catch (e) {
     consola.error(e)

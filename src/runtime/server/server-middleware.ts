@@ -5,7 +5,16 @@ import { updateSiteConfig } from '#site-config/server/composables'
 import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
 
 export default defineEventHandler(async (e) => {
-  const resolvedConfig = await resolveConfigEventHandler()
+  const allowedPaths = ['/sitemap.xml', '/sitemap_index.xml', '/robots.txt']
+  if (allowedPaths.includes(e.path)) return
+
+  const allowedRegex = [new RegExp('^/__sitemap__/.+')]
+  for (const re of allowedRegex) {
+    const match = e.path.match(re)
+    if (match) return
+  }
+
+  const resolvedConfig = await resolveConfigEventHandler(e)
   if (resolvedConfig) {
     const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
     updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))

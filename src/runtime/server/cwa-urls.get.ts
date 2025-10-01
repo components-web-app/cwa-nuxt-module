@@ -4,8 +4,8 @@ import type { SitemapUrlInput } from '#sitemap/types'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 // this route can be used as a source of data for sitemaps to return the cwa routes
-export default defineSitemapEventHandler(async (): Promise<SitemapUrlInput[]> => {
-  const resolvedConfig = await resolveConfigEventHandler()
+export default defineSitemapEventHandler(async (e): Promise<SitemapUrlInput[]> => {
+  const resolvedConfig = await resolveConfigEventHandler(e)
   if (!resolvedConfig || !resolvedConfig.sitemapEnabled) {
     return []
   }

@@ -17,7 +17,7 @@ export default defineNitroPlugin(async (nitroApp) => {
   })
 
   nitroApp.hooks.hook('sitemap:index-resolved', async (ctx: SitemapIndexRenderCtx) => {
-    const resolvedConfig = await resolveConfigEventHandler()
+    const resolvedConfig = await resolveConfigEventHandler(ctx.event)
     if (!resolvedConfig || !resolvedConfig.sitemapXml || resolvedConfig.sitemapXml === '') {
       return
     }
