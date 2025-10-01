@@ -5,6 +5,8 @@ import { updateSiteConfig } from '#site-config/server/composables'
 import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
 
 export default defineEventHandler(async (e) => {
+  if (e.context.skipMaintenanceChecks === true) return
+
   const allowedPaths = ['/sitemap.xml', '/sitemap_index.xml', '/robots.txt']
   if (allowedPaths.includes(e.path)) return
 
