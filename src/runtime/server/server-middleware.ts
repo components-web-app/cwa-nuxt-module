@@ -5,21 +5,25 @@ import { updateSiteConfig } from '#site-config/server/composables'
 import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
 
 export default defineEventHandler(async (e) => {
-  if (e.context.skipMaintenanceChecks === true) return
-
-  const allowedPaths = ['/sitemap.xml', '/sitemap_index.xml', '/robots.txt']
-  if (allowedPaths.includes(e.path)) return
-
-  const allowedRegex = [new RegExp('^/__sitemap__/.+')]
-  for (const re of allowedRegex) {
-    const match = e.path.match(re)
-    if (match) return
+  const skipMaintenanceChecks = () => {
+    if (e.context.skipMaintenanceChecks === true) return true
+    const allowedPaths = ['/sitemap.xml', '/sitemap_index.xml', '/robots.txt']
+    if (allowedPaths.includes(e.path)) return true
+    const allowedRegex = [new RegExp('^/__sitemap__/.+')]
+    for (const re of allowedRegex) {
+      const match = e.path.match(re)
+      if (match) return true
+    }
+    return false
   }
 
   const resolvedConfig = await resolveConfigEventHandler(e)
   if (resolvedConfig) {
     const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
     updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
+
+    if (skipMaintenanceChecks()) return
+
     if (resolvedConfig.maintenanceModeEnabled) {
       const isUserAllowedToBypassMaintenance = () => {
         const cookies = parseCookies(e)
@@ -27,7 +31,10 @@ export default defineEventHandler(async (e) => {
           return false
         }
         try {
-          const decoded = jwtDecode<{ roles?: string[], exp?: number }>(cookies.api_component)
+          const decoded = jwtDecode<{
+            roles?: string[]
+            exp?: number
+          }>(cookies.api_component)
           if (!decoded.roles || !Array.isArray(decoded.roles)) {
             return false
           }
@@ -35,26 +42,23 @@ export default defineEventHandler(async (e) => {
           if (!includesAny(decoded.roles, ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'])) {
             return false
           }
-          // ROLE_ADMIN
           if (!decoded.exp) {
             return false
           }
-          const expiry = new Date(decoded.exp * 1000)
-          const expired = (new Date()).getTime() >= expiry.getTime()
+          const expiry = new Date(decoded.exp * 1e3)
+          const expired = (/* @__PURE__ */ new Date()).getTime() >= expiry.getTime()
           return !expired
         }
-        catch (e) {
-          // failed to decode, show the error page, invalid, ta
+        catch (e2) {
           return false
         }
       }
       if (isUserAllowedToBypassMaintenance()) {
         return
       }
-
       const url = getRequestURL(e)
-      const allowedPaths = ['/__nuxt_error', '/login']
-      if (!allowedPaths.includes(url.pathname) && !url.pathname.startsWith('/_cwa')) {
+      const allowedPaths2 = ['/__nuxt_error', '/login']
+      if (!allowedPaths2.includes(url.pathname) && !url.pathname.startsWith('/_cwa')) {
         const maintenanceError = createError({
           statusCode: 503,
           statusMessage: 'Website under maintenance',

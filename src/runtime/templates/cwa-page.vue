@@ -43,6 +43,7 @@ const minimalPriority: UseHeadOptions = {
 // composable requested - https://github.com/harlan-zw/nuxt-seo-utils/issues/65
 const route = useRoute()
 const err = useError()
+
 const fallbackTitle = computed(() => {
   if (err.value && [404, 500].includes(err.value?.statusCode)) {
     return `${err.value.statusCode} - ${err.value.message}`
@@ -54,9 +55,11 @@ const fallbackTitle = computed(() => {
   const lastSegment = path.split('/').pop()
   return lastSegment ? titleCase(lastSegment) : null
 })
+
 const metaDescription = computed(() => {
   return $cwa.resources.pageData?.value?.data?.metaDescription || $cwa.resources.page?.value?.data?.metaDescription
 })
+
 useHead({
   title: () => {
     const userDefinedTitle = $cwa.resources.pageData?.value?.data?.title || $cwa.resources.page?.value?.data?.title
