@@ -1,8 +1,13 @@
 <template>
   <div
-    class="cwa:flex cwa:items-start cwa:outline-1 cwa:outline-offset-2 cwa:outline-red-500/50 cwa:bg-red-500/50 cwa:text-white cwa:text-sm cwa:font-bold cwa:px-4 cwa:py-3 cwa:rounded-md"
+    class="cwa:p-1.5"
     role="alert"
   >
-    <slot />
+    <div class="cwa:flex cwa:items-start cwa:outline-1 cwa:outline-offset-2 cwa:outline-danger-dark cwa:bg-danger-dark cwa:text-white cwa:text-sm cwa:font-bold cwa:px-4 cwa:py-3 cwa:rounded-md">
+      <slot />
+    </div>
   </div>
 </template>
+
+<script setup lang="ts">
+</script>

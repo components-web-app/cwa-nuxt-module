@@ -62,7 +62,7 @@
                 </p>
                 <p
                   v-else
-                  class="cwa:text-red-500 cwa:font-bold"
+                  class="cwa:text-danger cwa:font-bold"
                 >
                   If you do not specify a page title, no page title will be used
                 </p>
@@ -77,7 +77,7 @@
               />
               <p
                 v-if="canonicalMismatch"
-                class="cwa:text-red-500 cwa:font-bold cwa:text-sm cwa:mt-2"
+                class="cwa:text-danger cwa:font-bold cwa:text-sm cwa:mt-2"
               >
                 You are loading this page via <CwaCode>{{ currentHostDomain }}</CwaCode>&nbsp;which is different to the URL you have specified. Please ensure the canonical URL above is your primary domain and does not have redirects.
               </p>
@@ -137,7 +137,7 @@
             />
             <div
               v-if="showErrors && formErrors.robotsText"
-              class="cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-red-500 cwa:font-bold"
+              class="cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-danger cwa:font-bold"
             >
               <p
                 v-for="(error, index) of formErrors.robotsText"
@@ -215,7 +215,7 @@
       </div>
       <div
         v-if="showSubmitErrorState"
-        class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-red-500 cwa:font-bold"
+        class="cwa:mt-2 cwa:text-sm cwa:flex cwa:items-center cwa:gap-x-2 cwa:transition cwa:text-danger cwa:font-bold"
       >
         <p>An error occurred while saving your changes</p>
       </div>
