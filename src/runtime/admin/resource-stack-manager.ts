@@ -209,6 +209,7 @@ export default class ResourceStackManager {
       return
     }
 
+    // todo: switching to edit the layout from the Dev should also be able to trigger this notice...
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
       const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` }, fromContext)
       if (!confirmed) {
