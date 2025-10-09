@@ -175,7 +175,7 @@ defineExpose({
   <client-only>
     <canvas
       ref="canvas"
-      class="cwa:z-100 cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
+      class="cwa:z-overlay cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
     />
     <div
       :class="[borderColor]"

@@ -59,10 +59,11 @@
 
   --shadow-orange-bottom: 0 0 10px 1px #ffaa00;
 
-  --z-index-manager: 101;
-  --z-index-dialog: 102;
-  --z-index-notifications: 103;
-  --z-index-context: 104;
+  --z-index-overlay: 900;
+  --z-index-manager: 901;
+  --z-index-dialog: 902;
+  --z-index-notifications: 903;
+  --z-index-context: 904;
 }
 
 @layer components {

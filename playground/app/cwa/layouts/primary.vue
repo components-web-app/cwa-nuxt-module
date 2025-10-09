@@ -13,7 +13,7 @@
     <header class="relative bg-stone-900 border-b border-b-stone-700">
       <div class="mx-auto flex max-w-7xl items-center p-6 md:justify-start lg:px-8">
         <nav class="space-x-5 flex w-full items-center">
-          <div class="space-x-5 md:space-x-5 flex items-center grow w-auto">
+          <div class="space-x-5 md:space-x-5 flex items-center grow w-auto z-200">
             <div>
               <NuxtLink to="/playground/public">
                 <LazySvgoLogo

@@ -363,7 +363,7 @@ export default class ResourceStackManager {
     })
 
     this.focusWrapper = document.createElement('div')
-    this.focusWrapper.className = 'cwa:absolute cwa:z-10 cwa:top-0 cwa:left-0'
+    this.focusWrapper.className = 'cwa:absolute cwa:z-10 cwa:top-0 cwa:left-0 cwa:focus-wrapper'
 
     useNuxtApp().vueApp._container?.appendChild(this.focusWrapper)
 

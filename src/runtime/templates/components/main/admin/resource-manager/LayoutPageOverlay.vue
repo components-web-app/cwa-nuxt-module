@@ -204,7 +204,10 @@ const divElementOverlays = ref<DivElementOverlayType[] | undefined>(getDivElemen
 
 <template>
   <ClientOnly>
-    <div class="cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0">
+    <div
+      id="cwa-layout-page-overlay"
+      class="cwa:z-overlay cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
+    >
       <div
         v-for="(overlay, index) of divElementOverlays"
         :key="`cwa-admin-overlay-${index}`"
