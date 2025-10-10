@@ -159,7 +159,7 @@ export default class Auth {
   public async resetPassword(event: ResetPasswordEvent) {
     try {
       return await this.cwaFetch.fetch('/component/forms/password_reset/submit', {
-        method: 'PATCH',
+        method: 'POST',
         body: {
           password_update: {
             username: event.username,

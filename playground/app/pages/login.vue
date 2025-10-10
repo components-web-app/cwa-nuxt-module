@@ -11,9 +11,6 @@
         Use the username and password "admin" to log in to this preview version of CWA
       </div>
     </template>
-    <template #footer>
-      Holaaa
-    </template>
   </CwaAuthLoginPage>
 </template>
 

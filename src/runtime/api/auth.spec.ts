@@ -176,7 +176,7 @@ describe('Auth', () => {
 
       expect(result).toEqual(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/component/forms/password_reset/submit', {
-        method: 'PATCH',
+        method: 'POST',
         body: {
           password_update: {
             username: mockPayload.username,
@@ -196,7 +196,7 @@ describe('Auth', () => {
 
       await expect(auth.resetPassword(mockPayload)).rejects.toThrow(mockError)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/component/forms/password_reset/submit', {
-        method: 'PATCH',
+        method: 'POST',
         body: {
           password_update: {
             username: mockPayload.username,
@@ -217,7 +217,7 @@ describe('Auth', () => {
 
       expect(result).toEqual(mockResult)
       expect(cwaFetch.fetch).toHaveBeenCalledWith('/component/forms/password_reset/submit', {
-        method: 'PATCH',
+        method: 'POST',
         body: {
           password_update: {
             username: mockPayload.username,
