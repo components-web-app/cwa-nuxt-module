@@ -110,7 +110,7 @@
     "del-cli": "^7.0.0",
     "eslint": "^9.36.0",
     "globby": "^14.1.0",
-    "happy-dom": "^18.0.1",
+    "happy-dom": "^20.0.0",
     "nuxt": "^4.1.2",
     "pathe": "^2.0.3",
     "playwright-core": "^1.55.1",
