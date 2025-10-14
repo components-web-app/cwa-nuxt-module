@@ -1,16 +1,16 @@
-import type { ComponentPublicInstance, ComputedRef, Ref, ShallowRef, App } from 'vue'
-import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import type { Resources } from '#cwa/resources/resources'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import type { ComponentUi, ManagerTab } from '#cwa/types'
+import { useNuxtApp } from '#imports'
 import { consola as logger } from 'consola'
+import type { App, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
+import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { AdminStore } from '../storage/stores/admin/admin-store'
 import type { ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
-import type { ComponentUi, ManagerTab } from '#cwa/types'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
-import type { Resources } from '#cwa/resources/resources'
-import { useNuxtApp } from '#imports'
 
 interface _ResourceStackItem {
   iri: string
@@ -305,11 +305,15 @@ export default class ResourceStackManager {
         return false
       }
 
+      // when we are clicking it won't have a location until the stack is complete
       if (!location) {
         return true
       }
 
       const locationType = getResourceTypeFromIri(location)
+      if (locationType === CwaResourceTypes.LAYOUT) {
+        return false
+      }
       return locationType !== undefined && [CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(locationType)
     }
 
@@ -332,6 +336,8 @@ export default class ResourceStackManager {
           }
 
           const location = stack[i + 1]?.iri
+          // if no location, it may be in the layout or the page... but top level
+
           groupDisabledCache[item.iri] = {
             iri: item.iri,
             location,
