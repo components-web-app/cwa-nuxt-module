@@ -49,9 +49,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { useHead } from '#app'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
-import { definePageMeta, useCwa, useCwaResourceRoute } from '#imports'
+import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
 import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'

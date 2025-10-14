@@ -1,5 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { CwaModuleOptions } from '#cwa/types'
+import type { Router } from 'vue-router'
 import Cwa from './cwa'
 import { Storage } from './storage/storage'
 import ApiDocumentation from './api/api-documentation'
@@ -104,9 +105,7 @@ function createCwa({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
       },
     },
   }))
-  return new Cwa({
-    $router,
-  }, {
+  return new Cwa($router as Router, {
     storeName,
   }, {
     version: 'abc',

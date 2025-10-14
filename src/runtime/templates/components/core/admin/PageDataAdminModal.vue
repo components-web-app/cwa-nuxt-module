@@ -114,7 +114,7 @@
 <script setup lang="ts">
 import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
 import { computed, onMounted, ref, toRef, watch, watchEffect } from 'vue'
-import { navigateTo } from '#app'
+import { navigateTo, useCwa } from '#imports'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
@@ -127,7 +127,6 @@ import type { CwaResource } from '#cwa/resources/resource-utils'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader'
 import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
-import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 

@@ -19,7 +19,7 @@ import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 import type { FetchStatus } from '#cwa/storage/stores/fetcher/state'
-import { clearError, useError } from '#app'
+import { clearError, useError } from '#imports'
 
 export interface FinishFetchResourceEvent {
   resource: string

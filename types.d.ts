@@ -1,10 +1,6 @@
 import type Cwa from '#cwa/cwa'
 import 'nuxt'
-import type { CwaResourcesMeta, GlobalComponentNames } from '#cwa/types'
-
-interface CwaInjections {
-  $cwa: Cwa
-}
+import type { GlobalComponentNames } from '#cwa/types'
 
 interface CwaRouteMeta {
   admin?: boolean
@@ -12,15 +8,11 @@ interface CwaRouteMeta {
   staticLayout?: GlobalComponentNames
 }
 
-declare module '#app' {
-  interface Nuxt {
-    cwaResources: CwaResourcesMeta
+declare module 'nuxt/app' {
+  interface NuxtApp {
+    $cwa: Cwa
   }
   interface PageMeta {
     cwa?: CwaRouteMeta
   }
-}
-
-declare module 'nuxt/dist/app/nuxt' {
-  type NuxtApp = CwaInjections
 }

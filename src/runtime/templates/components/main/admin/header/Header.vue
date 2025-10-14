@@ -147,8 +147,7 @@ import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
 import Menu from './_parts/Menu.vue'
-import { useRoute, useRouter } from '#app'
-import { useCwa } from '#imports'
+import { useCwa, useError, useRoute, useRouter } from '#imports'
 import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconLayouts from '#cwa/templates/components/core/assets/IconLayouts.vue'
@@ -158,7 +157,6 @@ import PageAdminModal from '#cwa/templates/components/core/admin/PageAdminModal.
 import PageDataAdminModal from '#cwa/templates/components/core/admin/PageDataAdminModal.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import { useError } from '#app/composables/error'
 
 const $cwa = useCwa()
 const route = useRoute()

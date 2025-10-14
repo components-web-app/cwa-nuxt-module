@@ -8,7 +8,7 @@ import actions from './actions'
 import type { CwaResourcesStateInterface } from './state'
 import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
-import * as app from '#app'
+import * as app from 'nuxt/app'
 
 vi.mock('../../../resources/resource-utils', async () => {
   const actual = await vi.importActual<any>('../../../resources/resource-utils')

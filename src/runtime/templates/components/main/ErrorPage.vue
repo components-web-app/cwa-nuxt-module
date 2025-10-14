@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { NuxtError } from 'nuxt/app'
 import { onMounted, ref } from 'vue'
-import { clearError, navigateTo, useHead, useRoute } from '#app'
-import type { NuxtError } from '#app'
+import { clearError, navigateTo, useHead, useRoute } from '#imports'
 import { useCwa } from '#cwa/composables/cwa'
 
 const props = defineProps<{
@@ -15,7 +15,7 @@ const stacktrace = _error.stack
   ? _error.stack
       .split('\n')
       .splice(1)
-      .map((line) => {
+      .map((line: string) => {
         const text = line
           .replace('webpack:/', '')
           .replace('.vue', '.js') // TODO: Support sourcemap
@@ -26,7 +26,7 @@ const stacktrace = _error.stack
             || line.includes('internal')
             || line.includes('new Promise'),
         }
-      }).map(i => `<span class="stack${i.internal ? ' internal' : ''}">${i.text}</span>`).join('\n')
+      }).map((i: { text: string, internal: boolean }) => `<span class="stack${i.internal ? ' internal' : ''}">${i.text}</span>`).join('\n')
   : ''
 
 const $route = useRoute()

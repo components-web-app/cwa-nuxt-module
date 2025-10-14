@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { computed, ref } from 'vue'
-import { navigateTo } from '#app'
+import { navigateTo } from '#imports'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 

@@ -9,8 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#app'
-import { definePageMeta, useForgotPassword } from '#imports'
+import { definePageMeta, useForgotPassword, useHead } from '#imports'
 import { CwaAuthForgotPasswordPage } from '#components'
 
 const { doSubmit, credentials, error, submitting, success } = useForgotPassword()

@@ -38,8 +38,7 @@
 
 <script lang="ts" setup>
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { useCwa } from '#imports'
-import { navigateTo, useRoute } from '#app'
+import { useCwa, navigateTo, useRoute } from '#imports'
 
 const $cwa = useCwa()
 const route = useRoute()

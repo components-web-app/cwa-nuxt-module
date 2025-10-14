@@ -1,6 +1,6 @@
 import { reactive, ref } from 'vue'
 import { FetchError } from 'ofetch'
-import { navigateTo } from '#app'
+import { navigateTo } from '#imports'
 import { useCwa } from '#cwa/composables/cwa'
 
 export const useForgotPassword = () => {

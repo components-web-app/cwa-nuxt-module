@@ -1,19 +1,21 @@
 <script lang="ts" setup>
+import type { NuxtLinkProps } from 'nuxt/app'
 import { computed } from 'vue'
 import { hashMode } from '#build/router.options.mjs'
-import { defineNuxtLink } from '#app'
-import type { NuxtLinkProps } from '#app'
-import { useCwa } from '#imports'
+import { useCwa, defineNuxtLink } from '#imports'
 
-const props = defineProps<NuxtLinkProps>()
 defineSlots<{
   default(): any
 }>()
+
+// todo: find out why href and rel are not compatible with the defineNuxtLink definition
+const props = defineProps<Omit<NuxtLinkProps, 'href' | 'rel'>>()
 
 const $cwa = useCwa()
 const CwaLinkComponent = defineNuxtLink({
   componentName: 'CwaLink',
 })
+
 const cwaLink = CwaLinkComponent.useLink(props)
 
 const target = computed(() => {
