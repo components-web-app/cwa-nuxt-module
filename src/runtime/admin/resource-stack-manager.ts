@@ -43,6 +43,8 @@ export interface AddResourceEvent {
   pageDataProperty?: string
 }
 
+type GroupDisabledCacheItem = { iri: string, location?: string, isDisabled: boolean }
+
 export default class ResourceStackManager {
   public readonly forcePublishedVersion: Ref<boolean | undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
@@ -312,27 +314,43 @@ export default class ResourceStackManager {
     return false
   }
 
-  public isComponentDisabled(iri: string): boolean {
-    if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
-      return false
-    }
-
-    return this.resources.isDataPage.value && !this.resources.isPageDataResource(iri).value && !this.isLayoutStack.value
-  }
-
   private filterDisabledStackItems(isContext: boolean) {
-    const stack = this.getCurrentStack(isContext)
+    const stackRef = this.getCurrentStack(isContext)
+    const stack = stackRef.value
+    const stackEntries = stack.entries()
     const newStack: ResourceStackItem[] = []
-    for (const [index, item] of stack.value.entries()) {
-      const location = stack.value[index + 1]?.iri
-      if (
-        !this.isComponentGroupDisabled(item.iri, location)
-        && !this.isComponentDisabled(item.iri)
-      ) {
-        newStack.push(item)
+    const groupDisabledCache: Record<string, GroupDisabledCacheItem> = {}
+
+    const findNextComponentGroup = (startIndex: number): GroupDisabledCacheItem | undefined => {
+      for (let i = startIndex; i < stack.length; i++) {
+        const item = stack[i] as ResourceStackItem
+        if (getResourceTypeFromIri(item.iri) !== CwaResourceTypes.COMPONENT_GROUP) {
+          if (groupDisabledCache[item.iri]) {
+            return groupDisabledCache[item.iri]
+          }
+
+          const location = stack[i + 1]?.iri
+          groupDisabledCache[item.iri] = {
+            iri: item.iri,
+            location,
+            isDisabled: this.isComponentGroupDisabled(item.iri, location),
+          }
+          return groupDisabledCache[item.iri]
+        }
       }
     }
-    stack.value = newStack
+
+    for (const [index, item] of stackEntries) {
+      const resourceType = getResourceTypeFromIri(item.iri)
+      if (resourceType && [CwaResourceTypes.COMPONENT_GROUP, CwaResourceTypes.COMPONENT].includes(resourceType)) {
+        const nextGroup = findNextComponentGroup(index)
+        if (nextGroup?.isDisabled) {
+          continue
+        }
+      }
+      newStack.push(item)
+    }
+    stackRef.value = newStack
   }
 
   private getCurrentStack(isContext: boolean) {
