@@ -203,6 +203,7 @@ export default class ResourceStackManager {
     const currentLength = fromStack.value.length
 
     if (!currentLength) {
+      this.isLayoutStack.value = this._isEditingLayout.value
       this.showManager.value = false
       return
     }
@@ -303,6 +304,7 @@ export default class ResourceStackManager {
         // do not disable if we are modifying the layout
         return false
       }
+
       if (!location) {
         return true
       }
