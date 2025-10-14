@@ -292,17 +292,24 @@ export default class ResourceStackManager {
     }
   }
 
-  private isComponentGroupDisabled(iri: string): boolean {
+  public isComponentGroupDisabled(iri: string, location?: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP) {
       return false
     }
     if (this.resources.isDataPage.value) {
-      const groupResource = this.resourcesStore.getResource(iri)
-      console.log(groupResource)
-      return !this.isLayoutStack.value
+      if (this.isLayoutStack.value) {
+        // do not disable if we are modifying the layout
+        return false
+      }
+      if (!location) {
+        return true
+      }
+      // const groupResource = this.resourcesStore.getResource(iri)
+      // console.log(groupResource.data, location)
+      return false
     }
 
-    return !this.isLayoutStack.value
+    return false
   }
 
   public isComponentDisabled(iri: string): boolean {
@@ -316,15 +323,15 @@ export default class ResourceStackManager {
   private filterDisabledStackItems(isContext: boolean) {
     const stack = this.getCurrentStack(isContext)
     const newStack: ResourceStackItem[] = []
-
+    let location = undefined
     for (const item of stack.value) {
-      if (this.isComponentGroupDisabled(item.iri)) {
-        continue
+      if (
+        !this.isComponentGroupDisabled(item.iri, location)
+        && !this.isComponentDisabled(item.iri)
+      ) {
+        newStack.push(item)
       }
-      if (this.isComponentDisabled(item.iri)) {
-        continue
-      }
-      newStack.push(item)
+      location = item.iri
     }
     stack.value = newStack
   }
