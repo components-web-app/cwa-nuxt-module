@@ -292,12 +292,17 @@ export default class ResourceStackManager {
     }
   }
 
-  public isComponentGroupDisabled(iri: string): boolean {
+  private isComponentGroupDisabled(iri: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP) {
       return false
     }
+    if (this.resources.isDataPage.value) {
+      const groupResource = this.resourcesStore.getResource(iri)
+      console.log(groupResource)
+      return !this.isLayoutStack.value
+    }
 
-    return this.resources.isDataPage.value && !this.isLayoutStack.value
+    return !this.isLayoutStack.value
   }
 
   public isComponentDisabled(iri: string): boolean {

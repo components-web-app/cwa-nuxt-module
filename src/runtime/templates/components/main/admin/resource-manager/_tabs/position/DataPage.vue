@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { computed, ref } from 'vue'
 import { navigateTo } from '#app'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
@@ -10,6 +11,7 @@ const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Data Placeholder',
   order: DEFAULT_TAB_ORDER,
 })
+const { getInternalResourceLink } = useCwaResourceRoute()
 
 defineExpose(exposeMeta)
 
@@ -17,7 +19,13 @@ async function goToTemplate() {
   if (!$cwa.resources.pageIri.value) {
     return
   }
-  await navigateTo(`${$cwa.resources.pageIri.value}?cwa_force=true`)
+
+  await navigateTo({
+    ...getInternalResourceLink($cwa.resources.pageIri.value),
+    query: {
+      cwa_force: 'true',
+    },
+  })
   $cwa.admin.toggleEdit(false)
 }
 
@@ -129,7 +137,7 @@ function selectComponent() {
           href="#"
           @click.prevent="goToTemplate"
         >
-          Go to page dynamic page
+          Go to dynamic page template
         </a>
       </div>
     </div>
