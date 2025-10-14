@@ -323,15 +323,14 @@ export default class ResourceStackManager {
   private filterDisabledStackItems(isContext: boolean) {
     const stack = this.getCurrentStack(isContext)
     const newStack: ResourceStackItem[] = []
-    let location = undefined
-    for (const item of stack.value) {
+    for (const [index, item] of stack.value.entries()) {
+      const location = stack.value[index + 1]?.iri
       if (
         !this.isComponentGroupDisabled(item.iri, location)
         && !this.isComponentDisabled(item.iri)
       ) {
         newStack.push(item)
       }
-      location = item.iri
     }
     stack.value = newStack
   }
