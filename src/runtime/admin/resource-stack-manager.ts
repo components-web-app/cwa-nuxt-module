@@ -324,7 +324,7 @@ export default class ResourceStackManager {
     const findNextComponentGroup = (startIndex: number): GroupDisabledCacheItem | undefined => {
       for (let i = startIndex; i < stack.length; i++) {
         const item = stack[i] as ResourceStackItem
-        if (getResourceTypeFromIri(item.iri) !== CwaResourceTypes.COMPONENT_GROUP) {
+        if (getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_GROUP) {
           if (groupDisabledCache[item.iri]) {
             return groupDisabledCache[item.iri]
           }
