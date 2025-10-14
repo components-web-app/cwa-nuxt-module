@@ -304,9 +304,9 @@ export default class ResourceStackManager {
       if (!location) {
         return true
       }
-      // const groupResource = this.resourcesStore.getResource(iri)
-      // console.log(groupResource.data, location)
-      return false
+
+      const locationType = getResourceTypeFromIri(location)
+      return locationType !== undefined && [CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(locationType)
     }
 
     return false
