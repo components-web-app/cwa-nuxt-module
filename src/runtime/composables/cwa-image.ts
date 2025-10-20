@@ -1,10 +1,10 @@
+import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
+import type { HTMLImageElement } from 'happy-dom'
 import { computed, onMounted, ref } from 'vue'
-import type { Ref } from 'vue'
-import { useCwaResource } from './cwa-resource'
-import type { CwaResourceUtilsOps } from './cwa-resource'
-import { useCwaResourceEndpoint } from './cwa-resource-endpoint'
 
-export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string, ops?: CwaResourceUtilsOps) => {
+export const useCwaImage = (iri: string, imageRef: ShallowRef<HTMLImageElement | null>, fileProperty: string = 'file', imagineFilterName?: string) => {
+  const { query } = useCwaResourceEndpoint(iri)
+
   type MediaFile = {
     contentUrl: string
     fileSize: number
@@ -15,19 +15,14 @@ export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string, ops?: 
     height?: number
   }
 
-  const cwaResource = useCwaResource(iri, ops)
-  const { query } = useCwaResourceEndpoint(iri)
-  const resource = cwaResource.getResource()
-
   const loaded = ref(false)
-  const image = ref()
 
   function handleLoad() {
     loaded.value = true
   }
 
   const imageFileMediaObjects = computed<MediaFile[] | undefined>(() => {
-    return resource.value?.data?._metadata.mediaObjects?.file
+    return resource.value?.data?._metadata.mediaObjects?.[fileProperty]
   })
 
   const displayMedia = computed(() => {
@@ -47,17 +42,15 @@ export const useCwaImage = (iri: Ref<string>, imagineFilterName?: string, ops?: 
   })
 
   onMounted(() => {
-    if (image.value?.complete || image.value?.naturalHeight !== 0) {
+    if (imageRef.value?.complete || imageRef.value?.naturalHeight !== 0) {
       handleLoad()
     }
   })
 
   return {
-    ...cwaResource,
     contentUrl,
     displayMedia,
     handleLoad,
     loaded,
-    resource,
   }
 }
