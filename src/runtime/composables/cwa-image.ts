@@ -1,19 +1,28 @@
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import type { HTMLImageElement } from 'happy-dom'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, type Ref, ref, type ShallowRef, type ComputedRef } from 'vue'
 
-export const useCwaImage = (iri: string, imageRef: ShallowRef<HTMLImageElement | null>, fileProperty: string = 'file', imagineFilterName?: string) => {
+export type ImageOpsType = {
+  imagineFilterName?: string
+  fileProp?: string
+  imageRef: ShallowRef<HTMLImageElement | null>
+  mediaObjects: ComputedRef<Record<string, MediaFile[]>>
+}
+
+export type MediaFile = {
+  contentUrl: string
+  fileSize: number
+  mimeType: string
+  formattedFileSize: string
+  imagineFilter?: string
+  width?: number
+  height?: number
+}
+
+export const useCwaImage = (iri: Ref<string>, ops: ImageOpsType) => {
   const { query } = useCwaResourceEndpoint(iri)
 
-  type MediaFile = {
-    contentUrl: string
-    fileSize: number
-    mimeType: string
-    formattedFileSize: string
-    imagineFilter?: string
-    width?: number
-    height?: number
-  }
+  const fileProperty = ops.fileProp || 'file'
 
   const loaded = ref(false)
 
@@ -22,14 +31,14 @@ export const useCwaImage = (iri: string, imageRef: ShallowRef<HTMLImageElement |
   }
 
   const imageFileMediaObjects = computed<MediaFile[] | undefined>(() => {
-    return resource.value?.data?._metadata.mediaObjects?.[fileProperty]
+    return ops.mediaObjects.value?.[fileProperty]
   })
 
   const displayMedia = computed(() => {
     if (!imageFileMediaObjects.value || !imageFileMediaObjects.value.length) {
       return
     }
-    const thumbnail = imageFileMediaObjects.value.filter(({ imagineFilter }) => (imagineFilter === imagineFilterName))
+    const thumbnail = imageFileMediaObjects.value.filter(({ imagineFilter }) => (imagineFilter === ops.imagineFilterName))
     return thumbnail?.[0] || imageFileMediaObjects.value[0]
   })
 
@@ -42,7 +51,7 @@ export const useCwaImage = (iri: string, imageRef: ShallowRef<HTMLImageElement |
   })
 
   onMounted(() => {
-    if (imageRef.value?.complete || imageRef.value?.naturalHeight !== 0) {
+    if (ops.imageRef.value?.complete || ops.imageRef.value?.naturalHeight !== 0) {
       handleLoad()
     }
   })
