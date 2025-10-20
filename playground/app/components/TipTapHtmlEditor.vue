@@ -154,7 +154,7 @@ watch(value, (newValue) => {
     return
   }
 
-  editor.value.commands.setContent(newValue || null, false)
+  editor.value.commands.setContent(newValue || null, {})
 })
 
 // Toggle disabled prop and focus when enabled
