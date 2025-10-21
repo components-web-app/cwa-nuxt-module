@@ -1,6 +1,6 @@
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import type { HTMLImageElement } from 'happy-dom'
-import { computed, onMounted, type Ref, ref, type ShallowRef, type ComputedRef } from 'vue'
+import { computed, onMounted, ref, type Ref, type ShallowRef, type ComputedRef } from 'vue'
 
 export type ImageOpsType = {
   imagineFilterName?: string
@@ -19,7 +19,14 @@ export type MediaFile = {
   height?: number
 }
 
-export const useCwaImage = (iri: Ref<string>, ops: ImageOpsType) => {
+export type CwaImageReturnType = {
+  contentUrl: ComputedRef<string | undefined>
+  displayMedia: ComputedRef<MediaFile | undefined>
+  handleLoad: () => void
+  loaded: Ref<boolean>
+}
+
+export const useCwaImage = (iri: Ref<string>, ops: ImageOpsType): CwaImageReturnType => {
   const { query } = useCwaResourceEndpoint(iri)
 
   const fileProperty = ops.fileProp || 'file'
