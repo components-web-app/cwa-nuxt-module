@@ -28,8 +28,7 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { useCwaImageResource } from '#cwa/composables/cwa-image-resource'
-import { useCwa } from '#imports'
+import { useCwa, useCwaImageResource } from '#imports'
 
 const props = defineProps<{
   iri: string
