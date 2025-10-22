@@ -1,10 +1,11 @@
 <script lang="ts" setup>
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
-const { exposeMeta, iri, $cwa } = useCwaResourceManagerTab({
+const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
   name: 'Info',
   order: DEFAULT_TAB_ORDER + 1,
 })
@@ -39,7 +40,19 @@ const isDeleteEnabled = computed(() => {
   if (!iri.value) {
     return false
   }
-  return isAddingNew.value || !$cwa.resources.isDataPage.value || $cwa.resources.isPageDataResource(iri.value).value || $cwa.admin.resourceStackManager.isEditingLayout.value
+  if (getResourceTypeFromIri(iri.value) === CwaResourceTypes.COMPONENT_GROUP) {
+    return !$cwa.admin.resourceStackManager.isComponentGroupDisabled(iri.value, resource.value?.data?.location)
+  }
+  if (
+    isAddingNew.value
+    || $cwa.admin.resourceStackManager.isEditingLayout.value
+    || !$cwa.resources.isDataPage.value
+  ) {
+    return true
+  }
+  const groupIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP)
+  // on a data page, not editing layout and not adding new.
+  return $cwa.resources.isPageDataResource(iri.value).value || !!groupIri
 })
 
 const isAddingNew = computed(() => {
