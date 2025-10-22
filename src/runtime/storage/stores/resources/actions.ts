@@ -8,6 +8,7 @@ import {
   isCwaResourceSame,
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { createError } from 'h3'
 import type { CwaResourcesGettersInterface } from './getters'
 import type {
   CwaCurrentResourceInterface,
@@ -558,10 +559,18 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           consola.warn('-- SET COOKIE CALLED FROM ACTIONS -- ', parsedSetCookiesHeaders, currentSetCookieHeader.value, JSON.stringify(error?.asObject))
         }
 
+        const h3Error = createError<typeof error>({
+          name: 'cwa-resource-error',
+          statusCode: error.statusCode,
+          statusMessage: error.statusMessage,
+          message: error.statusMessage,
+          cause: 'Resource store returned a bad status code on a primary fetch',
+          data: error,
+        })
+        consola.info(h3Error)
         // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
         // users to see this on the error page - especially for the 404 endpoint
-        showError({ statusCode: error.statusCode, statusMessage: error.statusMessage })
-        consola.info(error.message)
+        showError(h3Error)
       }
     },
     saveResource,
