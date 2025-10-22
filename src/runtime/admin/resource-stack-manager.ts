@@ -352,7 +352,8 @@ export default class ResourceStackManager {
       const resourceType = getResourceTypeFromIri(item.iri)
       if (resourceType && [CwaResourceTypes.COMPONENT_GROUP, CwaResourceTypes.COMPONENT].includes(resourceType)) {
         const nextGroup = findNextComponentGroup(index)
-        if (nextGroup?.isDisabled) {
+        // this.resources.isDataPage.value && !this.resources.isPageDataResource(item.iri).value
+        if (!this.resources.isPageDataResource(item.iri).value && nextGroup?.isDisabled) {
           continue
         }
       }
