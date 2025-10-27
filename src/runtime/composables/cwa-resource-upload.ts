@@ -13,7 +13,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     return fileData.value ? `Existing Image (${fileData.value.formattedFileSize})` : ''
   }
 
-  const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename][0])
+  const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
 
   const filenameInputModel = ref(getFilename())
   const fileExists = ref(true)
