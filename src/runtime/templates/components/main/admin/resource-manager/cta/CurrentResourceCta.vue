@@ -41,32 +41,33 @@ const buttonLabel = computed<'Publish' | undefined>(() => {
 const buttonOptions = computed(() => {
   const ops: (ButtonOption | ButtonOption[])[] = []
 
-  if (!$cwa.resources.isDataPage.value || $cwa.admin.resourceStackManager.isEditingLayout.value) {
-    if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
-      ops.push([
-        {
-          label: 'Add Before',
-          value: 'add-before',
-        },
-        {
-          label: 'Add After',
-          value: 'add-after',
-        },
-      ])
-    }
-    else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
-      ops.push([
-        {
-          label: 'Add to Start',
-          value: 'add-before',
-        },
-        {
-          label: 'Add to End',
-          value: 'add-after',
-        },
-      ])
-    }
+  // this check wasn't really making sense, we can still add resources on data pages
+  // if (!$cwa.resources.isDataPage.value || $cwa.admin.resourceStackManager.isEditingLayout.value) {
+  if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
+    ops.push([
+      {
+        label: 'Add Before',
+        value: 'add-before',
+      },
+      {
+        label: 'Add After',
+        value: 'add-after',
+      },
+    ])
   }
+  else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
+    ops.push([
+      {
+        label: 'Add to Start',
+        value: 'add-before',
+      },
+      {
+        label: 'Add to End',
+        value: 'add-after',
+      },
+    ])
+  }
+  // }
 
   // if (resourceType.value === CwaResourceTypes.COMPONENT) {
   //   ops.push({ label: 'Clone', value: 'clone' })
