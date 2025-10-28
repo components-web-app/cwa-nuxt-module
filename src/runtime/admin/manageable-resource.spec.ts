@@ -40,6 +40,12 @@ const Node = {
 }
 vi.stubGlobal('Node', Node)
 
+vi.mock('#cwa/resources/resource-utils', () => {
+  return {
+    getResourceTypeFromIri: vi.fn(() => 'resourceTypeResolved'),
+  }
+})
+
 vi.mock('../cwa', () => {
   return {
     default: vi.fn(() => ({
@@ -352,7 +358,6 @@ describe('ManageableResource Class', () => {
     })
 
     test('should add to stack with correct object', () => {
-      const resourceType = 'type'
       const resourceConfig = { managerTabs: ['abc'], ui: 'ui' }
       const resource = { iri: '/abc' }
 
@@ -363,7 +368,6 @@ describe('ManageableResource Class', () => {
       const styles = { name: ['style'] }
 
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
-      vi.spyOn(instance, 'resourceType', 'get').mockImplementationOnce(() => (resourceType))
       vi.spyOn(instance, 'resourceConfig', 'get').mockImplementation(() => (resourceConfig))
       vi.spyOn(instance, 'currentResource', 'get').mockImplementation(() => (resource))
       vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => (childIris))
@@ -375,7 +379,7 @@ describe('ManageableResource Class', () => {
 
       instance.clickListener(mockEvent)
 
-      expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType, resourceConfig, resource })
+      expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith({ resourceType: 'resourceTypeResolved', resourceConfig, resource })
 
       expect($cwa.admin.resourceStackManager.addToStack).toHaveBeenCalledWith({
         iri: instance.currentIri.value,
