@@ -1,7 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 import type { CwaResourceMeta, ManagerTab } from '#cwa/types'
 import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
-import { getPublishedResourceState } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceState } from '#cwa/resources/resource-utils'
 import { useCwa } from '#imports'
 import type Cwa from '#cwa/cwa'
 
@@ -19,8 +19,8 @@ export default class ManagerTabsResolver {
     yield defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_tabs/group/Group.vue'))
   }
 
-  private* getComponentPositionTabs() {
-    if (this.cwa.resources.isDataPage.value) {
+  private* getComponentPositionTabs(isDynamicPosition?: boolean) {
+    if (this.cwa.resources.isDataPage.value && isDynamicPosition) {
       yield defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_tabs/position/DataPage.vue'))
       return
     }
@@ -47,12 +47,16 @@ export default class ManagerTabsResolver {
 
     if (ops.resourceType) {
       switch (ops.resourceType) {
-        case 'ComponentGroup':
+        case CwaResourceTypes.COMPONENT_GROUP:
           tabs = [...tabs, ...this.getComponentGroupTabs()]
           break
-        case 'ComponentPosition':
-          tabs = [...tabs, ...this.getComponentPositionTabs()]
+        case CwaResourceTypes.COMPONENT_POSITION: {
+          const positionTabs = this.getComponentPositionTabs(ops.resource.data?._metadata.isDynamicPosition)
+          if (positionTabs) {
+            tabs = [...tabs, ...positionTabs]
+          }
           break
+        }
         default:
           tabs = [...tabs, ...this.getComponentTabs(ops.resource)]
           break

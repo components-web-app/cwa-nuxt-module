@@ -1,3 +1,4 @@
+import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { watchOnce } from '@vueuse/core'
 import { consola } from 'consola'
 import {
@@ -247,7 +248,11 @@ export default class ManageableResource {
       domElements: this.domElements,
       clickTarget,
       displayName: this.displayName,
-      managerTabs: markRaw(this.tabResolver.resolve({ resourceType: this.resourceType, resourceConfig: this.resourceConfig, resource: this.currentResource })),
+      managerTabs: markRaw(this.tabResolver.resolve({
+        resourceType: getResourceTypeFromIri(this.currentIri.value),
+        resourceConfig: this.resourceConfig,
+        resource: this.currentResource,
+      })),
       ui: this.resourceConfig?.ui,
       styles: computed(() => this.ops.value.styles),
       childIris: this.childIris,

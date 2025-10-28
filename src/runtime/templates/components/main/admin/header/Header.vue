@@ -19,7 +19,7 @@
                 class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:justify-center"
                 @click="showEditPage"
               >
-                <span>{{ $cwa.resources.page.value.data?.reference }}</span> <CwaUiIconCogIcon
+                <span>{{ editPageLabel }}</span> <CwaUiIconCogIcon
                   class="cwa:h-5 cwa:w-5"
                   aria-hidden="true"
                 />
@@ -170,6 +170,12 @@ const error = useError()
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const isErrorPage = computed(() => !!error.value)
 const showEditModal = ref(false)
+const editPageLabel = computed(() => {
+  if ($cwa.resources.isDataPage.value) {
+    return $cwa.resources.pageData?.value?.data?.title || 'Data Page'
+  }
+  return $cwa.resources.page?.value?.data?.reference
+})
 
 const isNavEnabled = computed({
   get: () => {
