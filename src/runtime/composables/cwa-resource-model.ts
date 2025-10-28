@@ -181,7 +181,10 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
         return localValue.value
       }
       // when deleted, the store value is updating to undefined, then this model getter is null
-      return storeValue.value || null
+      if (storeValue.value === undefined) {
+        return null
+      }
+      return storeValue.value
     },
     set(value) {
       localValue.value = value

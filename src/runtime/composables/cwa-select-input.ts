@@ -44,10 +44,7 @@ export const useCwaSelectInput = (inputProps: ComputedRef<SelectInputProps>, emi
     if (a === undefined && b === null) {
       return true
     }
-    if (typeof a === 'object') {
-      return isEqual(a, b)
-    }
-    return a === b
+    return isEqual(a, b)
   }
 
   return {
