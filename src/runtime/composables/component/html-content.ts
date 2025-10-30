@@ -51,7 +51,7 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
   }
 
   function replaceAnchors() {
-    if (!container.value) {
+    if (typeof container.value?.getElementsByTagName !== 'function') {
       return
     }
     const anchors: HTMLCollectionOf<HTMLAnchorElement> = container.value.getElementsByTagName('a')
