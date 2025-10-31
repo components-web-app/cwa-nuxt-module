@@ -19,7 +19,7 @@ import {
   extendRouteRules,
   addServerPlugin,
 } from '@nuxt/kit'
-import type { Component, NuxtPage } from '@nuxt/schema'
+import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
@@ -337,8 +337,9 @@ declare module 'vue-router' {
       }
     })
 
-    nuxt.hook('vite:extendConfig', (config) => {
+    nuxt.hook('vite:extendConfig', (config: Readonly<ViteConfig>) => {
       logger.info(`Extending Vite optimizeDeps config for ${NAME} module dependencies...`)
+      // @ts-expect-error optimizeDeps is readonly but it can also be undefined. The config reading in is Readonly which is why... not sure how else to extend
       config.optimizeDeps = config.optimizeDeps || {}
       config.optimizeDeps.include = config.optimizeDeps.include || []
       config.optimizeDeps.exclude = config.optimizeDeps.exclude || []
