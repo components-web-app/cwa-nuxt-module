@@ -10,6 +10,7 @@ export interface CwaResourceMeta {
   name?: string
   description?: string
   instantAdd?: boolean
+  defaultData?: Record<any, any>
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
 }
