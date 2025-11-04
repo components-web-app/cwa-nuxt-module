@@ -11,7 +11,7 @@ export default defineSitemapEventHandler(async (e): Promise<SitemapUrlInput[]> =
   }
 
   const { fetcher } = useFetcher()
-  const data = await fetcher<CwaResource>('/_/routes')
+  const data = await fetcher<CwaResource>('/_/routes?pagination=false')
   return data['member'].map((r: CwaResource) => {
     return {
       loc: r.path,
