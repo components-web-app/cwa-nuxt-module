@@ -247,6 +247,7 @@ declare module 'vue-router' {
   }
 }`,
       })
+
       addPlugin({
         src: resolve('./runtime/plugin'),
       })

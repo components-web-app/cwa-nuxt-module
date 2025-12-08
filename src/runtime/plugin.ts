@@ -8,6 +8,7 @@ import { options, currentModulePackageInfo } from '#build/cwa-options'
 export default defineNuxtPlugin({
   name: 'cwa-plugin',
   enforce: 'post',
+  dependsOn: ['pinia'],
   setup() {
     const router = useRouter()
     const cwa = new Cwa(router, options, currentModulePackageInfo)
