@@ -141,4 +141,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   componentGroupSynchronizer.stopSyncWatcher()
 })
+
+defineExpose({
+  componentPositions,
+})
 </script>
