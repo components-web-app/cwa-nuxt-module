@@ -52,9 +52,9 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   }
 
   const getCurrentStyleName = (resource: CwaResource) => {
-    if (!uiStyles) return
+    if (!uiStyles?.classes) return
     const currentClassNames = resource.uiClassNames
-    for (const [name, classes] of Object.entries(uiStyles)) {
+    for (const [name, classes] of Object.entries(uiStyles.classes)) {
       if (isEqual(currentClassNames, classes)) {
         return name
       }
