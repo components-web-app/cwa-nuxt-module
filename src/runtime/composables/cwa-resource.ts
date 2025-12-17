@@ -1,3 +1,4 @@
+import type { CwaResource } from '#cwa/resources/resource-utils'
 import isEqual from 'lodash-es/isEqual'
 import { computed, onMounted } from 'vue'
 import type { Ref } from 'vue'
@@ -49,24 +50,22 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const getResource = () => {
     return computed(() => $cwa.resources.getResource(iri.value).value)
   }
-  const resource = getResource()
 
-  const currentStyleName = computed(() => {
+  const getCurrentStyleName = (resource: CwaResource) => {
     if (!uiStyles) return
-    const currentClassNames = resource.value?.data?.uiClassNames
+    const currentClassNames = resource.uiClassNames
     for (const [name, classes] of Object.entries(uiStyles)) {
       if (isEqual(currentClassNames, classes)) {
         return name
       }
     }
-  })
+  }
 
   return {
     $cwa,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
-    getResource: () => resource,
-    resource,
+    getResource,
     exposeMeta,
-    currentStyleName,
+    getCurrentStyleName,
   }
 }
