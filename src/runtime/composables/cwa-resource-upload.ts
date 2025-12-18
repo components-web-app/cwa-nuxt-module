@@ -5,12 +5,12 @@ import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 
-export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file') => {
+export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'Image') => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
   function getFilename() {
-    return fileData.value ? `Current File (${fileData.value.formattedFileSize})` : ''
+    return fileData.value ? `Existing ${fileDisplayType} (${fileData.value.formattedFileSize})` : ''
   }
 
   const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
