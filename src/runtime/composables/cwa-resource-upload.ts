@@ -10,7 +10,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
   function getFilename() {
-    return fileData.value ? `Existing Image (${fileData.value.formattedFileSize})` : ''
+    return fileData.value ? `Current File (${fileData.value.formattedFileSize})` : ''
   }
 
   const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
