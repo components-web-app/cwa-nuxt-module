@@ -151,12 +151,11 @@ describe('Test route middleware', () => {
   })
 
   test('Server-side redirects', async () => {
-    const mockNuxt = {
-      payload: {},
-      $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn() } },
-    }
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
-      return mockNuxt
+      return {
+        payload: {},
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn() } },
+      }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
@@ -166,16 +165,14 @@ describe('Test route middleware', () => {
     })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute)
-    expect(nuxt.callWithNuxt).toHaveBeenCalledWith(mockNuxt, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])
-    // expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
+    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 
   test('Client-side redirects', async () => {
-    const mockNuxt = {
-      $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
-    }
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
-      return mockNuxt
+      return {
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) } },
+      }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {
@@ -186,7 +183,6 @@ describe('Test route middleware', () => {
     const toRoute = createToRoute()
     await routeMiddleware(toRoute)
     await flushPromises()
-    expect(nuxt.callWithNuxt).toHaveBeenCalledWith(mockNuxt, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])
-    // expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
+    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 })
