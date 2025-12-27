@@ -7,6 +7,7 @@ import {
   defineNuxtRouteMiddleware,
   navigateTo,
   useNuxtApp,
+  callWithNuxt,
 } from 'nuxt/app'
 import { useProcess } from '#cwa/composables/process'
 
@@ -69,9 +70,11 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
       if (isClient && nuxtApp._processingMiddleware) {
         await waitForMiddleware()
       }
-
-      return navigateTo(resource.redirectPath, { redirectCode: 308 })
-      // return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
+      logger.info(`Handling route redirect to: '${resource.redirectPath}'`)
+      // return navigateTo(resource.redirectPath, { redirectCode: 308 })
+      // this may be in place to help with multiple redirects on a client side... stop stop
+      // infinite loop and crashing
+      return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
     }
   }
 
