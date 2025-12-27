@@ -187,6 +187,7 @@ export default class FetchStatusManager {
       if (event.userProvidedIri) {
         cwaResource['@id'] = event.userProvidedIri
       }
+      logger.debug(`Save resource with ID '${cwaResource['@id']}'`, cwaResource)
       this.resourcesStore.saveResource({
         resource: cwaResource,
       })
