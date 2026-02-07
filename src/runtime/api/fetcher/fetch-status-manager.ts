@@ -193,7 +193,7 @@ export default class FetchStatusManager {
       })
     }
 
-    this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: true, headers: event.headers, path: event.path })
+    this.resourcesStore.setResourceFetchStatus({ responseIri: cwaResource['@id'], iri: event.resource, isComplete: true, headers: event.headers, path: event.path })
 
     return cwaResource
   }

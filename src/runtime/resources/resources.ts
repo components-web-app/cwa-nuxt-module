@@ -219,7 +219,7 @@ export class Resources {
       if (!('iri' in successResource.apiState)) {
         return fetchStatus.path
       }
-      return successResource.apiState.iri || fetchStatus.path
+      return successResource.apiState.responseIri || successResource.apiState.iri || fetchStatus.path
     }
 
     switch (type) {

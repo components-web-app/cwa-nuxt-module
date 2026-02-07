@@ -38,6 +38,7 @@ export interface SetResourceCompletedStatusEvent {
   path?: string
   isComplete: true
   headers: CwaFetchRequestHeaders
+  responseIri?: string
 }
 export interface SetResourceResetStatusEvent {
   iri: string
@@ -498,6 +499,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           headers: event.headers,
           path: event.path,
           iri: event.iri,
+          responseIri: event.responseIri,
           // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
           ssr: import.meta.server,
           fetchedAt: (new Date()).getTime(),
