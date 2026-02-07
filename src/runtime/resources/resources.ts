@@ -203,10 +203,6 @@ export class Resources {
       return
     }
 
-    if (type === CwaResourceTypes.PAGE) {
-      return fetchStatus.path
-    }
-
     const successResource = this.getResource(fetchStatus.path).value
     if (!successResource) {
       if (type === CwaResourceTypes.PAGE) {
