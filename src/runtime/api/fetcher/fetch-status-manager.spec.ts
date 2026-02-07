@@ -465,6 +465,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       headers: {
         path: 'something',
       },
+      path: undefined,
     })
 
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
@@ -477,6 +478,8 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       headers: {
         path: 'something',
       },
+      path: undefined,
+      responseIri: '/another-resource',
     })
 
     expect(Mercure.mock.instances[0].setMercureHubFromLinkHeader).not.toHaveBeenCalled()
