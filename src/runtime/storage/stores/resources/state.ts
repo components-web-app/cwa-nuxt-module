@@ -32,6 +32,7 @@ export interface CwaResourceApiStateSuccess extends SsrApiState {
   status: CwaResourceApiStatuses.SUCCESS
   headers: CwaFetchRequestHeaders
   fetchedAt: number
+  iri?: string
 }
 
 export declare type CwaResourceApiState = CwaResourceApiStateGeneral | CwaResourceApiStateError | CwaResourceApiStateSuccess

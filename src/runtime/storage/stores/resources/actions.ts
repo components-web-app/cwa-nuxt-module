@@ -497,6 +497,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           status: CwaResourceApiStatuses.SUCCESS,
           headers: event.headers,
           path: event.path,
+          iri: event.iri,
           // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
           ssr: import.meta.server,
           fetchedAt: (new Date()).getTime(),
