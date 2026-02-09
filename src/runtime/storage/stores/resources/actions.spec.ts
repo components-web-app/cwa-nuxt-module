@@ -375,6 +375,8 @@ describe('Resources -> resetCurrentResources', () => {
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
           headers: {},
+          responseIri: '/sample-different-response',
+          iri: '/user-provided-iri',
         },
       },
     }
@@ -391,6 +393,8 @@ describe('Resources -> resetCurrentResources', () => {
       path: 'inProgress',
       ssr: undefined,
       fetchedAt: fetchedAtDate.getTime(),
+      iri: undefined,
+      responseIri: undefined,
     })
   })
 
