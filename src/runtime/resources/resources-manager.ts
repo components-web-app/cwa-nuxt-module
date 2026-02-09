@@ -14,7 +14,6 @@ import type { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } fro
 import type { ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import {
-
   CwaResourceTypes,
   getPublishedResourceIri,
   getPublishedResourceState,

@@ -465,6 +465,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
               ssr: currentState.ssr,
               path: currentState.path,
               fetchedAt: currentState.status === CwaResourceApiStatuses.SUCCESS ? currentState.fetchedAt : (new Date()).getTime(),
+              iri: 'iri' in currentState ? currentState.iri : undefined,
+              responseIri: 'responseIri' in currentState ? currentState.responseIri : undefined,
             }
           }
         }
