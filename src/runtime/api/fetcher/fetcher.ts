@@ -79,16 +79,23 @@ export default class Fetcher {
     }
     let iri: string
     let manifestPath: string | undefined
-    const routeParam = route.params.cwaPage0 || ''
-    // todo: test that we can get the iri from the route
-    iri = Array.isArray(routeParam) ? `/${routeParam.join('/')}` : routeParam
 
-    const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
+    if (route.meta.cwa?.fetch?.iri) {
+      iri = route.meta.cwa.fetch.iri
+      manifestPath = route.meta.cwa.fetch.manifestPath
+    }
+    else {
+      const routeParam = route.params.cwaPage0 || ''
+      // todo: test that we can get the iri from the route
+      iri = Array.isArray(routeParam) ? `/${routeParam.join('/')}` : routeParam
 
-    if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
-      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
-      iri = `${prefix}/_/routes/${route.path}`
-      manifestPath = `${prefix}/_/routes_manifest/${route.path}`
+      const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
+
+      if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
+        const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+        iri = `${prefix}/_/routes/${route.path}`
+        manifestPath = `${prefix}/_/routes_manifest/${route.path}`
+      }
     }
 
     return await this.fetchResource({

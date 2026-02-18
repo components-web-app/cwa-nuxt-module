@@ -6,6 +6,10 @@ interface CwaRouteMeta {
   admin?: boolean
   disabled?: boolean
   staticLayout?: GlobalComponentNames
+  fetch?: {
+    iri: string
+    manifestPath?: string
+  }
 }
 
 declare module 'nuxt/app' {
