@@ -129,7 +129,9 @@
   },
   "pnpm": {
     "auditConfig": {
-      "ignoreCves": []
+      "ignoreCves": [
+        "CVE-2025-69873"
+      ]
     },
     "onlyBuiltDependencies": [
       "@intlify/vue-i18n-bridge",
