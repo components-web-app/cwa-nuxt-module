@@ -302,6 +302,10 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
   admin?: boolean
   disabled?: boolean
   staticLayout?: GlobalComponentNames
+  fetch?: {
+    iri: string
+    manifestPath?: string
+  }
 }
 export * from 'vue-router'
 declare module 'vue-router' {
