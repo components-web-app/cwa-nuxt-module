@@ -43,8 +43,8 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
 
   async function confirmDelete() {
     const alertData = {
-      title: 'Delete this image?',
-      content: '<p>Are you sure you want to permanently delete this image?</p>',
+      title: `Delete this ${fileDisplayType.toLowerCase()}?`,
+      content: `<p>Are you sure you want to permanently delete this ${fileDisplayType.toLowerCase()}?</p>`,
     }
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
