@@ -38,12 +38,12 @@ function createGroupSynchronizer() {
     signedIn: ref(false),
   }
 
-  // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
       auth: mockAuth,
       resources: mockResources,
       resourcesManager: mockResourcesManager,
+      fetchResource: vi.fn(),
     }
   })
 
