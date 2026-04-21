@@ -2,6 +2,7 @@ import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
+import type Fetcher from '../../../api/fetcher/fetcher'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
@@ -29,14 +30,16 @@ interface SyncWatcherOps {
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
   private readonly resources: Resources
+  private readonly fetchResource: Fetcher['fetchResource']
   private readonly auth: Auth
   private watchStopHandle: WatchStopHandle | undefined
 
   constructor() {
-    const { auth, resources, resourcesManager } = useCwa()
+    const { auth, resources, resourcesManager, fetchResource } = useCwa()
     this.resourcesManager = resourcesManager
     this.resources = resources
     this.auth = auth
+    this.fetchResource = fetchResource
   }
 
   public createSyncWatcher(ops: SyncWatcherOps) {
@@ -45,6 +48,26 @@ export class ComponentGroupUtilSynchronizer {
       async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
           if (!resource) {
+            // see if it exists by reference before we get a component group already exists notice...
+            const resourceByRef = await this.fetchResource({
+              path: `/_/component_groups/${ops.fullReference}`,
+            })
+            if (resourceByRef) {
+              const locationResource = this.resources.getResource(ops.location)
+              if (locationResource.value?.data) {
+                await this.resourcesManager.updateResource({
+                  endpoint: locationResource.value.data['@id'],
+                  data: {
+                    componentGroups: [
+                      ...(locationResource.value.data.componentGroups || []),
+                      resourceByRef['@id'],
+                    ],
+                  },
+                })
+                return
+              }
+            }
+
             await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
           }
           else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
