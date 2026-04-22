@@ -7,7 +7,7 @@ import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageab
 
 vi.mock('../admin/manageable-resource', () => {
   return {
-    default: vi.fn(() => {
+    default: vi.fn(function() {
       return {
         init: vi.fn(),
         clear: vi.fn(),
