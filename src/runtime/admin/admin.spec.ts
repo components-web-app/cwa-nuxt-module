@@ -44,6 +44,16 @@ vi.mock('../storage/stores/admin/admin-store', () => {
   }
 })
 
+vi.mock('../storage/stores/resources/resources-store', () => {
+  return {
+    ResourcesStore: vi.fn(function() {
+      return {
+        useStore: vi.fn(() => ({})),
+      }
+    }),
+  }
+})
+
 vi.mock('mitt', () => {
   return {
     default: vi.fn(() => ({
@@ -130,6 +140,6 @@ describe('Admin class', () => {
   test('should have component manager created', () => {
     admin = createAdmin()
 
-    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition, admin.resourcesStoreDefinition, Resources.mock.results[0].value)
+    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(AdminStore.mock.results[0].value, ResourcesStore.mock.results[0].value, Resources.mock.results[0].value)
   })
 })

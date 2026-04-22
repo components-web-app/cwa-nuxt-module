@@ -27,9 +27,9 @@ export default class Admin {
   private throttledRedrawEmitFn: undefined | DebouncedFunc<() => void>
   private readonly _adminStore: CwaAdminStoreInterface
 
-  public constructor(adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, resources: Resources) {
+  public constructor(adminStoreDefinition: AdminStore, resourcesStoreDefinition: ResourcesStore, resources: Resources) {
     this.emitter = mitt<Events>()
-    this.stackManagerInstance = new ResourceStackManager(adminStoreDefinition, this.resourcesStoreDefinition, resources)
+    this.stackManagerInstance = new ResourceStackManager(adminStoreDefinition, resourcesStoreDefinition, resources)
     this.emitRedraw = this.emitRedraw.bind(this)
     this.redrawListen()
     this._adminStore = adminStoreDefinition.useStore()
