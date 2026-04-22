@@ -43,7 +43,7 @@ describe('Forms', () => {
         },
       }
 
-      const { forms, resourcesStore } = createForms()
+      const { forms } = createForms()
 
       expect(forms.getForm(iri).value).toBeUndefined()
     })
@@ -90,7 +90,7 @@ describe('Forms', () => {
         },
       }
 
-      const { forms, resourcesStore } = createForms()
+      const { forms } = createForms()
 
       expect(forms.getForm(iri).value).toEqual({
         'form full name': {
@@ -144,7 +144,7 @@ describe('Forms', () => {
         },
       }
 
-      const { forms, resourcesStore } = createForms()
+      const { forms } = createForms()
 
       expect(forms.getFormViewErrors(iri, 'test_form').value).toEqual(mockErrors)
     })
@@ -169,7 +169,7 @@ describe('Forms', () => {
         },
       }
 
-      const { forms, resourcesStore } = createForms()
+      const { forms } = createForms()
 
       expect(forms.getFormViewErrors(iri, 'test_form').value).toBeUndefined()
     })

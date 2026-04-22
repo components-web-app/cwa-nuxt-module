@@ -22,25 +22,21 @@ vi.mock('#app/composables/cookie.js', () => {
   }
 })
 
-vi.mock('#app/nuxt', () => {
-  return {
-    useRuntimeConfig: vi.fn(() => ({ public: { cwa: { apiUrl: '', apiUrlBrowser: '' } } })),
-  }
-})
-
 vi.mock('./storage/storage', () => {
   return {
-    Storage: vi.fn(() => ({
-      stores: {
-        apiDocumentation: vi.fn(),
-        resources: vi.fn(),
-        fetcher: vi.fn(),
-        mercure: vi.fn(),
-        admin: vi.fn(),
-        auth: vi.fn(),
-        error: vi.fn(),
-      },
-    })),
+    Storage: vi.fn(function () {
+      return {
+        stores: {
+          apiDocumentation: vi.fn(),
+          resources: vi.fn(),
+          fetcher: vi.fn(),
+          mercure: vi.fn(),
+          admin: vi.fn(),
+          auth: vi.fn(),
+          error: vi.fn(),
+        },
+      }
+    }),
   }
 })
 
@@ -51,7 +47,14 @@ vi.mock('./api/fetcher/fetcher', () => {
 })
 
 vi.mock('./api/mercure', () => {
-  const MercureInstance = vi.fn(() => ({ name: 'MERCURE', setFetcher: vi.fn(), setRequestCount: vi.fn() }))
+  const MercureInstance = vi.fn(function () {
+    return {
+      name: 'MERCURE',
+      setFetcher: vi.fn(),
+      setRequestCount: vi.fn(),
+    }
+  })
+
   return {
     default: MercureInstance,
   }
@@ -61,36 +64,53 @@ vi.mock('./api/api-documentation', () => {
   const getApiDocumentation = vi.fn((refresh = false) => {
     return 'refresh:' + refresh
   })
+
   return {
-    default: vi.fn(() => ({
-      getApiDocumentation,
-    })),
+    default: vi.fn(function () {
+      return {
+        getApiDocumentation,
+      }
+    }),
   }
 })
 vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
 vi.mock('./resources/resources-manager', () => {
   return {
-    ResourcesManager: vi.fn(() => ({ requestCount: 999 })),
+    ResourcesManager: vi.fn(function () {
+      return {
+        requestCount: 999,
+      }
+    }),
   }
 })
 vi.mock('./resources/resources')
 vi.mock('./api/auth', () => {
   return {
-    default: vi.fn(() => ({ signedIn: 'am-i-signed-in?' })),
+    default: vi.fn(function () {
+      return {
+        signedIn: 'am-i-signed-in?',
+      }
+    }),
   }
 })
 vi.mock('./api/forms')
 vi.mock('./admin/admin', () => {
   return {
-    default: vi.fn(() => ({ resourceManager: 'resourceManagerMockAsString' })),
+    default: vi.fn(function () {
+      return {
+        resourceManager: 'resourceManagerMockAsString',
+      }
+    }),
   }
 })
 vi.mock('./admin/navigation-guard', () => {
   return {
-    default: vi.fn(() => ({
-      adminNavigationGuardFn: vi.fn(),
-    })),
+    default: vi.fn(function () {
+      return {
+        adminNavigationGuardFn: vi.fn(),
+      }
+    }),
   }
 })
 
