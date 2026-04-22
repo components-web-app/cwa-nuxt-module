@@ -19,20 +19,8 @@ vi.mock('../storage/stores/admin/admin-store', () => {
   }
 })
 
-vi.mock('vue-router', () => {
-  return {
-    createRouter: vi.fn(() => ({
-      push: vi.fn(),
-      go: vi.fn(),
-      back: vi.fn(),
-      forward: vi.fn(),
-      replace: vi.fn(),
-    })),
-  }
-})
-
 function createNavigationGuard(customRouter?: Router) {
-  const router = customRouter || VueRouter.createRouter()
+  const router = customRouter || VueRouter.createRouter({ routes: [], history: VueRouter.createMemoryHistory() })
   return new NavigationGuard(router, new AdminStore('storeName'))
 }
 
@@ -48,7 +36,7 @@ describe('Test NavigationGuard Class', () => {
     { method: 'forward' },
     { method: 'replace' },
   ])('wraps router.$method and sets programmatic flag', ({ method }) => {
-    const router = VueRouter.createRouter()
+    const router = VueRouter.createRouter({ routes: [], history: VueRouter.createMemoryHistory() })
     const guard = createNavigationGuard(router)
 
     expect(guard.programmatic).toBe(false)
@@ -116,12 +104,12 @@ describe('Test NavigationGuard Class', () => {
 
       vi.spyOn(guard, 'isRouteForcedNavigation').mockReturnValue(isRouteForcedNavigation)
 
-      vi.spyOn(AdminStore.mock.results[0].value, 'useStore').mockImplementation(() => ({
+      guard._adminStore = {
         state: {
           isEditing,
           navigationGuardDisabled,
         },
-      }))
+      }
 
       guard.programmatic = programmatic
 
