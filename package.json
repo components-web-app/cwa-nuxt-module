@@ -142,7 +142,12 @@
     ],
     "overrides": {
       "svgo@>=3.0.0 <3.3.3": ">=3.3.3",
-      "serialize-javascript@<7.0.5": ">=7.0.5"
+      "serialize-javascript@<7.0.5": ">=7.0.5",
+      "unhead": "2.1.13",
+      "@unhead/vue": "2.1.13",
+      "@unhead/schema-org": "2.1.13",
+      "@unhead/addons": "2.1.13",
+      "@unhead/bundler": "2.1.13"
     }
   },
   "engines": {
