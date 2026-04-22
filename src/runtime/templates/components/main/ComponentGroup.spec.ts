@@ -338,7 +338,9 @@ describe('ComponentGroup', () => {
       const watchSpy = vi.fn()
       const unwatchSpy = vi.fn()
 
-      ComponentGroupUtilSynchronizer.mockImplementationOnce(function () { return { createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy } })
+      ComponentGroupUtilSynchronizer.mockImplementationOnce(function () {
+        return { createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy }
+      })
 
       const wrapper = createWrapper()
       expect(watchSpy.mock.calls[0][0].resource.value).toEqual(wrapper.vm.resource)

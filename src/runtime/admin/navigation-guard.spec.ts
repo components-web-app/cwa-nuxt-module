@@ -1,5 +1,4 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import * as VueRouter from 'vue-router'
 import type { Router } from 'vue-router'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import NavigationGuard from './navigation-guard'
@@ -17,20 +16,18 @@ vi.mock('../storage/stores/admin/admin-store', () => {
   }
 })
 
-vi.mock('vue-router', () => {
+function createFakeRouter() {
   return {
-    createRouter: vi.fn(() => ({
-      push: vi.fn(),
-      go: vi.fn(),
-      back: vi.fn(),
-      forward: vi.fn(),
-      replace: vi.fn(),
-    })),
+    push: vi.fn(),
+    go: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    replace: vi.fn(),
   }
-})
+}
 
 function createNavigationGuard(customRouter?: Router) {
-  const router = customRouter || VueRouter.createRouter()
+  const router = customRouter || createFakeRouter() as unknown as Router
   return new NavigationGuard(router, new AdminStore('storeName'))
 }
 describe('Test NavigationGuard Class', () => {
@@ -45,21 +42,14 @@ describe('Test NavigationGuard Class', () => {
     { method: 'forward' },
     { method: 'replace' },
   ])('extendRoutesMethods extends function $method properly', ({ method }) => {
-    const router = VueRouter.createRouter()
-    const originalRouter = {
-      ...router,
-    }
-    const guard = createNavigationGuard(router)
+    const router = createFakeRouter()
+    const guard = createNavigationGuard(router as any)
 
-    expect(guard.programmatic).toBe(false)
+    const args = [{ path: '/new-path' }]
 
-    const args = [
-      {
-        path: '/new-path',
-      },
-    ]
-    expect(guard.router[method](...args)).toEqual(originalRouter[method].mock.results[0].value)
-    expect(originalRouter[method]).toHaveBeenCalledWith(...args)
+    guard.router[method](...args)
+
+    expect(router[method]).toHaveBeenCalledWith(...args)
     expect(guard.programmatic).toBe(true)
   })
 

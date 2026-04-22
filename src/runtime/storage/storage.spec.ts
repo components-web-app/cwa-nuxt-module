@@ -36,25 +36,25 @@ vi.mock('./stores/api-documentation/api-documentation-store', () => {
 
 vi.mock('./stores/auth/auth-store', () => {
   return {
-    AuthStore: vi.fn<[], TestStore>(function() { return { name: 'AuthStore' } }),
+    AuthStore: vi.fn<[], TestStore>(function () { return { name: 'AuthStore' } }),
   }
 })
 
 vi.mock('./stores/admin/admin-store', () => {
   return {
-    AdminStore: vi.fn<[], TestStore>(function() { return { name: 'AdminStore' } }),
+    AdminStore: vi.fn<[], TestStore>(function () { return { name: 'AdminStore' } }),
   }
 })
 
 vi.mock('./stores/error/error-store', () => {
   return {
-    ErrorStore: vi.fn<[], TestStore>(function() { return { name: 'ErrorStore' } }),
+    ErrorStore: vi.fn<[], TestStore>(function () { return { name: 'ErrorStore' } }),
   }
 })
 
 vi.mock('./stores/site-config/site-config-store', () => {
   return {
-    SiteConfigStore: vi.fn<[], TestStore>(function() { return { name: 'SiteConfigStore' } }),
+    SiteConfigStore: vi.fn<[], TestStore>(function () { return { name: 'SiteConfigStore' } }),
   }
 })
 

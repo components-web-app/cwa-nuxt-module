@@ -3,7 +3,7 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
 import { flushPromises } from '@vue/test-utils'
-import * as vueRouter from 'vue-router'
+import { useRoute } from 'vue-router'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -37,11 +37,6 @@ vi.mock('../../storage/stores/resources/resources-store', () => {
 vi.mock('./fetch-status-manager')
 vi.mock('../mercure')
 vi.mock('../api-documentation')
-vi.mock('vue-router', () => {
-  return {
-    currentRoute: vi.fn(() => {}),
-  }
-})
 
 function delay(time: number, returnValue: any = undefined) {
   return new Promise((resolve) => {
@@ -56,7 +51,7 @@ function createFetcher(query?: { [key: string]: string }): Fetcher {
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
 
-  vi.spyOn(vueRouter, 'currentRoute', 'get').mockImplementation(() => ({ value: { path: '/current-path', query } }))
+  vi.spyOn({ useRoute }, 'useRoute', 'get').mockImplementation(() => ({ value: { path: '/current-path', query } }))
 
   return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore)
 }
