@@ -21,14 +21,14 @@ vi.mock('./resource-stack-manager', () => {
       return {
         showManager: { value: '' },
         isEditingLayout: { value: '' },
-      };
+      }
     }),
   }
 })
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
-    AdminStore: vi.fn(function() {
+    AdminStore: vi.fn(function () {
       return {
         useStore: vi.fn(() => ({
           toggleEdit: vi.fn(),
@@ -37,9 +37,9 @@ vi.mock('../storage/stores/admin/admin-store', () => {
             navigationGuardDisabled: 'ngs',
           },
         })),
-      };
+      }
     }),
-  };
+  }
 })
 
 vi.mock('mitt', () => {
