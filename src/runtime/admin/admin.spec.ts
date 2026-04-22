@@ -32,14 +32,14 @@ let adminStoreMock = {
     isEditing: 'isEdit',
     navigationGuardDisabled: 'ngs',
   },
-};
+}
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
     AdminStore: vi.fn(function() {
       return {
         useStore: vi.fn(() => adminStoreMock),
-      };
+      }
     }),
   }
 })
@@ -73,7 +73,7 @@ describe('Admin class', () => {
         isEditing: 'isEdit',
         navigationGuardDisabled: 'ngs',
       },
-    };
+    }
 
     admin = createAdmin()
 
@@ -89,7 +89,7 @@ describe('Admin class', () => {
     adminStoreMock = {
       toggleEdit: vi.fn(),
       state: mockState,
-    };
+    }
 
     admin = createAdmin()
 
@@ -110,7 +110,7 @@ describe('Admin class', () => {
       state: {},
     }
 
-    adminStoreMock = mockStore;
+    adminStoreMock = mockStore
 
     admin = createAdmin()
 
