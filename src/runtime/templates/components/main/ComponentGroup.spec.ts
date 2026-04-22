@@ -13,7 +13,7 @@ import { useComponentGroupPositions } from '#cwa/templates/components/main/Compo
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
-    ComponentGroupUtilSynchronizer: vi.fn(() => {
+    ComponentGroupUtilSynchronizer: vi.fn(function () {
       return {
         createSyncWatcher: vi.fn(),
       }
