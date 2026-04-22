@@ -4,14 +4,14 @@ import { consola as logger } from 'consola'
 import { storeToRefs } from 'pinia'
 import type Mercure from '../mercure'
 import type ApiDocumentation from '../api-documentation'
-import type { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
+import type { CwaFetcherStoreInterface, FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import type {
   AddFetchResourceEvent,
   FinishFetchEvent, ManifestErrorFetchEvent,
   ManifestSuccessFetchEvent,
   StartFetchEvent, StartFetchResponse,
 } from '../../storage/stores/fetcher/actions'
-import type { ResourcesStore } from '../../storage/stores/resources/resources-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type { CwaResourceError } from '../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import { isCwaResource } from '../../resources/resource-utils'
@@ -47,10 +47,10 @@ type _StartFetchEvent = Omit<StartFetchEvent, 'isCurrentSuccessResourcesResolved
  * This class manages the state across the fetcher store, resources store and additional services for API Documentation and Mercure
  */
 export default class FetchStatusManager {
-  private fetcherStoreDefinition: FetcherStore
   private readonly mercure: Mercure
   private readonly apiDocumentation: ApiDocumentation
-  private resourcesStoreDefinition: ResourcesStore
+  private readonly _fetcherStore: CwaFetcherStoreInterface
+  private readonly _resourcesStore: CwaResourcesStoreInterface
 
   constructor(
     fetcherStoreDefinition: FetcherStore,
@@ -58,10 +58,10 @@ export default class FetchStatusManager {
     apiDocumentation: ApiDocumentation,
     resourcesStoreDefinition: ResourcesStore,
   ) {
-    this.fetcherStoreDefinition = fetcherStoreDefinition
     this.mercure = mercure
     this.apiDocumentation = apiDocumentation
-    this.resourcesStoreDefinition = resourcesStoreDefinition
+    this._fetcherStore = fetcherStoreDefinition.useStore()
+    this._resourcesStore = resourcesStoreDefinition.useStore()
   }
 
   public async getFetchedCurrentResource(iri: string, timeout?: number): Promise<CwaResource | undefined> {
@@ -282,11 +282,11 @@ export default class FetchStatusManager {
     return this.resourcesStore.isFetchStatusResourcesResolved(successFetchStatus)
   }
 
-  private get fetcherStore() {
-    return this.fetcherStoreDefinition.useStore()
+  private get fetcherStore(): CwaFetcherStoreInterface {
+    return this._fetcherStore
   }
 
-  private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+  private get resourcesStore(): CwaResourcesStoreInterface {
+    return this._resourcesStore
   }
 }

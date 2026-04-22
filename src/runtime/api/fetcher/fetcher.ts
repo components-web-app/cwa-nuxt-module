@@ -10,7 +10,7 @@ import type {
 } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import type { ResourcesStore } from '../../storage/stores/resources/resources-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
@@ -64,12 +64,14 @@ interface FetchNestedResourcesEvent {
 }
 
 export default class Fetcher {
+  private readonly _store: CwaResourcesStoreInterface
   constructor(
     private readonly cwaFetch: CwaFetch,
     private fetchStatusManager: FetchStatusManager,
     private router: Router,
-    private resourcesStoreDefinition: ResourcesStore,
+    resourcesStoreDefinition: ResourcesStore,
   ) {
+    this._store = resourcesStoreDefinition.useStore()
   }
 
   public async fetchRoute(route: RouteLocationNormalizedLoaded): Promise<CwaResource | undefined> {
@@ -335,6 +337,6 @@ export default class Fetcher {
   }
 
   private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+    return this._store
   }
 }

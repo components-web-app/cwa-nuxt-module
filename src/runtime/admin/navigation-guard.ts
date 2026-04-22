@@ -1,10 +1,12 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
-import type { AdminStore } from '../storage/stores/admin/admin-store'
+import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
 
 export default class NavigationGuard {
   private programmatic = false
-  public constructor(private router: Router, private adminStoreDefinition: AdminStore) {
+  private readonly _adminStore: CwaAdminStoreInterface
+  public constructor(private router: Router, adminStoreDefinition: AdminStore) {
     this.extendRouteMethods()
+    this._adminStore = adminStoreDefinition.useStore()
   }
 
   private extendRouteMethods() {
@@ -68,6 +70,6 @@ export default class NavigationGuard {
   }
 
   private get adminStore() {
-    return this.adminStoreDefinition.useStore()
+    return this._adminStore
   }
 }

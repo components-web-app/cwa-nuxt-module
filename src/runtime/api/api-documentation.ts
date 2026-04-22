@@ -20,13 +20,13 @@ export interface ApiDocumentationComponentMetadataCollection {
 
 export default class ApiDocumentation {
   private readonly cwaFetch: CwaFetch
-  private readonly storeDefinition: ApiDocumentationStore
+  private readonly _store: CwaApiDocumentationStoreInterface
   private readonly apiDocsSet: Ref<boolean> = ref(false)
   private apiDocPromise: Promise<void> | undefined
 
   constructor(cwaFetch: CwaFetch, store: ApiDocumentationStore) {
     this.cwaFetch = cwaFetch
-    this.storeDefinition = store
+    this._store = store.useStore()
   }
 
   public setDocsPathFromLinkHeader(linkHeader: string) {
@@ -165,7 +165,7 @@ export default class ApiDocumentation {
   }
 
   private get store(): CwaApiDocumentationStoreInterface {
-    return this.storeDefinition.useStore()
+    return this._store
   }
 
   private get docsPath() {

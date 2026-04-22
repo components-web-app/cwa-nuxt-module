@@ -7,11 +7,11 @@ import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { DateTime } from 'luxon'
-import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type CwaFetch from '../api/fetcher/cwa-fetch'
 import type FetchStatusManager from '../api/fetcher/fetch-status-manager'
 import type { DeleteResourceEvent, SaveNewResourceEvent, SaveResourceEvent } from '../storage/stores/resources/actions'
-import type { ErrorStore } from '../storage/stores/error/error-store'
+import type { CwaErrorStoreInterface, ErrorStore } from '../storage/stores/error/error-store'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import {
   CwaResourceTypes,
@@ -53,13 +53,13 @@ interface RequestOptions {
 
 export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
-  private readonly resourcesStoreDefinition: ResourcesStore
   private readonly fetchStatusManager: FetchStatusManager
-  private readonly errorStoreDefinition: ErrorStore
   private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, { event: ApiResourceEvent, args: [string, RequestOptions] }] } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
   private _requestCount?: ComputedRef<number>
+  private readonly _resourcesStore: CwaResourcesStoreInterface
+  private readonly _errorStore: CwaErrorStoreInterface
 
   constructor(
     cwaFetch: CwaFetch,
@@ -71,9 +71,9 @@ export class ResourcesManager {
     private readonly resources: Resources,
   ) {
     this.cwaFetch = cwaFetch
-    this.resourcesStoreDefinition = resourcesStoreDefinition
+    this._resourcesStore = resourcesStoreDefinition.useStore()
     this.fetchStatusManager = fetchStatusManager
-    this.errorStoreDefinition = errorStoreDefinition
+    this._errorStore = errorStoreDefinition.useStore()
     watch(this.reqCount, (newValue) => {
       if (newValue >= 10000) {
         this.reqCount.value = 0
@@ -627,11 +627,11 @@ export class ResourcesManager {
     return this.groupResource.data?.componentPositions
   }
 
-  private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+  private get resourcesStore(): CwaResourcesStoreInterface {
+    return this._resourcesStore
   }
 
-  private get errorStore() {
-    return this.errorStoreDefinition.useStore()
+  private get errorStore(): CwaErrorStoreInterface {
+    return this._errorStore
   }
 }
