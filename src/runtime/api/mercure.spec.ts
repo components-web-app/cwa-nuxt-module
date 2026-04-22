@@ -252,6 +252,15 @@ describe('Mercure -> hubUrl', () => {
 describe('Mercure -> handleMercureMessage', () => {
   let mercure: Mercure
 
+  function initMercure() {
+    mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(() => {
+      return true
+    })
+    vi.spyOn(mercure, 'addMercureMessageToQueue').mockImplementation(() => {})
+    vi.spyOn(mercure, 'processMessageQueue').mockImplementation(() => {})
+  }
+
   beforeEach(() => {
     const pinia = createTestingPinia({
       createSpy: vi.fn,
@@ -264,12 +273,7 @@ describe('Mercure -> handleMercureMessage', () => {
     setActivePinia(pinia)
 
     vi.clearAllMocks()
-    mercure = createMercure()
-    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(() => {
-      return true
-    })
-    vi.spyOn(mercure, 'addMercureMessageToQueue').mockImplementation(() => {})
-    vi.spyOn(mercure, 'processMessageQueue').mockImplementation(() => {})
+    initMercure()
   })
 
   test('Do not add to message queue if isMessageForCurrentResource returns false', () => {
@@ -320,7 +324,7 @@ describe('Mercure -> handleMercureMessage', () => {
       },
     })
     setActivePinia(pinia)
-    mercure = createMercure()
+    initMercure()
 
     const event = new MessageEvent()
     event.data = JSON.stringify({})

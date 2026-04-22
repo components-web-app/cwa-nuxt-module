@@ -131,6 +131,9 @@ export default class Mercure {
   private isMessageForCurrentResource(mercureMessage: MercureMessageInterface): boolean {
     const currentResources = this.resourcesStore.current.currentIds
     const mercureMessageResource = mercureMessage.data
+    if (!('@id' in mercureMessageResource)) {
+      return false
+    }
     if (!currentResources.includes(mercureMessageResource['@id'])) {
       const publishedIri = getPublishedResourceIri(mercureMessageResource)
       if (!publishedIri || !currentResources.includes(publishedIri)) {
