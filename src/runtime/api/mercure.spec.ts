@@ -16,12 +16,14 @@ import Fetcher from './fetcher/fetcher'
 
 vi.mock('./fetcher/fetcher')
 
-const EventSource = vi.fn(() => ({
-  readyState: 0,
-  url: null,
-  onmessage: undefined,
-  close: vi.fn(),
-}))
+const EventSource = vi.fn(function () {
+  return {
+    readyState: 0,
+    url: null,
+    onmessage: undefined,
+    close: vi.fn(),
+  };
+});
 vi.stubGlobal('EventSource', EventSource)
 
 const MessageEvent = vi.fn(function (eventId = 'abc') {
