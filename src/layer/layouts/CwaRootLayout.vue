@@ -137,10 +137,11 @@ watch(() => $cwa.admin.isEditing, async () => {
 })
 
 const showAdmin = $cwa.auth.isAdmin
-
+// resolve the store inside setup
+const siteConfigVar = $cwa.siteConfig.config
 useHead({
   titleTemplate: () => {
-    if ($cwa.siteConfig.config.concatTitle) {
+    if (siteConfigVar.concatTitle) {
       return '%s %separator %siteName'
     }
     return '%s'
