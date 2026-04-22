@@ -60,8 +60,10 @@ vi.mock('vue', async () => {
     computed: vi.fn(fn => actual.computed(fn)),
   }
 })
-vi.mock('pinia', () => {
+vi.mock('pinia', async (importOriginal) => {
+  const { createPinia } = await importOriginal<typeof import('pinia')>()
   return {
+    createPinia,
     storeToRefs: vi.fn(),
   }
 })
