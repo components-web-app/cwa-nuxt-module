@@ -14,14 +14,16 @@ const mockedFetchResponseTime = 2
 vi.mock('../storage/stores/api-documentation/state')
 vi.mock('./fetcher/cwa-fetch', () => {
   return {
-    default: vi.fn(() => ({
-      fetch: vi.fn(async (path) => {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 2)
-        })
-        return 'response from ' + path
-      }),
-    })),
+    default: vi.fn(function () {
+      return {
+        fetch: vi.fn(async (path) => {
+          await new Promise((resolve) => {
+            setTimeout(resolve, 2);
+          });
+          return 'response from ' + path;
+        }),
+      };
+    }),
   }
 })
 

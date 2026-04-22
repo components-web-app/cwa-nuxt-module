@@ -17,10 +17,12 @@ vi.mock('./resource-manager', () => {
 vi.mock('../resources/resources')
 vi.mock('./resource-stack-manager', () => {
   return {
-    default: vi.fn(() => ({
-      showManager: { value: '' },
-      isEditingLayout: { value: '' },
-    })),
+    default: vi.fn(function () {
+      return {
+        showManager: { value: '' },
+        isEditingLayout: { value: '' },
+      };
+    }),
   }
 })
 
