@@ -12329,7 +12329,7 @@ snapshots:
   '@vueuse/core@7.7.1(vue@3.5.33(typescript@6.0.3))':
     dependencies:
       '@vueuse/shared': 7.7.1(vue@3.5.33(typescript@6.0.3))
-      vue-demi: 0.13.11(vue@3.5.33(typescript@6.0.3))
+      vue-demi: 0.14.10(vue@3.5.33(typescript@6.0.3))
     optionalDependencies:
       vue: 3.5.33(typescript@6.0.3)
 
@@ -12371,7 +12371,7 @@ snapshots:
 
   '@vueuse/shared@7.7.1(vue@3.5.33(typescript@6.0.3))':
     dependencies:
-      vue-demi: 0.13.11(vue@3.5.33(typescript@6.0.3))
+      vue-demi: 0.14.10(vue@3.5.33(typescript@6.0.3))
     optionalDependencies:
       vue: 3.5.33(typescript@6.0.3)
 
