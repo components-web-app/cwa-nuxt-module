@@ -26,17 +26,19 @@ vi.mock('./resource-stack-manager', () => {
   }
 })
 
+let adminStoreMock = {
+  toggleEdit: vi.fn(),
+  state: {
+    isEditing: 'isEdit',
+    navigationGuardDisabled: 'ngs',
+  },
+};
+
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
     AdminStore: vi.fn(function() {
       return {
-        useStore: vi.fn(() => ({
-          toggleEdit: vi.fn(),
-          state: {
-            isEditing: 'isEdit',
-            navigationGuardDisabled: 'ngs',
-          },
-        })),
+        useStore: vi.fn(() => adminStoreMock),
       };
     }),
   };
@@ -63,31 +65,33 @@ describe('Admin class', () => {
   })
 
   test('toggleEdit', () => {
-    admin = createAdmin()
     const toggleSpy = vi.fn()
 
-    admin.adminStoreDefinition.useStore = () => ({
+    adminStoreMock = {
       toggleEdit: toggleSpy,
       state: {
         isEditing: 'isEdit',
         navigationGuardDisabled: 'ngs',
       },
-    })
+    };
+
+    admin = createAdmin()
 
     expect(admin.toggleEdit(true)).toBeUndefined()
     expect(toggleSpy).toHaveBeenCalledWith(true)
   })
   test('setNavigationGuardDisabled', () => {
-    admin = createAdmin()
     const mockState = {
       isEditing: 'isEdit',
       navigationGuardDisabled: 'ngs',
     }
 
-    admin.adminStoreDefinition.useStore = () => ({
+    adminStoreMock = {
       toggleEdit: vi.fn(),
       state: mockState,
-    })
+    };
+
+    admin = createAdmin()
 
     expect(admin.setNavigationGuardDisabled(false)).toBeUndefined()
     expect(mockState.navigationGuardDisabled).toBe(false)
@@ -101,13 +105,14 @@ describe('Admin class', () => {
     expect(admin.isEditing).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.isEditing)
   })
   test('adminStore getter', () => {
-    admin = createAdmin()
     const mockStore = {
       toggleEdit: vi.fn(),
       state: {},
     }
 
-    admin.adminStoreDefinition.useStore = () => mockStore
+    adminStoreMock = mockStore;
+
+    admin = createAdmin()
 
     expect(admin.adminStore).toBe(mockStore)
   })
