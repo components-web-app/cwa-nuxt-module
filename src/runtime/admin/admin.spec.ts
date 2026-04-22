@@ -26,16 +26,18 @@ vi.mock('./resource-stack-manager', () => {
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
-    AdminStore: vi.fn(() => ({
-      useStore: vi.fn(() => ({
-        toggleEdit: vi.fn(),
-        state: {
-          isEditing: 'isEdit',
-          navigationGuardDisabled: 'ngs',
-        },
-      })),
-    })),
-  }
+    AdminStore: vi.fn(function() {
+      return {
+        useStore: vi.fn(() => ({
+          toggleEdit: vi.fn(),
+          state: {
+            isEditing: 'isEdit',
+            navigationGuardDisabled: 'ngs',
+          },
+        })),
+      };
+    }),
+  };
 })
 
 vi.mock('mitt', () => {
