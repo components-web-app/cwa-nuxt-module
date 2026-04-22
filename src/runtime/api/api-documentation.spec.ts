@@ -18,11 +18,11 @@ vi.mock('./fetcher/cwa-fetch', () => {
       return {
         fetch: vi.fn(async (path) => {
           await new Promise((resolve) => {
-            setTimeout(resolve, 2);
-          });
-          return 'response from ' + path;
+            setTimeout(resolve, 2)
+          })
+          return 'response from ' + path
         }),
-      };
+      }
     }),
   }
 })

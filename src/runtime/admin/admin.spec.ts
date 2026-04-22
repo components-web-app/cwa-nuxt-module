@@ -21,7 +21,7 @@ vi.mock('./resource-stack-manager', () => {
       return {
         showManager: { value: '' },
         isEditingLayout: { value: '' },
-      };
+      }
     }),
   }
 })
@@ -41,7 +41,7 @@ vi.mock('../storage/stores/admin/admin-store', () => {
         useStore: vi.fn(() => adminStoreMock),
       };
     }),
-  };
+  }
 })
 
 vi.mock('mitt', () => {

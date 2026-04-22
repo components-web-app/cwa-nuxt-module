@@ -22,8 +22,8 @@ const EventSource = vi.fn(function () {
     url: null,
     onmessage: undefined,
     close: vi.fn(),
-  };
-});
+  }
+})
 vi.stubGlobal('EventSource', EventSource)
 
 const MessageEvent = vi.fn(function (eventId = 'abc') {
@@ -46,6 +46,11 @@ function createMercure(): Mercure {
 
 describe('Mercure -> setFetcher', () => {
   test('Set fetcher will set the fetcher property', () => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+    })
+    setActivePinia(pinia)
+
     const mercure = createMercure()
     const fetcher = new Fetcher()
     mercure.setFetcher(fetcher)
@@ -230,6 +235,7 @@ describe('Mercure -> hubUrl', () => {
       },
     })
     setActivePinia(pinia)
+    mercure = createMercure()
     expect(mercure.hubUrl).toBeUndefined()
   })
 
@@ -246,6 +252,15 @@ describe('Mercure -> hubUrl', () => {
 describe('Mercure -> handleMercureMessage', () => {
   let mercure: Mercure
 
+  function initMercure() {
+    mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(() => {
+      return true
+    })
+    vi.spyOn(mercure, 'addMercureMessageToQueue').mockImplementation(() => {})
+    vi.spyOn(mercure, 'processMessageQueue').mockImplementation(() => {})
+  }
+
   beforeEach(() => {
     const pinia = createTestingPinia({
       createSpy: vi.fn,
@@ -258,12 +273,7 @@ describe('Mercure -> handleMercureMessage', () => {
     setActivePinia(pinia)
 
     vi.clearAllMocks()
-    mercure = createMercure()
-    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(() => {
-      return true
-    })
-    vi.spyOn(mercure, 'addMercureMessageToQueue').mockImplementation(() => {})
-    vi.spyOn(mercure, 'processMessageQueue').mockImplementation(() => {})
+    initMercure()
   })
 
   test('Do not add to message queue if isMessageForCurrentResource returns false', () => {
@@ -314,6 +324,7 @@ describe('Mercure -> handleMercureMessage', () => {
       },
     })
     setActivePinia(pinia)
+    initMercure()
 
     const event = new MessageEvent()
     event.data = JSON.stringify({})
