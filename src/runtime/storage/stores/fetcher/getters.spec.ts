@@ -7,10 +7,12 @@ import { FetcherGetterUtils } from './getter-utils'
 
 vi.mock('./getter-utils', () => {
   return {
-    FetcherGetterUtils: vi.fn(() => ({
-      getFetchStatusByToken: vi.fn(),
-      isFetchResolving: vi.fn(),
-    })),
+    FetcherGetterUtils: vi.fn(function () {
+      return {
+        getFetchStatusByToken: vi.fn(),
+        isFetchResolving: vi.fn(),
+      }
+    }),
   }
 })
 
