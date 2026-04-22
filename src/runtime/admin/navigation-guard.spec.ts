@@ -30,7 +30,13 @@ function createRouterMock() {
 
 function createNavigationGuard(customRouter?: Router) {
   const router = customRouter || createRouterMock()
-  return new NavigationGuard(router as any, new AdminStore('storeName'))
+  const navigationGuardInstance = new NavigationGuard(router as any, new AdminStore('storeName'))
+  vi.spyOn(navigationGuardInstance.router, 'push');
+  vi.spyOn(navigationGuardInstance.router, 'go');
+  vi.spyOn(navigationGuardInstance.router, 'back');
+  vi.spyOn(navigationGuardInstance.router, 'forward');
+  vi.spyOn(navigationGuardInstance.router, 'replace');
+  return navigationGuardInstance;
 }
 
 describe('Test NavigationGuard Class', () => {
