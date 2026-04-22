@@ -36,7 +36,7 @@ let adminStoreMock = {
 
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
-    AdminStore: vi.fn(function() {
+    AdminStore: vi.fn(function () {
       return {
         useStore: vi.fn(() => adminStoreMock),
       }
@@ -46,7 +46,7 @@ vi.mock('../storage/stores/admin/admin-store', () => {
 
 vi.mock('../storage/stores/resources/resources-store', () => {
   return {
-    ResourcesStore: vi.fn(function() {
+    ResourcesStore: vi.fn(function () {
       return {
         useStore: vi.fn(() => ({})),
       }
