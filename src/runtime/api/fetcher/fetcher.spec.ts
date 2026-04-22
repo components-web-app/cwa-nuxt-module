@@ -3,7 +3,6 @@
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
 import { flushPromises } from '@vue/test-utils'
-import { useRoute } from 'vue-router'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -19,19 +18,24 @@ import preloadHeaders from './preload-headers'
 
 vi.mock('./cwa-fetch', () => {
   return {
-    default: vi.fn(() => ({
-      fetch: {
-        raw: vi.fn(),
-      },
-    })),
+    default: vi.fn(function () {
+      return {
+        fetch: {
+          raw: vi.fn(),
+        },
+      }
+    }),
   }
 })
 vi.mock('../../storage/stores/fetcher/fetcher-store')
 vi.mock('../../storage/stores/resources/resources-store', () => {
   return {
-    ResourcesStore: vi.fn(() => ({
-      useStore: vi.fn(() => {}),
-    })),
+    ResourcesStore: vi.fn(function () {
+      return {
+        useStore: vi.fn(() => {
+        }),
+      }
+    }),
   }
 })
 vi.mock('./fetch-status-manager')
@@ -51,7 +55,14 @@ function createFetcher(query?: { [key: string]: string }): Fetcher {
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
 
-  vi.spyOn({ useRoute }, 'useRoute', 'get').mockImplementation(() => ({ value: { path: '/current-path', query } }))
+  const vueRouter = {
+    currentRoute: {
+      value: {
+        path: '/current-path',
+        query,
+      },
+    },
+  }
 
   return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore)
 }
@@ -77,7 +88,7 @@ describe('Fetcher -> fetchRoute', () => {
 
   test.each([
     {
-      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/routes_manifest//some-route',
+      path: '/some-route', apiPath: '/_api/_/routes//some-route', manifestPath: '/_api/_/routes_manifest//some-route',
     },
     {
       path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: undefined,
