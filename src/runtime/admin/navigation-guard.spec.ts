@@ -1,5 +1,4 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import * as VueRouter from 'vue-router'
 import type { Router } from 'vue-router'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import NavigationGuard from './navigation-guard'
@@ -19,9 +18,19 @@ vi.mock('../storage/stores/admin/admin-store', () => {
   }
 })
 
+function createRouterMock() {
+  return {
+    push: vi.fn(),
+    go: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    replace: vi.fn(),
+  }
+}
+
 function createNavigationGuard(customRouter?: Router) {
-  const router = customRouter || VueRouter.createRouter({ routes: [], history: VueRouter.createMemoryHistory() })
-  return new NavigationGuard(router, new AdminStore('storeName'))
+  const router = customRouter || createRouterMock()
+  return new NavigationGuard(router as any, new AdminStore('storeName'))
 }
 
 describe('Test NavigationGuard Class', () => {
@@ -36,7 +45,7 @@ describe('Test NavigationGuard Class', () => {
     { method: 'forward' },
     { method: 'replace' },
   ])('wraps router.$method and sets programmatic flag', ({ method }) => {
-    const router = VueRouter.createRouter({ routes: [], history: VueRouter.createMemoryHistory() })
+    const router = createRouterMock()
     const guard = createNavigationGuard(router)
 
     expect(guard.programmatic).toBe(false)
