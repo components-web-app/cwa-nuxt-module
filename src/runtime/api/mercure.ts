@@ -6,10 +6,9 @@ import type { CwaMercureStoreInterface, MercureStore } from '../storage/stores/m
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { CwaResource } from '../resources/resource-utils'
 import { getPublishedResourceIri } from '../resources/resource-utils'
-import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
 import { useProcess } from '#cwa/composables/process'
-import type { ResourcesManager } from '#cwa/resources/resources-manager'
 
 interface MercureMessageInterface {
   event: MessageEvent
@@ -22,13 +21,18 @@ export default class Mercure {
   private mercureMessageQueue: MercureMessageInterface[] = []
   private fetcher?: Fetcher
   private requestCount?: ComputedRef<number>
-  private resourcesManager?: ResourcesManager
+  private readonly _mercureStore: CwaMercureStoreInterface
+  private readonly _resourcesStore: CwaResourcesStoreInterface
+  private readonly _fetcherStore: CwaFetcherStoreInterface
 
   constructor(
-    private mercureStoreDefinition: MercureStore,
-    private resourcesStoreDefinition: ResourcesStore,
-    private fetcherStoreDefinition: FetcherStore,
+    mercureStoreDefinition: MercureStore,
+    resourcesStoreDefinition: ResourcesStore,
+    fetcherStoreDefinition: FetcherStore,
   ) {
+    this._mercureStore = mercureStoreDefinition.useStore()
+    this._resourcesStore = resourcesStoreDefinition.useStore()
+    this._fetcherStore = fetcherStoreDefinition.useStore()
   }
 
   public setFetcher(fetcher: Fetcher) {
@@ -148,7 +152,7 @@ export default class Mercure {
   private async processMessageQueue() {
     const messages = this.mercureMessageQueue
     this.mercureMessageQueue = []
-    const path = this.fetcherStoreDefinition.useStore().primaryFetchPath
+    const path = this._fetcherStore.primaryFetchPath
     const resourceActions = this.collectResourceActions(messages)
     const fetchedResources = await this.fetch(resourceActions.toFetch)
     const toSave = [...resourceActions.toSave, ...fetchedResources]
@@ -236,10 +240,10 @@ export default class Mercure {
   }
 
   private get mercureStore(): CwaMercureStoreInterface {
-    return this.mercureStoreDefinition.useStore()
+    return this._mercureStore
   }
 
   private get resourcesStore(): CwaResourcesStoreInterface {
-    return this.resourcesStoreDefinition.useStore()
+    return this._resourcesStore
   }
 }

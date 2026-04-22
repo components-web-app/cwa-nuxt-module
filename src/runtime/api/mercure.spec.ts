@@ -24,10 +24,12 @@ const EventSource = vi.fn(() => ({
 }))
 vi.stubGlobal('EventSource', EventSource)
 
-const MessageEvent = vi.fn((eventId = 'abc') => ({
-  data: null,
-  lastEventId: eventId,
-}))
+const MessageEvent = vi.fn(function (eventId = 'abc') {
+  return {
+    data: null,
+    lastEventId: eventId,
+  }
+})
 vi.stubGlobal('MessageEvent', MessageEvent)
 
 let mercureStoreDef: MercureStore
