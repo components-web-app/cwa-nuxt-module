@@ -22,8 +22,8 @@ const EventSource = vi.fn(function () {
     url: null,
     onmessage: undefined,
     close: vi.fn(),
-  };
-});
+  }
+})
 vi.stubGlobal('EventSource', EventSource)
 
 const MessageEvent = vi.fn(function (eventId = 'abc') {
@@ -46,6 +46,11 @@ function createMercure(): Mercure {
 
 describe('Mercure -> setFetcher', () => {
   test('Set fetcher will set the fetcher property', () => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+    })
+    setActivePinia(pinia)
+
     const mercure = createMercure()
     const fetcher = new Fetcher()
     mercure.setFetcher(fetcher)
@@ -230,6 +235,7 @@ describe('Mercure -> hubUrl', () => {
       },
     })
     setActivePinia(pinia)
+    mercure = createMercure()
     expect(mercure.hubUrl).toBeUndefined()
   })
 
@@ -314,6 +320,7 @@ describe('Mercure -> handleMercureMessage', () => {
       },
     })
     setActivePinia(pinia)
+    mercure = createMercure()
 
     const event = new MessageEvent()
     event.data = JSON.stringify({})
