@@ -9,7 +9,6 @@ export default defineVitestConfig({
       provider: 'v8',
       include: ['src/**'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*.d.mts'],
-      all: true,
     },
     environmentOptions: {
       nuxt: {
@@ -18,6 +17,11 @@ export default defineVitestConfig({
           indexedDb: false,
         },
         rootDir: fileURLToPath(new URL('./playground/', import.meta.url)),
+        overrides: {
+          ogImage: {
+            enabled: false,
+          },
+        },
       },
     },
     resolveSnapshotPath(path: string, extension: string) {
