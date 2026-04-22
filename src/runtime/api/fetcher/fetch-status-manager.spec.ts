@@ -23,17 +23,25 @@ import type { CwaCurrentResourceInterface } from '../../storage/stores/resources
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import FetchStatusManager from './fetch-status-manager'
 
-vi.mock('../../storage/stores/fetcher/fetcher-store', () => ({
-  FetcherStore: vi.fn(() => ({
-    useStore: vi.fn(() => {}),
-  })),
-}))
+vi.mock('../../storage/stores/fetcher/fetcher-store', () => {
+  return {
+    FetcherStore: vi.fn(function () {
+      return {
+        useStore: vi.fn(() => {
+        }),
+      };
+    }),
+  }
+})
 vi.mock('../../storage/stores/resources/resources-store', () => {
   return {
-    ResourcesStore: vi.fn(() => ({
-      useStore: vi.fn(() => {}),
-    })),
-  }
+    ResourcesStore: vi.fn(function () {
+      return {
+        useStore: vi.fn(() => {
+        }),
+      };
+    }),
+  };
 })
 vi.mock('../mercure')
 vi.mock('../api-documentation')
