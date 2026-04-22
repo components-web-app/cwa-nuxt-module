@@ -67,12 +67,12 @@ export default class ResourceStackManager {
   private readonly _resourcesStore: CwaResourcesStoreInterface
 
   constructor(private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
+    this._adminStore = this.adminStoreDefinition.useStore()
+    this._resourcesStore = this.resourcesStoreDefinition.useStore()
     watch(() => this.isEditing, this.listenEditModeChange.bind(this))
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
-    this._adminStore = this.adminStoreDefinition.useStore()
-    this._resourcesStore = this.resourcesStoreDefinition.useStore()
   }
 
   private async handleCurrentStackItemChange(currentStackItem: ResourceStackItem | undefined) {
