@@ -1,14 +1,16 @@
 import { describe, expect, test } from 'vitest'
 import Forms from './forms'
 
+let formsByIdStoreState = {
+  current: {
+    byId: {},
+  },
+}
+
 function createForms() {
   const mockResourcesStore = {
     useStore() {
-      return {
-        current: {
-          byId: {},
-        },
-      }
+      return formsByIdStoreState
     },
   }
   // @ts-expect-error
@@ -28,9 +30,8 @@ describe('Forms', () => {
 
     test('should return nothing IF requested resource is NOT of type Form', () => {
       const iri = 'mockIri'
-      const { forms, resourcesStore } = createForms()
 
-      resourcesStore.useStore = () => ({
+      formsByIdStoreState = {
         current: {
           byId: {
             [iri]: {
@@ -40,16 +41,17 @@ describe('Forms', () => {
             },
           },
         },
-      })
+      }
+
+      const { forms, resourcesStore } = createForms()
 
       expect(forms.getForm(iri).value).toBeUndefined()
     })
 
     test('should return formatted form data IF requested resource is found AND is of type form', () => {
       const iri = 'mockIri'
-      const { forms, resourcesStore } = createForms()
 
-      resourcesStore.useStore = () => ({
+      formsByIdStoreState = {
         current: {
           byId: {
             [iri]: {
@@ -86,7 +88,9 @@ describe('Forms', () => {
             },
           },
         },
-      })
+      }
+
+      const { forms, resourcesStore } = createForms()
 
       expect(forms.getForm(iri).value).toEqual({
         'form full name': {
@@ -120,10 +124,9 @@ describe('Forms', () => {
   describe('get form view errors', () => {
     test('should return errors BASED on form data AND field', () => {
       const iri = 'mockIri'
-      const { forms, resourcesStore } = createForms()
       const mockErrors = ['oops', ':(']
 
-      resourcesStore.useStore = () => ({
+      formsByIdStoreState = {
         current: {
           byId: {
             [iri]: {
@@ -139,16 +142,17 @@ describe('Forms', () => {
             },
           },
         },
-      })
+      }
+
+      const { forms, resourcesStore } = createForms()
 
       expect(forms.getFormViewErrors(iri, 'test_form').value).toEqual(mockErrors)
     })
 
     test('should return nothing IF no there are no errors present', () => {
       const iri = 'mockIri'
-      const { forms, resourcesStore } = createForms()
 
-      resourcesStore.useStore = () => ({
+      formsByIdStoreState = {
         current: {
           byId: {
             [iri]: {
@@ -163,7 +167,9 @@ describe('Forms', () => {
             },
           },
         },
-      })
+      }
+
+      const { forms, resourcesStore } = createForms()
 
       expect(forms.getFormViewErrors(iri, 'test_form').value).toBeUndefined()
     })
