@@ -4,14 +4,14 @@ import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import * as utils from '#cwa/resources/resource-utils'
 
-function createResources() {
+function createResources(mockFetcherStoreResponse: any = undefined, mockResourcesStoreResponse: any = undefined) {
   const mockResourcesStore = {
     useStore() {
       const current = {
         currentIds: [] as string[],
         byId: {},
       }
-      return {
+      return mockResourcesStoreResponse || {
         current,
         getResource: vi.fn(id => current.byId[id]),
       }
@@ -20,7 +20,7 @@ function createResources() {
 
   const mockFetcherStore = {
     useStore() {
-      return {
+      return mockFetcherStoreResponse || {
         primaryFetch: {
           fetchingToken: '123' as string | null,
         },
@@ -863,14 +863,11 @@ describe('Resources', () => {
 
   describe('resourceLoadStatus getter', () => {
     test('should return load status from store', () => {
-      const { resources, resourcesStore } = createResources()
-      const initialState = resourcesStore.useStore()
       const mockStatus = 'mock status'
-
-      resourcesStore.useStore = () => ({
-        ...initialState,
+      const resourcesMock = {
         resourceLoadStatus: mockStatus,
-      })
+      }
+      const { resources } = createResources(undefined, resourcesMock)
 
       expect(resources.resourceLoadStatus).toEqual(mockStatus)
     })
@@ -878,10 +875,8 @@ describe('Resources', () => {
 
   describe('fetcherStore getter', () => {
     test('should return fetcher store', () => {
-      const { resources, fetcherStore } = createResources()
       const mockStore = { mock: { fetcher: 'store' } }
-
-      fetcherStore.useStore = () => mockStore
+      const { resources } = createResources(mockStore)
 
       expect(resources.fetcherStore).toEqual(mockStore)
     })
@@ -889,10 +884,8 @@ describe('Resources', () => {
 
   describe('resourcesStore getter', () => {
     test('should return resources store', () => {
-      const { resources, resourcesStore } = createResources()
       const mockStore = { mock: { resources: 'store' } }
-
-      resourcesStore.useStore = () => mockStore
+      const { resources } = createResources(undefined, mockStore)
 
       expect(resources.resourcesStore).toEqual(mockStore)
     })
