@@ -8,10 +8,10 @@ export default defineVitestConfig({
     },
     environment: 'happy-dom', // or node or nuxt
     coverage: {
-      reportsDirectory: '../../coverage',
+      reportsDirectory: './coverage',
       provider: 'v8',
       include: ['src/**'],
-      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*.d.mts'],
+      exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts', 'src/**/*.d.ts', 'src/**/*.d.mts', 'src/**/*.md', 'src/**/*.json', 'src/**/.DS_Store'],
     },
     environmentOptions: {
       nuxt: {
@@ -25,7 +25,6 @@ export default defineVitestConfig({
             enabled: false,
           },
         },
-
       },
     },
     resolveSnapshotPath(path: string, extension: string) {
