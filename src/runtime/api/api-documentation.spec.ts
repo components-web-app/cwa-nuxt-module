@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, test, vi, beforeEach, expect, beforeAll } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { consola as logger } from 'consola'

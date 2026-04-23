@@ -1,4 +1,4 @@
-// @vitest-environment nuxt
+// @vitest-environment happy-dom
 
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
@@ -88,7 +88,7 @@ describe('Fetcher -> fetchRoute', () => {
 
   test.each([
     {
-      path: '/some-route', apiPath: '/_api/_/routes//some-route', manifestPath: '/_api/_/routes_manifest//some-route',
+      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/routes_manifest//some-route',
     },
     {
       path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: undefined,

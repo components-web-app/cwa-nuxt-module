@@ -3,7 +3,10 @@ import { defineVitestConfig } from '@nuxt/test-utils/config'
 
 export default defineVitestConfig({
   test: {
-    environment: 'nuxt',
+    onConsoleLog: (l) => {
+      return !l.includes('<Suspense> is an experimental feature')
+    },
+    // environment: 'happy-dom',
     coverage: {
       reportsDirectory: '../../coverage',
       provider: 'v8',

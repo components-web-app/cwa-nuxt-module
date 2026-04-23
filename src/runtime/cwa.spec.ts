@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { CwaModuleOptions } from '#cwa/types'
 import type { Router } from 'vue-router'

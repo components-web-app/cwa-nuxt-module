@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, vi, test, expect } from 'vitest'
 import type { SpyFn } from 'tinyspy'
 import { Storage } from './storage'

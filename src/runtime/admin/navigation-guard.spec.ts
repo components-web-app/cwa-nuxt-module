@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { Router } from 'vue-router'
 import { AdminStore } from '../storage/stores/admin/admin-store'
@@ -31,12 +33,12 @@ function createRouterMock() {
 function createNavigationGuard(customRouter?: Router) {
   const router = customRouter || createRouterMock()
   const navigationGuardInstance = new NavigationGuard(router as any, new AdminStore('storeName'))
-  vi.spyOn(navigationGuardInstance.router, 'push');
-  vi.spyOn(navigationGuardInstance.router, 'go');
-  vi.spyOn(navigationGuardInstance.router, 'back');
-  vi.spyOn(navigationGuardInstance.router, 'forward');
-  vi.spyOn(navigationGuardInstance.router, 'replace');
-  return navigationGuardInstance;
+  vi.spyOn(navigationGuardInstance.router, 'push')
+  vi.spyOn(navigationGuardInstance.router, 'go')
+  vi.spyOn(navigationGuardInstance.router, 'back')
+  vi.spyOn(navigationGuardInstance.router, 'forward')
+  vi.spyOn(navigationGuardInstance.router, 'replace')
+  return navigationGuardInstance
 }
 
 describe('Test NavigationGuard Class', () => {

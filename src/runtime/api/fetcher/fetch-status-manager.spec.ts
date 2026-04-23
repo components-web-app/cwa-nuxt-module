@@ -1,4 +1,4 @@
-// @vitest-environment nuxt
+// @vitest-environment happy-dom
 
 import * as vue from 'vue'
 import { afterEach, beforeEach, describe, vi, test, expect } from 'vitest'

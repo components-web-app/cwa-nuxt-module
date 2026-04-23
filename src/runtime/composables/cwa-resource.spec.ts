@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, vi, test } from 'vitest'
 import { ref } from 'vue'
 import * as cwaComposable from '#cwa/composables/cwa'

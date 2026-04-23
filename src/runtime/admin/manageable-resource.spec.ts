@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, test, vi, expect, afterEach } from 'vitest'
 import { computed, ref } from 'vue'
 import type { Mock } from '@vitest/spy'
