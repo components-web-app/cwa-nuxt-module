@@ -30,6 +30,11 @@
       Add the component to populate this component group
     </span>
   </div>
+  <div v-else-if="!locationResource && !$cwa.resources.isLoading.value">
+    <CwaUiAlertWarning>
+      The location provided `{{ location }}` is not a current resource
+    </CwaUiAlertWarning>
+  </div>
   <div
     v-else-if="signedInAndResourceExists"
     class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative"
@@ -71,16 +76,17 @@ const $cwa = useCwa()
 
 useCwaResourceManageable(iri)
 
-const props = withDefaults(defineProps<{ reference: string, location: string, allowedComponents?: string[] | null }>(), { allowedComponents: null })
+type PropsType = { reference: string, locationReference?: string, location: string, allowedComponents?: string[] | null }
+const props = withDefaults(defineProps<PropsType>(), { allowedComponents: null })
+
+const locationResource = computed(() => {
+  return $cwa.resources.getResource(props.location).value
+})
 
 const fullReference = computed(() => {
-  const locationResource = $cwa.resources.getResource(props.location)
-  if (!locationResource.value) {
-    return
-  }
   // do not use reference as configured by the user as this can change, so use IRI as reference here
   // const locationResourceReference = locationResource.value.data?.reference
-  return `${props.reference}_${props.location}`
+  return `${props.reference}_${props.locationReference || props.location}`
 })
 
 const resource = computed(() => {
