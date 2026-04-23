@@ -44,8 +44,8 @@ export class ComponentGroupUtilSynchronizer {
 
   public createSyncWatcher(ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
-      [this.resources.isLoading, this.auth.signedIn, ops.resource],
-      async ([isLoading, signedIn, resource]) => {
+      [this.resources.isLoading, this.auth.signedIn, ops.resource, ops.location],
+      async ([isLoading, signedIn, resource, locationIri]) => {
         if (!isLoading && signedIn) {
           if (!resource) {
             // see if it exists by reference before we get a component group already exists notice...
@@ -53,21 +53,21 @@ export class ComponentGroupUtilSynchronizer {
               path: `/_/component_groups/${ops.fullReference}`,
             })
             if (resourceByRef) {
-              const locationResource = this.resources.getResource(ops.location)
-              if (locationResource.value?.data) {
-                await this.resourcesManager.updateResource({
-                  endpoint: locationResource.value.data['@id'],
-                  data: {
-                    componentGroups: [
-                      ...(locationResource.value.data.componentGroups || []),
-                      resourceByRef['@id'],
-                    ],
-                  },
-                })
+              const locationResource = this.resources.getResource(locationIri)
+              if (!locationResource.value?.data) {
                 return
               }
+              await this.resourcesManager.updateResource({
+                endpoint: locationResource.value.data['@id'],
+                data: {
+                  componentGroups: [
+                    ...(locationResource.value.data.componentGroups || []),
+                    resourceByRef['@id'],
+                  ],
+                },
+              })
+              return
             }
-
             await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
           }
           else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
