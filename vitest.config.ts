@@ -6,7 +6,7 @@ export default defineVitestConfig({
     onConsoleLog: (l) => {
       return !l.includes('<Suspense> is an experimental feature')
     },
-    // environment: 'happy-dom',
+    environment: 'happy-dom', // or node or nuxt
     coverage: {
       reportsDirectory: '../../coverage',
       provider: 'v8',

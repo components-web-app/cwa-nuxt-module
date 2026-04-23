@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { Mock } from 'vitest'
 import mitt from 'mitt'

@@ -1,5 +1,3 @@
-// @vitest-environment nuxt
-
 import { describe, vi, test, expect } from 'vitest'
 import { ResourcesManager } from './resources-manager'
 import type { CwaResource } from '#cwa/resources/resource-utils'

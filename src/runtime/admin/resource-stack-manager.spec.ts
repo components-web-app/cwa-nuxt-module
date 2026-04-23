@@ -1,5 +1,3 @@
-// @vitest-environment nuxt
-
 import { describe, expect, test, vi } from 'vitest'
 import { reactive, ref } from 'vue'
 import ResourceStackManager from './resource-stack-manager'
