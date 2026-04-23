@@ -1,10 +1,12 @@
+// @vitest-environment happy-dom
+
 import { describe, test, vi, expect, afterEach } from 'vitest'
 import { computed, ref } from 'vue'
 import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
 import ManageableResource from './manageable-resource'
-import * as ManagerTabsResolver from '#cwa/admin/manager-tabs-resolver'
+import * as ManagerTabsResolver from './manager-tabs-resolver'
 
 const Node = {
   ELEMENT_NODE: 1,
@@ -48,33 +50,37 @@ vi.mock('#cwa/resources/resource-utils', () => {
 
 vi.mock('../cwa', () => {
   return {
-    default: vi.fn(() => ({
-      admin: {
-        eventBus: {
-          on: vi.fn(),
-          off: vi.fn(),
-          emit: vi.fn(),
+    default: vi.fn(function () {
+      return {
+        admin: {
+          eventBus: {
+            on: vi.fn(),
+            off: vi.fn(),
+            emit: vi.fn(),
+          },
+          resourceStackManager: {
+            addToStack: vi.fn(),
+            currentStackItem: ref({ iri: '/something' }),
+          },
         },
-        resourceStackManager: {
-          addToStack: vi.fn(),
-          currentStackItem: ref({ iri: '/something' }),
+        resources: {
+          findAllPublishableIris: vi.fn(iri => ([iri])),
         },
-      },
-      resources: {
-        findAllPublishableIris: vi.fn(iri => ([iri])),
-      },
-      resourcesManager: {
-        addResourceEvent: ref(),
-      },
-    })),
+        resourcesManager: {
+          addResourceEvent: ref(),
+        },
+      }
+    }),
   }
 })
 
 vi.mock('./manager-tabs-resolver', () => {
   return {
-    default: vi.fn(() => ({
-      resolve: vi.fn(),
-    })),
+    default: vi.fn(function () {
+      return {
+        resolve: vi.fn(),
+      }
+    }),
   }
 })
 

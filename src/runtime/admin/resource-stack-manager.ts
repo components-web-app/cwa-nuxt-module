@@ -7,8 +7,8 @@ import { consola as logger } from 'consola'
 import type { App, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import type { AdminStore } from '../storage/stores/admin/admin-store'
-import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
 
@@ -63,8 +63,12 @@ export default class ResourceStackManager {
   private focusProxy: ComponentPublicInstance | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
+  private readonly _adminStore: CwaAdminStoreInterface
+  private readonly _resourcesStore: CwaResourcesStoreInterface
 
   constructor(private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
+    this._adminStore = this.adminStoreDefinition.useStore()
+    this._resourcesStore = this.resourcesStoreDefinition.useStore()
     watch(() => this.isEditing, this.listenEditModeChange.bind(this))
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
@@ -498,11 +502,11 @@ export default class ResourceStackManager {
     return this.adminStore.state.isEditing
   }
 
-  private get adminStore() {
-    return this.adminStoreDefinition.useStore()
+  private get adminStore(): CwaAdminStoreInterface {
+    return this._adminStore
   }
 
-  private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+  private get resourcesStore(): CwaResourcesStoreInterface {
+    return this._resourcesStore
   }
 }

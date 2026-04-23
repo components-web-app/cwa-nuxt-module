@@ -7,10 +7,10 @@ import * as cwaComposables from '../../../composables/cwa'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
 import { ComponentGroupUtilSynchronizer } from './ComponentGroup.Util.Synchronizer'
 
-vi.mock('../../../resources/resource-utils', async () => {
-  const { CwaResourceTypes } = await vi.importActual('../../../resources/resource-utils')
+vi.mock('../../../resources/resource-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../resources/resource-utils')>()
   return {
-    CwaResourceTypes,
+    ...actual,
     getResourceTypeFromIri: vi.fn(),
   }
 })

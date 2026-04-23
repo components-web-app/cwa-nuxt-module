@@ -11,8 +11,8 @@ import getters from './getters'
 import * as app from 'nuxt/app'
 import { createError } from 'h3'
 
-vi.mock('../../../resources/resource-utils', async () => {
-  const actual = await vi.importActual<any>('../../../resources/resource-utils')
+vi.mock('../../../resources/resource-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof ResourceUtils>()
   return {
     ...actual,
     isCwaResourceSame: vi.fn(() => false),

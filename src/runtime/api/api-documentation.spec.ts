@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, test, vi, beforeEach, expect, beforeAll } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { consola as logger } from 'consola'
@@ -14,14 +16,16 @@ const mockedFetchResponseTime = 2
 vi.mock('../storage/stores/api-documentation/state')
 vi.mock('./fetcher/cwa-fetch', () => {
   return {
-    default: vi.fn(() => ({
-      fetch: vi.fn(async (path) => {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 2)
-        })
-        return 'response from ' + path
-      }),
-    })),
+    default: vi.fn(function () {
+      return {
+        fetch: vi.fn(async (path) => {
+          await new Promise((resolve) => {
+            setTimeout(resolve, 2)
+          })
+          return 'response from ' + path
+        }),
+      }
+    }),
   }
 })
 

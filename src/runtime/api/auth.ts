@@ -2,11 +2,11 @@ import type { CookieRef } from 'nuxt/app'
 import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import type { AuthStore } from '../storage/stores/auth/auth-store'
+import type { AuthStore, CwaAuthStoreInterface } from '../storage/stores/auth/auth-store'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import type { CwaUser } from '../storage/stores/auth/state'
-import type { ResourcesStore } from '../storage/stores/resources/resources-store'
-import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type CwaFetch from './fetcher/cwa-fetch'
 import type Mercure from './mercure'
 import type Fetcher from './fetcher/fetcher'
@@ -46,6 +46,9 @@ interface ResetPasswordEvent extends BaseTokenUserEvent {
 export default class Auth {
   private loading: Ref<boolean>
   private hasCheckedMeEndpointForInit = false
+  private readonly _authStore: CwaAuthStoreInterface
+  private readonly _resourcesStore: CwaResourcesStoreInterface
+  private readonly _fetcherStore: CwaFetcherStoreInterface
 
   public constructor(
     private readonly cwaFetch: CwaFetch,
@@ -53,12 +56,15 @@ export default class Auth {
     private readonly fetcher: Fetcher,
     private readonly admin: Admin,
     private readonly apiDocumentation: ApiDocumentation,
-    private readonly authStoreDefinition: AuthStore,
-    private readonly resourcesStoreDefinition: ResourcesStore,
-    private readonly fetcherStoreDefinition: FetcherStore,
+    authStoreDefinition: AuthStore,
+    resourcesStoreDefinition: ResourcesStore,
+    fetcherStoreDefinition: FetcherStore,
     private readonly authCookie: CookieRef<string | null>,
   ) {
     this.loading = ref(false)
+    this._authStore = authStoreDefinition.useStore()
+    this._resourcesStore = resourcesStoreDefinition.useStore()
+    this._fetcherStore = fetcherStoreDefinition.useStore()
   }
 
   public async signIn(credentials: Credentials) {
@@ -318,14 +324,14 @@ export default class Auth {
   }
 
   private get authStore() {
-    return this.authStoreDefinition.useStore()
+    return this._authStore
   }
 
   private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+    return this._resourcesStore
   }
 
   private get fetcherStore() {
-    return this.fetcherStoreDefinition.useStore()
+    return this._fetcherStore
   }
 }

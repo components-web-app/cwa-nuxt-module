@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { CwaModuleOptions } from '#cwa/types'
 import type { Router } from 'vue-router'
@@ -22,75 +24,112 @@ vi.mock('#app/composables/cookie.js', () => {
   }
 })
 
-vi.mock('#app/nuxt', () => {
-  return {
-    useRuntimeConfig: vi.fn(() => ({ public: { cwa: { apiUrl: '', apiUrlBrowser: '' } } })),
-  }
-})
-
 vi.mock('./storage/storage', () => {
   return {
-    Storage: vi.fn(() => ({
-      stores: {
-        apiDocumentation: vi.fn(),
-        resources: vi.fn(),
-        fetcher: vi.fn(),
-        mercure: vi.fn(),
-        admin: vi.fn(),
-        auth: vi.fn(),
-        error: vi.fn(),
-      },
-    })),
+    Storage: vi.fn(function () {
+      return {
+        stores: {
+          apiDocumentation: {
+            useStore: vi.fn(),
+          },
+          resources: {
+            useStore: vi.fn(),
+          },
+          fetcher: {
+            useStore: vi.fn(),
+          },
+          mercure: {
+            useStore: vi.fn(),
+          },
+          admin: {
+            useStore: vi.fn(),
+          },
+          auth: {
+            useStore: vi.fn(),
+          },
+          error: {
+            useStore: vi.fn(),
+          },
+          siteConfig: {
+            useStore: vi.fn(),
+          },
+        },
+      }
+    }),
   }
 })
 
-vi.mock('./api/fetcher/fetcher', () => {
+vi.mock('./api/fetcher/fetcher', function () {
   return {
-    default: vi.fn(() => ({ })),
+    default: vi.fn(function () {}),
   }
 })
 
-vi.mock('./api/mercure', () => {
-  const MercureInstance = vi.fn(() => ({ name: 'MERCURE', setFetcher: vi.fn(), setRequestCount: vi.fn() }))
+vi.mock('./api/mercure', function () {
+  const MercureInstance = vi.fn(function () {
+    return {
+      name: 'MERCURE',
+      setFetcher: vi.fn(),
+      setRequestCount: vi.fn(),
+    }
+  })
+
   return {
     default: MercureInstance,
   }
 })
 
-vi.mock('./api/api-documentation', () => {
+vi.mock('./api/api-documentation', function () {
   const getApiDocumentation = vi.fn((refresh = false) => {
     return 'refresh:' + refresh
   })
+
   return {
-    default: vi.fn(() => ({
-      getApiDocumentation,
-    })),
+    default: vi.fn(function () {
+      return {
+        getApiDocumentation,
+      }
+    }),
   }
 })
 vi.mock('./api/fetcher/cwa-fetch')
 vi.mock('./api/fetcher/fetch-status-manager')
-vi.mock('./resources/resources-manager', () => {
+vi.mock('./resources/resources-manager', function () {
   return {
-    ResourcesManager: vi.fn(() => ({ requestCount: 999 })),
+    ResourcesManager: vi.fn(function () {
+      return {
+        requestCount: 999,
+      }
+    }),
   }
 })
 vi.mock('./resources/resources')
-vi.mock('./api/auth', () => {
+vi.mock('./api/auth', function () {
   return {
-    default: vi.fn(() => ({ signedIn: 'am-i-signed-in?' })),
+    default: vi.fn(function () {
+      return {
+        signedIn: 'am-i-signed-in?',
+      }
+    }),
   }
 })
 vi.mock('./api/forms')
-vi.mock('./admin/admin', () => {
+vi.mock('./admin/admin', function () {
   return {
-    default: vi.fn(() => ({ resourceManager: 'resourceManagerMockAsString' })),
+    default: vi.fn(function () {
+      return {
+        resourceManager: 'resourceManagerMockAsString',
+      }
+    }),
   }
 })
-vi.mock('./admin/navigation-guard', () => {
+vi.mock('./admin/navigation-guard', function () {
   return {
-    default: vi.fn(() => ({
-      adminNavigationGuardFn: vi.fn(),
-    })),
+    default: vi.fn(function () {
+      return {
+        adminNavigationGuardFn: vi.fn(),
+      }
+    }),
   }
 })
 

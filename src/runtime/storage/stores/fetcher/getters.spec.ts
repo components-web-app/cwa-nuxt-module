@@ -5,12 +5,15 @@ import type { CwaFetcherGettersInterface } from './getters'
 import getters from './getters'
 import { FetcherGetterUtils } from './getter-utils'
 
+const fetcherGetterUtilsMock = {
+  getFetchStatusByToken: vi.fn(),
+  isFetchResolving: vi.fn(),
+}
 vi.mock('./getter-utils', () => {
   return {
-    FetcherGetterUtils: vi.fn(() => ({
-      getFetchStatusByToken: vi.fn(),
-      isFetchResolving: vi.fn(),
-    })),
+    FetcherGetterUtils: vi.fn(function () {
+      return fetcherGetterUtilsMock
+    }),
   }
 })
 
@@ -62,6 +65,7 @@ describe('FetcherStore getters -> resolvedSuccessFetchStatus', () => {
   beforeEach(() => {
     state = createState()
     state.primaryFetch.successToken = 'success-token'
+    FetcherGetterUtils.mockRestore()
     getterFns = getters(state)
   })
 

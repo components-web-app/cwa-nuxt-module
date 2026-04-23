@@ -44,8 +44,8 @@ const route = useRoute()
 const err = useError()
 
 const fallbackTitle = computed(() => {
-  if (err.value && [404, 500].includes(err.value?.statusCode)) {
-    return `${err.value.statusCode} - ${err.value.message}`
+  if (typeof err.value?.status === 'number' && [404, 500].includes(err.value.status)) {
+    return `${err.value.status} - ${err.value.message}`
   }
   if (typeof route.meta?.title === 'string')
     return route.meta?.title
