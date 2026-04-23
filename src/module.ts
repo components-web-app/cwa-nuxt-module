@@ -19,7 +19,7 @@ import {
   extendRouteRules,
   addServerPlugin,
 } from '@nuxt/kit'
-import type { Component, NuxtPage } from '@nuxt/schema'
+import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
@@ -70,38 +70,38 @@ export const NAME = '@cwa/nuxt' as const
 export default defineNuxtModule<CwaModuleOptions>({
   moduleDependencies: {
     '@pinia/nuxt': {
-      version: '^0.11.2',
+      version: '^0.11.3',
       optional: false,
     },
     '@nuxtjs/robots': {
-      version: '^5.5',
+      version: '^6.0',
     },
     '@nuxtjs/sitemap': {
-      version: '^7.4',
+      version: '^8.0',
       optional: false,
       defaults: {
         sitemaps: {
           cwa: {
             sources: ['/__sitemap__/cwa-urls'],
-            chunks: false,
+            chunks: true,
           },
         },
       },
     },
     'nuxt-link-checker': {
-      version: '^4.3',
-    },
-    'nuxt-og-image': {
-      version: '^5.1',
-    },
-    'nuxt-schema-org': {
       version: '^5.0',
     },
+    'nuxt-og-image': {
+      version: '^6.4',
+    },
+    'nuxt-schema-org': {
+      version: '^6.0',
+    },
     'nuxt-seo-utils': {
-      version: '^7.0',
+      version: '^8.1',
     },
     'nuxt-site-config': {
-      version: '^3.2',
+      version: '^4.0.8',
     },
   },
   meta: {
@@ -239,6 +239,10 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
   admin?: boolean
   disabled?: boolean
   staticLayout?: GlobalComponentNames
+  fetch?: {
+    iri: string
+    manifestPath?: string
+  }
 }
 export * from 'vue-router'
 declare module 'vue-router' {
@@ -247,6 +251,7 @@ declare module 'vue-router' {
   }
 }`,
       })
+
       addPlugin({
         src: resolve('./runtime/plugin'),
       })
@@ -337,8 +342,9 @@ declare module 'vue-router' {
       }
     })
 
-    nuxt.hook('vite:extendConfig', (config) => {
+    nuxt.hook('vite:extendConfig', (config: Readonly<ViteConfig>) => {
       logger.info(`Extending Vite optimizeDeps config for ${NAME} module dependencies...`)
+      // @ts-expect-error optimizeDeps is readonly but it can also be undefined. The config reading in is Readonly which is why... not sure how else to extend
       config.optimizeDeps = config.optimizeDeps || {}
       config.optimizeDeps.include = config.optimizeDeps.include || []
       config.optimizeDeps.exclude = config.optimizeDeps.exclude || []

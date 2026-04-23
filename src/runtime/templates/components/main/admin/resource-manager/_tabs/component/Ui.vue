@@ -65,7 +65,11 @@ const classOptions = computed(() => {
 })
 
 const disabled = exposeMeta.disabled
-disabled.value = !current.value?.styles?.value?.classes.length && !current.value?.ui?.length
+
+watchEffect(() => {
+  const classesObj = current.value?.styles?.value?.classes
+  disabled.value = (!classesObj || !Object.keys(classesObj).length) && !current.value?.ui?.length
+})
 
 const components = computed(() => {
   return current.value?.ui
@@ -109,15 +113,25 @@ defineExpose(exposeMeta)
 
 <template>
   <div>
-    <div class="cwa:flex cwa:gap-x-2">
-      <CwaUiFormSelect
-        v-model="uiSelect.model.value"
-        :options="uiSelect.options.value"
-      />
-      <CwaUiFormSelect
-        v-model="classNamesSelect.model.value"
-        :options="classNamesSelect.options.value"
-      />
+    <div class="cwa:flex cwa:gap-x-6">
+      <CwaUiFormLabelWrapper
+        v-if="uiSelect.options.value.length > 1"
+        label="UI:"
+      >
+        <CwaUiFormSelect
+          v-model="uiSelect.model.value"
+          :options="uiSelect.options.value"
+        />
+      </CwaUiFormLabelWrapper>
+      <CwaUiFormLabelWrapper
+        v-if="classNamesSelect.options.value.length > 1"
+        label="Style:"
+      >
+        <CwaUiFormSelect
+          v-model="classNamesSelect.model.value"
+          :options="classNamesSelect.options.value"
+        />
+      </CwaUiFormLabelWrapper>
     </div>
   </div>
 </template>

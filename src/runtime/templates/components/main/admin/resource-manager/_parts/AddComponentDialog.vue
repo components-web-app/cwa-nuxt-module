@@ -178,10 +178,12 @@ const resourceDescription = computed(() => {
 })
 
 const defaultComponentData = computed<{ [key: string]: any }>(() => {
+  const defaultData = selectedResourceMeta.value?.defaultData || {}
   if (selectedComponent.value !== 'ComponentPosition') {
-    return {}
+    return defaultData
   }
   return {
+    ...defaultData,
     pageDataProperty: dynamicPropertySelect.model.value,
   }
 })

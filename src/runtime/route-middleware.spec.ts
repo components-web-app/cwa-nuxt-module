@@ -5,7 +5,7 @@ import { flushPromises } from '@vue/test-utils'
 import { computed } from 'vue'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
-import * as nuxt from '#app'
+import * as nuxt from 'nuxt/app'
 
 function createToRoute(cwa?: boolean | undefined): RouteLocationNormalizedLoaded {
   if (cwa === undefined) {
@@ -165,8 +165,7 @@ describe('Test route middleware', () => {
     })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute)
-    expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
-    expect(nuxt.callWithNuxt).toHaveBeenCalledWith(nuxt.useNuxtApp.mock.results[0].value, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])
+    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 
   test('Client-side redirects', async () => {
@@ -184,7 +183,6 @@ describe('Test route middleware', () => {
     const toRoute = createToRoute()
     await routeMiddleware(toRoute)
     await flushPromises()
-    expect(nuxt.callWithNuxt).toHaveBeenCalledTimes(1)
-    expect(nuxt.callWithNuxt).toHaveBeenCalledWith(nuxt.useNuxtApp.mock.results[0].value, nuxt.navigateTo, ['/redirect-path', { redirectCode: 308 }])
+    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 })

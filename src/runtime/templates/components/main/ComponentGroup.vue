@@ -32,11 +32,12 @@
   </div>
   <div
     v-else-if="signedInAndResourceExists"
-    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5"
+    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative"
   >
     <LazyHotSpot
       screen-reader-action="Add component position"
       :iri="iri"
+      :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, location)"
     />
   </div>
 </template>
@@ -139,5 +140,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   componentGroupSynchronizer.stopSyncWatcher()
+})
+
+defineExpose({
+  componentPositions,
 })
 </script>

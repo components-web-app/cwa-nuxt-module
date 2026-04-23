@@ -1,16 +1,16 @@
-import type { ComponentPublicInstance, ComputedRef, Ref, ShallowRef, App } from 'vue'
-import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import type { Resources } from '#cwa/resources/resources'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import type { ComponentUi, ManagerTab } from '#cwa/types'
+import { useNuxtApp } from '#imports'
 import { consola as logger } from 'consola'
+import type { App, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
+import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import type { AdminStore } from '../storage/stores/admin/admin-store'
-import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
-import type { ComponentUi, ManagerTab } from '#cwa/types'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
-import type { Resources } from '#cwa/resources/resources'
-import { useNuxtApp } from '#imports'
 
 interface _ResourceStackItem {
   iri: string
@@ -43,6 +43,8 @@ export interface AddResourceEvent {
   pageDataProperty?: string
 }
 
+type GroupDisabledCacheItem = { iri: string, location?: string, isDisabled: boolean }
+
 export default class ResourceStackManager {
   public readonly forcePublishedVersion: Ref<boolean | undefined> = ref()
   public readonly showManager: Ref<boolean> = ref(false)
@@ -61,8 +63,12 @@ export default class ResourceStackManager {
   private focusProxy: ComponentPublicInstance | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
+  private readonly _adminStore: CwaAdminStoreInterface
+  private readonly _resourcesStore: CwaResourcesStoreInterface
 
   constructor(private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
+    this._adminStore = this.adminStoreDefinition.useStore()
+    this._resourcesStore = this.resourcesStoreDefinition.useStore()
     watch(() => this.isEditing, this.listenEditModeChange.bind(this))
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
@@ -201,6 +207,7 @@ export default class ResourceStackManager {
     const currentLength = fromStack.value.length
 
     if (!currentLength) {
+      this.isLayoutStack.value = this._isEditingLayout.value
       this.showManager.value = false
       return
     }
@@ -209,6 +216,7 @@ export default class ResourceStackManager {
       return
     }
 
+    // todo: switching to edit the layout from the Dev should also be able to trigger this notice...
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
       const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` }, fromContext)
       if (!confirmed) {
@@ -291,36 +299,71 @@ export default class ResourceStackManager {
     }
   }
 
-  public isComponentGroupDisabled(iri: string): boolean {
+  public isComponentGroupDisabled(iri: string, location?: string): boolean {
     if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP) {
       return false
     }
+    if (this.resources.isDataPage.value) {
+      if (this.isLayoutStack.value) {
+        // do not disable if we are modifying the layout
+        return false
+      }
 
-    return this.resources.isDataPage.value && !this.isLayoutStack.value
-  }
+      // when we are clicking it won't have a location until the stack is complete
+      if (!location) {
+        return true
+      }
 
-  public isComponentDisabled(iri: string): boolean {
-    if (getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT) {
-      return false
+      const locationType = getResourceTypeFromIri(location)
+      if (locationType === CwaResourceTypes.LAYOUT) {
+        return false
+      }
+      return locationType !== undefined && [CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(locationType)
     }
 
-    return this.resources.isDataPage.value && !this.resources.isPageDataResource(iri).value && !this.isLayoutStack.value
+    return false
   }
 
   private filterDisabledStackItems(isContext: boolean) {
-    const stack = this.getCurrentStack(isContext)
+    const stackRef = this.getCurrentStack(isContext)
+    const stack = stackRef.value
+    const stackEntries = stack.entries()
     const newStack: ResourceStackItem[] = []
+    const groupDisabledCache: Record<string, GroupDisabledCacheItem> = {}
 
-    for (const item of stack.value) {
-      if (this.isComponentGroupDisabled(item.iri)) {
-        continue
+    const findNextComponentGroup = (startIndex: number): GroupDisabledCacheItem | undefined => {
+      for (let i = startIndex; i < stack.length; i++) {
+        const item = stack[i] as ResourceStackItem
+        if (getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_GROUP) {
+          if (groupDisabledCache[item.iri]) {
+            return groupDisabledCache[item.iri]
+          }
+
+          const location = stack[i + 1]?.iri
+          // if no location, it may be in the layout or the page... but top level
+
+          groupDisabledCache[item.iri] = {
+            iri: item.iri,
+            location,
+            isDisabled: this.isComponentGroupDisabled(item.iri, location),
+          }
+          return groupDisabledCache[item.iri]
+        }
       }
-      if (this.isComponentDisabled(item.iri)) {
-        continue
+    }
+
+    for (const [index, item] of stackEntries) {
+      const resourceType = getResourceTypeFromIri(item.iri)
+      if (resourceType && [CwaResourceTypes.COMPONENT_GROUP, CwaResourceTypes.COMPONENT].includes(resourceType)) {
+        const nextGroup = findNextComponentGroup(index)
+        // this.resources.isDataPage.value && !this.resources.isPageDataResource(item.iri).value
+        if (!this.resources.isPageDataResource(item.iri).value && nextGroup?.isDisabled) {
+          continue
+        }
       }
       newStack.push(item)
     }
-    stack.value = newStack
+    stackRef.value = newStack
   }
 
   private getCurrentStack(isContext: boolean) {
@@ -459,11 +502,11 @@ export default class ResourceStackManager {
     return this.adminStore.state.isEditing
   }
 
-  private get adminStore() {
-    return this.adminStoreDefinition.useStore()
+  private get adminStore(): CwaAdminStoreInterface {
+    return this._adminStore
   }
 
-  private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+  private get resourcesStore(): CwaResourcesStoreInterface {
+    return this._resourcesStore
   }
 }

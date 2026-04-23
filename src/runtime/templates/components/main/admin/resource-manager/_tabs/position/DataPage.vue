@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { navigateTo } from '#app'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 
@@ -12,14 +11,6 @@ const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
 })
 
 defineExpose(exposeMeta)
-
-async function goToTemplate() {
-  if (!$cwa.resources.pageIri.value) {
-    return
-  }
-  await navigateTo(`${$cwa.resources.pageIri.value}?cwa_force=true`)
-  $cwa.admin.toggleEdit(false)
-}
 
 const hasDynamicComponent = computed(() => {
   if (!resource.value?.data?.component) {
@@ -108,7 +99,7 @@ function selectComponent() {
 <template>
   <div>
     <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
-      <div v-if="!!resource?.data?._metadata.isDynamicPosition">
+      <div>
         <CwaUiFormButton
           v-if="hasDynamicComponent"
           @click="selectComponent"
@@ -122,15 +113,6 @@ function selectComponent() {
         >
           Add {{ dynamicComponentName }}
         </CwaUiFormButton>
-      </div>
-      <div class="cwa:text-sm">
-        <span class="cwa:text-stone-400">Edit this position or fallback component?</span>
-        <a
-          href="#"
-          @click.prevent="goToTemplate"
-        >
-          Go to page dynamic page
-        </a>
       </div>
     </div>
   </div>

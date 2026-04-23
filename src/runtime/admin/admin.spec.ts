@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { Mock } from 'vitest'
 import mitt from 'mitt'
@@ -17,24 +16,40 @@ vi.mock('./resource-manager', () => {
 vi.mock('../resources/resources')
 vi.mock('./resource-stack-manager', () => {
   return {
-    default: vi.fn(() => ({
-      showManager: { value: '' },
-      isEditingLayout: { value: '' },
-    })),
+    default: vi.fn(function () {
+      return {
+        showManager: { value: '' },
+        isEditingLayout: { value: '' },
+      }
+    }),
   }
 })
 
+let adminStoreMock = {
+  toggleEdit: vi.fn(),
+  state: {
+    isEditing: 'isEdit',
+    navigationGuardDisabled: 'ngs',
+  },
+}
+
 vi.mock('../storage/stores/admin/admin-store', () => {
   return {
-    AdminStore: vi.fn(() => ({
-      useStore: vi.fn(() => ({
-        toggleEdit: vi.fn(),
-        state: {
-          isEditing: 'isEdit',
-          navigationGuardDisabled: 'ngs',
-        },
-      })),
-    })),
+    AdminStore: vi.fn(function () {
+      return {
+        useStore: vi.fn(() => adminStoreMock),
+      }
+    }),
+  }
+})
+
+vi.mock('../storage/stores/resources/resources-store', () => {
+  return {
+    ResourcesStore: vi.fn(function () {
+      return {
+        useStore: vi.fn(() => ({})),
+      }
+    }),
   }
 })
 
@@ -59,31 +74,33 @@ describe('Admin class', () => {
   })
 
   test('toggleEdit', () => {
-    admin = createAdmin()
     const toggleSpy = vi.fn()
 
-    admin.adminStoreDefinition.useStore = () => ({
+    adminStoreMock = {
       toggleEdit: toggleSpy,
       state: {
         isEditing: 'isEdit',
         navigationGuardDisabled: 'ngs',
       },
-    })
+    }
+
+    admin = createAdmin()
 
     expect(admin.toggleEdit(true)).toBeUndefined()
     expect(toggleSpy).toHaveBeenCalledWith(true)
   })
   test('setNavigationGuardDisabled', () => {
-    admin = createAdmin()
     const mockState = {
       isEditing: 'isEdit',
       navigationGuardDisabled: 'ngs',
     }
 
-    admin.adminStoreDefinition.useStore = () => ({
+    adminStoreMock = {
       toggleEdit: vi.fn(),
       state: mockState,
-    })
+    }
+
+    admin = createAdmin()
 
     expect(admin.setNavigationGuardDisabled(false)).toBeUndefined()
     expect(mockState.navigationGuardDisabled).toBe(false)
@@ -97,13 +114,14 @@ describe('Admin class', () => {
     expect(admin.isEditing).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.isEditing)
   })
   test('adminStore getter', () => {
-    admin = createAdmin()
     const mockStore = {
       toggleEdit: vi.fn(),
       state: {},
     }
 
-    admin.adminStoreDefinition.useStore = () => mockStore
+    adminStoreMock = mockStore
+
+    admin = createAdmin()
 
     expect(admin.adminStore).toBe(mockStore)
   })
@@ -121,6 +139,6 @@ describe('Admin class', () => {
   test('should have component manager created', () => {
     admin = createAdmin()
 
-    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(admin.adminStoreDefinition, admin.resourcesStoreDefinition, Resources.mock.results[0].value)
+    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(AdminStore.mock.results[0].value, ResourcesStore.mock.results[0].value, Resources.mock.results[0].value)
   })
 })

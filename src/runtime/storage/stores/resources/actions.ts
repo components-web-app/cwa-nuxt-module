@@ -8,6 +8,7 @@ import {
   isCwaResourceSame,
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { createError } from 'h3'
 import type { CwaResourcesGettersInterface } from './getters'
 import type {
   CwaCurrentResourceInterface,
@@ -17,7 +18,7 @@ import type {
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
-import { showError, useResponseHeader } from '#app'
+import { showError, useResponseHeader } from 'nuxt/app'
 import { parse as parseCookie } from 'set-cookie-parser'
 import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'
 
@@ -37,6 +38,7 @@ export interface SetResourceCompletedStatusEvent {
   path?: string
   isComplete: true
   headers: CwaFetchRequestHeaders
+  responseIri?: string
 }
 export interface SetResourceResetStatusEvent {
   iri: string
@@ -463,6 +465,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
               ssr: currentState.ssr,
               path: currentState.path,
               fetchedAt: currentState.status === CwaResourceApiStatuses.SUCCESS ? currentState.fetchedAt : (new Date()).getTime(),
+              iri: 'iri' in currentState ? currentState.iri : undefined,
+              responseIri: 'responseIri' in currentState ? currentState.responseIri : undefined,
             }
           }
         }
@@ -496,6 +500,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           status: CwaResourceApiStatuses.SUCCESS,
           headers: event.headers,
           path: event.path,
+          iri: event.iri,
+          responseIri: event.responseIri,
           // todo: test we reset the ssr state and do not reuse from previous when resource loader re-fetches
           ssr: import.meta.server,
           fetchedAt: (new Date()).getTime(),
@@ -558,10 +564,18 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           consola.warn('-- SET COOKIE CALLED FROM ACTIONS -- ', parsedSetCookiesHeaders, currentSetCookieHeader.value, JSON.stringify(error?.asObject))
         }
 
+        const h3Error = createError<typeof error>({
+          name: 'cwa-resource-error',
+          statusCode: error.statusCode,
+          statusMessage: error.statusMessage,
+          message: error.statusMessage,
+          cause: 'Resource store returned a bad status code on a primary fetch',
+          data: error,
+        })
+        consola.info(h3Error)
         // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
         // users to see this on the error page - especially for the 404 endpoint
-        showError({ statusCode: error.statusCode, statusMessage: error.statusMessage })
-        consola.info(error.message)
+        showError(h3Error)
       }
     },
     saveResource,

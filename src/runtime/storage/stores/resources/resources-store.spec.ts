@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, expect, test, beforeEach, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'

@@ -13,7 +13,7 @@ import { useComponentGroupPositions } from '#cwa/templates/components/main/Compo
 
 vi.mock('./ComponentGroup.Util.Synchronizer', () => {
   return {
-    ComponentGroupUtilSynchronizer: vi.fn(() => {
+    ComponentGroupUtilSynchronizer: vi.fn(function () {
       return {
         createSyncWatcher: vi.fn(),
       }
@@ -338,8 +338,9 @@ describe('ComponentGroup', () => {
       const watchSpy = vi.fn()
       const unwatchSpy = vi.fn()
 
-      // @ts-expect-error
-      ComponentGroupUtilSynchronizer.mockReturnValueOnce({ createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy })
+      ComponentGroupUtilSynchronizer.mockImplementationOnce(function () {
+        return { createSyncWatcher: watchSpy, stopSyncWatcher: unwatchSpy }
+      })
 
       const wrapper = createWrapper()
       expect(watchSpy.mock.calls[0][0].resource.value).toEqual(wrapper.vm.resource)

@@ -7,7 +7,7 @@ import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageab
 
 vi.mock('../admin/manageable-resource', () => {
   return {
-    default: vi.fn(() => {
+    default: vi.fn(function () {
       return {
         init: vi.fn(),
         clear: vi.fn(),
@@ -63,7 +63,12 @@ describe('CWA resource manageable composable', () => {
 
     const initSpy = vi.fn()
 
-    ManageableResource.mockReturnValueOnce({ init: initSpy, clear: vi.fn() })
+    ManageableResource.mockImplementationOnce(function () {
+      return {
+        init: initSpy,
+        clear: vi.fn(),
+      }
+    })
 
     useCwaResourceManageable(mockIri)
 
@@ -81,7 +86,12 @@ describe('CWA resource manageable composable', () => {
 
     const clearSpy = vi.fn()
 
-    ManageableResource.mockReturnValueOnce({ init: vi.fn(), clear: clearSpy })
+    ManageableResource.mockImplementationOnce(function () {
+      return {
+        init: vi.fn(),
+        clear: clearSpy,
+      }
+    })
 
     useCwaResourceManageable(mockIri)
 
@@ -99,7 +109,9 @@ describe('CWA resource manageable composable', () => {
 
     const mockReference = { init: vi.fn(), clear: vi.fn() }
 
-    ManageableResource.mockReturnValueOnce(mockReference)
+    ManageableResource.mockImplementationOnce(function () {
+      return mockReference
+    })
 
     const result = useCwaResourceManageable(mockIri)
 

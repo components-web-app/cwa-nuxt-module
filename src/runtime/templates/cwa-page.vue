@@ -12,14 +12,13 @@
 </template>
 
 <script setup lang="ts">
+import type { UseHeadOptions } from '@unhead/vue'
 import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef, watch } from 'vue'
-import type { UseHeadOptions } from '@unhead/vue/types'
 import { withoutTrailingSlash } from 'ufo'
 import { titleCase } from 'scule'
 import ResourceLoader from './components/core/ResourceLoader.vue'
-import { useError, useHead, useRoute } from '#app'
-import { useCwa } from '#imports'
+import { useCwa, useError, useHead, useRoute } from '#imports'
 
 // to prevent errors navigating between pages, a page should have a single root element
 // resource loader will be 1 at a time but can switch between 3 states
@@ -45,8 +44,8 @@ const route = useRoute()
 const err = useError()
 
 const fallbackTitle = computed(() => {
-  if (err.value && [404, 500].includes(err.value?.statusCode)) {
-    return `${err.value.statusCode} - ${err.value.message}`
+  if (typeof err.value?.status === 'number' && [404, 500].includes(err.value.status)) {
+    return `${err.value.status} - ${err.value.message}`
   }
   if (typeof route.meta?.title === 'string')
     return route.meta?.title

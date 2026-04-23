@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 
 interface ViewVars {
   full_name: string
@@ -41,11 +41,11 @@ interface KeyedFormView {
 }
 
 export default class Forms {
-  private resourcesStoreDefinition: ResourcesStore
+  private readonly _resourcesStore: CwaResourcesStoreInterface
   public constructor(
     resourcesStoreDefinition: ResourcesStore,
   ) {
-    this.resourcesStoreDefinition = resourcesStoreDefinition
+    this._resourcesStore = resourcesStoreDefinition.useStore()
   }
 
   public getForm(iri: string): ComputedRef<KeyedFormView | undefined> {
@@ -80,7 +80,7 @@ export default class Forms {
     })
   }
 
-  private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+  private get resourcesStore(): CwaResourcesStoreInterface {
+    return this._resourcesStore
   }
 }

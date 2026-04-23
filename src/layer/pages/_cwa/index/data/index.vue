@@ -65,12 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#app'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
 import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
-import { definePageMeta } from '#imports'
+import { definePageMeta, useHead } from '#imports'
 
 const { displayPageDataClassName, dataTypes, fqcnToEntrypointKey, isLoadingDataTypes } = useDataList()
 

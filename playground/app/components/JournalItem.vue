@@ -87,14 +87,12 @@ const formattedDate = computed(() => {
           v-if="item.imageSrc"
           itemprop="sharedContent"
           class="min-w-full"
-          provider="cloudinary"
           :alt="`Kitchen image for journal '${item.title}'`"
           :src="item.imageSrc"
           sizes="100vw sm:100vw md:50vw lg:800px"
           densities="x1 x2"
           format="webp"
           loading="lazy"
-          :modifiers="{ aspectRatio: '1:1', gravity: 'face:center' }"
           fit="fill"
         />
       </div>

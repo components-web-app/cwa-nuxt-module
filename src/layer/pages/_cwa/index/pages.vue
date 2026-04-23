@@ -70,7 +70,6 @@
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { useListPage } from './composables/useListPage'
-import { useHead } from '#app'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
@@ -79,7 +78,7 @@ import FilterFormWrapper from '#cwa/templates/components/core/admin/form/FilterF
 import ListFilterButton from '#cwa/templates/components/core/admin/ListFilterButton.vue'
 import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
-import { definePageMeta, useCwa, useCwaResourceRoute } from '#imports'
+import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 

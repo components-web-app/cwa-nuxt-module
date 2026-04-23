@@ -13,12 +13,12 @@
       #icons
     >
       <div>
-        <NuxtLink
+        <CwaLink
           v-if="resource"
           :to="getInternalResourceLink(resource['@id'])"
         >
           <CwaUiIconEyeIcon class="cwa:w-9" />
-        </NuxtLink>
+        </CwaLink>
       </div>
     </template>
     <ResourceModalTabs :tabs="tabs">
@@ -36,6 +36,19 @@
               label="Dynamic Page"
               :options="pageOptions"
             />
+          </div>
+          <div class="">
+            <button
+              type="button"
+              class="cwa:flex cwa:gap-x-2 cwa:text-xs cwa:cursor-pointer cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:opacity-70 cwa:hover:opacity-100 cwa:transition"
+              :disabled="!localResourceData?.page"
+              @click="goToTemplate"
+            >
+              <CwaUiIconEyeIcon class="cwa:w-4" />
+              <span>
+                go to template page
+              </span>
+            </button>
           </div>
           <div v-if="pageDataConfig?.metaFields">
             <ModalSelect
@@ -114,7 +127,7 @@
 <script setup lang="ts">
 import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
 import { computed, onMounted, ref, toRef, watch, watchEffect } from 'vue'
-import { navigateTo } from '#app'
+import { navigateTo, useCwa } from '#imports'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
@@ -127,7 +140,6 @@ import type { CwaResource } from '#cwa/resources/resource-utils'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader'
 import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
-import { useCwa } from '#imports'
 
 const $cwa = useCwa()
 
@@ -167,6 +179,21 @@ function handleDeleteClick() {
   deleteResource(undefined, async () => {
     await navigateTo(pageDataTypeNuxtLinkParams.value)
   })
+}
+
+async function goToTemplate() {
+  if (!localResourceData.value?.page) {
+    return
+  }
+
+  emit('close')
+  await navigateTo({
+    ...getInternalResourceLink(localResourceData.value.page),
+    query: {
+      cwa_force: 'true',
+    },
+  })
+  $cwa.admin.toggleEdit(false)
 }
 
 const tabs = computed<ResourceModalTab[]>(() => {

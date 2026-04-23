@@ -1,3 +1,5 @@
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import isEqual from 'lodash-es/isEqual'
 import { computed, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from './cwa'
@@ -36,18 +38,34 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     $cwa.admin.eventBus.emit(disableManager ? 'componentMounted' : 'manageableComponentMounted', iri.value)
   })
 
+  const uiStyles = ops?.styles
   const exposeMeta: CwaResourceMeta = {
     cwaResource: {
       name: ops?.name,
-      styles: ops?.styles,
+      styles: uiStyles,
     },
     disableManager,
+  }
+
+  const getResource = () => {
+    return computed(() => $cwa.resources.getResource(iri.value).value)
+  }
+
+  const getCurrentStyleName = (resource: CwaResource) => {
+    if (!uiStyles?.classes) return
+    const currentClassNames = resource.uiClassNames
+    for (const [name, classes] of Object.entries(uiStyles.classes)) {
+      if (isEqual(currentClassNames, classes)) {
+        return name
+      }
+    }
   }
 
   return {
     $cwa,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
-    getResource: () => computed(() => $cwa.resources.getResource(iri.value).value),
+    getResource,
     exposeMeta,
+    getCurrentStyleName,
   }
 }

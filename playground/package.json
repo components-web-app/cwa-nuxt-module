@@ -10,22 +10,22 @@
   },
   "devDependencies": {
     "@headlessui/vue": "^1.7.23",
-    "@tailwindcss/typography": "^0.5.15",
-    "@tailwindcss/vite": "^4.1.7",
-    "@vite-pwa/nuxt": "^0.10.6",
-    "tailwindcss": "^4.1.7"
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.2.4",
+    "@vite-pwa/nuxt": "^1.1.1",
+    "tailwindcss": "^4.2.4"
   },
   "dependencies": {
-    "nuxt": "^4.1.2",
-    "@heroicons/vue": "^2.1.5",
-    "@internationalized/date": "^3.8.2",
-    "@nuxt/image": "^1.10.0",
-    "@tiptap/core": "^2.0.0",
-    "@tiptap/extension-link": "^2.12.0",
-    "@tiptap/extension-placeholder": "^2.11.0",
-    "@tiptap/pm": "^2.11.0",
-    "@tiptap/starter-kit": "^2.11.0",
-    "@tiptap/vue-3": "^2.11.0",
-    "nuxt-svgo": "^4.0.10"
+    "@heroicons/vue": "^2.2.0",
+    "@internationalized/date": "^3.12.1",
+    "@nuxt/image": "^2.0.0",
+    "@tiptap/core": "^3.22.4",
+    "@tiptap/extension-link": "^3.22.4",
+    "@tiptap/extension-placeholder": "^3.22.4",
+    "@tiptap/pm": "^3.22.4",
+    "@tiptap/starter-kit": "^3.22.4",
+    "@tiptap/vue-3": "^3.22.4",
+    "nuxt": "^4.4.2",
+    "nuxt-svgo": "^4.2.6"
   }
 }

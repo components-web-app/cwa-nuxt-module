@@ -24,12 +24,11 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { useHead } from '#app'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta, useCwa, useHead } from '#imports'
 import RouteListRow from '#cwa/templates/components/core/admin/RouteListRow.vue'
 
 const $cwa = useCwa()

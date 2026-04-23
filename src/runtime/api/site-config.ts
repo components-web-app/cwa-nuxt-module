@@ -13,6 +13,7 @@ import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export default class SiteConfig {
   private utils: ReturnType<typeof useCwaSiteConfig>
+  private readonly _store: CwaSiteConfigStoreInterface
   private readonly _apiState = {
     requests: ref<Promise<CwaResource | undefined>[]>([]),
     hasError: ref(false),
@@ -24,6 +25,7 @@ export default class SiteConfig {
     private readonly userConfig: Partial<SiteConfigParams>,
   ) {
     this.utils = useCwaSiteConfig()
+    this._store = this.storeDefinition.useStore()
   }
 
   public async loadConfig() {
@@ -164,6 +166,6 @@ export default class SiteConfig {
   }
 
   private get store(): CwaSiteConfigStoreInterface {
-    return this.storeDefinition.useStore()
+    return this._store
   }
 }

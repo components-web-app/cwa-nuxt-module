@@ -10,7 +10,7 @@ import type {
 } from '../../resources/resource-utils'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import type { ResourcesStore } from '../../storage/stores/resources/resources-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
@@ -64,12 +64,14 @@ interface FetchNestedResourcesEvent {
 }
 
 export default class Fetcher {
+  private readonly _store: CwaResourcesStoreInterface
   constructor(
     private readonly cwaFetch: CwaFetch,
     private fetchStatusManager: FetchStatusManager,
     private router: Router,
-    private resourcesStoreDefinition: ResourcesStore,
+    resourcesStoreDefinition: ResourcesStore,
   ) {
+    this._store = resourcesStoreDefinition.useStore()
   }
 
   public async fetchRoute(route: RouteLocationNormalizedLoaded): Promise<CwaResource | undefined> {
@@ -79,16 +81,23 @@ export default class Fetcher {
     }
     let iri: string
     let manifestPath: string | undefined
-    const routeParam = route.params.cwaPage0 || ''
-    // todo: test that we can get the iri from the route
-    iri = Array.isArray(routeParam) ? `/${routeParam.join('/')}` : routeParam
 
-    const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
+    if (route.meta.cwa?.fetch?.iri) {
+      iri = route.meta.cwa.fetch.iri
+      manifestPath = route.meta.cwa.fetch.manifestPath
+    }
+    else {
+      const routeParam = route.params.cwaPage0 || ''
+      // todo: test that we can get the iri from the route
+      iri = Array.isArray(routeParam) ? `/${routeParam.join('/')}` : routeParam
 
-    if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
-      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
-      iri = `${prefix}/_/routes/${route.path}`
-      manifestPath = `${prefix}/_/routes_manifest/${route.path}`
+      const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
+
+      if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
+        const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+        iri = `${prefix}/_/routes/${route.path}`
+        manifestPath = `${prefix}/_/routes_manifest/${route.path}`
+      }
     }
 
     return await this.fetchResource({
@@ -328,6 +337,6 @@ export default class Fetcher {
   }
 
   private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+    return this._store
   }
 }

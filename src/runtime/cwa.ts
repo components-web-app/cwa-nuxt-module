@@ -1,6 +1,5 @@
-import type { NuxtApp } from '#app'
-import { useRuntimeConfig } from '#imports'
-import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import { useCookie, useRuntimeConfig } from '#imports'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { CwaModuleOptions, CwaResourcesMeta } from '#cwa/types'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
@@ -19,7 +18,6 @@ import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { useCookie } from '#app/composables/cookie.js'
 import SiteConfig from '#cwa/api/site-config'
 
 export default class Cwa {
@@ -50,7 +48,7 @@ export default class Cwa {
 
   public readonly currentModulePackageInfo: { version: string, name: string }
 
-  constructor(nuxtApp: Pick<NuxtApp, '_middleware' | '$router' | 'cwaResources'>, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
+  constructor($router: Router, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
     const { isClient } = useProcess()
     const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
@@ -73,7 +71,7 @@ export default class Cwa {
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
 
-    this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, nuxtApp.$router, this.storage.stores.resources)
+    this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources)
 
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources)
@@ -92,7 +90,7 @@ export default class Cwa {
     this.forms = new Forms(this.storage.stores.resources)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)
-    this.adminNavGuard = new NavigationGuard(nuxtApp.$router, this.storage.stores.admin)
+    this.adminNavGuard = new NavigationGuard($router, this.storage.stores.admin)
   }
 
   public get adminNavigationGuardFn() {

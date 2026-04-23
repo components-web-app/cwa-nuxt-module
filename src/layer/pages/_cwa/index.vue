@@ -17,8 +17,7 @@
 
 <script lang="ts" setup>
 import { onBeforeMount } from 'vue'
-import { navigateTo, useHead } from '#app'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta, useCwa, navigateTo, useHead } from '#imports'
 
 const $cwa = useCwa()
 

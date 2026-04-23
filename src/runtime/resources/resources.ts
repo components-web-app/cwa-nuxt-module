@@ -203,13 +203,21 @@ export class Resources {
       return
     }
 
-    if (type === CwaResourceTypes.PAGE) {
-      return fetchStatus.path
-    }
     const successResource = this.getResource(fetchStatus.path).value
     if (!successResource) {
+      if (type === CwaResourceTypes.PAGE) {
+        return fetchStatus.path
+      }
       return
     }
+
+    if (type === CwaResourceTypes.PAGE) {
+      if (!('iri' in successResource.apiState)) {
+        return fetchStatus.path
+      }
+      return successResource.apiState.responseIri || successResource.apiState.iri || fetchStatus.path
+    }
+
     switch (type) {
       case CwaResourceTypes.PAGE_DATA: {
         return successResource.data?.page

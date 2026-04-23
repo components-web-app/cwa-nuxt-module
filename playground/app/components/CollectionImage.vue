@@ -28,8 +28,7 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { useCwaImage } from '#cwa/composables/cwa-image'
-import { useCwa } from '#imports'
+import { useCwa, useCwaImageResource } from '#imports'
 
 const props = defineProps<{
   iri: string
@@ -41,5 +40,5 @@ await $cwa.fetchResource({
   path: props.iri,
 })
 
-const { contentUrl, displayMedia, handleLoad, loaded } = useCwaImage(toRef(props, 'iri'), 'thumbnail')
+const { contentUrl, displayMedia, handleLoad, loaded } = useCwaImageResource(toRef(props, 'iri'), { imagineFilterName: 'thumbnail' })
 </script>

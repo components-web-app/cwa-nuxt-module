@@ -60,11 +60,10 @@
 import { computed, ref, watch } from 'vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
-import { useCwa } from '#imports'
+import { useCwa, navigateTo, useRoute } from '#imports'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
-import { navigateTo, useRoute } from '#app'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'

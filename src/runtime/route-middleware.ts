@@ -4,25 +4,23 @@ import type { RouteLocationNormalized } from 'vue-router'
 import type { CwaResource } from './resources/resource-utils'
 import {
   abortNavigation,
-  callWithNuxt,
   defineNuxtRouteMiddleware,
-  navigateTo, useError,
+  navigateTo,
   useNuxtApp,
-} from '#app'
+} from 'nuxt/app'
 import { useProcess } from '#cwa/composables/process'
 
 let middlewareToken = ''
 
 export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, from: RouteLocationNormalized) => {
-  const err = useError()
-
+  // const err = useError()
   // this line is because when we clearError and redirect from the error page, the error still seems to exist at the
   // time this middleware is being called. So instead we must not use the clearError and redirect option or keep this fix
   // our error page will clear error first and then redirect.
-  // @ts-expect-error - not sure what the type is being used for the error which include the URL
-  if (err.value && err.value.url === to.fullPath) {
-    return
-  }
+  // todo: check removal of this as .url is no longer a prop on the error
+  // if (err.value && err.value.url === to.fullPath) {
+  //   return
+  // }
 
   const { isClient } = useProcess()
   middlewareToken = uuidv4()
@@ -71,8 +69,11 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
       if (isClient && nuxtApp._processingMiddleware) {
         await waitForMiddleware()
       }
-
-      return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
+      logger.info(`Handling route redirect to: '${resource.redirectPath}'`)
+      return navigateTo(resource.redirectPath, { redirectCode: 308 })
+      // this may be in place to help with multiple redirects on a client side... stop stop
+      // infinite loop and crashing
+      // return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])
     }
   }
 

@@ -1,9 +1,8 @@
-// @vitest-environment nuxt
+// @vitest-environment happy-dom
 
 import { describe, vi, afterEach, test, expect, beforeEach } from 'vitest'
 import { FetchError } from 'ofetch'
 import { flushPromises } from '@vue/test-utils'
-import * as vueRouter from 'vue-router'
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
@@ -19,29 +18,29 @@ import preloadHeaders from './preload-headers'
 
 vi.mock('./cwa-fetch', () => {
   return {
-    default: vi.fn(() => ({
-      fetch: {
-        raw: vi.fn(),
-      },
-    })),
+    default: vi.fn(function () {
+      return {
+        fetch: {
+          raw: vi.fn(),
+        },
+      }
+    }),
   }
 })
 vi.mock('../../storage/stores/fetcher/fetcher-store')
 vi.mock('../../storage/stores/resources/resources-store', () => {
   return {
-    ResourcesStore: vi.fn(() => ({
-      useStore: vi.fn(() => {}),
-    })),
+    ResourcesStore: vi.fn(function () {
+      return {
+        useStore: vi.fn(() => {
+        }),
+      }
+    }),
   }
 })
 vi.mock('./fetch-status-manager')
 vi.mock('../mercure')
 vi.mock('../api-documentation')
-vi.mock('vue-router', () => {
-  return {
-    currentRoute: vi.fn(() => {}),
-  }
-})
 
 function delay(time: number, returnValue: any = undefined) {
   return new Promise((resolve) => {
@@ -56,7 +55,14 @@ function createFetcher(query?: { [key: string]: string }): Fetcher {
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
 
-  vi.spyOn(vueRouter, 'currentRoute', 'get').mockImplementation(() => ({ value: { path: '/current-path', query } }))
+  const vueRouter = {
+    currentRoute: {
+      value: {
+        path: '/current-path',
+        query,
+      },
+    },
+  }
 
   return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore)
 }

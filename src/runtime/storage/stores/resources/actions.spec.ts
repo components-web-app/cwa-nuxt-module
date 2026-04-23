@@ -8,13 +8,20 @@ import actions from './actions'
 import type { CwaResourcesStateInterface } from './state'
 import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
-import * as app from '#app'
+import * as app from 'nuxt/app'
+import { createError } from 'h3'
 
-vi.mock('../../../resources/resource-utils', async () => {
-  const actual = await vi.importActual<any>('../../../resources/resource-utils')
+vi.mock('../../../resources/resource-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof ResourceUtils>()
   return {
     ...actual,
     isCwaResourceSame: vi.fn(() => false),
+  }
+})
+
+vi.mock('h3', () => {
+  return {
+    createError: vi.fn(obj => obj),
   }
 })
 
@@ -368,6 +375,8 @@ describe('Resources -> resetCurrentResources', () => {
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
           headers: {},
+          responseIri: '/sample-different-response',
+          iri: '/user-provided-iri',
         },
       },
     }
@@ -384,6 +393,8 @@ describe('Resources -> resetCurrentResources', () => {
       path: 'inProgress',
       ssr: undefined,
       fetchedAt: fetchedAtDate.getTime(),
+      iri: undefined,
+      responseIri: undefined,
     })
   })
 
@@ -518,9 +529,20 @@ describe('resources action setResourceFetchError', () => {
 
   test('is isPrimary is true and there is an error then showError should be called', () => {
     vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
-    const error = createCwaResourceError({ message: 'my message' })
+    const error = createCwaResourceError({ statusMessage: 'teapot', statusCode: 418 })
     resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
-    expect(app.showError).toHaveBeenCalledWith({ statusCode: error.statusCode })
+
+    const createErrorObj = {
+      name: 'cwa-resource-error',
+      statusCode: 418,
+      statusMessage: 'teapot',
+      message: 'teapot',
+      cause: 'Resource store returned a bad status code on a primary fetch',
+      data: error,
+    }
+
+    expect(createError).toHaveBeenCalledWith(createErrorObj)
+    expect(app.showError).toHaveBeenCalledWith(createErrorObj)
   })
 })
 

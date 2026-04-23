@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { clearError, navigateTo, useHead, useRoute } from '#app'
-import type { NuxtError } from '#app'
+import type { NuxtError } from 'nuxt/app'
+import { onMounted, ref, computed } from 'vue'
+import { clearError, navigateTo, useHead, useRoute } from '#imports'
 import { useCwa } from '#cwa/composables/cwa'
 
 const props = defineProps<{
@@ -15,7 +15,7 @@ const stacktrace = _error.stack
   ? _error.stack
       .split('\n')
       .splice(1)
-      .map((line) => {
+      .map((line: string) => {
         const text = line
           .replace('webpack:/', '')
           .replace('.vue', '.js') // TODO: Support sourcemap
@@ -26,15 +26,44 @@ const stacktrace = _error.stack
             || line.includes('internal')
             || line.includes('new Promise'),
         }
-      }).map(i => `<span class="stack${i.internal ? ' internal' : ''}">${i.text}</span>`).join('\n')
+      }).map((i: { text: string, internal: boolean }) => `<span class="stack${i.internal ? ' internal' : ''}">${i.text}</span>`).join('\n')
   : ''
 
 const $route = useRoute()
 const $cwa = useCwa()
 
 const statusCode = Number(_error.statusCode || 500)
+
+const statusMessages: Record<number, string> = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'This Page Doesn’t Exist',
+  405: 'Method Not Allowed',
+  408: 'Request Timeout',
+  409: 'Conflict',
+  410: 'Gone',
+  418: 'I’m a Teapot ☕️',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  501: 'Not Implemented',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
+  504: 'Gateway Timeout',
+}
+
 const is404 = statusCode === 404
-const statusMessage = _error.statusMessage ?? (is404 ? 'Page Not Found' : 'Internal Server Error')
+const isAuthError = [401, 403].includes(statusCode)
+const statusMessage = computed(() => {
+  if (_error.statusMessage) {
+    return _error.statusMessage
+  }
+  if (statusMessages[statusCode]) {
+    return statusMessages[statusCode]
+  }
+  return 'Internal Server Error'
+})
+
 const description = _error.message || _error.toString()
 const stack = import.meta.dev && !is404 ? description || `${stacktrace}` : undefined
 
@@ -86,7 +115,7 @@ onMounted(() => {
               v-html="stack"
             />
           </div>
-          <div class="cwa:mt-10 cwa:flex cwa:items-center cwa:justify-center cwa:gap-x-6">
+          <div class="cwa:mt-10 cwa:flex cwa:flex-col cwa:items-center cwa:justify-center cwa:gap-y-6">
             <button
               v-if="$route.path !== '/'"
               class="cwa:cursor-pointer cwa:rounded-md cwa:bg-blue-600 cwa:px-3.5 cwa:py-2.5 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
@@ -94,6 +123,13 @@ onMounted(() => {
             >
               Go back home
             </button>
+            <CwaLink
+              v-if="isAuthError"
+              to="/login"
+              class="cwa:cursor-pointer cwa:rounded-md cwa:bg-white/20 cwa:px-3.5 cwa:py-1.5 cwa:text-xs cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
+            >
+              Sign in
+            </CwaLink>
           </div>
         </div>
       </div>

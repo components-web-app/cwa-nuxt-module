@@ -9,9 +9,8 @@
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#app'
 import { CwaAuthLoginPage } from '#components'
-import { definePageMeta, useLogin } from '#imports'
+import { definePageMeta, useLogin, useHead } from '#imports'
 
 const { error, submitting, signIn, credentials } = useLogin()
 

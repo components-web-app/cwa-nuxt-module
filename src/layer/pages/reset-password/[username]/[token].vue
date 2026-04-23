@@ -10,8 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { useHead } from '#app'
-import { definePageMeta, useResetPassword } from '#imports'
+import { definePageMeta, useResetPassword, useHead } from '#imports'
 
 const {
   error,

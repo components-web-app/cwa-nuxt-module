@@ -1,3 +1,4 @@
+import { useNuxtApp } from '#imports'
 import {
   createApp,
 
@@ -9,7 +10,6 @@ import {
 
 } from 'vue'
 import type { defineAsyncComponent, Ref, WatchStopHandle } from 'vue'
-import { useNuxtApp } from '#app'
 import type { ManagerTab } from '#cwa/types'
 
 interface Options {

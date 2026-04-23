@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+
 import { describe, vi, test, expect } from 'vitest'
 import type { SpyFn } from 'tinyspy'
 import { Storage } from './storage'
@@ -15,46 +17,46 @@ type StoreMock = SpyFn<[], TestStore>
 
 vi.mock('./stores/resources/resources-store', () => {
   return {
-    ResourcesStore: vi.fn<[], TestStore>(() => ({ name: 'ResourcesStore' })),
+    ResourcesStore: vi.fn<[], TestStore>(function () { return { name: 'ResourcesStore' } }),
   }
 })
 vi.mock('./stores/fetcher/fetcher-store', () => {
   return {
-    FetcherStore: vi.fn<[], TestStore>(() => ({ name: 'FetcherStore' })),
+    FetcherStore: vi.fn<[], TestStore>(function () { return { name: 'FetcherStore' } }),
   }
 })
 vi.mock('./stores/mercure/mercure-store', () => {
   return {
-    MercureStore: vi.fn<[], TestStore>(() => ({ name: 'MercureStore' })),
+    MercureStore: vi.fn<[], TestStore>(function () { return { name: 'MercureStore' } }),
   }
 })
 vi.mock('./stores/api-documentation/api-documentation-store', () => {
   return {
-    ApiDocumentationStore: vi.fn<[], TestStore>(() => ({ name: 'ApiDocumentationStore' })),
+    ApiDocumentationStore: vi.fn<[], TestStore>(function () { return { name: 'ApiDocumentationStore' } }),
   }
 })
 
 vi.mock('./stores/auth/auth-store', () => {
   return {
-    AuthStore: vi.fn<[], TestStore>(() => ({ name: 'AuthStore' })),
+    AuthStore: vi.fn<[], TestStore>(function () { return { name: 'AuthStore' } }),
   }
 })
 
 vi.mock('./stores/admin/admin-store', () => {
   return {
-    AdminStore: vi.fn<[], TestStore>(() => ({ name: 'AdminStore' })),
+    AdminStore: vi.fn<[], TestStore>(function () { return { name: 'AdminStore' } }),
   }
 })
 
 vi.mock('./stores/error/error-store', () => {
   return {
-    ErrorStore: vi.fn<[], TestStore>(() => ({ name: 'ErrorStore' })),
+    ErrorStore: vi.fn<[], TestStore>(function () { return { name: 'ErrorStore' } }),
   }
 })
 
 vi.mock('./stores/site-config/site-config-store', () => {
   return {
-    SiteConfigStore: vi.fn<[], TestStore>(() => ({ name: 'SiteConfigStore' })),
+    SiteConfigStore: vi.fn<[], TestStore>(function () { return { name: 'SiteConfigStore' } }),
   }
 })
 

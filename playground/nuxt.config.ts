@@ -40,10 +40,11 @@ export default defineNuxtConfig({
       },
     },
   },
-  routeRules: {
-    // '/': { prerender: true },
-    '/**': { isr: true },
-  },
+  // routeRules: {
+  // '/': { prerender: true },
+  // breaks things like og-image caching all endpoints
+  // '/**': { isr: true },
+  // },
   vite: {
     plugins: [
       // @ts-ignore - builds with this bit errors here sometimes but not in prod

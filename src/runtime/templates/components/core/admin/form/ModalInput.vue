@@ -33,7 +33,14 @@ import { useId } from 'vue'
 import { useTextareaAutosize } from '@vueuse/core'
 
 const id = useId()
-const model = defineModel<string>()
+const [model, modifiers] = defineModel<string | null | undefined | number>({
+  set(value) {
+    if (modifiers.nullable) {
+      value ||= null
+    }
+    return value
+  },
+})
 const { type } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'url', placeholder?: string, autocomplete?: string }>()
 
 const { textarea, input } = useTextareaAutosize({

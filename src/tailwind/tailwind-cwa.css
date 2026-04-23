@@ -46,6 +46,8 @@
   --color-black: #000;
 
   --color-red-500: #ef4444;
+  --color-danger: var(--color-red-500);
+  --color-danger-dark: color-mix(in oklch, var(--color-red-800), transparent 20%);
 
   --color-dark: #1c1917;
   --color-light: #f5f5f4;
@@ -59,7 +61,8 @@
 
   --shadow-orange-bottom: 0 0 10px 1px #ffaa00;
 
-  --z-index-overlay: 900;
+  --z-index-overlay: 750;
+  --z-index-manager-focus: 900;
   --z-index-manager: 901;
   --z-index-dialog: 902;
   --z-index-notifications: 903;

@@ -110,38 +110,38 @@ describe('CWA module', () => {
 
       expect(moduleDependencies).toEqual({
         '@pinia/nuxt': {
-          version: '^0.11.2',
+          version: '^0.11.3',
           optional: false,
         },
         '@nuxtjs/robots': {
-          version: '^5.5',
+          version: '^6.0',
         },
         '@nuxtjs/sitemap': {
-          version: '^7.4',
+          version: '^8.0',
           optional: false,
           defaults: {
             sitemaps: {
               cwa: {
                 sources: ['/__sitemap__/cwa-urls'],
-                chunks: false,
+                chunks: true,
               },
             },
           },
         },
         'nuxt-link-checker': {
-          version: '^4.3',
-        },
-        'nuxt-og-image': {
-          version: '^5.1',
-        },
-        'nuxt-schema-org': {
           version: '^5.0',
         },
+        'nuxt-og-image': {
+          version: '^6.4',
+        },
+        'nuxt-schema-org': {
+          version: '^6.0',
+        },
         'nuxt-seo-utils': {
-          version: '^7.0',
+          version: '^8.1',
         },
         'nuxt-site-config': {
-          version: '^3.2',
+          version: '^4.0.8',
         },
       })
     })
@@ -302,6 +302,10 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
   admin?: boolean
   disabled?: boolean
   staticLayout?: GlobalComponentNames
+  fetch?: {
+    iri: string
+    manifestPath?: string
+  }
 }
 export * from 'vue-router'
 declare module 'vue-router' {

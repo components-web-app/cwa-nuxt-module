@@ -5,15 +5,15 @@ import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 
-export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>) => {
+export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'Image') => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
   function getFilename() {
-    return fileData.value ? `Existing Image (${fileData.value.formattedFileSize})` : ''
+    return fileData.value ? `Existing ${fileDisplayType} (${fileData.value.formattedFileSize})` : ''
   }
 
-  const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.file[0])
+  const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
 
   const filenameInputModel = ref(getFilename())
   const fileExists = ref(true)
@@ -28,7 +28,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>) => {
     }
     updating.value = true
     const formData = new FormData()
-    formData.append('file', newFile)
+    formData.append(filename, newFile)
     await $cwa.resourcesManager.updateResource({
       iri: iri.value,
       endpoint: updateEndpoint.value,
@@ -43,8 +43,8 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>) => {
 
   async function confirmDelete() {
     const alertData = {
-      title: 'Delete this image?',
-      content: '<p>Are you sure you want to permanently delete this image?</p>',
+      title: `Delete this ${fileDisplayType.toLowerCase()}?`,
+      content: `<p>Are you sure you want to permanently delete this ${fileDisplayType.toLowerCase()}?</p>`,
     }
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
@@ -64,7 +64,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>) => {
     await $cwa.resourcesManager.updateResource({
       endpoint: deleteEndpoint.value,
       data: {
-        file: null,
+        [filename]: null,
       },
     })
     fileExists.value = false

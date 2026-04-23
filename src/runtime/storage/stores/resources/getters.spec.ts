@@ -15,10 +15,12 @@ import { ResourcesGetterUtils } from './getter-utils'
 
 vi.mock('./getter-utils', () => {
   return {
-    ResourcesGetterUtils: vi.fn(() => ({
-      resourcesApiStateIsPending: vi.fn(),
-      totalResourcesPending: vi.fn(),
-    })),
+    ResourcesGetterUtils: vi.fn(function () {
+      return {
+        resourcesApiStateIsPending: vi.fn(),
+        totalResourcesPending: vi.fn(),
+      }
+    }),
   }
 })
 
