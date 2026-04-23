@@ -25,6 +25,7 @@ export default defineVitestConfig({
             enabled: false,
           },
         },
+
       },
     },
     resolveSnapshotPath(path: string, extension: string) {

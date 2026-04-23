@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [lts/*,latest]
+        node: [lts/*,22.21.0]
         pnpm: [latest]
         include:
           - node: latest
