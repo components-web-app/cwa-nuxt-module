@@ -139,7 +139,7 @@ describe('Resources', () => {
 
       const mockFetcherStore = {
         primaryFetch: {
-          fetchingToken: 'mock'
+          fetchingToken: 'mock',
         },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {},
@@ -811,11 +811,11 @@ describe('Resources', () => {
     })
 
     test('should return false IF both resources are not pending AND all fetches are resolved', () => {
-      const mockFetcherStore  = {
+      const mockFetcherStore = {
         fetchesResolved: true,
       }
 
-      const mockResourcesStore= {
+      const mockResourcesStore = {
         resourceLoadStatus: {
           pending: 0,
         },
