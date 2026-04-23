@@ -44,19 +44,19 @@ export class ComponentGroupUtilSynchronizer {
 
   public createSyncWatcher(ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
-      [this.resources.isLoading, this.auth.signedIn, ops.resource, ops.location],
-      async ([isLoading, signedIn, resource, locationIri]) => {
+      [this.resources.isLoading, this.auth.signedIn, ops.resource],
+      async ([isLoading, signedIn, resource]) => {
         if (!isLoading && signedIn) {
           if (!resource) {
+            const locationResource = this.resources.getResource(ops.location)
+            if (!locationResource.value?.data) {
+              return
+            }
             // see if it exists by reference before we get a component group already exists notice...
             const resourceByRef = await this.fetchResource({
               path: `/_/component_groups/${ops.fullReference}`,
             })
             if (resourceByRef) {
-              const locationResource = this.resources.getResource(locationIri)
-              if (!locationResource.value?.data) {
-                return
-              }
               await this.resourcesManager.updateResource({
                 endpoint: locationResource.value.data['@id'],
                 data: {
@@ -68,6 +68,7 @@ export class ComponentGroupUtilSynchronizer {
               })
               return
             }
+
             await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
           }
           else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {

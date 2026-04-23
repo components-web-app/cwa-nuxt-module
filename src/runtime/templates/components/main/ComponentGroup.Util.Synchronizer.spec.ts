@@ -33,6 +33,15 @@ function createGroupSynchronizer() {
   }
   const mockResources = {
     isLoading: ref(false),
+    getResource: vi.fn((iri) => {
+      return {
+        value: {
+          data: {
+            '@id': iri,
+          },
+        },
+      }
+    }),
   }
   const mockAuth = {
     signedIn: ref(false),
