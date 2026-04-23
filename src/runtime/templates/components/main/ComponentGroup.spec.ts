@@ -109,10 +109,10 @@ describe('ComponentGroup', () => {
 
   describe('computed properties', () => {
     describe('fullReference', () => {
-      test('should return nothing IF there is no resource matching location', () => {
+      test('should return a custom reference IF there is no resource matching location', () => {
         const wrapper = createWrapper()
 
-        expect(wrapper.vm.fullReference).toBeUndefined()
+        expect(wrapper.vm.fullReference).toEqual(`mockReference_mockLocation`)
         expect(mockCwaResources.getResource).toHaveBeenCalledWith(mockLocation)
       })
 
@@ -134,12 +134,6 @@ describe('ComponentGroup', () => {
     })
 
     describe('resource', () => {
-      test('should return undefined if full reference is undefined', () => {
-        const wrapper = createWrapper()
-        expect(mockCwaResources.getComponentGroupByReference).not.toHaveBeenCalled()
-        expect(wrapper.vm.resource).toBeUndefined()
-      })
-
       test('should return resource from resources list BASED on type AND full reference', () => {
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
           return 'COMPY-PONENET'
