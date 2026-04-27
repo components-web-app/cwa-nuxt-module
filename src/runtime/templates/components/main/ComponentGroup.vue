@@ -90,9 +90,6 @@ const fullReference = computed(() => {
 })
 
 const resource = computed(() => {
-  if (!fullReference.value) {
-    return
-  }
   return $cwa.resources.getComponentGroupByReference(fullReference.value)
 })
 
