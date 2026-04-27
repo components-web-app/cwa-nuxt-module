@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { type CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
@@ -60,7 +60,12 @@ export class ComponentGroupUtilSynchronizer {
                 endpoint: locationResource.value.data['@id'],
                 data: {
                   componentGroups: [
-                    ...(locationResource.value.data.componentGroups || []),
+                    ...(locationResource.value.data.componentGroups.map((cg: CwaResource | string) => {
+                      if (typeof cg === 'object') {
+                        return cg['@id']
+                      }
+                      return cg
+                    }) || []),
                     resourceByRef['@id'],
                   ],
                 },
