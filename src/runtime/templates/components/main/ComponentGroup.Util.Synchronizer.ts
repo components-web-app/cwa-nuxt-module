@@ -1,8 +1,8 @@
+import type Cwa from '#cwa/cwa'
 import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import type Fetcher from '../../../api/fetcher/fetcher'
 import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
@@ -30,16 +30,15 @@ interface SyncWatcherOps {
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
   private readonly resources: Resources
-  private readonly fetchResource: Fetcher['fetchResource']
   private readonly auth: Auth
   private watchStopHandle: WatchStopHandle | undefined
+  private $cwa: Cwa
 
   constructor() {
-    const { auth, resources, resourcesManager, fetchResource } = useCwa()
-    this.resourcesManager = resourcesManager
-    this.resources = resources
-    this.auth = auth
-    this.fetchResource = fetchResource
+    this.$cwa = useCwa()
+    this.resourcesManager = this.$cwa.resourcesManager
+    this.resources = this.$cwa.resources
+    this.auth = this.$cwa.auth
   }
 
   public createSyncWatcher(ops: SyncWatcherOps) {
@@ -53,7 +52,7 @@ export class ComponentGroupUtilSynchronizer {
               return
             }
             // see if it exists by reference before we get a component group already exists notice...
-            const resourceByRef = await this.fetchResource({
+            const resourceByRef = await this.$cwa.fetchResource({
               path: `/_/component_groups/${ops.fullReference}`,
             })
             if (resourceByRef) {
