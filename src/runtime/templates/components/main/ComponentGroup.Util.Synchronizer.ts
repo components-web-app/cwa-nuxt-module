@@ -23,7 +23,7 @@ const resourceTypeProperty: {
 interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
-  fullReference: ComputedRef<string | undefined>
+  fullReference: ComputedRef<string>
   allowedComponents: string[] | null
 }
 
@@ -53,7 +53,7 @@ export class ComponentGroupUtilSynchronizer {
             }
             // see if it exists by reference before we get a component group already exists notice...
             const resourceByRef = await this.$cwa.fetchResource({
-              path: `/_/component_groups/${ops.fullReference}`,
+              path: `/_/component_groups/${ops.fullReference.value}`,
             })
             if (resourceByRef) {
               await this.resourcesManager.updateResource({
