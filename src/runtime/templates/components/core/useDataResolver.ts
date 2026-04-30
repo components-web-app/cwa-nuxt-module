@@ -1,13 +1,10 @@
 import { useNuxtApp } from '#imports'
 import {
-  createApp,
-
   defineComponent,
   h, onBeforeUnmount, onMounted,
   ref,
-
   watch,
-
+  render,
 } from 'vue'
 import type { defineAsyncComponent, Ref, WatchStopHandle } from 'vue'
 import type { ManagerTab } from '#cwa/types'
@@ -32,6 +29,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
         = typeof props.component === 'string'
           ? globalComponents[props.component]
           : props.component
+
       if (possibleAsyncDefinition === undefined) {
         throw new Error('Cannot load metadata for component')
       }
@@ -62,9 +60,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
         return h(possibleAsyncDefinition, { ...props.cProps, ref: metadata })
       }
     },
-
     {
-
       props: ['component', 'cProps'],
     },
   )
@@ -84,15 +80,20 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
     for (const [index, cName] of ops.components.value.entries()) {
       const wrapper = document.createElement('div')
 
-      const component = createApp(rootDefinition, { cProps: ops.props.value, component: cName })
-      const instance = component.mount(wrapper)
-      const exposed = instance.$.exposed
+      const vnode = h(rootDefinition, {
+        cProps: ops.props.value,
+        component: cName,
+      })
+      vnode.appContext = nuxtApp.vueApp._context
+      render(vnode, wrapper)
+      const exposed = vnode.component?.exposed
+
       if (!exposed) {
         continue
       }
       const completeLoad = () => {
         allMeta.value.splice(index, 1, exposed.metadata.value)
-        component.unmount()
+        render(null, wrapper)
       }
       if (exposed.resolved.value) {
         completeLoad()
