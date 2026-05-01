@@ -117,7 +117,8 @@ describe('Group synchronizer', () => {
   })
 
   test('should create resource with additional location info IF loading is not in progress, user is signed in, resource does not exist', async () => {
-    const { auth, resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+    const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+    auth.signedIn.value = false
 
     vi.spyOn(ResourceUtils, 'getResourceTypeFromIri').mockImplementationOnce(() => CwaResourceTypes.PAGE)
 
@@ -125,7 +126,6 @@ describe('Group synchronizer', () => {
       resource: null,
     })
 
-    resources.isLoading.value = false
     auth.signedIn.value = true
 
     await nextTick()

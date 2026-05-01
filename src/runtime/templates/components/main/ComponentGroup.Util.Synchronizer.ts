@@ -49,7 +49,6 @@ export class ComponentGroupUtilSynchronizer {
     if (!signedIn) {
       return
     }
-
     // if the component groups exists, we can check if the allowed components are in sync
     if (componentGroupResource) {
       if (componentGroupResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
@@ -71,7 +70,7 @@ export class ComponentGroupUtilSynchronizer {
       path: `/_/component_groups/${fullReference.value}`,
     })
 
-    if (!resourceByRef) {
+    if (resourceByRef) {
       await this.resourcesManager.updateResource({
         endpoint: locationResource.value.data['@id'],
         data: {
