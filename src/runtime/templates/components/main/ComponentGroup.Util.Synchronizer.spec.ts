@@ -53,6 +53,9 @@ function createGroupSynchronizer() {
       resources: mockResources,
       resourcesManager: mockResourcesManager,
       fetchResource: vi.fn(),
+      addUniquePromise: vi.fn((scope: string, key: string, fn: () => Promise<void>) => {
+        return fn()
+      }),
     }
   })
 

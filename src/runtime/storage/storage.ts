@@ -25,7 +25,7 @@ export interface CwaStores {
 
 export class Storage {
   public readonly stores: CwaStores
-  private readonly uniquePromiseStore: { [scope: string]: Map<string, Promise<void>> }
+  private readonly uniquePromiseStore: Record<string, Map<string, Promise<void>>>
 
   constructor(storeName: string) {
     this.stores = {
