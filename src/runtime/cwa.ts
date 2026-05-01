@@ -30,6 +30,8 @@ export default class Cwa {
   private readonly fetchStatusManager: FetchStatusManager
   private readonly cwaFetch: CwaFetch
 
+  public createdResources= new Set<string>();
+
   public readonly siteConfig: SiteConfig
 
   // public resources repository and utility getters

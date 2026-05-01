@@ -130,6 +130,7 @@ function getResourceKey(positionIri: string) {
 }
 
 onMounted(() => {
+  console.log('onMounted', props.location);
   if (isNewPosition.value) {
     return
   }
@@ -142,6 +143,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  console.log('onBeforeUnmount', props.location);
   componentGroupSynchronizer.stopSyncWatcher()
 })
 
