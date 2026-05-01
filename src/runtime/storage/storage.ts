@@ -55,12 +55,14 @@ export class Storage {
     if (map.has(key)) {
       return map.get(key)
     }
-    const requestPromise = new Promise<void>((done) => {
-      fn().then(() => {
+    const requestPromise = fn()
+      .catch((e) => {
         map.delete(key)
-        done()
+        throw e
       })
-    })
+      .finally(() => {
+        map.delete(key)
+      })
     map.set(key, requestPromise)
   }
 }
