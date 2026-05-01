@@ -56,10 +56,6 @@ export class Storage {
       return map.get(key)
     }
     const requestPromise = fn()
-      .catch((e) => {
-        map.delete(key)
-        throw e
-      })
       .finally(() => {
         map.delete(key)
       })
