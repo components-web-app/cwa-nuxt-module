@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { type CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
@@ -45,40 +45,36 @@ export class ComponentGroupUtilSynchronizer {
     this.watchStopHandle = watch(
       [this.auth.signedIn, ops.resource],
       async ([signedIn, resource]) => {
-        if (signedIn) {
-          if (!resource) {
-            const locationResource = this.resources.getResource(ops.location)
-            if (!locationResource.value?.data) {
-              return
-            }
-            // see if it exists by reference before we get a component group already exists notice...
-            const resourceByRef = await this.$cwa.fetchResource({
-              path: `/_/component_groups/${ops.fullReference.value}`,
-            })
-            if (resourceByRef) {
-              await this.resourcesManager.updateResource({
-                endpoint: locationResource.value.data['@id'],
-                data: {
-                  componentGroups: [
-                    ...(locationResource.value.data.componentGroups.map((cg: CwaResource | string) => {
-                      if (typeof cg === 'object') {
-                        return cg['@id']
-                      }
-                      return cg
-                    }) || []),
-                    resourceByRef['@id'],
-                  ],
-                },
-              })
-              return
-            }
+        if (!signedIn) {
+          return
+        }
 
-            await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
-          }
-          else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
+        if (resource) {
+          if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
             await this.updateAllowedComponents(ops.allowedComponents, resource)
           }
+          return
         }
+
+        const locationResource = this.resources.getResource(ops.location)
+        if (!locationResource.value?.data) {
+          return
+        }
+        // see if it exists by reference before we get a component group already exists notice...
+        const resourceByRef = await this.$cwa.fetchResource({
+          path: `/_/component_groups/${ops.fullReference.value}`,
+        })
+        if (resourceByRef) {
+          await this.resourcesManager.updateResource({
+            endpoint: locationResource.value.data['@id'],
+            data: {
+              componentGroups: locationResource.value.data.componentGroups,
+            },
+          })
+          return
+        }
+
+        await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
       }, {
         immediate: true,
       })
