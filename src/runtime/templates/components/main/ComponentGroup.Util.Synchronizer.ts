@@ -95,8 +95,9 @@ export class ComponentGroupUtilSynchronizer {
           currentResource,
         ],
       ) => {
-        // todo: this promise can be mapped with ops.fullReference as the key, and if an unresolved promise exists already we return this instead of a new watcher callback
-        await this.createComponentGroupWatchHandler(ops, [currentSignedIn, currentResource])
+        await this.$cwa.addUniquePromise('component_group_sync', ops.fullReference.value, async () => {
+          await this.createComponentGroupWatchHandler(ops, [currentSignedIn, currentResource])
+        })
       },
       {
         immediate: true,
