@@ -43,9 +43,9 @@ export class ComponentGroupUtilSynchronizer {
 
   public createSyncWatcher(ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
-      [this.resources.isLoading, this.auth.signedIn, ops.resource],
-      async ([isLoading, signedIn, resource]) => {
-        if (!isLoading && signedIn) {
+      [this.auth.signedIn, ops.resource],
+      async ([signedIn, resource]) => {
+        if (signedIn) {
           if (!resource) {
             const locationResource = this.resources.getResource(ops.location)
             if (!locationResource.value?.data) {
