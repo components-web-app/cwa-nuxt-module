@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { type CwaResource, CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
@@ -41,47 +41,68 @@ export class ComponentGroupUtilSynchronizer {
     this.auth = this.$cwa.auth
   }
 
+  private async createComponentGroupWatchHandler(
+    { allowedComponents, location, fullReference }: SyncWatcherOps,
+    [signedIn, componentGroupResource]: [boolean, CwaCurrentResourceInterface | undefined],
+  ) {
+    // not signed in? we shouldn't have permissions anyway to do anything in creating new component groups
+    if (!signedIn) {
+      return
+    }
+    // if the component groups exists, we can check if the allowed components are in sync
+    if (componentGroupResource) {
+      if (componentGroupResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+        await this.updateAllowedComponents(allowedComponents, componentGroupResource)
+      }
+      return
+    }
+
+    // find the resource where this component group should be located
+    const locationResource = this.resources.getResource(location)
+    // no location, no action
+    if (!locationResource.value?.data) {
+      return
+    }
+
+    // at this point we are going to be performing an API request to update or create resources.
+    // Check if the resource reference already exists, may not be assigned to this location yet
+    const resourceByRef = await this.$cwa.fetchResource({
+      path: `/_/component_groups/${fullReference.value}`,
+    })
+
+    if (resourceByRef) {
+      await this.resourcesManager.updateResource({
+        endpoint: locationResource.value.data['@id'],
+        data: {
+          componentGroups: locationResource.value.data.componentGroups,
+        },
+      })
+      return
+    }
+
+    await this.createComponentGroup(location, fullReference, allowedComponents)
+  }
+
   public createSyncWatcher(ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
-      [this.resources.isLoading, this.auth.signedIn, ops.resource],
-      async ([isLoading, signedIn, resource]) => {
-        if (!isLoading && signedIn) {
-          if (!resource) {
-            const locationResource = this.resources.getResource(ops.location)
-            if (!locationResource.value?.data) {
-              return
-            }
-            // see if it exists by reference before we get a component group already exists notice...
-            const resourceByRef = await this.$cwa.fetchResource({
-              path: `/_/component_groups/${ops.fullReference.value}`,
-            })
-            if (resourceByRef) {
-              await this.resourcesManager.updateResource({
-                endpoint: locationResource.value.data['@id'],
-                data: {
-                  componentGroups: [
-                    ...(locationResource.value.data.componentGroups.map((cg: CwaResource | string) => {
-                      if (typeof cg === 'object') {
-                        return cg['@id']
-                      }
-                      return cg
-                    }) || []),
-                    resourceByRef['@id'],
-                  ],
-                },
-              })
-              return
-            }
-
-            await this.createComponentGroup(ops.location, ops.fullReference, ops.allowedComponents)
-          }
-          else if ((resource as CwaCurrentResourceInterface).apiState.status === CwaResourceApiStatuses.SUCCESS) {
-            await this.updateAllowedComponents(ops.allowedComponents, resource)
-          }
-        }
-      }, {
+      [
+        this.auth.signedIn,
+        ops.resource,
+      ],
+      async (
+        [
+          currentSignedIn,
+          currentResource,
+        ],
+      ) => {
+        await this.$cwa.addUniquePromise('component_group_sync', ops.fullReference.value, async () => {
+          await this.createComponentGroupWatchHandler(ops, [currentSignedIn, currentResource])
+        })
+      },
+      {
         immediate: true,
-      })
+      },
+    )
   }
 
   public stopSyncWatcher() {

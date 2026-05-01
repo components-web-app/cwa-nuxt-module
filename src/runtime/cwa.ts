@@ -161,4 +161,8 @@ export default class Cwa {
   public get apiUrlBase(): string {
     return this.apiUrl
   }
+
+  public addUniquePromise(scope: string, key: string, fn: () => Promise<void>) {
+    return this.storage.addUniquePromise(scope, key, fn)
+  }
 }
