@@ -1,3 +1,4 @@
+import { reactive } from 'vue'
 import {
   ResourcesStore,
 } from './stores/resources/resources-store'
@@ -24,6 +25,7 @@ export interface CwaStores {
 
 export class Storage {
   public readonly stores: CwaStores
+  private readonly uniquePromiseStore: { [scope: string]: Map<string, Promise<void>> }
 
   constructor(storeName: string) {
     this.stores = {
@@ -36,5 +38,29 @@ export class Storage {
       error: new ErrorStore(storeName),
       siteConfig: new SiteConfigStore(storeName),
     }
+    this.uniquePromiseStore = {}
+  }
+
+  private getUniquePromiseStore(scope: string) {
+    const existingMap = this.uniquePromiseStore[scope]
+    if (existingMap) {
+      return existingMap
+    }
+    this.uniquePromiseStore[scope] = reactive(new Map())
+    return this.uniquePromiseStore[scope]
+  }
+
+  public addUniquePromise(scope: string, key: string, fn: () => Promise<void>) {
+    const map = this.getUniquePromiseStore(scope)
+    if (map.has(key)) {
+      return map.get(key)
+    }
+    const requestPromise = new Promise<void>((done) => {
+      fn().then(() => {
+        map.delete(key)
+        done()
+      })
+    })
+    map.set(key, requestPromise)
   }
 }
