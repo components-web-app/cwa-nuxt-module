@@ -74,7 +74,10 @@ export class ComponentGroupUtilSynchronizer {
       await this.resourcesManager.updateResource({
         endpoint: locationResource.value.data['@id'],
         data: {
-          componentGroups: locationResource.value.data.componentGroups,
+          componentGroups: [
+            ...(locationResource.value.data.componentGroups || []),
+            resourceByRef['@id'],
+          ],
         },
       })
       return

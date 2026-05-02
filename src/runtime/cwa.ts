@@ -112,7 +112,12 @@ export default class Cwa {
 
   // fetcher is private, exposing the only function required by applications
   public fetchResource(event: FetchResourceEvent) {
-    return this.fetcher.fetchResource(event)
+    try {
+      return this.fetcher.fetchResource(event)
+    } catch (e) {
+      console.error(e)
+      return
+    }
   }
 
   public fetchRoute(route: RouteLocationNormalizedLoaded) {
