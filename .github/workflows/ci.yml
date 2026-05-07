@@ -16,6 +16,10 @@ on:
       - 'main'
       - 'dev'
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -124,22 +128,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
-          cache: "pnpm"
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
       - run: pnpm install
       - run: pnpm dev:prepare
       - run: pnpm build
-      - uses: step-security/wait-for-secrets@v1
-        id: get-otp
-        if: |
-          github.event_name == 'push' &&
-          github.repository_owner == 'components-web-app' &&
-          !contains(github.event.head_commit.message, '[skip-release]') &&
-          !startsWith(github.event.head_commit.message, 'docs')
-        with:
-          secrets: |
-            NPM_OTP:
-              name: 'NPM OTP'
-              description: 'Your OTP for NPM for publishing this package'
       - name: Release Edge
         if: ${{ steps.get-otp.outcome == 'success' }}
         run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || '1x' }}
