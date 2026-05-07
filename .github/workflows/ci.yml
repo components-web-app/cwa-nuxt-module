@@ -134,7 +134,6 @@ jobs:
       - run: pnpm dev:prepare
       - run: pnpm build
       - name: Release Edge
-        if: ${{ steps.get-otp.outcome == 'success' }}
         run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || '1x' }}
         env:
           NPM_CONFIG_PROVENANCE: true
