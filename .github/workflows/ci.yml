@@ -137,8 +137,6 @@ jobs:
         if: ${{ steps.get-otp.outcome == 'success' }}
         run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || '1x' }}
         env:
-          NPM_OTP: ${{ steps.get-otp.outputs.NPM_OTP }}
-          NPM_AUTH_TOKEN: ${{secrets.NPM_AUTH_TOKEN}}
           NPM_CONFIG_PROVENANCE: true
 
 #  e2e:

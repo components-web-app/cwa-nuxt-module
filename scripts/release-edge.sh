@@ -9,12 +9,6 @@ TAG=${1:-latest}
 # turn off git checks
 echo "gitChecks: false" >> ~/pnpm-workspace.yaml
 
-# Update token
-if [[ ! -z ${NPM_AUTH_TOKEN} ]] ; then
-  echo "//registry.npmjs.org/:_authToken=${NPM_AUTH_TOKEN}" >> ~/.npmrc
-  echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
-fi
-
 # Bump versions to edge
 node ./scripts/bump-edge.mjs
 
