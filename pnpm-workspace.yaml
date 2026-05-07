@@ -10,10 +10,8 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 minimumReleaseAgeExclude:
-  - serialize-javascript@7.0.3
   - svgo@3.3.3
   - serialize-javascript@7.0.5
 overrides:
   serialize-javascript@<7.0.5: ^7.0.5
-  serialize-javascript@<=7.0.2: ^7.0.3
   svgo@>=3.0.0 <3.3.3: ^3.3.3
