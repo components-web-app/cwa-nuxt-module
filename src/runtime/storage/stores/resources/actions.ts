@@ -105,6 +105,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
         for (const componentGroup of Object.values(componentGroups)) {
           const componentPositions = componentGroup.data?.componentPositions
+          if (!componentPositions) continue
           const positionIndex = componentPositions.indexOf(event.resource)
           if (positionIndex !== -1) {
             componentPositions.splice(positionIndex, 1)
