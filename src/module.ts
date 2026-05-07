@@ -23,7 +23,7 @@ import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
-declare module '@nuxt/schema' {
+declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
     cwa: {
       apiUrl: string
