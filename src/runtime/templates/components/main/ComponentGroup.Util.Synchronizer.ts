@@ -71,10 +71,15 @@ export class ComponentGroupUtilSynchronizer {
     })
 
     if (resourceByRef) {
+      // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
+      // then we could lose data of a component group being added. Safer to update the component group as it's less
+      // common for there to be another simultaneous update call
+      const locationResourceType = getResourceTypeFromIri(locationResource.value.data['@id']) as keyof typeof resourceTypeProperty
+      const locationProperty = resourceTypeProperty[locationResourceType]
       await this.resourcesManager.updateResource({
-        endpoint: locationResource.value.data['@id'],
+        endpoint: resourceByRef['@id'],
         data: {
-          componentGroups: [...(locationResource.value.data.componentGroups || []), resourceByRef['@id']],
+          [locationProperty]: [...resourceByRef[locationProperty], locationResource.value.data['@id']],
         },
       })
       return
@@ -95,7 +100,7 @@ export class ComponentGroupUtilSynchronizer {
           currentResource,
         ],
       ) => {
-        await this.$cwa.addUniquePromise('component_group_sync', ops.fullReference.value, async () => {
+        await this.$cwa.addUniquePromise('component_group_sync', `${ops.fullReference.value}-${ops.location}`, async () => {
           await this.createComponentGroupWatchHandler(ops, [currentSignedIn, currentResource])
         })
       },
