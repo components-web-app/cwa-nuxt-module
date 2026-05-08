@@ -9,7 +9,7 @@ defineSlots<{
 }>()
 
 // todo: find out why href and rel are not compatible with the defineNuxtLink definition
-const props = defineProps<Omit<NuxtLinkProps, 'href' | 'rel'>>()
+const props = defineProps<Omit<NuxtLinkProps, 'href' | 'rel' | 'noPrefetch'>>()
 
 const $cwa = useCwa()
 const CwaLinkComponent = defineNuxtLink({
