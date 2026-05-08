@@ -89,7 +89,7 @@ const editor = useEditor({
     },
   },
   extensions: [
-    StarterKit,
+    StarterKit.configure(),
     Placeholder.configure({
       placeholder: 'Write something …',
       emptyEditorClass: 'is-editor-empty text-inherit opacity-50',

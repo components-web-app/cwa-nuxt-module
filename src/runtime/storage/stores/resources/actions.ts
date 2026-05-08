@@ -104,7 +104,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // remove a component position from all component groups
         const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
         for (const componentGroup of Object.values(componentGroups)) {
+          // component groups can be fetched by reference. If so the returned IRI will be saved and the reference will not have any data.
           const componentPositions = componentGroup.data?.componentPositions
+          if (!componentPositions) continue
           const positionIndex = componentPositions.indexOf(event.resource)
           if (positionIndex !== -1) {
             componentPositions.splice(positionIndex, 1)

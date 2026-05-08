@@ -94,6 +94,7 @@ export default defineNuxtConfig({
     },
   },
   pwa: {
+    disable: import.meta.test,
     registerType: 'autoUpdate',
     manifest: {
       name: 'CWA',

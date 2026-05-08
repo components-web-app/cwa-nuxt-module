@@ -20,11 +20,6 @@ export default defineVitestConfig({
           indexedDb: false,
         },
         rootDir: fileURLToPath(new URL('./playground/', import.meta.url)),
-        overrides: {
-          ogImage: {
-            enabled: false,
-          },
-        },
       },
     },
     resolveSnapshotPath(path: string, extension: string) {

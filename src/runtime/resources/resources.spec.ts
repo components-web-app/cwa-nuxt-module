@@ -4,14 +4,14 @@ import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import * as utils from '#cwa/resources/resource-utils'
 
-function createResources() {
+function createResources(mockFetcherStoreResponse: any = undefined, mockResourcesStoreResponse: any = undefined) {
   const mockResourcesStore = {
     useStore() {
       const current = {
         currentIds: [] as string[],
         byId: {},
       }
-      return {
+      return mockResourcesStoreResponse || {
         current,
         getResource: vi.fn(id => current.byId[id]),
       }
@@ -20,7 +20,7 @@ function createResources() {
 
   const mockFetcherStore = {
     useStore() {
-      return {
+      return mockFetcherStoreResponse || {
         primaryFetch: {
           fetchingToken: '123' as string | null,
         },
@@ -39,15 +39,14 @@ function createResources() {
 describe('Resources', () => {
   describe('current ids', () => {
     test('should return current ids BASED on resources store', () => {
-      const { resources, resourcesStore } = createResources()
       const mockIds = ['1', '2', '3']
-
-      resourcesStore.useStore = () => ({
+      const mockResourcesStore = {
         current: {
           byId: {},
           currentIds: mockIds,
         },
-      })
+      }
+      const { resources } = createResources(undefined, mockResourcesStore)
 
       expect(resources.currentIds).toEqual(mockIds)
     })
@@ -55,35 +54,36 @@ describe('Resources', () => {
 
   describe('getResource', () => {
     test('should return resource BASED on its id', () => {
-      const { resources, resourcesStore } = createResources()
       const mockId = 'mockedId'
       const mockResource = { test: true }
-
       const current = {
         byId: {
           [mockId]: mockResource,
         },
         currentIds: [],
       }
-      resourcesStore.useStore = () => ({
+
+      const mockResourcesStore = {
         current,
         getResource: vi.fn(id => current.byId[id]),
-      })
+      }
+      const { resources } = createResources(undefined, mockResourcesStore)
 
       expect(resources.getResource(mockId).value).toEqual(mockResource)
     })
 
     test('should return nothing IF resource with requested id does not exist', () => {
-      const { resources, resourcesStore } = createResources()
       const mockId = 'mockedId'
 
-      resourcesStore.useStore = () => ({
+      const mockResourcesStore = {
         current: {
           byId: {},
           currentIds: [],
         },
         getResource: vi.fn(() => undefined),
-      })
+      }
+
+      const { resources } = createResources(undefined, mockResourcesStore)
 
       expect(resources.getResource(mockId).value).toBeUndefined()
     })
@@ -91,11 +91,9 @@ describe('Resources', () => {
 
   describe('currentResources', () => {
     test('should return formatted resources', () => {
-      const { resources, resourcesStore } = createResources()
       const resourceA = { id: 'a', otherData: {} }
       const resourceB = { id: 'b', otherData: {} }
       const resourceC = { id: 'c', otherData: {} }
-
       const current = {
         byId: {
           a: resourceA,
@@ -104,10 +102,13 @@ describe('Resources', () => {
         },
         currentIds: ['a', 'b', 'c'],
       }
-      resourcesStore.useStore = () => ({
+
+      const mockResourcesStore = {
         current,
         getResource: vi.fn(id => current.byId[id]),
-      })
+      }
+
+      const { resources } = createResources(undefined, mockResourcesStore)
 
       expect(resources.currentResources).toEqual({
         a: resourceA,
@@ -119,42 +120,40 @@ describe('Resources', () => {
 
   describe('displayFetchStatus', () => {
     test('should return resolvedSuccessFetchStatus IF fetching token is not present', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockStatus = { success: 'mock' }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: null,
         },
         resolvedSuccessFetchStatus: mockStatus,
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
     })
 
     test('should return resolvedSuccessFetchStatus IF no fetches are found by fetching token', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockStatus = { success: 'mock' }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
+        primaryFetch: {
+          fetchingToken: 'mock',
+        },
         resolvedSuccessFetchStatus: mockStatus,
         fetches: {},
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
     })
 
     test('should return resolvedSuccessFetchStatus IF page iri is not defined', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockStatus = { success: 'mock' }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abcd' as string | null,
         },
@@ -162,7 +161,9 @@ describe('Resources', () => {
         fetches: {
           abcd: { test: true },
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(null)
 
@@ -170,12 +171,9 @@ describe('Resources', () => {
     })
 
     test('should return resolvedSuccessFetchStatus IF current ids do not include page iri', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockStatus = { success: 'mock' }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abcd' as string | null,
         },
@@ -183,7 +181,9 @@ describe('Resources', () => {
         fetches: {
           abcd: { test: true },
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue('this-iri-does-not-exist')
 
@@ -191,22 +191,17 @@ describe('Resources', () => {
     })
 
     test('should return resolvedSuccessFetchStatus IF page resource has no data', () => {
-      const { resources, fetcherStore, resourcesStore } = createResources()
-      const initialState = fetcherStore.useStore()
-      const initialResourcesState = resourcesStore.useStore()
       const mockStatus = { success: 'mock' }
       const mockPageIri = 'I exist'
 
-      resourcesStore.useStore = () => ({
-        ...initialResourcesState,
+      const mockResourcesStore = ({
         current: {
           currentIds: [mockPageIri] as string[],
           byId: {},
         },
       })
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abcd' as string | null,
         },
@@ -214,7 +209,9 @@ describe('Resources', () => {
         fetches: {
           abcd: { test: true },
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
       vi.spyOn(resources, 'getResource').mockReturnValue({ value: { data: null } })
@@ -223,22 +220,17 @@ describe('Resources', () => {
     })
 
     test('should return resolvedSuccessFetchStatus IF page resource api status IS NOT success', () => {
-      const { resources, fetcherStore, resourcesStore } = createResources()
-      const initialState = fetcherStore.useStore()
-      const initialResourcesState = resourcesStore.useStore()
       const mockStatus = { success: 'mock' }
       const mockPageIri = 'I exist'
 
-      resourcesStore.useStore = () => ({
-        ...initialResourcesState,
+      const mockResourcesStore = {
         current: {
           currentIds: [mockPageIri] as string[],
           byId: {},
         },
-      })
+      }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abcd' as string | null,
         },
@@ -246,7 +238,9 @@ describe('Resources', () => {
         fetches: {
           abcd: { test: true },
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
       vi.spyOn(resources, 'getResource').mockReturnValue({
@@ -264,23 +258,18 @@ describe('Resources', () => {
     })
 
     test('should return fetchStatus of resource IF page resource has data and api status IS success', () => {
-      const { resources, fetcherStore, resourcesStore } = createResources()
-      const initialState = fetcherStore.useStore()
-      const initialResourcesState = resourcesStore.useStore()
       const mockStatus = { success: 'mock' }
       const resourceStatus = { specific: 'status' }
       const mockPageIri = 'I exist'
 
-      resourcesStore.useStore = () => ({
-        ...initialResourcesState,
+      const mockResourcesStore = {
         current: {
           currentIds: [mockPageIri] as string[],
           byId: {},
         },
-      })
+      }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abcd' as string | null,
         },
@@ -288,7 +277,9 @@ describe('Resources', () => {
         fetches: {
           abcd: resourceStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
 
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
       vi.spyOn(resources, 'getResource').mockReturnValue({
@@ -308,40 +299,32 @@ describe('Resources', () => {
 
   describe('pageLoadResources', () => {
     test('should return nothing IF token is not defined', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: null,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       expect(resources.pageLoadResources).toBeUndefined()
     })
 
     test('should return nothing IF fetch status is not defined', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {},
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       expect(resources.pageLoadResources).toBeUndefined()
     })
 
     test('should return nothing IF fetch status type is not defined', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
@@ -350,7 +333,9 @@ describe('Resources', () => {
             mock: true,
           },
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(null)
 
@@ -358,21 +343,20 @@ describe('Resources', () => {
     })
 
     test('should return page iri and layout iri IF fetch status type is NOT route OR page data', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockPageIri = 'mock page iri'
       const mockLayoutIri = 'mock layout iri'
       const mockFetchStatus = { mock: true }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.COMPONENT)
       const layoutSpy = vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
@@ -384,22 +368,21 @@ describe('Resources', () => {
     })
 
     test('should return resources including path IF fetch status type is page data', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockPageIri = 'mock page iri'
       const mockLayoutIri = 'mock layout iri'
       const mockPath = '/test'
       const mockFetchStatus = { path: mockPath }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE_DATA)
       const layoutSpy = vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
@@ -411,22 +394,21 @@ describe('Resources', () => {
     })
 
     test('should return resources including path IF fetch status type is route', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockPageIri = 'mock page iri'
       const mockLayoutIri = 'mock layout iri'
       const mockPath = '/test'
       const mockFetchStatus = { path: mockPath }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.ROUTE)
       const layoutSpy = vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
@@ -438,8 +420,6 @@ describe('Resources', () => {
     })
 
     test('should return resources including path AND page data iri IF fetch status type is route AND resource has data', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockPageIri = 'mock page iri'
       const mockLayoutIri = 'mock layout iri'
       const mockPageData = { mock: { page: 'data' } }
@@ -447,15 +427,16 @@ describe('Resources', () => {
       const mockPath = '/test'
       const mockFetchStatus = { path: mockPath }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.ROUTE)
       vi.spyOn(resources, 'getResource').mockReturnValue({ value: mockRouteResource })
@@ -470,10 +451,9 @@ describe('Resources', () => {
 
   describe('getComponentGroupByReference', () => {
     test('Returns a component if it exists with the same reference', () => {
-      const { resources, resourcesStore } = createResources()
       const component = { data: { any: 'thing', reference: 'ref' } }
       // @ts-expect-error
-      resourcesStore.useStore = () => ({
+      const mockResourcesStore = {
         resourcesByType: {
           [utils.CwaResourceTypes.COMPONENT_GROUP]: [component, {}, {
             data: {
@@ -482,22 +462,21 @@ describe('Resources', () => {
             },
           }],
         },
-      })
+      }
+      const { resources } = createResources(undefined, mockResourcesStore)
       expect(resources.getComponentGroupByReference('ref')).toEqual(component)
     })
   })
 
   describe('pageLoadProgress', () => {
     test('should return default load progress IF page load resources are not defined', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: null,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       expect(resources.pageLoadProgress.value).toEqual({
         resources: [],
@@ -508,21 +487,20 @@ describe('Resources', () => {
     })
 
     test('should return load progress IF half of resources are loading', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockPageIri = 'mock page iri'
       const mockLayoutIri = 'mock layout iri'
       const mockFetchStatus = { mock: true }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
@@ -540,21 +518,20 @@ describe('Resources', () => {
     })
 
     test('should return load progress IF all resources are loading', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockPageIri = 'mock page iri'
       const mockLayoutIri = 'mock layout iri'
       const mockFetchStatus = { mock: true }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
@@ -571,20 +548,19 @@ describe('Resources', () => {
     })
 
     test('should return load progress IF some resources are loading AND some iri is not defined', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
       const mockLayoutIri = 'mock layout iri'
       const mockFetchStatus = { mock: true }
 
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         primaryFetch: {
           fetchingToken: 'abc',
         },
         fetches: {
           abc: mockFetchStatus,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(mockLayoutIri)
       vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(undefined)
@@ -809,53 +785,43 @@ describe('Resources', () => {
 
   describe('isLoading getter', () => {
     test('should return true IF some fetches are not resolved', () => {
-      const { resources, fetcherStore } = createResources()
-      const initialState = fetcherStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         fetchesResolved: false,
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore)
 
       expect(resources.isLoading.value).toEqual(true)
     })
 
     test('should return true IF some resources are pending', () => {
-      const { resources, fetcherStore, resourcesStore } = createResources()
-      const initialState = fetcherStore.useStore()
-      const initialResourcesState = resourcesStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         fetchesResolved: true,
-      })
+      }
 
-      resourcesStore.useStore = () => ({
-        ...initialResourcesState,
+      const mockResourcesStore = {
         resourceLoadStatus: {
           pending: 1,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
 
       expect(resources.isLoading.value).toEqual(true)
     })
 
     test('should return false IF both resources are not pending AND all fetches are resolved', () => {
-      const { resources, fetcherStore, resourcesStore } = createResources()
-      const initialState = fetcherStore.useStore()
-      const initialResourcesState = resourcesStore.useStore()
-
-      fetcherStore.useStore = () => ({
-        ...initialState,
+      const mockFetcherStore = {
         fetchesResolved: true,
-      })
+      }
 
-      resourcesStore.useStore = () => ({
-        ...initialResourcesState,
+      const mockResourcesStore = {
         resourceLoadStatus: {
           pending: 0,
         },
-      })
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
 
       expect(resources.isLoading.value).toEqual(false)
     })
@@ -863,14 +829,11 @@ describe('Resources', () => {
 
   describe('resourceLoadStatus getter', () => {
     test('should return load status from store', () => {
-      const { resources, resourcesStore } = createResources()
-      const initialState = resourcesStore.useStore()
       const mockStatus = 'mock status'
-
-      resourcesStore.useStore = () => ({
-        ...initialState,
+      const resourcesMock = {
         resourceLoadStatus: mockStatus,
-      })
+      }
+      const { resources } = createResources(undefined, resourcesMock)
 
       expect(resources.resourceLoadStatus).toEqual(mockStatus)
     })
@@ -878,10 +841,8 @@ describe('Resources', () => {
 
   describe('fetcherStore getter', () => {
     test('should return fetcher store', () => {
-      const { resources, fetcherStore } = createResources()
       const mockStore = { mock: { fetcher: 'store' } }
-
-      fetcherStore.useStore = () => mockStore
+      const { resources } = createResources(mockStore)
 
       expect(resources.fetcherStore).toEqual(mockStore)
     })
@@ -889,10 +850,8 @@ describe('Resources', () => {
 
   describe('resourcesStore getter', () => {
     test('should return resources store', () => {
-      const { resources, resourcesStore } = createResources()
       const mockStore = { mock: { resources: 'store' } }
-
-      resourcesStore.useStore = () => mockStore
+      const { resources } = createResources(undefined, mockStore)
 
       expect(resources.resourcesStore).toEqual(mockStore)
     })

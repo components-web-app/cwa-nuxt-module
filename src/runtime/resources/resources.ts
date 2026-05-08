@@ -1,9 +1,9 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import type { ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
-import type { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type { FetchStatus } from '../storage/stores/fetcher/state'
 import {
   CwaResourceTypes,
@@ -19,7 +19,11 @@ interface PageLoadStatus {
 }
 
 export class Resources {
-  constructor(private readonly resourcesStoreDefinition: ResourcesStore, private readonly fetcherStoreDefinition: FetcherStore) {
+  private readonly _resourcesStore: CwaResourcesStoreInterface
+  private readonly _fetcherStore: CwaFetcherStoreInterface
+  constructor(readonly resourcesStoreDefinition: ResourcesStore, readonly fetcherStoreDefinition: FetcherStore) {
+    this._resourcesStore = resourcesStoreDefinition.useStore()
+    this._fetcherStore = fetcherStoreDefinition.useStore()
   }
 
   public get currentIds() {
@@ -358,12 +362,12 @@ export class Resources {
     return this.resourcesStore.resourceLoadStatus
   }
 
-  private get fetcherStore() {
-    return this.fetcherStoreDefinition.useStore()
+  private get fetcherStore(): CwaFetcherStoreInterface {
+    return this._fetcherStore
   }
 
-  private get resourcesStore() {
-    return this.resourcesStoreDefinition.useStore()
+  private get resourcesStore(): CwaResourcesStoreInterface {
+    return this._resourcesStore
   }
 
   public get usesPageTemplate() {

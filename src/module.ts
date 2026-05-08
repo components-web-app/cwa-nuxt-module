@@ -23,7 +23,7 @@ import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
-declare module '@nuxt/schema' {
+declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
     cwa: {
       apiUrl: string
@@ -90,9 +90,6 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
     'nuxt-link-checker': {
       version: '^5.0',
-    },
-    'nuxt-og-image': {
-      version: '^6.4',
     },
     'nuxt-schema-org': {
       version: '^6.0',

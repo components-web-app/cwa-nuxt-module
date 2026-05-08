@@ -131,9 +131,6 @@ describe('CWA module', () => {
         'nuxt-link-checker': {
           version: '^5.0',
         },
-        'nuxt-og-image': {
-          version: '^6.4',
-        },
         'nuxt-schema-org': {
           version: '^6.0',
         },
