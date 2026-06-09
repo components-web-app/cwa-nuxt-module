@@ -230,6 +230,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
     }),
     getResource: computed(() => {
+      // todo: should we consider making this into a promise if there is a request in progress to update the resource?
       return (id: string) => {
         return resourcesState.current.byId?.[id]
       }

@@ -20,7 +20,7 @@
         <div class="cwa:fixed cwa:inset-0 cwa:dark-blur cwa:transition-opacity" />
       </TransitionChild>
 
-      <div class="cwa:fixed cwa:inset-0 cwa:z-10 cwa:w-screen cwa:overflow-y-auto">
+      <div class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:w-screen cwa:overflow-y-auto">
         <div class="cwa:flex cwa:min-h-full cwa:items-end cwa:justify-center cwa:p-4 cwa:text-center cwa:sm:items-center">
           <TransitionChild
             as="template"

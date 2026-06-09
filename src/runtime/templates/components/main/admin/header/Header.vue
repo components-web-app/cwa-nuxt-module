@@ -8,7 +8,7 @@
       @click.stop
     >
       <div class="cwa:flex cwa:justify-between cwa:items-center">
-        <div class="cwa:absolute cwa:left-1/2 cwa:top-1/2 cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-20">
+        <div class="cwa:absolute cwa:left-1/2 cwa:top-1/2 cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager">
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiFormButton
               v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data"
@@ -116,8 +116,8 @@
           <Menu />
         </div>
       </div>
-      <OutdatedContentNotice class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-20" />
-      <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-10" />
+      <OutdatedContentNotice class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-notifications" />
+      <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
     <ResourceModalOverlayTemplate :show="showEditModal && !!($cwa.resources.pageDataIri.value || $cwa.resources.pageIri.value)">
