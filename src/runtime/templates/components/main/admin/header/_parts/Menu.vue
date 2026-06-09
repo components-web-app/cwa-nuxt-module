@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa:flex cwa:relative cwa:h-full cwa:items-center cwa:z-50">
+  <div class="cwa:flex cwa:relative cwa:h-full cwa:items-center cwa:z-dialog">
     <CwaUiHamburger
       ref="hamburger"
       v-model="showMenu"

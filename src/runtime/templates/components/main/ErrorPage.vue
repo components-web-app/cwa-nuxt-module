@@ -90,7 +90,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="cwa:h-full cwa:relative cwa:z-10 cwa:transition-opacity cwa:duration-300"
+    class="cwa:h-full cwa:relative cwa:z-overlay cwa:transition-opacity cwa:duration-300"
     :class="[showingErrorPage ? 'cwa:opacity-100' : 'cwa:opacity-0']"
   >
     <CwaUiBackgroundParticles class="cwa:absolute cwa:inset-0 cwa:-z-10 cwa:opacity-30 cwa:invert cwa:dark:invert-0" />
