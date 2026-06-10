@@ -32,6 +32,7 @@ describe('CWA resource manageable composable', () => {
       eventBus: {
         emit: vi.fn(),
         on: vi.fn(),
+        off: vi.fn(),
       },
     },
   }
