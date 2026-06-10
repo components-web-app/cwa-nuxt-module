@@ -17,34 +17,40 @@
     />
     <!--cwa-end-->
   </template>
-  <div
-    v-else-if="isNewPosition"
-    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative"
-  >
-    <LazyHotSpot
-      screen-reader-action="Add component position"
-      :iri="iri"
-      disabled
-    />
-    <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
-      Add the component to populate this component group
-    </span>
-  </div>
-  <div v-else-if="!locationResource && !$cwa.resources.isLoading.value">
-    <CwaUiAlertWarning>
-      The location provided `{{ location }}` is not a current resource
-    </CwaUiAlertWarning>
-  </div>
-  <div
-    v-else-if="signedInAndResourceExists"
-    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative"
-  >
-    <LazyHotSpot
-      screen-reader-action="Add component position"
-      :iri="iri"
-      :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, location)"
-    />
-  </div>
+  <template v-else-if="isNewPosition">
+    <!--cwa-start-->
+    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative">
+      <LazyHotSpot
+        screen-reader-action="Add component position"
+        :iri="iri"
+        disabled
+      />
+      <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
+        Add the component to populate this component group
+      </span>
+    </div>
+    <!--cwa-end-->
+  </template>
+  <template v-else-if="!locationResource && !$cwa.resources.isLoading.value">
+    <!--cwa-start-->
+    <div>
+      <CwaUiAlertWarning>
+        The location provided `{{ location }}` is not a current resource
+      </CwaUiAlertWarning>
+    </div>
+    <!--cwa-end-->
+  </template>
+  <template v-else-if="signedInAndResourceExists">
+    <!--cwa-start-->
+    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative">
+      <LazyHotSpot
+        screen-reader-action="Add component position"
+        :iri="iri"
+        :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, location)"
+      />
+    </div>
+    <!--cwa-end-->
+  </template>
 </template>
 
 <script setup lang="ts">
