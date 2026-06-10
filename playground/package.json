@@ -25,7 +25,7 @@
     "@tiptap/pm": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
     "@tiptap/vue-3": "^3.22.5",
-    "nuxt": "^4.4.4",
+    "nuxt": "^4.4.8",
     "nuxt-svgo": "^5.3.0"
   }
 }
