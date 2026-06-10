@@ -256,8 +256,10 @@ export default class ResourceStackManager {
 
     // we are starting a new stack - last click before was a window or has been reset
     if (!currentTarget.value) {
-      // If the first item being added to stack is the same IRI as the first item populated into the current stack, cancel, do not repopulate the same stack
-      if (!isContext && isResourceClick && this.isResourceInStack(resourceStackItem.iri, false)) {
+      // Only skip reset if the FIRST (deepest/most-specific) stack item fires first — this handles
+      // re-clicking the same resource. If an outer resource fires first (due to listener registration
+      // order), we still reset so outer-first event ordering doesn't compound onto the previous stack.
+      if (!isContext && isResourceClick && this.currentResourceStack.value[0]?.iri === resourceStackItem.iri) {
         currentTarget.value = clickTarget
         return
       }

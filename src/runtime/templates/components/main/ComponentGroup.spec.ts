@@ -65,9 +65,9 @@ function createWrapper({
   isEditing?: boolean
 } = {}) {
   // @ts-expect-error
-  vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => {
+  vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
-      auth: { signedIn: vue.ref(signedIn) },
+      auth: { signedIn: vue.ref(signedIn), isAdmin: vue.computed(() => false) },
       resources: {
         ...mockCwaResources,
         isLoading: { value: isLoading },
@@ -151,8 +151,8 @@ describe('ComponentGroup', () => {
         })
 
         const wrapper = createWrapper()
-        expect(mockCwaResources.getComponentGroupByReference).toHaveBeenCalledWith(`${mockReference}_${mockLocation}`)
         expect(wrapper.vm.resource).toEqual('COMPY-PONENET')
+        expect(mockCwaResources.getComponentGroupByReference).toHaveBeenCalledWith(`${mockReference}_${mockLocation}`)
       })
     })
 
@@ -220,6 +220,7 @@ describe('ComponentGroup', () => {
         const wrapper = createWrapper()
 
         expect(wrapper.vm.componentPositions).toBeUndefined()
+        void wrapper.vm.resource // ensure getComponentGroupByReference mock is always consumed
       })
 
       test('should return resource component positions from resources store', () => {
@@ -309,6 +310,7 @@ describe('ComponentGroup', () => {
           isEditing,
         })
 
+        void wrapper.vm.resource // ensure getComponentGroupByReference mock is always consumed
         expect(wrapper.vm.signedInAndResourceExists).toEqual(expected)
       })
     })

@@ -107,7 +107,7 @@ const showLoader = computed(() => {
     return true
   }
   // if we do not have data yet (nothing cached either) and the api fetch status is in progress
-  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return !resource.value?.data && resource.value?.apiState?.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()

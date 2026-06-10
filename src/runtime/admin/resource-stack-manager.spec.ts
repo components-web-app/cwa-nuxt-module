@@ -169,7 +169,7 @@ describe('Resource Manager', () => {
         expect(manager.currentResourceStack.value.length).toEqual(1)
       })
 
-      test('should not reset and add item to stack IF item with same iri already in stack even if no previous click target', () => {
+      test('should not reset and add item to stack IF item with same iri is the FIRST item in current stack and no previous click target', () => {
         const mockStore = { state: { isEditing: true } }
         const mockIri = '/mock'
         const { manager } = createResourceManager(mockStore)
@@ -181,11 +181,25 @@ describe('Resource Manager', () => {
         const event = { iri: mockIri, clickTarget: 'new' }
         manager.addToStack(event)
         expect(resetSpy).toHaveBeenCalledTimes(0)
-        // expect(resetSpy).toHaveBeenCalledWith(undefined)
-        // expect(resetSpy).toHaveBeenCalledWith(true)
         expect(manager.insertResourceStackItem).toHaveBeenCalledTimes(0)
-        // expect(manager.insertResourceStackItem).toHaveBeenCalledWith({ iri: mockIri }, undefined)
         expect(manager.currentClickTarget.value).toEqual('new')
+      })
+
+      test('should reset stack IF item with same iri is NOT the first item in stack (outer resource fires first)', () => {
+        const mockStore = { state: { isEditing: true } }
+        const outerIri = '/outer'
+        const innerIri = '/inner'
+        const { manager } = createResourceManager(mockStore)
+        const resetSpy = vi.spyOn(manager, 'resetStack')
+        vi.spyOn(manager, 'insertResourceStackItem').mockImplementationOnce(() => {})
+        manager.currentClickTarget = ref(null)
+        // innerIri is first (deepest), outerIri is second — outer fires first due to listener ordering
+        manager.currentResourceStack = ref([{ iri: innerIri }, { iri: outerIri }])
+
+        const event = { iri: outerIri, clickTarget: 'new' }
+        manager.addToStack(event)
+        // should reset because outerIri is NOT the first item
+        expect(resetSpy).toHaveBeenCalled()
       })
 
       test('should NOT add item to stack IF item has no iri', () => {

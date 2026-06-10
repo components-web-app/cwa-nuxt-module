@@ -22,12 +22,19 @@ vi.mock('vue', async () => {
     ...mod,
     onMounted: vi.fn(fn => fn()),
     onBeforeUnmount: vi.fn(fn => fn()),
+    watch: vi.fn((source, cb, opts) => {
+      if (opts?.immediate) cb(typeof source === 'function' ? source() : source.value, undefined)
+      return vi.fn()
+    }),
   }
 })
 
 describe('CWA resource manageable composable', () => {
   const mockIri = ref('mock-iri')
   const mockCwa = {
+    auth: {
+      isAdmin: ref(true),
+    },
     admin: {
       eventBus: {
         emit: vi.fn(),
