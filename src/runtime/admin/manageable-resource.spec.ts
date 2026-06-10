@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, test, vi, expect, afterEach } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
@@ -237,13 +237,15 @@ describe('ManageableResource Class', () => {
     test.each([
       { iri: '/child', childIris: ['/child', '/another-child'], callCount: 1 },
       { iri: '/no-exist', childIris: ['/eeeerie'], callCount: 0 },
-    ])('If iri passed is $iri with childIris as $childIris then functions should be called $callCount times', ({ iri, childIris, callCount }) => {
+    ])('If iri passed is $iri with childIris as $childIris then functions should be called $callCount times', async ({ iri, childIris, callCount }) => {
       const { instance } = createManageableResource()
       instance.currentIri = ref('/abc')
-      vi.spyOn(instance, 'removeClickEventListeners').mockImplementationOnce(() => {})
-      vi.spyOn(instance, 'addClickEventListeners').mockImplementationOnce(() => {})
-      vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => computed(() => childIris))
+      instance.isIriInit = true
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementation(() => {})
+      vi.spyOn(instance, 'addClickEventListeners').mockImplementation(() => {})
+      vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => childIris))
       instance.componentMountedListener(iri)
+      await nextTick()
       expect(instance.removeClickEventListeners).toHaveBeenCalledTimes(callCount)
       expect(instance.addClickEventListeners).toHaveBeenCalledTimes(callCount)
       if (callCount) {

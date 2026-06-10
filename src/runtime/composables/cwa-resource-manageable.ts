@@ -23,20 +23,21 @@ export const useCwaResourceManageable = (iri: Ref<string | undefined>, ops?: Man
 
   const manageableResource = new ManageableResource(useProxy, $cwa, ops || ref({}))
 
+  const onManageableComponentMounted = (iriMounted: string) => {
+    if (iriMounted === iri.value) {
+      manageableResource.initNewIri()
+      $cwa.admin.eventBus.emit('componentMounted', iri.value)
+    }
+  }
+
   onMounted(() => {
     manageableResource.init(iri)
-
     iri.value && $cwa.admin.eventBus.emit('componentMounted', iri.value)
-
-    $cwa.admin.eventBus.on('manageableComponentMounted', (iriMounted) => {
-      if (iriMounted === iri.value) {
-        manageableResource.initNewIri()
-        $cwa.admin.eventBus.emit('componentMounted', iri.value)
-      }
-    })
+    $cwa.admin.eventBus.on('manageableComponentMounted', onManageableComponentMounted)
   })
 
   onBeforeUnmount(() => {
+    $cwa.admin.eventBus.off('manageableComponentMounted', onManageableComponentMounted)
     manageableResource.clear()
   })
 

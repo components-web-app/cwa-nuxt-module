@@ -4,6 +4,7 @@ import { consola } from 'consola'
 import {
   computed,
   markRaw,
+  nextTick,
   ref,
   watch,
 
@@ -29,6 +30,7 @@ export default class ManageableResource {
   private unwatchCurrentIri: undefined | WatchStopHandle
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
+  private pendingChildMountedReInit: boolean = false
 
   constructor(
     private readonly component: ComponentPublicInstance,
@@ -100,6 +102,12 @@ export default class ManageableResource {
       return
     }
 
+    // Already scheduled a re-init this tick: emit the cascade immediately (so grandparents still
+    // propagate in the same synchronous pass) but skip redundant addClickEventListeners work.
+    if (this.pendingChildMountedReInit) {
+      return
+    }
+
     const childIris = this.childIris.value
     const iris: string[] = []
     if (iri.endsWith('_placeholder')) {
@@ -110,24 +118,23 @@ export default class ManageableResource {
       iris.push(...this.$cwa.resources.findAllPublishableIris(iri))
     }
 
-    const iriIsChild = () => {
-      // for each possible publishable IRI of the resource just mounted
-      for (const iri of iris) {
-        // is it part of the calculated children of this resource
-        if (childIris.includes(iri)) {
-          return true
-        }
-      }
-      return false
-    }
+    const isChild = iris.some(i => childIris.includes(i))
 
-    // the child will have to have a click handler added for this (parent) resource
-    const isNewlyMountedIriAChild = iriIsChild()
-
-    if (isNewlyMountedIriAChild) {
-      this.removeClickEventListeners()
-      this.addClickEventListeners()
+    if (isChild) {
+      this.pendingChildMountedReInit = true
+      // Emit the cascade synchronously so grandparents propagate in the same pass, but defer the
+      // actual DOM listener refresh to nextTick. This ensures children register their own click
+      // listeners (via the post-flush watcher) before parents register theirs, which fixes the
+      // click-event ordering bug that caused the resource stack to compound across clicks.
       this.$cwa.admin.eventBus.emit('componentMounted', currentIri)
+      void nextTick(() => {
+        this.pendingChildMountedReInit = false
+        if (!this.currentIri?.value || !this.isIriInit) {
+          return
+        }
+        this.removeClickEventListeners()
+        this.addClickEventListeners()
+      })
     }
   }
 
