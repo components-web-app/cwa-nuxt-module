@@ -1,4 +1,5 @@
-import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { watchOnce } from '@vueuse/core'
 import { consola } from 'consola'
 import {
@@ -256,7 +257,7 @@ export default class ManageableResource {
       clickTarget,
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({
-        resourceType: getResourceTypeFromIri(this.currentIri.value),
+        resourceType: getResourceTypeFromIri(this.currentIri.value) ?? (this.currentIri.value === NEW_RESOURCE_IRI ? CwaResourceTypes.COMPONENT : undefined),
         resourceConfig: this.resourceConfig,
         resource: this.currentResource,
       })),

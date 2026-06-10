@@ -7,6 +7,7 @@ import * as vue from 'vue'
 import Cwa from '../cwa'
 import ManageableResource from './manageable-resource'
 import * as ManagerTabsResolver from './manager-tabs-resolver'
+import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 const Node = {
   ELEMENT_NODE: 1,
@@ -45,6 +46,15 @@ vi.stubGlobal('Node', Node)
 vi.mock('#cwa/resources/resource-utils', () => {
   return {
     getResourceTypeFromIri: vi.fn(() => 'resourceTypeResolved'),
+    CwaResourceTypes: {
+      COMPONENT: 'COMPONENT',
+    },
+  }
+})
+
+vi.mock('#cwa/storage/stores/resources/state', () => {
+  return {
+    NEW_RESOURCE_IRI: '__new__',
   }
 })
 
@@ -399,6 +409,29 @@ describe('ManageableResource Class', () => {
         styles,
         childIris,
       }, false, instance.ops)
+    })
+
+    test('should resolve resourceType as COMPONENT when iri is NEW_RESOURCE_IRI', () => {
+      ;(getResourceTypeFromIri as ReturnType<typeof vi.fn>).mockReturnValueOnce(undefined)
+
+      const resourceConfig = { managerTabs: [], ui: [] }
+      const resource = { iri: '__new__' }
+      const { instance } = createManageableResource()
+      const mockEvent = { target: 'mock' }
+
+      vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => 'name')
+      vi.spyOn(instance, 'resourceConfig', 'get').mockImplementation(() => resourceConfig)
+      vi.spyOn(instance, 'currentResource', 'get').mockImplementation(() => resource)
+      vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => [])
+      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
+      vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockImplementationOnce(() => [])
+
+      instance.currentIri = ref('__new__')
+      instance.clickListener(mockEvent)
+
+      expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith(
+        expect.objectContaining({ resourceType: 'COMPONENT' }),
+      )
     })
   })
 
