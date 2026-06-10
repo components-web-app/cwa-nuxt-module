@@ -58,8 +58,8 @@ import LayoutPageOverlay from '#cwa/templates/components/main/admin/resource-man
 const $cwa = useCwa()
 const currentRoute = useRouter().currentRoute
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
-const page = ref<null | HTMLDivElement>(null)
-const rootLayout = ref<null | HTMLDivElement>(null)
+const page = ref<null | HTMLElement>(null)
+const rootLayout = ref<null | HTMLElement>(null)
 const instance = getCurrentInstance()
 
 const cwaPageMeta = computed(() => {

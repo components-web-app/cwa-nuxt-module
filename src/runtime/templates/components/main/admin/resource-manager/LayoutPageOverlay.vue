@@ -8,9 +8,13 @@ const windowSize = useWindowSize()
 
 const $cwa = useCwa()
 
+interface BoundedElement {
+  getBoundingClientRect(): DOMRect
+}
+
 const props = defineProps<{
-  page: HTMLDivElement
-  layout: HTMLDivElement
+  page: BoundedElement
+  layout: BoundedElement
 }>()
 
 async function redraw() {
