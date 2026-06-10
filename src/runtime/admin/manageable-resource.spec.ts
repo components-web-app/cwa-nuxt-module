@@ -411,6 +411,44 @@ describe('ManageableResource Class', () => {
       }, false, instance.ops)
     })
 
+    // domElements is passed as the LIVE ref so ComponentFocus reacts to DOM changes while
+    // a resource is selected (e.g. the user switches UI variant and new elements mount).
+    //
+    // Because it is live, consumers must NOT use :static based on resourceStack to keep
+    // Headless UI containers open. resourceStack returns [] while a click is being processed,
+    // causing isEditing to flicker false for one flush cycle — the container unmounts and
+    // clears domElements before ComponentFocus can read them.
+    //
+    // The correct approach: let Headless UI open/close naturally. When the container is open
+    // and the user clicks a child component, the click is captured before any close() fires.
+    test('domElements is the live ref so ComponentFocus updates when DOM changes after selection', () => {
+      const { instance, $cwa } = createManageableResource()
+
+      vi.spyOn(instance, 'displayName', 'get').mockReturnValue('name')
+      vi.spyOn(instance, 'resourceConfig', 'get').mockReturnValue(null)
+      vi.spyOn(instance, 'currentResource', 'get').mockReturnValue({ iri: '/mock' })
+      vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => []))
+      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
+      vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockReturnValue([])
+
+      const el1 = { nodeType: 1, id: 'el1' }
+      instance.domElements.value = [el1]
+
+      instance.currentIri = ref('/mock')
+      instance.clickListener({ target: 'mock' })
+
+      const [[passedStackItem]] = $cwa.admin.resourceStackManager.addToStack.mock.calls
+
+      // Stack item holds the SAME ref — not a copy
+      expect(passedStackItem.domElements).toBe(instance.domElements)
+
+      // When addClickEventListeners() refreshes elements (e.g. after a UI variant switch
+      // causes new DOM nodes to mount), the live ref propagates to ComponentFocus automatically
+      const el2 = { nodeType: 1, id: 'el2' }
+      instance.domElements.value = [el2]
+      expect(passedStackItem.domElements.value).toEqual([el2])
+    })
+
     test('should resolve resourceType as COMPONENT when iri is NEW_RESOURCE_IRI', () => {
       ;(getResourceTypeFromIri as ReturnType<typeof vi.fn>).mockReturnValueOnce(undefined)
 
