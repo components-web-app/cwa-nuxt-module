@@ -32,7 +32,7 @@ const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, {
   styles: {
     multiple: true,
     classes: {
-      'Big Text': ['text-2xl'],
+      'Black Background': ['bg-black border border-white p-2'],
     },
   },
 })
