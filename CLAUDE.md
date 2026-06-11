@@ -189,6 +189,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 | Baseline | ~42% | Before coverage push |
 | 2026-06-10 | 44.56% | actions.ts, resources.ts, storage.ts, cwa-resource-model.ts |
 | 2026-06-11 | 47.97% | cwa-select-input, cwa-collection-resource, cwa-image, cwa-image-resource, ComponentGroup.Util.Positions debounce, resource-stack-manager listenCurrentIri |
+| 2026-06-11 | 48.44% | resource-stack-manager isComponentGroupDisabled + filterDisabledStackItems (3rd constructor arg was missing from test factory) |
 
 **Key patterns established:**
 - Lodash `debounce` with fake timers: `vi.useFakeTimers()` + `vi.runAllTimers()` (or `vi.advanceTimersByTime(n)` to avoid triggering other timers)
@@ -222,6 +223,15 @@ Pages should support sub-pages. A conference page at `/best-conference-ever` ren
 These are intentionally separate. A page can have a prefixed URL (`$parentRoute` set) without being rendered nested (`$nested = false`) — useful for organisational URL structure or SEO without changing the render model. `$nested = true` with no `$parentRoute` is invalid and should be caught by a validation constraint in the API.
 
 **These fields are currently not serialized** (no `@Groups` annotation). The first API bundle change is to add them to `Route:manifest:read`. Once done, the manifest response for a child route will include `parentRoute` (as an IRI) and `nested: true/false`.
+
+### Route path concatenation and URL resolution
+
+The API's `RouteGenerator` may prefix a child page's path with the parent's path (e.g. `/conference/programme`). **The module does not rely on this.** Nesting is determined solely by reading `parentRoute` as an IRI from the manifest response — the module follows that IRI directly to fetch the parent manifest. URL segment parsing is never used to infer hierarchy.
+
+This means:
+- The frontend lookup is always by full path, regardless of whether it is concatenated or flat.
+- Concatenated paths are good for SEO and avoiding conflicts between children of different parents, but are a server-side generation concern — the module is agnostic to the URL shape.
+- Never add logic that parses URL segments to infer parent/child depth — always use the `parentRoute` IRI from the manifest.
 
 ### Route lifecycle (critical context)
 

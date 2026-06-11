@@ -333,4 +333,155 @@ describe('Resource Manager', () => {
       expect(manager.getState('key')).toBe('value')
     })
   })
+
+  describe('isComponentGroupDisabled', () => {
+    function createManagerForGroupDisabled(opts?: { isDataPage?: boolean, isLayoutStack?: boolean }) {
+      const mockAdminStore = {
+        useStore: () => ({ state: reactive({ isEditing: false }) }),
+      }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+        }),
+      }
+      const mockResources = {
+        isDataPage: ref(opts?.isDataPage ?? false),
+        isPageDataResource: vi.fn((_iri: string) => ref(false)),
+      }
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, mockResources as any)
+      if (opts?.isLayoutStack) {
+        ;(manager as any).isLayoutStack.value = true
+      }
+      return manager
+    }
+
+    test('returns false for non-component-group IRI', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true })
+      expect(manager.isComponentGroupDisabled('/component/1')).toBe(false)
+    })
+
+    test('returns false when not a data page', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: false })
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1')).toBe(false)
+    })
+
+    test('returns false when isDataPage and isLayoutStack (editing layout)', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true, isLayoutStack: true })
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1')).toBe(false)
+    })
+
+    test('returns true when isDataPage and no location provided', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true })
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1')).toBe(true)
+    })
+
+    test('returns false when isDataPage and location is a LAYOUT', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true })
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1', '/_/layouts/1')).toBe(false)
+    })
+
+    test('returns true when isDataPage and location is a PAGE', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true })
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1', '/_/pages/1')).toBe(true)
+    })
+
+    test('returns true when isDataPage and location is PAGE_DATA', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true })
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1', '/page_data/1')).toBe(true)
+    })
+
+    test('returns false when isDataPage and location is not PAGE, PAGE_DATA, or LAYOUT', () => {
+      const manager = createManagerForGroupDisabled({ isDataPage: true })
+      // COMPONENT_POSITION is not in the disabled-location types
+      expect(manager.isComponentGroupDisabled('/_/component_groups/1', '/_/component_positions/1')).toBe(false)
+    })
+  })
+
+  describe('filterDisabledStackItems (private, via finishStack)', () => {
+    function createManagerForFilter(opts?: {
+      isDataPage?: boolean
+      isPageDataResourceFn?: (iri: string) => boolean
+    }) {
+      const mockAdminStore = {
+        useStore: () => ({ state: reactive({ isEditing: false }) }),
+      }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+        }),
+      }
+      const mockResources = {
+        isDataPage: ref(opts?.isDataPage ?? false),
+        isPageDataResource: vi.fn((iri: string) => ref(opts?.isPageDataResourceFn?.(iri) ?? false)),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, mockResources as any)
+    }
+
+    function makeItem(iri: string) {
+      return { iri, domElements: ref([]), childIris: ref([]) }
+    }
+
+    test('preserves all items when isDataPage is false', () => {
+      const manager = createManagerForFilter({ isDataPage: false })
+      const stack = [
+        makeItem('/component/1'),
+        makeItem('/_/component_groups/grp1'),
+        makeItem('/_/pages/page1'),
+      ]
+      ;(manager as any).currentResourceStack.value = stack
+      ;(manager as any).filterDisabledStackItems(false)
+      expect((manager as any).currentResourceStack.value).toHaveLength(3)
+    })
+
+    test('removes component and component group when next group is disabled and item is not page data resource', () => {
+      // stack: component (0), group (1), page (2)
+      // group's location = page → disabled (isDataPage + PAGE location)
+      const manager = createManagerForFilter({ isDataPage: true })
+      const stack = [
+        makeItem('/component/1'),
+        makeItem('/_/component_groups/grp1'),
+        makeItem('/_/pages/page1'),
+      ]
+      ;(manager as any).currentResourceStack.value = stack
+      ;(manager as any).filterDisabledStackItems(false)
+      const remaining = (manager as any).currentResourceStack.value
+      // only the page item survives (not a COMPONENT or COMPONENT_GROUP)
+      expect(remaining).toHaveLength(1)
+      expect(remaining[0].iri).toBe('/_/pages/page1')
+    })
+
+    test('preserves component when it is a page data resource even if group is disabled', () => {
+      // same stack as above but component/1 is a page data resource
+      const manager = createManagerForFilter({
+        isDataPage: true,
+        isPageDataResourceFn: iri => iri === '/component/1',
+      })
+      const stack = [
+        makeItem('/component/1'),
+        makeItem('/_/component_groups/grp1'),
+        makeItem('/_/pages/page1'),
+      ]
+      ;(manager as any).currentResourceStack.value = stack
+      ;(manager as any).filterDisabledStackItems(false)
+      const remaining = (manager as any).currentResourceStack.value
+      // component/1 is preserved (isPageDataResource=true), group is removed, page is preserved
+      expect(remaining).toHaveLength(2)
+      expect(remaining[0].iri).toBe('/component/1')
+      expect(remaining[1].iri).toBe('/_/pages/page1')
+    })
+
+    test('non-component items (route, page, layout) are always preserved', () => {
+      const manager = createManagerForFilter({ isDataPage: true })
+      const stack = [
+        makeItem('/_/routes/r1'),
+        makeItem('/_/pages/page1'),
+        makeItem('/_/layouts/layout1'),
+      ]
+      ;(manager as any).currentResourceStack.value = stack
+      ;(manager as any).filterDisabledStackItems(false)
+      expect((manager as any).currentResourceStack.value).toHaveLength(3)
+    })
+  })
 })
