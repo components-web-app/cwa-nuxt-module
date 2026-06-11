@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { FetchError, createFetchError } from 'ofetch'
+import type { FetchError } from 'ofetch'
+import { createFetchError } from 'ofetch'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useLogin } from '#cwa/composables/login'
 

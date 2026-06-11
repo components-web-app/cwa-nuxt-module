@@ -75,16 +75,16 @@ describe('useCwaSiteConfig', () => {
     })
 
     test('returns empty object when member is not an array', () => {
-      expect(responseToConfig({ '@id': '/config', '@type': 'SiteConfig', member: 'bad' })).toEqual({})
+      expect(responseToConfig({ '@id': '/config', '@type': 'SiteConfig', 'member': 'bad' })).toEqual({})
     })
 
     test('converts member rows to config merged with defaults', () => {
       const data = {
         '@id': '/config',
         '@type': 'SiteConfig',
-        member: [
-          { '@id': '/config/1', '@type': 'SiteConfigParam', key: 'siteName', value: 'Test Site' },
-          { '@id': '/config/2', '@type': 'SiteConfigParam', key: 'indexable', value: '0' },
+        'member': [
+          { '@id': '/config/1', '@type': 'SiteConfigParam', 'key': 'siteName', 'value': 'Test Site' },
+          { '@id': '/config/2', '@type': 'SiteConfigParam', 'key': 'indexable', 'value': '0' },
         ],
       }
       const result = responseToConfig(data)
@@ -96,8 +96,8 @@ describe('useCwaSiteConfig', () => {
       const data = {
         '@id': '/config',
         '@type': 'SiteConfig',
-        member: [
-          { '@id': '/config/1', '@type': 'SiteConfigParam', key: 'siteName', value: 'Test Site' },
+        'member': [
+          { '@id': '/config/1', '@type': 'SiteConfigParam', 'key': 'siteName', 'value': 'Test Site' },
         ],
       }
       const result = responseToConfig(data, true)
