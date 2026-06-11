@@ -856,4 +856,294 @@ describe('Resources', () => {
       expect(resources.resourcesStore).toEqual(mockStore)
     })
   })
+
+  describe('delegation methods', () => {
+    test('isIriPublishableEquivalent delegates to resourcesStore', () => {
+      const mockStore = { isIriPublishableEquivalent: vi.fn(() => true) }
+      const { resources } = createResources(undefined, mockStore)
+      const result = resources.isIriPublishableEquivalent('/a', '/b')
+      expect(mockStore.isIriPublishableEquivalent).toHaveBeenCalledWith('/a', '/b')
+      expect(result).toBe(true)
+    })
+
+    test('findAllPublishableIris delegates to resourcesStore', () => {
+      const mockStore = { findAllPublishableIris: vi.fn(() => ['/a', '/b']) }
+      const { resources } = createResources(undefined, mockStore)
+      const result = resources.findAllPublishableIris('/a')
+      expect(mockStore.findAllPublishableIris).toHaveBeenCalledWith('/a')
+      expect(result).toEqual(['/a', '/b'])
+    })
+
+    test('getChildIris delegates to resourcesStore', () => {
+      const mockStore = { getChildIris: vi.fn(() => ['/child']) }
+      const { resources } = createResources(undefined, mockStore)
+      const result = resources.getChildIris('/parent', undefined)
+      expect(mockStore.getChildIris).toHaveBeenCalledWith('/parent', undefined)
+      expect(result).toEqual(['/child'])
+    })
+
+    test('newResource returns computed from resourcesStore.getResource(NEW_RESOURCE_IRI)', () => {
+      const mockNewResource = { data: { '@id': '__new__', '@type': 'Component', '_metadata': { persisted: false } } }
+      const mockStore = { getResource: vi.fn(() => mockNewResource) }
+      const { resources } = createResources(undefined, mockStore)
+      expect(resources.newResource.value).toBe(mockNewResource)
+    })
+
+    test('findPublishedComponentIri delegates to resourcesStore', () => {
+      const mockStore = { findPublishedComponentIri: vi.fn(() => '/component/published') }
+      const { resources } = createResources(undefined, mockStore)
+      const result = resources.findPublishedComponentIri('/component/draft')
+      expect(result.value).toBe('/component/published')
+    })
+
+    test('findDraftComponentIri delegates to resourcesStore', () => {
+      const mockStore = { findDraftComponentIri: vi.fn(() => '/component/draft') }
+      const { resources } = createResources(undefined, mockStore)
+      const result = resources.findDraftComponentIri('/component/published')
+      expect(result.value).toBe('/component/draft')
+    })
+
+    test('getOrderedPositionsForGroup delegates to resourcesStore', () => {
+      const mockFn = vi.fn()
+      const mockStore = { getOrderedPositionsForGroup: mockFn }
+      const { resources } = createResources(undefined, mockStore)
+      expect(resources.getOrderedPositionsForGroup).toBe(mockFn)
+    })
+
+    test('getPositionSortDisplayNumber delegates to resourcesStore', () => {
+      const mockFn = vi.fn()
+      const mockStore = { getPositionSortDisplayNumber: mockFn }
+      const { resources } = createResources(undefined, mockStore)
+      expect(resources.getPositionSortDisplayNumber).toBe(mockFn)
+    })
+
+    test('hasNewResources delegates to resourcesStore', () => {
+      const mockStore = { hasNewResources: true }
+      const { resources } = createResources(undefined, mockStore)
+      expect(resources.hasNewResources).toBe(true)
+    })
+  })
+
+  describe('isPageDataResource', () => {
+    function createResourcesWithPageData(pageDataValues: Record<string, any> | null, publishableIris: string[]) {
+      const mockStore = {
+        findAllPublishableIris: vi.fn(() => publishableIris),
+        getResource: vi.fn(() => undefined),
+      }
+      const { resources } = createResources(undefined, mockStore)
+      // Override pageData getter on instance to control what it returns
+      const pageDataResult = pageDataValues !== null
+        ? computed(() => ({ apiState: { status: 1 as any, headers: {}, fetchedAt: 0 }, data: pageDataValues }))
+        : undefined
+      Object.defineProperty(resources, 'pageData', {
+        get: () => pageDataResult,
+        configurable: true,
+      })
+      return resources
+    }
+
+    test('returns false when no pageData', () => {
+      const resources = createResourcesWithPageData(null, [])
+      expect(resources.isPageDataResource('/component/1').value).toBe(false)
+    })
+
+    test('returns false when iri is not a COMPONENT type', () => {
+      const resources = createResourcesWithPageData({ someIri: '/component/1' }, [])
+      expect(resources.isPageDataResource('/page_data/1').value).toBe(false)
+    })
+
+    test('iterates publishable iris looking for pageData match', () => {
+      const componentIri = '/component/comp-1'
+      const otherIri = '/component/other'
+      const resources = createResourcesWithPageData({ someField: otherIri }, [componentIri])
+      // With otherIri in pageData but we search for componentIri — no match
+      expect(resources.isPageDataResource(componentIri).value).toBe(false)
+    })
+
+    test('returns false when component IRI is not in pageData values', () => {
+      const componentIri = '/component/comp-1'
+      const resources = createResourcesWithPageData({ someField: '/component/other' }, [componentIri])
+      expect(resources.isPageDataResource(componentIri).value).toBe(false)
+    })
+  })
+
+  describe('pageDataIri getter', () => {
+    test('returns undefined when displayFetchStatus has no type', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(undefined)
+      expect(resources.pageDataIri.value).toBeUndefined()
+    })
+
+    test('returns undefined when displayFetchStatus has no path', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE)
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '' } as any)
+      expect(resources.pageDataIri.value).toBeUndefined()
+    })
+
+    test('returns path when type is PAGE_DATA', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE_DATA)
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/page_data/1' } as any)
+      expect(resources.pageDataIri.value).toBe('/page_data/1')
+    })
+
+    test('returns resource pageData when type is ROUTE', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.ROUTE)
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/routes/test' } as any)
+      vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => ({ data: { pageData: '/page_data/1' } })) as any)
+      expect(resources.pageDataIri.value).toBe('/page_data/1')
+    })
+
+    test('returns undefined when type is PAGE (not PAGE_DATA or ROUTE)', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE)
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/pages/1' } as any)
+      vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => ({ data: {} })) as any)
+      expect(resources.pageDataIri.value).toBeUndefined()
+    })
+  })
+
+  describe('displayPageIri getter', () => {
+    test('returns pageDataIri when isDataPage is true', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'isDataPage', 'get').mockReturnValue(computed(() => true))
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => '/page_data/1'))
+      expect(resources.displayPageIri.value).toBe('/page_data/1')
+    })
+
+    test('returns pageIri when isDataPage is false', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'isDataPage', 'get').mockReturnValue(computed(() => false))
+      vi.spyOn(resources, 'pageIri', 'get').mockReturnValue(computed(() => '/_/pages/1'))
+      expect(resources.displayPageIri.value).toBe('/_/pages/1')
+    })
+  })
+
+  describe('displayPage getter', () => {
+    test('returns undefined when displayPageIri is not set', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayPageIri', 'get').mockReturnValue(computed(() => undefined))
+      expect(resources.displayPage).toBeUndefined()
+    })
+
+    test('returns getResource result when displayPageIri is set', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayPageIri', 'get').mockReturnValue(computed(() => '/page_data/1'))
+      vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => ({ data: { '@id': '/page_data/1' } })) as any)
+      expect(resources.displayPage?.value?.data?.['@id']).toBe('/page_data/1')
+    })
+  })
+
+  describe('usesPageTemplate, isDataPage, isDynamicPage', () => {
+    test('usesPageTemplate returns false when page has no data', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'page', 'get').mockReturnValue(undefined)
+      expect(resources.usesPageTemplate.value).toBe(false)
+    })
+
+    test('usesPageTemplate returns true when page.isTemplate is true', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'page', 'get').mockReturnValue(computed(() => ({ data: { isTemplate: true } })) as any)
+      expect(resources.usesPageTemplate.value).toBe(true)
+    })
+
+    test('isDataPage returns true when usesPageTemplate and pageDataIri is set', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'usesPageTemplate', 'get').mockReturnValue(computed(() => true))
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => '/page_data/1'))
+      expect(resources.isDataPage.value).toBe(true)
+    })
+
+    test('isDataPage returns false when usesPageTemplate is false', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'usesPageTemplate', 'get').mockReturnValue(computed(() => false))
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => '/page_data/1'))
+      expect(resources.isDataPage.value).toBe(false)
+    })
+
+    test('isDynamicPage returns true when usesPageTemplate and no pageDataIri', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'usesPageTemplate', 'get').mockReturnValue(computed(() => true))
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => undefined))
+      expect(resources.isDynamicPage.value).toBe(true)
+    })
+
+    test('isDynamicPage returns false when pageDataIri is set', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'usesPageTemplate', 'get').mockReturnValue(computed(() => true))
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => '/page_data/1'))
+      expect(resources.isDynamicPage.value).toBe(false)
+    })
+  })
+
+  describe('getRefreshEndpointsForDelete', () => {
+    test('returns empty array when no pageDataIri or positionsByComponent', () => {
+      const mockStore = {
+        findAllPublishableIris: vi.fn(() => ['/component/1']),
+        current: { positionsByComponent: {} },
+      }
+      const { resources } = createResources(undefined, mockStore)
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => undefined))
+      expect(resources.getRefreshEndpointsForDelete('/component/1')).toEqual([])
+    })
+
+    test('includes pageDataIri when present', () => {
+      const mockStore = {
+        findAllPublishableIris: vi.fn(() => ['/component/1']),
+        current: { positionsByComponent: {} },
+      }
+      const { resources } = createResources(undefined, mockStore)
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => '/page_data/1'))
+      const result = resources.getRefreshEndpointsForDelete('/component/1')
+      expect(result).toContain('/page_data/1')
+    })
+
+    test('includes component positions and their groups', () => {
+      const positionIri = '/_/component_positions/pos-1'
+      const groupIri = '/_/component_groups/group-1'
+      const mockStore = {
+        findAllPublishableIris: vi.fn(() => ['/component/1']),
+        current: { positionsByComponent: { '/component/1': [positionIri] } },
+        getResource: vi.fn((iri: string) => {
+          if (iri === positionIri) {
+            return { data: { componentGroup: groupIri } }
+          }
+          return undefined
+        }),
+      }
+      const { resources } = createResources(undefined, mockStore)
+      vi.spyOn(resources, 'pageDataIri', 'get').mockReturnValue(computed(() => undefined))
+      vi.spyOn(resources, 'getResource').mockImplementation((iri: string) => {
+        if (iri === positionIri) {
+          return computed(() => ({ data: { componentGroup: groupIri } })) as any
+        }
+        return computed(() => undefined) as any
+      })
+      const result = resources.getRefreshEndpointsForDelete('/component/1')
+      expect(result).toContain(positionIri)
+      expect(result).toContain(groupIri)
+    })
+  })
+
+  describe('getPageIriByFetchStatus real implementation', () => {
+    test('returns path when type is PAGE and no resource in store', () => {
+      const mockStore = { getResource: vi.fn(() => undefined), current: { currentIds: [] } }
+      const { resources } = createResources(undefined, mockStore)
+      vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE)
+      expect(resources.getPageIriByFetchStatus({ path: '/_/pages/1' } as any)).toBe('/_/pages/1')
+    })
+
+    test('returns responseIri when type is PAGE and resource has responseIri in apiState', () => {
+      const mockStore = {
+        getResource: vi.fn(() => ({
+          apiState: { status: 1, headers: {}, fetchedAt: 0, iri: '/_/pages/1', responseIri: '/_/pages/2' },
+        })),
+      }
+      const { resources } = createResources(undefined, mockStore)
+      vi.spyOn(resources, 'getFetchStatusType').mockReturnValue(utils.CwaResourceTypes.PAGE)
+      expect(resources.getPageIriByFetchStatus({ path: '/_/pages/1' } as any)).toBe('/_/pages/2')
+    })
+  })
 })
