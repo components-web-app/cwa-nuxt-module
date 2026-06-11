@@ -238,4 +238,62 @@ describe('Resource Manager', () => {
       })
     })
   })
+
+  describe('state management', () => {
+    test('getState returns undefined for uninitialised key', () => {
+      const { manager } = createResourceManager()
+      expect(manager.getState('unknown')).toBeUndefined()
+    })
+
+    test('setState stores a value and getState retrieves it', () => {
+      const { manager } = createResourceManager()
+      manager.setState('myProp', 'hello')
+      expect(manager.getState('myProp')).toBe('hello')
+    })
+
+    test('setState overwrites existing value', () => {
+      const { manager } = createResourceManager()
+      manager.setState('myProp', 'first')
+      manager.setState('myProp', 'second')
+      expect(manager.getState('myProp')).toBe('second')
+    })
+  })
+
+  describe('simple getters', () => {
+    test('isEditingLayout returns false by default', () => {
+      const { manager } = createResourceManager()
+      expect(manager.isEditingLayout.value).toBe(false)
+    })
+
+    test('isPopulating returns false when no click target', () => {
+      const { manager } = createResourceManager()
+      expect(manager.isPopulating.value).toBe(false)
+    })
+
+    test('isContextPopulating returns false when no last context target', () => {
+      const { manager } = createResourceManager()
+      expect(manager.isContextPopulating.value).toBe(false)
+    })
+
+    test('contextStack returns empty array when lastContextTarget is set', () => {
+      const { manager } = createResourceManager()
+      // contextStack returns [] when lastContextTarget is truthy
+      // initially lastContextTarget is null (falsy), so contextStack = contextResourceStack (empty)
+      expect(manager.contextStack.value).toEqual([])
+    })
+
+    test('currentIri returns undefined when showManager is false', () => {
+      const { manager } = createResourceManager()
+      manager.showManager.value = false
+      expect(manager.currentIri.value).toBeUndefined()
+    })
+  })
+
+  describe('getClosestStackItemByType', () => {
+    test('returns undefined when stack is empty', () => {
+      const { manager } = createResourceManager()
+      const result = manager.getClosestStackItemByType('/_/component_groups/' as any)
+      expect(result).toBeUndefined()
+    })
+  })
 })

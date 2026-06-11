@@ -17,7 +17,7 @@ describe('useCwaResourceRoute', () => {
   describe('getResourceRoute', () => {
     test('returns the resource property value when set', () => {
       const { getResourceRoute } = useCwaResourceRoute()
-      const resource: any = { '@id': '/some/iri', link: '/external-link' }
+      const resource: any = { '@id': '/some/iri', 'link': '/external-link' }
       expect(getResourceRoute(resource, 'link')).toBe('/external-link')
     })
 
@@ -33,7 +33,7 @@ describe('useCwaResourceRoute', () => {
 
     test('falls back to internal link when property value is undefined', () => {
       const { getResourceRoute } = useCwaResourceRoute()
-      const resource: any = { '@id': '/my/iri', link: undefined }
+      const resource: any = { '@id': '/my/iri', 'link': undefined }
       const result = getResourceRoute(resource, 'link')
       expect(result).toEqual({
         name: '_cwa-resource-page',

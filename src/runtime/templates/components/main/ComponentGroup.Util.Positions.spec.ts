@@ -101,9 +101,9 @@ describe('useComponentGroupPositions', () => {
         '/_/component_positions/c',
       ]
       resources = {
-        '/_/component_positions/a': { '@id': '/_/component_positions/a', sortValue: 1, _metadata: {} },
-        '/_/component_positions/b': { '@id': '/_/component_positions/b', sortValue: 2, _metadata: {} },
-        '/_/component_positions/c': { '@id': '/_/component_positions/c', sortValue: 3, _metadata: {} },
+        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
+        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
+        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 3, '_metadata': {} },
       }
     })
 
@@ -180,8 +180,8 @@ describe('useComponentGroupPositions', () => {
     test('skips positions with no resource data when updating sortDisplayNumbers', () => {
       const sparsePositions = ['/_/component_positions/a', '/_/component_positions/missing', '/_/component_positions/c']
       const sparseResources: Record<string, any> = {
-        '/_/component_positions/a': { '@id': '/_/component_positions/a', sortValue: 1, _metadata: {} },
-        '/_/component_positions/c': { '@id': '/_/component_positions/c', sortValue: 3, _metadata: {} },
+        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
+        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 3, '_metadata': {} },
       }
       const { mockCwa, getCapturedHandler } = buildCwa(sparsePositions, sparseResources)
       useComponentGroupPositions(iriRef, mockCwa)

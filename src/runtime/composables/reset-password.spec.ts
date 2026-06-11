@@ -106,7 +106,7 @@ describe('useResetPassword', () => {
     test('saves resource and sets form IRI for 422 FetchError', async () => {
       mockParams.username = 'alice'
       mockParams.token = 'tok'
-      const fetchError = makeFetchError(422, { '@id': '/forms/reset/1', violations: [] })
+      const fetchError = makeFetchError(422, { '@id': '/forms/reset/1', 'violations': [] })
       mockAuth.resetPassword.mockResolvedValue(fetchError)
       const { resetPassword } = useResetPassword()
       await resetPassword()
