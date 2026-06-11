@@ -60,6 +60,61 @@ vi.mock('./stores/site-config/site-config-store', () => {
   }
 })
 
+describe('Storage addUniquePromise', () => {
+  test('executes fn for new key and returns undefined', async () => {
+    const storage = new Storage('test')
+    let resolved = false
+    const result = storage.addUniquePromise('scope', 'key', async () => {
+      resolved = true
+    })
+    // first call returns undefined (no return statement for new keys)
+    expect(result).toBeUndefined()
+    // wait for microtask queue to flush
+    await Promise.resolve()
+    expect(resolved).toBe(true)
+  })
+
+  test('returns existing promise for duplicate key while in flight', () => {
+    const storage = new Storage('test')
+    let resolveFn: () => void
+    const fn = () => new Promise<void>((resolve) => {
+      resolveFn = resolve
+    })
+    storage.addUniquePromise('scope', 'key', fn) // first call - starts promise
+    const p2 = storage.addUniquePromise('scope', 'key', fn) // second call - returns existing
+    expect(p2).toBeInstanceOf(Promise)
+    resolveFn!()
+  })
+
+  test('allows a new fn call after previous key completed', async () => {
+    const storage = new Storage('test')
+    storage.addUniquePromise('scope', 'key', () => Promise.resolve())
+    // wait for promise to complete and delete key
+    await new Promise(resolve => setTimeout(resolve, 0))
+    let ran = false
+    storage.addUniquePromise('scope', 'key', async () => {
+      ran = true
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(ran).toBe(true)
+  })
+
+  test('different scopes maintain separate promise maps', async () => {
+    const storage = new Storage('test')
+    let ran1 = false
+    let ran2 = false
+    storage.addUniquePromise('scope1', 'key', async () => {
+      ran1 = true
+    })
+    storage.addUniquePromise('scope2', 'key', async () => {
+      ran2 = true
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(ran1).toBe(true)
+    expect(ran2).toBe(true)
+  })
+})
+
 describe('Storage is initialised properly', () => {
   test('Stores are initialised', () => {
     const storeName = 'mystore'

@@ -296,4 +296,41 @@ describe('Resource Manager', () => {
       expect(result).toBeUndefined()
     })
   })
+
+  describe('listenCurrentIri (private, called via watcher)', () => {
+    function createManagerWithResourcesStore(isEquivalentFn?: (a: string, b: string) => boolean) {
+      const mockAdminStore = {
+        useStore: () => ({ state: reactive({ isEditing: false }) }),
+      }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: isEquivalentFn || vi.fn().mockReturnValue(false),
+        }),
+      }
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      return manager
+    }
+
+    test('resets resourceManagerState when either iri is falsy', () => {
+      const manager = createManagerWithResourcesStore()
+      manager.setState('key', 'value')
+      ;(manager as any).listenCurrentIri(undefined, '/old')
+      expect(manager.getState('key')).toBeUndefined()
+    })
+
+    test('resets when both iris are truthy but not publishable equivalents', () => {
+      const manager = createManagerWithResourcesStore(vi.fn().mockReturnValue(false))
+      manager.setState('key', 'value')
+      ;(manager as any).listenCurrentIri('/new', '/old')
+      expect(manager.getState('key')).toBeUndefined()
+    })
+
+    test('does not reset when new and old iri are publishable equivalents', () => {
+      const manager = createManagerWithResourcesStore(vi.fn().mockReturnValue(true))
+      manager.setState('key', 'value')
+      ;(manager as any).listenCurrentIri('/new', '/old')
+      expect(manager.getState('key')).toBe('value')
+    })
+  })
 })

@@ -2,9 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working Principles
+
+### Principle of least exposure
+Only add store getters, composable properties, or fetched resource types when there is a concrete consumer for them. Do not speculatively expose data "in case it's needed". Each addition should be justified against a real requirement and covered by a test.
+
+### TDD process
+All feature work follows this cycle:
+1. Explain what we're about to do and why, with a proposed Vitest test
+2. Agree on whether the test is correct (Daniel is the author and has deep system knowledge — expect discussion)
+3. Write or adjust the test, then write the code to make it pass
+4. Keep CLAUDE.md current throughout — update mid-task if the design shifts, not just at the end
+
+---
+
 ## Overview
 
 `@cwa/nuxt` is a Nuxt 4 module providing a full UI and CMS for component-driven web apps backed by the [API Components Bundle](https://github.com/components-web-app/api-components-bundle). It ships as a Nuxt module with auto-imported composables, a Vue component library, Pinia stores, a real-time Mercure SSE layer, and an in-line admin/resource-management UI.
+
+Companion project: **API Components Bundle** (Symfony) — local source at `/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle`. Example consuming project: **SRNTE** — local source at `/Users/danielwest/Documents/GitHub/srnte`.
 
 Package manager: **pnpm** (>=10.33.1 required).
 
@@ -163,6 +179,89 @@ Configured in the consuming app's `nuxt.config.ts` under the `cwa` key:
 ### Testing
 
 Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`. The playground is used as the Nuxt `rootDir` for the test environment. Snapshot files are co-located with spec files (`.spec.ts.snap` next to `.spec.ts`). `setup.ts` at the repo root configures `@vue/test-utils` globals.
+
+### Coverage progress
+
+**Target: 70% statement coverage** (5753 statements total, ~4027 needed).
+
+| Date | Stmt % | Notes |
+|------|--------|-------|
+| Baseline | ~42% | Before coverage push |
+| 2026-06-10 | 44.56% | actions.ts, resources.ts, storage.ts, cwa-resource-model.ts |
+| 2026-06-11 | 47.97% | cwa-select-input, cwa-collection-resource, cwa-image, cwa-image-resource, ComponentGroup.Util.Positions debounce, resource-stack-manager listenCurrentIri |
+
+**Key patterns established:**
+- Lodash `debounce` with fake timers: `vi.useFakeTimers()` + `vi.runAllTimers()` (or `vi.advanceTimersByTime(n)` to avoid triggering other timers)
+- `vi.hoisted()` cannot use `ref()`/`reactive()` — use plain objects `{ value: ... }` or `var` + factory in `vi.mock()`
+- Reactive route mock: `var mockRoute: {...}` + `mockRoute = reactive({...})` inside `vi.mock('vue-router', async () => {...})`
+- Vue `computed` caches — make mock data `reactive()` so computed re-evaluates when mock state changes
+
+**High-ROI remaining targets (uncovered statements est.):**
+- `resources-manager.ts` (33.2%) — ~380 statements, very complex class (CRUD, confirm dialogs)
+- `resource-stack-manager.ts` (42.12%) — ~100+ statements (many private methods/watchers)
+- `cwa.ts` (69.76%) — ~25 statements
+- `api-documentation.ts` (68.75%) — ~25 statements
+- `html-content.ts` (0%) — ~77 lines, creates Vue apps dynamically (hard to unit test)
+- `useDataResolver.ts` (0%) — ~121 lines, uses Vue internals (hard to unit test)
+
+## Planned Feature: Nested Sub-Pages
+
+> **Status: design agreed, not yet implemented.**
+> Companion plan: see `## Planned Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
+
+### What we want
+
+Pages should support sub-pages. A conference page at `/best-conference-ever` renders a tab bar and a `<NuxtPage />` slot; child pages (`/best-conference-ever/programme`, etc.) fill that slot. Structure is admin-manageable and reusable across projects.
+
+### How the API models it
+
+`AbstractPage` (base of all `PageData` entities) has two distinct fields:
+- `$parentRoute: ?Route` — **URL construction only**. When a route is generated for this page, prefix the path with this route's path. No rendering implication on its own.
+- `$nested: bool` — **rendering instruction**. When `true`, the module must fetch and render the parent page template and display this page inside it at the next depth level.
+
+These are intentionally separate. A page can have a prefixed URL (`$parentRoute` set) without being rendered nested (`$nested = false`) — useful for organisational URL structure or SEO without changing the render model. `$nested = true` with no `$parentRoute` is invalid and should be caught by a validation constraint in the API.
+
+**These fields are currently not serialized** (no `@Groups` annotation). The first API bundle change is to add them to `Route:manifest:read`. Once done, the manifest response for a child route will include `parentRoute` (as an IRI) and `nested: true/false`.
+
+### Route lifecycle (critical context)
+
+Routes are the **publication mechanism**. A `PageData` entity exists and is editable in the admin before it has a `Route`. The parent/child relationship is set on `PageData` during drafting — before either page has a public URL. This is why hierarchy lives on `PageData`, not `Route`.
+
+### What already exists in this module
+
+- `module.ts` → `createDefaultCwaPages()` already generates a **nested Nuxt route tree** of `cwaPage0` → `cwaPage1` → ... (up to `pagesDepth`, default 4). Multi-segment URLs are already captured — `/a/b/c` maps to params `{cwaPage0: ['a'], cwaPage1: ['b'], cwaPage2: ['c']}`.
+- `fetcher.ts` → `fetchNestedResources()` already recursively follows resource IRIs via `resourceTypeToNestedResourceProperties`. Adding `parentRoute` to the `PAGE_DATA` entry in that map is all that's needed to trigger automatic parent fetching.
+- All route levels share the same `cwa-page.vue` — so `<NuxtPage />` in a parent template naturally renders another `cwa-page.vue` instance for the child level.
+
+### Planned changes (Nuxt module)
+
+**Step 1 — Follow `parentRoute` in the fetch graph (`src/runtime/resources/resource-utils.ts`):**
+Add `parentRoute` to the `PAGE_DATA` entry in `resourceTypeToNestedResourceProperties`. The fetcher will then automatically follow the `parentRoute` IRI to fetch the parent `Route`, then call `GET /routes_manifest/<parent-id>` as a **separate request**. Parent and child manifests are cached and invalidated independently — a change to the parent layout must not invalidate the child manifest, and vice versa. Never embed parent resource data inside the child manifest response.
+
+**Step 2 — Store parent/child resources separately:**
+The resource store currently exposes a single `pageIri`. Add `parentPageIri` (and `childPageIri`) getters so `cwa-page.vue` instances can each render the right resource.
+
+**Step 3 — Make `cwa-page.vue` depth-aware:**
+`cwa-page.vue` currently always renders `$cwa.resources.pageIri.value`. It needs to determine its depth in the route tree using `useRoute().matched` (the index of the current matched route entry corresponds to which `cwaPage*` param it serves). Depth 0 → parent page resource; depth 1+ → child page resource.
+
+**Step 4 — `<NuxtPage />` in consuming app templates (no module change needed):**
+Consuming app page templates (e.g. `ConferencePageTemplate.vue`) place `<NuxtPage />` wherever child content should appear. No new `<CwaPage />` component required — standard Nuxt composition works because the nested route tree is already in place.
+
+**Step 5 — Admin UI:**
+The route/page admin panel should show a nullable "parent route" picker for any `PageData` entity (detectable because the API schema will expose `parentRoute` as a field on all `AbstractPageData`-derived types). This is a generic change — no per-project admin code.
+
+**Step 6 — Tests (Vitest):**
+- Fetcher: given a manifest response with `nested: true` and `parentRoute` IRI, verify the parent chain is fetched
+- Store getters: verify `parentPageIri` and `childPageIri` are correctly derived
+- `cwa-page.vue`: verify depth-aware resource selection at each route nesting level
+
+### Design decisions
+
+- **`<NuxtPage />` not a new `<CwaPage />` component** — The nested Nuxt route tree is already in place; `<NuxtPage />` just works once `cwa-page.vue` is depth-aware. Avoids reinventing a Nuxt primitive.
+- **Hierarchy on PageData, not Route** — See "Route lifecycle" above. Must be settable in draft state before publication.
+- **Automatic parent fetch via existing `fetchNestedResources` machinery** — Adding `parentRoute` to the fetch graph is a one-line change that fits naturally into the existing recursive fetch model.
+
+---
 
 ## Future: Nuxt UI Integration
 

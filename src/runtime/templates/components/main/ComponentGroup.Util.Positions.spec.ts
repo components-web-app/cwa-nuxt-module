@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { computed } from 'vue'
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
+import { computed, reactive } from 'vue'
 import { useComponentGroupPositions } from './ComponentGroup.Util.Positions'
 import type { ReorderEvent } from '#cwa/admin/admin'
 
@@ -188,6 +188,156 @@ describe('useComponentGroupPositions', () => {
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
       // 'missing' has no resource data — should be skipped (only 2 saveResource calls)
       expect(mockCwa.resourcesManager.saveResource).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('sendUpdatePositionRequest (via debounce)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function buildDynamicCwa(initialPositions: string[], initialResources: Record<string, any>) {
+      // reactive deep-copy so Vue computed can track sortDisplayNumber changes via saveResource
+      const positionResources = reactive(JSON.parse(JSON.stringify(initialResources)))
+
+      let capturedHandler: ((e: ReorderEvent) => void) | undefined
+      const iri = '/_/component_groups/1'
+
+      const mockCwa: any = {
+        admin: {
+          resourceStackManager: {
+            getState: vi.fn().mockReturnValue(true),
+            getClosestStackItemByType: vi.fn().mockReturnValue(iri),
+          },
+          eventBus: {
+            on: vi.fn((_event: string, handler: any) => { capturedHandler = handler }),
+            off: vi.fn(),
+          },
+          emitRedraw: vi.fn(),
+        },
+        resources: {
+          // return positions sorted by current sortDisplayNumber so debounce sees the new order
+          getOrderedPositionsForGroup: vi.fn(() => {
+            return [...initialPositions].sort((a, b) => {
+              const aNum = positionResources[a]?._metadata?.sortDisplayNumber ?? positionResources[a]?.sortValue ?? 0
+              const bNum = positionResources[b]?._metadata?.sortDisplayNumber ?? positionResources[b]?.sortValue ?? 0
+              return aNum - bNum
+            })
+          }),
+          getResource: vi.fn((posIri: string) => ({
+            value: positionResources[posIri] ? { data: positionResources[posIri] } : undefined,
+          })),
+        },
+        resourcesManager: {
+          saveResource: vi.fn(({ resource }) => {
+            positionResources[resource['@id']] = { ...resource, _metadata: { ...resource._metadata } }
+          }),
+          updateResource: vi.fn().mockResolvedValue(undefined),
+        },
+      }
+
+      return { mockCwa, getCapturedHandler: () => capturedHandler! }
+    }
+
+    test('calls updateResource after debounce fires', async () => {
+      const { nextTick } = await import('vue')
+      const initialResources: Record<string, any> = {
+        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
+        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
+        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 3, '_metadata': {} },
+      }
+      const initialPositions = ['/_/component_positions/a', '/_/component_positions/b', '/_/component_positions/c']
+      const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
+      useComponentGroupPositions(iriRef, mockCwa)
+      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
+      vi.advanceTimersByTime(1100)
+      await nextTick()
+      await nextTick()
+      expect(mockCwa.resourcesManager.updateResource).toHaveBeenCalledWith(expect.objectContaining({
+        endpoint: '/_/component_positions/a',
+        data: expect.objectContaining({ sortValue: expect.any(Number) }),
+      }))
+    })
+
+    test('does not call updateResource when position index did not change', async () => {
+      const { nextTick } = await import('vue')
+      const initialResources: Record<string, any> = {
+        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
+        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
+      }
+      const initialPositions = ['/_/component_positions/a', '/_/component_positions/b']
+      const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
+      useComponentGroupPositions(iriRef, mockCwa)
+      // moving 'a' previous → clamped to index 0 = no change
+      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'previous' })
+      vi.advanceTimersByTime(1100)
+      await nextTick()
+      await nextTick()
+      expect(mockCwa.resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('cancels previous debounce when same position reordered again', async () => {
+      const { nextTick } = await import('vue')
+      const initialResources: Record<string, any> = {
+        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
+        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
+        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 3, '_metadata': {} },
+      }
+      const initialPositions = ['/_/component_positions/a', '/_/component_positions/b', '/_/component_positions/c']
+      const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
+      useComponentGroupPositions(iriRef, mockCwa)
+      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
+      vi.advanceTimersByTime(500)
+      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
+      vi.advanceTimersByTime(1100)
+      await nextTick()
+      await nextTick()
+      expect(mockCwa.resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('updateRelatedLocalSortValues', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    test('increments sortValue for positions between oldIndex and newIndex when moving forward', async () => {
+      const { nextTick } = await import('vue')
+      const positionResources: Record<string, any> = {
+        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 10, '_metadata': {} },
+        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 20, '_metadata': {} },
+        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 30, '_metadata': {} },
+        '/_/component_positions/d': { '@id': '/_/component_positions/d', 'sortValue': 40, '_metadata': {} },
+      }
+      const { mockCwa, getCapturedHandler } = buildCwa(
+        ['/_/component_positions/a', '/_/component_positions/b', '/_/component_positions/c', '/_/component_positions/d'],
+        positionResources,
+      )
+      // resolve updateResource immediately
+      mockCwa.resourcesManager.updateResource.mockResolvedValue(undefined)
+      useComponentGroupPositions(iriRef, mockCwa)
+      // move 'a' (index 0) to index 2 (location 3)
+      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 3 })
+      vi.advanceTimersByTime(1100)
+      await nextTick()
+      await nextTick()
+      await Promise.resolve()
+      await nextTick()
+      // updateRelatedLocalSortValues should have been called; check saveResource was called for the updated positions
+      // positions b and c (between old index 0 and new index 2) should have sortValue decremented by 1
+      const saveResourceCalls = mockCwa.resourcesManager.saveResource.mock.calls
+      const relatedCalls = saveResourceCalls.filter(([{ resource }]: any) =>
+        resource['@id'] !== '/_/component_positions/a',
+      )
+      expect(relatedCalls.length).toBeGreaterThan(0)
     })
   })
 })

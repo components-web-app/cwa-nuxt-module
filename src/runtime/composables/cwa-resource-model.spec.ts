@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 
@@ -136,6 +136,110 @@ describe('useCwaResourceModel', () => {
       iri.value = undefined
       const { model } = useCwaResourceModel(iri, 'title')
       expect(model.value).toBeNull()
+    })
+  })
+
+  describe('rootProperty and updateResource flow', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function flushDebounceAndAsync() {
+      await nextTick()
+      vi.runAllTimers()
+      await nextTick()
+      await nextTick()
+    }
+
+    test('uses array[0] as root key when property is an array', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { meta: { a: 1 } } }))
+      const { model } = useCwaResourceModel(iri, ['meta', 'a'])
+      model.value = 99 as any
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ meta: expect.anything() }),
+      }))
+    })
+
+    test('uses dot-notation prefix as root key', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { meta: { a: 1 } } }))
+      const { model } = useCwaResourceModel(iri, 'meta.a')
+      model.value = 99 as any
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ meta: expect.anything() }),
+      }))
+    })
+
+    test('does not call updateResource when iri is undefined', async () => {
+      iri.value = undefined
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model } = useCwaResourceModel(iri, 'title')
+      model.value = 'New'
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('skips update and resets when resource is undefined', async () => {
+      mockGetResource.mockReturnValue(ref<any>(undefined))
+      const { model, localValueWithIri } = useCwaResourceModel(iri, 'title')
+      model.value = 'New'
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+      expect(localValueWithIri.value['/my/resource']).toBeUndefined()
+    })
+
+    test('skips update when value equals store value', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model } = useCwaResourceModel(iri, 'title')
+      model.value = 'Store'
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('calls updateResource with scalar value', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model } = useCwaResourceModel(iri, 'title')
+      model.value = 'NewValue'
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({
+        endpoint: '/my/resource',
+        data: { title: 'NewValue' },
+      }))
+    })
+
+    test('calls getWaitForRequestPromise for nested object property', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { meta: { existing: 'val' } } }))
+      const { model } = useCwaResourceModel(iri, 'meta.extra')
+      model.value = { key: 'value' } as any
+      await flushDebounceAndAsync()
+      expect(mockGetWaitForRequestPromise).toHaveBeenCalled()
+      expect(mockUpdateResource).toHaveBeenCalled()
+    })
+
+    test('transfers localValue to new IRI when response returns different IRI', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Old' } }))
+      mockUpdateResource.mockResolvedValue({ '@id': '/my/new-resource', 'title': 'New' })
+      const { model, localValueWithIri } = useCwaResourceModel(iri, 'title')
+      model.value = 'New'
+      await flushDebounceAndAsync()
+      expect(localValueWithIri.value['/my/new-resource']).toBe('New')
+    })
+
+    test('sets isLongWait after longWaitThreshold when busy', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      mockUpdateResource.mockImplementation(() => new Promise(() => {})) // never resolves
+      const { model, states } = useCwaResourceModel(iri, 'title', { longWaitThreshold: 100 })
+      model.value = 'New'
+      await nextTick()
+      vi.runAllTimers() // fires debounce + longWait timer
+      await nextTick()
+      // after running all timers, longWait should be set
+      expect(states.isLongWait.value).toBe(true)
     })
   })
 })
