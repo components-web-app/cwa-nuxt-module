@@ -257,7 +257,7 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finishFetchResource after fetch (with preload) is called if startFetch returns continue as true', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
@@ -287,8 +287,8 @@ describe('Fetcher -> fetchResource', () => {
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
 
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false, onlyIfNoExist: false })
-    expect(fetcher.fetchNestedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
+    expect(fetcher.fetchAssociatedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false, onlyIfNoExist: false })
+    expect(fetcher.fetchAssociatedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
     expect(result).toStrictEqual({ some: 'resource' })
   })
 
@@ -303,7 +303,7 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finish fetch is called if no previous token is provided', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
 
     let finishResolved = false
@@ -324,14 +324,14 @@ describe('Fetcher -> fetchResource', () => {
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({
       token: 'new-token',
     })
-    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchNestedResources.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchAssociatedResources.mock.invocationCallOrder[0])
 
     expect(result).toStrictEqual({ some: 'resource' })
     expect(finishResolved).toBe(true)
   })
 
   test('fetch status manager finishFetchResource is called with noSave', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
@@ -352,11 +352,11 @@ describe('Fetcher -> fetchResource', () => {
         '@id': '/some-resource',
       },
     })
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true, onlyIfNoExist: false })
+    expect(fetcher.fetchAssociatedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true, onlyIfNoExist: false })
   })
 
   test('if shallowFetch is passed, nested resources should not be fetched', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
@@ -364,19 +364,19 @@ describe('Fetcher -> fetchResource', () => {
       token: 'token',
     }
     await fetcher.fetchResource(fetchResourceEvent)
-    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+    expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
   })
 
   test('if the primary response is a redirect, nested fetches should not occur and the fetch should be aborted', async () => {
     vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_/routes//path')
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ '@id': '/_/routes//path', 'redirectPath': '/my-redirect' }))
     const fetchResourceEvent = {
       path: '/_/routes//path',
       token: 'token',
     }
     await fetcher.fetchResource(fetchResourceEvent)
-    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+    expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledTimes(1)
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token')
   })
@@ -688,7 +688,7 @@ describe('Fetcher -> createRequestHeaders', () => {
     })
 })
 
-describe('Fetcher -> fetchNestedResources', () => {
+describe('Fetcher -> fetchAssociatedResources', () => {
   let fetcher: Fetcher
 
   beforeEach(() => {
@@ -784,6 +784,55 @@ describe('Fetcher -> fetchNestedResources', () => {
     await fetcher.fetchResource(fetchResourceEvent)
 
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/layouts/layout-resource'],
+      token: 'any',
+    })
+  })
+
+  test('fetches parentPage IRI when present on a PAGE resource', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/child-page',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'parentPage': '/_/pages/parent-page',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/pages/parent-page'],
+      token: 'any',
+    })
+  })
+
+  test('fetches parentPageData IRI when present on a PAGE_DATA resource', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/page_data/child',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'page': '/_/pages/child-page',
+      'parentPageData': '/page_data/parent',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/pages/child-page', '/page_data/parent'],
+      token: 'any',
+    })
+  })
+
+  test('does not fetch parentPage when field is absent on a PAGE resource', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'layout': '/_/layouts/layout-resource',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({
       noSave: false,
       paths: ['/_/layouts/layout-resource'],

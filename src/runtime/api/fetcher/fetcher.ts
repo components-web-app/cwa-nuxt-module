@@ -3,7 +3,7 @@ import type { FetchResponse } from 'ofetch'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri, ResourceTypeFromIri,
-  resourceTypeToNestedResourceProperties,
+  resourceTypeToAssociatedResourceProperties,
 } from '../../resources/resource-utils'
 import type {
   CwaResource,
@@ -180,7 +180,7 @@ export default class Fetcher {
       this.fetchStatusManager.abortFetch(startFetchResult.token)
     }
     else if (resource && shallowFetch !== true) {
-      await this.fetchNestedResources({ resource, token: startFetchResult.token, noSave: !!noSave, onlyIfNoExist: shallowFetch === 'noexist' })
+      await this.fetchAssociatedResources({ resource, token: startFetchResult.token, noSave: !!noSave, onlyIfNoExist: shallowFetch === 'noexist' })
     }
 
     if (!token) {
@@ -219,15 +219,15 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources({ resource, token, noSave, onlyIfNoExist }: FetchNestedResourcesEvent): undefined | Promise<(CwaResource | undefined)[]> {
+  private fetchAssociatedResources({ resource, token, noSave, onlyIfNoExist }: FetchNestedResourcesEvent): undefined | Promise<(CwaResource | undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
       return
     }
     let nestedIris = []
-    const nestedPropertiesToFetch = resourceTypeToNestedResourceProperties[type]
-    for (const prop of nestedPropertiesToFetch) {
+    const associatedPropertiesToFetch = resourceTypeToAssociatedResourceProperties[type]
+    for (const prop of associatedPropertiesToFetch) {
       let propIris = resource[prop]
       if (!propIris) {
         continue

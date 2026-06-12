@@ -5,7 +5,8 @@ import {
   CwaResourceTypes,
   getPublishedResourceState,
   getResourceTypeFromIri,
-  resourceTypeToNestedResourceProperties,
+  resourceTypeToAssociatedResourceProperties,
+  parentResourceProperties,
 } from '../../../resources/resource-utils'
 import type { CwaResource } from '../../../resources/resource-utils'
 import type { FetchStatus } from '../fetcher/state'
@@ -177,8 +178,11 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
 
       // get the known properties for the resource type to hold children in the known structure
-      const propertiesWithChildIris = resourceTypeToNestedResourceProperties[resourceType]
+      const propertiesWithChildIris = resourceTypeToAssociatedResourceProperties[resourceType]
       for (const propWithChildIri of propertiesWithChildIris) {
+        if (parentResourceProperties.includes(propWithChildIri)) {
+          continue
+        }
         const children: string | string[] = resource.data?.[propWithChildIri]
         if (!children) {
           continue

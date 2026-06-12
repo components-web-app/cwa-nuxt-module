@@ -40,7 +40,7 @@ type TypeToPathPrefixMap = {
   [T in CwaResourceTypes]: string;
 }
 
-type TypeToNestedPropertiesMap = {
+type TypeToAssociatedPropertiesMap = {
   [T in CwaResourceTypes]: Array<string>;
 }
 
@@ -125,10 +125,12 @@ export function isCwaResourceSame(resource1: CwaResource, resource2: CwaResource
   return clearAndStringify(resource1) === clearAndStringify(resource2)
 }
 
-export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
+export const parentResourceProperties: string[] = ['parentPage', 'parentPageData']
+
+export const resourceTypeToAssociatedResourceProperties: TypeToAssociatedPropertiesMap = {
   [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
-  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
-  [CwaResourceTypes.PAGE_DATA]: ['page'],
+  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups', 'parentPage', 'parentPageData'],
+  [CwaResourceTypes.PAGE_DATA]: ['page', 'parentPage', 'parentPageData'],
   [CwaResourceTypes.LAYOUT]: ['componentGroups'],
   [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
   [CwaResourceTypes.COMPONENT_POSITION]: ['component'],

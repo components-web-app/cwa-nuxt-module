@@ -6,6 +6,7 @@ import {
   getResourceTypeFromIri,
   CwaResourceTypes,
   isCwaResource, isCwaResourceSame,
+  resourceTypeToAssociatedResourceProperties,
 } from './resource-utils'
 
 describe('Resource isCwaResourceSame function', () => {
@@ -147,5 +148,19 @@ describe('Resource Utilities getResourceTypeFromIri function', () => {
   })
   test('COMPONENT type', () => {
     expect(getResourceTypeFromIri('/component/abcdefg')).toBe(CwaResourceTypes.COMPONENT)
+  })
+})
+
+describe('resourceTypeToAssociatedResourceProperties', () => {
+  test('PAGE entry includes parentPage and parentPageData', () => {
+    const props = resourceTypeToAssociatedResourceProperties[CwaResourceTypes.PAGE]
+    expect(props).toContain('parentPage')
+    expect(props).toContain('parentPageData')
+  })
+
+  test('PAGE_DATA entry includes parentPage and parentPageData', () => {
+    const props = resourceTypeToAssociatedResourceProperties[CwaResourceTypes.PAGE_DATA]
+    expect(props).toContain('parentPage')
+    expect(props).toContain('parentPageData')
   })
 })

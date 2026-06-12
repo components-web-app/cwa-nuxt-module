@@ -329,11 +329,15 @@ Files changed: `fetcher.ts`, `state.ts`, `actions.ts`.
 
 Behaviour is identical to before for flat pages (`[[...]]`). Multi-depth groups are all fetched in parallel (flattened) and the full 2D array is stored for later depth-aware use.
 
-**Step 2 — Add `parentPage`/`parentPageData` to `resourceTypeToNestedResourceProperties`**
+**Step 2 — Add `parentPage`/`parentPageData` to associated resource properties** ✅ DONE
 
-File: `src/runtime/resources/resource-utils.ts`.
+Files changed: `resource-utils.ts`, `fetcher.ts`, `getters.ts`.
 
-Add both fields to `PAGE` and `PAGE_DATA` entries. `fetchNestedResources()` will then follow the parent chain when fetching individual resources (admin/draft access, and as a safety net for manifest-loaded resources).
+- Renamed `resourceTypeToNestedResourceProperties` → `resourceTypeToAssociatedResourceProperties` (also `TypeToNestedPropertiesMap` → `TypeToAssociatedPropertiesMap`) — map covers all associated resources to pre-fetch, not just downward children
+- Renamed `fetchNestedResources` → `fetchAssociatedResources` throughout
+- Added `'parentPage'` and `'parentPageData'` to `PAGE` and `PAGE_DATA` entries — fetcher now follows the parent chain for admin/draft access
+- Exported `parentResourceProperties` constant from `resource-utils.ts`
+- In `getChildIris` (`getters.ts`), skip `parentResourceProperties` entries — parent pages are independent admin roots, not children of the child page
 
 **Step 3 — Store: depth-aware page IRI access and display switching**
 
@@ -360,6 +364,10 @@ When navigating between pages at the same nesting level (e.g. `/conference/progr
 **Step 6 — Admin UI: `parentPage`/`parentPageData` picker**
 
 Generic picker in the page/pageData admin panel. The API already exposes both fields on all `AbstractPage`-derived resources; the picker is pure module UI work.
+
+**Step 6b — Admin top bar: nested page context**
+
+The top admin bar currently opens settings for the current page (route, page record, pageData). For nested pages, multiple page depths are loaded simultaneously. The top bar UI needs a design decision: does it show settings for the leaf page only, show a depth switcher, or show both parent and child pages as separate expandable sections? Routes for both depths may need to be manageable. This needs UI design before implementation — do not implement Step 6 without resolving this first.
 
 **Step 7 — Tests (Vitest)**
 - Manifest consumption: `resource_iris` `string[][]` is correctly parsed; all IRIs prefetched; depth groups stored
