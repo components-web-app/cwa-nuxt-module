@@ -16,6 +16,7 @@ import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import Auth from './api/auth'
+import SiteConfig from '#cwa/api/site-config'
 import * as nuxtApp from '#app/nuxt'
 
 vi.mock('#app/composables/cookie.js', () => {
@@ -28,6 +29,7 @@ vi.mock('./storage/storage', () => {
   return {
     Storage: vi.fn(function () {
       return {
+        addUniquePromise: vi.fn(),
         stores: {
           apiDocumentation: {
             useStore: vi.fn(),
@@ -61,7 +63,13 @@ vi.mock('./storage/storage', () => {
 
 vi.mock('./api/fetcher/fetcher', function () {
   return {
-    default: vi.fn(function () {}),
+    default: vi.fn(function () {
+      return {
+        fetch: vi.fn(),
+        fetchResource: vi.fn(),
+        fetchRoute: vi.fn(),
+      }
+    }),
   }
 })
 
@@ -83,17 +91,37 @@ vi.mock('./api/api-documentation', function () {
   const getApiDocumentation = vi.fn((refresh = false) => {
     return 'refresh:' + refresh
   })
+  const getComponentMetadata = vi.fn()
 
   return {
     default: vi.fn(function () {
       return {
         getApiDocumentation,
+        getComponentMetadata,
+      }
+    }),
+  }
+})
+
+vi.mock('#cwa/api/site-config', function () {
+  return {
+    default: vi.fn(function () {
+      return {
+        config: { theme: 'default' },
       }
     }),
   }
 })
 vi.mock('./api/fetcher/cwa-fetch')
-vi.mock('./api/fetcher/fetch-status-manager')
+vi.mock('./api/fetcher/fetch-status-manager', function () {
+  return {
+    default: vi.fn(function () {
+      return {
+        clearPrimaryFetch: vi.fn(),
+      }
+    }),
+  }
+})
 vi.mock('./resources/resources-manager', function () {
   return {
     ResourcesManager: vi.fn(function () {
@@ -135,17 +163,18 @@ vi.mock('./admin/navigation-guard', function () {
 
 const storeName = 'dummystore'
 const $router = vi.fn()
-function createCwa({ apiUrlBrowser, apiUrl }: CwaModuleOptions) {
+function createCwa(opts: CwaModuleOptions = { storeName }) {
   vi.spyOn(nuxtApp, 'useRuntimeConfig').mockImplementation(() => ({
     public: {
       cwa: {
-        apiUrlBrowser,
-        apiUrl,
+        apiUrlBrowser: opts.apiUrlBrowser,
+        apiUrl: opts.apiUrl,
       },
     },
   }))
   return new Cwa($router as Router, {
     storeName,
+    ...opts,
   }, {
     version: 'abc',
     name: 'named',
@@ -283,5 +312,95 @@ describe('Cwa class test', () => {
     expect(NavigationGuard).toBeCalledWith($router, stores.admin)
     expect($cwa.adminNavGuard).toBe(NavigationGuard.mock.results[0].value)
     expect($cwa.adminNavigationGuardFn).toBe(NavigationGuard.mock.results[0].value.adminNavigationGuardFn)
+  })
+
+  test('SiteConfig is initialised', () => {
+    createCwa({ storeName })
+    const stores = Storage.mock.results[0].value.stores
+    expect(SiteConfig).toBeCalledWith(CwaFetch.mock.results[0].value, stores.siteConfig, undefined)
+  })
+})
+
+describe('Cwa delegation methods and getters', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('fetch delegates to fetcher.fetch', () => {
+    const $cwa = createCwa({ storeName })
+    const fetcherInstance = Fetcher.mock.results[0].value
+    const mockEvent = { path: '/test' }
+    $cwa.fetch(mockEvent as any)
+    expect(fetcherInstance.fetch).toHaveBeenCalledWith(mockEvent)
+  })
+
+  test('clearPrimaryFetch delegates to fetchStatusManager.clearPrimaryFetch', () => {
+    const $cwa = createCwa({ storeName })
+    const fsmInstance = FetchStatusManager.mock.results[0].value
+    $cwa.clearPrimaryFetch()
+    expect(fsmInstance.clearPrimaryFetch).toHaveBeenCalledOnce()
+  })
+
+  test('resourcesConfig returns options.resources or empty object', () => {
+    const resources = { MyComponent: { instantAdd: true } }
+    const $cwa = createCwa({ storeName, resources })
+    expect($cwa.resourcesConfig).toEqual(resources)
+  })
+
+  test('resourcesConfig returns empty object when not set', () => {
+    const $cwa = createCwa({ storeName })
+    expect($cwa.resourcesConfig).toEqual({})
+  })
+
+  test('setResourceMeta updates resourcesConfig', () => {
+    const $cwa = createCwa({ storeName })
+    const meta = { MyComp: { instantAdd: false } }
+    $cwa.setResourceMeta(meta)
+    expect($cwa.resourcesConfig).toBe(meta)
+  })
+
+  test('layoutsConfig returns options.layouts', () => {
+    const layouts = [{ name: 'Default', label: 'Default Layout' }]
+    const $cwa = createCwa({ storeName, layouts })
+    expect($cwa.layoutsConfig).toBe(layouts)
+  })
+
+  test('pagesConfig returns options.pages', () => {
+    const pages = [{ name: 'Home', label: 'Home Page' }]
+    const $cwa = createCwa({ storeName, pages })
+    expect($cwa.pagesConfig).toBe(pages)
+  })
+
+  test('pageDataConfig returns options.pageData', () => {
+    const pageData = [{ name: 'Conference', label: 'Conference' }]
+    const $cwa = createCwa({ storeName, pageData })
+    expect($cwa.pageDataConfig).toBe(pageData)
+  })
+
+  test('config returns siteConfig.config', () => {
+    const $cwa = createCwa({ storeName })
+    expect($cwa.config).toBe(SiteConfig.mock.results[0].value.config)
+  })
+
+  test('apiUrlBase returns the resolved apiUrl', () => {
+    const $cwa = createCwa({ storeName, apiUrl: 'https://example.com' })
+    expect($cwa.apiUrlBase).toBe('https://example.com')
+  })
+
+  test('addUniquePromise delegates to storage.addUniquePromise', () => {
+    const $cwa = createCwa({ storeName })
+    const storageInstance = Storage.mock.results[0].value
+    const fn = vi.fn()
+    $cwa.addUniquePromise('scope', 'key', fn)
+    expect(storageInstance.addUniquePromise).toHaveBeenCalledWith('scope', 'key', fn)
+  })
+
+  test('getComponentMetadata delegates to apiDocumentation', async () => {
+    const $cwa = createCwa({ storeName })
+    const apiDocInstance = ApiDocumentation.mock.results[0].value
+    apiDocInstance.getComponentMetadata.mockResolvedValue({ MyComp: { resourceName: 'MyComp' } })
+    const result = await $cwa.getComponentMetadata(true, true)
+    expect(apiDocInstance.getComponentMetadata).toHaveBeenCalledWith(true, true)
+    expect(result).toEqual({ MyComp: { resourceName: 'MyComp' } })
   })
 })

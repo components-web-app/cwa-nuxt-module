@@ -11,6 +11,7 @@ vi.mock('../admin/manageable-resource', () => {
       return {
         init: vi.fn(),
         clear: vi.fn(),
+        initNewIri: vi.fn(),
       }
     }),
   }
@@ -45,6 +46,7 @@ describe('CWA resource manageable composable', () => {
   }
 
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.spyOn(cwaComposable, 'useCwa').mockReturnValue(mockCwa)
   })
 
@@ -124,6 +126,98 @@ describe('CWA resource manageable composable', () => {
     const result = useCwaResourceManageable(mockIri)
 
     expect(result.manager).toEqual(mockReference)
+  })
+
+  describe('onManageableComponentMounted listener', () => {
+    test('calls initNewIri and emits componentMounted when iri matches', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      const initNewIriSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      // capture the 'manageableComponentMounted' listener registered on eventBus.on
+      const listenerCall = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'manageableComponentMounted')
+      const listener = listenerCall?.[1]
+
+      listener(mockIri.value) // matching iri
+
+      expect(initNewIriSpy).toHaveBeenCalledOnce()
+      expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
+    })
+
+    test('does nothing when iri does not match', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      const initNewIriSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      const listenerCall = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'manageableComponentMounted')
+      const listener = listenerCall?.[1]
+
+      listener('/different-iri') // non-matching
+
+      expect(initNewIriSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('isAdmin watcher callback', () => {
+    test('calls clearAdmin when admin transitions from true to false', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      let watchCallback: ((val: boolean, prev: boolean) => void) | undefined
+      vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+        watchCallback = cb
+        return vi.fn()
+      })
+
+      const clearSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: clearSpy, initNewIri: vi.fn() }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      // invoke the watcher callback with isAdmin going false
+      watchCallback!(false, true)
+
+      expect(clearSpy).toHaveBeenCalled()
+    })
+
+    test('calls initAdmin when admin transitions from false to true', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      let watchCallback: ((val: boolean, prev: boolean) => void) | undefined
+      vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+        watchCallback = cb
+        return vi.fn()
+      })
+
+      // isAdmin starts false so onMounted does NOT call initAdmin
+      mockCwa.auth.isAdmin.value = false
+
+      const initSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: initSpy, clear: vi.fn(), initNewIri: vi.fn() }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      watchCallback!(true, false)
+
+      expect(initSpy).toHaveBeenCalledWith(mockIri)
+    })
   })
 
   test.todo('Watch options')
