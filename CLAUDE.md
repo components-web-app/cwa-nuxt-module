@@ -218,12 +218,26 @@ Pages support sub-pages. A conference page renders a tab bar and a child-page sl
 
 `AbstractPage` (base of both `Page` and `AbstractPageData`) has two fields for hierarchy:
 
-- `$parentPage: ?Page` — parent is a `Page` entity (mutually exclusive with `$parentPageData`)
-- `$parentPageData: ?AbstractPageData` — parent is any `AbstractPageData` subclass (mutually exclusive with `$parentPage`)
+- `parentPage: ?Page` — parent is a `Page` entity (mutually exclusive with `parentPageData`)
+- `parentPageData: ?AbstractPageData` — parent is any `AbstractPageData` subclass (mutually exclusive with `parentPage`)
 
-**There is no `$nested` boolean.** Having a parent means the page is nested inside it — the relationship itself is the signal. A page exists with a parent or without one; there is no intermediate "parent but not nested" state that serves a real use case.
+**There is no `nested` boolean.** Having a parent means the page is nested inside it — the relationship itself is the signal.
 
-Both fields carry `#[Groups(['Route:manifest:read'])]`. The parent entity's `$route` also carries that group. `RouteNormalizer` walks the normalised structure and emits `resource_iris` as a **`string[][]`** grouped by depth: index 0 = root/shallowest resources, last index = the requested page's resources. The `parentPage`/`parentPageData` fields are the depth boundaries. All IRIs across all groups are fetched in parallel.
+Both fields carry `#[Groups(['Route:manifest:read'])]`, as does the `route` back-reference on `AbstractPage`. `RouteNormalizer` walks the normalised structure and emits `resource_iris` as a **`string[][]`** grouped by depth: index 0 = root/shallowest resources, last index = the requested page's resources. The `parentPage`/`parentPageData` fields are the depth boundaries. All IRIs across all groups are fetched in parallel.
+
+**Exact manifest response for a nested PageData route** (`GET /routes_manifest//conference/programme`):
+```json
+{
+  "resource_iris": [
+    ["/_/routes//conference", "/_/abstract_page_data/parent-uuid", "/_/pages/parent-template-uuid"],
+    ["/_/routes//conference/programme", "/_/abstract_page_data/child-uuid", "/_/pages/child-template-uuid"]
+  ]
+}
+```
+
+For a flat (non-nested) page, `resource_iris` always has one inner array: `[["/_/routes//my-route", ...]]`.
+
+`parentPage` and `parentPageData` are also exposed on every individual resource GET response (not just the manifest), so the admin/draft path can walk the chain IRI-by-IRI without a manifest.
 
 ### Route lifecycle (critical context)
 
@@ -241,37 +255,61 @@ There is no URL-segment-depth dependency. The URL can be anything; depth is alwa
 
 ---
 
-### What already exists in this module
+### What already exists in this module (relevant files)
 
-- `module.ts` → `createDefaultCwaPages()` generates a nested Nuxt route tree of `cwaPage0` → `cwaPage1` → ... (up to `pagesDepth`, default 4). Multi-segment URLs work — `/a/b/c` maps to `{cwaPage0: ['a'], cwaPage1: ['b'], cwaPage2: ['c']}`. These are URL routing definitions, separate from rendering depth.
-- `fetcher.ts` → `fetchNestedResources()` recursively follows resource IRIs via `resourceTypeToNestedResourceProperties`. `parentPage` and `parentPageData` need adding to the `PAGE_DATA` and `PAGE` entries.
-- `cwa-page.vue` is the existing catch-all page component. All rendering changes happen here.
+- **`src/runtime/api/fetcher/fetcher.ts`** — `fetchManifest()` reads `response._data?.resource_iris` as `string[]` and passes to `fetchBatch`. Must be updated for `string[][]`.
+- **`src/runtime/storage/stores/fetcher/state.ts`** — `FetchManifestInterface.resources?: string[]`. Must become `string[][]`.
+- **`src/runtime/storage/stores/fetcher/actions.ts`** — `finishManifestFetch` stores `event.resources` into `fetchStatus.manifest.resources`. Types follow from state change.
+- **`src/runtime/resources/resource-utils.ts`** — `resourceTypeToNestedResourceProperties`: `PAGE` entry has `['layout', 'componentGroups']`, `PAGE_DATA` has `['page']`. Neither includes `parentPage`/`parentPageData` yet.
+- **`src/runtime/resources/resources.ts`** — `pageIri` getter returns a single `ComputedRef<string | undefined>`. For nested pages this needs extending to return the IRI at a given depth.
+- **`src/runtime/templates/cwa-page.vue`** — renders `<ResourceLoader :iri="$cwa.resources.pageIri.value" component-prefix="CwaPage" />`. This is the only place the page template is mounted. All depth-aware rendering changes happen here.
 
 ### Planned changes (Nuxt module)
 
-**Step 1 — Update manifest consumption for `resource_iris: string[][]`:**
-`resource_iris` is now an array of arrays. Update any code that reads `resource_iris` to iterate over groups. Flatten to `string[]` where needed for the existing prefetch logic. This step must not change any visible behaviour — it is a structural adaptation only.
+**Step 1 — Adapt manifest consumption to `resource_iris: string[][]`** *(do first — must not break existing behaviour)*
 
-**Step 2 — Add `parentPage`/`parentPageData` to `resourceTypeToNestedResourceProperties`:**
-Add both fields to the `PAGE_DATA` and `PAGE` entries. Used by `fetchNestedResources()` for individually-fetched resources (admin/draft access, deep chains beyond manifest depth).
+Files: `fetcher.ts`, `state.ts`, `actions.ts`, and their types/interfaces.
 
-**Step 3 — Store: expose parent chain getters:**
-Add getters so `cwa-page.vue` can answer "given this page IRI, what is its full parent chain and what depth is it at?"
+`resource_iris` is now `string[][]`. The immediate goal is structural adaptation only — no behaviour change:
+- Flatten all groups to `string[]` for the existing `fetchBatch` call (all IRIs still fetched in parallel)
+- Store the full `string[][]` in `FetchManifestInterface.resources` for later use by depth-aware rendering
+- Update `ManifestSuccessFetchEvent` type to `resources: string[][]`
 
-**Step 4 — Make `cwa-page.vue` depth-aware:**
-`cwa-page.vue` currently always renders `$cwa.resources.pageIri.value`. Change it to render the correct resource for its depth position. For manifest-loaded resources, depth = index in `resource_iris`. For individually-fetched resources, depth = parent chain length from `parentPage`/`parentPageData`. Depth 0 → root page; last index → the requested page.
+After this step the module works identically to before; it just stores richer data.
 
-**Step 5 — Keepalive in `cwa-page.vue`:**
-When navigating between pages at the same nesting level (e.g. `/conference/programme` → `/conference/speakers`), depth-0 resources are unchanged — preserve the parent layer. Only re-render the changed depth level.
+**Step 2 — Add `parentPage`/`parentPageData` to `resourceTypeToNestedResourceProperties`**
 
-**Step 6 — Admin UI:**
-Generic `parentPage`/`parentPageData` picker in the page/pageData admin panel. Detectable from the API schema. No per-project code needed.
+File: `src/runtime/resources/resource-utils.ts`.
 
-**Step 7 — Tests (Vitest):**
-- Manifest consumption: `resource_iris` `string[][]` is correctly parsed and all IRIs are prefetched
+Add both fields to `PAGE` and `PAGE_DATA` entries. `fetchNestedResources()` will then follow the parent chain when fetching individual resources (admin/draft access, and as a safety net for manifest-loaded resources).
+
+**Step 3 — Store: depth-aware page IRI access**
+
+File: `src/runtime/resources/resources.ts`.
+
+`pageIri` currently returns `ComputedRef<string | undefined>`. Add a way to access the IRI at a specific rendering depth. For the manifest path, depth maps directly to `resource_iris[depth]` group (the route/page IRI in that group). For the IRI-walk path (admin/draft, no manifest), depth is computed from the `parentPage`/`parentPageData` chain length.
+
+Design TBD in a separate discussion before implementing.
+
+**Step 4 — Make `cwa-page.vue` depth-aware**
+
+File: `src/runtime/templates/cwa-page.vue`.
+
+Currently always renders `$cwa.resources.pageIri.value`. Must render the page at the correct depth. Consuming app page templates place a child-page slot component where child content appears. Design TBD alongside Step 3.
+
+**Step 5 — Keepalive**
+
+When navigating between pages at the same nesting level (e.g. `/conference/programme` → `/conference/speakers`), depth-0 resources are unchanged — preserve the parent layer without re-render. Only re-render the changed depth level.
+
+**Step 6 — Admin UI: `parentPage`/`parentPageData` picker**
+
+Generic picker in the page/pageData admin panel. The API already exposes both fields on all `AbstractPage`-derived resources; the picker is pure module UI work.
+
+**Step 7 — Tests (Vitest)**
+- Manifest consumption: `resource_iris` `string[][]` is correctly parsed; all IRIs prefetched; depth groups stored
 - Fetcher: parent chain followed via `resourceTypeToNestedResourceProperties`
-- Store: parent chain getters correctly derived
-- `cwa-page.vue`: correct resource selected at each depth (manifest path and IRI-walk path)
+- `resources.ts`: depth-indexed IRI access works for both manifest and IRI-walk paths
+- `cwa-page.vue`: correct resource rendered at each depth
 
 ### Design decisions
 
