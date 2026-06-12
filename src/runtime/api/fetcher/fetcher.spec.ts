@@ -447,7 +447,7 @@ describe('Fetcher -> fetchManifest', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: ['/resolve-resource'],
+              resource_iris: [['/resolve-resource']],
             },
           })
         }, 1)
@@ -481,7 +481,7 @@ describe('Fetcher -> fetchManifest', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: ['/manifest-resource-iri'],
+              resource_iris: [['/manifest-resource-iri']],
             },
           })
         }, 1)
@@ -499,7 +499,38 @@ describe('Fetcher -> fetchManifest', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
-      resources: ['/manifest-resource-iri'],
+      resources: [['/manifest-resource-iri']],
+      token: 'any',
+      type: FinishFetchManifestType.SUCCESS,
+    })
+  })
+
+  test('fetchBatch receives all IRIs flattened when manifest has multiple depth groups', async () => {
+    const nestedIris = [
+      ['/routes/parent', '/pages/parent-template'],
+      ['/routes/child', '/pages/child-template'],
+    ]
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      const response = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ _data: { resource_iris: nestedIris } })
+        }, 1)
+      })
+      return { response }
+    })
+
+    await fetcher.fetchResource({ path: '/new-path', token: 'any', manifestPath: '/my-manifest' })
+    await delay(2)
+
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      paths: ['/routes/parent', '/pages/parent-template', '/routes/child', '/pages/child-template'],
+      token: 'any',
+    })
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
+      resources: nestedIris,
       token: 'any',
       type: FinishFetchManifestType.SUCCESS,
     })

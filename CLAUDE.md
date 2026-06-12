@@ -318,16 +318,16 @@ The depth-0 page IRI is not derivable from `fetchStatus.path` alone — it comes
 
 ### Planned changes (Nuxt module)
 
-**Step 1 — Adapt manifest consumption to `resource_iris: string[][]`** *(do first — must not break existing behaviour)*
+**Step 1 — Adapt manifest consumption to `resource_iris: string[][]`** ✅ DONE
 
-Files: `fetcher.ts`, `state.ts`, `actions.ts`, and their types/interfaces.
+Files changed: `fetcher.ts`, `state.ts`, `actions.ts`.
 
-`resource_iris` is now `string[][]`. The immediate goal is structural adaptation only — no behaviour change:
-- Flatten all groups to `string[]` for the existing `fetchBatch` call (all IRIs still fetched in parallel)
-- Store the full `string[][]` in `FetchManifestInterface.resources` for later use by depth-aware rendering
-- Update `ManifestSuccessFetchEvent` type to `resources: string[][]`
+`resource_iris` is now `string[][]`. Changes:
+- `FetchManifestInterface.resources` → `string[][]` (was `string[]`)
+- `ManifestSuccessFetchEvent.resources` → `string[][]`
+- `fetchManifest()` uses `.flat()` to produce `string[]` for `fetchBatch`; passes full `string[][]` to `finishManifestFetch`
 
-After this step the module works identically to before; it just stores richer data.
+Behaviour is identical to before for flat pages (`[[...]]`). Multi-depth groups are all fetched in parallel (flattened) and the full 2D array is stored for later depth-aware use.
 
 **Step 2 — Add `parentPage`/`parentPageData` to `resourceTypeToNestedResourceProperties`**
 

@@ -3,7 +3,7 @@ import type { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
 
 interface FetchManifestInterface {
   path: string
-  resources?: string[]
+  resources?: string[][]
   error?: CwaResourceErrorObject
 }
 

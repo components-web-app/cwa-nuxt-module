@@ -192,16 +192,17 @@ export default class Fetcher {
   }
 
   private async fetchManifest(event: FetchManifestEvent): Promise<void> {
-    let resources: string[] = []
+    let resources: string[][] = []
     try {
       const result = this.fetch({
         path: event.manifestPath,
       })
       const response = await result.response
       resources = response._data?.resource_iris || []
-      if (resources.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
+      const flatPaths = resources.flat()
+      if (flatPaths.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
         // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
-        await this.fetchBatch({ paths: resources, token: event.token })
+        await this.fetchBatch({ paths: flatPaths, token: event.token })
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,

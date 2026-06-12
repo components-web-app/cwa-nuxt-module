@@ -39,7 +39,7 @@ export enum FinishFetchManifestType {
 export interface ManifestSuccessFetchEvent {
   type: FinishFetchManifestType.SUCCESS
   token: string
-  resources: string[]
+  resources: string[][]
 }
 
 export interface ManifestErrorFetchEvent {

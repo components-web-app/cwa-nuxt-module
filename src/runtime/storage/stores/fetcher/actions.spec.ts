@@ -497,10 +497,10 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'existing-token-with-manifest',
-      resources: ['/any'],
+      resources: [['/any']],
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toStrictEqual(['/any'])
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toStrictEqual([['/any']])
   })
 
   test('Can set the error state on a manifest', () => {
