@@ -207,69 +207,80 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ## Planned Feature: Nested Sub-Pages
 
-> **Status: design agreed, not yet implemented.**
-> Companion plan: see `## Planned Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
+> **Status: API manifest layer complete and tested. Module implementation not yet started.**
+> Companion plan: see `## Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
 
 ### What we want
 
-Pages should support sub-pages. A conference page at `/best-conference-ever` renders a tab bar and a `<NuxtPage />` slot; child pages (`/best-conference-ever/programme`, etc.) fill that slot. Structure is admin-manageable and reusable across projects.
+Pages support sub-pages. A conference page renders a tab bar and a child-page slot; child pages fill that slot. Structure is admin-manageable and reusable across projects. Rendering depth is driven by data (the manifest's `resource_iris` depth groups), not URL structure.
 
 ### How the API models it
 
-`AbstractPage` (base of all `PageData` entities) has two distinct fields:
-- `$parentRoute: ?Route` — **URL construction only**. When a route is generated for this page, prefix the path with this route's path. No rendering implication on its own.
-- `$nested: bool` — **rendering instruction**. When `true`, the module must fetch and render the parent page template and display this page inside it at the next depth level.
+`AbstractPage` (base of both `Page` and `AbstractPageData`) has two fields for hierarchy:
 
-These are intentionally separate. A page can have a prefixed URL (`$parentRoute` set) without being rendered nested (`$nested = false`) — useful for organisational URL structure or SEO without changing the render model. `$nested = true` with no `$parentRoute` is invalid and should be caught by a validation constraint in the API.
+- `$parentPage: ?Page` — parent is a `Page` entity (mutually exclusive with `$parentPageData`)
+- `$parentPageData: ?AbstractPageData` — parent is any `AbstractPageData` subclass (mutually exclusive with `$parentPage`)
 
-**These fields are currently not serialized** (no `@Groups` annotation). The first API bundle change is to add them to `Route:manifest:read`. Once done, the manifest response for a child route will include `parentRoute` (as an IRI) and `nested: true/false`.
+**There is no `$nested` boolean.** Having a parent means the page is nested inside it — the relationship itself is the signal. A page exists with a parent or without one; there is no intermediate "parent but not nested" state that serves a real use case.
 
-### Route path concatenation and URL resolution
-
-The API's `RouteGenerator` may prefix a child page's path with the parent's path (e.g. `/conference/programme`). **The module does not rely on this.** Nesting is determined solely by reading `parentRoute` as an IRI from the manifest response — the module follows that IRI directly to fetch the parent manifest. URL segment parsing is never used to infer hierarchy.
-
-This means:
-- The frontend lookup is always by full path, regardless of whether it is concatenated or flat.
-- Concatenated paths are good for SEO and avoiding conflicts between children of different parents, but are a server-side generation concern — the module is agnostic to the URL shape.
-- Never add logic that parses URL segments to infer parent/child depth — always use the `parentRoute` IRI from the manifest.
+Both fields carry `#[Groups(['Route:manifest:read'])]`. The parent entity's `$route` also carries that group. `RouteNormalizer` walks the normalised structure and emits `resource_iris` as a **`string[][]`** grouped by depth: index 0 = root/shallowest resources, last index = the requested page's resources. The `parentPage`/`parentPageData` fields are the depth boundaries. All IRIs across all groups are fetched in parallel.
 
 ### Route lifecycle (critical context)
 
-Routes are the **publication mechanism**. A `PageData` entity exists and is editable in the admin before it has a `Route`. The parent/child relationship is set on `PageData` during drafting — before either page has a public URL. This is why hierarchy lives on `PageData`, not `Route`.
+Routes are the **publication mechanism**. A `PageData` entity exists and is editable in the admin before it has a `Route`. The parent/child relationship is set on `PageData` during drafting — before either page has a public URL. This is why hierarchy lives on `AbstractPage`, not `Route`.
+
+### Rendering: `<CwaPage />`
+
+Nested page rendering uses a single mechanism for all access contexts: `<CwaPage />`, which is data-driven, not URL-depth-driven.
+
+**For public routes:** `cwa-page.vue` reads the manifest's `resource_iris` depth groups. Index 0 = root page resources, last index = the requested page's resources. `<CwaPage />` renders the stack from root to leaf. Keepalive is managed by the component — if depth-0 resources are unchanged on navigation, the parent layer is preserved without re-render.
+
+**For admin/draft access:** A nested page in draft has no public Route. `cwa-page.vue` is accessed via the entity IRI directly. The module walks the `parentPage`/`parentPageData` chain from the fetched resource to build the same depth stack — no manifest, same rendering component.
+
+There is no URL-segment-depth dependency. The URL can be anything; depth is always derived from data.
+
+---
 
 ### What already exists in this module
 
-- `module.ts` → `createDefaultCwaPages()` already generates a **nested Nuxt route tree** of `cwaPage0` → `cwaPage1` → ... (up to `pagesDepth`, default 4). Multi-segment URLs are already captured — `/a/b/c` maps to params `{cwaPage0: ['a'], cwaPage1: ['b'], cwaPage2: ['c']}`.
-- `fetcher.ts` → `fetchNestedResources()` already recursively follows resource IRIs via `resourceTypeToNestedResourceProperties`. Adding `parentRoute` to the `PAGE_DATA` entry in that map is all that's needed to trigger automatic parent fetching.
-- All route levels share the same `cwa-page.vue` — so `<NuxtPage />` in a parent template naturally renders another `cwa-page.vue` instance for the child level.
+- `module.ts` → `createDefaultCwaPages()` generates a nested Nuxt route tree of `cwaPage0` → `cwaPage1` → ... (up to `pagesDepth`, default 4). Multi-segment URLs work — `/a/b/c` maps to `{cwaPage0: ['a'], cwaPage1: ['b'], cwaPage2: ['c']}`. These are URL routing definitions, separate from rendering depth.
+- `fetcher.ts` → `fetchNestedResources()` recursively follows resource IRIs via `resourceTypeToNestedResourceProperties`. `parentPage` and `parentPageData` need adding to the `PAGE_DATA` and `PAGE` entries.
+- `cwa-page.vue` is the existing catch-all page component. All rendering changes happen here.
 
 ### Planned changes (Nuxt module)
 
-**Step 1 — Follow `parentRoute` in the fetch graph (`src/runtime/resources/resource-utils.ts`):**
-Add `parentRoute` to the `PAGE_DATA` entry in `resourceTypeToNestedResourceProperties`. The fetcher will then automatically follow the `parentRoute` IRI to fetch the parent `Route`, then call `GET /routes_manifest/<parent-id>` as a **separate request**. Parent and child manifests are cached and invalidated independently — a change to the parent layout must not invalidate the child manifest, and vice versa. Never embed parent resource data inside the child manifest response.
+**Step 1 — Update manifest consumption for `resource_iris: string[][]`:**
+`resource_iris` is now an array of arrays. Update any code that reads `resource_iris` to iterate over groups. Flatten to `string[]` where needed for the existing prefetch logic. This step must not change any visible behaviour — it is a structural adaptation only.
 
-**Step 2 — Store parent/child resources separately:**
-The resource store currently exposes a single `pageIri`. Add `parentPageIri` (and `childPageIri`) getters so `cwa-page.vue` instances can each render the right resource.
+**Step 2 — Add `parentPage`/`parentPageData` to `resourceTypeToNestedResourceProperties`:**
+Add both fields to the `PAGE_DATA` and `PAGE` entries. Used by `fetchNestedResources()` for individually-fetched resources (admin/draft access, deep chains beyond manifest depth).
 
-**Step 3 — Make `cwa-page.vue` depth-aware:**
-`cwa-page.vue` currently always renders `$cwa.resources.pageIri.value`. It needs to determine its depth in the route tree using `useRoute().matched` (the index of the current matched route entry corresponds to which `cwaPage*` param it serves). Depth 0 → parent page resource; depth 1+ → child page resource.
+**Step 3 — Store: expose parent chain getters:**
+Add getters so `cwa-page.vue` can answer "given this page IRI, what is its full parent chain and what depth is it at?"
 
-**Step 4 — `<NuxtPage />` in consuming app templates (no module change needed):**
-Consuming app page templates (e.g. `ConferencePageTemplate.vue`) place `<NuxtPage />` wherever child content should appear. No new `<CwaPage />` component required — standard Nuxt composition works because the nested route tree is already in place.
+**Step 4 — Make `cwa-page.vue` depth-aware:**
+`cwa-page.vue` currently always renders `$cwa.resources.pageIri.value`. Change it to render the correct resource for its depth position. For manifest-loaded resources, depth = index in `resource_iris`. For individually-fetched resources, depth = parent chain length from `parentPage`/`parentPageData`. Depth 0 → root page; last index → the requested page.
 
-**Step 5 — Admin UI:**
-The route/page admin panel should show a nullable "parent route" picker for any `PageData` entity (detectable because the API schema will expose `parentRoute` as a field on all `AbstractPageData`-derived types). This is a generic change — no per-project admin code.
+**Step 5 — Keepalive in `cwa-page.vue`:**
+When navigating between pages at the same nesting level (e.g. `/conference/programme` → `/conference/speakers`), depth-0 resources are unchanged — preserve the parent layer. Only re-render the changed depth level.
 
-**Step 6 — Tests (Vitest):**
-- Fetcher: given a manifest response with `nested: true` and `parentRoute` IRI, verify the parent chain is fetched
-- Store getters: verify `parentPageIri` and `childPageIri` are correctly derived
-- `cwa-page.vue`: verify depth-aware resource selection at each route nesting level
+**Step 6 — Admin UI:**
+Generic `parentPage`/`parentPageData` picker in the page/pageData admin panel. Detectable from the API schema. No per-project code needed.
+
+**Step 7 — Tests (Vitest):**
+- Manifest consumption: `resource_iris` `string[][]` is correctly parsed and all IRIs are prefetched
+- Fetcher: parent chain followed via `resourceTypeToNestedResourceProperties`
+- Store: parent chain getters correctly derived
+- `cwa-page.vue`: correct resource selected at each depth (manifest path and IRI-walk path)
 
 ### Design decisions
 
-- **`<NuxtPage />` not a new `<CwaPage />` component** — The nested Nuxt route tree is already in place; `<NuxtPage />` just works once `cwa-page.vue` is depth-aware. Avoids reinventing a Nuxt primitive.
-- **Hierarchy on PageData, not Route** — See "Route lifecycle" above. Must be settable in draft state before publication.
-- **Automatic parent fetch via existing `fetchNestedResources` machinery** — Adding `parentRoute` to the fetch graph is a one-line change that fits naturally into the existing recursive fetch model.
+- **No `$nested` boolean** — parent = nested, always. The presence of `$parentPage`/`$parentPageData` is the signal.
+- **Single rendering mechanism** — `<CwaPage />` (`cwa-page.vue`) handles all contexts. Depth comes from manifest `resource_iris` groups or from walking the `parentPage`/`parentPageData` chain. No URL-segment-depth dependency.
+- **`resource_iris` is `string[][]`** — index = rendering depth, root first. The module reads the array index directly; no client-side traversal needed to determine depth.
+- **Route concatenation is recommended, not required** — `RouteGenerator` prefixes child paths for clean URLs; the rendering mechanism does not depend on URL structure.
+- **Hierarchy on AbstractPage, not Route** — must be settable before publication.
+- **Keepalive by depth group** — if the same IRIs appear at depth 0 across two navigations, the parent layer is preserved without re-render.
 
 ---
 
