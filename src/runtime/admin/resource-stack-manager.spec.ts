@@ -484,4 +484,136 @@ describe('Resource Manager', () => {
       expect((manager as any).currentResourceStack.value).toHaveLength(3)
     })
   })
+
+  describe('completeStack', () => {
+    test('sets isLayoutStack to true when type is layout', () => {
+      const { manager } = createResourceManager()
+      expect((manager as any).isLayoutStack.value).toBe(false)
+      manager.completeStack({ clickTarget: null }, false, 'layout')
+      expect((manager as any).isLayoutStack.value).toBe(true)
+    })
+
+    test('sets isLayoutStack to false when type is page', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).isLayoutStack.value = true
+      manager.completeStack({ clickTarget: null }, false, 'page')
+      expect((manager as any).isLayoutStack.value).toBe(false)
+    })
+
+    test('does not modify isLayoutStack when no type provided', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).isLayoutStack.value = true
+      manager.completeStack({ clickTarget: null })
+      expect((manager as any).isLayoutStack.value).toBe(true)
+    })
+  })
+
+  describe('selectStackIndex', () => {
+    function createEditingManager() {
+      const mockAdminStore = {
+        useStore: () => ({ state: reactive({ isEditing: true }) }),
+      }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+        }),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+    }
+
+    test('calls resetStack(true) when fromContext is true', async () => {
+      const manager = createEditingManager()
+      const item = { iri: '/test', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [item]
+      ;(manager as any).contextResourceStack.value = [item]
+      const resetSpy = vi.spyOn(manager, 'resetStack')
+      await manager.selectStackIndex(0, true)
+      expect(resetSpy).toHaveBeenCalledWith(true)
+    })
+
+    test('does not call resetStack when fromContext is false', async () => {
+      const manager = createEditingManager()
+      const item = { iri: '/test', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [item]
+      const resetSpy = vi.spyOn(manager, 'resetStack')
+      await manager.selectStackIndex(0, false)
+      expect(resetSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('insertResourceStackItem', () => {
+    function createManagerWithFindAll() {
+      const mockAdminStore = {
+        useStore: () => ({ state: reactive({ isEditing: true }) }),
+      }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+          findAllPublishableIris: vi.fn((iri: string) => [iri]),
+        }),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+    }
+
+    function makeStackItem(iri: string, childIris: string[] = []) {
+      return { iri, domElements: ref([]), childIris: ref(childIris) }
+    }
+
+    test('appends item to empty stack', () => {
+      const manager = createManagerWithFindAll()
+      const item = makeStackItem('/component/1')
+      ;(manager as any).insertResourceStackItem(item, false)
+      expect((manager as any).currentResourceStack.value).toContain(item)
+    })
+
+    test('inserts before existing item whose childIris include the new item', () => {
+      const manager = createManagerWithFindAll()
+      const parent = makeStackItem('/_/component_groups/grp1', ['/component/child1'])
+      ;(manager as any).currentResourceStack.value = [parent]
+      const child = makeStackItem('/component/child1')
+      ;(manager as any).insertResourceStackItem(child, false)
+      const stack = (manager as any).currentResourceStack.value
+      expect(stack[0]).toBe(child)
+      expect(stack[1]).toBe(parent)
+    })
+  })
+
+  describe('redrawFocus', () => {
+    test('does nothing when focusProxy is not set', () => {
+      const { manager } = createResourceManager()
+      expect(() => manager.redrawFocus()).not.toThrow()
+    })
+
+    test('calls redraw on focusProxy when set', () => {
+      const { manager } = createResourceManager()
+      const redrawFn = vi.fn()
+      ;(manager as any).focusProxy = { redraw: redrawFn }
+      manager.redrawFocus()
+      expect(redrawFn).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('removeFocusComponent (private)', () => {
+    test('unmounts focusComponent and removes focusWrapper when both set', () => {
+      const { manager } = createResourceManager()
+      const unmount = vi.fn()
+      const remove = vi.fn()
+      ;(manager as any).focusComponent = { unmount }
+      ;(manager as any).focusWrapper = { remove }
+      ;(manager as any).focusProxy = {}
+      ;(manager as any).removeFocusComponent()
+      expect(unmount).toHaveBeenCalledOnce()
+      expect(remove).toHaveBeenCalledOnce()
+      expect((manager as any).focusComponent).toBeUndefined()
+      expect((manager as any).focusProxy).toBeUndefined()
+      expect((manager as any).focusWrapper).toBeUndefined()
+    })
+
+    test('handles when neither focusComponent nor focusWrapper is set', () => {
+      const { manager } = createResourceManager()
+      expect(() => (manager as any).removeFocusComponent()).not.toThrow()
+    })
+  })
 })

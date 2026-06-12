@@ -190,18 +190,20 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 | 2026-06-10 | 44.56% | actions.ts, resources.ts, storage.ts, cwa-resource-model.ts |
 | 2026-06-11 | 47.97% | cwa-select-input, cwa-collection-resource, cwa-image, cwa-image-resource, ComponentGroup.Util.Positions debounce, resource-stack-manager listenCurrentIri |
 | 2026-06-11 | 48.44% | resource-stack-manager isComponentGroupDisabled + filterDisabledStackItems (3rd constructor arg was missing from test factory) |
+| 2026-06-12 | 49.95% | resource-stack-manager completeStack/selectStackIndex/insertResourceStackItem/redrawFocus/removeFocusComponent; manageable-resource private getters; api-documentation getComponentMetadata; cwa.ts delegation methods; cwa-resource detached DOM + getCurrentStyleName; cwa-resource-manageable watcher/listener branches |
 
 **Key patterns established:**
 - Lodash `debounce` with fake timers: `vi.useFakeTimers()` + `vi.runAllTimers()` (or `vi.advanceTimersByTime(n)` to avoid triggering other timers)
 - `vi.hoisted()` cannot use `ref()`/`reactive()` — use plain objects `{ value: ... }` or `var` + factory in `vi.mock()`
 - Reactive route mock: `var mockRoute: {...}` + `mockRoute = reactive({...})` inside `vi.mock('vue-router', async () => {...})`
 - Vue `computed` caches — make mock data `reactive()` so computed re-evaluates when mock state changes
+- `vi.clearAllMocks()` in `beforeEach` is critical when capturing listeners/callbacks from `mock.calls` — stale calls from prior tests cause `find()` to return the wrong callback
+- Capturing Vue watcher callbacks: `vi.spyOn(vue, 'watch').mockImplementation((_source, cb) => { watchCallback = cb; return vi.fn() })`
+- Private TypeScript class getters: access via `(instance as any).prop` at runtime despite compile-time `private` modifier
 
 **High-ROI remaining targets (uncovered statements est.):**
 - `resources-manager.ts` (33.2%) — ~380 statements, very complex class (CRUD, confirm dialogs)
-- `resource-stack-manager.ts` (42.12%) — ~100+ statements (many private methods/watchers)
-- `cwa.ts` (69.76%) — ~25 statements
-- `api-documentation.ts` (68.75%) — ~25 statements
+- `resource-stack-manager.ts` (~60%) — remaining private methods/watchers
 - `html-content.ts` (0%) — ~77 lines, creates Vue apps dynamically (hard to unit test)
 - `useDataResolver.ts` (0%) — ~121 lines, uses Vue internals (hard to unit test)
 

@@ -75,10 +75,13 @@ vi.mock('../cwa', () => {
         },
         resources: {
           findAllPublishableIris: vi.fn(iri => ([iri])),
+          getResource: vi.fn(() => undefined),
+          getChildIris: vi.fn(() => []),
         },
         resourcesManager: {
           addResourceEvent: ref(),
         },
+        resourcesConfig: {},
       }
     }),
   }
@@ -470,6 +473,89 @@ describe('ManageableResource Class', () => {
       expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith(
         expect.objectContaining({ resourceType: 'COMPONENT' }),
       )
+    })
+  })
+
+  describe('currentResource getter', () => {
+    test('returns undefined when currentIri is not set', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref(undefined)
+      expect((instance as any).currentResource).toBeUndefined()
+    })
+
+    test('returns resource value when currentIri is set and getResource returns a ref', () => {
+      const { instance, $cwa } = createManageableResource()
+      const mockResource = { data: { '@type': 'MyComponent', '_metadata': { persisted: true } } }
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: mockResource })
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).currentResource).toBe(mockResource)
+    })
+
+    test('returns undefined when getResource returns undefined', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue(undefined)
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).currentResource).toBeUndefined()
+    })
+  })
+
+  describe('resourceType getter', () => {
+    test('returns undefined when currentResource is undefined', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue(undefined)
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).resourceType).toBeUndefined()
+    })
+
+    test('returns data["@type"] from currentResource', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).resourceType).toBe('MyComponent')
+    })
+  })
+
+  describe('resourceConfig getter', () => {
+    test('returns undefined when currentResource is undefined', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue(undefined)
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).resourceConfig).toBeUndefined()
+    })
+
+    test('returns undefined when resourceType is not in resourcesConfig', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'UnknownType' } } })
+      ;($cwa as any).resourcesConfig = {}
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).resourceConfig).toBeUndefined()
+    })
+
+    test('returns config for the matching resourceType', () => {
+      const { instance, $cwa } = createManageableResource()
+      const config = { name: 'My Component', managerTabs: [] }
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
+      ;($cwa as any).resourcesConfig = { MyComponent: config }
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).resourceConfig).toBe(config)
+    })
+  })
+
+  describe('displayName getter', () => {
+    test('returns resourceType when resourceConfig has no name', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
+      ;($cwa as any).resourcesConfig = { MyComponent: {} }
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).displayName).toBe('MyComponent')
+    })
+
+    test('returns resourceConfig.name when set', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
+      ;($cwa as any).resourcesConfig = { MyComponent: { name: 'Fancy Widget' } }
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).displayName).toBe('Fancy Widget')
     })
   })
 
