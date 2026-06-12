@@ -257,13 +257,63 @@ There is no URL-segment-depth dependency. The URL can be anything; depth is alwa
 
 ---
 
+### Display switching — two gates (critical context for Steps 1 and 3)
+
+There are two independent mechanisms that control when the displayed page changes during navigation. Both must be understood before touching Step 3.
+
+**Gate 1 — `isFetchResolving` (manifest completion check, `getter-utils.ts:34`)**
+
+```ts
+return !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
+```
+
+Blocks `resolvedSuccessFetchStatus` until the manifest has fully resolved (i.e. `finishManifestFetch` has been called). Checks `=== undefined` — type-agnostic, unaffected by `string[]` → `string[][]` change.
+
+**Gate 2 — `displayFetchStatus` early-switch (`resources.ts:74`)**
+
+```ts
+const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
+if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
+  const pageResource = this.getResource(pageIri).value
+  if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+    return fetchingStatus  // switch display NOW, before manifest batch completes
+  }
+}
+```
+
+An early-switch optimisation: if the target page is already in the store (previously visited), switch the display immediately without waiting for the full manifest fetch to complete. The cached data shows instantly; any updated data replaces it as responses arrive.
+
+Currently `getPageIriByFetchStatus` derives the page IRI from `fetchStatus.path` — always the **leaf/child** page. For non-nested pages that is the only page, so it works correctly.
+
+**The nested page problem with the current early-switch:**
+
+For a nested page at `/conference/programme`, `fetchStatus.path` = the child route. The early-switch checks the **child** IRI against `currentIds`. This creates three navigation scenarios:
+
+| Scenario | Early-switch behaviour | Correct? |
+|---|---|---|
+| First visit to `/conference/programme` | Child not in `currentIds` — no early-switch, wait for Gate 1 | Yes |
+| Return to `/conference/programme` (same URL) | Child in `currentIds`, parent also cached from prior visit — switches immediately | Yes |
+| `/conference/programme` → `/conference/speakers` (sibling nav) | `/speakers` child not in `currentIds` — no early-switch, wait for all resources including parent | Sub-optimal — parent is cached and could render immediately |
+
+For sibling navigation (third case), the parent frame is already in the store but the current logic won't early-switch because it only checks the child IRI. The user sits waiting for all resources when the parent frame could have rendered immediately.
+
+**Required fix (Step 3):** `displayFetchStatus` must become depth-aware. When a manifest with multiple depth groups is present, check the **depth-0 (root/parent)** page IRI against `currentIds` instead of the leaf. If the root is cached, switch display immediately — child data loads progressively and replaces cached data when fetched. This collapses all three scenarios into correct behaviour:
+
+- First visit: depth-0 not in `currentIds` → wait for Gate 1 (all resources loaded)
+- Return visit / same-page refresh: depth-0 in `currentIds` → switch immediately, refreshed data replaces stale data as it arrives
+- Sibling nav: depth-0 (shared parent) in `currentIds` → parent frame renders immediately, child slot fills progressively
+
+The depth-0 page IRI is not derivable from `fetchStatus.path` alone — it comes from `manifest.resources[0]` once the manifest response has arrived (before the batch fetch completes). Step 3 must ensure this is accessible.
+
+---
+
 ### What already exists in this module (relevant files)
 
 - **`src/runtime/api/fetcher/fetcher.ts`** — `fetchManifest()` reads `response._data?.resource_iris` as `string[]` and passes to `fetchBatch`. Must be updated for `string[][]`.
 - **`src/runtime/storage/stores/fetcher/state.ts`** — `FetchManifestInterface.resources?: string[]`. Must become `string[][]`.
 - **`src/runtime/storage/stores/fetcher/actions.ts`** — `finishManifestFetch` stores `event.resources` into `fetchStatus.manifest.resources`. Types follow from state change.
 - **`src/runtime/resources/resource-utils.ts`** — `resourceTypeToNestedResourceProperties`: `PAGE` entry has `['layout', 'componentGroups']`, `PAGE_DATA` has `['page']`. Neither includes `parentPage`/`parentPageData` yet.
-- **`src/runtime/resources/resources.ts`** — `pageIri` getter returns a single `ComputedRef<string | undefined>`. For nested pages this needs extending to return the IRI at a given depth.
+- **`src/runtime/resources/resources.ts`** — `pageIri` getter returns a single `ComputedRef<string | undefined>`. For nested pages this needs extending to return the IRI at a given depth. `displayFetchStatus` early-switch checks the leaf page IRI — must be updated to check depth-0 (see above).
 - **`src/runtime/templates/cwa-page.vue`** — renders `<ResourceLoader :iri="$cwa.resources.pageIri.value" component-prefix="CwaPage" />`. This is the only place the page template is mounted. All depth-aware rendering changes happen here.
 
 ### Planned changes (Nuxt module)
@@ -285,13 +335,17 @@ File: `src/runtime/resources/resource-utils.ts`.
 
 Add both fields to `PAGE` and `PAGE_DATA` entries. `fetchNestedResources()` will then follow the parent chain when fetching individual resources (admin/draft access, and as a safety net for manifest-loaded resources).
 
-**Step 3 — Store: depth-aware page IRI access**
+**Step 3 — Store: depth-aware page IRI access and display switching**
 
 File: `src/runtime/resources/resources.ts`.
 
-`pageIri` currently returns `ComputedRef<string | undefined>`. Add a way to access the IRI at a specific rendering depth. For the manifest path, depth maps directly to `resource_iris[depth]` group (the route/page IRI in that group). For the IRI-walk path (admin/draft, no manifest), depth is computed from the `parentPage`/`parentPageData` chain length.
+Two changes required:
 
-Design TBD in a separate discussion before implementing.
+1. **`pageIri` depth access** — currently returns `ComputedRef<string | undefined>`. Add a way to access the page IRI at a specific rendering depth. For the manifest path, depth maps directly to `resource_iris[depth]` group (the route/page IRI in that group). For the IRI-walk path (admin/draft, no manifest), depth is computed from the `parentPage`/`parentPageData` chain length.
+
+2. **`displayFetchStatus` early-switch** — currently checks the leaf page IRI against `currentIds`. For nested pages, must check the **depth-0 (root/parent)** page IRI instead. The depth-0 page IRI comes from `manifest.resources[0]` (available as soon as the manifest HTTP response arrives, before the batch fetch completes). If depth-0 is cached, switch display immediately — child data fills in progressively. This gives correct behaviour for first visits (depth-0 not cached → wait), return visits and same-page refreshes (depth-0 cached → switch immediately, stale data replaced as responses arrive), and sibling navigation (shared parent cached → parent frame renders immediately, child slot loads).
+
+Design for the depth-0 IRI lookup TBD before implementing.
 
 **Step 4 — Make `cwa-page.vue` depth-aware**
 
@@ -321,6 +375,7 @@ Generic picker in the page/pageData admin panel. The API already exposes both fi
 - **Route concatenation is recommended, not required** — `RouteGenerator` prefixes child paths for clean URLs; the rendering mechanism does not depend on URL structure.
 - **Hierarchy on AbstractPage, not Route** — must be settable before publication.
 - **Keepalive by depth group** — if the same IRIs appear at depth 0 across two navigations, the parent layer is preserved without re-render.
+- **Early-switch is depth-0 aware** — `displayFetchStatus` checks the depth-0 (root/parent) page IRI against `currentIds`, not the leaf. If cached, display switches immediately and stale data is replaced as fresh responses arrive. Covers first visits (wait), return visits and same-page refreshes (switch immediately), and sibling navigation (parent frame renders, child loads progressively).
 
 ---
 
