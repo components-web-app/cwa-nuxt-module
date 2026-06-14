@@ -209,7 +209,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ## Planned Feature: Nested Sub-Pages
 
-> **Status: API manifest layer complete and tested. Module implementation not yet started.**
+> **Status: API layer fully complete (including unified `/_/resource_manifest/{id}` endpoint for both public routes and admin/draft entity access). Module implementation not yet started.**
 > Companion plan: see `## Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
 
 ### What we want
@@ -225,9 +225,9 @@ Pages support sub-pages. A conference page renders a tab bar and a child-page sl
 
 **There is no `nested` boolean.** Having a parent means the page is nested inside it — the relationship itself is the signal.
 
-Both fields carry `#[Groups(['Route:manifest:read'])]`, as does the `route` back-reference on `AbstractPage`. `RouteNormalizer` walks the normalised structure and emits `resource_iris` as a **`string[][]`** grouped by depth: index 0 = root/shallowest resources, last index = the requested page's resources. The `parentPage`/`parentPageData` fields are the depth boundaries. All IRIs across all groups are fetched in parallel.
+Both fields carry `#[Groups(['Route:manifest:read'])]`, as does the `route` back-reference on `AbstractPage`. `ResourceManifestNormalizer` walks the normalised structure and emits `resource_iris` as a **`string[][]`** grouped by depth: index 0 = root/shallowest resources, last index = the requested page's resources. The `parentPage`/`parentPageData` fields are the depth boundaries. All IRIs across all groups are fetched in parallel.
 
-**Exact manifest response for a nested PageData route** (`GET /routes_manifest//conference/programme`):
+**Exact manifest response for a nested PageData route** (`GET /_/resource_manifest//conference/programme`):
 ```json
 {
   "resource_iris": [
@@ -251,7 +251,7 @@ Nested page rendering uses a single mechanism for all access contexts: `<CwaPage
 
 **For public routes:** `cwa-page.vue` reads the manifest's `resource_iris` depth groups. Index 0 = root page resources, last index = the requested page's resources. `<CwaPage />` renders the stack from root to leaf. Keepalive is managed by the component — if depth-0 resources are unchanged on navigation, the parent layer is preserved without re-render.
 
-**For admin/draft access:** A nested page in draft has no public Route. `cwa-page.vue` is accessed via the entity IRI directly. The module walks the `parentPage`/`parentPageData` chain from the fetched resource to build the same depth stack — no manifest, same rendering component.
+**For admin/draft access:** A nested page in draft has no public Route. `cwa-page.vue` is accessed via the entity IRI directly. `GET /_/resource_manifest/{uuid}` returns the same `resource_iris: string[][]` structure for any `Page` or `AbstractPageData` UUID, collapsing 4+ serial round trips into one parallel batch. The `parentPage`/`parentPageData` chain walk is a fallback only.
 
 There is no URL-segment-depth dependency. The URL can be anything; depth is always derived from data.
 
@@ -267,7 +267,7 @@ There are two independent mechanisms that control when the displayed page change
 return !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
 ```
 
-Blocks `resolvedSuccessFetchStatus` until the manifest has fully resolved (i.e. `finishManifestFetch` has been called). Checks `=== undefined` — type-agnostic, unaffected by `string[]` → `string[][]` change.
+Currently checks `resources === undefined` — type-agnostic gate that holds open until `finishManifestFetch` is called (which sets `resources`). **In Step 4 this will be replaced with a `fetchComplete` boolean** — the `resources` field will be renamed `irisByDepth` and set *before* the batch starts (when the manifest HTTP response arrives), so it can no longer double as a "batch complete" signal. The gate becomes `!manifest.fetchComplete`.
 
 **Gate 2 — `displayFetchStatus` early-switch (`resources.ts:74`)**
 
@@ -297,24 +297,24 @@ For a nested page at `/conference/programme`, `fetchStatus.path` = the child rou
 
 For sibling navigation (third case), the parent frame is already in the store but the current logic won't early-switch because it only checks the child IRI. The user sits waiting for all resources when the parent frame could have rendered immediately.
 
-**Required fix (Step 3):** `displayFetchStatus` must become depth-aware. When a manifest with multiple depth groups is present, check the **depth-0 (root/parent)** page IRI against `currentIds` instead of the leaf. If the root is cached, switch display immediately — child data loads progressively and replaces cached data when fetched. This collapses all three scenarios into correct behaviour:
+**Required fix (Step 5):** `displayFetchStatus` must become depth-aware. When a manifest with multiple depth groups is present, check the **depth-0 (root/parent)** page IRI against `currentIds` instead of the leaf. If the root is cached, switch display immediately — child data loads progressively and replaces cached data when fetched. This collapses all three scenarios into correct behaviour:
 
 - First visit: depth-0 not in `currentIds` → wait for Gate 1 (all resources loaded)
 - Return visit / same-page refresh: depth-0 in `currentIds` → switch immediately, refreshed data replaces stale data as it arrives
 - Sibling nav: depth-0 (shared parent) in `currentIds` → parent frame renders immediately, child slot fills progressively
 
-The depth-0 page IRI is not derivable from `fetchStatus.path` alone — it comes from `manifest.resources[0]` once the manifest response has arrived (before the batch fetch completes). Step 3 must ensure this is accessible.
+The depth-0 page IRI comes from `manifest.irisByDepth[0]` (available as soon as the manifest HTTP response arrives, before the batch fetch completes — set by the new early action in Step 4). For flat pages `irisByDepth` has one inner array; the logic is identical.
 
 ---
 
 ### What already exists in this module (relevant files)
 
-- **`src/runtime/api/fetcher/fetcher.ts`** — `fetchManifest()` reads `response._data?.resource_iris` as `string[]` and passes to `fetchBatch`. Must be updated for `string[][]`.
-- **`src/runtime/storage/stores/fetcher/state.ts`** — `FetchManifestInterface.resources?: string[]`. Must become `string[][]`.
-- **`src/runtime/storage/stores/fetcher/actions.ts`** — `finishManifestFetch` stores `event.resources` into `fetchStatus.manifest.resources`. Types follow from state change.
-- **`src/runtime/resources/resource-utils.ts`** — `resourceTypeToNestedResourceProperties`: `PAGE` entry has `['layout', 'componentGroups']`, `PAGE_DATA` has `['page']`. Neither includes `parentPage`/`parentPageData` yet.
-- **`src/runtime/resources/resources.ts`** — `pageIri` getter returns a single `ComputedRef<string | undefined>`. For nested pages this needs extending to return the IRI at a given depth. `displayFetchStatus` early-switch checks the leaf page IRI — must be updated to check depth-0 (see above).
-- **`src/runtime/templates/cwa-page.vue`** — renders `<ResourceLoader :iri="$cwa.resources.pageIri.value" component-prefix="CwaPage" />`. This is the only place the page template is mounted. All depth-aware rendering changes happen here.
+- **`src/runtime/api/fetcher/fetcher.ts`** — `fetchManifest()` flattens `resource_iris` depth groups for `fetchBatch`; passes full `string[][]` to `finishManifestFetch`. Step 1 complete. Step 4 will split this into two actions: set `irisByDepth` when response arrives, set `fetchComplete` when batch finishes.
+- **`src/runtime/storage/stores/fetcher/state.ts`** — `FetchManifestInterface.resources?: string[][]`. Step 4 will rename this to `irisByDepth` and add `fetchComplete?: true`.
+- **`src/runtime/storage/stores/fetcher/actions.ts`** — `finishManifestFetch` stores `event.resources` into `fetchStatus.manifest.resources`. Step 4 splits this: new `setManifestIrisByDepth` action (called pre-batch) + `finishManifestFetch` just sets `fetchComplete = true`.
+- **`src/runtime/resources/resource-utils.ts`** — `resourceTypeToAssociatedResourceProperties`: `PAGE` and `PAGE_DATA` include `parentPage`/`parentPageData`. Step 2 complete.
+- **`src/runtime/resources/resources.ts`** — `pageIri` getter returns a single `ComputedRef<string | undefined>`. `displayFetchStatus` early-switch checks the leaf page IRI — must be updated to check depth-0 via `manifest.irisByDepth[0]`. Step 3 covers both.
+- **`src/runtime/templates/cwa-page.vue`** — renders `<ResourceLoader :iri="$cwa.resources.pageIri.value" component-prefix="CwaPage" />`. Step 4 makes this depth-aware.
 
 ### Planned changes (Nuxt module)
 
@@ -339,51 +339,86 @@ Files changed: `resource-utils.ts`, `fetcher.ts`, `getters.ts`.
 - Exported `parentResourceProperties` constant from `resource-utils.ts`
 - In `getChildIris` (`getters.ts`), skip `parentResourceProperties` entries — parent pages are independent admin roots, not children of the child page
 
-**Step 3 — Store: depth-aware page IRI access and display switching**
+**Step 3 — API bundle: unified `/_/resource_manifest/{id}` endpoint** ✅ DONE *(API work, not Nuxt module)*
+
+`GET /_/resource_manifest/{id}` is now live. The `{id}` segment is matched with `requirements: ['id' => '(.+)']` to capture the full string including slashes.
+
+- **`{id}` starts with `/`** → resolved as a Route path (same as the previous `routes_manifest` endpoint)
+- **`{id}` is a UUID** → resolved as a `Page` or `AbstractPageData` entity (new; admin/draft access)
+- **Security**: delegates to `RouteVoter::READ_ROUTE` for routes; `AbstractRoutableVoter::READ_ROUTABLE` for page entities. Public pages are accessible without auth; draft/unpublished entities require admin.
+- **Response**: `{ "resource_iris": string[][] }` — same format in both cases
+
+The fetcher already uses `/_/resource_manifest/${route.path}` for public navigation. The next module-side task (Step 4+) is to call `/_/resource_manifest/${uuid}` for admin/draft access and wire `manifestPath` accordingly.
+
+**Step 4 — Fetch state: `irisByDepth` + `fetchComplete` + per-depth resolution tracking**
+
+Files: `state.ts`, `actions.ts`, `getter-utils.ts`, `fetcher.ts`.
+
+**State changes (`FetchManifestInterface`):**
+```ts
+interface FetchManifestInterface {
+  path: string
+  irisByDepth?: string[][]  // set when manifest HTTP response arrives — before batch starts
+  fetchComplete?: true       // set when batch completes — gates isFetchResolving
+  error?: CwaResourceErrorObject
+}
+```
+
+- `resources` renamed to `irisByDepth` — set by a new `setManifestIrisByDepth` action called immediately when the manifest HTTP response arrives, *before* `fetchBatch` is called
+- `fetchComplete` replaces the `resources === undefined` gate in `isFetchResolving` — the gate becomes `!manifest.fetchComplete`
+- `ManifestSuccessFetchEvent` drops `resources` payload; `finishManifestFetch` just sets `fetchComplete = true`
+- `fetcher.ts`: after `resources = response._data?.resource_iris || []`, immediately call `setManifestIrisByDepth({ token, irisByDepth: resources })`, then `fetchBatch`, then `finishManifestFetch`
+
+**Per-depth resolution** — computed reactively in `resources.ts` from `irisByDepth[n]` vs store state. No extra state field needed. A depth group is "resolved" when every IRI in `irisByDepth[n]` has a non-IN_PROGRESS status in the resources store (or was absent from the store and has since loaded). This drives the early-switch minimum-resources check.
+
+**Early-switch (`displayFetchStatus`)** — check `manifest.irisByDepth[0]` for the depth-0 page IRI (available as soon as the manifest response arrives, before the batch). If depth-0 IRI is in `currentIds` and status is SUCCESS, switch display immediately. Flat pages have `irisByDepth` with one inner array — logic is identical.
+
+**Step 5 — Depth-aware `pageIriAtDepth` and `displayFetchStatus` depth-0 check**
 
 File: `src/runtime/resources/resources.ts`.
 
-Two changes required:
+Two changes:
 
-1. **`pageIri` depth access** — currently returns `ComputedRef<string | undefined>`. Add a way to access the page IRI at a specific rendering depth. For the manifest path, depth maps directly to `resource_iris[depth]` group (the route/page IRI in that group). For the IRI-walk path (admin/draft, no manifest), depth is computed from the `parentPage`/`parentPageData` chain length.
+1. **`pageIriAtDepth(depth: number)`** — returns the page (template) IRI at the given rendering depth. For the manifest path: parse `irisByDepth[depth]` to find the first IRI whose type is `PAGE`. For the chain-walk path (admin, before manifest endpoint exists): walk the `parentPage`/`parentPageData` chain from the current resource, build a depth-indexed array of page IRIs. `pageIri` (existing) becomes `pageIriAtDepth(lastDepth)` for the leaf, with `pageIriAtDepth(0)` giving the root.
 
-2. **`displayFetchStatus` early-switch** — currently checks the leaf page IRI against `currentIds`. For nested pages, must check the **depth-0 (root/parent)** page IRI instead. The depth-0 page IRI comes from `manifest.resources[0]` (available as soon as the manifest HTTP response arrives, before the batch fetch completes). If depth-0 is cached, switch display immediately — child data fills in progressively. This gives correct behaviour for first visits (depth-0 not cached → wait), return visits and same-page refreshes (depth-0 cached → switch immediately, stale data replaced as responses arrive), and sibling navigation (shared parent cached → parent frame renders immediately, child slot loads).
+2. **`displayFetchStatus` early-switch** — replace the current leaf IRI check with a depth-0 IRI check. The depth-0 IRI comes from `manifest.irisByDepth?.[0]`. For sibling navigation (shared parent already cached) this allows the parent frame to render immediately while child resources load.
 
-Design for the depth-0 IRI lookup TBD before implementing.
-
-**Step 4 — Make `cwa-page.vue` depth-aware**
+**Step 6 — `cwa-page.vue` depth-aware rendering**
 
 File: `src/runtime/templates/cwa-page.vue`.
 
-Currently always renders `$cwa.resources.pageIri.value`. Must render the page at the correct depth. Consuming app page templates place a child-page slot component where child content appears. Design TBD alongside Step 3.
+Currently renders `<ResourceLoader :iri="$cwa.resources.pageIri.value" component-prefix="CwaPage" />`. Must iterate over available depths and render the page template at each depth. Consuming app page templates place a `<CwaChildPage />` component in their template where the next depth renders. Design TBD before implementing.
 
-**Step 5 — Keepalive**
+**Step 7 — Keepalive**
 
 When navigating between pages at the same nesting level (e.g. `/conference/programme` → `/conference/speakers`), depth-0 resources are unchanged — preserve the parent layer without re-render. Only re-render the changed depth level.
 
-**Step 6 — Admin UI: `parentPage`/`parentPageData` picker**
+**Step 8 — Admin UI: `parentPage`/`parentPageData` picker**
 
 Generic picker in the page/pageData admin panel. The API already exposes both fields on all `AbstractPage`-derived resources; the picker is pure module UI work.
 
-**Step 6b — Admin top bar: nested page context**
+**Step 8b — Admin top bar: nested page context**
 
-The top admin bar currently opens settings for the current page (route, page record, pageData). For nested pages, multiple page depths are loaded simultaneously. The top bar UI needs a design decision: does it show settings for the leaf page only, show a depth switcher, or show both parent and child pages as separate expandable sections? Routes for both depths may need to be manageable. This needs UI design before implementation — do not implement Step 6 without resolving this first.
+The top admin bar currently opens settings for the current page (route, page record, pageData). For nested pages, multiple page depths are loaded simultaneously. The top bar UI needs a design decision: does it show settings for the leaf page only, show a depth switcher, or show both parent and child pages as separate expandable sections? Routes for both depths may need to be manageable. This needs UI design before implementation — do not implement Step 8 without resolving this first.
 
-**Step 7 — Tests (Vitest)**
-- Manifest consumption: `resource_iris` `string[][]` is correctly parsed; all IRIs prefetched; depth groups stored
-- Fetcher: parent chain followed via `resourceTypeToNestedResourceProperties`
-- `resources.ts`: depth-indexed IRI access works for both manifest and IRI-walk paths
-- `cwa-page.vue`: correct resource rendered at each depth
+**Step 9 — Tests (Vitest)**
+- State/actions: `irisByDepth` set pre-batch; `fetchComplete` gates `isFetchResolving`; per-depth resolution computed correctly
+- Fetcher: `setManifestIrisByDepth` called before `fetchBatch`; `finishManifestFetch` sets `fetchComplete`
+- `resources.ts`: `pageIriAtDepth` works for manifest path and chain-walk path; `displayFetchStatus` uses depth-0 IRI for early-switch
+- `cwa-page.vue`: correct resource rendered at each depth; keepalive preserves depth-0 on sibling nav
 
 ### Design decisions
 
 - **No `$nested` boolean** — parent = nested, always. The presence of `$parentPage`/`$parentPageData` is the signal.
-- **Single rendering mechanism** — `<CwaPage />` (`cwa-page.vue`) handles all contexts. Depth comes from manifest `resource_iris` groups or from walking the `parentPage`/`parentPageData` chain. No URL-segment-depth dependency.
+- **Single rendering mechanism** — `<CwaPage />` (`cwa-page.vue`) handles all contexts. Depth comes from `manifest.irisByDepth` groups or from walking the `parentPage`/`parentPageData` chain. No URL-segment-depth dependency.
 - **`resource_iris` is `string[][]`** — index = rendering depth, root first. The module reads the array index directly; no client-side traversal needed to determine depth.
+- **Manifest required in both public and admin contexts** — without a manifest, fetching a page by IRI is 4+ serial round trips (page → groups → positions → components). The API bundle must expose a manifest endpoint for non-route entity access. The chain walk is a fallback, not the primary path.
+- **`irisByDepth` set before batch starts** — when the manifest HTTP response arrives, `irisByDepth` is stored immediately (before `fetchBatch`). This decouples "we know the depth structure" from "the batch has completed" and enables the depth-0 early-switch.
+- **`fetchComplete` replaces `resources === undefined` gate** — `isFetchResolving` checks `!manifest.fetchComplete` instead of `manifest.resources === undefined`. These are the same thing in the current code; the rename just makes the intent explicit and frees `irisByDepth` to be set earlier.
 - **Route concatenation is recommended, not required** — `RouteGenerator` prefixes child paths for clean URLs; the rendering mechanism does not depend on URL structure.
 - **Hierarchy on AbstractPage, not Route** — must be settable before publication.
 - **Keepalive by depth group** — if the same IRIs appear at depth 0 across two navigations, the parent layer is preserved without re-render.
-- **Early-switch is depth-0 aware** — `displayFetchStatus` checks the depth-0 (root/parent) page IRI against `currentIds`, not the leaf. If cached, display switches immediately and stale data is replaced as fresh responses arrive. Covers first visits (wait), return visits and same-page refreshes (switch immediately), and sibling navigation (parent frame renders, child loads progressively).
+- **Early-switch is depth-0 aware** — `displayFetchStatus` checks `manifest.irisByDepth?.[0]` for the root page IRI against `currentIds`, not the leaf. If cached, display switches immediately and stale data is replaced as fresh responses arrive. Covers first visits (wait), return visits and same-page refreshes (switch immediately), and sibling navigation (parent frame renders, child loads progressively).
 
 ---
 
