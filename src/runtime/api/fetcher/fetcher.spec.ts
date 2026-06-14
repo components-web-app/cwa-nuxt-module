@@ -88,7 +88,7 @@ describe('Fetcher -> fetchRoute', () => {
 
   test.each([
     {
-      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/routes_manifest//some-route',
+      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/resource_manifest//some-route',
     },
     {
       path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: undefined,
