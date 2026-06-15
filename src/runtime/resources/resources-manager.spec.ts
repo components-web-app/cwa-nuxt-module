@@ -461,7 +461,7 @@ describe('Resources manager', () => {
           }
         }
         if (iri === '/things/live') {
-          return { data: { '@id': '/things/live', componentPositions: [] } }
+          return { data: { '@id': '/things/live', 'componentPositions': [] } }
         }
       })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
@@ -486,7 +486,7 @@ describe('Resources manager', () => {
           }
         }
         if (iri === '/things/live') {
-          return { data: { '@id': '/things/live', componentPositions: [] } }
+          return { data: { '@id': '/things/live', 'componentPositions': [] } }
         }
       })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
@@ -877,7 +877,7 @@ describe('Resources manager', () => {
     test('POST response componentPositions are added to refreshEndpoints and fetchBatch is called', async () => {
       const mockFetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
       const { resourcesManager, cwaFetch } = createResourcesManager({ fetcher: mockFetcher })
-      const mockResource = { '@id': '/things/1', componentPositions: ['/positions/a', '/positions/b'] }
+      const mockResource = { '@id': '/things/1', 'componentPositions': ['/positions/a', '/positions/b'] }
       cwaFetch.fetch.mockResolvedValue(mockResource)
       vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {} })
@@ -890,7 +890,7 @@ describe('Resources manager', () => {
       const notFoundError = Object.assign(new Error('Not Found'), { statusCode: 404 })
       const mockFetcher = { fetchBatch: vi.fn().mockRejectedValue(notFoundError) }
       const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager({ fetcher: mockFetcher })
-      const mockResource = { '@id': '/things/1', componentPositions: ['/positions/a'] }
+      const mockResource = { '@id': '/things/1', 'componentPositions': ['/positions/a'] }
       cwaFetch.fetch.mockResolvedValue(mockResource)
       const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {} })
@@ -902,7 +902,7 @@ describe('Resources manager', () => {
       const serverError = Object.assign(new Error('Server Error'), { statusCode: 500 })
       const mockFetcher = { fetchBatch: vi.fn().mockRejectedValue(serverError) }
       const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager({ fetcher: mockFetcher })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/things/1', componentPositions: ['/positions/a'] })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/things/1', 'componentPositions': ['/positions/a'] })
       vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {} })
       expect(errorStoreActions.error).toHaveBeenCalledWith(
