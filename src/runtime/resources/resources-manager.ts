@@ -54,7 +54,7 @@ interface RequestOptions {
 export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
   private readonly fetchStatusManager: FetchStatusManager
-  private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, { event: ApiResourceEvent, args: [string, RequestOptions] }] } }>({})
+  private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
   private _requestCount?: ComputedRef<number>

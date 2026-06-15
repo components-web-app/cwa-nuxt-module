@@ -175,16 +175,20 @@ const { parentPages, loadParentPageOptions } = useParentPageLoader()
 
 const displayIri = ref(props.iri)
 
+function getResourceData(iri: string) {
+  return $cwa.resources.getResource(iri).value
+}
+
 const depthChain = computed(() => {
   const chain: SelectOption[] = []
   let iri: string | null | undefined = props.iri
   while (iri) {
-    const resource = $cwa.resources.getResource(iri).value
+    const res = getResourceData(iri)
     chain.unshift({
-      label: resource?.data?.reference || resource?.data?.title || iri,
+      label: res?.data?.reference || res?.data?.title || iri,
       value: iri,
     })
-    iri = resource?.data?.parentPage || resource?.data?.parentPageData || null
+    iri = res?.data?.parentPage || res?.data?.parentPageData || null
   }
   return chain
 })

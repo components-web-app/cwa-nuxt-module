@@ -162,6 +162,10 @@ import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList
 const $cwa = useCwa()
 const { parentPages, loadParentPageOptions } = useParentPageLoader()
 
+function getResourceData(iri: string) {
+  return $cwa.resources.getResource(iri).value
+}
+
 const parentPageOptions = computed<SelectOption[]>(() => {
   const options: SelectOption[] = [{ label: 'None', value: null }]
   for (const page of parentPages.value ?? []) {
@@ -182,12 +186,12 @@ const depthChain = computed(() => {
   const chain: SelectOption[] = []
   let iri: string | null | undefined = props.iri
   while (iri) {
-    const resource = $cwa.resources.getResource(iri).value
+    const res = getResourceData(iri)
     chain.unshift({
-      label: resource?.data?.title || resource?.data?.reference || iri,
+      label: res?.data?.title || res?.data?.reference || iri,
       value: iri,
     })
-    iri = resource?.data?.parentPage || resource?.data?.parentPageData || null
+    iri = res?.data?.parentPage || res?.data?.parentPageData || null
   }
   return chain
 })
