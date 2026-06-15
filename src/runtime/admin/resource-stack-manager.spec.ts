@@ -1,5 +1,8 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive, ref } from 'vue'
+import { consola as logger } from 'consola'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import { CwaResourceTypes } from '#cwa/resources/resource-utils'
 import ResourceStackManager from './resource-stack-manager'
 
 vi.mock('vue', async () => {
@@ -9,6 +12,9 @@ vi.mock('vue', async () => {
     watch: vi.fn(() => {}), // mod.watch(...args)
   }
 })
+
+vi.mock('vuejs-confirm-dialog', () => ({ createConfirmDialog: vi.fn() }))
+vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
 
 function createResourceManager(mockStore?: any) {
   const mockAdminStore = {
@@ -142,6 +148,20 @@ describe('Resource Manager', () => {
         expect(manager.resourceStack.value).toEqual([])
         expect(manager.currentClickTarget.value).toEqual(null)
       })
+
+      test('clears context stack when clearContextStack is true and does not touch currentResourceStack', () => {
+        const { manager } = createResourceManager()
+        const item = { iri: '/test', domElements: ref([]), childIris: ref([]) }
+        ;(manager as any).lastContextTarget.value = 'some-target'
+        ;(manager as any).contextResourceStack.value = [item]
+        ;(manager as any).currentResourceStack.value = [item]
+
+        manager.resetStack(true)
+
+        expect((manager as any).lastContextTarget.value).toBeNull()
+        expect((manager as any).contextResourceStack.value).toEqual([])
+        expect((manager as any).currentResourceStack.value).toEqual([item])
+      })
     })
 
     describe('addToStack', () => {
@@ -236,6 +256,17 @@ describe('Resource Manager', () => {
         expect(manager.showManager.value).toEqual(showManager)
         // expect(resetStackSpy).toHaveBeenCalledTimes(timesToCall)
       })
+
+      test('resets _isEditingLayout to false and calls resetStack(true) when isEditing becomes false', () => {
+        const { manager } = createResourceManager()
+        ;(manager as any)._isEditingLayout.value = true
+        const resetSpy = vi.spyOn(manager, 'resetStack')
+
+        manager.listenEditModeChange(false)
+
+        expect((manager as any)._isEditingLayout.value).toBe(false)
+        expect(resetSpy).toHaveBeenCalledWith(true)
+      })
     })
   })
 
@@ -287,6 +318,67 @@ describe('Resource Manager', () => {
       manager.showManager.value = false
       expect(manager.currentIri.value).toBeUndefined()
     })
+
+    test('isPopulating returns true when currentClickTarget is set', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).currentClickTarget.value = {}
+      expect(manager.isPopulating.value).toBe(true)
+    })
+
+    test('isContextPopulating returns true when lastContextTarget is set', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).lastContextTarget.value = {}
+      expect(manager.isContextPopulating.value).toBe(true)
+    })
+
+    test('contextStack returns contextResourceStack items when lastContextTarget is falsy', () => {
+      const { manager } = createResourceManager()
+      const item = { iri: '/test', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).contextResourceStack.value = [item]
+      expect(manager.contextStack.value).toEqual([item])
+    })
+
+    test('contextStack returns empty array when lastContextTarget is truthy regardless of contextResourceStack content', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).lastContextTarget.value = {}
+      ;(manager as any).contextResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
+      expect(manager.contextStack.value).toEqual([])
+    })
+  })
+
+  describe('currentIri - forcePublishedVersion', () => {
+    function createManagerWithPublishableFns() {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: false }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+          findPublishedComponentIri: vi.fn((iri: string) => `published:${iri}`),
+          findDraftComponentIri: vi.fn((iri: string) => `draft:${iri}`),
+        }),
+      }
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      manager.showManager.value = true
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([]), childIris: ref([]) }]
+      return manager
+    }
+
+    test('returns raw stackIri when forcePublishedVersion is undefined', () => {
+      const manager = createManagerWithPublishableFns()
+      expect(manager.currentIri.value).toBe('/component/1')
+    })
+
+    test('returns findPublishedComponentIri result when forcePublishedVersion is true', () => {
+      const manager = createManagerWithPublishableFns()
+      manager.forcePublishedVersion.value = true
+      expect(manager.currentIri.value).toBe('published:/component/1')
+    })
+
+    test('returns findDraftComponentIri result when forcePublishedVersion is false', () => {
+      const manager = createManagerWithPublishableFns()
+      manager.forcePublishedVersion.value = false
+      expect(manager.currentIri.value).toBe('draft:/component/1')
+    })
   })
 
   describe('getClosestStackItemByType', () => {
@@ -294,6 +386,23 @@ describe('Resource Manager', () => {
       const { manager } = createResourceManager()
       const result = manager.getClosestStackItemByType('/_/component_groups/' as any)
       expect(result).toBeUndefined()
+    })
+
+    test('returns the IRI when stack contains an item of the matching type', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).currentResourceStack.value = [
+        { iri: '/_/component_groups/grp1', domElements: ref([]), childIris: ref([]) },
+        { iri: '/_/pages/page1', domElements: ref([]), childIris: ref([]) },
+      ]
+      expect(manager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP)).toBe('/_/component_groups/grp1')
+    })
+
+    test('returns undefined when stack has items but none match the type', () => {
+      const { manager } = createResourceManager()
+      ;(manager as any).currentResourceStack.value = [
+        { iri: '/_/pages/page1', domElements: ref([]), childIris: ref([]) },
+      ]
+      expect(manager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP)).toBeUndefined()
     })
   })
 
@@ -509,6 +618,8 @@ describe('Resource Manager', () => {
   })
 
   describe('selectStackIndex', () => {
+    beforeEach(() => vi.clearAllMocks())
+
     function createEditingManager() {
       const mockAdminStore = {
         useStore: () => ({ state: reactive({ isEditing: true }) }),
@@ -521,6 +632,65 @@ describe('Resource Manager', () => {
       }
       return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
     }
+
+    test('returns early when not editing', async () => {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: false }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false) }),
+      }
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      const item = { iri: '/test', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [item]
+      manager.showManager.value = false
+      await manager.selectStackIndex(0, false)
+      expect(manager.showManager.value).toBe(false)
+    })
+
+    test('sets showManager false and returns when stack is empty', async () => {
+      const manager = createEditingManager()
+      ;(manager as any).currentResourceStack.value = []
+      manager.showManager.value = true
+      await manager.selectStackIndex(0, false)
+      expect(manager.showManager.value).toBe(false)
+    })
+
+    test('logs error and returns when index is negative', async () => {
+      const manager = createEditingManager()
+      ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation((() => {}) as any)
+      await manager.selectStackIndex(-1, false)
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('-1'))
+      expect(manager.showManager.value).toBe(false)
+    })
+
+    test('logs error and returns when index is out of range', async () => {
+      const manager = createEditingManager()
+      ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
+      const errorSpy = vi.spyOn(logger, 'error').mockImplementation((() => {}) as any)
+      await manager.selectStackIndex(5, false)
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('5'))
+      expect(manager.showManager.value).toBe(false)
+    })
+
+    test('when layout context differs and confirmed, updates _isEditingLayout and sets showManager true', async () => {
+      const manager = createEditingManager()
+      ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).isLayoutStack.value = true // differs from _isEditingLayout (false)
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal: vi.fn().mockResolvedValue({ isCanceled: false }) } as any)
+      await manager.selectStackIndex(0, false)
+      expect((manager as any)._isEditingLayout.value).toBe(true)
+      expect(manager.showManager.value).toBe(true)
+    })
+
+    test('when layout context differs and cancelled, restores isLayoutStack and does not proceed', async () => {
+      const manager = createEditingManager()
+      ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).isLayoutStack.value = true // differs from _isEditingLayout (false)
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal: vi.fn().mockResolvedValue({ isCanceled: true }) } as any)
+      await manager.selectStackIndex(0, false)
+      expect((manager as any).isLayoutStack.value).toBe(false) // reset to _isEditingLayout
+      expect(manager.showManager.value).toBe(false)
+    })
 
     test('calls resetStack(true) when fromContext is true', async () => {
       const manager = createEditingManager()

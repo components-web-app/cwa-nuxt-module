@@ -4,16 +4,10 @@ import { mount } from '@vue/test-utils'
 import CwaPage from './cwa-page.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-const defaultIri = '12345'
-
 describe('CWA page', () => {
-  function createWrapper(iri = defaultIri) {
+  function createWrapper() {
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-      resources: {
-        pageIri: {
-          value: iri,
-        },
-      },
+      resources: {},
       siteConfig: {
         config: {
           fallbackTitle: true,
@@ -26,26 +20,20 @@ describe('CWA page', () => {
     })
   }
 
-  test('should display ResourceLoader component IF pageIri is defined', () => {
+  test('should render CwaPage component', () => {
     const wrapper = createWrapper()
-    const child = wrapper.findComponent({ name: 'ResourceLoader' })
-    const { iri, componentPrefix } = child.props()
+    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(true)
+  })
 
-    expect(child).toBeDefined()
-    expect(iri).toEqual(defaultIri)
-    expect(componentPrefix).toEqual('CwaPage')
+  test('provides cwa-page-depth as 0', () => {
+    const wrapper = createWrapper()
+    // @ts-expect-error accessing internal provides
+    expect(wrapper.vm.$.provides['cwa-page-depth']).toBe(0)
   })
 
   describe('snapshots', () => {
-    test('should display ResourceLoader component IF pageIri is defined', () => {
+    test('renders CwaPage inside the page wrapper', () => {
       const wrapper = createWrapper()
-
-      expect(wrapper.element).toMatchSnapshot()
-    })
-
-    test('should NOT display ResourceLoader IF pageIri is NOT defined', () => {
-      const wrapper = createWrapper('')
-
       expect(wrapper.element).toMatchSnapshot()
     })
   })

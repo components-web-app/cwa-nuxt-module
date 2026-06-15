@@ -21,6 +21,16 @@
         </CwaLink>
       </div>
     </template>
+    <div
+      v-if="depthChain.length > 1"
+      class="cwa:mb-4"
+    >
+      <ModalSelect
+        v-model="displayIri"
+        label="Viewing"
+        :options="depthChain"
+      />
+    </div>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
@@ -31,6 +41,13 @@
             />
           </div>
           <div>
+            <ModalSelect
+              v-model="localResourceData.parentPage"
+              label="Parent Page"
+              :options="parentPageOptions"
+            />
+          </div>
+          <div v-if="!localResourceData.parentPage">
             <ModalSelect
               v-model="localResourceData.page"
               label="Dynamic Page"
@@ -126,8 +143,9 @@
 
 <script setup lang="ts">
 import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
-import { computed, onMounted, ref, toRef, watch, watchEffect } from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { navigateTo, useCwa } from '#imports'
+import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
@@ -142,6 +160,15 @@ import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/us
 import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
 
 const $cwa = useCwa()
+const { parentPages, loadParentPageOptions } = useParentPageLoader()
+
+const parentPageOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'None', value: null }]
+  for (const page of parentPages.value ?? []) {
+    options.push({ label: page.reference, value: page['@id'] })
+  }
+  return options
+})
 
 const emit = defineEmits<{
   close: []
@@ -149,7 +176,22 @@ const emit = defineEmits<{
 }>()
 const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType: string }>()
 
-const iriRef = toRef(props, 'iri')
+const displayIri = ref(props.iri)
+
+const depthChain = computed(() => {
+  const chain: SelectOption[] = []
+  let iri: string | null | undefined = props.iri
+  while (iri) {
+    const resource = $cwa.resources.getResource(iri).value
+    chain.unshift({
+      label: resource?.data?.title || resource?.data?.reference || iri,
+      value: iri,
+    })
+    iri = resource?.data?.parentPage || resource?.data?.parentPageData || null
+  }
+  return chain
+})
+
 const createEndpoint = ref('')
 const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource, getInternalResourceLink } = useItemPage({
   createEndpoint,
@@ -157,7 +199,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   resourceType: props.resourceType,
   defaultResource: {
   },
-  endpoint: iriRef,
+  endpoint: displayIri,
   routeHashAfterAdd: computed(() => ('#routes')),
 })
 
@@ -242,6 +284,7 @@ watchEffect(async () => {
 })
 
 onMounted(async () => {
+  loadParentPageOptions()
   await loadDynamicPageOptions()
   if (!dynamicPages.value?.length) {
     emit('close')

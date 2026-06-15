@@ -295,6 +295,102 @@ describe('Resources', () => {
 
       expect(resources.displayFetchStatus).toEqual(resourceStatus)
     })
+
+    test('should early-switch using depth-0 irisByDepth PAGE iri when it is in currentIds and SUCCESS', () => {
+      const mockPageIri = '/_/pages/parent-uuid'
+      const resourceStatus = {
+        specific: 'status',
+        manifest: { irisByDepth: [['/_/routes//conference', mockPageIri]] },
+      }
+
+      const mockResourcesStore = {
+        current: { currentIds: [mockPageIri] as string[], byId: {} },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: { success: 'mock' },
+        fetches: { abcd: resourceStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
+
+      vi.spyOn(resources, 'getResource').mockReturnValue({
+        value: {
+          data: { some: 'data' },
+          apiState: { status: CwaResourceApiStatuses.SUCCESS },
+        },
+      })
+
+      expect(resources.displayFetchStatus).toEqual(resourceStatus)
+    })
+
+    test('should return resolvedSuccessFetchStatus when irisByDepth depth-0 has no PAGE type IRI', () => {
+      const mockStatus = { success: 'mock' }
+      const fetchingStatus = {
+        manifest: { irisByDepth: [['/_/routes//conference']] },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: mockStatus,
+        fetches: { abcd: fetchingStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore)
+      expect(resources.displayFetchStatus).toEqual(mockStatus)
+    })
+  })
+
+  describe('pageIriAtDepth', () => {
+    test('returns the PAGE IRI from irisByDepth at the specified depth', () => {
+      const depth1PageIri = '/_/pages/child-uuid'
+      const fetchStatus = {
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/_/pages/parent-uuid'],
+            ['/_/routes//conference/speakers', depth1PageIri],
+          ],
+        },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageIriAtDepth(1).value).toEqual(depth1PageIri)
+    })
+
+    test('returns undefined when depth group has no PAGE type IRI', () => {
+      const fetchStatus = {
+        manifest: { irisByDepth: [['/_/routes//conference']] },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageIriAtDepth(0).value).toBeUndefined()
+    })
+
+    test('falls back to getPageIriByFetchStatus for depth 0 when no irisByDepth', () => {
+      const mockPageIri = 'some-page-iri'
+      const fetchStatus = { path: '/_/pages/1' }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      vi.spyOn(resources, 'getPageIriByFetchStatus').mockReturnValue(mockPageIri)
+      expect(resources.pageIriAtDepth(0).value).toEqual(mockPageIri)
+    })
+
+    test('returns undefined for depth > 0 when no irisByDepth', () => {
+      const fetchStatus = { path: '/_/pages/1' }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageIriAtDepth(1).value).toBeUndefined()
+    })
+
+    test('returns undefined when requested depth index does not exist in irisByDepth', () => {
+      const fetchStatus = {
+        manifest: { irisByDepth: [['/_/routes//conference', '/_/pages/parent-uuid']] },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageIriAtDepth(1).value).toBeUndefined()
+    })
   })
 
   describe('pageLoadResources', () => {

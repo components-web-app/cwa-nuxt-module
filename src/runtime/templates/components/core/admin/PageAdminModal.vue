@@ -21,6 +21,16 @@
         </NuxtLink>
       </div>
     </template>
+    <div
+      v-if="depthChain.length > 1"
+      class="cwa:mb-4"
+    >
+      <ModalSelect
+        v-model="displayIri"
+        label="Viewing"
+        :options="depthChain"
+      />
+    </div>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
@@ -43,7 +53,17 @@
               :options="layoutOptions"
             />
           </div>
-          <div class="cwa:flex cwa:gap-x-2">
+          <div>
+            <ModalSelect
+              v-model="localResourceData.parentPage"
+              label="Parent Page"
+              :options="parentPageOptions"
+            />
+          </div>
+          <div
+            v-if="!localResourceData.parentPage"
+            class="cwa:flex cwa:gap-x-2"
+          >
             <div class="cwa:grow">
               <ModalSelect
                 v-model="localResourceData.uiComponent"
@@ -128,13 +148,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
 import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import { useCwa } from '#imports'
@@ -150,6 +171,48 @@ const emit = defineEmits<{
 const props = defineProps<{ iri?: string, hideViewLink?: boolean }>()
 
 const $cwa = useCwa()
+const { parentPages, loadParentPageOptions } = useParentPageLoader()
+
+const displayIri = ref(props.iri)
+
+const depthChain = computed(() => {
+  const chain: SelectOption[] = []
+  let iri: string | null | undefined = props.iri
+  while (iri) {
+    const resource = $cwa.resources.getResource(iri).value
+    chain.unshift({
+      label: resource?.data?.reference || resource?.data?.title || iri,
+      value: iri,
+    })
+    iri = resource?.data?.parentPage || resource?.data?.parentPageData || null
+  }
+  return chain
+})
+
+function isDescendantOfCurrentPage(candidateIri: string): boolean {
+  const allPages = parentPages.value ?? []
+  const byId = Object.fromEntries(allPages.map(p => [p['@id'], p]))
+  const visited = new Set<string>()
+  let current: string | null | undefined = byId[candidateIri]?.parentPage
+  while (current) {
+    if (visited.has(current)) break
+    visited.add(current)
+    if (current === props.iri) return true
+    current = byId[current]?.parentPage
+  }
+  return false
+}
+
+const parentPageOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'None', value: null }]
+  for (const page of parentPages.value ?? []) {
+    if (page['@id'] !== props.iri && !isDescendantOfCurrentPage(page['@id'])) {
+      options.push({ label: page.reference, value: page['@id'] })
+    }
+  }
+  return options
+})
+
 const pageComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaPage'))
 })
@@ -216,7 +279,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
     isTemplate: false,
     uiComponent: pageComponentOptions.value[0]?.value,
   },
-  endpoint: toRef(props, 'iri'),
+  endpoint: displayIri,
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes')),
 })
 
@@ -273,5 +336,6 @@ watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolea
 
 onMounted(() => {
   loadLayoutOptions()
+  loadParentPageOptions()
 })
 </script>

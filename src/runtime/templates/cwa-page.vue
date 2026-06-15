@@ -3,27 +3,24 @@
     ref="cwaPage"
     class="cwa:page cwa:h-full"
   >
-    <ResourceLoader
-      v-if="$cwa.resources.pageIri.value"
-      :iri="$cwa.resources.pageIri.value"
-      component-prefix="CwaPage"
-    />
+    <CwaPage />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { UseHeadOptions } from '@unhead/vue'
 import { useElementSize } from '@vueuse/core'
-import { computed, useTemplateRef, watch } from 'vue'
+import { computed, provide, useTemplateRef, watch } from 'vue'
 import { withoutTrailingSlash } from 'ufo'
 import { titleCase } from 'scule'
-import ResourceLoader from './components/core/ResourceLoader.vue'
+import CwaPage from './components/main/CwaPage.vue'
 import { useCwa, useError, useHead, useRoute } from '#imports'
 
 // to prevent errors navigating between pages, a page should have a single root element
 // resource loader will be 1 at a time but can switch between 3 states
 
 const $cwa = useCwa()
+provide('cwa-page-depth', 0)
 
 const cwaPage = useTemplateRef('cwaPage')
 const { width, height } = useElementSize(cwaPage)

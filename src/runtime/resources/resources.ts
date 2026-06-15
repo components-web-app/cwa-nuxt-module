@@ -77,7 +77,10 @@ export class Resources {
     if (fetchingToken) {
       const fetchingStatus = this.fetcherStore.fetches[fetchingToken]
       if (fetchingStatus) {
-        const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
+        const irisByDepth = fetchingStatus.manifest?.irisByDepth
+        const pageIri = irisByDepth?.[0]
+          ? this.getPageIriFromDepthGroup(irisByDepth[0])
+          : this.getPageIriByFetchStatus(fetchingStatus)
         if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
           const pageResource = this.getResource(pageIri).value
           if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
@@ -196,6 +199,24 @@ export class Resources {
     }
     const pageResource = this.getResource(pageIri).value
     return pageResource?.data?.layout
+  }
+
+  private getPageIriFromDepthGroup(group: string[]): string | undefined {
+    return group.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
+  }
+
+  public pageIriAtDepth(depth: number): ComputedRef<string | undefined> {
+    return computed(() => {
+      const fetchStatus = this.displayFetchStatus
+      const irisByDepth = fetchStatus?.manifest?.irisByDepth
+      if (irisByDepth?.[depth]) {
+        return this.getPageIriFromDepthGroup(irisByDepth[depth])
+      }
+      if (depth === 0) {
+        return this.getPageIriByFetchStatus(fetchStatus)
+      }
+      return undefined
+    })
   }
 
   private getPageIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {

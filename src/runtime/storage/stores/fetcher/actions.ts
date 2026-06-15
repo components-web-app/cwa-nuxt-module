@@ -39,7 +39,11 @@ export enum FinishFetchManifestType {
 export interface ManifestSuccessFetchEvent {
   type: FinishFetchManifestType.SUCCESS
   token: string
-  resources: string[][]
+}
+
+export interface SetManifestIrisByDepthEvent {
+  token: string
+  irisByDepth: string[][]
 }
 
 export interface ManifestErrorFetchEvent {
@@ -54,6 +58,7 @@ interface AbortFetchEvent {
 
 export interface CwaFetcherActionsInterface {
   abortFetch(event: AbortFetchEvent): void
+  setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void
   finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
@@ -75,6 +80,13 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
     },
+    setManifestIrisByDepth(event: SetManifestIrisByDepthEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
+      if (!fetchStatus.manifest) {
+        throw new Error(`Cannot set manifest IRIs by depth for '${event.token}'. The manifest was never started.`)
+      }
+      fetchStatus.manifest.irisByDepth = event.irisByDepth
+    },
     finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus
       try {
@@ -88,7 +100,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         throw new Error(`Cannot set manifest status for '${event.token}'. The manifest was never started.`)
       }
       if (event.type === FinishFetchManifestType.SUCCESS) {
-        fetchStatus.manifest.resources = event.resources
+        fetchStatus.manifest.fetchComplete = true
       }
       if (event.type === FinishFetchManifestType.ERROR) {
         fetchStatus.manifest.error = event.error.asObject

@@ -91,10 +91,10 @@ describe('Fetcher -> fetchRoute', () => {
       path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/resource_manifest//some-route',
     },
     {
-      path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: undefined,
+      path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: '/_/resource_manifest/abcdefg',
     },
     {
-      path: '/_/pages/abcdefg', apiPath: '/_/pages/abcdefg', manifestPath: undefined,
+      path: '/_/pages/abcdefg', apiPath: '/_/pages/abcdefg', manifestPath: '/_/resource_manifest/abcdefg',
     },
   ])('If fetchRoute is called with the path $1', async ({ path, apiPath, manifestPath }) => {
     const result = await fetcher.fetchRoute({
@@ -467,8 +467,10 @@ describe('Fetcher -> fetchManifest', () => {
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({ irisByDepth: [['/resolve-resource']], token: 'any' })
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource'], token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth.mock.invocationCallOrder[0]).lessThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
   })
 
@@ -498,8 +500,11 @@ describe('Fetcher -> fetchManifest', () => {
     }
     await fetcher.fetchResource(fetchResourceEvent)
     await delay(2)
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({
+      irisByDepth: [['/manifest-resource-iri']],
+      token: 'any',
+    })
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
-      resources: [['/manifest-resource-iri']],
       token: 'any',
       type: FinishFetchManifestType.SUCCESS,
     })
@@ -529,8 +534,11 @@ describe('Fetcher -> fetchManifest', () => {
       paths: ['/routes/parent', '/pages/parent-template', '/routes/child', '/pages/child-template'],
       token: 'any',
     })
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({
+      irisByDepth: nestedIris,
+      token: 'any',
+    })
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
-      resources: nestedIris,
       token: 'any',
       type: FinishFetchManifestType.SUCCESS,
     })

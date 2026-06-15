@@ -93,10 +93,14 @@ export default class Fetcher {
 
       const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
 
+      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
-        const prefix = ResourceTypeFromIri.getPathPrefix() || ''
         iri = `${prefix}/_/routes/${route.path}`
         manifestPath = `${prefix}/_/resource_manifest/${route.path}`
+      }
+      else {
+        const id = iri.split('/').pop()
+        manifestPath = `${prefix}/_/resource_manifest/${id}`
       }
     }
 
@@ -199,6 +203,7 @@ export default class Fetcher {
       })
       const response = await result.response
       resources = response._data?.resource_iris || []
+      this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, irisByDepth: resources })
       const flatPaths = resources.flat()
       if (flatPaths.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
         // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
@@ -207,7 +212,6 @@ export default class Fetcher {
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
         token: event.token,
-        resources,
       })
     }
     catch (error: any) {

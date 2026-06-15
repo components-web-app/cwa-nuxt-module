@@ -96,15 +96,14 @@ export class ResourcesManager {
 
   public getWaitForRequestPromise(endpoint: string, property: string, source?: string) {
     const hasRequestConflict = () => {
-      if (!this.requestsInProgress.value) {
-        return false
-      }
-      for (const req of Object.values(this.requestsInProgress)) {
-        if (req.event.endpoint === endpoint) {
-          if ('data' in req.event) {
-            return req.event.data?.[property] && (!source || req.event.source !== source)
+      for (const sourceReqs of Object.values(this.requestsInProgress)) {
+        for (const req of Object.values(sourceReqs)) {
+          if (req.event.endpoint === endpoint) {
+            if ('data' in req.event) {
+              return req.event.data?.[property] && (!source || req.event.source !== source)
+            }
+            return true
           }
-          return true
         }
       }
       return false

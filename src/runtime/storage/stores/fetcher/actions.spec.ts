@@ -476,11 +476,10 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'non-existent',
-      resources: ['/any'],
     })
     expect(logger.trace).toHaveBeenCalledTimes(1)
     expect(logger.trace).toHaveBeenCalledWith('The fetch chain token \'non-existent\' does not exist')
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toBeUndefined()
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBeUndefined()
   })
 
   test('If a manifest has not been defined for the fetch chain an error is thrown', () => {
@@ -488,7 +487,6 @@ describe('Fetcher store action -> finishManifestFetch', () => {
       fetcherActions.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
         token: 'existing-token-no-manifest',
-        resources: ['/any'],
       })
     }).toThrowError('Cannot set manifest status for \'existing-token-no-manifest\'. The manifest was never started.')
   })
@@ -497,10 +495,32 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'existing-token-with-manifest',
-      resources: [['/any']],
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toStrictEqual([['/any']])
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBe(true)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth stores depth groups on the manifest', () => {
+    const irisByDepth = [['/parent-route', '/parent-page'], ['/child-route', '/child-page']]
+    fetcherActions.setManifestIrisByDepth({
+      token: 'existing-token-with-manifest',
+      irisByDepth,
+    })
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toStrictEqual(irisByDepth)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth throws if token does not exist', () => {
+    expect(() => {
+      fetcherActions.setManifestIrisByDepth({ token: 'non-existent', irisByDepth: [] })
+    }).toThrowError('The fetch chain token \'non-existent\' does not exist')
+  })
+
+  test('setManifestIrisByDepth throws if manifest was never started', () => {
+    expect(() => {
+      fetcherActions.setManifestIrisByDepth({ token: 'existing-token-no-manifest', irisByDepth: [] })
+    }).toThrowError('Cannot set manifest IRIs by depth for \'existing-token-no-manifest\'. The manifest was never started.')
   })
 
   test('Can set the error state on a manifest', () => {

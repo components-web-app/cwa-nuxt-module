@@ -1,5 +1,12 @@
 <template>
   <div>
+    <div
+      v-if="parentRoutePrefix"
+      data-route-prefix
+      class="cwa:text-sm cwa:text-stone-400 cwa:mb-4"
+    >
+      <span class="cwa:font-medium cwa:text-stone-300">Route prefix:</span> {{ parentRoutePrefix }}
+    </div>
     <div v-if="currentScreen === 'view'">
       <RoutesTabView
         :resource="resource"
@@ -79,6 +86,16 @@ const emit = defineEmits<{
 
 const $cwa = useCwa()
 const route = useRoute()
+
+const parentIri = computed(() => props.pageResource.parentPage || props.pageResource.parentPageData)
+const parentResource = computed(() => parentIri.value ? $cwa.resources.getResource(parentIri.value).value : null)
+const parentRoutePrefix = computed(() => {
+  const routeIri = parentResource.value?.data?.route
+  if (!routeIri) {
+    return null
+  }
+  return routeIri.replace(/^\/_\/routes\//, '')
+})
 
 const routeIriFromPage = computed(() => (props.pageResource.route))
 const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')

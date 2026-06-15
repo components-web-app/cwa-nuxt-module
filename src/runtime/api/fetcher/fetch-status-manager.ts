@@ -9,6 +9,7 @@ import type {
   AddFetchResourceEvent,
   FinishFetchEvent, ManifestErrorFetchEvent,
   ManifestSuccessFetchEvent,
+  SetManifestIrisByDepthEvent,
   StartFetchEvent, StartFetchResponse,
 } from '../../storage/stores/fetcher/actions'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
@@ -251,6 +252,10 @@ export default class FetchStatusManager {
     })
     await fetchChainCompletePromise
     stopWatch()
+  }
+
+  public setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void {
+    this.fetcherStore.setManifestIrisByDepth(event)
   }
 
   public finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void {
