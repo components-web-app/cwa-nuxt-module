@@ -1,8 +1,10 @@
-import { createApp, onBeforeUnmount, onMounted, resolveComponent, watch } from 'vue'
+import { createApp, onBeforeUnmount, onMounted, watch } from 'vue'
 import type { Ref, WatchStopHandle, App } from 'vue'
+import { useRouter } from 'vue-router'
 import { CwaLink } from '#components'
 
 export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
+  const router = useRouter()
   let watchStopHandle: undefined | WatchStopHandle
 
   function convertAnchor(anchor: HTMLElement): App<Element> | undefined {
@@ -41,15 +43,9 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
         }
       }
     }
-    const rlComponent = resolveComponent('RouterLink')
-    if (typeof rlComponent === 'string') {
-      return
-    }
 
-    const app = createApp(CwaLink, {
-      ...props,
-    })
-    app.component('RouterLink', rlComponent)
+    const app = createApp(CwaLink, { ...props })
+    app.use(router)
     return app
   }
 
