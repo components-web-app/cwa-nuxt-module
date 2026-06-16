@@ -742,6 +742,108 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
   })
 })
 
+describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDepthForIri / getPathForDepth / registerIriDepth)', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+    fetchStatusManager._fetcherStore = { setManifestIrisByDepth: vi.fn() }
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('getDepthForIri returns undefined before any manifest is set', () => {
+    expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1')).toBeUndefined()
+  })
+
+  test('getPathForDepth returns undefined before any manifest is set', () => {
+    expect(fetchStatusManager.getPathForDepth(0)).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth maps every IRI in each depth group to its depth index', () => {
+    fetchStatusManager.setManifestIrisByDepth({
+      token: 'token',
+      irisByDepth: [
+        ['/_/routes//topic-1', '/_/pages/parent-template', '/_/component_positions/parent-cp'],
+        ['/_/routes//topic-1/chapter-one', '/_/pages/child-template', '/_/component_positions/child-cp'],
+      ],
+    })
+    expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1')).toBe(0)
+    expect(fetchStatusManager.getDepthForIri('/_/pages/parent-template')).toBe(0)
+    expect(fetchStatusManager.getDepthForIri('/_/component_positions/parent-cp')).toBe(0)
+    expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1/chapter-one')).toBe(1)
+    expect(fetchStatusManager.getDepthForIri('/_/pages/child-template')).toBe(1)
+    expect(fetchStatusManager.getDepthForIri('/_/component_positions/child-cp')).toBe(1)
+    expect(fetchStatusManager.getDepthForIri('/unknown')).toBeUndefined()
+  })
+
+  test('getPathForDepth returns the path derived from the ROUTE IRI in each depth group', () => {
+    fetchStatusManager.setManifestIrisByDepth({
+      token: 'token',
+      irisByDepth: [
+        ['/_/pages/parent-template', '/_/routes//topic-1'],
+        ['/_/routes//topic-1/chapter-one', '/_/pages/child-template'],
+      ],
+    })
+    expect(fetchStatusManager.getPathForDepth(0)).toBe('/topic-1')
+    expect(fetchStatusManager.getPathForDepth(1)).toBe('/topic-1/chapter-one')
+    expect(fetchStatusManager.getPathForDepth(2)).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth replaces previous depth tracking data', () => {
+    fetchStatusManager.setManifestIrisByDepth({
+      token: 'token',
+      irisByDepth: [['/_/routes//old', '/_/pages/old-page']],
+    })
+    fetchStatusManager.setManifestIrisByDepth({
+      token: 'token',
+      irisByDepth: [['/_/routes//new', '/_/pages/new-page']],
+    })
+    expect(fetchStatusManager.getDepthForIri('/_/pages/old-page')).toBeUndefined()
+    expect(fetchStatusManager.getDepthForIri('/_/pages/new-page')).toBe(0)
+    expect(fetchStatusManager.getPathForDepth(0)).toBe('/new')
+  })
+
+  test('registerIriDepth adds an IRI to the depth map', () => {
+    fetchStatusManager.registerIriDepth('/component/some-uuid', 0)
+    expect(fetchStatusManager.getDepthForIri('/component/some-uuid')).toBe(0)
+  })
+
+  test('startFetch with isPrimary clears depth tracking', () => {
+    fetchStatusManager._fetcherStore = {
+      setManifestIrisByDepth: vi.fn(),
+      startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
+    }
+    fetchStatusManager.setManifestIrisByDepth({
+      token: 'token',
+      irisByDepth: [['/_/routes//topic-1', '/_/pages/parent']],
+    })
+    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
+
+    fetchStatusManager.startFetch({ path: '/new', isPrimary: true })
+
+    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBeUndefined()
+    expect(fetchStatusManager.getPathForDepth(0)).toBeUndefined()
+  })
+
+  test('startFetch without isPrimary preserves depth tracking', () => {
+    fetchStatusManager._fetcherStore = {
+      setManifestIrisByDepth: vi.fn(),
+      startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
+    }
+    fetchStatusManager.setManifestIrisByDepth({
+      token: 'token',
+      irisByDepth: [['/_/routes//topic-1', '/_/pages/parent']],
+    })
+    fetchStatusManager.startFetch({ path: '/new', isPrimary: false })
+
+    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
+    expect(fetchStatusManager.getPathForDepth(0)).toBe('/topic-1')
+  })
+})
+
 describe('FetchStatusManager -> isCurrentSuccessResourcesResolved', () => {
   let fetchStatusManager: FetchStatusManager
 

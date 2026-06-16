@@ -15,7 +15,7 @@ import type {
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type { CwaResourceError } from '../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import { isCwaResource } from '../../resources/resource-utils'
+import { isCwaResource, ResourceTypeFromIri } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
@@ -52,6 +52,9 @@ export default class FetchStatusManager {
   private readonly apiDocumentation: ApiDocumentation
   private readonly _fetcherStore: CwaFetcherStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
+
+  private _iriToDepth = new Map<string, number>()
+  private _depthPaths = new Map<number, string>()
 
   constructor(
     fetcherStoreDefinition: FetcherStore,
@@ -94,6 +97,10 @@ export default class FetchStatusManager {
   }
 
   public startFetch(event: _StartFetchEvent): StartFetchResponse {
+    if (event.isPrimary) {
+      this._iriToDepth = new Map()
+      this._depthPaths = new Map()
+    }
     const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
       this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
@@ -255,7 +262,31 @@ export default class FetchStatusManager {
   }
 
   public setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void {
+    this._iriToDepth = new Map()
+    this._depthPaths = new Map()
+    const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+    const routePathPrefix = `${prefix}/_/routes/`
+    for (let depth = 0; depth < event.irisByDepth.length; depth++) {
+      for (const iri of event.irisByDepth[depth]) {
+        this._iriToDepth.set(iri, depth)
+        if (!this._depthPaths.has(depth) && iri.startsWith(routePathPrefix)) {
+          this._depthPaths.set(depth, iri.substring(routePathPrefix.length))
+        }
+      }
+    }
     this.fetcherStore.setManifestIrisByDepth(event)
+  }
+
+  public getDepthForIri(iri: string): number | undefined {
+    return this._iriToDepth.get(iri)
+  }
+
+  public getPathForDepth(depth: number): string | undefined {
+    return this._depthPaths.get(depth)
+  }
+
+  public registerIriDepth(iri: string, depth: number): void {
+    this._iriToDepth.set(iri, depth)
   }
 
   public finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void {

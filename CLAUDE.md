@@ -281,7 +281,7 @@ Alternatively, identify by resource type:
 
 **~~Bug: `pageIriAtDepth` surfaces only the Page template, not the PageData~~ — FIXED**
 
-`pageDataIriAtDepth(depth)` added to `resources.ts` (parallel to `pageIriAtDepth`). `CwaPage.vue` now provides `'cwa-page-data-iri'` as a `ComputedRef<string | undefined>` at each depth. Template authors inject it and use it as the `CwaComponentGroup` location so each PageData instance has its own content components. Returns `undefined` for Page-backed depths (no PageData in the depth group).
+`pageDataIriAtDepth(depth)` added to `resources.ts` (parallel to `pageIriAtDepth`). `CwaPage.vue` now provides `'cwa-page-data-iri'` as a `ComputedRef<string | undefined>` at each depth. Template authors inject it to read PageData fields directly (title, dates, etc.) via `useCwaResource(pageDataIri)`. Returns `undefined` for Page-backed depths (no PageData in the depth group).
 
 ### Component data: how the API populates positions
 
@@ -504,7 +504,8 @@ Things to investigate in the playground (which runs from live source — run `pn
 3. Whether there is a z-index, `pointer-events: none`, or modal overlay that swallows the click before it reaches the button
 4. Whether the compiled Tailwind (`src/runtime/templates/assets/cwa.css`) includes the `cwa:cursor-pointer` and flex classes used by `ModalRadioTabs` — if not, run `pnpm run tailwind:main` and rebuild
 
-The playground is already in sync with the `components-web-app` (same `NestedTopicTemplate`/`NestedSubPageTemplate` Vue files, same `nuxt.config.ts` page/pageData registrations, fixtures loaded in the shared Docker API at `https://localhost/_api`). Use the playground to reproduce and fix before publishing.
+**Playground out of sync — pending update:**
+`playground/app/cwa/pages/NestedTopicTemplate.vue` and `playground/app/cwa/pages/NestedSubPageTemplate.vue` currently inject `'cwa-page-data-iri'` and compute `location` from it. This was incorrect for the demo. Both files should use `props.iri` directly as the `CwaComponentGroup` location (the template page IRI), with no `pageDataIri` inject. The `pageDataProperty='introContent'` position on the shared template page handles per-instance content (see "Per-instance component content" note below). Fixtures run in the shared Docker API at `https://localhost/_api` — `nuxt.config.ts` page/pageData registrations are already correct.
 
 ---
 
@@ -522,20 +523,42 @@ This is the primary use case driving the nested sub-pages feature and the bugs b
 
 **What the template needs (now implemented):**
 
-`EventTemplate.vue` receives `props.iri` = the Page template IRI and injects `'cwa-page-data-iri'` to get the `EventData` IRI:
-1. Read event title, dates, etc. via `useCwaResource(pageDataIri)`
-2. Use `pageDataIri?.value ?? props.iri` as the `location` for `<CwaComponentGroup>` so each event instance has its own content components
-
-`CwaPage.vue` provides `'cwa-page-data-iri'` (a `ComputedRef<string | undefined>`) at each depth. Template pattern:
+`EventTemplate.vue` receives `props.iri` = the Page template IRI. `CwaPage.vue` provides `'cwa-page-data-iri'` (a `ComputedRef<string | undefined>`) at each depth. Template pattern for reading PageData fields:
 
 ```ts
 const pageDataIri = inject<ComputedRef<string | undefined>>('cwa-page-data-iri')
-const location = computed(() => pageDataIri?.value ?? props.iri)
+// Read event-specific fields (title, dates, etc.) directly from the PageData entity
+const { resource } = useCwaResource(pageDataIri)
 ```
 
-**Note for fixture maintainers (components-web-app):** Component group content should be stored under the PageData IRI location (the new inject), not the page template IRI. See `components-web-app/CLAUDE.md` for details.
+**Per-instance component content uses `pageDataProperty` positions — NOT the PageData IRI as a ComponentGroup location.** The Page template has a `ComponentPosition` with `pageDataProperty = 'heroImage'` (or similar). The API's `ComponentPositionNormalizer` resolves that to the actual component IRI from the current PageData entity's property. The template's `<CwaComponentGroup>` always uses `location = props.iri` (the shared Page template IRI) — the component group is attached to the template, and positions within it resolve per-instance content dynamically.
+
+**Note for fixture maintainers (components-web-app):** See `components-web-app/CLAUDE.md` for the correct fixture setup: `pageDataProperty` positions must be added to the Page template's component group; per-instance component IRIs are stored as properties on each PageData entity.
 
 ---
+
+**Known bug: `path` header is leaf-only — parent `pageDataProperty` positions fail when a child page is active**
+
+`createRequestHeaders` in `fetcher.ts` sets `requestHeaders.path` from `fetchStatusManager.primaryFetchPath` — a single value applied to every request in the manifest batch. `ComponentPositionNormalizer` on the API uses this header via `PageDataProvider::getPageData()` → `routeRepository->findOneByIdOrPath(path)` → `route->getPageData()` to resolve `pageDataProperty` positions.
+
+**The problem:** when navigating to a nested child page (e.g. `/topic-1/chapter-one`), `primaryFetchPath` is the leaf URL. The route at that path resolves to a static `Page` (no PageData), so `getPageData()` returns `null`. All `pageDataProperty` positions in the parent template's component group (depth 0) silently return `component: null` — parent intro content is invisible.
+
+**Current symptom (confirmed via `components-web-app` demo):** `/topic-1/chapter-one` renders the parent `NestedTopicTemplate` with an empty primary slot where the intro content should appear.
+
+**Fix required:** The fetcher must send a depth-appropriate `path` header for each request rather than the global leaf path. The manifest already carries this information — each depth group (`resource_iris[depth]`) contains a route IRI from which the path can be derived:
+
+```
+depth 0 → route IRI /_/routes//topic-1 → path header "/topic-1"
+depth 1 → route IRI /_/routes//topic-1/chapter-one → path header "/topic-1/chapter-one"
+```
+
+**Design sketch for the fix:**
+
+1. After the manifest is parsed, build a `depthToPath: Map<number, string>` by extracting the ROUTE IRI from each `irisByDepth[depth]` array (the IRI matching `CwaResourceTypes.ROUTE`) and stripping the `/_/routes/` prefix to get the plain path.
+2. In `createRequestHeaders(event)`, look up which depth the requested IRI belongs to (requires a `iriToDepth: Map<string, number>` index populated when the manifest arrives).
+3. Use `depthToPath.get(depth)` as `requestHeaders.path` instead of `primaryFetchPath` when the depth is known; fall back to `primaryFetchPath` for resources not in the manifest (e.g. follow-up fetches for `pageDataProperty` component IRIs, which are at a known depth anyway).
+
+Note: resources fetched as `fetchAssociatedResources` follow-ups (componentGroups → componentPositions → component) inherit the depth of the parent resource they were discovered from, so the `iriToDepth` map should propagate depth downward through the associated-resource chain as each IRI is queued.
 
 **~~Known bug: layout component groups (nav links) not rendered for unauthenticated users~~ — FIXED**
 
@@ -649,3 +672,32 @@ public refreshFocusForIri(iri: string, domElements: Ref<HTMLElement[]>) {
 ```
 
 This ensures: when `componentMounted` fires (triggering `emitRedraw()` → canvas draw), `ComponentFocus` has already been recreated with the correct, populated ref. Both ordering and stale-ref problems are resolved in one change.
+
+---
+
+## Fixed: Same-origin absolute URLs treated as external in useHtmlContent
+
+**File:** `src/runtime/composables/component/html-content.ts`
+
+`hrefToUrl()` used `new URL(href)` which succeeds for any valid absolute URL (including `https://localhost:3002/some/path`). These were returned unchanged, and `CwaLink` saw them as external links (different from a bare path string), opening them in a new tab.
+
+**Fix:** After a successful `new URL(href)`, check `url.hostname === window.location.hostname`. If same hostname, return `url.pathname + url.search + url.hash` so the router treats it as an internal path. Hostname-only (not full origin) comparison handles dev environments where links may be stored without the port (e.g. `https://localhost/page` vs `https://localhost:3002/page`) — the protocol and port may differ but the destination is still the same app. SSR guard: the check is gated on `typeof window !== 'undefined'`; on the server, absolute URLs pass through unchanged (no `window` available).
+
+---
+
+## Known Bug: TipTap bubble/floating menu obscured by CWA overlay
+
+**File:** `playground/app/components/TipTapHtmlEditor.vue`
+
+TipTap v3 (`@tiptap/vue-3` ≥ 3.x) replaced Tippy.js with `@floating-ui/dom`. The `tippyOptions` prop on `<bubble-menu>` and `<floating-menu>` **no longer exists** — it is silently ignored. Setting `zIndex` via `tippyOptions` has no effect.
+
+The `BubbleMenu` component renders `h("div", { ref: root, ...attrs }, slots.default)`. The `BubbleMenuView` removes that element from its initial location and re-appends it via `appendTo` (defaulting to `this.view.dom.parentElement`). The element is appended inside the TipTap editor's DOM tree, which is inside a stacking context below the CWA overlay (`--cwa-z-index-overlay: 750`).
+
+**Things tried and failed:**
+- `tippyOptions` — prop doesn't exist in v3; silently ignored
+- `appendTo: () => document.body` — breaks menu visibility entirely; floating-ui's `position: absolute` coordinate calculation diverges from the viewport-relative `getBoundingClientRect()` rect when the element's offset parent changes to `<body>`
+- `strategy: 'fixed'` in `:options` + `style="z-index: 760"` — bubble menu does not appear when text is highlighted
+
+**What's known:** `attrs` (including `style` and `class`) do fall through to the root div via `...attrs` in TipTap's render function. The `BubbleMenuView.show()` appends the element via `appendTo`; `BubbleMenuView.updatePosition()` calls `computePosition` async then applies `position`, `left`, `top`. The `getShouldShow` default uses `view.hasFocus()` to gate visibility.
+
+**Next investigation needed:** Determine exactly why the bubble menu is not appearing at all. Check whether `getShouldShow` is returning false (focus detection issue), whether `updatePosition` is applying incorrect coordinates, or whether there is a different stacking context issue specific to the CWA admin context.

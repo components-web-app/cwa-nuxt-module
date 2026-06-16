@@ -694,6 +694,26 @@ describe('Fetcher -> createRequestHeaders', () => {
       await fetcher.fetchResource(fetchResourceEvent)
       expect(fetcher.createRequestHeaders).toReturnWith(headers)
     })
+
+  test('uses depth-aware path when IRI has a known depth and that depth has a path', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockImplementation((iri: string) => iri === '/some-path' ? 0 : undefined)
+    FetchStatusManager.mock.instances[0].getPathForDepth.mockImplementation((depth: number) => depth === 0 ? '/parent-route-path' : undefined)
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/parent-route-path', preload: undefined })
+  })
+
+  test('falls back to primaryFetchPath when getDepthForIri returns undefined', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/primary-fetch-path', preload: undefined })
+  })
+
+  test('falls back to primaryFetchPath when getPathForDepth returns undefined for a known depth', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(0)
+    FetchStatusManager.mock.instances[0].getPathForDepth.mockReturnValue(undefined)
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/primary-fetch-path', preload: undefined })
+  })
 })
 
 describe('Fetcher -> fetchAssociatedResources', () => {
@@ -850,6 +870,34 @@ describe('Fetcher -> fetchAssociatedResources', () => {
       paths: ['/_/pages/child-page', '/page_data/parent'],
       token: 'any',
     })
+  })
+
+  test('registers depth of parent resource on each discovered nested IRI when parent depth is known', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockImplementation((iri: string) => iri === '/_/pages/page-id' ? 0 : undefined)
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'layout': '/_/layouts/layout-resource',
+      'componentGroups': ['/_/component_groups/cg-1'],
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/_/pages/page-id', token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].registerIriDepth).toHaveBeenCalledWith('/_/layouts/layout-resource', 0)
+    expect(FetchStatusManager.mock.instances[0].registerIriDepth).toHaveBeenCalledWith('/_/component_groups/cg-1', 0)
+  })
+
+  test('does not call registerIriDepth when parent resource has no known depth', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'layout': '/_/layouts/layout-resource',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/_/pages/page-id', token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].registerIriDepth).not.toHaveBeenCalled()
   })
 
   test('does not fetch parentPage when field is absent on a PAGE resource', async () => {

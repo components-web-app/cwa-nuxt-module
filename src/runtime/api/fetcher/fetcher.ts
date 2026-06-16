@@ -258,6 +258,13 @@ export default class Fetcher {
       }
     }
 
+    const parentDepth = this.fetchStatusManager.getDepthForIri(iri)
+    if (parentDepth !== undefined) {
+      for (const nestedIri of nestedIris) {
+        this.fetchStatusManager.registerIriDepth(nestedIri, parentDepth)
+      }
+    }
+
     return this.fetchBatch({ paths: nestedIris, token, noSave })
   }
 
@@ -327,15 +334,25 @@ export default class Fetcher {
     }
     const requestHeaders: Record<string, string> = {}
     if (this.fetchStatusManager.primaryFetchPath) {
-      // todo: test we replace the /_/routes prefix
       const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       const routePathPrefix = `${prefix}/_/routes/`
-      const primaryFetchPath = this.fetchStatusManager.primaryFetchPath
-      if (primaryFetchPath.indexOf(routePathPrefix) === 0) {
-        requestHeaders.path = primaryFetchPath.substring(routePathPrefix.length)
+
+      const iri = event.path.split('?')[0]
+      const depth = this.fetchStatusManager.getDepthForIri(iri)
+      const depthPath = depth !== undefined ? this.fetchStatusManager.getPathForDepth(depth) : undefined
+
+      if (depthPath !== undefined) {
+        requestHeaders.path = depthPath
       }
       else {
-        requestHeaders.path = primaryFetchPath
+        // todo: test we replace the /_/routes prefix
+        const primaryFetchPath = this.fetchStatusManager.primaryFetchPath
+        if (primaryFetchPath.indexOf(routePathPrefix) === 0) {
+          requestHeaders.path = primaryFetchPath.substring(routePathPrefix.length)
+        }
+        else {
+          requestHeaders.path = primaryFetchPath
+        }
       }
     }
     if (preload) {
