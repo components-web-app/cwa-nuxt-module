@@ -212,7 +212,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ## Planned Feature: Nested Sub-Pages
 
-> **Status: Steps 1–7 complete. `<CwaPage />` component live with KeepAlive per-IRI caching. Next: Step 8 — Admin UI (needs design discussion first — see Step 8b).**
+> **Status: Steps 1–8 complete plus two post-Step-8 bug fixes (layout nav + pageDataIriAtDepth). Next: Step 9 — Tests.**
 > Companion plan: see `## Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
 
 ### What we want
@@ -243,6 +243,73 @@ Both fields carry `#[Groups(['Route:manifest:read'])]`, as does the `route` back
 For a flat (non-nested) page, `resource_iris` always has one inner array: `[["/_/routes//my-route", ...]]`.
 
 `parentPage` and `parentPageData` are also exposed on every individual resource GET response (not just the manifest), so the admin/draft path can walk the chain IRI-by-IRI without a manifest.
+
+### Manifest depth group anatomy
+
+Each inner array (`resource_iris[depth]`) is a flat list of all IRIs that belong to that rendering depth. A real group with a page template and one component group looks like:
+
+```
+[
+  "/_/routes//conference",           ← ROUTE
+  "/_/page_data/xxx/parent-uuid",    ← PAGE_DATA (content entity — title, custom fields)
+  "/_/pages/conference-template-uuid", ← PAGE (template — uiComponent, layout IRI, componentGroup IRIs)
+  "/_/component_groups/cg-uuid",     ← COMPONENT_GROUP
+  "/_/component_positions/pos-uuid"  ← COMPONENT_POSITION (sortValue, resolved component IRI or null)
+]
+```
+
+**What each IRI type carries when fetched:**
+
+| IRI prefix | Entity | Key fields returned |
+|---|---|---|
+| `/_/routes/` | Route | `page` IRI OR `pageData` IRI (one of, not both) |
+| `/_/page_data/` | PageData | All content fields (title, custom fields etc.) + `page` template IRI |
+| `/_/pages/` | Page | `uiComponent`, `layout` IRI, `componentGroups` array of IRIs |
+| `/_/component_groups/` | ComponentGroup | `componentPositions` (embedded objects with `component` IRI + `sortValue`) |
+| `/_/component_positions/` | ComponentPosition | `component` IRI (resolved, see below), `sortValue` |
+
+**How to identify the Page template vs the PageData in a depth group:**
+
+The Route entity is the authoritative link. When you fetch the Route IRI from a depth group, the response includes either `page: "/_/pages/..."` (for Page-based routes) or `pageData: "/_/page_data/..."` (for PageData-based routes). This is how the module should determine the content entity for each depth:
+
+- `route.page` is non-null → this is a Page-based depth; the Page entity is both the template and the content
+- `route.pageData` is non-null → this is a PageData-based depth; the PageData entity is the content; the Page template IRI comes from `pageData.page`
+
+Alternatively, identify by resource type:
+- First IRI in the group matching `PAGE_DATA` resource type (`/page_data/` prefix) → content entity
+- First IRI in the group matching `PAGE` resource type (`/_/pages/` prefix) → rendering template
+
+**~~Bug: `pageIriAtDepth` surfaces only the Page template, not the PageData~~ — FIXED**
+
+`pageDataIriAtDepth(depth)` added to `resources.ts` (parallel to `pageIriAtDepth`). `CwaPage.vue` now provides `'cwa-page-data-iri'` as a `ComputedRef<string | undefined>` at each depth. Template authors inject it and use it as the `CwaComponentGroup` location so each PageData instance has its own content components. Returns `undefined` for Page-backed depths (no PageData in the depth group).
+
+### Component data: how the API populates positions
+
+The manifest is a rich prefetch list — not just Route/PageData/Page IRIs. Because `Page.componentGroups`, `ComponentGroup.componentPositions`, and `ComponentPosition.component` are all in `Route:manifest:read`, the manifest already contains:
+
+- **ComponentGroup IRIs** (from `page.componentGroups`)
+- **ComponentPosition IRIs** (embedded within each ComponentGroup in the normalized output)
+- **Static component IRIs** (from `position.component`, for positions with a direct component reference)
+
+**What the manifest cannot include**: component IRIs for `pageDataProperty` positions. The API's `ComponentPositionNormalizer` resolves `pageDataProperty` using a `path` HTTP request header. During manifest generation that header is absent, so those positions remain `component: null` in the manifest output.
+
+**The fetch model is one primary parallel batch with a small rolling follow-up:**
+
+1. **Fetch the manifest** → get `resource_iris[depth]` arrays (includes CG, CP, and static component IRIs)
+2. **Fetch ALL manifest IRIs in one parallel batch** — when CG requests are sent with the `path` header, `ComponentPositionNormalizer` resolves `pageDataProperty` slots server-side and returns the actual component IRIs in the CG response body
+3. **De-dupe and follow-up** — component IRIs returned from CG responses that are not already in-flight get queued immediately. Static component IRIs are already being fetched (they were in the manifest). `pageDataProperty` component IRIs are the only additions. De-duplication means no double requests.
+
+The total serial depth is: **manifest → parallel batch (everything) → tiny parallel follow-up (pageDataProperty component IRIs only)**. In practice the follow-up fires as the first CG responses arrive, so it is effectively a single rolling parallel fetch.
+
+**`pageDataProperty` resolution is server-side, not the module's responsibility.**
+
+`ComponentPosition` has two modes:
+- `component` set directly → static component; IRI is already in the manifest; fetched in the initial batch
+- `pageDataProperty = 'heroImage'` → dynamic slot; API's `ComponentPositionNormalizer` intercepts normalization, reads `pageData->heroImage` via the `path` header, substitutes the real component IRI into `position.component`
+
+**From the module's perspective, every ComponentPosition response always has a `component` IRI (or null if no component is configured) — `pageDataProperty` is never visible on the public path.** No client-side resolution needed.
+
+For admin users, `pageDataProperty` is exposed via `ComponentPosition:read:role_admin` for the admin UI.
 
 ### Route lifecycle (critical context)
 
@@ -439,6 +506,50 @@ Things to investigate in the playground (which runs from live source — run `pn
 
 The playground is already in sync with the `components-web-app` (same `NestedTopicTemplate`/`NestedSubPageTemplate` Vue files, same `nuxt.config.ts` page/pageData registrations, fixtures loaded in the shared Docker API at `https://localhost/_api`). Use the playground to reproduce and fix before publishing.
 
+---
+
+### Concrete scenario: Event page with hero + sub-page tabs
+
+This is the primary use case driving the nested sub-pages feature and the bugs below.
+
+**Structure:**
+- An events section uses a `PageData` type (e.g. `EventData`) backed by a shared Page template (`EventTemplate`).
+- Each event has title, dates, and a hero image stored on its `EventData` entity.
+- The event page renders: a hero section (event-specific title/dates/image) + a tab navigation bar.
+- Each tab links to a child sub-page (e.g. Line-up, Tickets, Location) — each is also a `PageData` entity with `parentPageData = eventData`.
+- When navigating between tabs, the hero + nav bar must stay mounted (KeepAlive depth-0, already implemented in Step 7). Only the child slot (depth-1) changes.
+- Static parent pages (via `parentPage`) follow the same pattern — the parent's content stays stable, the child slot changes.
+
+**What the template needs (now implemented):**
+
+`EventTemplate.vue` receives `props.iri` = the Page template IRI and injects `'cwa-page-data-iri'` to get the `EventData` IRI:
+1. Read event title, dates, etc. via `useCwaResource(pageDataIri)`
+2. Use `pageDataIri?.value ?? props.iri` as the `location` for `<CwaComponentGroup>` so each event instance has its own content components
+
+`CwaPage.vue` provides `'cwa-page-data-iri'` (a `ComputedRef<string | undefined>`) at each depth. Template pattern:
+
+```ts
+const pageDataIri = inject<ComputedRef<string | undefined>>('cwa-page-data-iri')
+const location = computed(() => pageDataIri?.value ?? props.iri)
+```
+
+**Note for fixture maintainers (components-web-app):** Component group content should be stored under the PageData IRI location (the new inject), not the page template IRI. See `components-web-app/CLAUDE.md` for details.
+
+---
+
+**~~Known bug: layout component groups (nav links) not rendered for unauthenticated users~~ — FIXED**
+
+The API returns `componentGroups` on a `Layout` resource as **embedded JSON-LD objects**, not IRI strings. `fetchAssociatedResources` was pushing raw objects into `nestedIris`; `fetchBatch` then tried to call `path.split('?')` on an object — a TypeError silently swallowed, so the component groups were never fetched.
+
+**Fix (committed):** Array items in `fetchAssociatedResources` now extract `@id` when the value is an object:
+```ts
+for (const value of propIris) {
+  const iri = typeof value === 'string' ? value : value?.['@id']
+  if (iri) nestedIris.push(iri)
+}
+```
+This also applies to any future property that returns embedded objects in array form — the fix is defensive across all associated-resource properties.
+
 **Step 9 — Tests (Vitest)**
 - State/actions: `irisByDepth` set pre-batch; `fetchComplete` gates `isFetchResolving`; per-depth resolution computed correctly
 - Fetcher: `setManifestIrisByDepth` called before `fetchBatch`; `finishManifestFetch` sets `fetchComplete`
@@ -476,3 +587,43 @@ The playground is already in sync with the `components-web-app` (same `NestedTop
 3. Replace custom admin form components (`UInput`, `USelect`, `UModal`, etc.) with Nuxt UI equivalents
 
 **Not a drop-in today** — treat as a milestone after the Tailwind v4 upgrade.
+
+---
+
+## Known Bug: ComponentFocus doesn't reposition after UI/style changes
+
+**Symptom:** When the admin selects a component and then changes its UI variant or style class from the manager tab, the focus highlight (canvas cutout + animated outline div) stays at the old position. It does not redraw to follow the component as its layout shifts.
+
+**Files involved:**
+- `src/runtime/templates/components/main/admin/resource-manager/ComponentFocus.vue` — canvas + outline div
+- `src/runtime/admin/manageable-resource.ts` — tracks `domElements`, owned by each `ManageableResource` instance
+- `src/runtime/composables/cwa-resource-manageable.ts` — creates `ManageableResource`, pushes to event bus
+
+### Case 1 — Style/class change (no remount)
+
+`ComponentFocus` computes position via:
+```ts
+const position = computed(() => {
+  for (const domElement of domElements.value) {
+    const domRect = domElement.getBoundingClientRect()
+    // ...
+  }
+})
+```
+
+`position` only re-evaluates when its Vue reactive deps change: `totalWidthAndHeight` (from `useElementSize` / `ResizeObserver`), `windowSize`, `reorderId`. When a CSS class change shifts the element's layout position **without changing its size**, `ResizeObserver` never fires. `totalWidthAndHeight` stays the same. `position` stays cached. `drawCanvas()` draws the old cutout.
+
+**Fix:** The `drawCanvas()` function should read DOM rects directly (not through the cached computed) so every `redraw()` call sees the current layout. Alternatively, watch `resource.value?.data` in `ComponentFocus` and call `await nextTick(); redraw()` when it changes — this covers the patch arriving after a style/UI change.
+
+### Case 2 — UI component change (component remounts)
+
+Each `useCwaResourceManageable` call creates its own `ManageableResource` instance with its own `domElements: Ref<HTMLElement[]>`. When the user clicks component C, `getCurrentStackItem()` captures `this.domElements` — the live ref from C's current `ManageableResource` instance.
+
+When C's UI changes (different `uiComponent`), C unmounts:
+- Old `ManageableResource.clear()` sets `domElements.value = []`
+- The stack item now has an **empty** domElements ref
+- The canvas clears — focus is lost
+
+C then remounts with a NEW `ManageableResource` instance whose `domElements` is freshly populated. But the stack item still references the OLD (empty) ref. The focus never recovers until the user clicks C again.
+
+**Fix:** After C remounts, the new `domElements` ref must be propagated to the resource stack. In `cwa-resource-manageable.ts`, `onManageableComponentMounted` is called when C's IRI remounts. This is the right place to call a new `ResourceStackManager` method (e.g., `updateDomElementsForIri(iri, newDomElements)`) that walks the stack and replaces any matching item's `domElements` with the new ref.
