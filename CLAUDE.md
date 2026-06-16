@@ -615,15 +615,37 @@ const position = computed(() => {
 
 **Fix:** The `drawCanvas()` function should read DOM rects directly (not through the cached computed) so every `redraw()` call sees the current layout. Alternatively, watch `resource.value?.data` in `ComponentFocus` and call `await nextTick(); redraw()` when it changes — this covers the patch arriving after a style/UI change.
 
-### Case 2 — UI component change (component remounts)
+### Case 2 — UI component change (component remounts) — two compounding problems
 
-Each `useCwaResourceManageable` call creates its own `ManageableResource` instance with its own `domElements: Ref<HTMLElement[]>`. When the user clicks component C, `getCurrentStackItem()` captures `this.domElements` — the live ref from C's current `ManageableResource` instance.
+**Problem A — Ordering:** `admin.ts` listens to both `manageableComponentMounted` and `componentMounted` and calls `emitRedraw()`. Because event bus listeners fire in registration order, `admin.ts`'s listener fires **before** `onManageableComponentMounted` in the composable (which calls `initNewIri()` to populate the new `domElements`). So every `drawCanvas()` call from the redraw sees an empty ref.
 
-When C's UI changes (different `uiComponent`), C unmounts:
-- Old `ManageableResource.clear()` sets `domElements.value = []`
-- The stack item now has an **empty** domElements ref
-- The canvas clears — focus is lost
+**Problem B — Stale ref:** Each `useCwaResourceManageable` call creates its own `ManageableResource` with its own `domElements: Ref<HTMLElement[]>`. `createFocusComponent()` in `ResourceStackManager` mounts `ComponentFocus` once with `domElements: stackItem.domElements` — the OLD instance's ref. When C unmounts, `clear()` sets that ref to `[]`. When C remounts, a NEW `ManageableResource` is created with a NEW (populated) ref. The stack item still holds the OLD ref (permanently empty). `ComponentFocus` watching the old ref never recovers.
 
-C then remounts with a NEW `ManageableResource` instance whose `domElements` is freshly populated. But the stack item still references the OLD (empty) ref. The focus never recovers until the user clicks C again.
+**Fix:**
 
-**Fix:** After C remounts, the new `domElements` ref must be propagated to the resource stack. In `cwa-resource-manageable.ts`, `onManageableComponentMounted` is called when C's IRI remounts. This is the right place to call a new `ResourceStackManager` method (e.g., `updateDomElementsForIri(iri, newDomElements)`) that walks the stack and replaces any matching item's `domElements` with the new ref.
+In `onManageableComponentMounted` (`cwa-resource-manageable.ts`), after `initNewIri()` has populated the NEW `domElements`, update the stack item and recreate `ComponentFocus` *before* emitting `componentMounted`:
+
+```ts
+const onManageableComponentMounted = (iriMounted: string) => {
+  if (iriMounted === iri.value) {
+    manageableResource.initNewIri()
+    $cwa.admin.resourceStackManager.refreshFocusForIri(iri.value, manageableResource.domElements)
+    $cwa.admin.eventBus.emit('componentMounted', iri.value)
+  }
+}
+```
+
+In `ResourceStackManager`, add `refreshFocusForIri(iri, domElements)`:
+```ts
+public refreshFocusForIri(iri: string, domElements: Ref<HTMLElement[]>) {
+  for (const item of this.currentResourceStack.value) {
+    if (item.iri === iri) {
+      item.domElements = domElements
+      break
+    }
+  }
+  this.createFocusComponent()
+}
+```
+
+This ensures: when `componentMounted` fires (triggering `emitRedraw()` → canvas draw), `ComponentFocus` has already been recreated with the correct, populated ref. Both ordering and stale-ref problems are resolved in one change.
