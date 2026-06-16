@@ -2,7 +2,8 @@
   <div v-if="editor">
     <bubble-menu
       class="bg-stone-700 text-stone-100 rounded overflow-hidden text-sm"
-      :tippy-options="{ duration: 150, animation: 'fade' }"
+      style="z-index: 760"
+      :append-to="() => document.body"
       :editor="editor"
       :update-delay="0"
       @contextmenu.stop
@@ -30,7 +31,8 @@
 
     <floating-menu
       class="floating-menu bg-stone-200 text-stone-700 rounded overflow-hidden"
-      :tippy-options="{ duration: 150, animation: 'fade' }"
+      style="z-index: 760"
+      :append-to="() => document.body"
       :editor="editor"
       :update-delay="0"
       @contextmenu.stop
