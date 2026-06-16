@@ -30,10 +30,13 @@ function isHashLinkWithoutHashMode(link: NuxtLinkProps['to']) {
 }
 
 function handleClick(e: MouseEvent) {
+  if ($cwa.navigationDisabled) {
+    e.preventDefault()
+    return
+  }
   if (!cwaLink.isExternal.value && !isHashLinkWithoutHashMode(cwaLink.to.value)) {
     return
   }
-  if ($cwa.navigationDisabled) e.preventDefault()
 }
 </script>
 

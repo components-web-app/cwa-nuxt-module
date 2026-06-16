@@ -1,4 +1,4 @@
-import { createApp, onBeforeUnmount, onMounted, watch } from 'vue'
+import { createApp, h, onBeforeUnmount, onMounted, watch } from 'vue'
 import type { Ref, WatchStopHandle, App } from 'vue'
 import { useRouter } from 'vue-router'
 import { CwaLink } from '#components'
@@ -33,24 +33,30 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
       }
     }
 
-    const props: any = {
+    const linkProps: any = {
       to: hrefToUrl(href),
       noPrefetch: undefined,
       prefetch: false,
       noRel: undefined,
-      innerHTML: anchor.innerHTML,
     }
 
     for (const attr of anchor.attributes) {
-      if (!['href'].includes(attr.name)) {
+      if (!['href', 'target'].includes(attr.name)) {
         const anchorAttr = anchor.getAttribute(attr.name)
         if (anchorAttr) {
-          props[attr.name] = anchorAttr
+          linkProps[attr.name] = anchorAttr
         }
       }
     }
 
-    const app = createApp(CwaLink, { ...props })
+    const innerHtml = anchor.innerHTML
+    const app = createApp({
+      render() {
+        return h(CwaLink, linkProps, {
+          default: () => h('span', { innerHTML: innerHtml }),
+        })
+      },
+    })
     app.use(router)
     return app
   }
