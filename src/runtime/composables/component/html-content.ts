@@ -18,6 +18,9 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
         return href
       }
       catch (err) {
+        // Absolute paths starting with '/' are valid router paths — return as-is
+        if (href.startsWith('/')) return href
+        // Bare words (e.g. lipsum "0") — prefix with // to treat as external rather than router path
         return `//${href}`
       }
     }

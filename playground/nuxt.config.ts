@@ -97,9 +97,6 @@ export default defineNuxtConfig({
       NestedPageData: {
         name: 'Nested Topics',
       },
-      NestedSubPageData: {
-        name: 'Nested Sub-Pages',
-      },
     },
     siteConfig: {
       siteName: 'CWA Module Test Playground',

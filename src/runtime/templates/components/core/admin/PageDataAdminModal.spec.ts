@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import PageDataAdminModal from './PageDataAdminModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -130,6 +130,14 @@ describe('PageDataAdminModal', () => {
       const wrapper = setup({ parentPage: null })
       const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
       expect(selects.some(s => s.props('label') === 'Parent Page')).toBe(false)
+    })
+
+    test('clicking "Page" tab shows the Parent Page dropdown even when parentPage is initially null', async () => {
+      const wrapper = setup({ parentPage: null })
+      expect(wrapper.findAllComponents({ name: 'ModalSelect' }).some(s => s.props('label') === 'Parent Page')).toBe(false)
+      await wrapper.findComponent({ name: 'ModalRadioTabs' }).vm.$emit('update:modelValue', 'page')
+      await nextTick()
+      expect(wrapper.findAllComponents({ name: 'ModalSelect' }).some(s => s.props('label') === 'Parent Page')).toBe(true)
     })
 
     test('Parent Page options include a null "None" option and all pages', () => {

@@ -199,21 +199,7 @@ const parentTypeOptions = [
 
 const selectedParentDataType = ref<string | null>(null)
 
-const parentType = computed({
-  get(): string | null {
-    if (localResourceData.value?.parentPage) return 'page'
-    if (localResourceData.value?.parentPageData) return 'data'
-    return null
-  },
-  set(value: string | null) {
-    if (!localResourceData.value) return
-    if (value !== 'page') localResourceData.value.parentPage = null
-    if (value !== 'data') {
-      localResourceData.value.parentPageData = null
-      selectedParentDataType.value = null
-    }
-  },
-})
+const parentType = ref<string | null>(null)
 
 const parentPageOptions = computed<SelectOption[]>(() => {
   const options: SelectOption[] = [{ label: 'None', value: null }]
@@ -358,6 +344,21 @@ watchEffect(async () => {
 watch(selectedParentDataType, (key) => {
   if (localResourceData.value) localResourceData.value.parentPageData = null
   if (key) loadDataInstances(key)
+})
+
+watch(localResourceData, (data) => {
+  if (data?.parentPage) parentType.value = 'page'
+  else if (data?.parentPageData) parentType.value = 'data'
+  else parentType.value = null
+}, { immediate: true })
+
+watch(parentType, (value) => {
+  if (!localResourceData.value) return
+  if (value !== 'page') localResourceData.value.parentPage = null
+  if (value !== 'data') {
+    localResourceData.value.parentPageData = null
+    selectedParentDataType.value = null
+  }
 })
 
 onMounted(async () => {
