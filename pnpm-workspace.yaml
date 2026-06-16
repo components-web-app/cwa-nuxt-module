@@ -14,9 +14,19 @@ minimumReleaseAgeExclude:
   - serialize-javascript@7.0.5
   - qs@6.15.2
   - shell-quote@1.8.4
+  - vite@7.3.5
+  - tar@7.5.16
+  - launch-editor@2.14.1
+  - js-yaml@4.1.2
+  - '@babel/core@7.29.1'
 overrides:
   qs@>=6.11.1 <=6.15.1: ^6.15.2
   serialize-javascript@<7.0.5: ^7.0.5
   shell-quote@>=1.1.0 <=1.8.3: ^1.8.4
   svgo@>=3.0.0 <3.3.3: ^3.3.3
   esbuild@>=0.17.0 <0.28.1: ^0.28.1
+  vite@>=7.0.0 <=7.3.4: ^7.3.5
+  tar@<=7.5.15: ^7.5.16
+  launch-editor@<=2.14.0: ^2.14.1
+  js-yaml@<=4.1.1: ^4.1.2
+  '@babel/core@<=7.29.0': ^7.29.1
