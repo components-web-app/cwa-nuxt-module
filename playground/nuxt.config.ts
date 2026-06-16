@@ -50,6 +50,14 @@ export default defineNuxtConfig({
       // @ts-ignore - builds with this bit errors here sometimes but not in prod
       tailwindcss(),
     ],
+    server: {
+      watch: {
+        // cwa.css is compiled by tailwind:watch (PostCSS). Excluding it prevents
+        // the @tailwindcss/vite plugin from treating each rebuild as a tailwind.css
+        // dependency change, which would otherwise cause an HMR feedback loop.
+        ignored: ['**/src/runtime/templates/assets/cwa.css', '**/src/runtime/templates/assets/base.css'],
+      },
+    },
   },
   typescript: {
     typeCheck: false,
