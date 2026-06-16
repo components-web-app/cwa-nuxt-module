@@ -17,8 +17,10 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
     function hrefToUrl(href: string) {
       try {
         const url = new URL(href)
-        // Same-origin absolute URLs — strip origin so the router treats them as internal paths
-        if (typeof window !== 'undefined' && url.origin === window.location.origin) {
+        // Same-host absolute URLs — strip origin so the router treats them as internal paths.
+        // Hostname-only comparison (not full origin) handles dev environments where links may be
+        // stored without the port (e.g. https://localhost/page vs https://localhost:3002/page).
+        if (typeof window !== 'undefined' && url.hostname === window.location.hostname) {
           return url.pathname + url.search + url.hash
         }
         return href
