@@ -337,7 +337,7 @@ export default class Fetcher {
       const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       const routePathPrefix = `${prefix}/_/routes/`
 
-      const iri = event.path.split('?')[0]
+      const iri = event.path.split('?')[0] ?? event.path
       const depth = this.fetchStatusManager.getDepthForIri(iri)
       const depthPath = depth !== undefined ? this.fetchStatusManager.getPathForDepth(depth) : undefined
 

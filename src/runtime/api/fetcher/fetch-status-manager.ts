@@ -267,7 +267,7 @@ export default class FetchStatusManager {
     const prefix = ResourceTypeFromIri.getPathPrefix() || ''
     const routePathPrefix = `${prefix}/_/routes/`
     for (let depth = 0; depth < event.irisByDepth.length; depth++) {
-      for (const iri of event.irisByDepth[depth]) {
+      for (const iri of event.irisByDepth[depth]!) {
         this._iriToDepth.set(iri, depth)
         if (!this._depthPaths.has(depth) && iri.startsWith(routePathPrefix)) {
           this._depthPaths.set(depth, iri.substring(routePathPrefix.length))
