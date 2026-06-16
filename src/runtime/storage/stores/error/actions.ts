@@ -11,8 +11,10 @@ export interface CwaErrorActionsInterface {
   removeByEndpoint(endpoint: string): void
 }
 
-function getErrorType(type: string): ErrorType {
-  switch (type) {
+function getErrorType(type: string | undefined): ErrorType {
+  // problem+json gives a URL (e.g. 'https://symfony.com/errors/ConstraintViolationList') — extract last path segment
+  const typeKey = type?.includes('/') ? (type.split('/').pop() ?? type) : type
+  switch (typeKey) {
     case 'Error':
       return ErrorType.SERVER
     case 'TypeError':
@@ -35,15 +37,17 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
         err.type = getErrorType(error.cause.constructor.name)
         err.detail = (error.cause as Error).message
       }
-      else if (error.data?.['description']) {
-        err.type = getErrorType(error.data['@type'])
-        // todo: hydra:description deprecated in favour of error.data.detail
-        err.detail = error.data['description']
-        err.violations = error.data.violations?.map((e: any) => ({ property: e.propertyPath, message: e.message }))
-      }
       else {
-        err.type = ErrorType.SERVER
-        err.detail = error.data
+        const detail = error.data?.['detail'] || error.data?.['description']
+        if (detail) {
+          err.type = getErrorType(error.data['@type'] || error.data['type'])
+          err.detail = detail
+          err.violations = error.data.violations?.map((e: any) => ({ property: e.propertyPath, message: e.message }))
+        }
+        else {
+          err.type = ErrorType.SERVER
+          err.detail = error.data
+        }
       }
 
       if (err.type === ErrorType.SERVER || err.type === ErrorType.VALIDATION || err.type === ErrorType.UNKNOWN) {
