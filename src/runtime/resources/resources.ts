@@ -205,6 +205,10 @@ export class Resources {
     return group.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
   }
 
+  private getPageDataIriFromDepthGroup(group: string[]): string | undefined {
+    return group.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE_DATA)
+  }
+
   public pageIriAtDepth(depth: number): ComputedRef<string | undefined> {
     return computed(() => {
       const fetchStatus = this.displayFetchStatus
@@ -214,6 +218,16 @@ export class Resources {
       }
       if (depth === 0) {
         return this.getPageIriByFetchStatus(fetchStatus)
+      }
+      return undefined
+    })
+  }
+
+  public pageDataIriAtDepth(depth: number): ComputedRef<string | undefined> {
+    return computed(() => {
+      const irisByDepth = this.displayFetchStatus?.manifest?.irisByDepth
+      if (irisByDepth?.[depth]) {
+        return this.getPageDataIriFromDepthGroup(irisByDepth[depth])
       }
       return undefined
     })

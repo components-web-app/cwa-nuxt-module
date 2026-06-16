@@ -17,5 +17,7 @@ import { useCwa } from '#imports'
 const $cwa = useCwa()
 const depth = inject('cwa-page-depth', 0)
 const pageIri = computed(() => $cwa.resources.pageIriAtDepth(depth).value)
+const pageDataIri = computed(() => $cwa.resources.pageDataIriAtDepth(depth).value)
 provide('cwa-page-depth', depth + 1)
+provide('cwa-page-data-iri', pageDataIri)
 </script>

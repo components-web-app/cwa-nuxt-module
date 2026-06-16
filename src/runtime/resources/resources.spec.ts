@@ -393,6 +393,48 @@ describe('Resources', () => {
     })
   })
 
+  describe('pageDataIriAtDepth', () => {
+    test('returns the PAGE_DATA IRI from irisByDepth at the specified depth', () => {
+      const fetchStatus = {
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/page_data/event-uuid', '/_/pages/template-uuid'],
+            ['/_/routes//conference/programme', '/page_data/child-uuid', '/_/pages/child-template-uuid'],
+          ],
+        },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageDataIriAtDepth(0).value).toEqual('/page_data/event-uuid')
+      expect(resources.pageDataIriAtDepth(1).value).toEqual('/page_data/child-uuid')
+    })
+
+    test('returns undefined when depth group has no PAGE_DATA IRI (Page-backed depth)', () => {
+      const fetchStatus = {
+        manifest: { irisByDepth: [['/_/routes//about', '/_/pages/page-uuid']] },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageDataIriAtDepth(0).value).toBeUndefined()
+    })
+
+    test('returns undefined when no irisByDepth', () => {
+      const fetchStatus = { path: '/_/pages/uuid' }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageDataIriAtDepth(0).value).toBeUndefined()
+    })
+
+    test('returns undefined when requested depth index does not exist in irisByDepth', () => {
+      const fetchStatus = {
+        manifest: { irisByDepth: [['/_/routes//conference', '/page_data/event-uuid']] },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageDataIriAtDepth(1).value).toBeUndefined()
+    })
+  })
+
   describe('pageLoadResources', () => {
     test('should return nothing IF token is not defined', () => {
       const mockFetcherStore = {

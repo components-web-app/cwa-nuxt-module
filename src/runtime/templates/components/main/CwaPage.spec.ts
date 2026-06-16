@@ -5,11 +5,12 @@ import { KeepAlive, computed } from 'vue'
 import CwaPage from './CwaPage.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-function mockCwa(pageIri: string | undefined) {
+function mockCwa(pageIri: string | undefined, pageDataIri: string | undefined = undefined) {
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       pageIriAtDepth: vi.fn(() => computed(() => pageIri)),
+      pageDataIriAtDepth: vi.fn(() => computed(() => pageDataIri)),
     },
   }))
 }
@@ -76,5 +77,19 @@ describe('CwaPage', () => {
     })
     // @ts-expect-error accessing internal provides
     expect(wrapper.vm.$.provides['cwa-page-depth']).toBe(2)
+  })
+
+  test('provides cwa-page-data-iri to descendants', () => {
+    mockCwa('/_/pages/conf-uuid', '/page_data/event-uuid')
+    const wrapper = mount(CwaPage, { shallow: true })
+    // @ts-expect-error accessing internal provides
+    expect(wrapper.vm.$.provides['cwa-page-data-iri'].value).toBe('/page_data/event-uuid')
+  })
+
+  test('provides undefined cwa-page-data-iri for Page-backed depths', () => {
+    mockCwa('/_/pages/conf-uuid', undefined)
+    const wrapper = mount(CwaPage, { shallow: true })
+    // @ts-expect-error accessing internal provides
+    expect(wrapper.vm.$.provides['cwa-page-data-iri'].value).toBeUndefined()
   })
 })
