@@ -41,13 +41,35 @@
             />
           </div>
           <div>
+            <ModalRadioTabs
+              v-model="parentType"
+              :options="parentTypeOptions"
+            />
+          </div>
+          <div v-if="parentType === 'page'">
             <ModalSelect
               v-model="localResourceData.parentPage"
               label="Parent Page"
               :options="parentPageOptions"
             />
           </div>
-          <div v-if="!localResourceData.parentPage">
+          <template v-if="parentType === 'data'">
+            <div>
+              <ModalSelect
+                v-model="selectedParentDataType"
+                label="Parent Data Type"
+                :options="dataTypeOptions"
+              />
+            </div>
+            <div v-if="selectedParentDataType">
+              <ModalSelect
+                v-model="localResourceData.parentPageData"
+                label="Parent Data"
+                :options="dataInstanceOptions"
+              />
+            </div>
+          </template>
+          <div>
             <ModalSelect
               v-model="localResourceData.page"
               label="Dynamic Page"
@@ -146,6 +168,7 @@ import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { navigateTo, useCwa } from '#imports'
 import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
+import { useParentPageDataLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
@@ -154,6 +177,7 @@ import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader'
@@ -161,15 +185,59 @@ import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList
 
 const $cwa = useCwa()
 const { parentPages, loadParentPageOptions } = useParentPageLoader()
+const { dataTypes, dataInstances, loadDataTypes, loadDataInstances } = useParentPageDataLoader()
 
 function getResourceData(iri: string) {
   return $cwa.resources.getResource(iri).value
 }
 
+const parentTypeOptions = [
+  { label: 'None', value: null },
+  { label: 'Page', value: 'page' },
+  { label: 'Data', value: 'data' },
+]
+
+const selectedParentDataType = ref<string | null>(null)
+
+const parentType = computed({
+  get(): string | null {
+    if (localResourceData.value?.parentPage) return 'page'
+    if (localResourceData.value?.parentPageData) return 'data'
+    return null
+  },
+  set(value: string | null) {
+    if (!localResourceData.value) return
+    if (value !== 'page') localResourceData.value.parentPage = null
+    if (value !== 'data') {
+      localResourceData.value.parentPageData = null
+      selectedParentDataType.value = null
+    }
+  },
+})
+
 const parentPageOptions = computed<SelectOption[]>(() => {
   const options: SelectOption[] = [{ label: 'None', value: null }]
   for (const page of parentPages.value ?? []) {
     options.push({ label: page.reference, value: page['@id'] })
+  }
+  return options
+})
+
+const dataTypeOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'Select type…', value: null }]
+  for (const type of dataTypes.value ?? []) {
+    const key = fqcnToEntrypointKey(type.resourceClass)
+    if (key) {
+      options.push({ label: type.resourceClass.split('\\').pop() ?? key, value: key })
+    }
+  }
+  return options
+})
+
+const dataInstanceOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'Select…', value: null }]
+  for (const instance of dataInstances.value ?? []) {
+    options.push({ label: instance.title || instance['@id'], value: instance['@id'] })
   }
   return options
 })
@@ -287,15 +355,31 @@ watchEffect(async () => {
   }
 })
 
+watch(selectedParentDataType, (key) => {
+  if (localResourceData.value) localResourceData.value.parentPageData = null
+  if (key) loadDataInstances(key)
+})
+
 onMounted(async () => {
-  loadParentPageOptions()
-  await loadDynamicPageOptions()
+  await Promise.all([loadParentPageOptions(), loadDynamicPageOptions(), loadDataTypes()])
   if (!dynamicPages.value?.length) {
     emit('close')
     return
   }
   if (isAdding.value && localResourceData.value && !localResourceData.value.page) {
     localResourceData.value.page = pageOptions.value[0]?.value
+  }
+  const pdIri = localResourceData.value?.parentPageData
+  if (pdIri) {
+    const pdResource = $cwa.resources.getResource(pdIri).value
+    const pdType = pdResource?.data?.['@type']
+    if (pdType) {
+      const key = fqcnToEntrypointKey(pdType)
+      if (key) {
+        selectedParentDataType.value = key
+        await loadDataInstances(key)
+      }
+    }
   }
 })
 </script>

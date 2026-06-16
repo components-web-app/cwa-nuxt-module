@@ -5,10 +5,11 @@ import { mount } from '@vue/test-utils'
 import PageDataAdminModal from './PageDataAdminModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseDataType, mockUseDataList } = vi.hoisted(() => ({
+const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, mockUseDataList } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockUseDynamicPageLoader: vi.fn(),
   mockUseParentPageLoader: vi.fn(),
+  mockUseParentPageDataLoader: vi.fn(),
   mockUseDataType: vi.fn(),
   mockUseDataList: vi.fn(),
 }))
@@ -16,6 +17,7 @@ const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mock
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader', () => ({ useDynamicPageLoader: mockUseDynamicPageLoader }))
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
+vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useDataType', () => ({ useDataType: mockUseDataType }))
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useDataList', () => ({ useDataList: mockUseDataList }))
 
@@ -37,6 +39,7 @@ function setup(
     'metaDescription': '',
     'page': '/_/pages/template-1',
     'parentPage': null,
+    'parentPageData': null,
     ...localDataOverrides,
   })
 
@@ -62,6 +65,13 @@ function setup(
   mockUseParentPageLoader.mockReturnValue({
     parentPages: ref(mockParentPages),
     loadParentPageOptions: vi.fn(),
+  })
+
+  mockUseParentPageDataLoader.mockReturnValue({
+    dataTypes: ref([]),
+    dataInstances: ref([]),
+    loadDataTypes: vi.fn(),
+    loadDataInstances: vi.fn(),
   })
 
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(null) })
@@ -97,16 +107,33 @@ describe('PageDataAdminModal', () => {
     vi.clearAllMocks()
   })
 
-  describe('Parent Page picker', () => {
-    test('renders a "Parent Page" ModalSelect', () => {
+  describe('Parent picker tab radio', () => {
+    test('renders a ModalRadioTabs for selecting parent type', () => {
       const wrapper = setup()
+      expect(wrapper.findComponent({ name: 'ModalRadioTabs' }).exists()).toBe(true)
+    })
+
+    test('ModalRadioTabs has None/Page/Data options', () => {
+      const wrapper = setup()
+      const tabs = wrapper.findComponent({ name: 'ModalRadioTabs' })
+      const options = tabs.props('options') as Array<{ label: string, value: string | null }>
+      expect(options.map(o => o.label)).toEqual(['None', 'Page', 'Data'])
+    })
+
+    test('shows "Parent Page" ModalSelect when parentType is "page" (parentPage is set)', () => {
+      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
       const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const parentSelect = selects.find(s => s.props('label') === 'Parent Page')
-      expect(parentSelect?.exists()).toBe(true)
+      expect(selects.some(s => s.props('label') === 'Parent Page')).toBe(true)
+    })
+
+    test('hides "Parent Page" ModalSelect when parentType is none', () => {
+      const wrapper = setup({ parentPage: null })
+      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
+      expect(selects.some(s => s.props('label') === 'Parent Page')).toBe(false)
     })
 
     test('Parent Page options include a null "None" option and all pages', () => {
-      const wrapper = setup()
+      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
       const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
       const parentSelect = selects.find(s => s.props('label') === 'Parent Page')
       const options = parentSelect?.props('options') as Array<{ label: string, value: string | null }>
@@ -116,18 +143,13 @@ describe('PageDataAdminModal', () => {
   })
 
   describe('Dynamic Page field visibility', () => {
-    test('shows "Dynamic Page" select when parentPage is not set', () => {
-      const wrapper = setup({ parentPage: null })
-      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const labels = selects.map(s => s.props('label'))
-      expect(labels).toContain('Dynamic Page')
-    })
-
-    test('hides "Dynamic Page" select when parentPage is set', () => {
-      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
-      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const labels = selects.map(s => s.props('label'))
-      expect(labels).not.toContain('Dynamic Page')
+    test('always shows "Dynamic Page" select regardless of parent setting', () => {
+      const wrapperNoParent = setup({ parentPage: null })
+      const wrapperWithParent = setup({ parentPage: '/_/pages/uuid-2' })
+      const labelsNoParent = wrapperNoParent.findAllComponents({ name: 'ModalSelect' }).map(s => s.props('label'))
+      const labelsWithParent = wrapperWithParent.findAllComponents({ name: 'ModalSelect' }).map(s => s.props('label'))
+      expect(labelsNoParent).toContain('Dynamic Page')
+      expect(labelsWithParent).toContain('Dynamic Page')
     })
   })
 

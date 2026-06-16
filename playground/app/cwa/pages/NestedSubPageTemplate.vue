@@ -1,6 +1,9 @@
 <template>
   <div class="mt-8 border-t border-white/20 pt-8">
-    <CwaComponentGroup reference="primary" :location="props.iri" />
+    <CwaComponentGroup
+      reference="primary"
+      :location="props.iri"
+    />
   </div>
 </template>
 

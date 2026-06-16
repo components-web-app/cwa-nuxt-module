@@ -54,16 +54,35 @@
             />
           </div>
           <div>
+            <ModalRadioTabs
+              v-model="parentType"
+              :options="parentTypeOptions"
+            />
+          </div>
+          <div v-if="parentType === 'page'">
             <ModalSelect
               v-model="localResourceData.parentPage"
               label="Parent Page"
               :options="parentPageOptions"
             />
           </div>
-          <div
-            v-if="!localResourceData.parentPage"
-            class="cwa:flex cwa:gap-x-2"
-          >
+          <template v-if="parentType === 'data'">
+            <div>
+              <ModalSelect
+                v-model="selectedParentDataType"
+                label="Parent Data Type"
+                :options="dataTypeOptions"
+              />
+            </div>
+            <div v-if="selectedParentDataType">
+              <ModalSelect
+                v-model="localResourceData.parentPageData"
+                label="Parent Data"
+                :options="dataInstanceOptions"
+              />
+            </div>
+          </template>
+          <div class="cwa:flex cwa:gap-x-2">
             <div class="cwa:grow">
               <ModalSelect
                 v-model="localResourceData.uiComponent"
@@ -156,10 +175,12 @@ import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
 import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
+import { useParentPageDataLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader'
 import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import { useCwa } from '#imports'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
@@ -172,12 +193,37 @@ const props = defineProps<{ iri?: string, hideViewLink?: boolean }>()
 
 const $cwa = useCwa()
 const { parentPages, loadParentPageOptions } = useParentPageLoader()
+const { dataTypes, dataInstances, loadDataTypes, loadDataInstances, fqcnToEntrypointKey } = useParentPageDataLoader()
 
 const displayIri = ref(props.iri)
 
 function getResourceData(iri: string) {
   return $cwa.resources.getResource(iri).value
 }
+
+const parentTypeOptions = [
+  { label: 'None', value: null },
+  { label: 'Page', value: 'page' },
+  { label: 'Data', value: 'data' },
+]
+
+const selectedParentDataType = ref<string | null>(null)
+
+const parentType = computed({
+  get(): string | null {
+    if (localResourceData.value?.parentPage) return 'page'
+    if (localResourceData.value?.parentPageData) return 'data'
+    return null
+  },
+  set(value: string | null) {
+    if (!localResourceData.value) return
+    if (value !== 'page') localResourceData.value.parentPage = null
+    if (value !== 'data') {
+      localResourceData.value.parentPageData = null
+      selectedParentDataType.value = null
+    }
+  },
+})
 
 const depthChain = computed(() => {
   const chain: SelectOption[] = []
@@ -213,6 +259,25 @@ const parentPageOptions = computed<SelectOption[]>(() => {
     if (page['@id'] !== props.iri && !isDescendantOfCurrentPage(page['@id'])) {
       options.push({ label: page.reference, value: page['@id'] })
     }
+  }
+  return options
+})
+
+const dataTypeOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'Select type…', value: null }]
+  for (const type of dataTypes.value ?? []) {
+    const key = fqcnToEntrypointKey(type.resourceClass)
+    if (key) {
+      options.push({ label: type.resourceClass.split('\\').pop() ?? key, value: key })
+    }
+  }
+  return options
+})
+
+const dataInstanceOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'Select…', value: null }]
+  for (const instance of dataInstances.value ?? []) {
+    options.push({ label: instance.title || instance['@id'], value: instance['@id'] })
   }
   return options
 })
@@ -338,8 +403,24 @@ watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolea
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 
-onMounted(() => {
-  loadLayoutOptions()
-  loadParentPageOptions()
+watch(selectedParentDataType, (key) => {
+  if (localResourceData.value) localResourceData.value.parentPageData = null
+  if (key) loadDataInstances(key)
+})
+
+onMounted(async () => {
+  await Promise.all([loadLayoutOptions(), loadParentPageOptions(), loadDataTypes()])
+  const pdIri = localResourceData.value?.parentPageData
+  if (pdIri) {
+    const pdResource = $cwa.resources.getResource(pdIri).value
+    const pdType = pdResource?.data?.['@type']
+    if (pdType) {
+      const key = fqcnToEntrypointKey(pdType)
+      if (key) {
+        selectedParentDataType.value = key
+        await loadDataInstances(key)
+      }
+    }
+  }
 })
 </script>

@@ -5,9 +5,10 @@ import { mount } from '@vue/test-utils'
 import PageAdminModal from './PageAdminModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-const { mockUseItemPage, mockUseParentPageLoader } = vi.hoisted(() => ({
+const { mockUseItemPage, mockUseParentPageLoader, mockUseParentPageDataLoader } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockUseParentPageLoader: vi.fn(),
+  mockUseParentPageDataLoader: vi.fn(),
 }))
 
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({
@@ -15,6 +16,9 @@ vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({
 }))
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageLoader', () => ({
   useParentPageLoader: mockUseParentPageLoader,
+}))
+vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader', () => ({
+  useParentPageDataLoader: mockUseParentPageDataLoader,
 }))
 
 const mockLayouts = [{ '@id': '/_/layouts/default', 'reference': 'Default' }]
@@ -38,6 +42,7 @@ function setup(
     'uiComponent': 'PrimaryPageTemplate',
     'uiClassNames': null,
     'parentPage': null,
+    'parentPageData': null,
     ...localDataOverrides,
   })
 
@@ -60,12 +65,24 @@ function setup(
     loadParentPageOptions: vi.fn(),
   })
 
+  mockUseParentPageDataLoader.mockReturnValue({
+    dataTypes: ref([]),
+    dataInstances: ref([]),
+    loadDataTypes: vi.fn(),
+    loadDataInstances: vi.fn(),
+    fqcnToEntrypointKey: vi.fn((fqcn: string) => {
+      const cls = fqcn.split('\\').pop()
+      return cls ? cls.charAt(0).toLowerCase() + cls.slice(1) : undefined
+    }),
+  })
+
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     pagesConfig: { PrimaryPageTemplate: { name: 'Primary Page Template' } },
     fetch: vi.fn().mockReturnValue({
       response: Promise.resolve({ _data: { member: mockLayouts } }),
     }),
+    getApiDocumentation: vi.fn().mockResolvedValue({}),
     resources: { getResource: vi.fn(getResource) },
   }))
 
@@ -91,16 +108,33 @@ describe('PageAdminModal', () => {
     vi.clearAllMocks()
   })
 
-  describe('Parent Page picker', () => {
-    test('renders a "Parent Page" ModalSelect', () => {
+  describe('Parent picker tab radio', () => {
+    test('renders a ModalRadioTabs for selecting parent type', () => {
       const wrapper = setup()
+      expect(wrapper.findComponent({ name: 'ModalRadioTabs' }).exists()).toBe(true)
+    })
+
+    test('ModalRadioTabs has None/Page/Data options', () => {
+      const wrapper = setup()
+      const tabs = wrapper.findComponent({ name: 'ModalRadioTabs' })
+      const options = tabs.props('options') as Array<{ label: string, value: string | null }>
+      expect(options.map(o => o.label)).toEqual(['None', 'Page', 'Data'])
+    })
+
+    test('shows "Parent Page" ModalSelect when parentType is "page" (parentPage is set)', () => {
+      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
       const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const parentSelect = selects.find(s => s.props('label') === 'Parent Page')
-      expect(parentSelect?.exists()).toBe(true)
+      expect(selects.some(s => s.props('label') === 'Parent Page')).toBe(true)
+    })
+
+    test('hides "Parent Page" ModalSelect when parentType is none', () => {
+      const wrapper = setup({ parentPage: null })
+      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
+      expect(selects.some(s => s.props('label') === 'Parent Page')).toBe(false)
     })
 
     test('Parent Page options exclude the current page IRI', () => {
-      const wrapper = setup()
+      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
       const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
       const parentSelect = selects.find(s => s.props('label') === 'Parent Page')
       const options = parentSelect?.props('options') as Array<{ value: string }>
@@ -108,7 +142,7 @@ describe('PageAdminModal', () => {
     })
 
     test('Parent Page options include a null "None" option and all other pages', () => {
-      const wrapper = setup()
+      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
       const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
       const parentSelect = selects.find(s => s.props('label') === 'Parent Page')
       const options = parentSelect?.props('options') as Array<{ label: string, value: string | null }>
@@ -117,7 +151,7 @@ describe('PageAdminModal', () => {
     })
 
     test('excludes direct descendants from Parent Page options', () => {
-      const wrapper = setup({}, () => ref(null), [
+      const wrapper = setup({ parentPage: '/_/pages/uuid-1' }, () => ref(null), [
         { '@id': '/_/pages/uuid-1', 'reference': 'Home', 'parentPage': null },
         { '@id': '/_/pages/uuid-child', 'reference': 'Child', 'parentPage': '/_/pages/uuid-self' },
       ])
@@ -129,7 +163,8 @@ describe('PageAdminModal', () => {
     })
 
     test('excludes indirect descendants (grandchildren) from Parent Page options', () => {
-      const wrapper = setup({}, () => ref(null), [
+      const wrapper = setup({ parentPage: '/_/pages/uuid-1' }, () => ref(null), [
+        { '@id': '/_/pages/uuid-1', 'reference': 'Home', 'parentPage': null },
         { '@id': '/_/pages/uuid-child', 'reference': 'Child', 'parentPage': '/_/pages/uuid-self' },
         { '@id': '/_/pages/uuid-grandchild', 'reference': 'Grandchild', 'parentPage': '/_/pages/uuid-child' },
       ])
@@ -141,20 +176,14 @@ describe('PageAdminModal', () => {
     })
   })
 
-  describe('Page UI and Style visibility', () => {
-    test('shows Page UI select when parentPage is not set', () => {
-      const wrapper = setup({ parentPage: null })
-      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const labels = selects.map(s => s.props('label'))
-      expect(labels).toContain('Page UI')
-    })
-
-    test('hides Page UI and Style selects when parentPage is set', () => {
-      const wrapper = setup({ parentPage: '/_/pages/uuid-2' })
-      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const labels = selects.map(s => s.props('label'))
-      expect(labels).not.toContain('Page UI')
-      expect(labels).not.toContain('Style')
+  describe('Page UI visibility', () => {
+    test('always shows Page UI select regardless of parent setting', () => {
+      const wrapperNoParent = setup({ parentPage: null })
+      const wrapperWithParent = setup({ parentPage: '/_/pages/uuid-2' })
+      const labelsNoParent = wrapperNoParent.findAllComponents({ name: 'ModalSelect' }).map(s => s.props('label'))
+      const labelsWithParent = wrapperWithParent.findAllComponents({ name: 'ModalSelect' }).map(s => s.props('label'))
+      expect(labelsNoParent).toContain('Page UI')
+      expect(labelsWithParent).toContain('Page UI')
     })
   })
 

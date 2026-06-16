@@ -193,6 +193,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 | 2026-06-12 | 49.95% | resource-stack-manager completeStack/selectStackIndex/insertResourceStackItem/redrawFocus/removeFocusComponent; manageable-resource private getters; api-documentation getComponentMetadata; cwa.ts delegation methods; cwa-resource detached DOM + getCurrentStyleName; cwa-resource-manageable watcher/listener branches |
 | 2026-06-15 | 55.91% | resources-manager: deleteResource, doResourceRequest (errors/callbacks/fetchBatch/404 swallow), updateResource branches (FormData/headers/not-persisted/publish/forcePublishedVersion), getWaitForRequestPromise bug fix (reactive .value guard + wrong loop nesting), confirmDiscardAddingResource event-set paths, initAddResource, setAddResourceEventResource, addResourceAction (guard clauses/sort-value/componentPositions/publish/pageDataProperty/requestCompleteFn) |
 | 2026-06-15 | 56.46% | resource-stack-manager: currentIri forcePublishedVersion branches, resetStack(true), getClosestStackItemByType matching/non-matching, selectStackIndex (not-editing/empty/out-of-range/confirm-dialog confirmed+cancelled), listenEditModeChange _isEditingLayout reset, contextStack truthy/falsy lastContextTarget, isPopulating+isContextPopulating truthy cases |
+| 2026-06-16 | ~56.5% | ModalRadioTabs (new component, fully tested), useParentPageDataLoader (new composable, fully tested), PageAdminModal+PageDataAdminModal updated with tab-radio parent picker (Bug 1+2 fixes) |
 
 **Key patterns established:**
 - Lodash `debounce` with fake timers: `vi.useFakeTimers()` + `vi.runAllTimers()` (or `vi.advanceTimersByTime(n)` to avoid triggering other timers)
@@ -412,40 +413,19 @@ If Layout A and Layout B both reference the same `ComponentGroup` IRI, today's a
 
 **Step 8 — Admin UI: nested page management** ✅ DONE
 
-Files changed: `useParentPageLoader.ts` (new), `PageAdminModal.vue`, `PageDataAdminModal.vue`, `RoutesTab.vue`.
+Files changed: `useParentPageLoader.ts` (new), `useParentPageDataLoader.ts` (new), `ModalRadioTabs.vue` (new), `PageAdminModal.vue`, `PageDataAdminModal.vue`, `RoutesTab.vue`.
 
 **Design (resolved):**
 - **Top bar** — no structural change. Depth switching lives inside the modal.
 - **`useParentPageLoader`** — new composable fetching `/_/pages` (all pages, `noQuery: true`) with stale-request cancellation. Shared by both modals.
-- **"Parent Page" picker** — `ModalSelect` in both modals bound to `localResourceData.parentPage`. Options include "None" + all pages (excluding self in PageAdminModal). Loaded via `useParentPageLoader` on `onMounted`.
-- **Page UI/Style visibility** — hidden in `PageAdminModal` when `localResourceData.parentPage` is set (root page owns the template; child pages don't need a UI picker).
-- **"Dynamic Page" visibility** — hidden in `PageDataAdminModal` when `localResourceData.parentPage` is set.
+- **`useParentPageDataLoader`** — new composable loading page data types from API docs (filtering out `AbstractPageData`) then instances per type via `docs.entrypoint[key]`. Stale-request cancellation on both. Exposes `fqcnToEntrypointKey` for type derivation.
+- **`ModalRadioTabs`** — pill-tab radio component (None / Page / Data) used in both modals to select the parent type. Emits `update:modelValue` with the selected value.
+- **Parent picker** — tab-radio drives `parentType` computed (two-way). Selecting "Page" shows `ModalSelect` for `parentPage`; selecting "Data" shows type dropdown then instance dropdown for `parentPageData`. Switching tabs clears the opposing field.
+- **Page UI/Style visibility** — always visible in `PageAdminModal` (Bug 1 fixed — root page owns the template but child pages also need a template).
+- **"Dynamic Page" visibility** — always visible in `PageDataAdminModal` (Bug 1 fixed — every PageData must have a page template).
 - **Depth switcher ("Viewing" dropdown)** — both modals build a `depthChain` computed by walking `parentPage`/`parentPageData` from `$cwa.resources.getResource()`. When chain length > 1, a "Viewing" `ModalSelect` is shown above `ResourceModalTabs`. Changing selection updates `displayIri`, which drives `useItemPage` (replacing `toRef(props, 'iri')`). Labels use `reference` for Page resources and `title` for PageData resources.
 - **Route prefix display** — `RoutesTab` derives `parentIri` from `props.pageResource.parentPage || parentPageData`, looks up the parent in the store, and strips `/_/routes/` from the route IRI to display "Route prefix: /conference" above the route view. Hidden when no parent or parent has no route.
-
-**Step 8 known bugs (to fix)**
-
-Two issues were discovered when building the nested page demo in `components-web-app` and reviewing the resulting admin UI:
-
-**Bug 1 — Page template field hidden when parent is set (`PageDataAdminModal.vue` line 50)**
-
-```vue
-<div v-if="!localResourceData.parentPage">
-  <ModalSelect v-model="localResourceData.page" label="Dynamic Page" ... />
-</div>
-```
-
-The "Dynamic Page" (page template) selector is hidden when `parentPage` is set. This was the original Step 8 design decision ("child pages don't need a UI picker"), but it is wrong. The API's `AbstractPageData.page` is `nullable: false` with `@Assert\NotBlank` — every page data, nested or not, must have a page template. Nested pages need their own template (e.g. `NestedSubPageTemplate`) so the module knows which Vue component to render at that depth via `<CwaPage />`. Hiding this field leaves no way for the admin to change or verify the template for nested pages.
-
-**Fix:** Remove the `v-if="!localResourceData.parentPage"` wrapper so the "Dynamic Page" field is always visible. Also check `PageAdminModal.vue` for the equivalent "Page UI/Style visibility" hidden-when-parent condition and apply the same fix there.
-
-**Bug 2 — No `parentPageData` selector in `PageDataAdminModal.vue`**
-
-The form has a "Parent Page" dropdown bound to `localResourceData.parentPage` (→ a `Page` entity). But `AbstractPage` also supports `parentPageData` (→ any `AbstractPageData` subclass), which is the relationship used when one page-data entity is nested under another (e.g. `NestedSubPageData` under `NestedPageData`). There is currently no UI to set or clear `parentPageData`.
-
-The `depthChain` computed already walks both `parentPage` and `parentPageData` for display, and `RoutesTab` reads both for the prefix display — so both are read. But neither the add nor the edit flow exposes a `parentPageData` picker.
-
-**Fix:** Add a second `ModalSelect` for `localResourceData.parentPageData`, populated from the relevant page data collection. The two selectors (parentPage and parentPageData) are mutually exclusive — the API enforces this with `Assert\Expression`; the UI should enforce it too by clearing the other field when one is set. Consider a combined "Parent" field with a type toggle (Page vs Page Data), or two separate labelled selects with mutual exclusion logic. The `useParentPageLoader` composable currently only loads `/_/pages`; a parallel composable (or extension) will be needed to load available page data resources of the right type.
+- **Init from store** — on `onMounted`, if `localResourceData.parentPageData` is set, the resource's `@type` is looked up in the store via `getResource`, converted to an entrypoint key, and used to pre-populate `selectedParentDataType` + load instances. This restores the Data picker state when re-opening a modal for an existing nested resource.
 
 **Step 9 — Tests (Vitest)**
 - State/actions: `irisByDepth` set pre-batch; `fetchComplete` gates `isFetchResolving`; per-depth resolution computed correctly
