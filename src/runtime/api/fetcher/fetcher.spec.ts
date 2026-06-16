@@ -799,6 +799,26 @@ describe('Fetcher -> fetchAssociatedResources', () => {
     })
   })
 
+  test('extracts @id from embedded objects in array properties instead of pushing the raw object', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/layouts/layout-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'componentGroups': [
+        { '@id': '/_/component_groups/cg-1', 'location': 'top', 'componentPositions': [] },
+        { '@id': '/_/component_groups/cg-2', 'location': 'bottom', 'componentPositions': [] },
+      ] as any,
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/component_groups/cg-1', '/_/component_groups/cg-2'],
+      token: 'any',
+    })
+  })
+
   test('fetches parentPage IRI when present on a PAGE resource', async () => {
     const mockResource: CwaResource = {
       '@id': '/_/pages/child-page',

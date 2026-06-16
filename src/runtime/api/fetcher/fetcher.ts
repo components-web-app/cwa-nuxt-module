@@ -237,7 +237,10 @@ export default class Fetcher {
         continue
       }
       if (Array.isArray(propIris)) {
-        nestedIris.push(...propIris)
+        for (const value of propIris) {
+          const iri = typeof value === 'string' ? value : value?.['@id']
+          if (iri) nestedIris.push(iri)
+        }
       }
       else {
         // todo test - otherwise client-side auth will get the draft instead
