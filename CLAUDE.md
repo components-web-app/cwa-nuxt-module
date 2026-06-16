@@ -427,6 +427,18 @@ Files changed: `useParentPageLoader.ts` (new), `useParentPageDataLoader.ts` (new
 - **Route prefix display** — `RoutesTab` derives `parentIri` from `props.pageResource.parentPage || parentPageData`, looks up the parent in the store, and strips `/_/routes/` from the route IRI to display "Route prefix: /conference" above the route view. Hidden when no parent or parent has no route.
 - **Init from store** — on `onMounted`, if `localResourceData.parentPageData` is set, the resource's `@type` is looked up in the store via `getResource`, converted to an entrypoint key, and used to pre-populate `selectedParentDataType` + load instances. This restores the Data picker state when re-opening a modal for an existing nested resource.
 
+**Step 8 — Known issue: parent picker tabs not interactive**
+
+Reported from `components-web-app` against the published `048bbc6` edge package (which includes this code). The "None / Page / Data" `ModalRadioTabs` buttons in `PageAdminModal` (and likely `PageDataAdminModal`) appear rendered but clicking them has no effect. The user cannot set a `parentPage` or `parentPageData` on a `Page` resource through the admin UI.
+
+Things to investigate in the playground (which runs from live source — run `pnpm run dev`):
+1. Whether `ModalRadioTabs` buttons emit `update:modelValue` on click (add a `console.log` in the component or check Vue devtools)
+2. Whether the `parentType` computed setter in `PageAdminModal` fires and successfully mutates `localResourceData`
+3. Whether there is a z-index, `pointer-events: none`, or modal overlay that swallows the click before it reaches the button
+4. Whether the compiled Tailwind (`src/runtime/templates/assets/cwa.css`) includes the `cwa:cursor-pointer` and flex classes used by `ModalRadioTabs` — if not, run `pnpm run tailwind:main` and rebuild
+
+The playground is already in sync with the `components-web-app` (same `NestedTopicTemplate`/`NestedSubPageTemplate` Vue files, same `nuxt.config.ts` page/pageData registrations, fixtures loaded in the shared Docker API at `https://localhost/_api`). Use the playground to reproduce and fix before publishing.
+
 **Step 9 — Tests (Vitest)**
 - State/actions: `irisByDepth` set pre-batch; `fetchComplete` gates `isFetchResolving`; per-depth resolution computed correctly
 - Fetcher: `setManifestIrisByDepth` called before `fetchBatch`; `finishManifestFetch` sets `fetchComplete`
