@@ -622,19 +622,15 @@ This means every Tailwind class in the module must use the `cwa:` prefix (e.g. `
 
 ---
 
-## Future: Nuxt UI Integration
+## Future: CWA Admin UI Component Kit
 
-**Feasibility:** Possible in principle. Tailwind v4 is already in place (see above) and the `prefix(cwa)` CSS isolation is the correct foundation — that prerequisite is done.
+The goal is a polished, consistent component kit for the admin UI — inputs, selects, modals, buttons, etc. — similar in scope to what Nuxt UI provides.
 
-**Dependency cascade concern:** Adding `@nuxt/ui` as a module dependency means every consuming app gets Nuxt UI as a transitive dep. Nuxt UI is an opinionated design system that could conflict with apps that already have their own UI libraries or CSS setup.
+**Why not Nuxt UI:** Nuxt UI cannot be used as the foundation. Adding it as a module dependency would force every consuming app to carry Nuxt UI as a transitive dep. More critically, CSS isolation would break: Nuxt UI injects its own theme tokens and utility classes globally, so a consuming app's Nuxt UI configuration (colours, fonts, spacing) would bleed into — and potentially override — the admin UI styles. The `cwa:` prefix isolation only protects Tailwind utilities; it does not protect against a shared Nuxt UI runtime injecting conflicting CSS variables or component styles.
 
-**Recommended scope:** Use Nuxt UI only for admin/internal components (resource manager panel, form inputs, modals, etc.) — not for public-facing components which consuming apps own. This limits the blast radius of the dependency.
+**The right approach:** Build a small, self-contained component library scoped entirely within this module — styled exclusively with the `cwa:` prefixed Tailwind utilities already in place. No runtime CSS injected by a third party; no shared design tokens with the consuming app. The admin UI stays visually consistent regardless of what CSS framework or configuration the consuming app uses.
 
-**Planned integration path:**
-1. Add `@nuxt/ui` scoped to admin components under the `cwa` prefix
-2. Replace custom admin form components (`UInput`, `USelect`, `UModal`, etc.) with Nuxt UI equivalents
-
-**Not a drop-in today** — treat as a standalone milestone.
+**Scope:** Admin-only components (form inputs, selects, modals, tabs, buttons, etc.). Public-facing CWA components (`CwaComponent*`, layouts, page templates) are owned by consuming apps and intentionally unstyled by this module.
 
 ---
 
