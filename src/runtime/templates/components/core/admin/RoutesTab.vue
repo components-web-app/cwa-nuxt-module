@@ -11,6 +11,7 @@
       <RoutesTabView
         :resource="resource"
         :is-loading="isLoadingRoute"
+        :parent-has-no-route="parentHasNoRoute"
         @deleted="handleRedirectDeleted"
         @change-page="handleChangePage"
       />
@@ -45,6 +46,7 @@
             :current-path="resource.path"
             :disable-buttons="disableButtons"
             :page-resource="pageResource"
+            :parent-route-prefix="parentRoutePrefix"
             @save="handleSaveRoute"
             @generate="handleGenerateRoute"
             @delete="handleDeleteRoute"
@@ -65,12 +67,14 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
 import { useCwa, navigateTo, useRoute } from '#imports'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
@@ -96,6 +100,7 @@ const parentRoutePrefix = computed(() => {
   }
   return routeIri.replace(/^\/_\/routes\//, '')
 })
+const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
 
 const routeIriFromPage = computed(() => (props.pageResource.route))
 const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
@@ -146,14 +151,29 @@ async function handleGenerateRoute() {
 }
 
 async function handleSaveRoute() {
-  const resource = await saveResource(false)
-  if (resource) {
+  const pathChanged = localResourceData.value?.path !== resource.value?.path
+  let cascadeData: Record<string, any> | undefined
+
+  if (pathChanged) {
+    // @ts-expect-error
+    const dialog = createConfirmDialog(ConfirmDialog)
+    const { isCanceled } = await dialog.reveal({
+      title: 'Update child routes?',
+      content: '<p>The route path has changed. If this page has child routes that share the old prefix, would you like to update them too? Routes using a different prefix will be unchanged.</p>',
+    })
+    if (!isCanceled) {
+      cascadeData = { cascadeChildPaths: true }
+    }
+  }
+
+  const savedResource = await saveResource(false, cascadeData)
+  if (savedResource) {
     isLoadingRoute.value = true
     // reload the parent, because the route IRI/ID will have changed so we need to reference the updated route
     emit('reload')
     handleChangePage('view')
 
-    if (routeIriFromPage.value === resource['@id']) {
+    if (routeIriFromPage.value === savedResource['@id']) {
       await loadResource()
     }
   }

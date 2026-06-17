@@ -329,7 +329,7 @@ Routes are the **publication mechanism**. A `PageData` entity exists and is edit
 
 **Update via PATCH/PUT** — `RouteEventListener.onPostWrite()` fires and if the path changed, automatically creates a redirect from the old path to the new one. This is transparent to the module.
 
-**No cascade on parent route change** — if the parent's path changes from `/conference` to `/summit`, child routes (e.g. `/conference/programme`) are NOT updated. No cascade, no event listener for this. Child paths become stale/wrong.
+**No cascade on parent route change** — if the parent's path changes from `/conference` to `/summit`, child routes (e.g. `/conference/programme`) are NOT automatically updated. However, child routes do **not** break functionally: the manifest is assembled by walking the `parentPage`/`parentPageData` entity chain, not URL structure. Navigating to `/conference/programme` still produces the correct manifest (`irisByDepth[0]` = `/summit` parent resources, `irisByDepth[1]` = `/programme` child resources) and renders correctly. The only impact is URL-convention/SEO: the child's URL prefix no longer matches the parent's canonical path. Tab-bar links stored as hard-coded route paths (rather than resolved from route entities) would also point to stale sibling paths.
 
 **Draft state** — a child page can exist with no route. `getParentPageRoute()` returns null when the parent also has no route. `RouteGenerator` then generates just the slug with no prefix.
 
@@ -359,28 +359,29 @@ Routes are the **publication mechanism**. A `PageData` entity exists and is edit
 
 ---
 
-#### Gaps and issues to resolve in discussion
+#### Design decisions (resolved)
 
-1. **Path input is full path** — user must type `/conference/programme` in full when editing a nested page's route. This is confusing: the parent prefix should be locked/inherited, and the user should only need to think about the suffix (`/programme`).
+1. **Edit form uses an input group: editable prefix + editable suffix.** The `manage-route` screen shows the parent's current route path as a pre-filled prefix field alongside a suffix text input. The prefix defaults to the parent's route path (e.g. `/conference`) to encourage correct URL structure, but the user can change it — including clearing it to `/` to intentionally break from the hierarchy convention. The module assembles the full path (`prefix + suffix`) before saving. This guides toward the right structure without enforcing it.
 
-2. **SEO recommendation is prefix-unaware** — shows `/programme` instead of `/conference/programme`. The recommended route for a nested page must include the parent prefix to be meaningful.
+2. **SEO recommendation encourages proper URL structure.** The recommended suffix is the slugified page/pageData title (e.g. `/programme`). The full recommended path (`/conference/programme`) is shown as a preview assembled from the current prefix + recommended suffix. "Apply SEO" still calls `POST /_/routes/generate` — the API handles redirect creation and other side effects that a local computation would miss.
 
-3. **No prefix shown during editing** — the parent prefix label ("Route prefix: /conference") disappears when the user enters the `manage-route` screen. The user loses context of what the parent path is while typing.
+3. **Cascade child path updates via a new API contract.** Two flows trigger this:
 
-4. **No warning about stale child routes** — if a parent's route is updated, its children are silently wrong. There's no detection or warning in the UI.
+   **Manual path edit (primary flow):** When saving a changed path via `PATCH /_/routes/{id}`, the module checks whether the parent page has any child routes before saving. If yes, it asks: "Update child routes to use the new prefix? (children using a different prefix will be unchanged)." If confirmed, includes `cascadeChildPaths: true` in the PATCH body. The API applies the prefix substitution and creates redirects for all affected children within the same transaction.
 
-5. **No hierarchy on the standalone routes list** — flat list makes it hard to see which child routes belong under which parent.
+   **"Apply SEO" on a parent with existing children (secondary flow):** `POST /_/routes/generate` returns the newly generated path. The module compares it against the old path. If the path changed AND the parent has child routes, it offers a follow-up confirmation and issues a second `PATCH /_/routes/{id}` with `cascadeChildPaths: true` (the path is now the new value, old path passed as context — see API contract detail). This keeps the generate endpoint simple; cascade is always a `PATCH` concern.
+
+   In both cases the API finds all pages/pageData whose chain leads to this route's page, identifies their routes that currently use the old path as a prefix, replaces the prefix, and creates redirects from old → new paths. Children using a different prefix are untouched. See API bundle CLAUDE.md for the required implementation detail.
+
+4. **Standalone routes list hierarchy — via a dedicated API endpoint.** The API exposes a lightweight hierarchy endpoint (or query parameter) that returns route hierarchy only when the routes admin list requests it. The API builds this efficiently in one join query (routes → page/pageData → parentPage/parentPageData chain) rather than computing it per-row on the client. The module calls this lazily when rendering the routes list. We previously had a hierarchy UI for this (when Route had a parent field); the new design restores that UI backed by an entity-chain-derived tree. See API bundle CLAUDE.md for the required contract.
+
+5. **No route, no child routes — disabled by security.** If a parent page has no route, its resources are protected by the security layer (resources without a route are not publicly accessible). A child route pointing into an unreachable parent is therefore broken for public users, not just inconvenient. Child route creation and editing is **disabled** in the UI when the parent has no route, with explanation: "Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first." An existing child route from before the parent's route was removed stays in the database but shows as inactive with the same reason.
 
 ---
 
 #### Questions for the design discussion
 
-- **Should the edit form split into prefix (read-only) + suffix (editable)?** The module would then assemble the full path (`prefix + suffix`) before saving. This is the most intuitive UX for a nested page.
-- **Should the SEO recommendation strip the prefix** and show only the recommended suffix (so it can be compared with and applied to the suffix field)?
-- **Should the "Apply SEO" action still call `/routes/generate`** (server-side prefix + slugify), or compute the path locally now that we know the prefix?
-- **How should the standalone routes list handle hierarchy?** Options: indent child rows under parent; add a "parent" column; leave flat but add a badge.
-- **What UI should warn about stale children?** When the user edits a parent route path, should we detect that the parent has child routes and show a warning before save? Or show a post-save notice listing the affected child paths?
-- **Draft parent edge case** — when parent has no route yet, the prefix section would be empty. Should the form hide the prefix field entirely in that case, or show a "Parent has no route yet — suffix will be used as the full path when published"?
+(All resolved above. No open questions remain on the route UI design.)
 
 ### Rendering: `<CwaPage />`
 

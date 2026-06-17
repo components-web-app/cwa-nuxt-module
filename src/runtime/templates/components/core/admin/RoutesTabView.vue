@@ -9,6 +9,7 @@ import type { RouteScreens } from '#cwa/templates/components/core/admin/RoutesTa
 defineProps<{
   resource: CwaResource | TempCwaResource | undefined
   isLoading: boolean
+  parentHasNoRoute?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +32,12 @@ function handleDeletedEvent(resource: CwaResource) {
         v-if="isLoading"
         :show="true"
       />
+      <p
+        v-else-if="parentHasNoRoute"
+        class="cwa:text-sm cwa:text-stone-400"
+      >
+        Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first.
+      </p>
       <CwaUiFormButton
         v-else
         :color="resource?.path ? 'dark' : 'blue'"
