@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import RoutesTab from './RoutesTab.vue'
 import RoutesTabView from './RoutesTabView.vue'
 import RoutesTabManage from './RoutesTabManage.vue'
@@ -17,11 +17,11 @@ vi.mock('vuejs-confirm-dialog', () => ({
   createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
 }))
 
-function mockCwa(getResourceImpl: (iri: string) => any = () => ref(null)) {
+function mockCwa(getResourceImpl: (iri: string) => any = () => ref(null), resourcesManagerOverrides: Record<string, any> = {}) {
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: { getResource: vi.fn(getResourceImpl) },
-    resourcesManager: { createResource: vi.fn(), deleteResource: vi.fn() },
+    resourcesManager: { createResource: vi.fn(), deleteResource: vi.fn(), updateResource: vi.fn(), ...resourcesManagerOverrides },
   }))
 }
 
@@ -192,6 +192,7 @@ describe('RoutesTab', () => {
       const wrapper = mountTab()
       await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
       await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+      await flushPromises()
       expect(saveResource).toHaveBeenCalledWith(false, { cascadeChildPaths: true })
     })
 
@@ -202,7 +203,65 @@ describe('RoutesTab', () => {
       const wrapper = mountTab()
       await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
       await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+      await flushPromises()
       expect(saveResource).toHaveBeenCalledWith(false, undefined)
+    })
+  })
+
+  describe('generate+cascade two-step flow', () => {
+    test('does not offer cascade when generated path matches current path', async () => {
+      setupItemPage({ path: '/conference', currentPath: '/conference' })
+      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//conference', 'path': '/conference' })
+      const updateResource = vi.fn()
+      mockCwa(() => ref(null), { createResource, updateResource })
+      mockReveal.mockResolvedValue({ isCanceled: false })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
+      await flushPromises()
+      expect(mockReveal).not.toHaveBeenCalled()
+      expect(updateResource).not.toHaveBeenCalled()
+    })
+
+    test('offers cascade when generated path differs from current path', async () => {
+      setupItemPage({ path: '/conference', currentPath: '/conference' })
+      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//summit', 'path': '/summit' })
+      mockCwa(() => ref(null), { createResource, updateResource: vi.fn() })
+      mockReveal.mockResolvedValue({ isCanceled: true })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
+      await flushPromises()
+      expect(mockReveal).toHaveBeenCalledOnce()
+    })
+
+    test('patches new route with cascade data when confirmed', async () => {
+      setupItemPage({ path: '/conference', currentPath: '/conference' })
+      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//summit', 'path': '/summit' })
+      const updateResource = vi.fn().mockResolvedValue({})
+      mockCwa(() => ref(null), { createResource, updateResource })
+      mockReveal.mockResolvedValue({ isCanceled: false })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
+      await flushPromises()
+      expect(updateResource).toHaveBeenCalledWith({
+        endpoint: '/_/routes//summit',
+        data: { path: '/summit', cascadeChildPaths: true, oldPath: '/conference' },
+      })
+    })
+
+    test('does not patch when cascade declined', async () => {
+      setupItemPage({ path: '/conference', currentPath: '/conference' })
+      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//summit', 'path': '/summit' })
+      const updateResource = vi.fn()
+      mockCwa(() => ref(null), { createResource, updateResource })
+      mockReveal.mockResolvedValue({ isCanceled: true })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
+      await flushPromises()
+      expect(updateResource).not.toHaveBeenCalled()
     })
   })
 })

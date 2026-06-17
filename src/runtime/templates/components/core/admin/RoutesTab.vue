@@ -134,8 +134,19 @@ async function handleCreateRedirect(path: string) {
   }
 }
 
+async function askCascadeChildPaths(): Promise<boolean> {
+  // @ts-expect-error
+  const dialog = createConfirmDialog(ConfirmDialog)
+  const { isCanceled } = await dialog.reveal({
+    title: 'Update child routes?',
+    content: '<p>The route path has changed. If this page has child routes that share the old prefix, would you like to update them too? Routes using a different prefix will be unchanged.</p>',
+  })
+  return !isCanceled
+}
+
 async function handleGenerateRoute() {
   submitting.value = true
+  const oldPath = resource.value?.path as string | undefined
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes/generate',
     data: {
@@ -147,6 +158,15 @@ async function handleGenerateRoute() {
   if (newResource) {
     emit('reload')
     handleChangePage('view')
+    const newPath = newResource.path as string | undefined
+    if (oldPath && newPath && newPath !== oldPath) {
+      if (await askCascadeChildPaths()) {
+        await $cwa.resourcesManager.updateResource({
+          endpoint: newResource['@id'],
+          data: { path: newPath, cascadeChildPaths: true, oldPath },
+        })
+      }
+    }
   }
 }
 
@@ -154,16 +174,8 @@ async function handleSaveRoute() {
   const pathChanged = localResourceData.value?.path !== resource.value?.path
   let cascadeData: Record<string, any> | undefined
 
-  if (pathChanged) {
-    // @ts-expect-error
-    const dialog = createConfirmDialog(ConfirmDialog)
-    const { isCanceled } = await dialog.reveal({
-      title: 'Update child routes?',
-      content: '<p>The route path has changed. If this page has child routes that share the old prefix, would you like to update them too? Routes using a different prefix will be unchanged.</p>',
-    })
-    if (!isCanceled) {
-      cascadeData = { cascadeChildPaths: true }
-    }
+  if (pathChanged && await askCascadeChildPaths()) {
+    cascadeData = { cascadeChildPaths: true }
   }
 
   const savedResource = await saveResource(false, cascadeData)
