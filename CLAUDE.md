@@ -315,6 +315,73 @@ For admin users, `pageDataProperty` is exposed via `ComponentPosition:read:role_
 
 Routes are the **publication mechanism**. A `PageData` entity exists and is editable in the admin before it has a `Route`. The parent/child relationship is set on `PageData` during drafting — before either page has a public URL. This is why hierarchy lives on `AbstractPage`, not `Route`.
 
+### Planned discussion: nested page route UI/UX
+
+> **Status: investigated, needs design decision before implementation.**
+
+#### How the API works (established facts)
+
+**Route entity** (`Route.php`): a standalone entity with `path` (full URL path, unique), `name` (unique slug), `redirect` (→ another Route), `redirectedFrom` (collection of redirecting routes), `page` or `pageData` (one-to-one to the content entity). Routes are a separate resource — not embedded on Page/PageData.
+
+**Two ways to create/set a route:**
+1. `POST /_/routes` — manual: submit `{ path, name, page|pageData }`. The module submits `name = path` automatically (see `RoutesTab.vue` `validate()` hook). The full path is always stored — there is no "suffix" field.
+2. `POST /_/routes/generate` — auto-generate: submit `{ page|pageData }`. The API's `RouteGenerator.create()` slugifies the title, then checks `page.getParentPageRoute()` and **prepends the parent's path** as a prefix. So for a child under `/conference`, the generated path is `/conference/chapter-title`. This endpoint is the only one that applies the prefix automatically.
+
+**Update via PATCH/PUT** — `RouteEventListener.onPostWrite()` fires and if the path changed, automatically creates a redirect from the old path to the new one. This is transparent to the module.
+
+**No cascade on parent route change** — if the parent's path changes from `/conference` to `/summit`, child routes (e.g. `/conference/programme`) are NOT updated. No cascade, no event listener for this. Child paths become stale/wrong.
+
+**Draft state** — a child page can exist with no route. `getParentPageRoute()` returns null when the parent also has no route. `RouteGenerator` then generates just the slug with no prefix.
+
+---
+
+#### What the current module UI does
+
+**`RoutesTab.vue`** (inside Page/PageData modal, "Routes" tab):
+- Reads `parentPage || parentPageData` from the page resource → looks up parent resource in store → reads `data.route` (the route IRI, e.g. `/_/routes//conference`) → strips `/_/routes/` to get the path → shows as static text "Route prefix: /conference"
+- This is purely informational. It is visible on the *view* screen only.
+- Three screens: `view` (shows current path + Edit button + redirects tree), `manage-route` (edit form), `create-redirect`.
+
+**`RoutesTabManage.vue`** (the edit form):
+- A single full-path text input bound to `localResourceData.path` — e.g. the user must type `/conference/programme` in full.
+- "SEO recommendation" = `'/' + slugify(title.toLowerCase())` — **this does NOT include the parent prefix**. For a nested page the recommendation shows just `/programme` instead of `/conference/programme`. The "Apply" button calls `handleGenerateRoute` which posts to `/routes/generate` — the API correctly adds the prefix server-side, so the *apply* flow is right but the *display* is wrong/misleading.
+- No parent prefix is shown in the edit form.
+
+**`RoutesTabView.vue`** (the view screen):
+- Shows the route path via `ModalInfo`.
+- Shows a redirects tree (`RouteRedirectsTree`).
+- "Create New Route" button (when no route) or "Edit" button (when route exists).
+
+**Standalone routes admin page** (`_cwa/routes.vue`):
+- Flat list of all routes, ordered by date/path.
+- Each row shows the path + the associated page/pageData reference + link to that page's admin modal.
+- No hierarchy — doesn't show parent/child relationships.
+
+---
+
+#### Gaps and issues to resolve in discussion
+
+1. **Path input is full path** — user must type `/conference/programme` in full when editing a nested page's route. This is confusing: the parent prefix should be locked/inherited, and the user should only need to think about the suffix (`/programme`).
+
+2. **SEO recommendation is prefix-unaware** — shows `/programme` instead of `/conference/programme`. The recommended route for a nested page must include the parent prefix to be meaningful.
+
+3. **No prefix shown during editing** — the parent prefix label ("Route prefix: /conference") disappears when the user enters the `manage-route` screen. The user loses context of what the parent path is while typing.
+
+4. **No warning about stale child routes** — if a parent's route is updated, its children are silently wrong. There's no detection or warning in the UI.
+
+5. **No hierarchy on the standalone routes list** — flat list makes it hard to see which child routes belong under which parent.
+
+---
+
+#### Questions for the design discussion
+
+- **Should the edit form split into prefix (read-only) + suffix (editable)?** The module would then assemble the full path (`prefix + suffix`) before saving. This is the most intuitive UX for a nested page.
+- **Should the SEO recommendation strip the prefix** and show only the recommended suffix (so it can be compared with and applied to the suffix field)?
+- **Should the "Apply SEO" action still call `/routes/generate`** (server-side prefix + slugify), or compute the path locally now that we know the prefix?
+- **How should the standalone routes list handle hierarchy?** Options: indent child rows under parent; add a "parent" column; leave flat but add a badge.
+- **What UI should warn about stale children?** When the user edits a parent route path, should we detect that the parent has child routes and show a warning before save? Or show a post-save notice listing the affected child paths?
+- **Draft parent edge case** — when parent has no route yet, the prefix section would be empty. Should the form hide the prefix field entirely in that case, or show a "Parent has no route yet — suffix will be used as the full path when published"?
+
 ### Rendering: `<CwaPage />`
 
 Nested page rendering uses a single mechanism for all access contexts: `<CwaPage />`, which is data-driven, not URL-depth-driven.
