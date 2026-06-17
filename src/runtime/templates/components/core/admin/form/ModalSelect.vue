@@ -12,7 +12,7 @@ import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
 
 const emit = defineEmits(['update:modelValue'])
-const props = defineProps<SelectInputProps & { label: string }>()
+const props = defineProps<SelectInputProps & { label: string, containerClass?: string }>()
 const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(computed(() => props), emit)
 </script>
 
@@ -25,7 +25,7 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
     <div class="cwa:relative cwa:w-full">
       <div
         class="cwa:rounded-lg cwa:py-1.5 cwa:relative cwa:border"
-        :class="[open ? 'cwa:bg-dark cwa:border-stone-600' : 'cwa:bg-dark/90 cwa:border-stone-700']"
+        :class="[open ? 'cwa:bg-dark cwa:border-stone-600' : 'cwa:bg-dark/90 cwa:border-stone-700', containerClass]"
       >
         <ListboxLabel class="cwa:px-4 cwa:text-stone-400 cwa:absolute">
           {{ label }}

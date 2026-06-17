@@ -3,6 +3,7 @@ import { describe, test, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RoutesTabManage from './RoutesTabManage.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 
 function mountManage(options: {
   modelValue?: string
@@ -23,11 +24,11 @@ function mountManage(options: {
 }
 
 function getPrefixInput(wrapper: ReturnType<typeof mountManage>) {
-  return wrapper.findAllComponents(ModalInput)[0]
+  return wrapper.findComponent(ModalSelect)
 }
 
 function getSuffixInput(wrapper: ReturnType<typeof mountManage>) {
-  return wrapper.findAllComponents(ModalInput)[1]
+  return wrapper.findComponent(ModalInput)
 }
 
 describe('RoutesTabManage', () => {
@@ -69,22 +70,35 @@ describe('RoutesTabManage', () => {
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', '/new-page')
       expect(wrapper.emitted('update:modelValue')).toEqual([['/new-page']])
     })
+
+    test('normalises missing leading slash on suffix when prefix is not "/"', async () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'no-slash')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['/conference/no-slash']])
+    })
+
+    test('normalises missing leading slash on suffix when prefix is "/"', async () => {
+      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'no-slash')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['/no-slash']])
+    })
+
+    test('SEO recommendation always uses parentRoutePrefix regardless of selected prefix', async () => {
+      const wrapper = mountManage({ title: 'My Programme', parentRoutePrefix: '/conference' })
+      await getPrefixInput(wrapper).vm.$emit('update:modelValue', '/')
+      expect(wrapper.find('[data-seo-recommendation]').text()).toContain('/conference/my-programme')
+    })
   })
 
   describe('SEO recommendation', () => {
-    test('shows the slugified title as the recommended suffix (without prefix)', () => {
+    test('shows the full recommended path (prefix + slugified suffix) as SEO recommendation', () => {
       const wrapper = mountManage({ title: 'My Great Programme', parentRoutePrefix: '/conference' })
-      expect(wrapper.find('[data-recommended-suffix]').text()).toContain('/my-great-programme')
+      expect(wrapper.find('[data-seo-recommendation]').text()).toContain('/conference/my-great-programme')
     })
 
-    test('shows the full recommended path preview as prefix + recommended suffix', () => {
-      const wrapper = mountManage({ title: 'My Programme', parentRoutePrefix: '/conference' })
-      expect(wrapper.find('[data-recommended-preview]').text()).toContain('/conference/my-programme')
-    })
-
-    test('full recommended path preview uses "/" prefix when no parentRoutePrefix', () => {
+    test('shows just the slugified suffix as SEO recommendation when no parentRoutePrefix', () => {
       const wrapper = mountManage({ title: 'My Programme', parentRoutePrefix: null })
-      expect(wrapper.find('[data-recommended-preview]').text()).toContain('/my-programme')
+      expect(wrapper.find('[data-seo-recommendation]').text()).toContain('/my-programme')
     })
 
     test('Apply button is disabled when currentPath already matches the full recommended path', () => {

@@ -34,7 +34,6 @@
         v-for="node in hierarchyNodes"
         :key="node.route"
         :node="node"
-        :link-fn="computedItemLink"
         @delete="deleteRoute"
       />
     </div>
@@ -94,12 +93,50 @@ const hierarchyLoading = ref(false)
 const hierarchyError = ref(false)
 const hierarchyNodes = ref<RouteHierarchyNodeData[]>([])
 
+interface FlatRoute {
+  '@id': string
+  'path': string
+}
+
+function buildRouteTree(routeList: FlatRoute[]): RouteHierarchyNodeData[] {
+  const sorted = [...routeList].sort((a, b) => {
+    const aDepth = (a.path.match(/\//g) || []).length
+    const bDepth = (b.path.match(/\//g) || []).length
+    if (aDepth !== bDepth) return aDepth - bDepth
+    return a.path.localeCompare(b.path)
+  })
+
+  const nodeMap = new Map<string, RouteHierarchyNodeData>()
+  const roots: RouteHierarchyNodeData[] = []
+
+  for (const route of sorted) {
+    const node: RouteHierarchyNodeData = { route: route['@id'], path: route.path, children: [] }
+    let parentPath = ''
+    for (const [p] of nodeMap) {
+      if (route.path.startsWith(p + '/') && p.length > parentPath.length) {
+        parentPath = p
+      }
+    }
+    if (parentPath) {
+      nodeMap.get(parentPath)!.children.push(node)
+    }
+    else {
+      roots.push(node)
+    }
+    nodeMap.set(route.path, node)
+  }
+
+  return roots
+}
+
 async function loadHierarchy() {
   hierarchyLoading.value = true
   hierarchyError.value = false
   try {
-    const response = await $cwa.fetchResource({ path: '/_/routes/hierarchy', shallowFetch: true })
-    hierarchyNodes.value = (response as any)?.['hydra:member'] ?? response ?? []
+    const { response } = $cwa.fetch({ path: '/_/routes', noQuery: true })
+    const { _data: data } = await response
+    const routeList: FlatRoute[] = data?.member ?? data?.['hydra:member'] ?? []
+    hierarchyNodes.value = buildRouteTree(routeList)
   }
   catch {
     hierarchyError.value = true

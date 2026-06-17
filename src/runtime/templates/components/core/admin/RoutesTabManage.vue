@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import slugify from 'slugify'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const { pageResource, parentRoutePrefix, currentPath, disableButtons } = defineProps<{
@@ -32,7 +33,30 @@ const localPrefix = ref(initial.prefix)
 const localSuffix = ref(initial.suffix)
 
 watch([localPrefix, localSuffix], ([prefix, suffix]) => {
-  pathModel.value = prefix === '/' ? suffix : prefix + suffix
+  if (prefix === '/') {
+    pathModel.value = suffix.startsWith('/') ? suffix : '/' + suffix
+  }
+  else {
+    const p = prefix.replace(/\/+$/, '')
+    const s = suffix.replace(/^\/+/, '')
+    pathModel.value = s ? `${p}/${s}` : p
+  }
+})
+
+watch(() => parentRoutePrefix, (newPrefix) => {
+  if (newPrefix && localPrefix.value === '/') {
+    const split = splitPath(pathModel.value, newPrefix)
+    localPrefix.value = split.prefix
+    localSuffix.value = split.suffix
+  }
+})
+
+const prefixOptions = computed(() => {
+  const options = [{ label: '/ (root)', value: '/' }]
+  if (parentRoutePrefix && parentRoutePrefix !== '/') {
+    options.push({ label: parentRoutePrefix, value: parentRoutePrefix })
+  }
+  return options
 })
 
 const recommendedSuffix = computed(() => {
@@ -46,7 +70,7 @@ const fullRecommendedPath = computed(() => {
   if (!recommendedSuffix.value) {
     return undefined
   }
-  return localPrefix.value === '/' ? recommendedSuffix.value : localPrefix.value + recommendedSuffix.value
+  return parentRoutePrefix && parentRoutePrefix !== '/' ? parentRoutePrefix + recommendedSuffix.value : recommendedSuffix.value
 })
 
 const isApplyDisabled = computed(() => disableButtons || fullRecommendedPath.value === currentPath)
@@ -59,17 +83,20 @@ const pageResourceRouteIri = computed(() => pageResource.route)
     class="cwa:flex cwa:flex-col cwa:gap-y-6"
   >
     <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-      <div class="cwa:flex cwa:gap-x-2">
+      <div class="cwa:flex">
         <div class="cwa:flex-none cwa:w-40">
-          <ModalInput
+          <ModalSelect
             v-model="localPrefix"
             label="Prefix"
+            :options="prefixOptions"
+            container-class="cwa:rounded-r-none cwa:border-r-0"
           />
         </div>
         <div class="cwa:flex-1">
           <ModalInput
             v-model="localSuffix"
             label="Route suffix"
+            class="cwa:rounded-l-none"
           />
         </div>
       </div>
@@ -103,24 +130,13 @@ const pageResourceRouteIri = computed(() => pageResource.route)
       v-if="recommendedSuffix"
       class="cwa:p-4 cwa:bg-dark/80 cwa:rounded-lg cwa:flex cwa:flex-col cwa:gap-y-2 cwa:text-sm"
     >
-      <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+      <div>
         <ModalInfo
           label="SEO recommendation"
           class="cwa:font-bold"
         >
-          <span data-recommended-suffix>{{ recommendedSuffix }}</span>
+          <span data-seo-recommendation>{{ fullRecommendedPath }}</span>
         </ModalInfo>
-        <ModalInfo
-          v-if="parentRoutePrefix"
-          label="Full path preview"
-        >
-          <span data-recommended-preview>{{ fullRecommendedPath }}</span>
-        </ModalInfo>
-        <span
-          v-else
-          data-recommended-preview
-          class="cwa:sr-only"
-        >{{ fullRecommendedPath }}</span>
       </div>
       <div class="cwa:flex cwa:justify-start">
         <CwaUiFormButton

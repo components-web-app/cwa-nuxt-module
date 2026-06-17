@@ -21,19 +21,58 @@
         </CwaLink>
       </div>
     </template>
-    <div
+    <template
       v-if="depthChain.length > 1"
-      class="cwa:mb-4"
+      #subheader
     >
-      <ModalSelect
-        v-model="displayIri"
-        label="Viewing"
-        :options="depthChain"
-      />
-    </div>
+      <div class="cwa:flex cwa:gap-x-1 cwa:justify-center cwa:flex-wrap">
+        <button
+          v-for="option in depthChain"
+          :key="String(option.value)"
+          type="button"
+          class="cwa:py-1 cwa:px-3 cwa:text-sm cwa:rounded cwa:transition cwa:cursor-pointer"
+          :class="displayIri === option.value
+            ? 'cwa:text-stone-100 cwa:bg-stone-700/80'
+            : 'cwa:text-stone-400 cwa:hover:text-stone-300'"
+          @click="displayIri = option.value as string"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </template>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-2 cwa:pb-2 cwa:border-b cwa:border-stone-500">
+            <span class="cwa:text-xs cwa:text-stone-400 cwa:uppercase cwa:tracking-wide cwa:px-1">Parent page</span>
+            <ModalRadioTabs
+              v-model="parentType"
+              :options="parentTypeOptions"
+            />
+            <div v-if="parentType === 'page'">
+              <ModalSelect
+                v-model="localResourceData.parentPage"
+                label="Parent Page"
+                :options="parentPageOptions"
+              />
+            </div>
+            <template v-if="parentType === 'data'">
+              <div>
+                <ModalSelect
+                  v-model="selectedParentDataType"
+                  label="Parent Data Type"
+                  :options="dataTypeOptions"
+                />
+              </div>
+              <div v-if="selectedParentDataType">
+                <ModalSelect
+                  v-model="localResourceData.parentPageData"
+                  label="Parent Data"
+                  :options="dataInstanceOptions"
+                />
+              </div>
+            </template>
+          </div>
           <div>
             <ModalInput
               v-model="localResourceData.metaDescription"
@@ -41,53 +80,29 @@
             />
           </div>
           <div>
-            <ModalRadioTabs
-              v-model="parentType"
-              :options="parentTypeOptions"
-            />
-          </div>
-          <div v-if="parentType === 'page'">
-            <ModalSelect
-              v-model="localResourceData.parentPage"
-              label="Parent Page"
-              :options="parentPageOptions"
-            />
-          </div>
-          <template v-if="parentType === 'data'">
-            <div>
-              <ModalSelect
-                v-model="selectedParentDataType"
-                label="Parent Data Type"
-                :options="dataTypeOptions"
-              />
-            </div>
-            <div v-if="selectedParentDataType">
-              <ModalSelect
-                v-model="localResourceData.parentPageData"
-                label="Parent Data"
-                :options="dataInstanceOptions"
-              />
-            </div>
-          </template>
-          <div>
             <ModalSelect
               v-model="localResourceData.page"
               label="Dynamic Page"
               :options="pageOptions"
             />
           </div>
-          <div class="">
+          <div class="cwa:flex cwa:items-center cwa:gap-x-1.5 cwa:text-xs">
+            <CwaUiIconEyeIcon
+              class="cwa:w-4 cwa:flex-none"
+              :class="localResourceData?.page ? 'cwa:text-yellow' : 'cwa:text-stone-500'"
+            />
             <button
+              v-if="localResourceData?.page"
               type="button"
-              class="cwa:flex cwa:gap-x-2 cwa:text-xs cwa:cursor-pointer cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:opacity-70 cwa:hover:opacity-100 cwa:transition"
-              :disabled="!localResourceData?.page"
+              class="cwa:cursor-pointer cwa:text-yellow cwa:transition cwa:hover:opacity-80"
               @click="goToTemplate"
             >
-              <CwaUiIconEyeIcon class="cwa:w-4" />
-              <span>
-                go to template page
-              </span>
+              Go to dynamic template
             </button>
+            <span
+              v-else
+              class="cwa:text-stone-500"
+            >No template selected</span>
           </div>
           <div v-if="pageDataConfig?.metaFields">
             <ModalSelect

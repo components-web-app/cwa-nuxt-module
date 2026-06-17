@@ -120,18 +120,11 @@
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
-    <ResourceModalOverlayTemplate :show="showEditModal && !!($cwa.resources.pageDataIri.value || $cwa.resources.pageIri.value)">
-      <PageDataAdminModal
-        v-if="$cwa.resources.pageDataIri.value"
-        :resource-type="$cwa.resources.pageData?.value?.data?.['@type'] || ''"
-        :iri="$cwa.resources.pageDataIri.value"
-        :hide-view-link="true"
-        @close="closeModal"
-        @reload="goToAdminPagesView"
-      />
-      <PageAdminModal
-        v-else-if="$cwa.resources.pageIri.value"
-        :iri="$cwa.resources.pageIri.value"
+    <ResourceModalOverlayTemplate :show="showEditModal && !!$cwa.resources.displayPageIri.value">
+      <PageResourceAdminModal
+        v-if="$cwa.resources.displayPageIri.value"
+        :iri="$cwa.resources.displayPageIri.value"
+        :resource-type="editPageResourceType"
         :hide-view-link="true"
         @close="closeModal"
         @reload="goToAdminPagesView"
@@ -153,8 +146,7 @@ import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconLayouts from '#cwa/templates/components/core/assets/IconLayouts.vue'
 import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
 import ResourceModalOverlayTemplate from '#cwa/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
-import PageAdminModal from '#cwa/templates/components/core/admin/PageAdminModal.vue'
-import PageDataAdminModal from '#cwa/templates/components/core/admin/PageDataAdminModal.vue'
+import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageResourceAdminModal.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 
@@ -187,6 +179,13 @@ const isNavEnabled = computed({
 })
 
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
+
+const editPageResourceType = computed(() => {
+  if ($cwa.resources.isDataPage.value) {
+    return $cwa.resources.pageData?.value?.data?.['@type'] || ''
+  }
+  return 'Page'
+})
 
 const highlightClass = computed(() => {
   const classes = ['cwa:before:content-[""] cwa:before:absolute cwa:before:top-0 cwa:before:left-0 cwa:before:w-full cwa:before:h-0.5 cwa:before:transition-colors']

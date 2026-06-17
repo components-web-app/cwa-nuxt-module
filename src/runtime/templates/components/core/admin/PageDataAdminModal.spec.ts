@@ -95,7 +95,7 @@ function setup(
           template: '<div><slot name="details" /><slot name="routes" /><slot name="info" /></div>',
         },
         ResourceModal: {
-          template: '<div><slot /><slot name="title" /></div>',
+          template: '<div><slot name="subheader" /><slot /><slot name="title" /></div>',
         },
       },
     },
@@ -162,27 +162,26 @@ describe('PageDataAdminModal', () => {
   })
 
   describe('depth switcher', () => {
-    test('shows a "Viewing" ModalSelect when the resource chain has parents in the store', () => {
+    test('shows depth pill buttons when the resource chain has parents in the store', () => {
       const wrapper = setup({}, (iri) => {
         if (iri === '/_/abstract_page_data/uuid-self') return ref({ data: { title: 'Programme Data', parentPage: '/_/pages/uuid-2' } })
         if (iri === '/_/pages/uuid-2') return ref({ data: { reference: 'Conference', parentPage: null } })
         return ref(null)
       })
-      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      expect(selects.find(s => s.props('label') === 'Viewing')?.exists()).toBe(true)
+      const allText = wrapper.text()
+      expect(allText).toContain('Programme Data')
+      expect(allText).toContain('Conference')
     })
 
-    test('depth options include the current data page and its parent', () => {
+    test('depth pill buttons include the current data page and its parent', () => {
       const wrapper = setup({}, (iri) => {
         if (iri === '/_/abstract_page_data/uuid-self') return ref({ data: { title: 'Programme Data', parentPage: '/_/pages/uuid-2' } })
         if (iri === '/_/pages/uuid-2') return ref({ data: { reference: 'Conference', parentPage: null } })
         return ref(null)
       })
-      const selects = wrapper.findAllComponents({ name: 'ModalSelect' })
-      const depthSelect = selects.find(s => s.props('label') === 'Viewing')
-      const options = depthSelect?.props('options') as Array<{ label: string, value: string }>
-      expect(options).toContainEqual({ label: 'Programme Data', value: '/_/abstract_page_data/uuid-self' })
-      expect(options).toContainEqual({ label: 'Conference', value: '/_/pages/uuid-2' })
+      const allText = wrapper.text()
+      expect(allText).toContain('Programme Data')
+      expect(allText).toContain('Conference')
     })
 
     test('does not show depth switcher when the resource has no parents', () => {

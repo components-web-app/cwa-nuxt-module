@@ -63,7 +63,7 @@ describe('RoutesTab', () => {
   })
 
   describe('parent route prefix', () => {
-    test('shows the parent route prefix when parentPage is set and parent has a route', () => {
+    test('passes the parent route path as parentRoutePrefix to RoutesTabManage', async () => {
       setupItemPage()
       mockCwa((iri) => {
         if (iri === '/_/pages/conference-uuid') {
@@ -72,29 +72,11 @@ describe('RoutesTab', () => {
         return ref(null)
       })
       const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      expect(wrapper.text()).toContain('/conference')
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBe('/conference')
     })
 
-    test('shows the parent route prefix when parentPageData is set and parent has a route', () => {
-      setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/abstract_page_data/parent-uuid') {
-          return ref({ data: { route: '/_/routes//events' } })
-        }
-        return ref(null)
-      })
-      const wrapper = mountTab({ parentPageData: '/_/abstract_page_data/parent-uuid' })
-      expect(wrapper.text()).toContain('/events')
-    })
-
-    test('does not show a prefix when parentPage and parentPageData are not set', () => {
-      setupItemPage()
-      mockCwa()
-      const wrapper = mountTab({ parentPage: null, parentPageData: null })
-      expect(wrapper.find('[data-route-prefix]').exists()).toBe(false)
-    })
-
-    test('does not show a prefix when the parent resource has no route', () => {
+    test('passes null parentRoutePrefix when parent has no route', async () => {
       setupItemPage()
       mockCwa((iri) => {
         if (iri === '/_/pages/conference-uuid') {
@@ -103,7 +85,16 @@ describe('RoutesTab', () => {
         return ref(null)
       })
       const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      expect(wrapper.find('[data-route-prefix]').exists()).toBe(false)
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBeNull()
+    })
+
+    test('passes null parentRoutePrefix when no parent is set', async () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountTab({ parentPage: null, parentPageData: null })
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBeNull()
     })
   })
 
@@ -137,29 +128,6 @@ describe('RoutesTab', () => {
       mockCwa()
       const wrapper = mountTab({ parentPage: null, parentPageData: null })
       expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
-    })
-  })
-
-  describe('RoutesTabManage receives parentRoutePrefix', () => {
-    test('passes the parent route path to RoutesTabManage when on manage-route screen', async () => {
-      setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/pages/conference-uuid') {
-          return ref({ data: { route: '/_/routes//conference' } })
-        }
-        return ref(null)
-      })
-      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBe('/conference')
-    })
-
-    test('passes null parentRoutePrefix to RoutesTabManage when no parent', async () => {
-      setupItemPage()
-      mockCwa()
-      const wrapper = mountTab({ parentPage: null, parentPageData: null })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBeNull()
     })
   })
 
