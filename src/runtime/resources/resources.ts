@@ -201,7 +201,11 @@ export class Resources {
   }
 
   private getLayoutIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
-    const pageIri = this.getPageIriByFetchStatus(fetchStatus)
+    // Use depth-0 page for layout; the leaf route may not be in the store yet during sibling nav.
+    const irisByDepth = fetchStatus?.manifest?.irisByDepth
+    const pageIri = irisByDepth?.[0]
+      ? this.getPageIriFromDepthGroup(irisByDepth[0])
+      : this.getPageIriByFetchStatus(fetchStatus)
     if (!pageIri) {
       return
     }

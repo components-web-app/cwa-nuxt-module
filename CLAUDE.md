@@ -603,22 +603,38 @@ The total serial depth for a manifest fetch is now: **manifest → parallel batc
 
 ---
 
+## Tailwind v4
+
+The module uses **Tailwind v4** (`tailwindcss: ^4.2.4`, `@tailwindcss/postcss: ^4.2.4`, `@tailwindcss/vite: ^4.2.4`). The build is CSS-first — no `tailwind.config.js`. All configuration lives in `src/tailwind/tailwind-cwa.css`.
+
+**CSS isolation:** All utilities are scoped under a `cwa:` prefix via v4's `prefix()` import:
+
+```css
+@import 'tailwindcss/theme' layer(theme) prefix(cwa);
+@import 'tailwindcss/utilities' prefix(cwa);
+```
+
+This means every Tailwind class in the module must use the `cwa:` prefix (e.g. `cwa:flex`, `cwa:bg-dark`). The compiled output is committed to the repo at `src/runtime/templates/assets/cwa.css`.
+
+**Custom theme** is declared in `@theme {}` blocks — replaces the v3 `theme` key. **Plugins** use `@plugin` directive — replaces v3 `plugins` array. **Base reset** (`tailwind-base.css`) imports only `tailwindcss/preflight` layer(base), consumed by the layer.
+
+**Build:** `postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css` via `@tailwindcss/postcss`. Vite integration (`@tailwindcss/vite`) is available but not used for the pre-compiled admin CSS — it is used by the playground for the app-side CSS.
+
+---
+
 ## Future: Nuxt UI Integration
 
-**Feasibility:** Possible in principle, but blocked by a Tailwind v3 → v4 migration. The module currently uses **Tailwind v3** (compiled CSS files, `tailwind:main`/`tailwind:base` scripts, `cwa:` variant prefix — all v3 patterns). Nuxt UI v3 requires **Tailwind v4**, which uses a CSS-first `@import` approach with native cascade layers.
-
-**CSS isolation mechanism:** Tailwind v4 supports `@import "tailwindcss" prefix(cwa)` to scope all generated utilities under a prefix — this is the right isolation primitive. The current v3 `cwa:` variant prefix is a different, incompatible approach.
+**Feasibility:** Possible in principle. Tailwind v4 is already in place (see above) and the `prefix(cwa)` CSS isolation is the correct foundation — that prerequisite is done.
 
 **Dependency cascade concern:** Adding `@nuxt/ui` as a module dependency means every consuming app gets Nuxt UI as a transitive dep. Nuxt UI is an opinionated design system that could conflict with apps that already have their own UI libraries or CSS setup.
 
 **Recommended scope:** Use Nuxt UI only for admin/internal components (resource manager panel, form inputs, modals, etc.) — not for public-facing components which consuming apps own. This limits the blast radius of the dependency.
 
-**Planned migration path:**
-1. Migrate the module's Tailwind build to v4 — refactor all admin component styles to use `prefix()` import isolation
-2. Add `@nuxt/ui` scoped to admin components under the `cwa` prefix
-3. Replace custom admin form components (`UInput`, `USelect`, `UModal`, etc.) with Nuxt UI equivalents
+**Planned integration path:**
+1. Add `@nuxt/ui` scoped to admin components under the `cwa` prefix
+2. Replace custom admin form components (`UInput`, `USelect`, `UModal`, etc.) with Nuxt UI equivalents
 
-**Not a drop-in today** — treat as a milestone after the Tailwind v4 upgrade.
+**Not a drop-in today** — treat as a standalone milestone.
 
 ---
 
