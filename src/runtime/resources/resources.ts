@@ -78,30 +78,19 @@ export class Resources {
       const fetchingStatus = this.fetcherStore.fetches[fetchingToken]
       if (fetchingStatus) {
         const irisByDepth = fetchingStatus.manifest?.irisByDepth
-        if (irisByDepth?.length) {
-          // For manifest-based fetches, require every depth group's page resource to be
-          // ready before switching display. Switching on depth-0 alone causes a white flash
-          // when navigating between sibling sub-pages: the depth-1 ResourceLoader mounts
-          // with an IN_PROGRESS resource and briefly shows a Spinner.
-          let foundAnyPageIri = false
-          const allDepthPagesReady = irisByDepth.every((group) => {
-            const pageIri = this.getPageIriFromDepthGroup(group)
-            if (!pageIri) return true
-            foundAnyPageIri = true
-            if (!this.resourcesStore.current.currentIds.includes(pageIri)) return false
-            const pageResource = this.getResource(pageIri).value
-            return !!(pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS)
-          })
-          if (foundAnyPageIri && allDepthPagesReady) {
-            return fetchingStatus
-          }
-        }
-        else {
-          // No manifest / single-page: original single-depth check
-          const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
-          if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
-            const pageResource = this.getResource(pageIri).value
-            if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+        // Determine the depth-0 page IRI — from irisByDepth[0] if available, else from the
+        // fetch path. Deeper depths are allowed to load progressively after the switch.
+        const pageIri = irisByDepth?.[0]
+          ? this.getPageIriFromDepthGroup(irisByDepth[0])
+          : this.getPageIriByFetchStatus(fetchingStatus)
+        if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
+          const pageResource = this.getResource(pageIri).value
+          if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+            // Also require the layout resource to have data so the early-switch doesn't
+            // briefly fall back to the unstyled DefaultLayout while the layout entity loads.
+            const layoutIri = this.getLayoutIriByFetchStatus(fetchingStatus)
+            const layoutReady = !layoutIri || !!(this.getResource(layoutIri).value?.data)
+            if (layoutReady) {
               return fetchingStatus
             }
           }
