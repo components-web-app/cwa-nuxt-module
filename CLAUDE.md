@@ -624,13 +624,22 @@ This means every Tailwind class in the module must use the `cwa:` prefix (e.g. `
 
 ## Future: CWA Admin UI Component Kit
 
-The goal is a polished, consistent component kit for the admin UI — inputs, selects, modals, buttons, etc. — similar in scope to what Nuxt UI provides.
+The goal is a polished, consistent component kit for the admin UI — similar in scope to what Nuxt UI provides but built entirely inside this module with no third-party design system dependency.
 
-**Why not Nuxt UI:** Nuxt UI cannot be used as the foundation. Adding it as a module dependency would force every consuming app to carry Nuxt UI as a transitive dep. More critically, CSS isolation would break: Nuxt UI injects its own theme tokens and utility classes globally, so a consuming app's Nuxt UI configuration (colours, fonts, spacing) would bleed into — and potentially override — the admin UI styles. The `cwa:` prefix isolation only protects Tailwind utilities; it does not protect against a shared Nuxt UI runtime injecting conflicting CSS variables or component styles.
+**Why not Nuxt UI:** Adding it as a module dependency would force every consuming app to carry Nuxt UI as a transitive dep. More critically, CSS isolation would break: Nuxt UI injects its own theme tokens and utility classes globally, so a consuming app's Nuxt UI configuration (colours, fonts, spacing) would bleed into — and potentially override — the admin UI styles. The `cwa:` prefix isolation only protects Tailwind utilities; it does not protect against a shared Nuxt UI runtime injecting conflicting CSS variables or component styles.
 
-**The right approach:** Build a small, self-contained component library scoped entirely within this module — styled exclusively with the `cwa:` prefixed Tailwind utilities already in place. No runtime CSS injected by a third party; no shared design tokens with the consuming app. The admin UI stays visually consistent regardless of what CSS framework or configuration the consuming app uses.
+**The right approach:** A self-contained component library scoped entirely within this module — styled exclusively with the `cwa:` prefixed Tailwind utilities already in place. No runtime CSS injected by a third party; no shared design tokens with the consuming app. The admin UI stays visually consistent regardless of what CSS framework or configuration the consuming app uses.
 
-**Scope:** Admin-only components (form inputs, selects, modals, tabs, buttons, etc.). Public-facing CWA components (`CwaComponent*`, layouts, page templates) are owned by consuming apps and intentionally unstyled by this module.
+**Nuxt UI as a structural reference:** Nuxt UI's source is a good model for how to organise the kit — its separation of base/variant/size layers, slot-based composition, and headless-first primitives are patterns worth following. Refer to it when designing new components, but implement everything natively using our own `cwa:` Tailwind classes.
+
+**Surface areas that need components:**
+
+- **Modal UI** — inputs, selects, textareas, radio tab groups, checkboxes, buttons, info fields, section labels. These already exist in `src/runtime/templates/components/core/admin/form/` in rough form and need to be consolidated into a coherent kit.
+- **Standalone admin pages** (`src/layer/pages/_cwa/`) — list views, data tables, form layouts, page-level navigation. These pages currently inherit ad-hoc styles and would benefit from shared layout primitives.
+- **Manager bar** — the resource manager panel (`LazyCwaAdminResourceManager`) needs alternative style variants; the current dark-panel aesthetic should be one option, not the only one. Tab bars, stack breadcrumbs, and focus overlays are all candidates for themeable base components.
+- **Base primitives** — tabs (headless, composable into modal tabs, manager tabs, radio tabs), dropdowns, badges, tooltips. Build the headless logic once; apply variant styles on top. This mirrors how Nuxt UI structures `UTab` / `USelect` etc.
+
+**Scope:** Admin-only. Public-facing CWA components (`CwaComponent*`, layouts, page templates) are owned by consuming apps and intentionally unstyled by this module.
 
 ---
 
