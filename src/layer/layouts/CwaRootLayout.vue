@@ -98,14 +98,32 @@ const layoutUiComponent = computed<GlobalComponentNames>(() => {
   return cwaPageMeta.value?.staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
+// Whether the current context resolves to a named layout component (not falling back to default).
+const hasNamedLayout = computed(() => !!(cwaPageMeta.value?.staticLayout || layoutResource.value?.data?.uiComponent))
+
+// Track the last confirmed real layout component so we can avoid a brief flash back to the
+// unstyled default during navigation. The flash occurs when the early-switch fires before the
+// route resource's HTTP response has arrived: layoutIri is defined (we know the new layout IRI
+// from the page resource) but layoutResource.data is still undefined (the layout entity hasn't
+// been fetched yet), causing layoutUiComponent to momentarily fall back to LazyCwaDefaultLayout.
+const stableLayoutUiComponent = ref<GlobalComponentNames | undefined>(hasNamedLayout.value ? layoutUiComponent.value : undefined)
+watch(hasNamedLayout, (isNamed) => {
+  if (isNamed) {
+    stableLayoutUiComponent.value = layoutUiComponent.value
+  }
+})
+
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
 const resolvedComponent = computed(() => {
   // todo: add checks to ensure component exists - otherwise output a warning and/or default
-  if (
-    typeof instance?.appContext.components !== 'object'
-    || !layoutUiComponent.value
-  ) {
+  if (typeof instance?.appContext.components !== 'object') {
     return LazyCwaDefaultLayout
+  }
+  // If we're momentarily without a named layout but we know a layout IRI exists (the layout
+  // entity data hasn't arrived yet), hold the last known real layout to avoid a flash back
+  // to the unstyled default during navigation.
+  if (!hasNamedLayout.value && $cwa.resources.layoutIri.value && stableLayoutUiComponent.value) {
+    return stableLayoutUiComponent.value
   }
   return layoutUiComponent.value
 })
