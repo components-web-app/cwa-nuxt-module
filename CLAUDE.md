@@ -560,18 +560,27 @@ depth 1 → route IRI /_/routes//topic-1/chapter-one → path header "/topic-1/c
 
 Note: resources fetched as `fetchAssociatedResources` follow-ups (componentGroups → componentPositions → component) inherit the depth of the parent resource they were discovered from, so the `iriToDepth` map should propagate depth downward through the associated-resource chain as each IRI is queued.
 
-**~~Known bug: layout component groups (nav links) not rendered for unauthenticated users~~ — FIXED**
+**~~Known bug: layout component groups (nav links) not rendered for unauthenticated users~~ — FIXED (both sides)**
 
-The API returns `componentGroups` on a `Layout` resource as **embedded JSON-LD objects**, not IRI strings. `fetchAssociatedResources` was pushing raw objects into `nestedIris`; `fetchBatch` then tried to call `path.split('?')` on an object — a TypeError silently swallowed, so the component groups were never fetched.
+The API was returning `componentGroups` on a `Layout` resource as **embedded JSON-LD objects**, not IRI strings. `fetchAssociatedResources` was pushing raw objects into `nestedIris`; `fetchBatch` then tried to call `path.split('?')` on an object — a TypeError silently swallowed, so the component groups were never fetched.
 
-**Fix (committed):** Array items in `fetchAssociatedResources` now extract `@id` when the value is an object:
+**Module fix (committed):** Array items in `fetchAssociatedResources` now extract `@id` when the value is an object:
 ```ts
 for (const value of propIris) {
   const iri = typeof value === 'string' ? value : value?.['@id']
   if (iri) nestedIris.push(iri)
 }
 ```
-This also applies to any future property that returns embedded objects in array form — the fix is defensive across all associated-resource properties.
+
+**API fix (committed 2026-06-16):** `Layout` now has an explicit `Layout:read` normalization group. `getComponentGroups()` is overridden in `Layout.php` with `#[ApiProperty(readableLink: false, writableLink: false)]`, so AP4 always returns IRI strings. The module's `@id` extraction is now a defensive fallback only.
+
+**~~Known gap: `pageDataProperty` component IRIs missing from manifests~~ — FIXED**
+
+`ComponentPositionNormalizer.normalizeForPageData()` previously resolved `pageDataProperty` slots via the `path` HTTP request header — absent during manifest generation. As a result, manifest responses for routes with pageDataProperty positions had `component: null` for those slots, and the component IRIs never appeared in `resource_iris`.
+
+**API fix (committed 2026-06-16):** `PageDataNormalizer` now injects `cwa_current_page_data` into the serialization context when `Route:manifest:read` is active. `ComponentPositionNormalizer` reads this context key first and falls back to the HTTP header only for non-manifest normalizations. `ManifestDepthGroupTrait.collectCurrentDepth()` now also collects string IRI values that AP4 emits for related resources where readableLink is auto-computed as false (e.g. component IRIs from `ComponentPosition.component` where `AbstractComponent` has no `Route:manifest:read` fields). Internal blank node resources (`/.well-known/genid/...`) are excluded so AP4-internal metadata IRIs (`pageDataMetadata` etc.) are not leaked into `resource_iris`.
+
+The total serial depth for a manifest fetch is now: **manifest → parallel batch (everything, including resolved pageDataProperty component IRIs) → no follow-up needed for static positions** (they were already in the manifest). `pageDataProperty` component IRIs still require a follow-up only when they differ between pageData instances and haven't been pre-fetched.
 
 **Step 9 — Tests (Vitest)**
 - State/actions: `irisByDepth` set pre-batch; `fetchComplete` gates `isFetchResolving`; per-depth resolution computed correctly

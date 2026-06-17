@@ -326,7 +326,7 @@ const layoutOptions = computed(() => {
   return options
 })
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource, getInternalResourceLink } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, saveTitle: _saveTitle, loadResource, getInternalResourceLink } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',
@@ -336,7 +336,21 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   },
   endpoint: displayIri,
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes')),
+  excludeFields: ['componentGroups'],
 })
+
+function saveResource(close = false) {
+  if (localResourceData.value) {
+    if (parentType.value !== 'page') localResourceData.value.parentPage = null
+    if (parentType.value !== 'data') localResourceData.value.parentPageData = null
+  }
+  return _saveResource(close)
+}
+
+function saveTitle() {
+  if (isAdding.value) return
+  return saveResource()
+}
 
 const tabs = computed<ResourceModalTab[]>(() => {
   const t: ResourceModalTab[] = [
@@ -389,39 +403,30 @@ watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolea
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 
-watch(selectedParentDataType, (key) => {
-  if (localResourceData.value) localResourceData.value.parentPageData = null
+// Only clear the instance when the user explicitly changes type (oldKey non-null = user action, not init).
+watch(selectedParentDataType, (key, oldKey) => {
+  if (oldKey && localResourceData.value) localResourceData.value.parentPageData = null
   if (key) loadDataInstances(key)
 })
 
-watch(localResourceData, (data) => {
+// Set parentType from loaded data. On first load (!oldData), also restore selectedParentDataType
+// so the data instance dropdown repopulates without waiting for onMounted.
+watch(localResourceData, (data, oldData) => {
   if (data?.parentPage) parentType.value = 'page'
   else if (data?.parentPageData) parentType.value = 'data'
   else parentType.value = null
-}, { immediate: true })
 
-watch(parentType, (value) => {
-  if (!localResourceData.value) return
-  if (value !== 'page') localResourceData.value.parentPage = null
-  if (value !== 'data') {
-    localResourceData.value.parentPageData = null
-    selectedParentDataType.value = null
-  }
-})
-
-onMounted(async () => {
-  await Promise.all([loadLayoutOptions(), loadParentPageOptions(), loadDataTypes()])
-  const pdIri = localResourceData.value?.parentPageData
-  if (pdIri) {
-    const pdResource = $cwa.resources.getResource(pdIri).value
+  if (data && !oldData && data.parentPageData) {
+    const pdResource = $cwa.resources.getResource(data.parentPageData).value
     const pdType = pdResource?.data?.['@type']
     if (pdType) {
       const key = fqcnToEntrypointKey(pdType)
-      if (key) {
-        selectedParentDataType.value = key
-        await loadDataInstances(key)
-      }
+      if (key) selectedParentDataType.value = key
     }
   }
+}, { immediate: true })
+
+onMounted(async () => {
+  await Promise.all([loadLayoutOptions(), loadParentPageOptions(), loadDataTypes()])
 })
 </script>

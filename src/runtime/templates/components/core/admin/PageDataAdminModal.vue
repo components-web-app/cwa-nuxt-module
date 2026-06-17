@@ -251,7 +251,7 @@ const depthChain = computed(() => {
 })
 
 const createEndpoint = ref('')
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource, getInternalResourceLink } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, saveTitle: _saveTitle, loadResource, getInternalResourceLink } = useItemPage({
   createEndpoint,
   emit,
   resourceType: props.resourceType,
@@ -261,13 +261,24 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   routeHashAfterAdd: computed(() => ('#routes')),
 })
 
+function saveResource(close = false) {
+  if (localResourceData.value) {
+    if (parentType.value !== 'page') localResourceData.value.parentPage = null
+    if (parentType.value !== 'data') localResourceData.value.parentPageData = null
+  }
+  return _saveResource(close)
+}
+
+function saveTitle() {
+  if (isAdding.value) return
+  return saveResource()
+}
+
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 const { fqcnToEntrypointKey } = useDataList()
 const { pageDataConfig } = useDataType(computed(() => resource.value?.['@type']))
 
 const pageDataTypeNuxtLinkParams = computed(() => {
-  // should do to the individual type when deleting the data from the admin pages, not just when the current page is page data loaded....
-  // save the type from the resource and have it cached locally in the component before the resource is deleted
   const type = $cwa.resources.pageData?.value?.data?.['@type']
   if (!type) {
     return { name: '_cwa-data' }
@@ -341,25 +352,28 @@ watchEffect(async () => {
   }
 })
 
-watch(selectedParentDataType, (key) => {
-  if (localResourceData.value) localResourceData.value.parentPageData = null
+// Only clear the instance when the user explicitly changes type (oldKey non-null = user action, not init).
+watch(selectedParentDataType, (key, oldKey) => {
+  if (oldKey && localResourceData.value) localResourceData.value.parentPageData = null
   if (key) loadDataInstances(key)
 })
 
-watch(localResourceData, (data) => {
+// Set parentType from loaded data. On first load (!oldData), also restore selectedParentDataType
+// so the data instance dropdown repopulates without waiting for onMounted.
+watch(localResourceData, (data, oldData) => {
   if (data?.parentPage) parentType.value = 'page'
   else if (data?.parentPageData) parentType.value = 'data'
   else parentType.value = null
-}, { immediate: true })
 
-watch(parentType, (value) => {
-  if (!localResourceData.value) return
-  if (value !== 'page') localResourceData.value.parentPage = null
-  if (value !== 'data') {
-    localResourceData.value.parentPageData = null
-    selectedParentDataType.value = null
+  if (data && !oldData && data.parentPageData) {
+    const pdResource = $cwa.resources.getResource(data.parentPageData).value
+    const pdType = pdResource?.data?.['@type']
+    if (pdType) {
+      const key = fqcnToEntrypointKey(pdType)
+      if (key) selectedParentDataType.value = key
+    }
   }
-})
+}, { immediate: true })
 
 onMounted(async () => {
   await Promise.all([loadParentPageOptions(), loadDynamicPageOptions(), loadDataTypes()])
@@ -369,18 +383,6 @@ onMounted(async () => {
   }
   if (isAdding.value && localResourceData.value && !localResourceData.value.page) {
     localResourceData.value.page = pageOptions.value[0]?.value
-  }
-  const pdIri = localResourceData.value?.parentPageData
-  if (pdIri) {
-    const pdResource = $cwa.resources.getResource(pdIri).value
-    const pdType = pdResource?.data?.['@type']
-    if (pdType) {
-      const key = fqcnToEntrypointKey(pdType)
-      if (key) {
-        selectedParentDataType.value = key
-        await loadDataInstances(key)
-      }
-    }
   }
 })
 </script>
