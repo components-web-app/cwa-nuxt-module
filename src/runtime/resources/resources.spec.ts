@@ -340,6 +340,74 @@ describe('Resources', () => {
       const { resources } = createResources(mockFetcherStore)
       expect(resources.displayFetchStatus).toEqual(mockStatus)
     })
+
+    test('should NOT early-switch with multi-depth manifest when depth-1 page is not yet ready', () => {
+      const depth0PageIri = '/_/pages/parent-uuid'
+      const depth1PageIri = '/_/pages/child-uuid'
+      const mockStatus = { success: 'mock' }
+      const resourceStatus = {
+        specific: 'status',
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', depth0PageIri],
+            ['/_/routes//conference/speakers', depth1PageIri],
+          ],
+        },
+      }
+
+      const mockResourcesStore = {
+        current: { currentIds: [depth0PageIri] as string[], byId: {} },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: mockStatus,
+        fetches: { abcd: resourceStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
+
+      vi.spyOn(resources, 'getResource').mockImplementation((iri: string) => ({
+        value: iri === depth0PageIri
+          ? { data: { some: 'data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } }
+          : { data: undefined, apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } },
+      }))
+
+      // depth-0 is ready but depth-1 is IN_PROGRESS — must wait
+      expect(resources.displayFetchStatus).toEqual(mockStatus)
+    })
+
+    test('should early-switch with multi-depth manifest when ALL depth page resources are ready', () => {
+      const depth0PageIri = '/_/pages/parent-uuid'
+      const depth1PageIri = '/_/pages/child-uuid'
+      const resourceStatus = {
+        specific: 'status',
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', depth0PageIri],
+            ['/_/routes//conference/speakers', depth1PageIri],
+          ],
+        },
+      }
+
+      const mockResourcesStore = {
+        current: { currentIds: [depth0PageIri, depth1PageIri] as string[], byId: {} },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: { success: 'mock' },
+        fetches: { abcd: resourceStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
+
+      vi.spyOn(resources, 'getResource').mockReturnValue({
+        value: { data: { some: 'data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } },
+      })
+
+      expect(resources.displayFetchStatus).toEqual(resourceStatus)
+    })
   })
 
   describe('pageIriAtDepth', () => {
