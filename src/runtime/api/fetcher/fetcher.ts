@@ -211,11 +211,13 @@ export default class Fetcher {
       })
       const response = await result.response
       resources = response._data?.resource_iris || []
-      this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, irisByDepth: resources })
-      const flatPaths = resources.flat()
-      if (flatPaths.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
-        // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
-        await this.fetchBatch({ paths: flatPaths, token: event.token })
+      if (this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
+        this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, irisByDepth: resources })
+        const flatPaths = resources.flat()
+        if (flatPaths.length) {
+          // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
+          await this.fetchBatch({ paths: flatPaths, token: event.token })
+        }
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,

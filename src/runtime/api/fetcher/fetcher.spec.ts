@@ -503,8 +503,39 @@ describe('Fetcher -> fetchManifest', () => {
     expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({ irisByDepth: [['/resolve-resource']], token: 'any' })
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource'], token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mock.invocationCallOrder[0]).lessThan(FetchStatusManager.mock.instances[0].setManifestIrisByDepth.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth.mock.invocationCallOrder[0]).lessThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
+  })
+
+  test('if token is no longer current when manifest response arrives, setManifestIrisByDepth and fetchBatch are not called', async () => {
+    FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => false)
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      const response = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ _data: { resource_iris: [['/resolve-resource']] } })
+        }, 1)
+      })
+      return { response }
+    })
+
+    await fetcher.fetchResource({
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest',
+    })
+    await delay(2)
+
+    expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).not.toHaveBeenCalled()
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
+      token: 'any',
+      type: FinishFetchManifestType.SUCCESS,
+    })
   })
 
   test('We finish the manifest status when completed', async () => {
