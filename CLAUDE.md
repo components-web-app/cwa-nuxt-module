@@ -182,7 +182,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ### Coverage progress
 
-**Target: 70% statement coverage** (5753 statements total, ~4027 needed).
+**Target: 70% statement coverage** (6353 statements total, ~4447 needed).
 
 | Date | Stmt % | Notes |
 |------|--------|-------|
@@ -194,6 +194,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 | 2026-06-15 | 55.91% | resources-manager: deleteResource, doResourceRequest (errors/callbacks/fetchBatch/404 swallow), updateResource branches (FormData/headers/not-persisted/publish/forcePublishedVersion), getWaitForRequestPromise bug fix (reactive .value guard + wrong loop nesting), confirmDiscardAddingResource event-set paths, initAddResource, setAddResourceEventResource, addResourceAction (guard clauses/sort-value/componentPositions/publish/pageDataProperty/requestCompleteFn) |
 | 2026-06-15 | 56.46% | resource-stack-manager: currentIri forcePublishedVersion branches, resetStack(true), getClosestStackItemByType matching/non-matching, selectStackIndex (not-editing/empty/out-of-range/confirm-dialog confirmed+cancelled), listenEditModeChange _isEditingLayout reset, contextStack truthy/falsy lastContextTarget, isPopulating+isContextPopulating truthy cases |
 | 2026-06-16 | ~56.5% | ModalRadioTabs (new component, fully tested), useParentPageDataLoader (new composable, fully tested), PageAdminModal+PageDataAdminModal updated with tab-radio parent picker (Bug 1+2 fixes) |
+| 2026-06-17 | 55.58% | Steps 8+9 code added net new statements; fetcher/resources/CwaPage/cwa-page/RoutesTab/RoutesTabManage/PageAdminModal/PageDataAdminModal specs all present. Slight % drop from new code volume. |
 
 **Key patterns established:**
 - Lodash `debounce` with fake timers: `vi.useFakeTimers()` + `vi.runAllTimers()` (or `vi.advanceTimersByTime(n)` to avoid triggering other timers)
@@ -212,7 +213,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ## Planned Feature: Nested Sub-Pages
 
-> **Status: Steps 1–8 complete plus two post-Step-8 bug fixes (layout nav + pageDataIriAtDepth). Next: Step 9 — Tests.**
+> **Status: All steps complete (1–9). Nested sub-pages feature done.**
 > Companion plan: see `## Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
 
 ### What we want
@@ -373,9 +374,7 @@ Routes are the **publication mechanism**. A `PageData` entity exists and is edit
 
    In both cases the API finds all pages/pageData whose chain leads to this route's page, identifies their routes that currently use the old path as a prefix, replaces the prefix, and creates redirects from old → new paths. Children using a different prefix are untouched. See API bundle CLAUDE.md for the required implementation detail.
 
-4. **Standalone routes list hierarchy — via a dedicated API endpoint.** The API exposes a lightweight hierarchy endpoint (or query parameter) that returns route hierarchy only when the routes admin list requests it. The API builds this efficiently in one join query (routes → page/pageData → parentPage/parentPageData chain) rather than computing it per-row on the client. The module calls this lazily when rendering the routes list. We previously had a hierarchy UI for this (when Route had a parent field); the new design restores that UI backed by an entity-chain-derived tree. See API bundle CLAUDE.md for the required contract.
-
-5. **No route, no child routes — disabled by security.** If a parent page has no route, its resources are protected by the security layer (resources without a route are not publicly accessible). A child route pointing into an unreachable parent is therefore broken for public users, not just inconvenient. Child route creation and editing is **disabled** in the UI when the parent has no route, with explanation: "Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first." An existing child route from before the parent's route was removed stays in the database but shows as inactive with the same reason.
+4. **No route, no child routes — disabled by security.** If a parent page has no route, its resources are protected by the security layer (resources without a route are not publicly accessible). A child route pointing into an unreachable parent is therefore broken for public users, not just inconvenient. Child route creation and editing is **disabled** in the UI when the parent has no route, with explanation: "Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first." An existing child route from before the parent's route was removed stays in the database but shows as inactive with the same reason.
 
 ---
 
@@ -560,20 +559,9 @@ Files changed: `useParentPageLoader.ts` (new), `useParentPageDataLoader.ts` (new
 - **"Dynamic Page" visibility** — always visible in `PageDataAdminModal` (Bug 1 fixed — every PageData must have a page template).
 - **Depth switcher ("Viewing" dropdown)** — both modals build a `depthChain` computed by walking `parentPage`/`parentPageData` from `$cwa.resources.getResource()`. When chain length > 1, a "Viewing" `ModalSelect` is shown above `ResourceModalTabs`. Changing selection updates `displayIri`, which drives `useItemPage` (replacing `toRef(props, 'iri')`). Labels use `reference` for Page resources and `title` for PageData resources.
 - **Route prefix display** — `RoutesTab` derives `parentIri` from `props.pageResource.parentPage || parentPageData`, looks up the parent in the store, and strips `/_/routes/` from the route IRI to display "Route prefix: /conference" above the route view. Hidden when no parent or parent has no route.
-- **Init from store** — on `onMounted`, if `localResourceData.parentPageData` is set, the resource's `@type` is looked up in the store via `getResource`, converted to an entrypoint key, and used to pre-populate `selectedParentDataType` + load instances. This restores the Data picker state when re-opening a modal for an existing nested resource.
+- **Init from store** — a `watch` on the resource data restores `selectedParentDataType` when data first loads (not `onMounted`): if `data.parentPageData` is set, its `@type` is looked up via `getResource`, converted to an entrypoint key via `fqcnToEntrypointKey`, and assigned to `selectedParentDataType`. This repopulates the Data instance dropdown when re-opening a modal for an existing nested resource.
 
-**Step 8 — Known issue: parent picker tabs not interactive**
 
-Reported from `components-web-app` against the published `048bbc6` edge package (which includes this code). The "None / Page / Data" `ModalRadioTabs` buttons in `PageAdminModal` (and likely `PageDataAdminModal`) appear rendered but clicking them has no effect. The user cannot set a `parentPage` or `parentPageData` on a `Page` resource through the admin UI.
-
-Things to investigate in the playground (which runs from live source — run `pnpm run dev`):
-1. Whether `ModalRadioTabs` buttons emit `update:modelValue` on click (add a `console.log` in the component or check Vue devtools)
-2. Whether the `parentType` computed setter in `PageAdminModal` fires and successfully mutates `localResourceData`
-3. Whether there is a z-index, `pointer-events: none`, or modal overlay that swallows the click before it reaches the button
-4. Whether the compiled Tailwind (`src/runtime/templates/assets/cwa.css`) includes the `cwa:cursor-pointer` and flex classes used by `ModalRadioTabs` — if not, run `pnpm run tailwind:main` and rebuild
-
-**Playground out of sync — pending update:**
-`playground/app/cwa/pages/NestedTopicTemplate.vue` and `playground/app/cwa/pages/NestedSubPageTemplate.vue` currently inject `'cwa-page-data-iri'` and compute `location` from it. This was incorrect for the demo. Both files should use `props.iri` directly as the `CwaComponentGroup` location (the template page IRI), with no `pageDataIri` inject. The `pageDataProperty='introContent'` position on the shared template page handles per-instance content (see "Per-instance component content" note below). Fixtures run in the shared Docker API at `https://localhost/_api` — `nuxt.config.ts` page/pageData registrations are already correct.
 
 ---
 
@@ -650,11 +638,9 @@ for (const value of propIris) {
 
 The total serial depth for a manifest fetch is now: **manifest → parallel batch (everything, including resolved pageDataProperty component IRIs) → no follow-up needed for static positions** (they were already in the manifest). `pageDataProperty` component IRIs still require a follow-up only when they differ between pageData instances and haven't been pre-fetched.
 
-**Step 9 — Tests (Vitest)**
-- State/actions: `irisByDepth` set pre-batch; `fetchComplete` gates `isFetchResolving`; per-depth resolution computed correctly
-- Fetcher: `setManifestIrisByDepth` called before `fetchBatch`; `finishManifestFetch` sets `fetchComplete`
-- `resources.ts`: `pageIriAtDepth` works for manifest path and chain-walk path; `displayFetchStatus` uses depth-0 IRI for early-switch
-- `cwa-page.vue`: correct resource rendered at each depth; keepalive preserves depth-0 on sibling nav
+**Step 9 — Tests (Vitest)** ✅ DONE
+
+Specs: `fetcher.spec.ts`, `fetch-status-manager.spec.ts`, `resources.spec.ts`, `CwaPage.spec.ts`, `cwa-page.spec.ts`, `RoutesTab.spec.ts`, `RoutesTabManage.spec.ts`, `PageAdminModal.spec.ts`, `PageDataAdminModal.spec.ts`, `ModalRadioTabs.spec.ts`, `useParentPageLoader.spec.ts`, `useParentPageDataLoader.spec.ts`.
 
 ### Design decisions
 

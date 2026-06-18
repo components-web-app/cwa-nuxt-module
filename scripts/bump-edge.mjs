@@ -97,7 +97,7 @@ async function main() {
   const date = Math.round(Date.now() / (1000 * 60))
 
   for (const pkg of workspace.packages.filter(p => !p.data.private)) {
-    workspace.setVersion(pkg.data.name, `${pkg.data.version}-${date}.${commit}`)
+    workspace.setVersion(pkg.data.name, `0.0.0-${date}.${commit}`)
     workspace.rename(pkg.data.name, pkg.data.name + '-edge')
   }
 
