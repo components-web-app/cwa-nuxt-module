@@ -1,6 +1,8 @@
 import { describe, test, expect, vi } from 'vitest'
 import { computed } from 'vue'
 import { Resources } from './resources'
+import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
+import * as utils from '#cwa/resources/resource-utils'
 
 const mockInject = vi.hoisted(() => vi.fn<any>().mockReturnValue(0))
 
@@ -8,8 +10,6 @@ vi.mock('vue', async (orig) => {
   const actual = await orig<typeof import('vue')>()
   return { ...actual, inject: mockInject }
 })
-import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
-import * as utils from '#cwa/resources/resource-utils'
 
 function createResources(mockFetcherStoreResponse: any = undefined, mockResourcesStoreResponse: any = undefined) {
   const mockResourcesStore = {
@@ -591,7 +591,7 @@ describe('Resources', () => {
   describe('pageDataAtDepth', () => {
     test('returns the pageData resource for an explicit depth', () => {
       const pageDataIri = '/page_data/event-uuid'
-      const pageDataResource = { data: { '@id': pageDataIri, title: 'Event' }, apiState: { status: 1 } }
+      const pageDataResource = { data: { '@id': pageDataIri, 'title': 'Event' }, apiState: { status: 1 } }
       const { resources } = createResources()
       vi.spyOn(resources, 'pageDataIriAtDepth').mockReturnValue(computed(() => pageDataIri))
       vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => pageDataResource as any))
