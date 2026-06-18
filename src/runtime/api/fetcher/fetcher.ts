@@ -124,8 +124,9 @@ export default class Fetcher {
       return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
+    let manifestPromise: Promise<void> | undefined
     if (manifestPath) {
-      this.fetchManifest({ token: startFetchResult.token, manifestPath }).then(() => {})
+      manifestPromise = this.fetchManifest({ token: startFetchResult.token, manifestPath })
     }
 
     const fetchEvent = {
@@ -184,6 +185,13 @@ export default class Fetcher {
       this.fetchStatusManager.abortFetch(startFetchResult.token)
     }
     else if (resource && shallowFetch !== true) {
+      // Wait for the manifest batch to complete before traversing associated resources.
+      // This ensures _iriToDepth and _depthPaths are populated so createRequestHeaders
+      // sends the correct depth-aware path for every follow-up request. fetchAssociatedResources
+      // still runs as a safety pass for anything the manifest did not include.
+      if (manifestPromise) {
+        await manifestPromise
+      }
       await this.fetchAssociatedResources({ resource, token: startFetchResult.token, noSave: !!noSave, onlyIfNoExist: shallowFetch === 'noexist' })
     }
 

@@ -367,6 +367,39 @@ describe('Fetcher -> fetchResource', () => {
     expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
   })
 
+  test('if manifestPath is passed, fetchAssociatedResources is called only after the manifest promise resolves', async () => {
+    let resolveManifest!: () => void
+    const manifestPromise = new Promise<void>(resolve => (resolveManifest = resolve))
+    vi.spyOn(fetcher, 'fetchManifest').mockReturnValue(manifestPromise)
+
+    let associatedCalledAt = 0
+    let manifestResolvedAt = 0
+    let tick = 0
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {
+      associatedCalledAt = ++tick
+      return Promise.resolve([])
+    })
+
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
+
+    const fetchPromise = fetcher.fetchResource({
+      path: '/_/routes//leaf',
+      token: 'token',
+      manifestPath: '/_/resource_manifest//leaf',
+    })
+
+    // Resolve manifest after a tick so we can verify ordering
+    await Promise.resolve()
+    manifestResolvedAt = ++tick
+    resolveManifest()
+
+    await fetchPromise
+
+    expect(fetcher.fetchManifest).toHaveBeenCalled()
+    expect(fetcher.fetchAssociatedResources).toHaveBeenCalled()
+    expect(associatedCalledAt).toBeGreaterThan(manifestResolvedAt)
+  })
+
   test('if the primary response is a redirect, nested fetches should not occur and the fetch should be aborted', async () => {
     vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_/routes//path')
     vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})

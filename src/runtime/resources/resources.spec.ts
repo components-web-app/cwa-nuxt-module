@@ -1,6 +1,13 @@
 import { describe, test, expect, vi } from 'vitest'
 import { computed } from 'vue'
 import { Resources } from './resources'
+
+const mockInject = vi.hoisted(() => vi.fn<any>().mockReturnValue(0))
+
+vi.mock('vue', async (orig) => {
+  const actual = await orig<typeof import('vue')>()
+  return { ...actual, inject: mockInject }
+})
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import * as utils from '#cwa/resources/resource-utils'
 
@@ -461,6 +468,32 @@ describe('Resources', () => {
       vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
       expect(resources.pageIriAtDepth(1).value).toBeUndefined()
     })
+
+    test('uses inject default (0) when no depth argument given', () => {
+      const depth0PageIri = '/_/pages/parent-uuid'
+      const fetchStatus = {
+        manifest: { irisByDepth: [['/_/routes//conference', depth0PageIri]] },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageIriAtDepth().value).toEqual(depth0PageIri)
+    })
+
+    test('uses injected depth value when no depth argument given', () => {
+      const depth1PageIri = '/_/pages/child-uuid'
+      const fetchStatus = {
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/_/pages/parent-uuid'],
+            ['/_/routes//conference/speakers', depth1PageIri],
+          ],
+        },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      mockInject.mockReturnValueOnce(1)
+      expect(resources.pageIriAtDepth().value).toEqual(depth1PageIri)
+    })
   })
 
   describe('pageDataIriAtDepth', () => {
@@ -502,6 +535,137 @@ describe('Resources', () => {
       const { resources } = createResources()
       vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
       expect(resources.pageDataIriAtDepth(1).value).toBeUndefined()
+    })
+
+    test('uses inject default (0) when no depth argument given', () => {
+      const fetchStatus = {
+        manifest: { irisByDepth: [['/_/routes//conference', '/page_data/event-uuid', '/_/pages/template-uuid']] },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      expect(resources.pageDataIriAtDepth().value).toEqual('/page_data/event-uuid')
+    })
+
+    test('uses injected depth value when no depth argument given', () => {
+      const fetchStatus = {
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/page_data/parent-uuid', '/_/pages/parent-template'],
+            ['/_/routes//conference/programme', '/page_data/child-uuid', '/_/pages/child-template'],
+          ],
+        },
+      }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(fetchStatus as any)
+      mockInject.mockReturnValueOnce(1)
+      expect(resources.pageDataIriAtDepth().value).toEqual('/page_data/child-uuid')
+    })
+  })
+
+  describe('pageAtDepth', () => {
+    test('returns the page resource for an explicit depth', () => {
+      const pageIri = '/_/pages/child-uuid'
+      const pageResource = { data: { '@id': pageIri }, apiState: { status: 1 } }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageIriAtDepth').mockReturnValue(computed(() => pageIri))
+      vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => pageResource as any))
+      expect(resources.pageAtDepth(1).value).toBe(pageResource)
+      expect(resources.pageIriAtDepth).toHaveBeenCalledWith(1)
+      expect(resources.getResource).toHaveBeenCalledWith(pageIri)
+    })
+
+    test('returns undefined when pageIriAtDepth returns undefined', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageIriAtDepth').mockReturnValue(computed(() => undefined))
+      expect(resources.pageAtDepth(1).value).toBeUndefined()
+    })
+
+    test('passes no depth to pageIriAtDepth when called without argument', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageIriAtDepth').mockReturnValue(computed(() => undefined))
+      resources.pageAtDepth()
+      expect(resources.pageIriAtDepth).toHaveBeenCalledWith(undefined)
+    })
+  })
+
+  describe('pageDataAtDepth', () => {
+    test('returns the pageData resource for an explicit depth', () => {
+      const pageDataIri = '/page_data/event-uuid'
+      const pageDataResource = { data: { '@id': pageDataIri, title: 'Event' }, apiState: { status: 1 } }
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageDataIriAtDepth').mockReturnValue(computed(() => pageDataIri))
+      vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => pageDataResource as any))
+      expect(resources.pageDataAtDepth(0).value).toBe(pageDataResource)
+      expect(resources.pageDataIriAtDepth).toHaveBeenCalledWith(0)
+      expect(resources.getResource).toHaveBeenCalledWith(pageDataIri)
+    })
+
+    test('returns undefined when pageDataIriAtDepth returns undefined', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageDataIriAtDepth').mockReturnValue(computed(() => undefined))
+      expect(resources.pageDataAtDepth(0).value).toBeUndefined()
+    })
+
+    test('passes no depth to pageDataIriAtDepth when called without argument', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'pageDataIriAtDepth').mockReturnValue(computed(() => undefined))
+      resources.pageDataAtDepth()
+      expect(resources.pageDataIriAtDepth).toHaveBeenCalledWith(undefined)
+    })
+  })
+
+  describe('depthCount', () => {
+    test('returns 1 when displayFetchStatus has no manifest', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/test' } as any)
+      expect(resources.depthCount.value).toBe(1)
+    })
+
+    test('returns 1 when manifest has no irisByDepth', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ manifest: {} } as any)
+      expect(resources.depthCount.value).toBe(1)
+    })
+
+    test('returns 1 when displayFetchStatus is undefined', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue(undefined as any)
+      expect(resources.depthCount.value).toBe(1)
+    })
+
+    test('returns irisByDepth length for a flat page', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({
+        manifest: { irisByDepth: [['/_/routes//about', '/_/pages/uuid']] },
+      } as any)
+      expect(resources.depthCount.value).toBe(1)
+    })
+
+    test('returns irisByDepth length for a two-level nested page', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/_/pages/parent-uuid'],
+            ['/_/routes//conference/speakers', '/_/pages/child-uuid'],
+          ],
+        },
+      } as any)
+      expect(resources.depthCount.value).toBe(2)
+    })
+
+    test('returns irisByDepth length for three depth levels', () => {
+      const { resources } = createResources()
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//a', '/_/pages/a'],
+            ['/_/routes//a/b', '/_/pages/b'],
+            ['/_/routes//a/b/c', '/_/pages/c'],
+          ],
+        },
+      } as any)
+      expect(resources.depthCount.value).toBe(3)
     })
   })
 
