@@ -769,6 +769,41 @@ This ensures: when `componentMounted` fires (triggering `emitRedraw()` → canva
 
 ---
 
+## Future Ideas
+
+### `mockCwaResource` test utility
+A developer-facing helper that sets up the Pinia resource store with a mock resource, making it possible to unit-test components that use `useCwaResource` without spinning up the full stack. API sketch:
+
+```ts
+import { mockCwaResource } from '@cwa/nuxt/test-utils'
+
+const { wrapper } = mockCwaResource('/component/titles/123', {
+    '@type': 'Title',
+    title: 'Hello world',
+    uiClassNames: ''
+})
+```
+
+Should integrate with Vitest + `@vue/test-utils`. The utility creates a minimal Pinia store context with the resource pre-populated so `getResource()` returns it immediately. Keep it in a separate `test-utils` export so it doesn't add to production bundle size.
+
+### `defineCwaComponent()` macro
+A shorthand that inlines the four mandatory lines every display component must have:
+
+```ts
+// Instead of:
+const props = defineProps<IriProp>()
+const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+const resource = getResource()
+defineExpose(exposeMeta)
+
+// A developer could write:
+const resource = defineCwaComponent()
+```
+
+Would need to be a Vite/unplugin macro (not a runtime composable) so `defineProps` and `defineExpose` can be called at the correct scope. Worth implementing once the composable API is stable — reduces boilerplate for every component author.
+
+---
+
 ## Known Bug: TipTap bubble/floating menu obscured by CWA overlay
 
 **File:** `playground/app/components/TipTapHtmlEditor.vue`
