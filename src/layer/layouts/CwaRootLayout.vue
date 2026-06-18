@@ -3,7 +3,8 @@
     id="cwa-root-layout"
     ref="rootLayout"
     class="cwa:relative cwa:h-full cwa:flex cwa:flex-col"
-    @contextmenu="closeContextMenu"
+    @click="onRootClick"
+    @contextmenu="onRootContextMenu"
   >
     <ClientOnly>
       <LazyCwaAdminHeader v-if="showAdmin" />
@@ -16,14 +17,10 @@
       :is="resolvedComponent"
       v-if="resolvedComponent"
       class="cwa:relative"
-      @click.stop="onLayoutClick"
-      @contextmenu.stop="onLayoutContextMenu"
     >
       <div
         ref="page"
         class="cwa:grow"
-        @click.stop="onPageClick"
-        @contextmenu.stop="onPageContextMenu"
       >
         <slot />
       </div>
@@ -70,24 +67,16 @@ function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandle
   resourceManager.value && resourceManager.value[handler](e, type)
 }
 
-function closeContextMenu(e: MouseEvent) {
-  resourceManager.value && resourceManager.value.closeContextMenu(e)
+function isInPage(e: MouseEvent) {
+  return !!page.value && (page.value === e.target || page.value.contains(e.target as Node))
 }
 
-function onLayoutContextMenu(e: MouseEvent) {
-  callResourceManagerHandler('contextMenuHandler', e, 'layout')
+function onRootClick(e: MouseEvent) {
+  callResourceManagerHandler('clickHandler', e, isInPage(e) ? 'page' : 'layout')
 }
 
-function onPageContextMenu(e: MouseEvent) {
-  callResourceManagerHandler('contextMenuHandler', e, 'page')
-}
-
-function onPageClick(e: MouseEvent) {
-  callResourceManagerHandler('clickHandler', e, 'page')
-}
-
-function onLayoutClick(e: MouseEvent) {
-  callResourceManagerHandler('clickHandler', e, 'layout')
+function onRootContextMenu(e: MouseEvent) {
+  callResourceManagerHandler('contextMenuHandler', e, isInPage(e) ? 'page' : 'layout')
 }
 
 const layoutResource = computed(() => {
