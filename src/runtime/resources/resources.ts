@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
@@ -221,40 +221,44 @@ export class Resources {
     return group.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE_DATA)
   }
 
-  public pageIriAtDepth(depth: number): ComputedRef<string | undefined> {
+  public pageIriAtDepth(depth?: number): ComputedRef<string | undefined> {
+    const d = depth ?? inject<number>('cwa-page-depth', 0)
     return computed(() => {
       const fetchStatus = this.displayFetchStatus
       const irisByDepth = fetchStatus?.manifest?.irisByDepth
-      if (irisByDepth?.[depth]) {
-        return this.getPageIriFromDepthGroup(irisByDepth[depth])
+      if (irisByDepth?.[d]) {
+        return this.getPageIriFromDepthGroup(irisByDepth[d])
       }
-      if (depth === 0) {
+      if (d === 0) {
         return this.getPageIriByFetchStatus(fetchStatus)
       }
       return undefined
     })
   }
 
-  public pageDataIriAtDepth(depth: number): ComputedRef<string | undefined> {
+  public pageDataIriAtDepth(depth?: number): ComputedRef<string | undefined> {
+    const d = depth ?? inject<number>('cwa-page-depth', 0)
     return computed(() => {
       const irisByDepth = this.displayFetchStatus?.manifest?.irisByDepth
-      if (irisByDepth?.[depth]) {
-        return this.getPageDataIriFromDepthGroup(irisByDepth[depth])
+      if (irisByDepth?.[d]) {
+        return this.getPageDataIriFromDepthGroup(irisByDepth[d])
       }
       return undefined
     })
   }
 
-  public pageAtDepth(depth: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+  public pageAtDepth(depth?: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    const iriRef = this.pageIriAtDepth(depth)
     return computed(() => {
-      const iri = this.pageIriAtDepth(depth).value
+      const iri = iriRef.value
       return iri ? this.getResource(iri).value : undefined
     })
   }
 
-  public pageDataAtDepth(depth: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+  public pageDataAtDepth(depth?: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    const iriRef = this.pageDataIriAtDepth(depth)
     return computed(() => {
-      const iri = this.pageDataIriAtDepth(depth).value
+      const iri = iriRef.value
       return iri ? this.getResource(iri).value : undefined
     })
   }
