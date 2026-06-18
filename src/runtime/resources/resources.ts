@@ -222,7 +222,7 @@ export class Resources {
   }
 
   public pageIriAtDepth(depth?: number): ComputedRef<string | undefined> {
-    const d = depth ?? inject<number>('cwa-page-depth', 0)
+    const d = depth ?? inject<number>('cwa-page-own-depth', 0)
     return computed(() => {
       const fetchStatus = this.displayFetchStatus
       const irisByDepth = fetchStatus?.manifest?.irisByDepth
@@ -237,7 +237,7 @@ export class Resources {
   }
 
   public pageDataIriAtDepth(depth?: number): ComputedRef<string | undefined> {
-    const d = depth ?? inject<number>('cwa-page-depth', 0)
+    const d = depth ?? inject<number>('cwa-page-own-depth', 0)
     return computed(() => {
       const irisByDepth = this.displayFetchStatus?.manifest?.irisByDepth
       if (irisByDepth?.[d]) {
