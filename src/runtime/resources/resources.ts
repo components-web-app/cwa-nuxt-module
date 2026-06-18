@@ -245,6 +245,26 @@ export class Resources {
     })
   }
 
+  public pageAtDepth(depth: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const iri = this.pageIriAtDepth(depth).value
+      return iri ? this.getResource(iri).value : undefined
+    })
+  }
+
+  public pageDataAtDepth(depth: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const iri = this.pageDataIriAtDepth(depth).value
+      return iri ? this.getResource(iri).value : undefined
+    })
+  }
+
+  public get depthCount(): ComputedRef<number> {
+    return computed(() => {
+      return this.displayFetchStatus?.manifest?.irisByDepth?.length ?? 1
+    })
+  }
+
   private getPageIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
     const type = this.getFetchStatusType(fetchStatus)
     if (!type) {
