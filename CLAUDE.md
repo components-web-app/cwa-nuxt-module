@@ -768,13 +768,11 @@ Admin UI functionality to duplicate an existing resource (page, component, etc.)
 
 ---
 
-## Partial: pageDataProperty position UI — two-step picker (#234)
+## Fixed: pageDataProperty position UI — two-step picker (#234)
 
 **Files:** `src/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions.ts`, `src/runtime/templates/components/main/admin/resource-manager/_tabs/position/DynamicPage.vue`, `src/runtime/types/index.ts`
 
-**Module side complete:** `DynamicPage.vue` now shows two `ModalSelect` dropdowns — first selects the PageData type (from `pageDataMetadata`), second shows filtered properties for that type. Labels use camelCase/PascalCase → Title Case by default. Configurable per-field via new `cwa.pageData[TypeName].properties[field]` key in `nuxt.config.ts`. `allowedComponents` on the parent ComponentGroup filters the property list (strips API path prefix before comparing). On re-open, scans `pageDataMetadata` to find which type has the stored `pageDataProperty` and pre-sets the type dropdown.
-
-**Blocked on API:** `ComponentPosition` needs a new `pageDataClass` field (FQCN of the selected PageData type). Once available: module sends it alongside `pageDataProperty` on write; re-open reads it directly instead of scanning; API can use it for write-time validation (api-components-bundle#170).
+`DynamicPage.vue` shows two `ModalSelect` dropdowns — first selects the PageData type, second shows filtered properties for that type. Labels use camelCase/PascalCase → Title Case by default; configurable per-field via `cwa.pageData[TypeName].properties[field]` in `nuxt.config.ts`. `allowedComponents` on the parent ComponentGroup filters the property list (strips API path prefix). Saves `pageDataClass` + `pageDataProperty` together in one PATCH. Re-open reads `pageDataClass` directly from position data. Incomplete-state validation (type set, no field) shows warning + cancel. "Make static" button shown only when a component is already assigned to the position.
 
 ---
 
@@ -800,11 +798,9 @@ Module-side UX enforcement tracked in [#234](https://github.com/components-web-a
 
 **API read-side is fixed** (api-components-bundle commit `2305ad89`, `88262abe`): positions whose resolved component type is not in `allowedComponents` return `component: null`. Doctrine proxy class names are now handled correctly so anonymous users also see the correct filtering.
 
-**API write-side requires a module-side prerequisite:** When creating or PATCHing a `ComponentPosition` with `pageDataProperty` set, the module must also send `pageDataClass` — the FQCN of the PageData entity whose property is being referenced (e.g. `"pageDataClass": "App\\Entity\\ConferenceData"`). Without this, the API has no way to resolve the property type at write time and cannot validate it against `allowedComponents`. The API will return a 422 if the resolved component type is not in `allowedComponents`.
+**API write-side is now fixed (api-components-bundle, pending commit, closes #170):** `ComponentPosition` stores `pageDataClass` (FQCN) alongside `pageDataProperty`. Both must be set together. `ComponentPositionValidator` validates: (1) `pageDataClass` is a known PageData resource; (2) `pageDataProperty` is a component-typed property on it; (3) the resolved type is in `allowedComponents` if set. The API returns 422 on any violation.
 
-This `pageDataClass` field does not yet exist on the API side — it is the agreed design direction (documented in api-components-bundle#170, reopened). It needs a coordinated implementation in both projects:
-- **Module**: send `pageDataClass` in the POST/PATCH body when creating `pageDataProperty` positions
-- **API**: add `pageDataClass` to `ComponentPosition`, resolve the property type via `PageDataMetadataFactory`, validate against `allowedComponents` in `ComponentPositionValidator`
+**Module action required:** Send `pageDataClass` in the POST/PATCH body when creating or updating `pageDataProperty` positions. The `pageDataClass` value is already available from the type dropdown selection in `DynamicPage.vue`. Existing positions expose `pageDataClass` via the admin read group so the re-open flow can read it directly.
 
 ---
 
