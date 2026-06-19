@@ -11,7 +11,7 @@ function makeCwa(opts: {
   return {
     getApiDocumentation: vi.fn().mockResolvedValue(opts.docs ?? null),
     getComponentMetadata: vi.fn().mockResolvedValue(opts.componentMetadata ?? {}),
-    pageData: opts.pageDataConfig ?? {},
+    pageDataConfig: opts.pageDataConfig ?? {},
   } as any
 }
 

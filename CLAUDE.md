@@ -197,6 +197,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 | 2026-06-17 | 55.58% | Steps 8+9 code added net new statements; fetcher/resources/CwaPage/cwa-page/RoutesTab/RoutesTabManage/PageAdminModal/PageDataAdminModal specs all present. Slight % drop from new code volume. |
 
 **Key patterns established:**
+- `vi.mock('#imports')` does NOT intercept compiled SFC auto-imports — use `mockNuxtImport('fnName', () => impl)` from `@nuxt/test-utils/runtime` instead. Also mock `useError` and `useRoute` when testing `useHead` title logic to prevent happy-dom localStorage errors polluting `useError()`.
 - Lodash `debounce` with fake timers: `vi.useFakeTimers()` + `vi.runAllTimers()` (or `vi.advanceTimersByTime(n)` to avoid triggering other timers)
 - `vi.hoisted()` cannot use `ref()`/`reactive()` — use plain objects `{ value: ... }` or `var` + factory in `vi.mock()`
 - Reactive route mock: `var mockRoute: {...}` + `mockRoute = reactive({...})` inside `vi.mock('vue-router', async () => {...})`

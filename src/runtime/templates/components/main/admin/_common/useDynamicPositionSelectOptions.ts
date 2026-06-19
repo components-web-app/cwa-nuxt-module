@@ -15,7 +15,7 @@ export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
       .filter((m: any) => !m.resourceClass.endsWith('\\AbstractPageData'))
       .map((m: any) => {
         const shortName = m.resourceClass.split('\\').pop() as string
-        const label = $cwa.pageData?.[shortName]?.name ?? toReadableLabel(shortName)
+        const label = $cwa.pageDataConfig?.[shortName]?.name ?? toReadableLabel(shortName)
         return { label, value: m.resourceClass }
       })
   }
@@ -26,7 +26,7 @@ export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
     if (!member) return []
 
     const shortName = resourceClass.split('\\').pop() as string
-    const propertyLabels = $cwa.pageData?.[shortName]?.properties ?? {}
+    const propertyLabels = $cwa.pageDataConfig?.[shortName]?.properties ?? {}
 
     let componentMeta: Record<string, { endpoint: string }> | undefined
     if (allowedComponents) {

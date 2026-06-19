@@ -53,16 +53,29 @@ const fallbackTitle = computed(() => {
 })
 
 const metaDescription = computed(() => {
-  return $cwa.resources.pageData?.value?.data?.metaDescription || $cwa.resources.page?.value?.data?.metaDescription
+  const count = $cwa.resources.depthCount.value
+  for (let d = count - 1; d >= 0; d--) {
+    const desc = $cwa.resources.pageDataAtDepth(d).value?.data?.metaDescription
+      || $cwa.resources.pageAtDepth(d).value?.data?.metaDescription
+    if (desc) return desc
+  }
+  return undefined
 })
 
 useHead({
   title: () => {
-    const userDefinedTitle = $cwa.resources.pageData?.value?.data?.title || $cwa.resources.page?.value?.data?.title
+    const count = $cwa.resources.depthCount.value
+    const titles: string[] = []
+    for (let d = count - 1; d >= 0; d--) {
+      const t = $cwa.resources.pageDataAtDepth(d).value?.data?.title
+        || $cwa.resources.pageAtDepth(d).value?.data?.title
+      if (t) titles.push(t)
+    }
+    const userDefinedTitle = titles.length ? titles.join(' | ') : undefined
     if (!userDefinedTitle && $cwa.siteConfig.config.fallbackTitle) {
       return fallbackTitle.value
     }
-    return userDefinedTitle
+    return userDefinedTitle || null
   },
   meta: [
     { name: 'description', content: metaDescription },

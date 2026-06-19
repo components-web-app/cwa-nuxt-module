@@ -38,10 +38,21 @@
             v-html="resourceDescription"
           />
           <template v-if="selectedComponent === 'ComponentPosition'">
-            <CwaUiFormSelect
-              v-model="dynamicPropertySelect.model.value"
-              :options="dynamicPropertySelect.options.value"
-            />
+            <div class="cwa:flex cwa:flex-col cwa:gap-y-3">
+              <ModalSelect
+                :model-value="selectedDynamicType"
+                label="Data type"
+                :options="dynamicTypeOptions"
+                @update:model-value="onDynamicTypeChange"
+              />
+              <ModalSelect
+                v-if="selectedDynamicType"
+                :model-value="selectedDynamicProperty"
+                label="Field"
+                :options="dynamicPropertyOptions"
+                @update:model-value="val => selectedDynamicProperty = val"
+              />
+            </div>
           </template>
         </div>
       </div>
@@ -53,7 +64,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
 import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
-import { useCwa, useCwaSelect } from '#imports'
+import { useCwa } from '#imports'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 import type {
   ApiDocumentationComponentMetadata,
@@ -63,6 +74,7 @@ import type { CwaResourceMeta } from '#cwa/types'
 import {
   useDynamicPositionSelectOptions,
 } from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
+import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 interface MergedComponentMetadata {
@@ -83,7 +95,7 @@ interface DisplayDataI {
 const buttonClass = 'w-full cwa:rounded-lg cwa:py-3 cwa:px-4 cwa:text-white/70 cwa:bg-stone-800 cwa:hover:bg-stone-700 cwa:aria-selected:bg-stone-700 cwa:hover:text-white cwa:aria-selected:text-white cwa:transition cwa:border cwa:border-solid cwa:border-stone-700 cwa:hover:border-opacity-100 cwa:cursor-pointer'
 
 const $cwa = useCwa()
-const { getOptions } = useDynamicPositionSelectOptions($cwa)
+const { getTypeOptions, getPropertyOptions } = useDynamicPositionSelectOptions($cwa)
 
 const loadingComponents = ref(true)
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
@@ -91,13 +103,10 @@ const displayData = ref<DisplayDataI>()
 const selectedComponent = ref<string | undefined>()
 const dialogLoading = ref(false)
 
-const dynamicPositionPropertyModel = ref<string | undefined>()
-
-const dynamicPropertySelect = useCwaSelect(dynamicPositionPropertyModel)
-dynamicPropertySelect.options.value = [{
-  label: 'Loading...',
-  value: undefined,
-}]
+const selectedDynamicType = ref<string | null>(null)
+const selectedDynamicProperty = ref<string | null>(null)
+const dynamicTypeOptions = ref<{ label: string, value: string }[]>([])
+const dynamicPropertyOptions = ref<{ label: string, value: string }[]>([])
 
 const addResourceEvent = computed(() => $cwa.resourcesManager.addResourceEvent.value)
 const isInstantAddResourceSaved = computed(() => {
@@ -189,7 +198,8 @@ const defaultComponentData = computed<{ [key: string]: any }>(() => {
   }
   return {
     ...defaultData,
-    pageDataProperty: dynamicPropertySelect.model.value,
+    pageDataClass: selectedDynamicType.value ?? null,
+    pageDataProperty: selectedDynamicProperty.value ?? null,
   }
 })
 
@@ -227,12 +237,29 @@ function handleAdd() {
   }
   $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value, defaultComponentData.value)
 }
-async function loadOps() {
-  dynamicPropertySelect.options.value = await getOptions()
+async function loadDynamicTypeOptions() {
+  dynamicTypeOptions.value = await getTypeOptions() as { label: string, value: string }[]
+}
+
+async function loadDynamicPropertyOptions() {
+  if (!selectedDynamicType.value) {
+    dynamicPropertyOptions.value = []
+    return
+  }
+  const groupIri = displayData.value?.event.closest.group
+  const allowedComponents = groupIri ? findAllowedComponents(groupIri) ?? null : null
+  dynamicPropertyOptions.value = [{ label: 'Loading...', value: '' }]
+  dynamicPropertyOptions.value = await getPropertyOptions(selectedDynamicType.value, allowedComponents) as { label: string, value: string }[]
+}
+
+function onDynamicTypeChange(value: string | null) {
+  selectedDynamicType.value = value
+  selectedDynamicProperty.value = null
+  loadDynamicPropertyOptions()
 }
 
 onMounted(() => {
-  loadOps()
+  loadDynamicTypeOptions()
 })
 
 watch(isInstantAddResourceSaved, async (newlySaved) => {

@@ -26,7 +26,9 @@ const isDirtyIncomplete = computed(() => selectedType.value !== null && !selecte
 
 const componentGroupIri = computed(() => resource.value?.data?.componentGroup)
 const allowedComponents = computed<string[] | null>(() =>
-  $cwa.resources.getResource(componentGroupIri.value).value?.data?.allowedComponents ?? null,
+  componentGroupIri.value
+    ? $cwa.resources.getResource(componentGroupIri.value).value?.data?.allowedComponents ?? null
+    : null,
 )
 
 const canMakeStatic = computed(() =>
