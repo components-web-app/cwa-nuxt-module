@@ -2,20 +2,9 @@ import type { SitemapIndexRenderCtx } from '#sitemap/types'
 import type { HookRobotsConfigContext } from '#robots/types'
 import { parseRobotsTxt, NonHelpfulBots, AiBots } from '#robots/util'
 import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
-import type { H3Event } from 'h3'
 import { defineNitroPlugin } from 'nitropack/runtime'
 
 export default defineNitroPlugin(async (nitroApp) => {
-  // todo: refine this - resources.actions would like to clear cookies if a user is no longer logged in.
-  //  But we are trying to resolve some non-admins being randomly logged in as admins.
-  nitroApp.hooks.hook('beforeResponse', (event: H3Event) => {
-    const response = event.node.res
-    if (!response) return
-    if (response.hasHeader('set-cookie')) {
-      response.removeHeader('set-cookie')
-    }
-  })
-
   nitroApp.hooks.hook('sitemap:index-resolved', async (ctx: SitemapIndexRenderCtx) => {
     const resolvedConfig = await resolveConfigEventHandler(ctx.event)
     if (!resolvedConfig || !resolvedConfig.sitemapXml || resolvedConfig.sitemapXml === '') {
