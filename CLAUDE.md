@@ -779,9 +779,6 @@ Adding a dynamic position (`pageDataProperty`) referencing a component type the 
 
 ### UX / Admin
 
-**[#197](https://github.com/components-web-app/cwa-nuxt-module/issues/197) — Adding any layout file to `layouts/` breaks CWA default layout** *(fixed)*
-`module.ts` now runs a second `extendPages` pass after adding CWA pages. Any page without `meta.layout` (checked as `=== undefined` to preserve `layout: false`) gets `options.layoutName || 'cwa-root-layout'` set, regardless of how many layouts the consuming app has added.
-
 **[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)**
 Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wrong sort position after add) remains open — may be API-side.
 
@@ -801,6 +798,12 @@ A sample CWA form component and the composables needed to build forms are requir
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
+
+---
+
+## Fixed: Default layout not applied when consuming app adds custom layouts (#197)
+
+`module.ts` now runs a second `extendPages` pass after adding CWA pages. Any page without `meta.layout` (checked as `=== undefined` to preserve `layout: false`) gets `options.layoutName || 'cwa-root-layout'` set, regardless of how many layouts the consuming app has added.
 
 ---
 
