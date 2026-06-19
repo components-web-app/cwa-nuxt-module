@@ -3,6 +3,7 @@ import type {
   CwaResource } from './resource-utils'
 import {
   getPublishedResourceIri,
+  getPublishedResourceState,
   getResourceTypeFromIri,
   CwaResourceTypes,
   isCwaResource, isCwaResourceSame,
@@ -30,6 +31,11 @@ describe('Resource isCwaResourceSame function', () => {
       resource1: { '@id': 'id1', '@type': 'type', '_metadata': { persisted: true } },
       resource2: { '@id': 'id2', '@type': 'type', '_metadata': { persisted: true } },
       result: false,
+    },
+    {
+      resource1: { '@id': 'id', '@type': 'type', '_metadata': { persisted: true }, '@context': '/api/contexts/Page' },
+      resource2: { '@id': 'id', '@type': 'type', '_metadata': { persisted: true }, '@context': { '@vocab': 'https://example.com/' } },
+      result: true,
     },
   ])('If resource 1 is $resource1 and resource 2 is $resource2 then the result should be $result', ({ resource1, resource2, result }) => {
     expect(isCwaResourceSame(resource1, resource2)).toBe(result)
@@ -79,6 +85,18 @@ describe('Resource isCwaResource function', () => {
   })
 })
 
+describe('Resource getPublishedResourceState function', () => {
+  test('returns undefined when resource data has no _metadata (e.g. Mercure delete message shape)', () => {
+    const result = getPublishedResourceState({ data: { '@id': '/test', '@type': 'Page' } as any })
+    expect(result).toBeUndefined()
+  })
+
+  test('returns undefined when resource data is undefined', () => {
+    const result = getPublishedResourceState({ data: undefined })
+    expect(result).toBeUndefined()
+  })
+})
+
 describe('Resource getPublishedResourceIri function', () => {
   const resource: CwaResource = {
     '@id': 'id',
@@ -87,6 +105,11 @@ describe('Resource getPublishedResourceIri function', () => {
       persisted: true,
     },
   }
+
+  test('handles Mercure delete message shape (no _metadata) without throwing', () => {
+    expect(() => getPublishedResourceIri({ '@id': 'iri' } as any)).not.toThrow()
+    expect(getPublishedResourceIri({ '@id': 'iri' } as any)).toBe('iri')
+  })
 
   test('Not a publishable resource', () => {
     expect(getPublishedResourceIri(resource)).toBe('id')

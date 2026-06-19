@@ -381,6 +381,12 @@ describe('Mercure -> isMessageForCurrentResource', () => {
     expect(result).toBe(true)
   })
 
+  test('returns false without throwing when data is null or has no @id', () => {
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: null as any })).toBe(false)
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: undefined as any })).toBe(false)
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: {} as any })).toBe(false)
+  })
+
   test.each([
     { publishedResourceIriResult: 'id', result: true },
     { publishedResourceIriResult: undefined, result: false },

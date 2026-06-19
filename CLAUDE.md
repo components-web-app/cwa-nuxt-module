@@ -642,6 +642,77 @@ The total serial depth for a manifest fetch is now: **manifest → parallel batc
 
 Specs: `fetcher.spec.ts`, `fetch-status-manager.spec.ts`, `resources.spec.ts`, `CwaPage.spec.ts`, `cwa-page.spec.ts`, `RoutesTab.spec.ts`, `RoutesTabManage.spec.ts`, `PageAdminModal.spec.ts`, `PageDataAdminModal.spec.ts`, `ModalRadioTabs.spec.ts`, `useParentPageLoader.spec.ts`, `useParentPageDataLoader.spec.ts`.
 
+**Step 10 — Auto-fallback `<CwaPage />`** 🔲 PENDING (TDD agreed, not yet implemented)
+
+**What it does:** If the page template at depth N does not include a `<CwaPage />` (i.e. no child-depth content slot), but the current navigation has resources at depth N+1 (i.e. a child page exists), `CwaPage.vue` automatically appends a fallback `<CwaPage />` at the bottom of the rendered content. Developer convenience / safety net — production templates should always include `<CwaPage />` explicitly.
+
+**Design decisions:**
+- `mounted = ref(false)`, set true in `onMounted` — gates the fallback behind the first render cycle. Prevents flash on CSR initial render (fallback only appears after children have had a chance to register) and prevents double-rendering on SSR (`onMounted` never fires server-side, so `mounted` stays false and the fallback is never added to SSR output).
+- `childRegistered = ref(false)` — tracks whether a non-fallback child `<CwaPage />` has called the `'cwa-register-child-page'` provide callback during its own `setup()`.
+- Each `CwaPage.vue` provides `'cwa-register-child-page': (depth: number) => void` for its own direct children.
+- Each non-fallback `<CwaPage />` calls `inject('cwa-register-child-page')?.(depth)` synchronously in `setup()`. This is synchronous so by the time parent's `onMounted` fires, all synchronously-mounted template children have already registered.
+- `autoFallback?: boolean` prop — when `true`, the component skips self-registration. Prevents the auto-fallback from immediately unregistering itself.
+- `showAutoChildPage = computed(() => mounted.value && depthCount.value > depth + 1 && !childRegistered.value)`
+- Fallback rendered as `<CwaPage :auto-fallback="true" />` at the end of `CwaPage.vue`'s template.
+- Recursive: the auto-fallback itself follows the same logic — if depth+2 exists and it also lacks a `<CwaPage />`, it adds one, and so on.
+- For async/lazy template components there is still a brief flash (fallback appears at mount, hides when the async component resolves and registers). Acceptable — standard Nuxt globally-registered components are synchronous.
+
+**`mockCwa` update required:** Add `depthCount` to the mock (second arg changes from a raw `pageDataIri` string to an options object `{ pageDataIri?, depthCount? }`). Update affected call sites in the existing tests.
+
+**Agreed Vitest tests (add to `CwaPage.spec.ts`):**
+```ts
+describe('auto-fallback CwaPage', () => {
+  test('does not render fallback when depthCount is 1 (flat page)', async () => {
+    mockCwa('/_/pages/conf-uuid', { depthCount: 1 })
+    const wrapper = mount(CwaPage, { shallow: true })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(false)
+  })
+
+  test('renders fallback CwaPage after mount when depthCount > depth + 1 and no child registered', async () => {
+    mockCwa('/_/pages/conf-uuid', { depthCount: 2 })
+    const wrapper = mount(CwaPage, { shallow: true })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(true)
+  })
+
+  test('hides fallback after a child registers at the expected depth', async () => {
+    mockCwa('/_/pages/conf-uuid', { depthCount: 2 })
+    const wrapper = mount(CwaPage, { shallow: true })
+    await wrapper.vm.$nextTick()
+    const register = (wrapper.vm.$.provides as any)['cwa-register-child-page'] as (d: number) => void
+    register(1) // depth-0 parent; child expected at depth 1
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(false)
+  })
+
+  test('non-fallback CwaPage registers itself with the parent callback', () => {
+    mockCwa('/_/pages/conf-uuid')
+    const register = vi.fn()
+    mount(CwaPage, {
+      shallow: true,
+      global: { provide: { 'cwa-register-child-page': register, 'cwa-page-depth': 3 } },
+    })
+    expect(register).toHaveBeenCalledWith(3)
+  })
+
+  test('autoFallback=true prevents self-registration', () => {
+    mockCwa('/_/pages/conf-uuid')
+    const register = vi.fn()
+    mount(CwaPage, {
+      shallow: true,
+      props: { autoFallback: true },
+      global: { provide: { 'cwa-register-child-page': register } },
+    })
+    expect(register).not.toHaveBeenCalled()
+  })
+})
+```
+
+**Files to change:** `src/runtime/templates/components/main/CwaPage.vue`, `src/runtime/templates/components/main/CwaPage.spec.ts`.
+
+**Note on `PageDataAdminModal` parent picker:** Verified (2026-06-19) that `AbstractPageData` entities DO support `parentPage`/`parentPageData` via the API — confirmed by `abstract_page_data.schema.json` and `DoctrineContext.php`. The parent picker section in `PageDataAdminModal.vue` is correct and should stay. Child `PageData` entities (e.g. LineupData with `parentPageData = eventData`) set their parent through this UI.
+
 ### Design decisions
 
 - **No `$nested` boolean** — parent = nested, always. The presence of `$parentPage`/`$parentPageData` is the signal.
@@ -694,6 +765,97 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 - **Base primitives** — tabs (headless, composable into modal tabs, manager tabs, radio tabs), dropdowns, badges, tooltips. Build the headless logic once; apply variant styles on top. This mirrors how Nuxt UI structures `UTab` / `USelect` etc.
 
 **Scope:** Admin-only. Public-facing CWA components (`CwaComponent*`, layouts, page templates) are owned by consuming apps and intentionally unstyled by this module.
+
+---
+
+## Known Bug: Page navigation flash (regression, 2026-06-19)
+
+**Symptom:** When navigating between pages, there is a brief flash of old page content before the new page displays. This was believed to be fixed by the stale-manifest race condition fix (commit `2d56f0f1`, which guarded `setManifestIrisByDepth` and `fetchBatch` with `isCurrentFetchingToken`), but the flash has reappeared.
+
+**What was fixed:** `fetchManifest()` in `fetcher.ts` now guards both `setManifestIrisByDepth` AND `fetchBatch` inside a single `isCurrentFetchingToken` check. This prevents a stale manifest HTTP response (from an aborted fetch) from overwriting the current fetch's `_iriToDepth`/`_depthPaths` maps in `FetchStatusManager`.
+
+**Status:** Root cause of the regression not yet identified. Possible areas to investigate:
+- `displayFetchStatus` early-switch: if the depth-0 page IRI is in `currentIds` with SUCCESS status, display switches immediately — stale cached data may briefly show before fresh data replaces it
+- `isFetchResolving` gate: check whether `manifest.fetchComplete` is being set at the right time
+- A different timing window in `FetchStatusManager` — the shared `_iriToDepth`/`_depthPaths` maps are instance-level (shared across tokens); any other path that mutates them could cause a similar corruption
+
+**Files involved:** `src/runtime/api/fetcher/fetcher.ts`, `src/runtime/api/fetcher/fetch-status-manager.ts`, `src/runtime/resources/resources.ts` (`displayFetchStatus`), `src/runtime/storage/stores/fetcher/getter-utils.ts` (`isFetchResolving`).
+
+---
+
+## Open GitHub Issues
+
+All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-19. Check this list before starting new work — many may already be fixed.
+
+### Critical / Core
+
+**[#211](https://github.com/components-web-app/cwa-nuxt-module/issues/211) — Cache showing previous data page on navigation** (bug, reproduction required)
+Visiting a data page sometimes shows the previously-visited data page briefly before the correct one loads; occasionally the page fails to load at all. Root cause is almost certainly the `displayFetchStatus` early-switch: when the depth-0 page IRI is already in `currentIds` with SUCCESS status, display switches immediately to the cached (stale) data before the new resource responses arrive. This is the same as the page navigation flash regression noted above. The stale-manifest race condition fix (`2d56f0f1`) addressed one path; a second path likely remains.
+
+**[#217](https://github.com/components-web-app/cwa-nuxt-module/issues/217) — Auth invalidation shows 403/401 on SSR public page**
+On redeploy, JWT is revoked. SSR requests with a stale JWT get a 403/401 from the API. The API clears the cookie on the response, so a client reload would recover — but the user sees an error page instead. Fix: detect 401/403 in SSR, clear auth cookies, and retry the page render once (or redirect to a loading page that retries client-side).
+
+**[#212](https://github.com/components-web-app/cwa-nuxt-module/issues/212) — Mercure update on delete causes TypeError**
+```
+TypeError: Cannot read properties of undefined (reading 'publishable')
+  at getPublishedResourceIri (resource-utils.js)
+  at Mercure.isMessageForCurrentResource (mercure.js)
+```
+Delete fires a Mercure SSE update for the now-deleted resource; `isMessageForCurrentResource` reads `resource.publishable` but the resource is `undefined` after deletion. Need a null-guard before accessing the property.
+
+**[#151](https://github.com/components-web-app/cwa-nuxt-module/issues/151) — Component group `allowedComponents` restriction not enforced for `pageDataProperty` positions** (bug)
+Adding a dynamic position (`pageDataProperty`) referencing a component type the group does not allow raises no error. The `allowedComponents` check is bypassed. Needs API-side fix too: see [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
+
+### UX / Admin
+
+**[#197](https://github.com/components-web-app/cwa-nuxt-module/issues/197) — Adding any layout file to `layouts/` breaks CWA default layout**
+If a consuming app adds a non-CWA layout (e.g. `alternate-layout.vue`) to its `layouts/` directory, Nuxt no longer applies the CWA root layout by default to CWA pages. Pages added manually (outside the layer) fall back to the wrong layout. Fix: ensure the module either sets `layoutName` explicitly in route meta or that the layer's default layout is enforced regardless of what other layouts exist in the app.
+
+**[#198](https://github.com/components-web-app/cwa-nuxt-module/issues/198) — Browser "Page Reload" prompt shown when adding or deleting a page**
+The browser's native beforeunload/reload confirmation dialog fires when a CWA page is added or deleted, even though there are no unsaved changes. Does not happen on simple field edits. Likely the admin's `NavigationGuard` or a watcher incorrectly triggering the reload-prompt event during page creation/deletion operations.
+
+**[#230](https://github.com/components-web-app/cwa-nuxt-module/issues/230) — Route prefix defaults to root when parent page is already selected**
+When creating/editing a route for a page that has a `parentPage`/`parentPageData` set, the prefix field in `RoutesTabManage.vue` should default to the parent's current route path (e.g. `/conference`), not `/`. Fix: initialise the prefix `ref` from `props.pageResource.parentPage || props.pageResource.parentPageData` → look up in store → read `data.route` IRI → strip `/_/routes/` prefix.
+
+**[#209](https://github.com/components-web-app/cwa-nuxt-module/issues/209) — Leading/trailing spaces in route input not stripped**
+Entering ` /journal` (with a leading space) saves the route as ` /journal` rather than `/journal`. The route resolves but the page fails to load because the stored path includes the space. Fix: `.trim()` the path value in `RoutesTabManage.vue` before saving.
+
+**[#210](https://github.com/components-web-app/cwa-nuxt-module/issues/210) — Slugify includes full stops in recommended route**
+If a page title contains `.` (e.g. "Dr. Smith"), the SEO-recommended slug includes the full stop (e.g. `/dr.-smith`). Full stops are not valid slug characters. Fix: add `.` to the list of characters stripped by the slugify function used in `RoutesTabManage.vue`.
+
+**[#213](https://github.com/components-web-app/cwa-nuxt-module/issues/213) — Deleting a data page navigates to the wrong listing**
+After deleting a data page, the user is taken to the "Data Categories" page. Should navigate to the data page listing (all instances of that type) instead. UX fix in the delete-completion handler.
+
+**[#216](https://github.com/components-web-app/cwa-nuxt-module/issues/216) — Collection pagination broken in edit mode**
+In edit mode, paginating a `CwaCollectionResource` component changes the displayed items but does NOT update the URL. On the next full navigation the URL and state are out of sync. Pagination in edit mode should still update the URL (or at minimum keep client state consistent).
+
+**[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)**
+Two separate bugs reported together:
+1. Existing image / image field not cleared when switching between file upload components (stale file ref persists after component switch)
+2. Added resource not appearing at the correct position in a list (sort order / position insertion bug)
+*Needs clarification on which specific components and which list.* Comment posted on the issue.
+
+### Polish / Minor
+
+**[#204](https://github.com/components-web-app/cwa-nuxt-module/issues/204) — Publication status badge misaligned on multi-line text**
+The green/orange publication status dot should vertically align to the end of the text. When the label wraps to multiple lines, the dot is not aligned correctly. CSS flexbox alignment fix needed in the badge component.
+
+### Features / Enhancements
+
+**[#220](https://github.com/components-web-app/cwa-nuxt-module/issues/220) — Page `<title>` missing on auth/verify pages**
+The `/_cwa/` auth pages (verify email, reset password) don't set `<title>`. Each should have a descriptive `useHead({ title: '...' })`.
+
+**[#189](https://github.com/components-web-app/cwa-nuxt-module/issues/189) — `useTransition()` composable for uniform transitions** (good first issue)
+Components should use a `useTransition()` composable (like `ContextMenu` does) so transition CSS properties are globally configurable rather than hard-coded per-component.
+
+**[#188](https://github.com/components-web-app/cwa-nuxt-module/issues/188) — OG image defaults for CWA pages**
+Implement default Open Graph image templates so CWA pages have usable OG images without bespoke per-project setup.
+
+**[#172](https://github.com/components-web-app/cwa-nuxt-module/issues/172) — Form component sample + composables**
+A sample CWA form component and the composables needed to build forms are required as a documented starting point for consuming apps.
+
+**[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
+Admin UI functionality to duplicate an existing resource (page, component, etc.).
 
 ---
 

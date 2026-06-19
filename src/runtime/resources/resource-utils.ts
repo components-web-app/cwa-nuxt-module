@@ -80,7 +80,7 @@ export const ResourceTypeFromIri = new ResourceTypeFromIriCls()
 export const getResourceTypeFromIri = ResourceTypeFromIri._call.bind(ResourceTypeFromIri)
 
 export function getPublishedResourceState(resource: Pick<CwaCurrentResourceInterface, 'data'>): undefined | boolean {
-  const publishableMeta = resource.data?._metadata.publishable
+  const publishableMeta = resource.data?._metadata?.publishable
   return publishableMeta?.published
 }
 
@@ -111,6 +111,7 @@ export function isCwaResourceSame(resource1: CwaResource, resource2: CwaResource
     delete newObj.publishedResource
     delete newObj.draftResource
     delete newObj.modifiedAt
+    delete newObj['@context']
     // remove metadata, can include things specific to the resource such as published timestamps
     delete newObj._metadata
     if (getResourceTypeFromIri(newObj['@id']) === CwaResourceTypes.COMPONENT) {
