@@ -772,15 +772,7 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-19. Check this list before starting new work — many may already be fixed.
 
-### Critical / Core
-
-**[#151](https://github.com/components-web-app/cwa-nuxt-module/issues/151) — Component group `allowedComponents` restriction not enforced for `pageDataProperty` positions** (bug)
-Adding a dynamic position (`pageDataProperty`) referencing a component type the group does not allow raises no error. The `allowedComponents` check is bypassed. Needs API-side fix too: see [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
-
 ### UX / Admin
-
-**[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)** *(fixed)*
-Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wrong sort position after add) fixed: before inserting a new component, the module now PATCHes all positions in the group with `sortValue >= newSortValue` to shift them up (descending order, to avoid intermediate collisions). A cleaner atomic API-side fix is documented in the API bundle CLAUDE.md.
 
 ### Features / Enhancements
 
@@ -798,6 +790,18 @@ A sample CWA form component and the composables needed to build forms are requir
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
+
+---
+
+## Fixed: ComponentPosition sort value collisions on insert (#224 Bug 2)
+
+Before inserting a new component, the module PATCHes all positions in the containing group with `sortValue >= newSortValue` (in descending order to avoid intermediate collisions) to shift them up by 1. Previously, "add before X" gave the new position the same `sortValue` as X, and "add after X" could collide with the next position — both caused the API to return positions in undefined order after save. A cleaner atomic API-side fix (auto-shift on collision inside the POST transaction) is documented in the api-components-bundle CLAUDE.md.
+
+---
+
+## Fixed: `allowedComponents` not enforced for `pageDataProperty` positions (#151)
+
+Module-side UX enforcement tracked in [#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) (two-step type/property picker filtering candidates to `allowedComponents`). API-side write validation remains open in [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
 
 ---
 
