@@ -26,7 +26,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   middlewareToken = uuidv4()
   const nuxtApp = useNuxtApp()
 
-  const adminRouteGuard = nuxtApp.$cwa.adminNavigationGuardFn(to)
+  const adminRouteGuard = nuxtApp.$cwa.adminNavigationGuardFn(to, from)
   if (adminRouteGuard === false) {
     return abortNavigation()
   }

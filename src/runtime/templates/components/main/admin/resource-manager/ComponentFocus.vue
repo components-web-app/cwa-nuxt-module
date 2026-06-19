@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
