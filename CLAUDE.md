@@ -900,3 +900,35 @@ The `beforeResponse` hook unconditionally strips all `Set-Cookie` headers from N
 **Once the bundle fix is deployed:** Remove the `beforeResponse` stripping hook (or scope it narrowly). Currently the strip also silently swallows legitimate `Set-Cookie` responses on SSR — the forwarding code in `resources/actions.ts` (lines 558–566) is effectively dead because the plugin removes the header before it reaches the browser.
 
 **Status:** Bundle fix landed (2026-06-19). `JWTEventListener` now implements `ResetInterface` and clears `$this->token` in `onKernelResponse()` before use. The `beforeResponse` strip in `server-plugin.ts` can now be removed — and the dead forwarding code in `resources/actions.ts` (lines 558–566) should be re-evaluated to ensure legitimate `Set-Cookie` responses are correctly forwarded to the browser on SSR.
+
+---
+
+## ComponentGroupUtilSynchronizer — spurious PATCH when `allowedComponents` absent from embedded response
+
+**File:** `src/runtime/templates/components/main/ComponentGroup.Util.Synchronizer.ts`, `updateAllowedComponents()` (line 142)
+
+**Symptom:** Navigation renders on first SSR load, then disappears once the synchronizer runs client-side.
+
+**Root cause (in `api-components-bundle`):** `ComponentGroup.allowedComponents` is in `#[Groups(['ComponentGroup:read', 'ComponentGroup:write'])]` only. When a `Layout` (or `Page`) is fetched with `Layout:read` context, embedded `ComponentGroup` objects have no matching fields — they arrive as bare `{"@id": "...", "@type": "ComponentGroup"}` with no `allowedComponents` key.
+
+`updateAllowedComponents()` does:
+```ts
+if (isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
+    return
+}
+```
+
+`resource.data.allowedComponents` is `undefined` (key absent) → coerces to `null` via `?? null`. The prop is `['/component/navigation_links']`. `isEqual` returns false → PATCH fires unnecessarily.
+
+The PATCH response uses `ComponentGroup:read` normalization and returns `componentPositions` as bare IRI strings (since `ComponentPosition` fields are not in `ComponentGroup:read`). This overwrites the richer SSR-fetched position/component data in the Pinia store. The nav goes blank.
+
+**Primary fix (bundle side):** Add `Layout:read` and `Page:read` to `allowedComponents`'s `#[Groups]` in `ComponentGroup.php`. Then the embedded data includes `allowedComponents`, `isEqual` returns true, and no PATCH fires. See `api-components-bundle` CLAUDE.md section "ComponentGroup.allowedComponents — missing from embedded Layout/Page responses".
+
+**Secondary / defensive fix (module side):** In `updateAllowedComponents()`, distinguish between `undefined` (field absent from response — don't PATCH) and `null` (field explicitly unset — PATCH). Change `?? null` to a sentinel check:
+```ts
+const stored = resource?.data?.allowedComponents
+if (stored === undefined) return // field not in response; cannot compare
+if (isEqual(allowedComponents, stored ?? null)) return
+```
+
+**Status:** Primary fix pending in bundle. Secondary module-side fix is a defensive improvement that prevents the bug even if the serialization groups are wrong.
