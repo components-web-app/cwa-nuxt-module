@@ -727,11 +727,60 @@ describe('Resources manager', () => {
           if (iri === '/_/component_groups/g1') {
             return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
           }
-          if (iri === '/_/component_positions/p1') return { data: { sortValue: 3 } }
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', sortValue: 3, _metadata: {} } }
+          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', sortValue: 4, _metadata: {} } }
         },
       })
       await resourcesManager.addResourceAction()
       expect(newResourceData.sortValue).toBe(3)
+    })
+
+    test('shifts existing positions up before inserting to avoid sort value collisions', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
+      setupStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_groups/g1',
+          addAfter: false,
+          closest: { group: '/_/component_groups/g1' },
+        },
+        extraGetResource: (iri: string) => {
+          if (iri === '/_/component_groups/g1') {
+            return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
+          }
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', sortValue: 3, _metadata: {} } }
+          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', sortValue: 4, _metadata: {} } }
+        },
+      })
+      await resourcesManager.addResourceAction()
+      // p2 (sortValue=4) must be shifted before p1 (sortValue=3) to avoid intermediate collisions
+      expect(updateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ endpoint: '/_/component_positions/p2', data: { sortValue: 5 }, refreshEndpoints: [] }))
+      expect(updateSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ endpoint: '/_/component_positions/p1', data: { sortValue: 4 }, refreshEndpoints: [] }))
+    })
+
+    test('does not shift when adding to end of group (add after last position)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
+      const { newResourceData } = setupStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_groups/g1',
+          addAfter: true,
+          closest: { group: '/_/component_groups/g1' },
+        },
+        extraGetResource: (iri: string) => {
+          if (iri === '/_/component_groups/g1') {
+            return { data: { componentPositions: ['/_/component_positions/p1'] } }
+          }
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', sortValue: 2, _metadata: {} } }
+        },
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.sortValue).toBe(3) // last sortValue + 1
+      expect(updateSpy).not.toHaveBeenCalled() // no shift needed
     })
 
     test('sets publishedAt when publish=true', async () => {

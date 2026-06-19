@@ -779,8 +779,8 @@ Adding a dynamic position (`pageDataProperty`) referencing a component type the 
 
 ### UX / Admin
 
-**[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)**
-Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wrong sort position after add) remains open — may be API-side.
+**[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)** *(fixed)*
+Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wrong sort position after add) fixed: before inserting a new component, the module now PATCHes all positions in the group with `sortValue >= newSortValue` to shift them up (descending order, to avoid intermediate collisions). A cleaner atomic API-side fix is documented in the API bundle CLAUDE.md.
 
 ### Features / Enhancements
 

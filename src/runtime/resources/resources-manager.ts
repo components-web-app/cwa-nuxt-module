@@ -190,7 +190,7 @@ export class ResourcesManager {
 
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
     // it'll update anything visually until client-side refresh
-    if (currentResource?._metadata.persisted === false) {
+    if (currentResource?._metadata?.persisted === false) {
       const newResource = mergeWith(currentResource, event.data, (a, b) => {
         if (isArray(a)) {
           return b.concat(a)
@@ -483,6 +483,15 @@ export class ResourcesManager {
 
     const refreshEndpoints: string[] = []
 
+    // The group IRI whose positions may need to be shifted before inserting the new component.
+    // When targetIri IS the group (add to start/end), use it directly; otherwise use the
+    // closest group from the resource stack (the group that contains the target position).
+    const shiftGroupIri = getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP
+      ? addEvent.targetIri
+      : addEvent.closest.group
+
+    let capturedSortValue: number | undefined
+
     if (addEvent.addAfter !== null) {
       (() => {
         addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
@@ -526,9 +535,12 @@ export class ResourcesManager {
           return existingSortValue !== undefined ? (addEvent.addAfter ? existingSortValue + 1 : existingSortValue) : 0
         }
 
+        const newSortValue = getPositionSortValue()
+        capturedSortValue = newSortValue
+
         const positionIri = this.resourcesStore.adding.position
         if (!positionIri) {
-          resource.sortValue = getPositionSortValue()
+          resource.sortValue = newSortValue
           refreshEndpoints.push(...this.getRefreshPositions(this.resourcesStore.adding.resource))
           return
         }
@@ -543,7 +555,7 @@ export class ResourcesManager {
           '@id': undefined,
           '@type': undefined,
           'component': undefined,
-          'sortValue': getPositionSortValue(),
+          'sortValue': newSortValue,
         }
 
         resource.componentPositions = [
@@ -552,6 +564,35 @@ export class ResourcesManager {
 
         refreshEndpoints.push(...this.getRefreshPositions(positionIri))
       })()
+
+      // Shift existing positions up to make room for the new one at capturedSortValue.
+      // Without this, "add before" gives the new position the same sortValue as the target,
+      // and "add after" may collide with the position immediately following the target.
+      // Patching from highest sortValue downward avoids intermediate collisions.
+      if (shiftGroupIri && capturedSortValue !== undefined) {
+        const groupData = this.resourcesStore.getResource(shiftGroupIri)?.data
+        if (groupData?.componentPositions) {
+          const threshold = capturedSortValue
+          const positionsToShift = (groupData.componentPositions as string[])
+            .filter(iri => !iri.endsWith(NEW_RESOURCE_IRI))
+            .reduce<Array<{ id: string, sortValue: number }>>((acc, iri) => {
+              const pos = this.resourcesStore.getResource(iri)?.data
+              if (pos && pos['@id'] && typeof pos.sortValue === 'number' && pos.sortValue >= threshold) {
+                acc.push({ id: pos['@id'], sortValue: pos.sortValue })
+              }
+              return acc
+            }, [])
+            .sort((a, b) => b.sortValue - a.sortValue)
+
+          for (const pos of positionsToShift) {
+            await this.updateResource({
+              endpoint: pos.id,
+              data: { sortValue: pos.sortValue + 1 },
+              refreshEndpoints: [],
+            })
+          }
+        }
+      }
     }
     else if (!addEvent.pageDataProperty) {
       // adding the resource to a position resource, adding a fallback component on a dynamic page/template
