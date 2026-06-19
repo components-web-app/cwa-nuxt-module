@@ -982,3 +982,17 @@ The `BubbleMenu` component renders `h("div", { ref: root, ...attrs }, slots.defa
 **What's known:** `attrs` (including `style` and `class`) do fall through to the root div via `...attrs` in TipTap's render function. The `BubbleMenuView.show()` appends the element via `appendTo`; `BubbleMenuView.updatePosition()` calls `computePosition` async then applies `position`, `left`, `top`. The `getShouldShow` default uses `view.hasFocus()` to gate visibility.
 
 **Next investigation needed:** Determine exactly why the bubble menu is not appearing at all. Check whether `getShouldShow` is returning false (focus detection issue), whether `updatePosition` is applying incorrect coordinates, or whether there is a different stacking context issue specific to the CWA admin context.
+
+---
+
+## Set-Cookie leakage — `server-plugin.ts` TODO (pending bundle fix)
+
+**File:** `src/runtime/server/server-plugin.ts`, lines 11–17
+
+The `beforeResponse` hook unconditionally strips all `Set-Cookie` headers from Nuxt SSR responses. This was added as a blunt workaround for intermittent cross-user cookie leakage reported in production. The TODO comment in the file confirms this was always temporary.
+
+**Root cause (in `api-components-bundle`):** `JWTEventListener` holds `$this->token` as an instance variable that is never reset between FrankenPHP worker requests. A JWT refresh on request A leaks the `Set-Cookie` header onto request B (a different user). See `api-components-bundle` CLAUDE.md section "JWTEventListener: cross-user Set-Cookie leakage in FrankenPHP worker mode" for the fix.
+
+**Once the bundle fix is deployed:** Remove the `beforeResponse` stripping hook (or scope it narrowly). Currently the strip also silently swallows legitimate `Set-Cookie` responses on SSR — the forwarding code in `resources/actions.ts` (lines 558–566) is effectively dead because the plugin removes the header before it reaches the browser.
+
+**Status:** Bundle fix landed (2026-06-19). `JWTEventListener` now implements `ResetInterface` and clears `$this->token` in `onKernelResponse()` before use. The `beforeResponse` strip in `server-plugin.ts` can now be removed — and the dead forwarding code in `resources/actions.ts` (lines 558–566) should be re-evaluated to ensure legitimate `Set-Cookie` responses are correctly forwarded to the browser on SSR.

@@ -387,6 +387,16 @@ export default class ResourceStackManager {
     this.focusProxy.redraw()
   }
 
+  public refreshFocusForIri(iri: string, domElements: Ref<HTMLElement[]>) {
+    for (const item of this.currentResourceStack.value) {
+      if (item.iri === iri) {
+        item.domElements = domElements
+        break
+      }
+    }
+    this.createFocusComponent()
+  }
+
   private createFocusComponent() {
     this.removeFocusComponent()
     const stackItem = this.currentStackItem.value

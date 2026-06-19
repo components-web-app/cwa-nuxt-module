@@ -5,12 +5,13 @@ import { KeepAlive, computed } from 'vue'
 import CwaPage from './CwaPage.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-function mockCwa(pageIri: string | undefined, pageDataIri: string | undefined = undefined) {
+function mockCwa(pageIri: string | undefined, opts: { pageDataIri?: string, depthCount?: number } = {}) {
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       pageIriAtDepth: vi.fn(() => computed(() => pageIri)),
-      pageDataIriAtDepth: vi.fn(() => computed(() => pageDataIri)),
+      pageDataIriAtDepth: vi.fn(() => computed(() => opts.pageDataIri)),
+      depthCount: computed(() => opts.depthCount ?? 1),
     },
   }))
 }
@@ -34,7 +35,7 @@ describe('CwaPage', () => {
     const pageIriAtDepth = vi.fn(() => computed(() => undefined))
     // @ts-expect-error
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-      resources: { pageIriAtDepth },
+      resources: { pageIriAtDepth, pageDataIriAtDepth: vi.fn(() => computed(() => undefined)), depthCount: computed(() => 1) },
     }))
     mount(CwaPage, { shallow: true, global: { provide: { 'cwa-page-depth': 2 } } })
     expect(pageIriAtDepth).toHaveBeenCalledWith(2)
@@ -44,7 +45,7 @@ describe('CwaPage', () => {
     const pageIriAtDepth = vi.fn(() => computed(() => undefined))
     // @ts-expect-error
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-      resources: { pageIriAtDepth },
+      resources: { pageIriAtDepth, pageDataIriAtDepth: vi.fn(() => computed(() => undefined)), depthCount: computed(() => 1) },
     }))
     mount(CwaPage, { shallow: true })
     expect(pageIriAtDepth).toHaveBeenCalledWith(0)
@@ -80,16 +81,63 @@ describe('CwaPage', () => {
   })
 
   test('provides cwa-page-data-iri to descendants', () => {
-    mockCwa('/_/pages/conf-uuid', '/page_data/event-uuid')
+    mockCwa('/_/pages/conf-uuid', { pageDataIri: '/page_data/event-uuid' })
     const wrapper = mount(CwaPage, { shallow: true })
     // @ts-expect-error accessing internal provides
     expect(wrapper.vm.$.provides['cwa-page-data-iri'].value).toBe('/page_data/event-uuid')
   })
 
   test('provides undefined cwa-page-data-iri for Page-backed depths', () => {
-    mockCwa('/_/pages/conf-uuid', undefined)
+    mockCwa('/_/pages/conf-uuid')
     const wrapper = mount(CwaPage, { shallow: true })
     // @ts-expect-error accessing internal provides
     expect(wrapper.vm.$.provides['cwa-page-data-iri'].value).toBeUndefined()
+  })
+
+  describe('auto-fallback CwaPage', () => {
+    test('does not render fallback when depthCount is 1 (flat page)', async () => {
+      mockCwa('/_/pages/conf-uuid', { depthCount: 1 })
+      const wrapper = mount(CwaPage, { shallow: true })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAllComponents({ name: 'CwaPage' }).length).toBe(0)
+    })
+
+    test('renders fallback CwaPage after mount when depthCount > depth + 1 and no child registered', async () => {
+      mockCwa('/_/pages/conf-uuid', { depthCount: 2 })
+      const wrapper = mount(CwaPage, { shallow: true })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(true)
+    })
+
+    test('hides fallback after a child registers at the expected depth', async () => {
+      mockCwa('/_/pages/conf-uuid', { depthCount: 2 })
+      const wrapper = mount(CwaPage, { shallow: true })
+      await wrapper.vm.$nextTick()
+      const register = (wrapper.vm.$.provides as any)['cwa-register-child-page'] as (d: number) => void
+      register(1)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAllComponents({ name: 'CwaPage' }).length).toBe(0)
+    })
+
+    test('non-fallback CwaPage registers itself with the parent callback', () => {
+      mockCwa('/_/pages/conf-uuid')
+      const register = vi.fn()
+      mount(CwaPage, {
+        shallow: true,
+        global: { provide: { 'cwa-register-child-page': register, 'cwa-page-depth': 3 } },
+      })
+      expect(register).toHaveBeenCalledWith(3)
+    })
+
+    test('autoFallback=true prevents self-registration', () => {
+      mockCwa('/_/pages/conf-uuid')
+      const register = vi.fn()
+      mount(CwaPage, {
+        shallow: true,
+        props: { autoFallback: true },
+        global: { provide: { 'cwa-register-child-page': register } },
+      })
+      expect(register).not.toHaveBeenCalled()
+    })
   })
 })

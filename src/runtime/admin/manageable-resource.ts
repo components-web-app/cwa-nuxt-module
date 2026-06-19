@@ -72,6 +72,10 @@ export default class ManageableResource {
     this._initNewIri(this.currentIri?.value)
   }
 
+  public get elements(): Ref<HTMLElement[]> {
+    return this.domElements
+  }
+
   public clear(soft: boolean = false) {
     if (!this.isIriInit) {
       return

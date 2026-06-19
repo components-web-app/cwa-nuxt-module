@@ -12,6 +12,7 @@ vi.mock('../admin/manageable-resource', () => {
         init: vi.fn(),
         clear: vi.fn(),
         initNewIri: vi.fn(),
+        elements: ref([]),
       }
     }),
   }
@@ -41,6 +42,9 @@ describe('CWA resource manageable composable', () => {
         emit: vi.fn(),
         on: vi.fn(),
         off: vi.fn(),
+      },
+      resourceStackManager: {
+        refreshFocusForIri: vi.fn(),
       },
     },
   }
@@ -129,13 +133,14 @@ describe('CWA resource manageable composable', () => {
   })
 
   describe('onManageableComponentMounted listener', () => {
-    test('calls initNewIri and emits componentMounted when iri matches', () => {
+    test('calls initNewIri, refreshFocusForIri, and emits componentMounted when iri matches', () => {
       const mockProxy = { mock: 'proxy' }
       vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
 
       const initNewIriSpy = vi.fn()
+      const mockElements = ref([])
       ManageableResource.mockImplementationOnce(function () {
-        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy }
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy, elements: mockElements }
       })
 
       useCwaResourceManageable(mockIri)
@@ -147,6 +152,7 @@ describe('CWA resource manageable composable', () => {
       listener(mockIri.value) // matching iri
 
       expect(initNewIriSpy).toHaveBeenCalledOnce()
+      expect(mockCwa.admin.resourceStackManager.refreshFocusForIri).toHaveBeenCalledWith(mockIri.value, mockElements)
       expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
     })
 
@@ -156,7 +162,7 @@ describe('CWA resource manageable composable', () => {
 
       const initNewIriSpy = vi.fn()
       ManageableResource.mockImplementationOnce(function () {
-        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy }
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy, elements: ref([]) }
       })
 
       useCwaResourceManageable(mockIri)

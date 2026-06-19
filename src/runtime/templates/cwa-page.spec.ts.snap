@@ -4,6 +4,8 @@ exports[`CWA page > snapshots > renders CwaPage inside the page wrapper 1`] = `
 <div
   class="cwa:page cwa:h-full"
 >
-  <cwapage-stub />
+  <cwapage-stub
+    autofallback="false"
+  />
 </div>
 `;

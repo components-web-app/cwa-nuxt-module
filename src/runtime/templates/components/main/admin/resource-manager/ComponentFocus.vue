@@ -159,6 +159,10 @@ onMounted(() => {
   $cwa.admin.eventBus.on('reorder', assignReorderId)
   watch([totalWidthAndHeight, position], $cwa.admin.emitRedraw)
   watch(canvas, newCanvas => newCanvas && redraw())
+  watch(() => resource.value?.data, async () => {
+    await nextTick()
+    redraw()
+  })
 })
 
 onBeforeUnmount(() => {

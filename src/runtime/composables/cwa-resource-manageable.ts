@@ -27,6 +27,9 @@ export const useCwaResourceManageable = (iri: Ref<string | undefined>, ops?: Man
   const onManageableComponentMounted = (iriMounted: string) => {
     if (iriMounted === iri.value) {
       manageableResource.initNewIri()
+      if (iri.value) {
+        $cwa.admin.resourceStackManager.refreshFocusForIri(iri.value, manageableResource.elements)
+      }
       $cwa.admin.eventBus.emit('componentMounted', iri.value)
     }
   }

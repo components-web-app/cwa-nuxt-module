@@ -20,6 +20,7 @@
       />
     </template>
   </ListContent>
+  <ResourceModalOverlay @reload="triggerReload" />
 </template>
 
 <script lang="ts" setup>
@@ -30,6 +31,7 @@ import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
 import { definePageMeta, useCwa, useHead } from '#imports'
 import RouteListRow from '#cwa/templates/components/core/admin/RouteListRow.vue'
+import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
 
 const $cwa = useCwa()
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
