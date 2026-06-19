@@ -768,7 +768,7 @@ describe('resources action -> saveResource', () => {
     resourcesState.current.byId['already-current'] = { apiState: { status: undefined } }
     resourcesState.current.allIds.push('already-current')
     resourcesState.current.currentIds = ['already-current']
-    const resource = { '@id': 'already-current', '@type': 'type', '_metadata': { persisted: true }, title: 'updated' }
+    const resource = { '@id': 'already-current', '@type': 'type', '_metadata': { persisted: true }, 'title': 'updated' }
     resourcesActions.saveResource({ resource })
     expect(resourcesState.current.byId['already-current'].data).toStrictEqual(resource)
     expect(resourcesState.current.currentIds).toStrictEqual(['already-current'])
