@@ -130,11 +130,9 @@ function clearResource() {
   value.value = null
 }
 
-function handleOptionClick(clickValue: ModelValue, close: () => void) {
+function handleOptionClick(clickValue: ModelValue) {
   value.value = clickValue
-  close()
   focussed.value = false
-  searchValue.value = resourcePropertyValue.value
 }
 function unfocus() {
   setTimeout(() => {
@@ -199,9 +197,12 @@ onMounted(() => {
         <CwaUiIconXMarkIcon class="cwa:w-6" />
       </button>
     </div>
-    <div v-if="open">
+    <div
+      v-if="open"
+      data-testid="results-panel"
+      @mousedown.prevent
+    >
       <PopoverPanel
-        v-slot="{ close }"
         ref="container"
         static
         class="cwa:absolute cwa:max-h-60 cwa:min-w-full cwa:max-w-[300px] cwa:overflow-auto cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-400"
@@ -217,13 +218,13 @@ onMounted(() => {
             v-if="Array.isArray(option)"
             :key="`popover-group-option-${index}`"
             :options="option"
-            @click="(value: ModelValue) => handleOptionClick(value, close)"
+            @click="(value: ModelValue) => handleOptionClick(value)"
           />
           <ButtonPopoverItem
             v-else
             :key="`popover-item-option-${index}`"
             :option="option"
-            @click="(value: ModelValue) => handleOptionClick(value, close)"
+            @click="(value: ModelValue) => handleOptionClick(value)"
           />
         </template>
       </PopoverPanel>

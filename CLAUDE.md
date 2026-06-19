@@ -593,28 +593,9 @@ const { resource } = useCwaResource(pageDataIri)
 
 ---
 
-**Known bug: `path` header is leaf-only — parent `pageDataProperty` positions fail when a child page is active**
+**~~Known bug: `path` header is leaf-only — parent `pageDataProperty` positions fail when a child page is active~~ — FIXED**
 
-`createRequestHeaders` in `fetcher.ts` sets `requestHeaders.path` from `fetchStatusManager.primaryFetchPath` — a single value applied to every request in the manifest batch. `ComponentPositionNormalizer` on the API uses this header via `PageDataProvider::getPageData()` → `routeRepository->findOneByIdOrPath(path)` → `route->getPageData()` to resolve `pageDataProperty` positions.
-
-**The problem:** when navigating to a nested child page (e.g. `/topic-1/chapter-one`), `primaryFetchPath` is the leaf URL. The route at that path resolves to a static `Page` (no PageData), so `getPageData()` returns `null`. All `pageDataProperty` positions in the parent template's component group (depth 0) silently return `component: null` — parent intro content is invisible.
-
-**Current symptom (confirmed via `components-web-app` demo):** `/topic-1/chapter-one` renders the parent `NestedTopicTemplate` with an empty primary slot where the intro content should appear.
-
-**Fix required:** The fetcher must send a depth-appropriate `path` header for each request rather than the global leaf path. The manifest already carries this information — each depth group (`resource_iris[depth]`) contains a route IRI from which the path can be derived:
-
-```
-depth 0 → route IRI /_/routes//topic-1 → path header "/topic-1"
-depth 1 → route IRI /_/routes//topic-1/chapter-one → path header "/topic-1/chapter-one"
-```
-
-**Design sketch for the fix:**
-
-1. After the manifest is parsed, build a `depthToPath: Map<number, string>` by extracting the ROUTE IRI from each `irisByDepth[depth]` array (the IRI matching `CwaResourceTypes.ROUTE`) and stripping the `/_/routes/` prefix to get the plain path.
-2. In `createRequestHeaders(event)`, look up which depth the requested IRI belongs to (requires a `iriToDepth: Map<string, number>` index populated when the manifest arrives).
-3. Use `depthToPath.get(depth)` as `requestHeaders.path` instead of `primaryFetchPath` when the depth is known; fall back to `primaryFetchPath` for resources not in the manifest (e.g. follow-up fetches for `pageDataProperty` component IRIs, which are at a known depth anyway).
-
-Note: resources fetched as `fetchAssociatedResources` follow-ups (componentGroups → componentPositions → component) inherit the depth of the parent resource they were discovered from, so the `iriToDepth` map should propagate depth downward through the associated-resource chain as each IRI is queued.
+`fetch-status-manager.ts` now builds `_iriToDepth: Map<string, number>` and `_depthPaths: Map<number, string>` when `setManifestIrisByDepth` is called. `createRequestHeaders` in `fetcher.ts` calls `fetchStatusManager.getPathForDepth(depth)` (looked up via `_iriToDepth`) and sends that as `requestHeaders.path` instead of the global `primaryFetchPath`. `fetchAssociatedResources` follow-ups propagate depth downward via `setIriDepth` so every associated resource inherits its parent's depth. Falls back to `primaryFetchPath` for resources not in the manifest.
 
 **~~Known bug: layout component groups (nav links) not rendered for unauthenticated users~~ — FIXED (both sides)**
 
@@ -642,7 +623,7 @@ The total serial depth for a manifest fetch is now: **manifest → parallel batc
 
 Specs: `fetcher.spec.ts`, `fetch-status-manager.spec.ts`, `resources.spec.ts`, `CwaPage.spec.ts`, `cwa-page.spec.ts`, `RoutesTab.spec.ts`, `RoutesTabManage.spec.ts`, `PageAdminModal.spec.ts`, `PageDataAdminModal.spec.ts`, `ModalRadioTabs.spec.ts`, `useParentPageLoader.spec.ts`, `useParentPageDataLoader.spec.ts`.
 
-**Step 10 — Auto-fallback `<CwaPage />`** 🔲 PENDING (TDD agreed, not yet implemented)
+**Step 10 — Auto-fallback `<CwaPage />`** ✅ DONE
 
 **What it does:** If the page template at depth N does not include a `<CwaPage />` (i.e. no child-depth content slot), but the current navigation has resources at depth N+1 (i.e. a child page exists), `CwaPage.vue` automatically appends a fallback `<CwaPage />` at the bottom of the rendered content. Developer convenience / safety net — production templates should always include `<CwaPage />` explicitly.
 
