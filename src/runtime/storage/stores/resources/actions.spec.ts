@@ -751,7 +751,27 @@ describe('resources action -> saveResource', () => {
     })
     expect(resourcesState.current.byId.id.data).toStrictEqual(resource)
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
-    expect(resourcesState.current.currentIds).toStrictEqual(['id'])
+    // resource was not already in currentIds — CRUD saves must not add to currentIds (#198)
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('saveResource does not add a newly created resource to currentIds (#198: prevents OutdatedContentNotice on admin CRUD)', () => {
+    resourcesState.current.currentIds = []
+    const resource = { '@id': '/_/pages/new-uuid', '@type': 'Page', '_metadata': { persisted: true } }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.byId['/_/pages/new-uuid'].data).toStrictEqual(resource)
+    expect(resourcesState.current.allIds).toContain('/_/pages/new-uuid')
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('saveResource keeps resource in currentIds when it was already present (PATCH on currently-displayed resource)', () => {
+    resourcesState.current.byId['already-current'] = { apiState: { status: undefined } }
+    resourcesState.current.allIds.push('already-current')
+    resourcesState.current.currentIds = ['already-current']
+    const resource = { '@id': 'already-current', '@type': 'type', '_metadata': { persisted: true }, title: 'updated' }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.byId['already-current'].data).toStrictEqual(resource)
+    expect(resourcesState.current.currentIds).toStrictEqual(['already-current'])
   })
 
   test('A new resource will not be saved if it is the same as an existing resource', () => {

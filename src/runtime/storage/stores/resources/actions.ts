@@ -265,7 +265,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const data = initResource({
       resourcesState,
       iri,
-      isCurrent: true,
+      isCurrent: resourcesState.current.currentIds.includes(iri),
     })
 
     data.data = event.resource
