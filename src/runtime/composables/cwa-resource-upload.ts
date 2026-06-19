@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
@@ -16,8 +16,12 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
   const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
 
   const filenameInputModel = ref(getFilename())
-  const fileExists = ref(true)
+  const fileExists = computed(() => !!fileData.value)
   const updating = ref(false)
+
+  watch(fileData, () => {
+    filenameInputModel.value = getFilename()
+  })
 
   const { endpoint: updateEndpoint } = useCwaResourceEndpoint(iri, '/upload')
   const { endpoint: deleteEndpoint } = useCwaResourceEndpoint(iri)
@@ -37,7 +41,6 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
         accept: '*/*',
       },
     })
-    filenameInputModel.value = getFilename()
     updating.value = false
   }
 
@@ -67,8 +70,6 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
         [filename]: null,
       },
     })
-    fileExists.value = false
-    filenameInputModel.value = ''
     updating.value = false
   }
 

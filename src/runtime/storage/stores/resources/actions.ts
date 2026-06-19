@@ -18,7 +18,7 @@ import type {
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
-import { showError, useResponseHeader } from 'nuxt/app'
+import { navigateTo, showError, useRequestURL, useResponseHeader } from 'nuxt/app'
 import { parse as parseCookie } from 'set-cookie-parser'
 import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'
 
@@ -541,7 +541,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       data.apiState = newApiState
     },
-    setResourceFetchError({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): void {
+    async setResourceFetchError({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): Promise<void> {
       const data = initResource({
         resourcesState,
         iri,
@@ -561,6 +561,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
             return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
           })
+          if (import.meta.server && (error.statusCode === 401 || error.statusCode === 403)) {
+            const url = useRequestURL()
+            await navigateTo(url.pathname + url.search, { redirectCode: 302 })
+            return
+          }
         }
 
         const h3Error = createError<typeof error>({
