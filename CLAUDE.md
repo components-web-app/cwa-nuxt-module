@@ -795,14 +795,6 @@ Visiting a data page sometimes shows the previously-visited data page briefly be
 **[#217](https://github.com/components-web-app/cwa-nuxt-module/issues/217) — Auth invalidation shows 403/401 on SSR public page**
 On redeploy, JWT is revoked. SSR requests with a stale JWT get a 403/401 from the API. The API clears the cookie on the response, so a client reload would recover — but the user sees an error page instead. Fix: detect 401/403 in SSR, clear auth cookies, and retry the page render once (or redirect to a loading page that retries client-side).
 
-**[#212](https://github.com/components-web-app/cwa-nuxt-module/issues/212) — Mercure update on delete causes TypeError**
-```
-TypeError: Cannot read properties of undefined (reading 'publishable')
-  at getPublishedResourceIri (resource-utils.js)
-  at Mercure.isMessageForCurrentResource (mercure.js)
-```
-Delete fires a Mercure SSE update for the now-deleted resource; `isMessageForCurrentResource` reads `resource.publishable` but the resource is `undefined` after deletion. Need a null-guard before accessing the property.
-
 **[#151](https://github.com/components-web-app/cwa-nuxt-module/issues/151) — Component group `allowedComponents` restriction not enforced for `pageDataProperty` positions** (bug)
 Adding a dynamic position (`pageDataProperty`) referencing a component type the group does not allow raises no error. The `allowedComponents` check is bypassed. Needs API-side fix too: see [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
 
@@ -811,39 +803,13 @@ Adding a dynamic position (`pageDataProperty`) referencing a component type the 
 **[#197](https://github.com/components-web-app/cwa-nuxt-module/issues/197) — Adding any layout file to `layouts/` breaks CWA default layout**
 If a consuming app adds a non-CWA layout (e.g. `alternate-layout.vue`) to its `layouts/` directory, Nuxt no longer applies the CWA root layout by default to CWA pages. Pages added manually (outside the layer) fall back to the wrong layout. Fix: ensure the module either sets `layoutName` explicitly in route meta or that the layer's default layout is enforced regardless of what other layouts exist in the app.
 
-**[#198](https://github.com/components-web-app/cwa-nuxt-module/issues/198) — Browser "Page Reload" prompt shown when adding or deleting a page**
-The browser's native beforeunload/reload confirmation dialog fires when a CWA page is added or deleted, even though there are no unsaved changes. Does not happen on simple field edits. Likely the admin's `NavigationGuard` or a watcher incorrectly triggering the reload-prompt event during page creation/deletion operations.
-
-**[#230](https://github.com/components-web-app/cwa-nuxt-module/issues/230) — Route prefix defaults to root when parent page is already selected**
-When creating/editing a route for a page that has a `parentPage`/`parentPageData` set, the prefix field in `RoutesTabManage.vue` should default to the parent's current route path (e.g. `/conference`), not `/`. Fix: initialise the prefix `ref` from `props.pageResource.parentPage || props.pageResource.parentPageData` → look up in store → read `data.route` IRI → strip `/_/routes/` prefix.
-
-**[#209](https://github.com/components-web-app/cwa-nuxt-module/issues/209) — Leading/trailing spaces in route input not stripped**
-Entering ` /journal` (with a leading space) saves the route as ` /journal` rather than `/journal`. The route resolves but the page fails to load because the stored path includes the space. Fix: `.trim()` the path value in `RoutesTabManage.vue` before saving.
-
-**[#210](https://github.com/components-web-app/cwa-nuxt-module/issues/210) — Slugify includes full stops in recommended route**
-If a page title contains `.` (e.g. "Dr. Smith"), the SEO-recommended slug includes the full stop (e.g. `/dr.-smith`). Full stops are not valid slug characters. Fix: add `.` to the list of characters stripped by the slugify function used in `RoutesTabManage.vue`.
-
-**[#213](https://github.com/components-web-app/cwa-nuxt-module/issues/213) — Deleting a data page navigates to the wrong listing**
-After deleting a data page, the user is taken to the "Data Categories" page. Should navigate to the data page listing (all instances of that type) instead. UX fix in the delete-completion handler.
-
-**[#216](https://github.com/components-web-app/cwa-nuxt-module/issues/216) — Collection pagination broken in edit mode**
-In edit mode, paginating a `CwaCollectionResource` component changes the displayed items but does NOT update the URL. On the next full navigation the URL and state are out of sync. Pagination in edit mode should still update the URL (or at minimum keep client state consistent).
-
 **[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)**
 Two separate bugs reported together:
 1. Existing image / image field not cleared when switching between file upload components (stale file ref persists after component switch)
 2. Added resource not appearing at the correct position in a list (sort order / position insertion bug)
 *Needs clarification on which specific components and which list.* Comment posted on the issue.
 
-### Polish / Minor
-
-**[#204](https://github.com/components-web-app/cwa-nuxt-module/issues/204) — Publication status badge misaligned on multi-line text**
-The green/orange publication status dot should vertically align to the end of the text. When the label wraps to multiple lines, the dot is not aligned correctly. CSS flexbox alignment fix needed in the badge component.
-
 ### Features / Enhancements
-
-**[#220](https://github.com/components-web-app/cwa-nuxt-module/issues/220) — Page `<title>` missing on auth/verify pages**
-The `/_cwa/` auth pages (verify email, reset password) don't set `<title>`. Each should have a descriptive `useHead({ title: '...' })`.
 
 **[#189](https://github.com/components-web-app/cwa-nuxt-module/issues/189) — `useTransition()` composable for uniform transitions** (good first issue)
 Components should use a `useTransition()` composable (like `ContextMenu` does) so transition CSS properties are globally configurable rather than hard-coded per-component.
@@ -856,68 +822,6 @@ A sample CWA form component and the composables needed to build forms are requir
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
-
----
-
-## Known Bug: ComponentFocus doesn't reposition after UI/style changes
-
-**Symptom:** When the admin selects a component and then changes its UI variant or style class from the manager tab, the focus highlight (canvas cutout + animated outline div) stays at the old position. It does not redraw to follow the component as its layout shifts.
-
-**Files involved:**
-- `src/runtime/templates/components/main/admin/resource-manager/ComponentFocus.vue` — canvas + outline div
-- `src/runtime/admin/manageable-resource.ts` — tracks `domElements`, owned by each `ManageableResource` instance
-- `src/runtime/composables/cwa-resource-manageable.ts` — creates `ManageableResource`, pushes to event bus
-
-### Case 1 — Style/class change (no remount)
-
-`ComponentFocus` computes position via:
-```ts
-const position = computed(() => {
-  for (const domElement of domElements.value) {
-    const domRect = domElement.getBoundingClientRect()
-    // ...
-  }
-})
-```
-
-`position` only re-evaluates when its Vue reactive deps change: `totalWidthAndHeight` (from `useElementSize` / `ResizeObserver`), `windowSize`, `reorderId`. When a CSS class change shifts the element's layout position **without changing its size**, `ResizeObserver` never fires. `totalWidthAndHeight` stays the same. `position` stays cached. `drawCanvas()` draws the old cutout.
-
-**Fix:** The `drawCanvas()` function should read DOM rects directly (not through the cached computed) so every `redraw()` call sees the current layout. Alternatively, watch `resource.value?.data` in `ComponentFocus` and call `await nextTick(); redraw()` when it changes — this covers the patch arriving after a style/UI change.
-
-### Case 2 — UI component change (component remounts) — two compounding problems
-
-**Problem A — Ordering:** `admin.ts` listens to both `manageableComponentMounted` and `componentMounted` and calls `emitRedraw()`. Because event bus listeners fire in registration order, `admin.ts`'s listener fires **before** `onManageableComponentMounted` in the composable (which calls `initNewIri()` to populate the new `domElements`). So every `drawCanvas()` call from the redraw sees an empty ref.
-
-**Problem B — Stale ref:** Each `useCwaResourceManageable` call creates its own `ManageableResource` with its own `domElements: Ref<HTMLElement[]>`. `createFocusComponent()` in `ResourceStackManager` mounts `ComponentFocus` once with `domElements: stackItem.domElements` — the OLD instance's ref. When C unmounts, `clear()` sets that ref to `[]`. When C remounts, a NEW `ManageableResource` is created with a NEW (populated) ref. The stack item still holds the OLD ref (permanently empty). `ComponentFocus` watching the old ref never recovers.
-
-**Fix:**
-
-In `onManageableComponentMounted` (`cwa-resource-manageable.ts`), after `initNewIri()` has populated the NEW `domElements`, update the stack item and recreate `ComponentFocus` *before* emitting `componentMounted`:
-
-```ts
-const onManageableComponentMounted = (iriMounted: string) => {
-  if (iriMounted === iri.value) {
-    manageableResource.initNewIri()
-    $cwa.admin.resourceStackManager.refreshFocusForIri(iri.value, manageableResource.domElements)
-    $cwa.admin.eventBus.emit('componentMounted', iri.value)
-  }
-}
-```
-
-In `ResourceStackManager`, add `refreshFocusForIri(iri, domElements)`:
-```ts
-public refreshFocusForIri(iri: string, domElements: Ref<HTMLElement[]>) {
-  for (const item of this.currentResourceStack.value) {
-    if (item.iri === iri) {
-      item.domElements = domElements
-      break
-    }
-  }
-  this.createFocusComponent()
-}
-```
-
-This ensures: when `componentMounted` fires (triggering `emitRedraw()` → canvas draw), `ComponentFocus` has already been recreated with the correct, populated ref. Both ordering and stale-ref problems are resolved in one change.
 
 ---
 
