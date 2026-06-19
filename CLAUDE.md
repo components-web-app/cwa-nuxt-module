@@ -760,9 +760,6 @@ All open issues from [components-web-app/cwa-nuxt-module](https://github.com/com
 **[#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) — pageDataProperty position UI: type picker, property filter, readable component names**
 Two-step picker when adding a dynamic position: (1) select the PageData type, (2) select the property (filtered to `allowedComponents` if set). Readable property names (`heroImage` → "Hero Image") with component type label from `cwa.resources[type].name`. Editing after creation: derive type from stored property name via API docs. See issue for full spec.
 
-**[#189](https://github.com/components-web-app/cwa-nuxt-module/issues/189) — `useTransition()` composable for uniform transitions** (good first issue)
-Components should use a `useTransition()` composable (like `ContextMenu` does) so transition CSS properties are globally configurable rather than hard-coded per-component.
-
 **[#188](https://github.com/components-web-app/cwa-nuxt-module/issues/188) — OG image defaults for CWA pages**
 Implement default Open Graph image templates so CWA pages have usable OG images without bespoke per-project setup.
 
@@ -774,6 +771,16 @@ Admin UI functionality to duplicate an existing resource (page, component, etc.)
 
 ---
 
+## Fixed: Centralise transition classes into useTransitions() (#189)
+
+**File:** `src/runtime/composables/transitions.ts`
+
+All `<Transition>` / `<TransitionGroup>` components previously had hardcoded inline class props. Added 7 new keys to `useTransitions()` — `dropdown`, `overlay`, `slideUp`, `menu`, `notification`, `spinner`, `progressBar` — and migrated every component to `v-bind` from the composable. All transition styles now live in one file.
+
+**Note:** When destructuring from `useTransitions()`, check for identifier conflicts with existing local variables (e.g. `menu` was already a template ref in `Menu.vue` — renamed to `menuTransition`).
+
+---
+
 ## Fixed: ComponentPosition sort value collisions on insert (#224 Bug 2)
 
 Before inserting a new component, the module PATCHes all positions in the containing group with `sortValue >= newSortValue` (in descending order to avoid intermediate collisions) to shift them up by 1. Previously, "add before X" gave the new position the same `sortValue` as X, and "add after X" could collide with the next position — both caused the API to return positions in undefined order after save. A cleaner atomic API-side fix (auto-shift on collision inside the POST transaction) is documented in the api-components-bundle CLAUDE.md.
@@ -782,7 +789,15 @@ Before inserting a new component, the module PATCHes all positions in the contai
 
 ## Fixed: `allowedComponents` not enforced for `pageDataProperty` positions (#151)
 
-Module-side UX enforcement tracked in [#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) (two-step type/property picker filtering candidates to `allowedComponents`). API-side write validation remains open in [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
+Module-side UX enforcement tracked in [#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) (two-step type/property picker filtering candidates to `allowedComponents`).
+
+**API read-side is fixed** (api-components-bundle commit `2305ad89`, `88262abe`): positions whose resolved component type is not in `allowedComponents` return `component: null`. Doctrine proxy class names are now handled correctly so anonymous users also see the correct filtering.
+
+**API write-side requires a module-side prerequisite:** When creating or PATCHing a `ComponentPosition` with `pageDataProperty` set, the module must also send `pageDataClass` — the FQCN of the PageData entity whose property is being referenced (e.g. `"pageDataClass": "App\\Entity\\ConferenceData"`). Without this, the API has no way to resolve the property type at write time and cannot validate it against `allowedComponents`. The API will return a 422 if the resolved component type is not in `allowedComponents`.
+
+This `pageDataClass` field does not yet exist on the API side — it is the agreed design direction (documented in api-components-bundle#170 comments, now closed). It needs a coordinated implementation in both projects:
+- **Module**: send `pageDataClass` in the POST/PATCH body when creating `pageDataProperty` positions
+- **API**: add `pageDataClass` to `ComponentPosition`, resolve the property type via `PageDataMetadataFactory`, validate against `allowedComponents` in `ComponentPositionValidator`
 
 ---
 
