@@ -154,6 +154,19 @@ export default defineNuxtModule<CwaModuleOptions>({
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 4, options.layoutName)
     })
+
+    const defaultLayoutName = options.layoutName || 'cwa-root-layout'
+    extendPages((pages: NuxtPage[]) => {
+      function applyDefaultLayout(page: NuxtPage) {
+        if (page.meta?.layout === undefined) {
+          page.meta = page.meta || {}
+          page.meta.layout = defaultLayoutName
+        }
+        page.children?.forEach(applyDefaultLayout)
+      }
+      pages.forEach(applyDefaultLayout)
+    })
+
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 
     logger.info(`Registering user components for CWA...`)

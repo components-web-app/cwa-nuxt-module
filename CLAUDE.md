@@ -779,8 +779,8 @@ Adding a dynamic position (`pageDataProperty`) referencing a component type the 
 
 ### UX / Admin
 
-**[#197](https://github.com/components-web-app/cwa-nuxt-module/issues/197) — Adding any layout file to `layouts/` breaks CWA default layout**
-If a consuming app adds a non-CWA layout (e.g. `alternate-layout.vue`) to its `layouts/` directory, Nuxt no longer applies the CWA root layout by default to CWA pages. Pages added manually (outside the layer) fall back to the wrong layout. Fix: ensure the module either sets `layoutName` explicitly in route meta or that the layer's default layout is enforced regardless of what other layouts exist in the app.
+**[#197](https://github.com/components-web-app/cwa-nuxt-module/issues/197) — Adding any layout file to `layouts/` breaks CWA default layout** *(fixed)*
+`module.ts` now runs a second `extendPages` pass after adding CWA pages. Any page without `meta.layout` (checked as `=== undefined` to preserve `layout: false`) gets `options.layoutName || 'cwa-root-layout'` set, regardless of how many layouts the consuming app has added.
 
 **[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)**
 Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wrong sort position after add) remains open — may be API-side.
@@ -865,14 +865,8 @@ The `BubbleMenu` component renders `h("div", { ref: root, ...attrs }, slots.defa
 
 ---
 
-## ComponentGroupUtilSynchronizer — spurious PATCH when `allowedComponents` absent from embedded response
+## Fixed: ComponentGroupUtilSynchronizer spurious PATCH when `allowedComponents` absent
 
-**File:** `src/runtime/templates/components/main/ComponentGroup.Util.Synchronizer.ts`, `updateAllowedComponents()`
+**Files:** `ComponentGroup.Util.Synchronizer.ts` `updateAllowedComponents()` (module) + `ComponentGroup.php` `#[Groups]` (bundle).
 
-**Symptom:** Navigation renders on first SSR load, then disappears once the synchronizer runs client-side.
-
-**Root cause (in `api-components-bundle`):** `ComponentGroup.allowedComponents` is in `#[Groups(['ComponentGroup:read', 'ComponentGroup:write'])]` only. When a `Layout` (or `Page`) is fetched with `Layout:read` context, embedded `ComponentGroup` objects have no matching fields — they arrive as bare `{"@id": "...", "@type": "ComponentGroup"}` with no `allowedComponents` key. The old `?? null` coercion treated `undefined` (field absent) the same as `null` (field explicitly unset), causing a spurious PATCH that overwrote richer SSR store data with bare IRI strings.
-
-**Module fix (done):** `updateAllowedComponents()` now returns early when `stored === undefined` (field not in response). Only PATCHes when `allowedComponents` is explicitly present in the response and differs.
-
-**Primary fix (bundle side, pending):** Add `Layout:read` and `Page:read` to `allowedComponents`'s `#[Groups]` in `ComponentGroup.php` so embedded objects include the field. See `api-components-bundle` CLAUDE.md section "ComponentGroup.allowedComponents — missing from embedded Layout/Page responses".
+`?? null` coercion treated `undefined` (field absent from embedded response) as `null` (explicitly unset), causing a spurious PATCH that overwrote richer SSR store data with bare IRI strings and blanked navigation. Fixed: module returns early when `stored === undefined`; bundle adds `Layout:read` / `Page:read` to `allowedComponents` groups so the field is always present.

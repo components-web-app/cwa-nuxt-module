@@ -417,22 +417,22 @@ declare module 'vue-router' {
     })
 
     test('should extend pages with 3 levels by default', async () => {
-      let cb = null
-      const mockPages = []
+      const callbacks: ((pages: any[]) => void)[] = []
+      const mockPages: any[] = []
       const mockResolver = vi.fn(path => path)
       vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
         resolve: mockResolver,
         resolvePath: vi.fn(),
       })
       vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
-        cb = callback
+        callbacks.push(callback)
       })
 
       await prepareMockNuxt()
 
-      expect(nuxtKit.extendPages).toHaveBeenCalledWith(cb)
+      expect(callbacks).toHaveLength(2)
 
-      cb(mockPages)
+      callbacks[0](mockPages)
 
       expect(mockPages).toEqual([
         {
@@ -475,6 +475,28 @@ declare module 'vue-router' {
           ],
         },
       ])
+    })
+
+    test('second extendPages pass sets cwa-root-layout as default for pages without explicit layout', async () => {
+      const callbacks: ((pages: any[]) => void)[] = []
+      vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
+        callbacks.push(callback)
+      })
+
+      await prepareMockNuxt()
+
+      const noLayout: any = { name: 'app-page', path: '/app', meta: { cwa: { disabled: true } } }
+      const explicitLayout: any = { name: 'styled-page', path: '/styled', meta: { layout: 'alternate-layout' } }
+      const disabledLayout: any = { name: 'no-layout', path: '/no-layout', meta: { layout: false } }
+      const withChildren: any = { name: 'parent', path: '/parent', children: [{ name: 'child', path: 'child' }] }
+
+      const pages = [noLayout, explicitLayout, disabledLayout, withChildren]
+      callbacks[1](pages)
+
+      expect(noLayout.meta.layout).toBe('cwa-root-layout')
+      expect(explicitLayout.meta.layout).toBe('alternate-layout')
+      expect(disabledLayout.meta.layout).toBe(false)
+      expect(withChildren.children[0].meta.layout).toBe('cwa-root-layout')
     })
   })
 })
