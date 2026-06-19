@@ -6,6 +6,7 @@ import { consola as logger } from 'consola'
 import { createTestingPinia } from '@pinia/testing'
 import { flushPromises } from '@vue/test-utils'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
+import { ResourceTypeFromIri } from '../resources/resource-utils'
 import ApiDocumentation from './api-documentation'
 import CwaFetch from './fetcher/cwa-fetch'
 
@@ -249,5 +250,29 @@ describe('API Documentation getComponentMetadata functionality', () => {
     const spy = vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(undefined)
     await apiDoc.getComponentMetadata(true)
     expect(spy).toHaveBeenCalledWith(true)
+  })
+
+  test('strips API path prefix from endpoint so it matches allowedComponents format', async () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    try {
+      const apiDoc = createApiDocumentation()
+      vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs({
+        entrypoint: {
+          myComponent: '/_api/component/my_component',
+        },
+        docs: {
+          supportedClass: [
+            { title: 'MyComponent', supportedProperty: [{ title: 'publishedAt' }] },
+          ],
+        },
+      }))
+      const result = await apiDoc.getComponentMetadata()
+      expect(result).toEqual({
+        MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true },
+      })
+    }
+    finally {
+      ResourceTypeFromIri.setPathPrefix(undefined)
+    }
   })
 })

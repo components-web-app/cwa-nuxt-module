@@ -6,7 +6,7 @@ import type {
   CwaApiDocumentationDataInterface,
 } from '../storage/stores/api-documentation/state'
 import type CwaFetch from './fetcher/cwa-fetch'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 export interface ApiDocumentationComponentMetadata {
   resourceName: string
@@ -101,9 +101,22 @@ export default class ApiDocumentation {
         //   continue
         // }
         const isPublishable = properties?.[resourceName]?.includes('publishedAt') || false
+        // Normalize endpoint: strip API path prefix and origin so the stored value matches
+        // the format used in allowedComponents (e.g. /component/navigation_links, not /_api/component/navigation_links)
+        const prefix = ResourceTypeFromIri.getPathPrefix()
+        let normalizedEndpoint = endpoint
+        try {
+          normalizedEndpoint = new URL(endpoint).pathname
+        }
+        catch {
+          // already a relative path
+        }
+        if (prefix && prefix !== '/' && normalizedEndpoint.startsWith(prefix)) {
+          normalizedEndpoint = normalizedEndpoint.slice(prefix.length)
+        }
         metadata[resourceName] = {
           resourceName,
-          endpoint,
+          endpoint: normalizedEndpoint,
           isPublishable,
         }
       }
