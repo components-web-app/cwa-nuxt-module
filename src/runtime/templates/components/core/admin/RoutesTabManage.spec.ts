@@ -83,6 +83,18 @@ describe('RoutesTabManage', () => {
       expect(wrapper.emitted('update:modelValue')).toEqual([['/no-slash']])
     })
 
+    test('trims leading/trailing spaces from suffix before assembling path (#209)', async () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', ' /new-page ')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['/conference/new-page']])
+    })
+
+    test('trims leading space from suffix when prefix is "/" (#209)', async () => {
+      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', ' /journal')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['/journal']])
+    })
+
     test('SEO recommendation always uses parentRoutePrefix regardless of selected prefix', async () => {
       const wrapper = mountManage({ title: 'My Programme', parentRoutePrefix: '/conference' })
       await getPrefixInput(wrapper).vm.$emit('update:modelValue', '/')
@@ -108,6 +120,16 @@ describe('RoutesTabManage', () => {
         currentPath: '/conference/my-programme',
       })
       expect(wrapper.findComponent('[data-apply-seo]').props('disabled')).toBe(true)
+    })
+
+    test('strips full stops from SEO recommended slug (#210)', () => {
+      const wrapper = mountManage({ title: 'Dr. Smith', parentRoutePrefix: null })
+      expect(wrapper.find('[data-seo-recommendation]').text()).toBe('/dr-smith')
+    })
+
+    test('strips punctuation other than hyphens from SEO recommended slug (strict mode)', () => {
+      const wrapper = mountManage({ title: 'Hello! World?', parentRoutePrefix: null })
+      expect(wrapper.find('[data-seo-recommendation]').text()).toBe('/hello-world')
     })
 
     test('Apply button is enabled when currentPath differs from the full recommended path', () => {

@@ -33,6 +33,7 @@ const localPrefix = ref(initial.prefix)
 const localSuffix = ref(initial.suffix)
 
 watch([localPrefix, localSuffix], ([prefix, suffix]) => {
+  suffix = suffix.trim()
   if (prefix === '/') {
     pathModel.value = suffix.startsWith('/') ? suffix : '/' + suffix
   }
@@ -63,7 +64,7 @@ const recommendedSuffix = computed(() => {
   if (!pageResource.title) {
     return undefined
   }
-  return '/' + slugify(pageResource.title.toLowerCase())
+  return '/' + slugify(pageResource.title.toLowerCase(), { strict: true })
 })
 
 const fullRecommendedPath = computed(() => {
