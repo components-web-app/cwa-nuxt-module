@@ -50,6 +50,20 @@ describe('RoutesTabManage', () => {
       expect(getPrefixInput(wrapper).props('modelValue')).toBe('/')
       expect(getSuffixInput(wrapper).props('modelValue')).toBe('/my-page')
     })
+
+    test('defaults prefix to parentRoutePrefix when path is empty (creating a new route) (#230)', () => {
+      const wrapper = mountManage({ modelValue: '', parentRoutePrefix: '/conference' })
+      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('')
+    })
+
+    test('updates prefix to parentRoutePrefix when it loads asynchronously and path is empty (#230)', async () => {
+      const wrapper = mountManage({ modelValue: '', parentRoutePrefix: null })
+      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/')
+      await wrapper.setProps({ parentRoutePrefix: '/conference' })
+      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('')
+    })
   })
 
   describe('path assembly', () => {

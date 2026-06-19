@@ -22,8 +22,13 @@ defineEmits<{
 }>()
 
 function splitPath(fullPath: string, prefix: string | null | undefined): { prefix: string, suffix: string } {
-  if (prefix && prefix !== '/' && fullPath.startsWith(prefix)) {
-    return { prefix, suffix: fullPath.slice(prefix.length) || '' }
+  if (prefix && prefix !== '/') {
+    if (!fullPath) {
+      return { prefix, suffix: '' }
+    }
+    if (fullPath.startsWith(prefix)) {
+      return { prefix, suffix: fullPath.slice(prefix.length) || '' }
+    }
   }
   return { prefix: '/', suffix: fullPath }
 }
