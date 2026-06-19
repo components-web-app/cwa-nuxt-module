@@ -417,6 +417,97 @@ describe('Resources', () => {
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
     })
+
+    test('should NOT early-switch when depth-0 has PAGE_DATA IRI with no data (prevents flash on first visit to shared-template page)', () => {
+      const depth0PageIri = '/_/pages/template-uuid'
+      const depth0PageDataIri = '/page_data/event-b-uuid'
+      const mockStatus = { success: 'mock' }
+      const resourceStatus = {
+        manifest: {
+          irisByDepth: [['/_/routes//event-b', depth0PageDataIri, depth0PageIri]],
+        },
+      }
+
+      const mockResourcesStore = {
+        current: { currentIds: [depth0PageIri] as string[], byId: {} },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: mockStatus,
+        fetches: { abcd: resourceStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
+
+      vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(undefined)
+      vi.spyOn(resources, 'getResource').mockImplementation((iri: string) => ({
+        value: iri === depth0PageIri
+          ? { data: { some: 'data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } }
+          : { data: undefined, apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } },
+      }))
+
+      expect(resources.displayFetchStatus).toEqual(mockStatus)
+    })
+
+    test('should early-switch when depth-0 PAGE_DATA already has data (return visit to shared-template page)', () => {
+      const depth0PageIri = '/_/pages/template-uuid'
+      const depth0PageDataIri = '/page_data/event-b-uuid'
+      const resourceStatus = {
+        manifest: {
+          irisByDepth: [['/_/routes//event-b', depth0PageDataIri, depth0PageIri]],
+        },
+      }
+
+      const mockResourcesStore = {
+        current: { currentIds: [depth0PageIri] as string[], byId: {} },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: { mock: 'old' },
+        fetches: { abcd: resourceStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
+
+      vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(undefined)
+      vi.spyOn(resources, 'getResource').mockImplementation((iri: string) => ({
+        value: iri === depth0PageDataIri
+          ? { data: { title: 'cached event-b data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } }
+          : { data: { some: 'page-data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } },
+      }))
+
+      expect(resources.displayFetchStatus).toEqual(resourceStatus)
+    })
+
+    test('should early-switch normally when depth-0 has no PAGE_DATA IRI (Page-based route, no pageData)', () => {
+      const depth0PageIri = '/_/pages/template-uuid'
+      const resourceStatus = {
+        manifest: {
+          irisByDepth: [['/_/routes//about', depth0PageIri]],
+        },
+      }
+
+      const mockResourcesStore = {
+        current: { currentIds: [depth0PageIri] as string[], byId: {} },
+      }
+
+      const mockFetcherStore = {
+        primaryFetch: { fetchingToken: 'abcd' as string | null },
+        resolvedSuccessFetchStatus: { mock: 'old' },
+        fetches: { abcd: resourceStatus },
+      }
+
+      const { resources } = createResources(mockFetcherStore, mockResourcesStore)
+
+      vi.spyOn(resources, 'getLayoutIriByFetchStatus').mockReturnValue(undefined)
+      vi.spyOn(resources, 'getResource').mockReturnValue({
+        value: { data: { some: 'data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } },
+      })
+
+      expect(resources.displayFetchStatus).toEqual(resourceStatus)
+    })
   })
 
   describe('pageIriAtDepth', () => {

@@ -91,6 +91,15 @@ export class Resources {
             const layoutIri = this.getLayoutIriByFetchStatus(fetchingStatus)
             const layoutReady = !layoutIri || !!(this.getResource(layoutIri).value?.data)
             if (layoutReady) {
+              // Prevent flash of wrong page data: if depth-0 has a PageData IRI, require it to
+              // have data in the store before early-switching. Stops pages sharing a template
+              // from briefly showing the previous page's data during navigation.
+              if (irisByDepth?.[0]) {
+                const pageDataIri = this.getPageDataIriFromDepthGroup(irisByDepth[0])
+                if (pageDataIri && !this.getResource(pageDataIri).value?.data) {
+                  return this.fetcherStore.resolvedSuccessFetchStatus
+                }
+              }
               return fetchingStatus
             }
           }

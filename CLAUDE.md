@@ -768,19 +768,6 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ---
 
-## Known Bug: Page navigation flash (regression, 2026-06-19)
-
-**Symptom:** When navigating between pages, there is a brief flash of old page content before the new page displays. This was believed to be fixed by the stale-manifest race condition fix (commit `2d56f0f1`, which guarded `setManifestIrisByDepth` and `fetchBatch` with `isCurrentFetchingToken`), but the flash has reappeared.
-
-**What was fixed:** `fetchManifest()` in `fetcher.ts` now guards both `setManifestIrisByDepth` AND `fetchBatch` inside a single `isCurrentFetchingToken` check. This prevents a stale manifest HTTP response (from an aborted fetch) from overwriting the current fetch's `_iriToDepth`/`_depthPaths` maps in `FetchStatusManager`.
-
-**Status:** Root cause of the regression not yet identified. Possible areas to investigate:
-- `displayFetchStatus` early-switch: if the depth-0 page IRI is in `currentIds` with SUCCESS status, display switches immediately — stale cached data may briefly show before fresh data replaces it
-- `isFetchResolving` gate: check whether `manifest.fetchComplete` is being set at the right time
-- A different timing window in `FetchStatusManager` — the shared `_iriToDepth`/`_depthPaths` maps are instance-level (shared across tokens); any other path that mutates them could cause a similar corruption
-
-**Files involved:** `src/runtime/api/fetcher/fetcher.ts`, `src/runtime/api/fetcher/fetch-status-manager.ts`, `src/runtime/resources/resources.ts` (`displayFetchStatus`), `src/runtime/storage/stores/fetcher/getter-utils.ts` (`isFetchResolving`).
-
 ---
 
 ## Open GitHub Issues
@@ -883,46 +870,14 @@ The `BubbleMenu` component renders `h("div", { ref: root, ...attrs }, slots.defa
 
 ---
 
-## Set-Cookie leakage — `server-plugin.ts` TODO (pending bundle fix)
-
-**File:** `src/runtime/server/server-plugin.ts`, lines 11–17
-
-The `beforeResponse` hook unconditionally strips all `Set-Cookie` headers from Nuxt SSR responses. This was added as a blunt workaround for intermittent cross-user cookie leakage reported in production. The TODO comment in the file confirms this was always temporary.
-
-**Root cause (in `api-components-bundle`):** `JWTEventListener` holds `$this->token` as an instance variable that is never reset between FrankenPHP worker requests. A JWT refresh on request A leaks the `Set-Cookie` header onto request B (a different user). See `api-components-bundle` CLAUDE.md section "JWTEventListener: cross-user Set-Cookie leakage in FrankenPHP worker mode" for the fix.
-
-**Once the bundle fix is deployed:** Remove the `beforeResponse` stripping hook (or scope it narrowly). Currently the strip also silently swallows legitimate `Set-Cookie` responses on SSR — the forwarding code in `resources/actions.ts` (lines 558–566) is effectively dead because the plugin removes the header before it reaches the browser.
-
-**Status:** Bundle fix landed (2026-06-19). `JWTEventListener` now implements `ResetInterface` and clears `$this->token` in `onKernelResponse()` before use. The `beforeResponse` strip in `server-plugin.ts` can now be removed — and the dead forwarding code in `resources/actions.ts` (lines 558–566) should be re-evaluated to ensure legitimate `Set-Cookie` responses are correctly forwarded to the browser on SSR.
-
----
-
 ## ComponentGroupUtilSynchronizer — spurious PATCH when `allowedComponents` absent from embedded response
 
-**File:** `src/runtime/templates/components/main/ComponentGroup.Util.Synchronizer.ts`, `updateAllowedComponents()` (line 142)
+**File:** `src/runtime/templates/components/main/ComponentGroup.Util.Synchronizer.ts`, `updateAllowedComponents()`
 
 **Symptom:** Navigation renders on first SSR load, then disappears once the synchronizer runs client-side.
 
-**Root cause (in `api-components-bundle`):** `ComponentGroup.allowedComponents` is in `#[Groups(['ComponentGroup:read', 'ComponentGroup:write'])]` only. When a `Layout` (or `Page`) is fetched with `Layout:read` context, embedded `ComponentGroup` objects have no matching fields — they arrive as bare `{"@id": "...", "@type": "ComponentGroup"}` with no `allowedComponents` key.
+**Root cause (in `api-components-bundle`):** `ComponentGroup.allowedComponents` is in `#[Groups(['ComponentGroup:read', 'ComponentGroup:write'])]` only. When a `Layout` (or `Page`) is fetched with `Layout:read` context, embedded `ComponentGroup` objects have no matching fields — they arrive as bare `{"@id": "...", "@type": "ComponentGroup"}` with no `allowedComponents` key. The old `?? null` coercion treated `undefined` (field absent) the same as `null` (field explicitly unset), causing a spurious PATCH that overwrote richer SSR store data with bare IRI strings.
 
-`updateAllowedComponents()` does:
-```ts
-if (isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
-    return
-}
-```
+**Module fix (done):** `updateAllowedComponents()` now returns early when `stored === undefined` (field not in response). Only PATCHes when `allowedComponents` is explicitly present in the response and differs.
 
-`resource.data.allowedComponents` is `undefined` (key absent) → coerces to `null` via `?? null`. The prop is `['/component/navigation_links']`. `isEqual` returns false → PATCH fires unnecessarily.
-
-The PATCH response uses `ComponentGroup:read` normalization and returns `componentPositions` as bare IRI strings (since `ComponentPosition` fields are not in `ComponentGroup:read`). This overwrites the richer SSR-fetched position/component data in the Pinia store. The nav goes blank.
-
-**Primary fix (bundle side):** Add `Layout:read` and `Page:read` to `allowedComponents`'s `#[Groups]` in `ComponentGroup.php`. Then the embedded data includes `allowedComponents`, `isEqual` returns true, and no PATCH fires. See `api-components-bundle` CLAUDE.md section "ComponentGroup.allowedComponents — missing from embedded Layout/Page responses".
-
-**Secondary / defensive fix (module side):** In `updateAllowedComponents()`, distinguish between `undefined` (field absent from response — don't PATCH) and `null` (field explicitly unset — PATCH). Change `?? null` to a sentinel check:
-```ts
-const stored = resource?.data?.allowedComponents
-if (stored === undefined) return // field not in response; cannot compare
-if (isEqual(allowedComponents, stored ?? null)) return
-```
-
-**Status:** Primary fix pending in bundle. Secondary module-side fix is a defensive improvement that prevents the bug even if the serialization groups are wrong.
+**Primary fix (bundle side, pending):** Add `Layout:read` and `Page:read` to `allowedComponents`'s `#[Groups]` in `ComponentGroup.php` so embedded objects include the field. See `api-components-bundle` CLAUDE.md section "ComponentGroup.allowedComponents — missing from embedded Layout/Page responses".

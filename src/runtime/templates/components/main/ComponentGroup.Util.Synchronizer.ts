@@ -140,7 +140,9 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   private async updateAllowedComponents(allowedComponents: string[] | null, resource: any) {
-    if (isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
+    const stored = resource?.data?.allowedComponents
+    if (stored === undefined) return
+    if (isEqual(allowedComponents, stored ?? null)) {
       return
     }
 
