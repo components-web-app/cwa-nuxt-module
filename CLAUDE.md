@@ -768,16 +768,11 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ---
 
----
-
 ## Open GitHub Issues
 
 All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-19. Check this list before starting new work — many may already be fixed.
 
 ### Critical / Core
-
-**[#211](https://github.com/components-web-app/cwa-nuxt-module/issues/211) — Cache showing previous data page on navigation** (bug, reproduction required)
-Visiting a data page sometimes shows the previously-visited data page briefly before the correct one loads; occasionally the page fails to load at all. Root cause is almost certainly the `displayFetchStatus` early-switch: when the depth-0 page IRI is already in `currentIds` with SUCCESS status, display switches immediately to the cached (stale) data before the new resource responses arrive. This is the same as the page navigation flash regression noted above. The stale-manifest race condition fix (`2d56f0f1`) addressed one path; a second path likely remains.
 
 **[#151](https://github.com/components-web-app/cwa-nuxt-module/issues/151) — Component group `allowedComponents` restriction not enforced for `pageDataProperty` positions** (bug)
 Adding a dynamic position (`pageDataProperty`) referencing a component type the group does not allow raises no error. The `allowedComponents` check is bypassed. Needs API-side fix too: see [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
