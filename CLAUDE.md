@@ -792,9 +792,6 @@ All open issues from [components-web-app/cwa-nuxt-module](https://github.com/com
 **[#211](https://github.com/components-web-app/cwa-nuxt-module/issues/211) — Cache showing previous data page on navigation** (bug, reproduction required)
 Visiting a data page sometimes shows the previously-visited data page briefly before the correct one loads; occasionally the page fails to load at all. Root cause is almost certainly the `displayFetchStatus` early-switch: when the depth-0 page IRI is already in `currentIds` with SUCCESS status, display switches immediately to the cached (stale) data before the new resource responses arrive. This is the same as the page navigation flash regression noted above. The stale-manifest race condition fix (`2d56f0f1`) addressed one path; a second path likely remains.
 
-**[#217](https://github.com/components-web-app/cwa-nuxt-module/issues/217) — Auth invalidation shows 403/401 on SSR public page**
-On redeploy, JWT is revoked. SSR requests with a stale JWT get a 403/401 from the API. The API clears the cookie on the response, so a client reload would recover — but the user sees an error page instead. Fix: detect 401/403 in SSR, clear auth cookies, and retry the page render once (or redirect to a loading page that retries client-side).
-
 **[#151](https://github.com/components-web-app/cwa-nuxt-module/issues/151) — Component group `allowedComponents` restriction not enforced for `pageDataProperty` positions** (bug)
 Adding a dynamic position (`pageDataProperty`) referencing a component type the group does not allow raises no error. The `allowedComponents` check is bypassed. Needs API-side fix too: see [api-components-bundle#170](https://github.com/components-web-app/api-components-bundle/issues/170).
 
@@ -804,10 +801,7 @@ Adding a dynamic position (`pageDataProperty`) referencing a component type the 
 If a consuming app adds a non-CWA layout (e.g. `alternate-layout.vue`) to its `layouts/` directory, Nuxt no longer applies the CWA root layout by default to CWA pages. Pages added manually (outside the layer) fall back to the wrong layout. Fix: ensure the module either sets `layoutName` explicitly in route meta or that the layer's default layout is enforced regardless of what other layouts exist in the app.
 
 **[#224](https://github.com/components-web-app/cwa-nuxt-module/issues/224) — Various bugs (image component + list position)**
-Two separate bugs reported together:
-1. Existing image / image field not cleared when switching between file upload components (stale file ref persists after component switch)
-2. Added resource not appearing at the correct position in a list (sort order / position insertion bug)
-*Needs clarification on which specific components and which list.* Comment posted on the issue.
+Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wrong sort position after add) remains open — may be API-side.
 
 ### Features / Enhancements
 
