@@ -5,14 +5,7 @@
       v-model="showMenu"
       class="cwa:relative cwa:z-20"
     />
-    <Transition
-      enter-from-class="cwa:transform cwa:opacity-0 cwa:scale-[0.97]"
-      enter-active-class="cwa:duration-200 cwa:ease-out"
-      enter-to-class="cwa:opacity-100"
-      leave-from-class="cwa:opacity-100"
-      leave-active-class="cwa:duration-200 cwa:ease-in"
-      leave-to-class="cwa:transform cwa:opacity-0 cwa:scale-[0.97]"
-    >
+    <Transition v-bind="menu">
       <div
         v-show="showMenu"
         ref="menu"
@@ -124,6 +117,7 @@ import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
 import { useCwa, useRoute } from '#imports'
+import { useTransitions } from '#cwa/composables/transitions'
 import IconLayouts from '#cwa/templates/components/core/assets/IconLayouts.vue'
 import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
@@ -132,6 +126,7 @@ import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 
 const $cwa = useCwa()
+const { menu } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)

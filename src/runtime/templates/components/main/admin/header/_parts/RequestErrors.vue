@@ -2,8 +2,10 @@
 import Notification from './Notification.vue'
 import { useCwa } from '#imports'
 import { ErrorType } from '#cwa/storage/stores/error/state'
+import { useTransitions } from '#cwa/composables/transitions'
 
 const $cwa = useCwa()
+const { notification } = useTransitions()
 
 function removeError(timestamp: number) {
   $cwa.resourcesManager.removeError(timestamp)
@@ -18,12 +20,7 @@ function removeError(timestamp: number) {
     <TransitionGroup
       tag="ul"
       class="cwa:list-none cwa:flex cwa:w-full cwa:flex-col cwa:items-center cwa:gap-y-4 cwa:sm:items-end"
-      enter-active-class="cwa:transform cwa:ease-out cwa:duration-300 cwa:transition"
-      enter-from-class="cwa:translate-y-2 cwa:opacity-0 cwa:sm:translate-y-0 cwa:sm:translate-x-2"
-      enter-to-class="cwa:translate-y-0 cwa:opacity-100 cwa:sm:translate-x-0"
-      leave-active-class="cwa:transition cwa:ease-in cwa:duration-100"
-      leave-from-class="cwa:opacity-100"
-      leave-to-class="cwa:translate-y-2 cwa:opacity-0 cwa:sm:translate-y-0 cwa:sm:translate-x-2"
+      v-bind="notification"
     >
       <Notification
         v-for="(error, index) in $cwa.resourcesManager.errors"

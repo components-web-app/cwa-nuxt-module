@@ -1,12 +1,5 @@
 <template>
-  <Transition
-    enter-from-class="cwa:transform cwa:opacity-0 cwa:w-0"
-    enter-active-class="cwa:duration-200 cwa:ease-out"
-    enter-to-class="cwa:opacity-100"
-    leave-from-class="cwa:opacity-100"
-    leave-active-class="cwa:duration-300 cwa:ease-in cwa:delay-200"
-    leave-to-class="cwa:transform cwa:opacity-0"
-  >
+  <Transition v-bind="progressBar">
     <div
       v-show="props.show"
       class="cwa:w-full cwa:h-0.5"
@@ -21,6 +14,9 @@
 </template>
 
 <script setup lang="ts">
+import { useTransitions } from '#cwa/composables/transitions'
+
+const { progressBar } = useTransitions()
 const props = withDefaults(defineProps<{
   show: boolean
   percent: number

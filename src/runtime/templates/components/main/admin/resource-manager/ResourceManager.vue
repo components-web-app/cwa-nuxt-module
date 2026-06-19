@@ -5,6 +5,7 @@ import ResourceLoadingIndicator
 import ManagerTabs from './_parts/ManagerTabs.vue'
 import CwaAdminResourceManagerContextMenu from './_parts/CwaResourceManagerContextMenu.vue'
 import { useCwa } from '#imports'
+import { useTransitions } from '#cwa/composables/transitions'
 import type { CwaResourceManagerTabOptions } from '#cwa/composables/cwa-resource-manager-tab'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import type { ManagerTab } from '#cwa/types'
@@ -15,6 +16,7 @@ import AddComponentDialog
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 
 const $cwa = useCwa()
+const { slideUp } = useTransitions()
 const currentStackItem = $cwa.admin.resourceStackManager.currentStackItem
 const spacer = useTemplateRef<HTMLElement | null>('spacer')
 const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
@@ -161,14 +163,7 @@ defineExpose({
     ref="spacer"
     class="relative"
   />
-  <Transition
-    enter-from-class="cwa:transform cwa:translate-y-full"
-    enter-active-class="cwa:duration-200 cwa:ease-out"
-    enter-to-class="cwa:translate-y-0"
-    leave-from-class="cwa:translate-y-0"
-    leave-active-class="cwa:duration-200 cwa:ease-in"
-    leave-to-class="cwa:transform cwa:translate-y-full"
-  >
+  <Transition v-bind="slideUp">
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
       class="fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/40"

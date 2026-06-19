@@ -32,4 +32,28 @@ describe('useTransitions', () => {
     expect(a).not.toBe(b)
     expect(a).toEqual(b)
   })
+
+  const newKeys = ['dropdown', 'overlay', 'slideUp', 'menu', 'spinner', 'notification', 'progressBar'] as const
+  const requiredProps = ['enterActiveClass', 'enterFromClass', 'enterToClass', 'leaveActiveClass', 'leaveFromClass', 'leaveToClass']
+
+  for (const key of newKeys) {
+    test(`returns a transitions object with a ${key} key`, () => {
+      expect(useTransitions()).toHaveProperty(key)
+    })
+
+    test(`${key} transition has all required CSS class keys`, () => {
+      const transition = useTransitions()[key]
+      for (const prop of requiredProps) {
+        expect(transition).toHaveProperty(prop)
+      }
+    })
+
+    test(`${key} classes are non-empty strings`, () => {
+      const transition = useTransitions()[key]
+      for (const value of Object.values(transition)) {
+        expect(typeof value).toBe('string')
+        expect(value.length).toBeGreaterThan(0)
+      }
+    })
+  }
 })
