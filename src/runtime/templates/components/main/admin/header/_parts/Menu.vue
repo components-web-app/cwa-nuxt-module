@@ -5,7 +5,7 @@
       v-model="showMenu"
       class="cwa:relative cwa:z-20"
     />
-    <Transition v-bind="menu">
+    <Transition v-bind="menuTransition">
       <div
         v-show="showMenu"
         ref="menu"
@@ -126,7 +126,7 @@ import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 
 const $cwa = useCwa()
-const { menu } = useTransitions()
+const { menu: menuTransition } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)
