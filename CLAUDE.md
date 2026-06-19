@@ -888,23 +888,32 @@ Two root causes in `handleOptionClick`:
 
 ## `allowedComponents` format contract
 
-The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths to the component collection endpoint (e.g. `'/component/navigation_links'`). This is the canonical format the API stores and returns.
+The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.
 
 **Do not pass PHP FQCNs to the prop.** The prop is front-end-facing and expects collection IRIs that map to the API collection endpoints.
 
 For reference, the three layers use different input formats:
 | Layer | Input format | Conversion |
 |---|---|---|
-| `<CwaComponentGroup :allowed-components>` prop | Collection IRI (e.g. `/component/navigation_links`) | None — stored and compared as-is |
-| API PATCH `allowedComponents` field | IRI or PHP FQCN | Server converts FQCN → IRI automatically |
+| `<CwaComponentGroup :allowed-components>` prop | Prefix-free IRI (e.g. `/component/navigation_links`) | Synchroniser adds prefix before PATCH/POST |
+| API PATCH `allowedComponents` field | Prefixed IRI or PHP FQCN | Server converts FQCN → IRI automatically |
 | `CwaFixtureBuilder->group('nav', allow: [NavigationLink::class])` | PHP FQCN | Builder converts FQCN → IRI before persisting |
 
-The module does not need to handle FQCN → IRI conversion. The prop must always receive IRIs.
+The module does not need to handle FQCN → IRI conversion. The prop must always receive prefix-free IRIs.
 
-### IRI prefix preservation — do not strip or modify stored IRIs
+### IRI prefix normalisation (FIXED)
 
-**Bug pattern:** The synchroniser must send `allowedComponents` values back to the API exactly as received — do not strip any path prefix (e.g. `/_api`).
+The API path prefix (e.g. `/_api`) is derived at runtime from `new URL(apiUrl).pathname` and stored on `ResourceTypeFromIri`. The synchroniser calls `ResourceTypeFromIri.getPathPrefix()` and normalises incoming prop values before comparing or PATCHing:
 
-The API's `ComponentPositionValidator` compares a position's component class against `allowedComponents` using `IriConverterInterface::getIriFromResource(..., ABS_PATH, new GetCollection())`. That call produces whatever IRI the app's API Platform configuration emits, including any configured API path prefix (e.g. `/_api/component/navigation_links` in an app with `/_api` as the path prefix). The stored value and the validator's generated value must be identical strings for `in_array` to match.
+```ts
+// normalizeAllowedComponents in ComponentGroup.Util.Synchronizer.ts
+const prefix = ResourceTypeFromIri.getPathPrefix()
+return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
+```
 
-If the synchroniser strips `/_api` (or any other prefix) before PATCHing, the stored value (`/component/navigation_links`) will never match the validator's output (`/_api/component/navigation_links`) in that environment, and all `ComponentPosition` creation against that group will fail validation.
+This ensures:
+- Stored values in the DB always include the prefix → `ComponentPositionValidator` comparison succeeds
+- Props can be written without the prefix (and the module's own test fixtures do so)
+- Already-prefixed values (e.g. from consuming apps written before this fix) are not double-prefixed
+
+`AddComponentDialog` strips the prefix from stored `allowedComponents` before the `includes()` comparison against `getComponentMetadata()` endpoints (which are already prefix-free after the `ddd900ee` normalisation). Both sides are always compared without prefix.

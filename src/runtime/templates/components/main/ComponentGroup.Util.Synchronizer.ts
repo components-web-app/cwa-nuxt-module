@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
@@ -128,7 +128,7 @@ export class ComponentGroupUtilSynchronizer {
     } = {
       reference: fullReference.value,
       location: iri,
-      allowedComponents,
+      allowedComponents: this.normalizeAllowedComponents(allowedComponents),
     }
     if (locationProperty) {
       postData[locationProperty] = [iri]
@@ -139,17 +139,25 @@ export class ComponentGroupUtilSynchronizer {
     })
   }
 
+  private normalizeAllowedComponents(allowedComponents: string[] | null): string[] | null {
+    if (!allowedComponents) return allowedComponents
+    const prefix = ResourceTypeFromIri.getPathPrefix()
+    if (!prefix) return allowedComponents
+    return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
+  }
+
   private async updateAllowedComponents(allowedComponents: string[] | null, resource: any) {
     const stored = resource?.data?.allowedComponents
     if (stored === undefined) return
-    if (isEqual(allowedComponents, stored ?? null)) {
+    const normalized = this.normalizeAllowedComponents(allowedComponents)
+    if (isEqual(normalized, stored ?? null)) {
       return
     }
 
     await this.resourcesManager.updateResource({
       endpoint: resource?.data['@id'],
       data: {
-        allowedComponents,
+        allowedComponents: normalized,
       },
     })
   }

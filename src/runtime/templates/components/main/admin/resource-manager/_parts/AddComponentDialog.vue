@@ -63,6 +63,7 @@ import type { CwaResourceMeta } from '#cwa/types'
 import {
   useDynamicPositionSelectOptions,
 } from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
+import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadata
@@ -148,9 +149,13 @@ async function findAvailableComponents(allowedComponents: undefined | string[], 
   }
 
   const asEntries = Object.entries(apiComponents)
-  const filteredAllowed = allowedComponents
+  const prefix = ResourceTypeFromIri.getPathPrefix()
+  const normalizedAllowed = prefix
+    ? allowedComponents?.map(iri => iri.startsWith(prefix) ? iri.slice(prefix.length) : iri)
+    : allowedComponents
+  const filteredAllowed = normalizedAllowed
     ? asEntries.filter(
-        ([_, value]) => (allowedComponents.includes(value.endpoint)),
+        ([_, value]) => (normalizedAllowed.includes(value.endpoint)),
       )
     : asEntries
   // if no config, the front-end component does not exist to add

@@ -240,6 +240,111 @@ describe('Group synchronizer', () => {
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
 
+  describe('allowedComponents path prefix normalisation', () => {
+    test('prepends the API path prefix to prop values before PATCHing when stored values have the prefix', async () => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+      try {
+        const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+        const mockId = '/test'
+        createSyncWatcher(groupSynchronizer, {
+          resource: {
+            data: {
+              '@id': mockId,
+              'allowedComponents': ['/_api/component/nav'],
+            },
+            apiState: { status: CwaResourceApiStatuses.SUCCESS },
+          },
+          allowedComponents: ['/component/nav'],
+        })
+
+        auth.signedIn.value = true
+        await nextTick()
+
+        // prop was '/component/nav' but PATCH must send '/_api/component/nav' to match stored format
+        expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+      }
+      finally {
+        ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+      }
+    })
+
+    test('does not double-prefix values that already include the path prefix', async () => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+      try {
+        const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+        const mockId = '/test'
+        createSyncWatcher(groupSynchronizer, {
+          resource: {
+            data: {
+              '@id': mockId,
+              'allowedComponents': ['/_api/component/nav'],
+            },
+            apiState: { status: CwaResourceApiStatuses.SUCCESS },
+          },
+          allowedComponents: ['/_api/component/nav'],
+        })
+
+        auth.signedIn.value = true
+        await nextTick()
+
+        expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+      }
+      finally {
+        ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+      }
+    })
+
+    test('sends prefixed allowedComponents in PATCH when values differ', async () => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+      try {
+        const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+        const mockId = '/test'
+        createSyncWatcher(groupSynchronizer, {
+          resource: {
+            data: {
+              '@id': mockId,
+              'allowedComponents': ['/_api/component/nav', '/_api/component/buttons'],
+            },
+            apiState: { status: CwaResourceApiStatuses.SUCCESS },
+          },
+          allowedComponents: ['/component/nav'],
+        })
+
+        auth.signedIn.value = true
+        await nextTick()
+
+        expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+          endpoint: mockId,
+          data: { allowedComponents: ['/_api/component/nav'] },
+        })
+      }
+      finally {
+        ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+      }
+    })
+
+    test('prefixes allowedComponents when creating a new component group', async () => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+      try {
+        const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+
+        createSyncWatcher(groupSynchronizer, {
+          resource: null,
+          allowedComponents: ['/component/nav'],
+        })
+
+        auth.signedIn.value = true
+        await nextTick()
+
+        const call = resourcesManager.createResource.mock.calls[0][0]
+        expect(call.data.allowedComponents).toEqual(['/_api/component/nav'])
+      }
+      finally {
+        ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+      }
+    })
+  })
+
   test('should stop sync watcher', () => {
     const { groupSynchronizer } = createGroupSynchronizer()
     createSyncWatcher(groupSynchronizer)
