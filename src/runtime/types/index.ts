@@ -54,6 +54,7 @@ export interface CwaModuleOptions {
   }
   pageData?: {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'> & {
+      properties?: { [propertyName: string]: string }
       metaFields?: {
         field: string
         type: 'input' | 'select'

@@ -1195,6 +1195,9 @@
 .cwa\:pt-0\.5 {
   padding-top: calc(var(--cwa-spacing) * 0.5);
 }
+.cwa\:pt-1 {
+  padding-top: calc(var(--cwa-spacing) * 1);
+}
 .cwa\:pt-2 {
   padding-top: calc(var(--cwa-spacing) * 2);
 }

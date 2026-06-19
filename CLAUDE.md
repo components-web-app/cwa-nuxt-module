@@ -757,9 +757,6 @@ All open issues from [components-web-app/cwa-nuxt-module](https://github.com/com
 
 ### Features / Enhancements
 
-**[#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) — pageDataProperty position UI: type picker, property filter, readable component names**
-Two-step picker when adding a dynamic position: (1) select the PageData type, (2) select the property (filtered to `allowedComponents` if set). Readable property names (`heroImage` → "Hero Image") with component type label from `cwa.resources[type].name`. Editing after creation: derive type from stored property name via API docs. See issue for full spec.
-
 **[#188](https://github.com/components-web-app/cwa-nuxt-module/issues/188) — OG image defaults for CWA pages**
 Implement default Open Graph image templates so CWA pages have usable OG images without bespoke per-project setup.
 
@@ -768,6 +765,16 @@ A sample CWA form component and the composables needed to build forms are requir
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
+
+---
+
+## Partial: pageDataProperty position UI — two-step picker (#234)
+
+**Files:** `src/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions.ts`, `src/runtime/templates/components/main/admin/resource-manager/_tabs/position/DynamicPage.vue`, `src/runtime/types/index.ts`
+
+**Module side complete:** `DynamicPage.vue` now shows two `ModalSelect` dropdowns — first selects the PageData type (from `pageDataMetadata`), second shows filtered properties for that type. Labels use camelCase/PascalCase → Title Case by default. Configurable per-field via new `cwa.pageData[TypeName].properties[field]` key in `nuxt.config.ts`. `allowedComponents` on the parent ComponentGroup filters the property list (strips API path prefix before comparing). On re-open, scans `pageDataMetadata` to find which type has the stored `pageDataProperty` and pre-sets the type dropdown.
+
+**Blocked on API:** `ComponentPosition` needs a new `pageDataClass` field (FQCN of the selected PageData type). Once available: module sends it alongside `pageDataProperty` on write; re-open reads it directly instead of scanning; API can use it for write-time validation (api-components-bundle#170).
 
 ---
 
@@ -795,7 +802,7 @@ Module-side UX enforcement tracked in [#234](https://github.com/components-web-a
 
 **API write-side requires a module-side prerequisite:** When creating or PATCHing a `ComponentPosition` with `pageDataProperty` set, the module must also send `pageDataClass` — the FQCN of the PageData entity whose property is being referenced (e.g. `"pageDataClass": "App\\Entity\\ConferenceData"`). Without this, the API has no way to resolve the property type at write time and cannot validate it against `allowedComponents`. The API will return a 422 if the resolved component type is not in `allowedComponents`.
 
-This `pageDataClass` field does not yet exist on the API side — it is the agreed design direction (documented in api-components-bundle#170 comments, now closed). It needs a coordinated implementation in both projects:
+This `pageDataClass` field does not yet exist on the API side — it is the agreed design direction (documented in api-components-bundle#170, reopened). It needs a coordinated implementation in both projects:
 - **Module**: send `pageDataClass` in the POST/PATCH body when creating `pageDataProperty` positions
 - **API**: add `pageDataClass` to `ComponentPosition`, resolve the property type via `PageDataMetadataFactory`, validate against `allowedComponents` in `ComponentPositionValidator`
 
