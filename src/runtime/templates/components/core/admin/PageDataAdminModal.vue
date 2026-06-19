@@ -302,8 +302,9 @@ const pageDataTypeNuxtLinkParams = computed(() => {
 })
 
 function handleDeleteClick() {
+  const destination = pageDataTypeNuxtLinkParams.value
   deleteResource(undefined, async () => {
-    await navigateTo(pageDataTypeNuxtLinkParams.value)
+    await navigateTo(destination)
   })
 }
 

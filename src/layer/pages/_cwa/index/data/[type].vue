@@ -25,8 +25,8 @@
     <template #item="{ data }">
       <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
         <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
-          <div class="cwa:flex cwa:items-center cwa:gap-x-3">
-            <span class="cwa:text-xl">{{ data.title }}</span><span :class="['cwa:outline', 'cwa:outline-1', 'cwa:outline-offset-2', 'cwa:w-2', 'cwa:h-2', 'cwa:rounded-full', data.route ? ['cwa:outline-green', 'cwa:bg-green'] : ['cwa:outline-orange', 'cwa:bg-orange']]" />
+          <div class="cwa:flex cwa:items-end cwa:gap-x-3">
+            <span class="cwa:text-xl">{{ data.title }}</span><span :class="['cwa:outline', 'cwa:outline-1', 'cwa:outline-offset-2', 'cwa:w-2', 'cwa:h-2', 'cwa:shrink-0', 'cwa:rounded-full', data.route ? ['cwa:outline-green', 'cwa:bg-green'] : ['cwa:outline-orange', 'cwa:bg-orange']]" />
           </div>
           <span class="cwa:text-stone-400">{{ pageDataById[data.page]?.reference || data.page }}</span>
         </div>

@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { definePageMeta, useResetPassword, useHead } from '#imports'
+import { definePageMeta, useHead, useResetPassword } from '#imports'
 
 const {
   error,
@@ -28,6 +28,7 @@ definePageMeta({
 })
 
 useHead({
+  title: 'Reset Password',
   bodyAttrs: {
     class: 'cwa:h-full',
   },
