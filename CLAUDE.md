@@ -787,6 +787,9 @@ Bug 1 (stale filename on component switch) fixed in commit `0722fea1`. Bug 2 (wr
 
 ### Features / Enhancements
 
+**[#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) — pageDataProperty position UI: type picker, property filter, readable component names**
+Two-step picker when adding a dynamic position: (1) select the PageData type, (2) select the property (filtered to `allowedComponents` if set). Readable property names (`heroImage` → "Hero Image") with component type label from `cwa.resources[type].name`. Editing after creation: derive type from stored property name via API docs. See issue for full spec.
+
 **[#189](https://github.com/components-web-app/cwa-nuxt-module/issues/189) — `useTransition()` composable for uniform transitions** (good first issue)
 Components should use a `useTransition()` composable (like `ContextMenu` does) so transition CSS properties are globally configurable rather than hard-coded per-component.
 
