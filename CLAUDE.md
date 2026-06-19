@@ -880,3 +880,30 @@ The `BubbleMenu` component renders `h("div", { ref: root, ...attrs }, slots.defa
 **Files:** `ComponentGroup.Util.Synchronizer.ts` `updateAllowedComponents()` (module) + `ComponentGroup.php` `#[Groups]` (bundle).
 
 `?? null` coercion treated `undefined` (field absent from embedded response) as `null` (explicitly unset), causing a spurious PATCH that overwrote richer SSR store data with bare IRI strings and blanked navigation. Fixed: module returns early when `stored === undefined`; bundle adds `Layout:read` / `Page:read` to `allowedComponents` groups so the field is always present.
+
+---
+
+## `allowedComponents` format contract
+
+The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths to the component collection endpoint. The **exact format** must match what the API stores — including any API path prefix the app is configured with.
+
+**Do not pass PHP FQCNs to the prop.** The prop is front-end-facing and expects collection IRIs that map to the API collection endpoints.
+
+For reference, the three layers use different input formats:
+| Layer | Input format | Conversion |
+|---|---|---|
+| `<CwaComponentGroup :allowed-components>` prop | Full collection IRI as stored by API (e.g. `/_api/component/navigation_links`) | None — stored and compared as-is |
+| API PATCH `allowedComponents` field | IRI or PHP FQCN | Server converts FQCN → IRI automatically |
+| `CwaFixtureBuilder->group('nav', allow: [NavigationLink::class])` | PHP FQCN | Builder converts FQCN → IRI before persisting |
+
+The module does not need to handle FQCN → IRI conversion. The prop must always receive IRIs.
+
+### IRI prefix — prop must match stored value exactly
+
+**Root cause of spurious PATCH loop (confirmed 2026-06-19):** The IRI stored by the API includes the app's full API path prefix. `CwaFixtureBuilder` uses `IriConverterInterface::getIriFromResource(NavigationLink::class, ABS_PATH, GetCollection)` which emits whatever prefix the app's API Platform configuration uses (e.g. `/_api/component/navigation_links` in the components-web-app demo with `/_api` as the path prefix). If the `:allowed-components` prop passes a shorter form (e.g. `'/component/navigation_links'`, no `/_api`), the synchroniser's `isEqual` check always finds a difference — PATCH fires on every component group load, overwriting position data and blanking navigation.
+
+**Two-directional requirement:**
+1. **Prop → comparison:** The prop value must be the full IRI including any API path prefix. A shorter form causes a spurious PATCH on every load.
+2. **PATCH → stored:** The synchroniser must send `allowedComponents` values back to the API exactly as received — do not strip any path prefix. If `/_api` is stripped before PATCHing, the stored value loses the prefix and the API's `ComponentPositionValidator` can no longer match positions against it (the validator generates `/_api/...` at comparison time via `IriConverter`).
+
+**Fix direction (being worked on in module + bundle):** The module synchroniser should normalise prop IRIs against the API docs to derive the canonical stored form, rather than requiring the template author to know the runtime prefix. The `:allowed-components` prop format is being reconsidered to accept component short names (e.g. `'NavigationLink'`) with the module handling the IRI expansion.

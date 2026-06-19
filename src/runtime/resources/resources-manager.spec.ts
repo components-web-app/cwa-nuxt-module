@@ -727,8 +727,8 @@ describe('Resources manager', () => {
           if (iri === '/_/component_groups/g1') {
             return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
           }
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', sortValue: 3, _metadata: {} } }
-          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', sortValue: 4, _metadata: {} } }
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 3, '_metadata': {} } }
+          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', 'sortValue': 4, '_metadata': {} } }
         },
       })
       await resourcesManager.addResourceAction()
@@ -750,8 +750,8 @@ describe('Resources manager', () => {
           if (iri === '/_/component_groups/g1') {
             return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
           }
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', sortValue: 3, _metadata: {} } }
-          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', sortValue: 4, _metadata: {} } }
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 3, '_metadata': {} } }
+          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', 'sortValue': 4, '_metadata': {} } }
         },
       })
       await resourcesManager.addResourceAction()
@@ -775,7 +775,7 @@ describe('Resources manager', () => {
           if (iri === '/_/component_groups/g1') {
             return { data: { componentPositions: ['/_/component_positions/p1'] } }
           }
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', sortValue: 2, _metadata: {} } }
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 2, '_metadata': {} } }
         },
       })
       await resourcesManager.addResourceAction()
