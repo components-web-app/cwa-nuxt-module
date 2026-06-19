@@ -866,6 +866,18 @@ The API entrypoint returns component collection endpoints with the app's API bas
 
 ---
 
+## Fixed: Route selector click reliability in SearchResource (#235)
+
+**File:** `src/runtime/templates/components/ui/form/SearchResource.vue`
+
+Two root causes in `handleOptionClick`:
+
+1. **"Nothing happens"** — The input's `blur` event fired on mousedown (before the click), triggering `unfocus()` → 100ms timer → panel removed from DOM before click registered. Fixed: `@mousedown.prevent` on the results panel keeps focus on the input during click.
+
+2. **"Value appears but not saved"** — The headlessui `close()` call attempted focus-restoration to a non-existent `PopoverButton`, risking side effects that could reset `iri.value` before the PATCH debounce fired. Fixed: removed `close()` (panel visibility is controlled by our own `open` computed, not headlessui state). Also removed the dead `searchValue.value = resourcePropertyValue.value` assignment (immediately overridden by `watch(value)`).
+
+---
+
 ## Fixed: ComponentGroupUtilSynchronizer spurious PATCH when `allowedComponents` absent
 
 **Files:** `ComponentGroup.Util.Synchronizer.ts` `updateAllowedComponents()` (module) + `ComponentGroup.php` `#[Groups]` (bundle).
