@@ -376,6 +376,89 @@ describe('Forms', () => {
     })
   })
 
+  describe('local form view entries', () => {
+    const iri = 'mockIri'
+
+    function withBaseForm() {
+      formsByIdStoreState = {
+        current: {
+          byId: {
+            [iri]: {
+              data: {
+                '@type': 'Form',
+                'formView': { vars: { full_name: 'example_form' }, children: [] },
+              },
+            },
+          },
+        },
+      }
+    }
+
+    test('registerLocalEntry adds flattened entry to getForm()', () => {
+      withBaseForm()
+      const { forms } = createForms()
+      forms.registerLocalEntry(iri, {
+        vars: { full_name: 'example_form[children][0]' } as any,
+        children: [{ vars: { full_name: 'example_form[children][0][name]', label: 'Child object text label' } as any, children: [] }],
+      })
+      expect(forms.getForm(iri).value?.['example_form[children][0][name]']?.vars?.label).toBe('Child object text label')
+    })
+
+    test('registerLocalEntry returns the flat keys that were registered', () => {
+      withBaseForm()
+      const { forms } = createForms()
+      const keys = forms.registerLocalEntry(iri, {
+        vars: { full_name: 'example_form[children][0]' } as any,
+        children: [{ vars: { full_name: 'example_form[children][0][name]' } as any, children: [] }],
+      })
+      expect(keys).toEqual(expect.arrayContaining(['example_form[children][0]', 'example_form[children][0][name]']))
+    })
+
+    test('API store data wins over local entries for the same key', () => {
+      formsByIdStoreState = {
+        current: {
+          byId: {
+            [iri]: {
+              data: {
+                '@type': 'Form',
+                'formView': {
+                  vars: { full_name: 'example_form' },
+                  children: [{ vars: { full_name: 'example_form[children][0][name]', label: 'API Label' } as any, children: [] }],
+                },
+              },
+            },
+          },
+        },
+      }
+      const { forms } = createForms()
+      forms.registerLocalEntry(iri, { vars: { full_name: 'example_form[children][0][name]', label: 'Local Label' } as any, children: [] })
+      expect(forms.getForm(iri).value?.['example_form[children][0][name]']?.vars?.label).toBe('API Label')
+    })
+
+    test('unregisterLocalEntries removes keys from getForm()', () => {
+      withBaseForm()
+      const { forms } = createForms()
+      const keys = forms.registerLocalEntry(iri, {
+        vars: { full_name: 'example_form[children][0]' } as any,
+        children: [{ vars: { full_name: 'example_form[children][0][name]' } as any, children: [] }],
+      })
+      forms.unregisterLocalEntries(iri, keys)
+      expect(forms.getForm(iri).value?.['example_form[children][0][name]']).toBeUndefined()
+    })
+
+    test('registerLocalEntry is reactive — getForm() computed updates after call', () => {
+      withBaseForm()
+      const { forms } = createForms()
+      const formView = forms.getForm(iri)
+      expect(formView.value?.['example_form[children][0][name]']).toBeUndefined()
+      forms.registerLocalEntry(iri, {
+        vars: { full_name: 'example_form[children][0]' } as any,
+        children: [{ vars: { full_name: 'example_form[children][0][name]' } as any, children: [] }],
+      })
+      expect(formView.value?.['example_form[children][0][name]']).toBeDefined()
+    })
+  })
+
   describe('get form view errors', () => {
     test('should return errors BASED on form data AND field', () => {
       const iri = 'mockIri'

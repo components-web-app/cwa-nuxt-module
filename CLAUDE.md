@@ -1239,20 +1239,30 @@ All steps follow TDD: propose test → agree → write test → write code.
 2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `{iri}/submit` with `{ [fullName]: value, ...extraData }`. `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors/unregisteredFieldErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store. `unregisteredFieldErrors` surfaces errors for formView fields not bound to any `useCwaFormInput` instance — prevents silent error loss.
 3. ✅ `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
 4. ✅ `useCwaFormCollection` — prototype cloning, entry add/remove
-5. ✅ Sample form component in playground (`playground/app/cwa/components/Form/Form.vue`) — all field types from `ExampleFormType` with Nuxt UI; sub-components `FormChildEntry.vue` + `FormTextEntry.vue` for collection entries
+5. ✅ Sample form component in playground (`playground/app/cwa/components/ExampleForm/ExampleForm.vue`) — all field types from `ExampleFormType` with Nuxt UI; sub-components `FormChildEntry.vue` + `FormTextEntry.vue` for collection entries
 
 **Bug fixes (2026-06-20):**
 
 - **`addEntry()` always no-op**: `getForm()` was discarding `prototype` — it's a sibling of `vars` in the API response (`ApiFormView: { vars, children, prototype }`), not a key inside `vars`. `createFormViewObject` now copies `prototype` into the `FormView` entry. `useCwaFormCollection` reads from `formEntry.prototype` (not `vars.prototype`). Spec `makeCollectionFormData` was also wrong (had `prototype` inside `vars`) — now corrected.
 - **Per-field validation always 200, no errors**: `FormApiEventListener.getData()` only processes form data when the path ends with `/submit`. `validateField` was PATCHing `iri.value` directly — the API ignored the form body and returned 200 as a plain entity response. Fix: `validate()` now calls `validateField(\`${iri.value}/submit\`, ...)`. The submit endpoint URL is also in `rootFormVars.action` (set by `FormViewFactory` to `{absolute-iri}/submit`). See api-components-bundle CLAUDE.md for the security note — the `/submit` endpoint inherits the Form entity's access control.
-- **Checkbox non-responsive**: `useCwaFormInput` was initialising `value` from `vars.value` which for `CheckboxType` is always `'1'` (the submit attribute), not the checked state. Fix: when `block_prefixes` includes `'checkbox'`, initialise `value` from `vars.checked ? '1' : ''`. The consuming app getter should then use `!!checkbox.value.value` (reads local ref, immediate feedback) — NOT `checkbox.vars.value?.checked` (reads store, snaps back after click until PATCH returns). See components-web-app CLAUDE.md for the correct template pattern.
+- **Checkbox non-responsive**: `useCwaFormInput` was initialising `value` from `vars.value` which for `CheckboxType` is always `'1'` (the submit attribute), not the checked state. Fix: when `block_prefixes` includes `'checkbox'`, initialise `value` from `vars.checked ? '1' : null`. The consuming app getter uses `!!checkbox.value.value` (reads local ref, immediate feedback) — NOT `checkbox.vars.value?.checked` (reads store, snaps back after click until PATCH returns). Unchecked value is `null` so Symfony's `BooleanToStringTransformer` correctly maps it to `false` — `""` was treated as checked. See components-web-app CLAUDE.md for the correct template pattern.
 
 **Full legacy field type coverage via composables:**
 
 | Legacy type | Composable | Notes |
 |---|---|---|
-| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` | `vars.attr.type` drives HTML type; `value` is `'1'`/`''` for checkbox (not boolean) |
+| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` | `vars.attr.type` drives HTML type; `value` is `'1'`/`null` for checkbox (not boolean); `!!value.value` gives the boolean |
 | `choice` | `useCwaFormInput` | Template reads `vars.choices`, `vars.expanded`, `vars.multiple` to decide `<select>` vs radio/checkbox group |
 | `repeated` | `useCwaFormRepeated` | Two sub-inputs with cross-validation |
 | `collection` | `useCwaFormCollection` | Prototype from `formEntry.prototype` (NOT `vars.prototype`); entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
 | `button` / `submit` | `useCwaForm.submitting` + `submit()` | No dedicated composable needed |
+
+---
+
+## Fixed: Unchecked checkbox unchecked value is `null`
+
+`useCwaFormInput` initialises unchecked checkboxes with `null` (not `""`). Symfony's `BooleanToStringTransformer` maps only `null` → `false`; any non-null string (including `""`) maps to `true`, so sending `""` silently treated unchecked boxes as checked and suppressed validation errors on `NotBlank`/`IsTrue` constraints.
+
+**Consuming app template pattern:** `!!checkbox.value.value` for the boolean getter, `v ? '1' : null` for the boolean setter. The playground `ExampleForm.vue` implements this pattern.
+
+**Enhancement (future):** Expose `booleanValue: ComputedRef<boolean>` from `useCwaFormInput` when `block_prefixes` includes `'checkbox'`, so templates use `v-model="checkbox.booleanValue"` instead of the getter/setter boilerplate.

@@ -14,7 +14,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
   const initValue = () => {
     const v = vars.value
     if (v?.block_prefixes?.includes('checkbox')) {
-      return v.checked ? (v.value ?? '1') : ''
+      return v.checked ? (v.value ?? '1') : null
     }
     return v?.value
   }
@@ -47,6 +47,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
 
   const hasBlurred = ref(false)
   const hasPreviouslyBeenValid = ref(false)
+  const validating = ref(false)
 
   watch(valid, (v) => {
     if (v === true) hasPreviouslyBeenValid.value = true
@@ -54,16 +55,16 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
 
   const displayErrors = computed(
     () =>
-      (opts?.blurTrigger !== undefined ? opts.blurTrigger.value : hasBlurred.value)
-      || (hasPreviouslyBeenValid.value && valid.value === false)
-      || $cwa.forms.isSubmitAttempted(iri.value ?? ''),
+      !validating.value && (
+        (opts?.blurTrigger !== undefined ? opts.blurTrigger.value : hasBlurred.value)
+        || (hasPreviouslyBeenValid.value && valid.value === false)
+        || $cwa.forms.isSubmitAttempted(iri.value ?? '')
+      ),
   )
 
   const onBlur = () => {
     hasBlurred.value = true
   }
-
-  const validating = ref(false)
 
   const result = {
     vars,
@@ -76,7 +77,14 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
     validate: async (extraData?: Record<string, any>): Promise<void> => {
       if (!iri.value || !vars.value) return
       validating.value = true
-      await $cwa.forms.validateField(`${iri.value}/submit`, { [fullName]: value.value, ...extraData })
+      // Include all registered field values so the API sees the full form context and
+      // returns validation state for all fields — prevents one field's response from
+      // clearing the validation state of other collection entries in the store.
+      await $cwa.forms.validateField(`${iri.value}/submit`, {
+        ...$cwa.forms.getFieldValues(iri.value),
+        [fullName]: value.value,
+        ...extraData,
+      })
       validating.value = false
     },
     onInput: null as unknown as () => void,

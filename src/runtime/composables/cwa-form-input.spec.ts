@@ -8,6 +8,7 @@ const mockValidateField = vi.hoisted(() => vi.fn())
 const mockIsSubmitAttempted = vi.hoisted(() => vi.fn().mockReturnValue(false))
 const mockSetFieldValue = vi.hoisted(() => vi.fn())
 const mockClearFieldValue = vi.hoisted(() => vi.fn())
+const mockGetFieldValues = vi.hoisted(() => vi.fn().mockReturnValue({}))
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
@@ -17,6 +18,7 @@ vi.mock('#cwa/composables/cwa', () => ({
       isSubmitAttempted: mockIsSubmitAttempted,
       setFieldValue: mockSetFieldValue,
       clearFieldValue: mockClearFieldValue,
+      getFieldValues: mockGetFieldValues,
     },
   }),
 }))
@@ -246,6 +248,29 @@ describe('useCwaFormInput', () => {
       const { displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
       expect(displayErrors.value).toBe(true)
     })
+
+    test('is suppressed while validating is in progress and restored after', async () => {
+      let resolveValidate!: () => void
+      mockValidateField.mockReturnValueOnce(new Promise<void>((r) => {
+        resolveValidate = r
+      }))
+
+      // field has been blurred with a previous error — displayErrors would normally be true
+      const formData = makeFormData({ value: 'Alice', submitted: true, valid: false, errors: ['error'] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+
+      const { validate, displayErrors, onBlur } = useCwaFormInput(iri, 'contact_form[name]')
+      onBlur()
+      expect(displayErrors.value).toBe(true)
+
+      const validatePromise = validate()
+      // validating.value set synchronously before the internal await
+      expect(displayErrors.value).toBe(false)
+
+      resolveValidate()
+      await validatePromise
+      expect(displayErrors.value).toBe(true)
+    })
   })
 
   describe('blurTrigger option', () => {
@@ -344,6 +369,33 @@ describe('useCwaFormInput', () => {
       expect(validating.value).toBe(false)
     })
 
+    test('validate includes all registered field values so API has full context', async () => {
+      mockGetFieldValues.mockReturnValue({
+        'contact_form[name]': 'Alice',
+        'contact_form[email]': 'alice@example.com',
+      })
+      const formData = makeFormData({ value: 'Alice' })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', {
+        'contact_form[name]': 'Alice',
+        'contact_form[email]': 'alice@example.com',
+      })
+    })
+
+    test('current field value overrides stale getFieldValues entry', async () => {
+      // getFieldValues may have a slightly stale value; current value wins
+      mockGetFieldValues.mockReturnValue({ 'contact_form[name]': 'stale' })
+      const formData = makeFormData({ value: 'fresh' })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', {
+        'contact_form[name]': 'fresh',
+      })
+    })
+
     test('validate merges extraData into the body', async () => {
       const formData = makeFormData({ value: 'abc' })
       mockGetForm.mockReturnValue(computed(() => formData))
@@ -365,11 +417,11 @@ describe('useCwaFormInput', () => {
   })
 
   describe('checkbox initialization', () => {
-    test('value is empty string for unchecked checkbox (block_prefixes includes checkbox)', () => {
+    test('value is null for unchecked checkbox (block_prefixes includes checkbox)', () => {
       const formData = makeFormData({ value: '1', checked: false, block_prefixes: ['checkbox', 'form'] })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { value } = useCwaFormInput(iri, 'contact_form[name]')
-      expect(value.value).toBe('')
+      expect(value.value).toBeNull()
     })
 
     test('value is the submit-value for a checked checkbox', () => {
@@ -386,7 +438,7 @@ describe('useCwaFormInput', () => {
       expect(value.value).toBe('Alice')
     })
 
-    test('resets to empty string when iri changes and new field is an unchecked checkbox', async () => {
+    test('resets to null when iri changes and new field is an unchecked checkbox', async () => {
       const formData = makeFormData({ value: 'Alice', block_prefixes: ['text', 'form'] })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { value } = useCwaFormInput(iri, 'contact_form[name]')
@@ -396,7 +448,7 @@ describe('useCwaFormInput', () => {
       mockGetForm.mockReturnValue(computed(() => checkboxData))
       iri.value = '/_/form_components/456'
       await new Promise(r => setTimeout(r, 0))
-      expect(value.value).toBe('')
+      expect(value.value).toBeNull()
     })
   })
 

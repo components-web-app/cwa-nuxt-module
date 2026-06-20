@@ -63,10 +63,41 @@ function bracketToNested(flat: Record<string, any>): Record<string, any> {
   return result
 }
 
+function createFormViewObject(apiFormView: ApiFormView): KeyedFormView {
+  const structuredFormView: FormView = {
+    vars: Object.assign({}, apiFormView.vars),
+  }
+  if (apiFormView.prototype) {
+    structuredFormView.prototype = apiFormView.prototype
+  }
+
+  // Process children first so the parent entry always wins on collision.
+  // Expanded ChoiceType (radio group, single value) renders individual option
+  // nodes with the same full_name as the parent — the parent has the correct
+  // label/choices and must not be overwritten by those child nodes.
+  let data: KeyedFormView = {}
+  if (apiFormView.children) {
+    for (const child of apiFormView.children) {
+      data = { ...data, ...createFormViewObject(child) }
+    }
+  }
+
+  // Symfony appends [] to full_name for non-expanded multiple-value fields
+  // (e.g. multi-select). Normalise to the bare key so composable callers
+  // can use the field name without the trailing [].
+  const fullName = apiFormView.vars.multiple && apiFormView.vars.full_name?.endsWith('[]')
+    ? apiFormView.vars.full_name.slice(0, -2)
+    : apiFormView.vars.full_name
+
+  data[fullName] = structuredFormView
+  return data
+}
+
 export default class Forms {
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _submitAttempted = reactive<Record<string, boolean>>({})
   private readonly _fieldValues = reactive<Record<string, Record<string, any>>>({})
+  private readonly _localEntries = reactive<Record<string, KeyedFormView>>({})
 
   public constructor(
     resourcesStoreDefinition: ResourcesStore,
@@ -173,30 +204,31 @@ export default class Forms {
     }
   }
 
+  public registerLocalEntry(iri: string, entry: Record<string, any>): string[] {
+    if (!this._localEntries[iri]) {
+      this._localEntries[iri] = {}
+    }
+    const flat = createFormViewObject(entry as ApiFormView)
+    Object.assign(this._localEntries[iri], flat)
+    return Object.keys(flat)
+  }
+
+  public unregisterLocalEntries(iri: string, keys: string[]): void {
+    if (!this._localEntries[iri]) return
+    for (const key of keys) {
+      delete this._localEntries[iri][key]
+    }
+  }
+
   public getForm(iri: string): ComputedRef<KeyedFormView | undefined> {
     return computed(() => {
       const resource = this.resourcesStore.current.byId[iri]
       if (resource?.data?.['@type'] !== 'Form') {
         return
       }
-      const createFormViewObject = (apiFormView: ApiFormView): KeyedFormView => {
-        const structuredFormView: FormView = {
-          vars: Object.assign({}, apiFormView.vars),
-        }
-        if (apiFormView.prototype) {
-          structuredFormView.prototype = apiFormView.prototype
-        }
-        let data: KeyedFormView = {
-          [apiFormView.vars.full_name]: structuredFormView,
-        }
-        if (apiFormView.children) {
-          for (const child of apiFormView.children) {
-            data = { ...data, ...createFormViewObject(child) }
-          }
-        }
-        return data
-      }
-      return createFormViewObject(resource.data.formView)
+      const apiData = createFormViewObject(resource.data.formView)
+      // Local entries (from prototype cloning) act as fallback; API data wins on collision.
+      return { ...(this._localEntries[iri] ?? {}), ...apiData }
     })
   }
 

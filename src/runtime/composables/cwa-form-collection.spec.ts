@@ -4,10 +4,12 @@ import { computed, reactive, ref } from 'vue'
 import { useCwaFormCollection } from '#cwa/composables/cwa-form-collection'
 
 const mockGetForm = vi.hoisted(() => vi.fn())
+const mockRegisterLocalEntry = vi.hoisted(() => vi.fn(() => [] as string[]))
+const mockUnregisterLocalEntries = vi.hoisted(() => vi.fn())
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
-    forms: { getForm: mockGetForm },
+    forms: { getForm: mockGetForm, registerLocalEntry: mockRegisterLocalEntry, unregisterLocalEntries: mockUnregisterLocalEntries },
   }),
 }))
 
@@ -150,12 +152,92 @@ describe('useCwaFormCollection', () => {
       expect(entries.value[1]).toBe('form[items][1]')
     })
 
+    test('clears Symfony __name__label__ sentinel from vars.label on the cloned entry', () => {
+      const formData = reactive({
+        'contact_form[tags]': {
+          vars: { full_name: 'contact_form[tags]', errors: [] as string[] },
+          prototype: {
+            vars: { full_name: 'contact_form[tags][__name__]', label: '__name__label__', value: '' },
+            children: [],
+          },
+        },
+      })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      addEntry()
+      const calledEntry = mockRegisterLocalEntry.mock.calls[0][1]
+      expect(calledEntry.vars.label).toBeUndefined()
+    })
+
+    test('preserves explicit labels in children that do not contain __name__', () => {
+      const formData = reactive({
+        'form[items]': {
+          vars: { full_name: 'form[items]', errors: [] as string[] },
+          prototype: {
+            vars: { full_name: 'form[items][__name__]', label: '__name__label__', value: '' },
+            children: [
+              { vars: { full_name: 'form[items][__name__][name]', label: 'Child object text label', value: '' }, children: [] },
+            ],
+          },
+        },
+      })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { addEntry } = useCwaFormCollection(iri, 'form[items]')
+      addEntry()
+      const calledEntry = mockRegisterLocalEntry.mock.calls[0][1]
+      expect(calledEntry.children[0].vars.label).toBe('Child object text label')
+    })
+
     test('does not mutate the original prototype', () => {
       const formData = makeCollectionFormData()
       mockGetForm.mockReturnValue(computed(() => formData))
       const { addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
       addEntry()
       expect(formData['contact_form[tags]'].prototype.vars.full_name).toBe('contact_form[tags][__name__]')
+    })
+  })
+
+  describe('addEntry — registerLocalEntry', () => {
+    test('calls registerLocalEntry with iri and the cloned prototype entry (index 0)', () => {
+      const formData = makeCollectionFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      addEntry()
+      expect(mockRegisterLocalEntry).toHaveBeenCalledWith(
+        iri.value,
+        expect.objectContaining({ vars: expect.objectContaining({ full_name: 'contact_form[tags][0]' }) }),
+      )
+    })
+
+    test('does not call registerLocalEntry when prototype is absent', () => {
+      const formData = reactive({
+        'contact_form[tags]': { vars: { full_name: 'contact_form[tags]', errors: [] as string[] } },
+      })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      addEntry()
+      expect(mockRegisterLocalEntry).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('removeEntry — unregisterLocalEntries', () => {
+    test('calls unregisterLocalEntries with the keys returned by registerLocalEntry', () => {
+      const formData = makeCollectionFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const returnedKeys = ['contact_form[tags][0]', 'contact_form[tags][0][name]']
+      mockRegisterLocalEntry.mockReturnValueOnce(returnedKeys)
+      const { addEntry, removeEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      addEntry()
+      removeEntry('contact_form[tags][0]')
+      expect(mockUnregisterLocalEntries).toHaveBeenCalledWith(iri.value, returnedKeys)
+    })
+
+    test('does not call unregisterLocalEntries for unknown fullName', () => {
+      const formData = makeCollectionFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { removeEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      removeEntry('contact_form[tags][99]')
+      expect(mockUnregisterLocalEntries).not.toHaveBeenCalled()
     })
   })
 

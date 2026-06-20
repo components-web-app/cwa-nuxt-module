@@ -92,6 +92,8 @@
         v-model="subject.value.value"
         :items="(subject.vars.value?.choices || []).filter((c: any) => c.value !== '')"
         :placeholder="subject.vars.value?.placeholder"
+        value-key="value"
+        label-key="label"
         class="w-full"
         @update:model-value="subject.onInput()"
         @blur="subject.onBlur"
@@ -140,6 +142,8 @@
       <URadioGroup
         v-model="developer.value.value"
         :items="developer.vars.value?.choices || []"
+        value-key="value"
+        label-key="label"
         @change="developer.onInput()"
       />
     </UFormField>
@@ -165,6 +169,8 @@
       <UCheckboxGroup
         v-model="interests.value.value"
         :items="interests.vars.value?.choices || []"
+        value-key="value"
+        label-key="label"
         @change="interests.onInput()"
       />
     </UFormField>
@@ -180,6 +186,8 @@
         :items="(otherInterests.vars.value?.choices || []).filter((c: any) => c.value !== '')"
         :placeholder="otherInterests.vars.value?.placeholder"
         :multiple="true"
+        value-key="value"
+        label-key="label"
         class="w-full"
         @update:model-value="otherInterests.onInput()"
       />
@@ -249,6 +257,8 @@
 import { computed, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwaResource, useCwaForm, useCwaFormInput, useCwaFormRepeated, useCwaFormCollection } from '#imports'
+import FormChildEntry from './FormChildEntry.vue'
+import FormTextEntry from './FormTextEntry.vue'
 
 // Returns a trailing icon name for text-like inputs: spinner while validating, tick when valid.
 function trailingIcon(field: { validating: { value: boolean }, valid: { value: boolean | null } }) {
@@ -292,7 +302,7 @@ const checkbox = useCwaFormInput(iriRef, 'example_form[randomCheckbox]')
 const isChecked = computed({
   get: () => !!checkbox.value.value,
   set: (v: boolean) => {
-    checkbox.value.value = v ? '1' : ''
+    checkbox.value.value = v ? '1' : null
     checkbox.onInput()
   },
 })
