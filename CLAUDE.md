@@ -750,17 +750,48 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ---
 
-## Pending: Route redirect when `page`/`pageData` also set
+## Pending: Route redirect — outbound forward and admin UI
 
-**API context:** The `Route` entity allows `redirect` and `page`/`pageData` to coexist on the same route — there is no validation preventing this. The intended use case is a parent page (e.g. `/topic-1`) that has real content (`pageData`) but should always redirect the visitor to a default child (e.g. `/topic-1/chapter-one`).
+### How the current system works (investigated 2026-06-20)
 
-**What the API returns:** A standard `GET /_/routes//topic-1` response may include both a `pageData` IRI and a `redirect` IRI on the same route object. Currently the module likely renders the page because it sees `pageData`.
+`RouteNormalizer.php` (API bundle) already handles outbound redirects correctly. When a `Route` has `redirect → another Route`:
+1. Walks the redirect chain to the final destination
+2. Copies the destination's `page`/`pageData` onto the source (for SSR render-before-redirect)
+3. Adds `redirectPath: "/destination-path"` to the normalised output
 
-**Required change:** When the module resolves a route and the response contains a non-null `redirect` field, always follow the redirect — regardless of whether `page` or `pageData` is also present. A route with `redirect` set means "send the user here instead", even if the route also owns content. This is a **client-side navigation redirect** (e.g. `navigateTo(redirectRoute.path)`), not an HTTP 301/302.
+The module's `route-middleware.ts` already checks `resource?.redirectPath` and calls `navigateTo(resource.redirectPath, { redirectCode: 308 })`. So the redirect mechanics are fully implemented — **no module code change needed for following redirects**.
 
-**Child manifest is unaffected:** `redirect` is not in the `Route:manifest:read` serialization group. When `/topic-1/chapter-one` fetches its manifest, the parent route's `redirect` field is invisible to the normalizer. `resource_iris[0]` still contains the parent's `pageData` IRI and the parent renders correctly as the ancestor layer.
+### The gap: no admin UI to set an outbound forward
 
-**TDD:** Propose a Vitest test before implementing.
+The current `RoutesTabView.vue` "Redirects" section only handles **inbound** redirects: other routes that point TO this page (`redirectedFrom`). The "+" button creates a new empty route with `redirect` pointing here. There is no UI to set the current route to forward visitors to a different page.
+
+### Use case: parent page forwarding to default child
+
+`/topic-1` has its own `pageData` content AND the admin wants visitors to `/topic-1` to automatically be sent to `/topic-1/chapter-one`. This is done by setting `redirect` on the `/topic-1` Route entity to point at `/topic-1/chapter-one`'s Route IRI. The `RouteNormalizer` handles the rest.
+
+**Child manifest is unaffected:** `redirect` is not in the `Route:manifest:read` group. When `/topic-1/chapter-one` fetches its manifest, the parent route's `redirect` field is invisible. `resource_iris[0]` still contains the parent's resources and renders correctly as the ancestor layer.
+
+### UX design (agreed 2026-06-20)
+
+Split the current "Redirects" section in `RoutesTabView.vue` into two clearly labelled sections:
+
+**1. "Forward visitors to"** (new — the outbound `redirect` field):
+- Default state: "None — visitors see this page's content" + [Set] button
+- When set: shows the target path + [Edit] [Remove] buttons + warning "Visitors to /topic-1 are sent here automatically. This page's own content is not shown directly."
+- [Set] / [Edit] → new `forward-to` screen: a route path input (or search picker) that PATCHes `redirect` on the current route with the target route's IRI
+- [Remove] → PATCHes `redirect: null`
+
+**2. "Incoming redirects"** (rename of existing "Redirects" section):
+- Same as current — `redirectedFrom` tree + "+" to create a new inbound redirect
+- The rename removes the directional ambiguity in the current "Redirects" label
+
+### Files to change
+
+- `src/runtime/templates/components/core/admin/RoutesTabView.vue` — split into two sections, rename "Redirects" → "Incoming redirects", add "Forward visitors to" section
+- `src/runtime/templates/components/core/admin/RoutesTab.vue` — add `forward-to` screen case to the screen switcher; pass `resource.redirect` (the outbound redirect IRI) and a `save-forward` handler
+- New component `RoutesTabForwardTo.vue` (or inline in RoutesTab) — route path input + save/remove logic; PATCH `redirect` field on the current route
+
+**TDD:** Propose Vitest tests before implementing.
 
 ---
 
