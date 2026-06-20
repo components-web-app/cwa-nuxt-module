@@ -220,6 +220,62 @@ describe('Forms', () => {
   })
 
   describe('get form', () => {
+    test('preserves prototype when present on a collection field', () => {
+      const iri = 'mockIri'
+      formsByIdStoreState = {
+        current: {
+          byId: {
+            [iri]: {
+              data: {
+                '@type': 'Form',
+                'formView': {
+                  vars: { full_name: 'example_form' },
+                  children: [
+                    {
+                      vars: { full_name: 'example_form[children]', allow_add: true },
+                      children: [],
+                      prototype: {
+                        vars: { full_name: 'example_form[children][__name__]' },
+                        children: [
+                          { vars: { full_name: 'example_form[children][__name__][name]' }, children: [] },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      }
+      const { forms } = createForms()
+      const form = forms.getForm(iri).value
+      expect(form?.['example_form[children]']?.prototype).toBeDefined()
+      expect(form?.['example_form[children]']?.prototype?.vars?.full_name).toBe('example_form[children][__name__]')
+      expect(form?.['example_form[children]']?.prototype?.children?.[0]?.vars?.full_name).toBe('example_form[children][__name__][name]')
+    })
+
+    test('omits prototype when not present on a field', () => {
+      const iri = 'mockIri'
+      formsByIdStoreState = {
+        current: {
+          byId: {
+            [iri]: {
+              data: {
+                '@type': 'Form',
+                'formView': {
+                  vars: { full_name: 'example_form' },
+                  children: [{ vars: { full_name: 'example_form[text]' }, children: [] }],
+                },
+              },
+            },
+          },
+        },
+      }
+      const { forms } = createForms()
+      expect(forms.getForm(iri).value?.['example_form[text]']?.prototype).toBeUndefined()
+    })
+
     test('should return nothing IF requested resource does not exist', () => {
       const iri = 'i do not exist'
       const { forms } = createForms()

@@ -11,7 +11,15 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
     return $cwa.forms.getForm(iri.value).value?.[fullName]?.vars
   })
 
-  const value = ref<any>(vars.value?.value)
+  const initValue = () => {
+    const v = vars.value
+    if (v?.block_prefixes?.includes('checkbox')) {
+      return v.checked ? (v.value ?? '1') : ''
+    }
+    return v?.value
+  }
+
+  const value = ref<any>(initValue())
 
   if (iri.value) {
     $cwa.forms.setFieldValue(iri.value, fullName, value.value)
@@ -19,7 +27,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
 
   watch(iri, (newIri, oldIri) => {
     if (oldIri) $cwa.forms.clearFieldValue(oldIri, fullName)
-    value.value = vars.value?.value
+    value.value = initValue()
     if (newIri) $cwa.forms.setFieldValue(newIri, fullName, value.value)
   })
 
@@ -68,7 +76,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
     validate: async (extraData?: Record<string, any>): Promise<void> => {
       if (!iri.value || !vars.value) return
       validating.value = true
-      await $cwa.forms.validateField(iri.value, { [fullName]: value.value, ...extraData })
+      await $cwa.forms.validateField(`${iri.value}/submit`, { [fullName]: value.value, ...extraData })
       validating.value = false
     },
     onInput: null as unknown as () => void,

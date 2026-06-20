@@ -40,6 +40,7 @@ function makeFormData(overrides: Record<string, any> = {}, rootMethod = 'PATCH')
         label: 'Name',
         required: true,
         action: '/_/contact_requests',
+        block_prefixes: ['text', 'form'] as string[],
         ...overrides,
       },
     },
@@ -296,12 +297,12 @@ describe('useCwaFormInput', () => {
       vi.useRealTimers()
     })
 
-    test('validate calls forms.validateField with the form component IRI and {[fullName]: value}', async () => {
+    test('validate calls forms.validateField with the /submit endpoint and {[fullName]: value}', async () => {
       const formData = makeFormData({ value: 'Alice' })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate()
-      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123', { 'contact_form[name]': 'Alice' })
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', { 'contact_form[name]': 'Alice' })
     })
 
     test('validate fires for POST forms (no method guard)', async () => {
@@ -309,7 +310,7 @@ describe('useCwaFormInput', () => {
       mockGetForm.mockReturnValue(computed(() => formData))
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate()
-      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123', { 'contact_form[name]': 'Alice' })
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', { 'contact_form[name]': 'Alice' })
     })
 
     test('validating is true during validateField and false after', async () => {
@@ -333,7 +334,7 @@ describe('useCwaFormInput', () => {
       mockGetForm.mockReturnValue(computed(() => formData))
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate({ 'contact_form[confirm]': 'abc' })
-      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123', {
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', {
         'contact_form[name]': 'abc',
         'contact_form[confirm]': 'abc',
       })
@@ -345,6 +346,42 @@ describe('useCwaFormInput', () => {
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate()
       expect(mockValidateField).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('checkbox initialization', () => {
+    test('value is empty string for unchecked checkbox (block_prefixes includes checkbox)', () => {
+      const formData = makeFormData({ value: '1', checked: false, block_prefixes: ['checkbox', 'form'] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { value } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(value.value).toBe('')
+    })
+
+    test('value is the submit-value for a checked checkbox', () => {
+      const formData = makeFormData({ value: '1', checked: true, block_prefixes: ['checkbox', 'form'] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { value } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(value.value).toBe('1')
+    })
+
+    test('non-checkbox field still initializes from vars.value regardless of checked', () => {
+      const formData = makeFormData({ value: 'Alice', checked: false, block_prefixes: ['text', 'form'] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { value } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(value.value).toBe('Alice')
+    })
+
+    test('resets to empty string when iri changes and new field is an unchecked checkbox', async () => {
+      const formData = makeFormData({ value: 'Alice', block_prefixes: ['text', 'form'] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { value } = useCwaFormInput(iri, 'contact_form[name]')
+      value.value = 'Bob'
+
+      const checkboxData = makeFormData({ value: '1', checked: false, block_prefixes: ['checkbox', 'form'] })
+      mockGetForm.mockReturnValue(computed(() => checkboxData))
+      iri.value = '/_/form_components/456'
+      await new Promise(r => setTimeout(r, 0))
+      expect(value.value).toBe('')
     })
   })
 

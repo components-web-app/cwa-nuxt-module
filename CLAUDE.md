@@ -1018,7 +1018,7 @@ This ensures:
 
 ## Planned Feature: Form Composables & Sample Component (#172)
 
-> **Status: Steps 1–2 complete (2026-06-20). `useCwaFormInput` full reactive state + HTTP validate wired + `useCwaForm` submit lifecycle done. Next: `useCwaFormRepeated` (step 3).**
+> **Status: Steps 1–5 complete. All composables and sample component done. Bug fixes applied 2026-06-20 (see below).**
 > Researched from legacy branches (`legacy` / `legacy-dev`). Key pivot vs. legacy: **no built-in input components** — composables only; consuming app brings its own inputs (Nuxt UI, plain HTML, whatever).
 
 ### Core design principle
@@ -1236,17 +1236,23 @@ The sample component in the playground demonstrates the pattern using Nuxt UI �
 All steps follow TDD: propose test → agree → write test → write code.
 
 1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy.
-2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `vars.action` with `{ [fullName]: value, ...extraData }` (no-op for POST forms). `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors/unregisteredFieldErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store. `unregisteredFieldErrors` surfaces errors for formView fields not bound to any `useCwaFormInput` instance — prevents silent error loss.
+2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `{iri}/submit` with `{ [fullName]: value, ...extraData }`. `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors/unregisteredFieldErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store. `unregisteredFieldErrors` surfaces errors for formView fields not bound to any `useCwaFormInput` instance — prevents silent error loss.
 3. ✅ `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
 4. ✅ `useCwaFormCollection` — prototype cloning, entry add/remove
 5. ✅ Sample form component in playground (`playground/app/cwa/components/Form/Form.vue`) — all field types from `ExampleFormType` with Nuxt UI; sub-components `FormChildEntry.vue` + `FormTextEntry.vue` for collection entries
+
+**Bug fixes (2026-06-20):**
+
+- **`addEntry()` always no-op**: `getForm()` was discarding `prototype` — it's a sibling of `vars` in the API response (`ApiFormView: { vars, children, prototype }`), not a key inside `vars`. `createFormViewObject` now copies `prototype` into the `FormView` entry. `useCwaFormCollection` reads from `formEntry.prototype` (not `vars.prototype`). Spec `makeCollectionFormData` was also wrong (had `prototype` inside `vars`) — now corrected.
+- **Per-field validation always 200, no errors**: `FormApiEventListener.getData()` only processes form data when the path ends with `/submit`. `validateField` was PATCHing `iri.value` directly — the API ignored the form body and returned 200 as a plain entity response. Fix: `validate()` now calls `validateField(\`${iri.value}/submit\`, ...)`. The submit endpoint URL is also in `rootFormVars.action` (set by `FormViewFactory` to `{absolute-iri}/submit`). See api-components-bundle CLAUDE.md for the security note — the `/submit` endpoint inherits the Form entity's access control.
+- **Checkbox non-responsive**: `useCwaFormInput` was initialising `value` from `vars.value` which for `CheckboxType` is always `'1'` (the submit attribute), not the checked state. Fix: when `block_prefixes` includes `'checkbox'`, initialise `value` from `vars.checked ? '1' : ''`. The consuming app getter should then use `!!checkbox.value.value` (reads local ref, immediate feedback) — NOT `checkbox.vars.value?.checked` (reads store, snaps back after click until PATCH returns). See components-web-app CLAUDE.md for the correct template pattern.
 
 **Full legacy field type coverage via composables:**
 
 | Legacy type | Composable | Notes |
 |---|---|---|
-| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` | `vars.attr.type` drives HTML type; `value` is boolean for checkbox |
+| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` | `vars.attr.type` drives HTML type; `value` is `'1'`/`''` for checkbox (not boolean) |
 | `choice` | `useCwaFormInput` | Template reads `vars.choices`, `vars.expanded`, `vars.multiple` to decide `<select>` vs radio/checkbox group |
 | `repeated` | `useCwaFormRepeated` | Two sub-inputs with cross-validation |
-| `collection` | `useCwaFormCollection` | Prototype cloning (`vars.prototype`), entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
+| `collection` | `useCwaFormCollection` | Prototype from `formEntry.prototype` (NOT `vars.prototype`); entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
 | `button` / `submit` | `useCwaForm.submitting` + `submit()` | No dedicated composable needed |

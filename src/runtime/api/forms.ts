@@ -31,11 +31,13 @@ export interface ViewVars {
 
 export interface FormView {
   vars: ViewVars
+  prototype?: ApiFormView
 }
 
 interface ApiFormView {
   vars: ViewVars
   children: ApiFormView[]
+  prototype?: ApiFormView | null
 }
 
 export interface KeyedFormView {
@@ -153,6 +155,9 @@ export default class Forms {
       const createFormViewObject = (apiFormView: ApiFormView): KeyedFormView => {
         const structuredFormView: FormView = {
           vars: Object.assign({}, apiFormView.vars),
+        }
+        if (apiFormView.prototype) {
+          structuredFormView.prototype = apiFormView.prototype
         }
         let data: KeyedFormView = {
           [apiFormView.vars.full_name]: structuredFormView,

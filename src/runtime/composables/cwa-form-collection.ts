@@ -17,10 +17,12 @@ function replaceNameInTree(node: Record<string, any>, index: string): Record<str
 export const useCwaFormCollection = (iri: Ref<string | undefined>, collectionFullName: string) => {
   const $cwa = useCwa()
 
-  const vars = computed(() => {
+  const formEntry = computed(() => {
     if (!iri.value) return undefined
-    return $cwa.forms.getForm(iri.value).value?.[collectionFullName]?.vars
+    return $cwa.forms.getForm(iri.value).value?.[collectionFullName]
   })
+
+  const vars = computed(() => formEntry.value?.vars)
 
   const _entries = reactive<string[]>([])
   let _nextIndex = 0
@@ -28,7 +30,7 @@ export const useCwaFormCollection = (iri: Ref<string | undefined>, collectionFul
   const entries = computed(() => [..._entries])
 
   const addEntry = () => {
-    const prototype = vars.value?.prototype
+    const prototype = formEntry.value?.prototype
     if (!prototype) return
     const index = _nextIndex++
     const cloned = replaceNameInTree(JSON.parse(JSON.stringify(prototype)), String(index))

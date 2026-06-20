@@ -11,7 +11,7 @@ vi.mock('#cwa/composables/cwa', () => ({
   }),
 }))
 
-function makeCollectionFormData(prototypeOverrides: Record<string, any> = {}) {
+function makeCollectionFormData(prototypeVarsOverrides: Record<string, any> = {}) {
   return reactive({
     'contact_form[tags]': {
       vars: {
@@ -19,11 +19,10 @@ function makeCollectionFormData(prototypeOverrides: Record<string, any> = {}) {
         allow_add: true,
         allow_delete: true,
         errors: [] as string[],
-        prototype: {
-          vars: { full_name: 'contact_form[tags][__name__]', label: 'Tag', value: '' },
-          children: [],
-          ...prototypeOverrides,
-        },
+      },
+      prototype: {
+        vars: { full_name: 'contact_form[tags][__name__]', label: 'Tag', value: '', ...prototypeVarsOverrides },
+        children: [],
       },
     },
   })
@@ -109,10 +108,11 @@ describe('useCwaFormCollection', () => {
       expect(entries.value).toEqual(['contact_form[tags][1]'])
     })
 
-    test('is a no-op when prototype is absent', () => {
+    test('is a no-op when prototype is absent from the form entry', () => {
       const formData = reactive({
         'contact_form[tags]': {
           vars: { full_name: 'contact_form[tags]', errors: [] as string[] },
+          // no prototype property
         },
       })
       mockGetForm.mockReturnValue(computed(() => formData))
@@ -121,7 +121,7 @@ describe('useCwaFormCollection', () => {
       expect(entries.value).toEqual([])
     })
 
-    test('is a no-op when vars is undefined', () => {
+    test('is a no-op when the form entry is undefined', () => {
       mockGetForm.mockReturnValue(computed(() => undefined))
       const { entries, addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
       addEntry()
@@ -138,19 +138,14 @@ describe('useCwaFormCollection', () => {
       }
       const formData = reactive({
         'form[items]': {
-          vars: {
-            full_name: 'form[items]',
-            errors: [] as string[],
-            prototype: compoundPrototype,
-          },
+          vars: { full_name: 'form[items]', errors: [] as string[] },
+          prototype: compoundPrototype,
         },
       })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { entries, addEntry } = useCwaFormCollection(iri, 'form[items]')
       addEntry()
-      // Root full_name has __name__ replaced
       expect(entries.value[0]).toBe('form[items][0]')
-      // Second add uses the next index (proves internal cloning doesn't mutate the original)
       addEntry()
       expect(entries.value[1]).toBe('form[items][1]')
     })
@@ -160,8 +155,7 @@ describe('useCwaFormCollection', () => {
       mockGetForm.mockReturnValue(computed(() => formData))
       const { addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
       addEntry()
-      // Prototype's full_name should still have __name__
-      expect(formData['contact_form[tags]'].vars.prototype.vars.full_name).toBe('contact_form[tags][__name__]')
+      expect(formData['contact_form[tags]'].prototype.vars.full_name).toBe('contact_form[tags][__name__]')
     })
   })
 
