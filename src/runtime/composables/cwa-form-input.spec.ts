@@ -36,6 +36,7 @@ function makeFormData(overrides: Record<string, any> = {}, rootMethod = 'PATCH')
         value: 'Alice',
         errors: [] as string[],
         valid: null as boolean | null,
+        submitted: false as boolean | undefined,
         label: 'Name',
         required: true,
         action: '/_/contact_requests',
@@ -150,32 +151,48 @@ describe('useCwaFormInput', () => {
 
   describe('valid', () => {
     test('is null when vars.valid is null', () => {
-      const formData = makeFormData({ valid: null })
+      const formData = makeFormData({ valid: null, submitted: true })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { valid } = useCwaFormInput(iri, 'contact_form[name]')
       expect(valid.value).toBeNull()
     })
 
-    test('is true when vars.valid is true', () => {
-      const formData = makeFormData({ valid: true })
+    test('is true when vars.valid is true and submitted is true', () => {
+      const formData = makeFormData({ valid: true, submitted: true })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { valid } = useCwaFormInput(iri, 'contact_form[name]')
       expect(valid.value).toBe(true)
     })
 
-    test('is false when vars.valid is false', () => {
-      const formData = makeFormData({ valid: false })
+    test('is false when vars.valid is false and submitted is true', () => {
+      const formData = makeFormData({ valid: false, submitted: true })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { valid } = useCwaFormInput(iri, 'contact_form[name]')
       expect(valid.value).toBe(false)
     })
 
-    test('updates reactively', () => {
-      const formData = makeFormData({ valid: null })
+    test('is null when submitted is false even if vars.valid is true (Symfony untouched state)', () => {
+      const formData = makeFormData({ valid: true, submitted: false })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { valid } = useCwaFormInput(iri, 'contact_form[name]')
       expect(valid.value).toBeNull()
+    })
+
+    test('is null when submitted is undefined', () => {
+      const formData = makeFormData({ valid: true, submitted: undefined })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(valid.value).toBeNull()
+    })
+
+    test('updates reactively when submitted transitions to true', async () => {
+      const formData = makeFormData({ valid: null, submitted: false })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(valid.value).toBeNull()
+      formData['contact_form[name]'].vars.submitted = true
       formData['contact_form[name]'].vars.valid = true
+      await new Promise(r => setTimeout(r, 0))
       expect(valid.value).toBe(true)
     })
   })
@@ -198,11 +215,13 @@ describe('useCwaFormInput', () => {
     })
 
     test('becomes true when field was previously valid then becomes invalid, without blur', async () => {
-      const formData = makeFormData({ valid: null })
+      const formData = makeFormData({ valid: null, submitted: false })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
       expect(displayErrors.value).toBe(false)
 
+      // simulate API returning submitted:true + valid:true after first validation
+      formData['contact_form[name]'].vars.submitted = true
       formData['contact_form[name]'].vars.valid = true
       await new Promise(r => setTimeout(r, 0))
 
@@ -277,12 +296,20 @@ describe('useCwaFormInput', () => {
       vi.useRealTimers()
     })
 
-    test('validate calls forms.validateField with action and {[fullName]: value} for PATCH forms', async () => {
-      const formData = makeFormData({ value: 'Alice' }, 'PATCH')
+    test('validate calls forms.validateField with the form component IRI and {[fullName]: value}', async () => {
+      const formData = makeFormData({ value: 'Alice' })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate()
-      expect(mockValidateField).toHaveBeenCalledWith('/_/contact_requests', { 'contact_form[name]': 'Alice' })
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123', { 'contact_form[name]': 'Alice' })
+    })
+
+    test('validate fires for POST forms (no method guard)', async () => {
+      const formData = makeFormData({ value: 'Alice' }, 'POST')
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123', { 'contact_form[name]': 'Alice' })
     })
 
     test('validating is true during validateField and false after', async () => {
@@ -290,7 +317,7 @@ describe('useCwaFormInput', () => {
       mockValidateField.mockImplementation(async () => {
         seenDuringCall = true
       })
-      const formData = makeFormData({ value: 'Alice' }, 'PATCH')
+      const formData = makeFormData({ value: 'Alice' })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { validate, validating } = useCwaFormInput(iri, 'contact_form[name]')
       expect(validating.value).toBe(false)
@@ -301,31 +328,15 @@ describe('useCwaFormInput', () => {
       expect(validating.value).toBe(false)
     })
 
-    test('validating stays false when validate is a no-op (POST form)', async () => {
-      const formData = makeFormData({ value: 'Alice' }, 'POST')
-      mockGetForm.mockReturnValue(computed(() => formData))
-      const { validate, validating } = useCwaFormInput(iri, 'contact_form[name]')
-      await validate()
-      expect(validating.value).toBe(false)
-    })
-
     test('validate merges extraData into the body', async () => {
-      const formData = makeFormData({ value: 'abc' }, 'PATCH')
+      const formData = makeFormData({ value: 'abc' })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate({ 'contact_form[confirm]': 'abc' })
-      expect(mockValidateField).toHaveBeenCalledWith('/_/contact_requests', {
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123', {
         'contact_form[name]': 'abc',
         'contact_form[confirm]': 'abc',
       })
-    })
-
-    test('validate is a no-op for POST forms', async () => {
-      const formData = makeFormData({ value: 'Alice' }, 'POST')
-      mockGetForm.mockReturnValue(computed(() => formData))
-      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
-      await validate()
-      expect(mockValidateField).not.toHaveBeenCalled()
     })
 
     test('validate is a no-op when iri is undefined', async () => {

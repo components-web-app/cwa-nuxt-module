@@ -32,7 +32,10 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
   })
 
   const errors = computed(() => vars.value?.errors ?? [])
-  const valid = computed<boolean | null>(() => vars.value?.valid ?? null)
+  const valid = computed<boolean | null>(() => {
+    if (!vars.value?.submitted) return null
+    return vars.value?.valid ?? null
+  })
 
   const hasBlurred = ref(false)
   const hasPreviouslyBeenValid = ref(false)
@@ -64,11 +67,8 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
     onBlur,
     validate: async (extraData?: Record<string, any>): Promise<void> => {
       if (!iri.value || !vars.value) return
-      const rootKey = fullName.includes('[') ? fullName.substring(0, fullName.indexOf('[')) : fullName
-      const rootVars = $cwa.forms.getForm(iri.value).value?.[rootKey]?.vars
-      if (!rootVars?.action || rootVars.method?.toUpperCase() !== 'PATCH') return
       validating.value = true
-      await $cwa.forms.validateField(rootVars.action, { [fullName]: value.value, ...extraData })
+      await $cwa.forms.validateField(iri.value, { [fullName]: value.value, ...extraData })
       validating.value = false
     },
     onInput: null as unknown as () => void,

@@ -42,6 +42,22 @@ export interface KeyedFormView {
   [key: string]: FormView
 }
 
+function bracketToNested(flat: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {}
+  for (const [key, value] of Object.entries(flat)) {
+    const parts = key.replace(/\]/g, '').split('[')
+    let current = result
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (typeof current[parts[i]] !== 'object' || current[parts[i]] === null) {
+        current[parts[i]] = {}
+      }
+      current = current[parts[i]]
+    }
+    current[parts[parts.length - 1]] = value
+  }
+  return result
+}
+
 export default class Forms {
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _submitAttempted = reactive<Record<string, boolean>>({})
@@ -87,14 +103,14 @@ export default class Forms {
           'content-type': 'application/merge-patch+json',
           'accept': 'application/ld+json,application/json',
         },
-        body,
+        body: bracketToNested(body),
       })
       if (response?.['@id']) {
         this._resourcesStore.saveResource({ resource: response })
       }
     }
     catch (e: any) {
-      if (e?.data?.['@id']) {
+      if (e?.data?.['@id'] && e.data?.['@type'] !== 'Error') {
         this._resourcesStore.saveResource({ resource: e.data })
       }
     }
@@ -112,7 +128,7 @@ export default class Forms {
           'content-type': method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json',
           'accept': 'application/ld+json,application/json',
         },
-        body,
+        body: bracketToNested(body),
       })
       if (response?.['@id']) {
         this._resourcesStore.saveResource({ resource: response })

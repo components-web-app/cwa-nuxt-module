@@ -98,14 +98,43 @@ describe('Forms', () => {
   })
 
   describe('validateField', () => {
-    test('PATCHes the endpoint with the given body', async () => {
+    test('PATCHes the endpoint with the body converted to nested object', async () => {
       const fetchFn = vi.fn().mockResolvedValue({ '@id': '/_/contact/1' })
       const { forms } = createForms({ fetchFn })
       await forms.validateField('/_/contact/1', { 'contact_form[name]': 'Alice' })
       expect(fetchFn).toHaveBeenCalledWith('/_/contact/1', expect.objectContaining({
         method: 'PATCH',
-        body: { 'contact_form[name]': 'Alice' },
+        body: { contact_form: { name: 'Alice' } },
       }))
+    })
+
+    test('merges multiple bracket-notation keys under the same root', async () => {
+      const fetchFn = vi.fn().mockResolvedValue({ '@id': '/_/contact/1' })
+      const { forms } = createForms({ fetchFn })
+      await forms.validateField('/_/contact/1', {
+        'contact_form[name]': 'Alice',
+        'contact_form[email]': 'a@b.com',
+      })
+      expect(fetchFn).toHaveBeenCalledWith('/_/contact/1', expect.objectContaining({
+        body: { contact_form: { name: 'Alice', email: 'a@b.com' } },
+      }))
+    })
+
+    test('handles deeply nested bracket notation', async () => {
+      const fetchFn = vi.fn().mockResolvedValue({ '@id': '/_/contact/1' })
+      const { forms } = createForms({ fetchFn })
+      await forms.validateField('/_/contact/1', { 'example_form[plainPassword][first]': 'abc' })
+      expect(fetchFn).toHaveBeenCalledWith('/_/contact/1', expect.objectContaining({
+        body: { example_form: { plainPassword: { first: 'abc' } } },
+      }))
+    })
+
+    test('does not save Error-type 422 responses to the store', async () => {
+      const errorData = { '@id': '/_api/errors/422', '@type': 'Error', 'title': 'An error occurred' }
+      const fetchFn = vi.fn().mockRejectedValue({ data: errorData })
+      const { forms, resourcesStore } = createForms({ fetchFn })
+      await forms.validateField('/_/contact/1', { 'contact_form[name]': 'Alice' })
+      expect(resourcesStore.saveResource).not.toHaveBeenCalled()
     })
 
     test('saves successful response to store', async () => {
@@ -133,13 +162,16 @@ describe('Forms', () => {
   })
 
   describe('submitForm', () => {
-    test('sends the correct method and body', async () => {
+    test('sends the correct method and converts body to nested object', async () => {
       const fetchFn = vi.fn().mockResolvedValue({ '@id': '/_/contact_requests/1' })
       const { forms } = createForms({ fetchFn })
-      await forms.submitForm('/_/contact_requests', { 'contact_form[name]': 'Alice' }, 'POST')
+      await forms.submitForm('/_/contact_requests', {
+        'contact_form[name]': 'Alice',
+        'contact_form[email]': 'a@b.com',
+      }, 'POST')
       expect(fetchFn).toHaveBeenCalledWith('/_/contact_requests', expect.objectContaining({
         method: 'POST',
-        body: { 'contact_form[name]': 'Alice' },
+        body: { contact_form: { name: 'Alice', email: 'a@b.com' } },
       }))
     })
 
