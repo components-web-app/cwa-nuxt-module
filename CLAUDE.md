@@ -750,7 +750,7 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ---
 
-## Pending: Route redirect — outbound forward and admin UI
+## Fixed: Route redirect — outbound forward and admin UI
 
 ### How the current system works (investigated 2026-06-20)
 
@@ -817,10 +817,10 @@ Every CWA component repeats the same block (`defineProps`, `useCwaResource`, `us
 **[#237](https://github.com/components-web-app/cwa-nuxt-module/issues/237) — DX: `npx cwa make:component` cross-stack generator**
 Creating a new CWA component requires coordinated steps across two codebases with no single entry point. Proposes an interactive CLI command that generates the Vue file with correct boilerplate pre-filled and prints the `make:api-component` command to run on the API side (and the `nuxt.config` snippet if the component is a PageData property).
 
-**[#172](https://github.com/components-web-app/cwa-nuxt-module/issues/172) — Form component sample + composables**
-A sample CWA form component and the composables needed to build forms are required as a documented starting point for consuming apps.
+**[#172](https://github.com/components-web-app/cwa-nuxt-module/issues/172) — Form component sample + composables** ✅ DONE
+All four composables (`useCwaFormInput`, `useCwaForm`, `useCwaFormRepeated`, `useCwaFormCollection`) are complete. Sample component (`ExampleForm`) is in both the playground and components-web-app. Bug fixes applied 2026-06-20.
 
-> **See `## Planned Feature: Form Composables & Sample Component (#172)` below for the full design plan.**
+> **See `## Planned Feature: Form Composables & Sample Component (#172)` below for full design detail.**
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
@@ -1018,7 +1018,7 @@ This ensures:
 
 ## Planned Feature: Form Composables & Sample Component (#172)
 
-> **Status: Steps 1–5 complete. All composables and sample component done. Bug fixes applied 2026-06-20 (see below).**
+> **Status: Complete. All composables and sample component done in module + playground + components-web-app. Bug fixes applied 2026-06-20.**
 > Researched from legacy branches (`legacy` / `legacy-dev`). Key pivot vs. legacy: **no built-in input components** — composables only; consuming app brings its own inputs (Nuxt UI, plain HTML, whatever).
 
 ### Core design principle
