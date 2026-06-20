@@ -1534,6 +1534,9 @@
   outline-style: var(--tw-outline-style);
   outline-width: 2px;
 }
+.cwa\:\[outline-offset\:-1px\] {
+  outline-offset: -1px;
+}
 .cwa\:outline-offset-2 {
   outline-offset: 2px;
 }
@@ -2005,6 +2008,11 @@
   &:focus-visible {
     outline-style: var(--tw-outline-style);
     outline-width: 2px;
+  }
+}
+.cwa\:focus-visible\:\[outline-offset\:-2px\] {
+  &:focus-visible {
+    outline-offset: -2px;
   }
 }
 .cwa\:focus-visible\:outline-offset-2 {
