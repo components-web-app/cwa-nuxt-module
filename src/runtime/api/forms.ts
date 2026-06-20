@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 
-interface ViewVars {
+export interface ViewVars {
   full_name: string
   name: string
   id: string
@@ -27,7 +27,7 @@ interface ViewVars {
   [key: string]: any
 }
 
-interface FormView {
+export interface FormView {
   vars: ViewVars
 }
 
@@ -36,7 +36,7 @@ interface ApiFormView {
   children: ApiFormView[]
 }
 
-interface KeyedFormView {
+export interface KeyedFormView {
   [key: string]: FormView
 }
 
