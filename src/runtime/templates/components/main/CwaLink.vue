@@ -43,6 +43,7 @@ function handleClick(e: MouseEvent) {
 <template>
   <CwaLinkComponent
     v-bind="props"
+    :prefetch="props.prefetch ?? false"
     :target="target"
     @click="handleClick"
   >

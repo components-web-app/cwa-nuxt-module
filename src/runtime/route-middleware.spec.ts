@@ -120,6 +120,41 @@ describe('Test route middleware', () => {
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
   })
 
+  test('Server-side passes event context to loadConfig so preloaded config skips API call', async () => {
+    const loadConfigFn = vi.fn()
+    vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
+      return {
+        payload: {},
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: loadConfigFn } },
+      }
+    })
+    const eventContext = { cwaSiteConfig: { maintenanceModeEnabled: false }, cwaSiteConfigServerValues: { maintenanceModeEnabled: false } }
+    vi.spyOn(nuxt, 'useRequestEvent').mockReturnValueOnce({ context: eventContext } as any)
+    vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({
+      isClient: false,
+      isServer: true,
+    }))
+    await routeMiddleware(createToRoute())
+    expect(loadConfigFn).toHaveBeenCalledWith(eventContext)
+  })
+
+  test('Server-side passes undefined context to loadConfig when no request event', async () => {
+    const loadConfigFn = vi.fn()
+    vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
+      return {
+        payload: {},
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: loadConfigFn } },
+      }
+    })
+    vi.spyOn(nuxt, 'useRequestEvent').mockReturnValueOnce(undefined)
+    vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({
+      isClient: false,
+      isServer: true,
+    }))
+    await routeMiddleware(createToRoute())
+    expect(loadConfigFn).toHaveBeenCalledWith(undefined)
+  })
+
   test.todo('Test we await promise for server-side requests.', async () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
       return {

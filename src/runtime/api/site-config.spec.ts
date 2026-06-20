@@ -78,6 +78,28 @@ describe('SiteConfig', () => {
       expect(result).toBeDefined()
       expect(typeof result).toBe('object')
     })
+
+    test('uses preloaded config from event context without making an API call', async () => {
+      const preloadedConfig = { siteName: 'Preloaded' } as any
+      const serverValues = { siteName: 'Preloaded' } as any
+      const { siteConfig, mockFetch, mockPatch } = buildSiteConfig()
+      const result = await siteConfig.loadConfig({ cwaSiteConfig: preloadedConfig, cwaSiteConfigServerValues: serverValues })
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockPatch).toHaveBeenCalledWith({ isLoading: false, config: preloadedConfig, serverConfig: serverValues })
+      expect(result).toBe(preloadedConfig)
+    })
+
+    test('falls back to API fetch when event context has no preloaded config', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig()
+      await siteConfig.loadConfig({ someOtherKey: 'value' })
+      expect(mockFetch).toHaveBeenCalledWith('/_/site_config_parameters', { credentials: 'omit' })
+    })
+
+    test('falls back to API fetch when event context is undefined', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig()
+      await siteConfig.loadConfig(undefined)
+      expect(mockFetch).toHaveBeenCalledWith('/_/site_config_parameters', { credentials: 'omit' })
+    })
   })
 
   describe('saveConfig', () => {

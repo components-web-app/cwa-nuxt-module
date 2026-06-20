@@ -17,7 +17,7 @@ export default defineNitroPlugin(async (nitroApp) => {
   })
 
   nitroApp.hooks.hook('robots:config', async (ctx: HookRobotsConfigContext) => {
-    const resolvedConfig = await resolveConfigEventHandler()
+    const resolvedConfig = await resolveConfigEventHandler(ctx.event)
     if (!resolvedConfig) {
       return
     }

@@ -34,10 +34,13 @@ export const resolveConfigEventHandler = async (e?: H3Event) => {
       credentials: 'omit',
     })
 
-    const config = mergeConfig(options.siteConfig, responseToConfig(data, true))
+    const serverValues = responseToConfig(data, true)
+    const config = mergeConfig(options.siteConfig, serverValues)
 
-    if (e)
+    if (e) {
       e.context.cwaSiteConfig = config
+      e.context.cwaSiteConfigServerValues = serverValues
+    }
 
     return config
   }
