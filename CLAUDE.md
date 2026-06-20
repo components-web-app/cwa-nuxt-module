@@ -959,233 +959,198 @@ This ensures:
 
 ## Planned Feature: Form Composables & Sample Component (#172)
 
-> **Status: Design stage. No implementation started.**
-> Researched by reviewing legacy branches (`legacy` / `legacy-dev`) which had a complete Vue 2 / Vuex form system.
+> **Status: Design finalised (2026-06-20). No implementation started.**
+> Researched from legacy branches (`legacy` / `legacy-dev`). Key pivot vs. legacy: **no built-in input components** — composables only; consuming app brings its own inputs (Nuxt UI, plain HTML, whatever).
+
+### Core design principle
+
+The module provides **scaffolding composables**, not input components. A consuming app wraps their own inputs in `useCwaFormInput` to get validation state, and wraps their form in `useCwaForm` to get submit/success/error state. The user's template is completely free to use any UI library.
+
+```vue
+<!-- Example: contact form CWA component, using Nuxt UI inputs -->
+<script setup lang="ts">
+const props = defineProps<IriProp>()
+const { resource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+defineExpose(exposeMeta)
+
+const form = useCwaForm(toRef(props, 'iri'))
+const name = useCwaFormInput(toRef(props, 'iri'), 'contact_form[name]')
+const email = useCwaFormInput(toRef(props, 'iri'), 'contact_form[email]')
+const message = useCwaFormInput(toRef(props, 'iri'), 'contact_form[message]')
+</script>
+
+<template>
+  <form @submit.prevent="form.submit()">
+    <UFormField :label="name.label.value" :error="name.displayErrors.value ? name.errors.value[0] : undefined">
+      <UInput v-model="name.value.value" @blur="name.onBlur" @input="name.onInput" />
+    </UFormField>
+    <UFormField :label="email.label.value" :error="email.displayErrors.value ? email.errors.value[0] : undefined">
+      <UInput v-model="email.value.value" type="email" @blur="email.onBlur" @input="email.onInput" />
+    </UFormField>
+    <UFormField :label="message.label.value" :error="message.displayErrors.value ? message.errors.value[0] : undefined">
+      <UTextarea v-model="message.value.value" @blur="message.onBlur" @input="message.onInput" />
+    </UFormField>
+    <p v-if="form.formErrors.value.length">{{ form.formErrors.value[0] }}</p>
+    <UButton type="submit" :loading="form.submitting.value">Send</UButton>
+    <p v-if="form.success.value">Thank you!</p>
+  </form>
+</template>
+```
 
 ### What the API provides
 
-The API returns a `formView` tree on any form resource. It is a nested JSON object where each node represents a form field:
+Every form resource has a `formView` tree. Each node has:
 
 ```json
 {
   "formView": {
     "vars": {
       "id": "contact_form",
-      "name": "contact_form",
       "full_name": "contact_form",
       "action": "/_/contact_requests",
       "method": "POST",
       "valid": null,
       "submitted": false,
-      "errors": [],
-      "block_prefixes": ["form", "contact_form"]
+      "errors": []
     },
     "children": {
       "name": {
         "vars": {
-          "id": "contact_form_name",
-          "name": "name",
           "full_name": "contact_form[name]",
           "action": "/_/contact_requests",
           "valid": null,
           "errors": [],
+          "label": "Your name",
           "required": true,
-          "block_prefixes": ["form", "text", "contact_form_name"],
           "value": ""
         }
-      },
-      "email": { "vars": { ... "block_prefixes": ["form", "text", "email"] } },
-      "message": { "vars": { ... "block_prefixes": ["form", "text", "textarea"] } },
-      "submit": { "vars": { ... "block_prefixes": ["form", "button", "submit"] } }
+      }
     }
   }
 }
 ```
 
-**Key points:**
-- `vars.block_prefixes` — array from least to most specific. Used to resolve the field component: e.g. `["form", "text", "email"]` → tries `CwaFormEmail`, `CwaFormText`, `CwaFormForm` in order.
-- `vars.valid: null` on fresh load — `null` = not yet validated, `true` = valid, `false` = invalid. Never initialise as `true`.
-- `vars.errors: string[]` — populated after a submit or realtime validation PATCH.
-- `vars.action` — the endpoint for both the realtime PATCH (per-field) and the final POST (root form).
-- `vars.full_name` — the key for nested submit objects (e.g. `contact_form[name]`).
+- `vars.valid: null | true | false` — `null` = untouched, never initialise as `true`
+- `vars.errors: string[]` — populated after validation PATCH or submit POST/PATCH
+- `vars.action` — endpoint for both the per-field realtime PATCH and the final submit
+- `vars.method` — `"POST"` (create) or `"PATCH"` (edit existing resource). Both are valid — public forms may be either.
+- `vars.full_name` — the submit key (e.g. `contact_form[name]`)
 
-**Realtime validation:** A PATCH to `vars.action` with a partial submit object (just the changed field) returns `200` (valid) or `422` with the updated `formView`. The API validates only what it receives — to validate correlated fields (e.g. password + confirm-password), include the sibling value as extra context.
+**Realtime validation:** PATCH to `vars.action` with just the changed field. Returns `200` (valid, formView updated) or `422` (invalid, formView with field errors). The API validates only what it receives. Correlated fields (password + confirm) send the sibling value in `extraData`.
 
-**Final submit:** POST to `vars.action` (root form). Returns `201` on success or `422` with the full `formView` tree updated with all field errors.
+**Final submit:** POST or PATCH to root `vars.action`. `201`/`200` = success. `422` = full formView with all field errors.
+
+Both flows save the response to the resource store. `useCwaFormInput` reads errors reactively from the store.
 
 ### What already exists in this module
 
 | File | What it does |
 |---|---|
-| `src/runtime/api/forms.ts` | `getForm(iri)` — flattens `formView` tree into `Map<full_name, FormView>`. `getFormViewErrors(iri, field)` — reads `vars.errors` for a field key. No submit/validate logic. |
-| `src/runtime/composables/reset-password.ts` | Ad-hoc form submit pattern: POST → 422 saved to store → read errors. Blueprint for `useCwaFormSubmit`. |
-| `useCwaResourceModel` | Debounced optimistic PATCH for admin resource fields. Cancel-on-new pattern. Blueprint for per-field validation composable. |
-| `src/runtime/templates/components/core/admin/form/` | Admin input components (`ModalInput`, `ModalSelect`, etc.). These are admin-only — not for public forms. |
+| `src/runtime/api/forms.ts` | `getForm(iri)` — flattens `formView` into `Map<full_name, FormView>`. `getFormViewErrors(iri, field)` reads errors reactively. No submit/validate logic. |
+| `src/runtime/composables/reset-password.ts` | Ad-hoc POST → 422 pattern — blueprint for the submit flow |
+| `useCwaResourceModel` | Debounced PATCH with cancel-on-new — blueprint for per-field validation |
 
 ### Planned composables
 
-#### `useCwaForm(iri: MaybeRefOrGetter<string>)`
+#### `useCwaFormInput(iri, fullName, opts?)`
 
-Entry point for a form component. Reads `formView` from the resource store via `$cwa.forms.getForm(iri)`.
-
-```ts
-const { formId, fieldVars, fieldErrors, submit, submitting, success, formError } = useCwaForm(toRef(props, 'iri'))
-```
-
-Returns:
-- `formId` — the root form vars' `id`
-- `fieldVars(fullName)` — `ComputedRef<FormFieldVars | undefined>` — vars for a field (from flat map)
-- `fieldErrors(fullName)` — `ComputedRef<string[]>` — current errors for a field
-- `submit()` — POST to form action, saves 201/422 resource to store, sets `submitting`/`success`
-- `submitting` — `Ref<boolean>`
-- `success` — `Ref<boolean>` — true after successful submit
-- `formError` — `Ref<string | undefined>` — non-field-level error (root form `vars.errors[0]`)
-
-#### `useCwaFormField(iri: MaybeRefOrGetter<string>, fullName: MaybeRefOrGetter<string>)`
-
-Per-field composable. Drives realtime validation and local value state.
+Per-field composable. The consuming app calls this for each field and binds the returned state to their input component.
 
 ```ts
-const { value, errors, valid, validate, displayErrors, onBlur } = useCwaFormField(toRef(props, 'iri'), 'contact_form[email]')
+const {
+  value,          // Ref<any> — two-way, bind to v-model
+  errors,         // ComputedRef<string[]> — from store, always current
+  valid,          // ComputedRef<boolean | null> — null until first validation
+  displayErrors,  // ComputedRef<boolean> — true when errors should be shown to user
+  label,          // ComputedRef<string> — from vars.label
+  required,       // ComputedRef<boolean> — from vars.required
+  onBlur,         // () => void — call from @blur
+  onInput,        // () => void — call from @input/@update:modelValue
+} = useCwaFormInput(toRef(props, 'iri'), 'contact_form[email]')
 ```
 
-Returns:
-- `value` — two-way `Ref` for the field's current value (local copy)
-- `errors` — `ComputedRef<string[]>` — from store (updated after validate/submit)
-- `valid` — `ComputedRef<boolean | null>` — `null` until first validation
-- `displayErrors` — `Ref<boolean>` — gated: only show errors after blur or submit attempt. Never flash errors on initial load.
-- `onBlur()` — sets `displayErrors = true`; triggers `validate()` if value changed
-- `validate(extraData?)` — debounced PATCH to `vars.action` with just this field's value. Cancel-on-new-value. Accepts `extraData` for correlated fields (e.g. confirm-password sends sibling value). Saves response to store.
+**`displayErrors` rule (agreed):**
+Errors are shown when ANY of these are true:
+- The field has been blurred (user left the field at least once)
+- `valid` was previously `true` and is now `false` (field went from valid → invalid while user is still typing — show the error immediately rather than waiting for blur, because they already know this field is being validated)
+- A submit was attempted (see `useCwaForm` below)
 
-**Key pattern — `displayErrors` gate:** Errors exist in the store from the moment a 422 response is saved, but are only revealed to the user after `onBlur()` or a failed submit attempt. This prevents fields from showing red before the user has interacted with them.
-
-**Key pattern — cancel-on-new:** Each new keystroke cancels the in-flight PATCH before debouncing a new one. Prevents stale responses from overwriting newer state.
-
-#### `useCwaFormSubmit(iri, action)` (internal, used by `useCwaForm`)
-
-Handles the POST lifecycle: set `submitting`, call `resourcesManager.doResourceRequest`, on `201` set `success`, on `422` save resource to store (errors already in store via `forms.getFormViewErrors`).
-
-### Planned components
-
-#### `CwaFormField.vue` — universal field renderer (auto-import prefix: `Cwa`)
-
-Reads `vars.block_prefixes` from `useCwaFormField`, resolves the field component name by trying each prefix from most-specific to least-specific:
-
-```
-block_prefixes: ["form", "text", "email"]
-→ tries: CwaFormEmail, CwaFormText, CwaFormForm
-→ renders first globally-registered match
-```
-
-Consuming apps register custom field components globally: e.g. `CwaFormRichText.vue` is automatically used for any field with block prefix `rich_text`.
-
-Props: `iri`, `fullName`. Renders nothing if `vars` are not yet loaded.
-
-#### `CwaFormFieldWrapper.vue` — label + errors slot wrapper
-
-Shared by all field types. Renders label (from `vars.label`), the slot (the actual `<input>`/`<select>`), and the errors list when `displayErrors = true`.
-
-Props: `label`, `errors`, `displayErrors`, `required`, `valid`.
-
-#### Built-in field components
-
-These are the default implementations for common Symfony form types. Consuming apps can override any of them by registering a global component with the matching name.
-
-| Component | Block prefix | Notes |
-|---|---|---|
-| `CwaFormText.vue` | `text` | `<input type="text">`, uses `useCwaFormField` |
-| `CwaFormEmail.vue` | `email` | `<input type="email">` |
-| `CwaFormPassword.vue` | `password` | `<input type="password">` |
-| `CwaFormTextarea.vue` | `textarea` | `<textarea>` with auto-resize |
-| `CwaFormCheckbox.vue` | `checkbox` | `<input type="checkbox">` |
-| `CwaFormChoice.vue` | `choice` | `<select>` or expanded radio/checkbox group depending on `vars.expanded`/`vars.multiple` |
-| `CwaFormButton.vue` | `button` / `submit` | Submit button; disabled when `submitting` |
-| `CwaFormRepeated.vue` | `repeated` | Two password fields; each validates with the other's value in `extraData` |
-
-**Not in scope for initial implementation:** `Collection` (dynamic array of entries with `__name__` prototype cloning). Complex — defer.
-
-#### Sample CWA form component
-
-A complete working example for consuming apps to copy from. Registers as `CwaComponentContactForm` using `useCwaResource`. Template renders each child field by iterating `formView.children` and using `<CwaFormField>` per entry, plus a `<CwaFormButton>` at the end.
-
-### Block-prefix component resolution (critical detail)
-
-The resolution order is **most-specific first**:
-
-```
-block_prefixes: ["form", "text", "email"]
-               ↑ least specific      ↑ most specific
-```
-
-Try `CwaFormEmail` → `CwaFormText` → `CwaFormForm`. Stop at first match. This means a consuming app can override just `CwaFormEmail` without touching `CwaFormText`.
-
-### `valid: null` handling
-
-Fields start with `valid: null`. CSS class logic:
+This means: on first interaction, errors are suppressed until blur. After a field has ever been valid, errors appear immediately on re-invalidation. On failed submit, all errors appear everywhere.
 
 ```ts
-const fieldClass = computed(() => {
-  if (valid.value === null) return ''            // untouched
-  return valid.value ? 'cwa-field--valid' : 'cwa-field--invalid'
+const hasPreviouslyBeenValid = ref(false)
+const hasBlurred = ref(false)
+
+watch(valid, (v) => { if (v === true) hasPreviouslyBeenValid.value = true })
+
+const displayErrors = computed(() =>
+  hasBlurred.value ||
+  (hasPreviouslyBeenValid.value && valid.value === false) ||
+  submitAttempted.value  // from form-level state keyed by iri
+)
+```
+
+**Validation cadence (agreed):**
+- `onInput` → debounced PATCH (300ms), cancel-on-new-value
+- `onBlur` → sets `hasBlurred = true`; triggers immediate PATCH if value has changed since last validation; always shows errors after
+
+**`extraData` for correlated fields:**
+```ts
+const password = useCwaFormInput(iri, 'reset_password[password][first]')
+const confirm  = useCwaFormInput(iri, 'reset_password[password][second]')
+
+// When validating "first", send "second" as context:
+password.onInput(() => {
+  password.validate({ 'reset_password[password][second]': confirm.value.value || '__FAKE__' })
 })
 ```
+`'__FAKE__'` forces the API to validate the pair even when the second field is blank.
 
-Never apply a "valid" class to a field before validation has occurred.
+#### `useCwaForm(iri)`
 
-### API error response shape (for reference)
-
-**After realtime PATCH (per-field validation):**
-- `200` — valid; response contains updated `formView` with `vars.valid: true` for the validated field
-- `422` — invalid; response contains updated `formView` with `vars.valid: false` and `vars.errors: ["..."]`
-
-**After final POST:**
-- `201` — success; response is the created resource (not a formView)
-- `422` — validation failed; response contains the full `formView` tree with all field errors populated
-
-Both cases are handled by saving the response to the resource store. `useCwaFormField` reads errors reactively from the store.
-
-### Correlated field validation (`extraData`)
-
-The `Repeated` field type (and any other correlated field pattern) sends the sibling value as extra context to the API so it can validate both fields together:
+Form-level composable. Handles submit lifecycle and broadcasts "submit attempted" to all active `useCwaFormInput` instances for the same IRI.
 
 ```ts
-// In CwaFormRepeated.vue, when validating the "first" field:
-validate({ 'contact_form[password][second]': sibling.value || '__FAKE__' })
-// '__FAKE__' used when sibling is blank — forces API to validate without treating blank as "not provided"
+const {
+  submit,       // () => Promise<void> — POST/PATCH to root vars.action
+  submitting,   // Ref<boolean>
+  success,      // Ref<boolean>
+  formErrors,   // ComputedRef<string[]> — root-level errors (not field-specific)
+} = useCwaForm(toRef(props, 'iri'))
 ```
 
-This is an `extraData` argument passed to `useCwaFormField.validate(extraData?)`. The composable merges it into the PATCH body alongside the primary field value.
+**Submit flow:**
+1. Set `submitAttempted = true` in IRI-keyed state → all `useCwaFormInput` instances for this IRI immediately reveal their errors via `displayErrors`
+2. Call `resourcesManager.doResourceRequest` (POST or PATCH, driven by `vars.method`)
+3. On `201`/`200`: set `success = true`, clear `submitAttempted`
+4. On `422`: save response to store (field errors now in store, already showing via `displayErrors`); set `formErrors` from root `vars.errors`
 
-### What needs a blocking design decision before implementation
+**"Submit attempted" broadcast without provide/inject:**
+`submitAttempted` is stored in a reactive map keyed by IRI inside `$cwa.forms` (or a composable-local store). Both `useCwaForm` and `useCwaFormInput` read the same reactive flag by IRI — no Vue component hierarchy dependency.
 
-1. **How does a consuming app use this?** Two options:
-   - A: The form resource is a CWA component (`CwaComponentContactForm.vue`) with its own IRI, using `useCwaResource`. `formView` is part of the resource data. The component calls `useCwaForm(toRef(props, 'iri'))`.
-   - B: The form is a standalone page section that fetches the form resource separately via a known IRI. Uses `useCwaForm(knownIri)`.
-   - **Most likely A** — forms as CWA components fits the architecture. But a standalone composable (B) should also work.
+### No built-in input components
 
-2. **Where do form field components live?** If they are in `src/runtime/templates/components/main/` with prefix `Cwa`, they appear in the consuming app's auto-import as `<CwaFormText>` etc. But the `main/` dir has a rule: `ignore: ['**/_*/*']`. A `form/` subdirectory should work fine.
+The module ships **zero** form input components. The block-prefix component resolution system from the legacy codebase is **not replicated**. Consuming apps use whatever UI library or plain HTML inputs they prefer. The composables are the entire public surface.
 
-3. **Do we need a `CwaFormGroup.vue`?** A wrapper that iterates all children of a `formView` node and renders `<CwaFormField>` for each. Or does the consuming app's template handle iteration? Keeping the template explicit (Option B) gives more layout control. **Preference: no auto-group; consuming app iterates explicitly.**
+The sample component in the playground demonstrates the pattern using Nuxt UI — this is documentation/example only, not a shipped component.
 
-4. **Realtime validation on every keystroke vs. on blur only?** Legacy used debounced PATCH on every keystroke (300ms delay). On-blur-only is simpler but less responsive. **Preference: debounced on every input + mandatory on blur**, consistent with the admin resource model pattern.
+### API error response shapes (reference)
 
-5. **Submit trigger:** Should `useCwaForm` expose `setDisplayErrors(true)` for all fields on submit attempt (to reveal all errors if user clicks submit without touching any fields)? **Yes** — this is the "submit attempted" gate the legacy system had.
+**Realtime PATCH per-field:**
+- `200` → `vars.valid: true`, `vars.errors: []`
+- `422` → `vars.valid: false`, `vars.errors: ["This value is not valid."]`
 
-### Implementation order (suggested)
+**Final submit POST/PATCH:**
+- `201`/`200` → success resource (not a formView)
+- `422` → full formView with all field errors populated, root `vars.errors` for form-level errors
 
-1. `useCwaFormField` composable (validation, value, displayErrors gate) — TDD first
-2. `useCwaForm` composable (submit, success, formError) — TDD first
-3. `CwaFormFieldWrapper.vue` (label + errors slot)
-4. `CwaFormText.vue`, `CwaFormEmail.vue`, `CwaFormPassword.vue`, `CwaFormButton.vue`
-5. `CwaFormField.vue` (block-prefix resolver)
-6. `CwaFormChoice.vue`, `CwaFormCheckbox.vue`, `CwaFormTextarea.vue`
-7. `CwaFormRepeated.vue` (extraData correlated validation)
-8. Sample `CwaComponentContactForm.vue` in the playground
-9. Tests for all of the above
-10. Defer: `CwaFormCollection.vue` (dynamic array)
+### Implementation order
 
-### Open questions for Daniel
+All steps follow TDD: propose test → agree → write test → write code.
 
-- Are Symfony form components the only use case, or do we also need "resource edit" forms (PATCH an existing resource with inline field errors, not a `formView`)? The admin manager already handles PATCH via `useCwaResourceModel` — but a public-facing edit form might need both.
-- Should `useCwaFormField` validate on every input event (debounced) or only on blur? The legacy did both — debounced on input + immediate on blur.
-- Any form types from the legacy `Choice` component we must support on day 1 (select, radio, checkbox group)?
+1. `useCwaFormInput` — value, validation PATCH, displayErrors gate, extraData
+2. `useCwaForm` — submit lifecycle, submitAttempted broadcast, formErrors
+3. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
+4. Tests for all of the above
+
+**Deferred (not in scope for #172):** Collection fields (dynamic array with `__name__` prototype cloning).
