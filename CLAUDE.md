@@ -1202,35 +1202,3 @@ All steps follow TDD: propose test → agree → write test → write code.
 | `repeated` | `useCwaFormRepeated` | Two sub-inputs with cross-validation |
 | `collection` | `useCwaFormCollection` | Prototype cloning (`vars.prototype`), entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
 | `button` / `submit` | `useCwaForm.submitting` + `submit()` | No dedicated composable needed |
-
----
-
-## Pending Playground Updates (from docs audit 2026-06-20)
-
-Two changes needed in `playground/` to match documented behaviour. The same changes have already been applied to the template app (`components-web-app`).
-
-### 1. Add `properties` map to pageData config in `playground/nuxt.config.ts`
-
-`cwa.pageData[TypeName].properties` labels the per-field position pickers in the admin UI (`DynamicPage.vue`). Currently missing from the playground config.
-
-```ts
-pageData: {
-  BlogArticleData: {
-    name: 'Blog Articles',
-    properties: {
-      image: 'Hero Image',
-      htmlContent: 'Article Body'
-    }
-  },
-  NestedPageData: {
-    name: 'Nested Topics',
-    properties: {
-      introContent: 'Introduction Content'
-    }
-  }
-}
-```
-
-### 2. Remove stale `:no-prefetch="undefined"` from `NavigationLink.vue`
-
-`CwaLink` now defaults `prefetch` to `false`. The `:no-prefetch="undefined"` passthrough in `playground/app/cwa/components/NavigationLink/NavigationLink.vue` is dead code and may generate a Vue unknown-prop warning. Remove it.
