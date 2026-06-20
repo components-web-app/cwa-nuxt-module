@@ -1059,13 +1059,13 @@ Per-field composable. The consuming app calls this for each field and binds the 
 ```ts
 const {
   value,          // Ref<any> — two-way, bind to v-model
+  vars,           // ComputedRef<FormFieldVars | undefined> — full field vars from API (label, required, choices, expanded, multiple, attr, block_prefixes, ...)
   errors,         // ComputedRef<string[]> — from store, always current
   valid,          // ComputedRef<boolean | null> — null until first validation
   displayErrors,  // ComputedRef<boolean> — true when errors should be shown to user
-  label,          // ComputedRef<string> — from vars.label
-  required,       // ComputedRef<boolean> — from vars.required
   onBlur,         // () => void — call from @blur
   onInput,        // () => void — call from @input/@update:modelValue
+  validate,       // (extraData?: Record<string, any>) => void — trigger immediately (used by useCwaFormRepeated)
 } = useCwaFormInput(toRef(props, 'iri'), 'contact_form[email]')
 ```
 
@@ -1094,17 +1094,45 @@ const displayErrors = computed(() =>
 - `onInput` → debounced PATCH (300ms), cancel-on-new-value
 - `onBlur` → sets `hasBlurred = true`; triggers immediate PATCH if value has changed since last validation; always shows errors after
 
-**`extraData` for correlated fields:**
+**`vars` exposes all field metadata from the API** — label, required, errors, block_prefixes, and type-specific fields. For `choice` fields:
 ```ts
-const password = useCwaFormInput(iri, 'reset_password[password][first]')
-const confirm  = useCwaFormInput(iri, 'reset_password[password][second]')
-
-// When validating "first", send "second" as context:
-password.onInput(() => {
-  password.validate({ 'reset_password[password][second]': confirm.value.value || '__FAKE__' })
-})
+// vars.value contains choice-specific metadata
+// vars.choices — [{ label: 'Option A', value: '1' }, ...]
+// vars.expanded — true = render as radio/checkboxes, false = <select>
+// vars.multiple — true = multi-select / checkbox group
+// vars.attr — HTML attributes from Symfony (placeholder, maxlength, type, ...)
 ```
-`'__FAKE__'` forces the API to validate the pair even when the second field is blank.
+The consuming app reads `vars` to decide how to render — e.g. a choice field might render as `<select>`, radio buttons, or checkboxes depending on `vars.expanded` and `vars.multiple`.
+
+#### `useCwaFormRepeated(iri, fullName)`
+
+Dedicated composable for Symfony's `RepeatedType` — two fields that must match (e.g. new password + confirm password). Each validates with the other's current value as `extraData`.
+
+```ts
+const {
+  first,   // same shape as useCwaFormInput — bind to first input
+  second,  // same shape as useCwaFormInput — bind to second input
+} = useCwaFormRepeated(toRef(props, 'iri'), 'reset_password[password]')
+```
+
+Internally uses two `useCwaFormInput` instances (`fullName + '[first]'` and `fullName + '[second]'`). Each `onInput`/`onBlur` call triggers cross-validation by passing the sibling's current value as `extraData`. Uses `'__FAKE__'` when the sibling is blank so the API validates the pair even when one side is empty.
+
+#### `useCwaFormCollection(iri, collectionFullName)`
+
+For Symfony `CollectionType` — a dynamic list of entries the user can add/remove.
+
+```ts
+const {
+  entries,      // ComputedRef<string[]> — full_name keys of current entries (e.g. ['tags[0]', 'tags[1]'])
+  addEntry,     // () => void — clones vars.prototype (replacing __name__ with next index), adds to local state
+  removeEntry,  // (fullName: string) => void
+  vars,         // ComputedRef<FormFieldVars> — the collection-level vars (allow_add, allow_delete, prototype)
+} = useCwaFormCollection(toRef(props, 'iri'), 'tags')
+```
+
+Template iterates `entries`, calls `useCwaFormInput(iri, entryFullName)` per entry, renders the user's own input per entry. The full collection (all active entries) is included in the submit body by `useCwaForm`.
+
+**Prototype cloning:** `vars.prototype` is a `FormView` node with `__name__` as the placeholder. `addEntry()` deep-clones it, replaces all occurrences of `__name__` in `full_name` values with the next index, and adds it to a local reactive array. This local array is what `entries` exposes.
 
 #### `useCwaForm(iri)`
 
@@ -1148,9 +1176,18 @@ The sample component in the playground demonstrates the pattern using Nuxt UI �
 
 All steps follow TDD: propose test → agree → write test → write code.
 
-1. `useCwaFormInput` — value, validation PATCH, displayErrors gate, extraData
+1. `useCwaFormInput` — value, `vars`, debounced PATCH validate, displayErrors gate
 2. `useCwaForm` — submit lifecycle, submitAttempted broadcast, formErrors
-3. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
-4. Tests for all of the above
+3. `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
+4. `useCwaFormCollection` — prototype cloning, entry add/remove
+5. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
 
-**Deferred (not in scope for #172):** Collection fields (dynamic array with `__name__` prototype cloning).
+**Full legacy field type coverage via composables:**
+
+| Legacy type | Composable | Notes |
+|---|---|---|
+| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` | `vars.attr.type` drives HTML type; `value` is boolean for checkbox |
+| `choice` | `useCwaFormInput` | Template reads `vars.choices`, `vars.expanded`, `vars.multiple` to decide `<select>` vs radio/checkbox group |
+| `repeated` | `useCwaFormRepeated` | Two sub-inputs with cross-validation |
+| `collection` | `useCwaFormCollection` | Prototype cloning (`vars.prototype`), entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
+| `button` / `submit` | `useCwaForm.submitting` + `submit()` | No dedicated composable needed |
