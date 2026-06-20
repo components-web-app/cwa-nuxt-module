@@ -9,6 +9,7 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxt/test-utils/module',
     '@nuxtjs/seo',
+    'nuxt-og-image',
     '@vite-pwa/nuxt',
     'nuxt-svgo',
   ],
@@ -109,6 +110,11 @@ export default defineNuxtConfig({
     siteConfig: {
       siteName: 'CWA Module Test Playground',
     },
+  },
+  ogImage: {
+    // nuxt-og-image exits without registering imports when ssr:false (the test default).
+    // Disabling it in tests registers no-op mock imports instead, making mockNuxtImport work.
+    enabled: !process.env.VITEST,
   },
   pwa: {
     disable: import.meta.test,

@@ -14,7 +14,7 @@ import { computed, provide, useTemplateRef, watch } from 'vue'
 import { withoutTrailingSlash } from 'ufo'
 import { titleCase } from 'scule'
 import CwaPage from './components/main/CwaPage.vue'
-import { useCwa, useError, useHead, useRoute } from '#imports'
+import { defineOgImage, useCwa, useError, useHead, useRoute } from '#imports'
 
 // to prevent errors navigating between pages, a page should have a single root element
 // resource loader will be 1 at a time but can switch between 3 states
@@ -52,6 +52,17 @@ const fallbackTitle = computed(() => {
   return lastSegment ? titleCase(lastSegment) : null
 })
 
+const pageTitle = computed(() => {
+  const count = $cwa.resources.depthCount.value
+  const titles: string[] = []
+  for (let d = count - 1; d >= 0; d--) {
+    const t = $cwa.resources.pageDataAtDepth(d).value?.data?.title
+      || $cwa.resources.pageAtDepth(d).value?.data?.title
+    if (t) titles.push(t)
+  }
+  return titles.length ? titles.join(' | ') : undefined
+})
+
 const metaDescription = computed(() => {
   const count = $cwa.resources.depthCount.value
   for (let d = count - 1; d >= 0; d--) {
@@ -64,21 +75,18 @@ const metaDescription = computed(() => {
 
 useHead({
   title: () => {
-    const count = $cwa.resources.depthCount.value
-    const titles: string[] = []
-    for (let d = count - 1; d >= 0; d--) {
-      const t = $cwa.resources.pageDataAtDepth(d).value?.data?.title
-        || $cwa.resources.pageAtDepth(d).value?.data?.title
-      if (t) titles.push(t)
-    }
-    const userDefinedTitle = titles.length ? titles.join(' | ') : undefined
-    if (!userDefinedTitle && $cwa.siteConfig.config.fallbackTitle) {
+    if (!pageTitle.value && $cwa.siteConfig.config.fallbackTitle) {
       return fallbackTitle.value
     }
-    return userDefinedTitle || null
+    return pageTitle.value || null
   },
   meta: [
     { name: 'description', content: metaDescription },
   ],
 }, minimalPriority)
+
+defineOgImage('CwaDefault', {
+  title: pageTitle,
+  description: metaDescription,
+})
 </script>

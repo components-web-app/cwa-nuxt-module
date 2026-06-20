@@ -7,12 +7,35 @@ import CwaPage from './cwa-page.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 let capturedHeadConfig: { title: () => string | null | undefined } | undefined
+let capturedOgImageArgs: any[] = []
 
 mockNuxtImport('useHead', () => (config: any) => {
   capturedHeadConfig = config
 })
 mockNuxtImport('useError', () => () => ref(null))
 mockNuxtImport('useRoute', () => () => ({ path: '/', meta: {} }))
+mockNuxtImport('defineOgImage', () => (...args: any[]) => {
+  capturedOgImageArgs = args
+})
+
+function mockCwaWithDepths(
+  depths: Array<{ dataTitle?: string, pageTitle?: string }>,
+  fallbackTitleEnabled = false,
+) {
+  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+    resources: {
+      depthCount: { value: depths.length },
+      pageDataAtDepth: (d: number) => ({
+        value: depths[d]?.dataTitle ? { data: { title: depths[d].dataTitle } } : undefined,
+      }),
+      pageAtDepth: (d: number) => ({
+        value: depths[d]?.pageTitle ? { data: { title: depths[d].pageTitle } } : undefined,
+      }),
+    },
+    siteConfig: { config: { fallbackTitle: fallbackTitleEnabled } },
+  }))
+  mount(CwaPage, { shallow: true })
+}
 
 describe('CWA page', () => {
   function createWrapper() {
@@ -53,25 +76,6 @@ describe('CWA page', () => {
   })
 
   describe('page title', () => {
-    function mockCwaWithDepths(
-      depths: Array<{ dataTitle?: string, pageTitle?: string }>,
-      fallbackTitleEnabled = false,
-    ) {
-      vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-        resources: {
-          depthCount: { value: depths.length },
-          pageDataAtDepth: (d: number) => ({
-            value: depths[d]?.dataTitle ? { data: { title: depths[d].dataTitle } } : undefined,
-          }),
-          pageAtDepth: (d: number) => ({
-            value: depths[d]?.pageTitle ? { data: { title: depths[d].pageTitle } } : undefined,
-          }),
-        },
-        siteConfig: { config: { fallbackTitle: fallbackTitleEnabled } },
-      }))
-      mount(CwaPage, { shallow: true })
-    }
-
     test('returns single title for flat page', () => {
       mockCwaWithDepths([{ dataTitle: 'Events' }])
       expect(capturedHeadConfig!.title()).toBe('Events')
@@ -101,6 +105,28 @@ describe('CWA page', () => {
     test('returns null when no titles and fallback disabled', () => {
       mockCwaWithDepths([{}], false)
       expect(capturedHeadConfig!.title()).toBeNull()
+    })
+  })
+
+  describe('og image', () => {
+    test('calls defineOgImage with CwaDefault component', () => {
+      mockCwaWithDepths([{ dataTitle: 'Events' }])
+      expect(capturedOgImageArgs[0]).toBe('CwaDefault')
+    })
+
+    test('passes pageTitle computed ref as title prop for flat page', () => {
+      mockCwaWithDepths([{ dataTitle: 'Events' }])
+      expect(capturedOgImageArgs[1].title.value).toBe('Events')
+    })
+
+    test('passes leaf-first concatenated title for nested page', () => {
+      mockCwaWithDepths([{ dataTitle: 'Conference' }, { dataTitle: 'Programme' }])
+      expect(capturedOgImageArgs[1].title.value).toBe('Programme | Conference')
+    })
+
+    test('passes undefined title when no depths have a title', () => {
+      mockCwaWithDepths([{}])
+      expect(capturedOgImageArgs[1].title.value).toBeUndefined()
     })
   })
 })

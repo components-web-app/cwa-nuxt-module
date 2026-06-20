@@ -13,6 +13,7 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
+  installModule,
   resolveAlias,
   updateTemplates,
   useLogger,
@@ -100,6 +101,9 @@ export default defineNuxtModule<CwaModuleOptions>({
     'nuxt-site-config': {
       version: '^4.0.8',
     },
+    'nuxt-og-image': {
+      version: '^6.0',
+    },
   },
   meta: {
     name: NAME,
@@ -125,6 +129,8 @@ export default defineNuxtModule<CwaModuleOptions>({
   async setup(options, nuxt) {
     const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
+
+    await installModule('nuxt-og-image')
 
     const { version, name } = JSON.parse(
       readFileSync(resolve('../package.json'), 'utf8'),
@@ -240,6 +246,19 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
 export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
         },
+      })
+
+      addTypeTemplate({
+        filename: 'types/cwa-og-image.d.ts',
+        write: true,
+        getContents: () => /* ts */`import type CwaDefaultSatori from '${resolve('./layer/components/og-image/CwaDefault.satori.vue')}'
+declare module '#og-image/components' {
+  interface OgImageComponents {
+    CwaDefault: typeof CwaDefaultSatori
+    'CwaDefault.satori': typeof CwaDefaultSatori
+    CwaDefaultSatori: typeof CwaDefaultSatori
+  }
+}`,
       })
 
       addTypeTemplate({
