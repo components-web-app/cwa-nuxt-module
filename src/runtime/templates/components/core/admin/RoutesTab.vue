@@ -75,7 +75,7 @@
           <RoutesTabForwardTo
             :disable-buttons="disableButtons"
             :current-route-iri="resource['@id']"
-            :initial-iri="resource.redirect || undefined"
+            :initial-iri="redirectIri"
             @create="handleSetForwardTo"
           />
         </div>
@@ -132,10 +132,17 @@ const parentRoutePrefix = computed(() => {
 })
 const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
 
+// The API may return `redirect` as an embedded JSON-LD object rather than an IRI string.
+// Normalise to a string IRI so downstream consumers always receive a string.
+const redirectIri = computed<string | undefined>(() => {
+  const r = resource.value?.redirect
+  if (!r) return undefined
+  return typeof r === 'object' ? (r as any)['@id'] : (r as string)
+})
+
 const forwardToPath = computed(() => {
-  const redirectIri = resource.value?.redirect
-  if (!redirectIri) return undefined
-  return redirectIri.replace(/^.*\/_\/routes\//, '')
+  if (!redirectIri.value) return undefined
+  return redirectIri.value.replace(/^.*\/_\/routes\//, '')
 })
 
 const routeIriFromPage = computed(() => (props.pageResource.route))

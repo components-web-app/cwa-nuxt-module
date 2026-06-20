@@ -91,7 +91,11 @@ const editor = useEditor({
     },
   },
   extensions: [
-    StarterKit.configure(),
+    StarterKit.configure({
+      // TipTap v3 StarterKit includes Link by default — disable it here and
+      // register it explicitly below so we can apply custom configuration.
+      link: false,
+    }),
     Placeholder.configure({
       placeholder: 'Write something …',
       emptyEditorClass: 'is-editor-empty text-inherit opacity-50',

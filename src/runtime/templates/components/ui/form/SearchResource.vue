@@ -171,10 +171,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <Popover class="cwa:flex cwa:items-center cwa:gap-x-2">
+  <Popover class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:w-full">
     <div
       ref="trigger"
-      class="cwa:relative"
+      class="cwa:relative cwa:flex-1 cwa:px-px"
     >
       <CwaUiFormInput
         v-model="searchValue"

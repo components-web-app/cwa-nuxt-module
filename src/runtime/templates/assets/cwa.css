@@ -1158,6 +1158,9 @@
 .cwa\:px-12 {
   padding-inline: calc(var(--cwa-spacing) * 12);
 }
+.cwa\:px-px {
+  padding-inline: 1px;
+}
 .cwa\:py-0\.5 {
   padding-block: calc(var(--cwa-spacing) * 0.5);
 }
