@@ -1190,7 +1190,7 @@ All steps follow TDD: propose test → agree → write test → write code.
 1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy.
 2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `vars.action` with `{ [fullName]: value, ...extraData }` (no-op for POST forms). `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store.
 3. ✅ `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
-4. `useCwaFormCollection` — prototype cloning, entry add/remove
+4. ✅ `useCwaFormCollection` — prototype cloning, entry add/remove
 5. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
 
 **Full legacy field type coverage via composables:**
