@@ -67,6 +67,7 @@
     "@pinia/nuxt": "0.11.3",
     "@popperjs/core": "^2.11.8",
     "@tailwindcss/vite": "^4.2.4",
+    "@takumi-rs/core": "^1.1.2",
     "@vueuse/core": "^14.3.0",
     "consola": "^3.4.2",
     "cookie": "^1.1.1",
@@ -83,8 +84,7 @@
     "uuid": "^14.0.0",
     "vue": "^3.5.34",
     "vue-input-autowidth": "^2.2.1",
-    "vuejs-confirm-dialog": "^0.5.2",
-    "@takumi-rs/core": "^1.1.2"
+    "vuejs-confirm-dialog": "^0.5.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
@@ -120,6 +120,7 @@
     "playwright-core": "^1.59.1",
     "postcss": "^8.5.14",
     "postcss-cli": "^11.0.1",
+    "satori": "^0.26.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite-tsconfig-paths": "^6.1.1",

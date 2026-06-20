@@ -766,11 +766,14 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ## Open GitHub Issues
 
-All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20. Check this list before starting new work — many may already be fixed.
+All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20 (re-checked same date). Check this list before starting new work — many may already be fixed.
 
 ### UX / Admin
 
 ### Features / Enhancements
+
+**[#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236) — Feature: CWA Admin UI Component Kit**
+Build a self-contained component kit for the admin UI covering modal inputs, selects, buttons, tabs, info fields, and standalone admin page layouts. Structured similarly to Nuxt UI (slot-based composition, headless-first primitives, base/variant/size layers) but implemented entirely within this module using `cwa:` prefixed Tailwind utilities — no Nuxt UI dependency (would bleed its theme tokens into consuming apps). Surface areas: modal form controls (`src/runtime/templates/components/core/admin/form/`), standalone admin pages (`src/layer/pages/_cwa/`), manager bar (tab bars, stack breadcrumbs, focus overlays), and base headless primitives (tabs, dropdowns, badges, tooltips). Admin-only; public-facing components remain unstyled.
 
 **[#239](https://github.com/components-web-app/cwa-nuxt-module/issues/239) — DX: `useCwaResource` extensible composable pipeline**
 The parallel composables (`useCwaCollectionResource`, `useCwaImageResource`, etc.) cannot be combined — calling two on the same component requires manual threading. Proposes a plugin/middleware pattern so behaviour is layered: `useCwaResource(props, [withCollection(), withPublishable()])`. Each plugin receives the current resource state and returns additional reactive properties. Third-party libraries could ship their own plugins without forking internals.
