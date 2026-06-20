@@ -750,6 +750,20 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ---
 
+## Pending: Route redirect when `page`/`pageData` also set
+
+**API context:** The `Route` entity allows `redirect` and `page`/`pageData` to coexist on the same route — there is no validation preventing this. The intended use case is a parent page (e.g. `/topic-1`) that has real content (`pageData`) but should always redirect the visitor to a default child (e.g. `/topic-1/chapter-one`).
+
+**What the API returns:** A standard `GET /_/routes//topic-1` response may include both a `pageData` IRI and a `redirect` IRI on the same route object. Currently the module likely renders the page because it sees `pageData`.
+
+**Required change:** When the module resolves a route and the response contains a non-null `redirect` field, always follow the redirect — regardless of whether `page` or `pageData` is also present. A route with `redirect` set means "send the user here instead", even if the route also owns content. This is a **client-side navigation redirect** (e.g. `navigateTo(redirectRoute.path)`), not an HTTP 301/302.
+
+**Child manifest is unaffected:** `redirect` is not in the `Route:manifest:read` serialization group. When `/topic-1/chapter-one` fetches its manifest, the parent route's `redirect` field is invisible to the normalizer. `resource_iris[0]` still contains the parent's `pageData` IRI and the parent renders correctly as the ancestor layer.
+
+**TDD:** Propose a Vitest test before implementing.
+
+---
+
 ## Open GitHub Issues
 
 All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20. Check this list before starting new work — many may already be fixed.
@@ -1188,10 +1202,10 @@ The sample component in the playground demonstrates the pattern using Nuxt UI �
 All steps follow TDD: propose test → agree → write test → write code.
 
 1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy.
-2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `vars.action` with `{ [fullName]: value, ...extraData }` (no-op for POST forms). `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store.
+2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `vars.action` with `{ [fullName]: value, ...extraData }` (no-op for POST forms). `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors/unregisteredFieldErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store. `unregisteredFieldErrors` surfaces errors for formView fields not bound to any `useCwaFormInput` instance — prevents silent error loss.
 3. ✅ `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
 4. ✅ `useCwaFormCollection` — prototype cloning, entry add/remove
-5. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
+5. ✅ Sample form component in playground (`playground/app/cwa/components/Form/Form.vue`) — all field types from `ExampleFormType` with Nuxt UI; sub-components `FormChildEntry.vue` + `FormTextEntry.vue` for collection entries
 
 **Full legacy field type coverage via composables:**
 
