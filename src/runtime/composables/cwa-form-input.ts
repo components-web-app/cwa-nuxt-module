@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import debounce from 'lodash-es/debounce'
 import { useCwa } from '#cwa/composables/cwa'
@@ -13,8 +13,22 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
 
   const value = ref<any>(vars.value?.value)
 
-  watch(iri, () => {
+  if (iri.value) {
+    $cwa.forms.setFieldValue(iri.value, fullName, value.value)
+  }
+
+  watch(iri, (newIri, oldIri) => {
+    if (oldIri) $cwa.forms.clearFieldValue(oldIri, fullName)
     value.value = vars.value?.value
+    if (newIri) $cwa.forms.setFieldValue(newIri, fullName, value.value)
+  })
+
+  watch(value, (newValue) => {
+    if (iri.value) $cwa.forms.setFieldValue(iri.value, fullName, newValue)
+  })
+
+  onBeforeUnmount(() => {
+    if (iri.value) $cwa.forms.clearFieldValue(iri.value, fullName)
   })
 
   const errors = computed(() => vars.value?.errors ?? [])
@@ -28,7 +42,10 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
   })
 
   const displayErrors = computed(
-    () => hasBlurred.value || (hasPreviouslyBeenValid.value && valid.value === false),
+    () =>
+      hasBlurred.value
+      || (hasPreviouslyBeenValid.value && valid.value === false)
+      || $cwa.forms.isSubmitAttempted(iri.value ?? ''),
   )
 
   const onBlur = () => {
@@ -42,8 +59,12 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
     valid,
     displayErrors,
     onBlur,
-    validate: (_extraData?: Record<string, any>): void => {
-      // HTTP validation implemented in useCwaForm step
+    validate: async (extraData?: Record<string, any>): Promise<void> => {
+      if (!iri.value || !vars.value) return
+      const rootKey = fullName.includes('[') ? fullName.substring(0, fullName.indexOf('[')) : fullName
+      const rootVars = $cwa.forms.getForm(iri.value).value?.[rootKey]?.vars
+      if (!rootVars?.action || rootVars.method?.toUpperCase() !== 'PATCH') return
+      await $cwa.forms.validateField(rootVars.action, { [fullName]: value.value, ...extraData })
     },
     onInput: null as unknown as () => void,
   }

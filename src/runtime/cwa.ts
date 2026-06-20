@@ -87,7 +87,7 @@ export default class Cwa {
       this.storage.stores.fetcher,
       useCookie('cwa_auth', { sameSite: 'strict' }),
     )
-    this.forms = new Forms(this.storage.stores.resources)
+    this.forms = new Forms(this.storage.stores.resources, this.cwaFetch)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)
     this.adminNavGuard = new NavigationGuard($router, this.storage.stores.admin)

@@ -970,7 +970,7 @@ This ensures:
 
 ## Planned Feature: Form Composables & Sample Component (#172)
 
-> **Status: Implementation started (2026-06-20). `useCwaFormInput` reactive state + validate stub + onInput debounce complete (23 tests passing). Next: `useCwaForm` (submit lifecycle + submitAttempted flag) and `validate()` HTTP implementation.**
+> **Status: Steps 1–2 complete (2026-06-20). `useCwaFormInput` full reactive state + HTTP validate wired + `useCwaForm` submit lifecycle done. Next: `useCwaFormRepeated` (step 3).**
 > Researched from legacy branches (`legacy` / `legacy-dev`). Key pivot vs. legacy: **no built-in input components** — composables only; consuming app brings its own inputs (Nuxt UI, plain HTML, whatever).
 
 ### Core design principle
@@ -1187,8 +1187,9 @@ The sample component in the playground demonstrates the pattern using Nuxt UI �
 
 All steps follow TDD: propose test → agree → write test → write code.
 
-1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy. **validate HTTP body is the next step.**
-2. `useCwaForm` — submit lifecycle, submitAttempted broadcast, formErrors; also wire up `validate()` HTTP call in `useCwaFormInput` (PATCH/POST to `vars.action` using root form method)
+1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy.
+2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `vars.action` with `{ [fullName]: value, ...extraData }` (no-op for POST forms). `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store.
+3. `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
 3. `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
 4. `useCwaFormCollection` — prototype cloning, entry add/remove
 5. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
@@ -1202,3 +1203,35 @@ All steps follow TDD: propose test → agree → write test → write code.
 | `repeated` | `useCwaFormRepeated` | Two sub-inputs with cross-validation |
 | `collection` | `useCwaFormCollection` | Prototype cloning (`vars.prototype`), entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
 | `button` / `submit` | `useCwaForm.submitting` + `submit()` | No dedicated composable needed |
+
+---
+
+## Pending Playground Updates (from docs audit 2026-06-20)
+
+Two changes needed in `playground/` to match documented behaviour. The same changes have already been applied to the template app (`components-web-app`).
+
+### 1. Add `properties` map to pageData config in `playground/nuxt.config.ts`
+
+`cwa.pageData[TypeName].properties` labels the per-field position pickers in the admin UI (`DynamicPage.vue`). Currently missing from the playground config.
+
+```ts
+pageData: {
+  BlogArticleData: {
+    name: 'Blog Articles',
+    properties: {
+      image: 'Hero Image',
+      htmlContent: 'Article Body'
+    }
+  },
+  NestedPageData: {
+    name: 'Nested Topics',
+    properties: {
+      introContent: 'Introduction Content'
+    }
+  }
+}
+```
+
+### 2. Remove stale `:no-prefetch="undefined"` from `NavigationLink.vue`
+
+`CwaLink` now defaults `prefetch` to `false`. The `:no-prefetch="undefined"` passthrough in `playground/app/cwa/components/NavigationLink/NavigationLink.vue` is dead code and may generate a Vue unknown-prop warning. Remove it.

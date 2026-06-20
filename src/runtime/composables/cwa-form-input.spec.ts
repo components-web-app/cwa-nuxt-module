@@ -4,15 +4,32 @@ import { computed, reactive, ref } from 'vue'
 import { useCwaFormInput } from '#cwa/composables/cwa-form-input'
 
 const mockGetForm = vi.hoisted(() => vi.fn())
+const mockValidateField = vi.hoisted(() => vi.fn())
+const mockIsSubmitAttempted = vi.hoisted(() => vi.fn().mockReturnValue(false))
+const mockSetFieldValue = vi.hoisted(() => vi.fn())
+const mockClearFieldValue = vi.hoisted(() => vi.fn())
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
-    forms: { getForm: mockGetForm },
+    forms: {
+      getForm: mockGetForm,
+      validateField: mockValidateField,
+      isSubmitAttempted: mockIsSubmitAttempted,
+      setFieldValue: mockSetFieldValue,
+      clearFieldValue: mockClearFieldValue,
+    },
   }),
 }))
 
-function makeFormData(overrides: Record<string, any> = {}) {
+function makeFormData(overrides: Record<string, any> = {}, rootMethod = 'PATCH') {
   return reactive({
+    'contact_form': {
+      vars: {
+        full_name: 'contact_form',
+        action: '/_/contact_requests',
+        method: rootMethod,
+      },
+    },
     'contact_form[name]': {
       vars: {
         full_name: 'contact_form[name]',
@@ -200,6 +217,14 @@ describe('useCwaFormInput', () => {
       const { displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
       expect(displayErrors.value).toBe(false)
     })
+
+    test('becomes true when isSubmitAttempted(iri) returns true', () => {
+      const formData = makeFormData({ errors: ['Required'], valid: false })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      mockIsSubmitAttempted.mockReturnValue(true)
+      const { displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(displayErrors.value).toBe(true)
+    })
   })
 
   describe('onInput and validate', () => {
@@ -250,6 +275,71 @@ describe('useCwaFormInput', () => {
       vi.advanceTimersByTime(300)
       expect(validateSpy).toHaveBeenCalledTimes(1)
       vi.useRealTimers()
+    })
+
+    test('validate calls forms.validateField with action and {[fullName]: value} for PATCH forms', async () => {
+      const formData = makeFormData({ value: 'Alice' }, 'PATCH')
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).toHaveBeenCalledWith('/_/contact_requests', { 'contact_form[name]': 'Alice' })
+    })
+
+    test('validate merges extraData into the body', async () => {
+      const formData = makeFormData({ value: 'abc' }, 'PATCH')
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate({ 'contact_form[confirm]': 'abc' })
+      expect(mockValidateField).toHaveBeenCalledWith('/_/contact_requests', {
+        'contact_form[name]': 'abc',
+        'contact_form[confirm]': 'abc',
+      })
+    })
+
+    test('validate is a no-op for POST forms', async () => {
+      const formData = makeFormData({ value: 'Alice' }, 'POST')
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).not.toHaveBeenCalled()
+    })
+
+    test('validate is a no-op when iri is undefined', async () => {
+      iri.value = undefined
+      mockGetForm.mockReturnValue(computed(() => undefined))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('fieldValues sync', () => {
+    test('registers initial value with setFieldValue on creation', () => {
+      const formData = makeFormData({ value: 'Alice' })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      useCwaFormInput(iri, 'contact_form[name]')
+      expect(mockSetFieldValue).toHaveBeenCalledWith('/_/form_components/123', 'contact_form[name]', 'Alice')
+    })
+
+    test('calls setFieldValue when value is updated', async () => {
+      const formData = makeFormData({ value: 'Alice' })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { value } = useCwaFormInput(iri, 'contact_form[name]')
+      mockSetFieldValue.mockClear()
+      value.value = 'Bob'
+      await new Promise(r => setTimeout(r, 0))
+      expect(mockSetFieldValue).toHaveBeenCalledWith('/_/form_components/123', 'contact_form[name]', 'Bob')
+    })
+
+    test('calls clearFieldValue for old iri and setFieldValue for new iri when iri changes', async () => {
+      const formData = makeFormData({ value: 'Alice' })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      useCwaFormInput(iri, 'contact_form[name]')
+      mockSetFieldValue.mockClear()
+      iri.value = '/_/form_components/456'
+      await new Promise(r => setTimeout(r, 0))
+      expect(mockClearFieldValue).toHaveBeenCalledWith('/_/form_components/123', 'contact_form[name]')
+      expect(mockSetFieldValue).toHaveBeenCalledWith('/_/form_components/456', 'contact_form[name]', expect.anything())
     })
   })
 })
