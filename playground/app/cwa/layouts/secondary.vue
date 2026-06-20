@@ -1,6 +1,5 @@
 <template>
   <div class="relative">
-    <VitePwaManifest />
     <CwaUiProgressBar
       :show="showPageLoadBar"
       :percent="percent"

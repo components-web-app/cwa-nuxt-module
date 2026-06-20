@@ -102,9 +102,16 @@ export default defineNuxtConfig({
     pageData: {
       BlogArticleData: {
         name: 'Blog Articles',
+        properties: {
+          image: 'Hero Image',
+          htmlContent: 'Article Body',
+        },
       },
       NestedPageData: {
         name: 'Nested Topics',
+        properties: {
+          introContent: 'Introduction Content',
+        },
       },
     },
     siteConfig: {
