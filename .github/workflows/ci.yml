@@ -66,7 +66,7 @@ jobs:
         if: matrix.coverage
         run: echo "COVERAGE=1" >> $GITHUB_ENV
 
-      - name: Module only type tests
+      - name: Typechecks
         run: pnpm run test:types
         env:
           CI: true
