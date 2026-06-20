@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue'
+import { useCwaFormInput } from '#imports'
 
 const props = defineProps<{ iri: string | undefined, entryFullName: string }>()
 defineEmits<{ remove: [] }>()

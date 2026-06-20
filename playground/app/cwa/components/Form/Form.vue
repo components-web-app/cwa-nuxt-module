@@ -234,6 +234,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
+import { useCwaResource, useCwaForm, useCwaFormInput, useCwaFormRepeated, useCwaFormCollection } from '#imports'
 
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
