@@ -752,11 +752,22 @@ The goal is a polished, consistent component kit for the admin UI — similar in
 
 ## Open GitHub Issues
 
-All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-19. Check this list before starting new work — many may already be fixed.
+All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20. Check this list before starting new work — many may already be fixed.
 
 ### UX / Admin
 
 ### Features / Enhancements
+
+**[#239](https://github.com/components-web-app/cwa-nuxt-module/issues/239) — DX: `useCwaResource` extensible composable pipeline**
+The parallel composables (`useCwaCollectionResource`, `useCwaImageResource`, etc.) cannot be combined — calling two on the same component requires manual threading. Proposes a plugin/middleware pattern so behaviour is layered: `useCwaResource(props, [withCollection(), withPublishable()])`. Each plugin receives the current resource state and returns additional reactive properties. Third-party libraries could ship their own plugins without forking internals.
+
+**[#238](https://github.com/components-web-app/cwa-nuxt-module/issues/238) — DX: `useCwaComponent(props)` — single composable call to replace boilerplate**
+Every CWA component repeats the same block (`defineProps`, `useCwaResource`, `useCwaIsAdmin`, etc.). Missing pieces cause silent runtime bugs (no admin UI, no loading state). Proposes a single `useCwaComponent(props)` macro composable that returns everything a standard component needs. Stretch goal: a `defineCwaComponent()` Vite macro so even the `iri` prop declaration is implicit.
+
+> **Depends on #239** if the extensible pipeline approach is adopted first.
+
+**[#237](https://github.com/components-web-app/cwa-nuxt-module/issues/237) — DX: `npx cwa make:component` cross-stack generator**
+Creating a new CWA component requires coordinated steps across two codebases with no single entry point. Proposes an interactive CLI command that generates the Vue file with correct boilerplate pre-filled and prints the `make:api-component` command to run on the API side (and the `nuxt.config` snippet if the component is a PageData property).
 
 **[#172](https://github.com/components-web-app/cwa-nuxt-module/issues/172) — Form component sample + composables**
 A sample CWA form component and the composables needed to build forms are required as a documented starting point for consuming apps.
@@ -959,7 +970,7 @@ This ensures:
 
 ## Planned Feature: Form Composables & Sample Component (#172)
 
-> **Status: Design finalised (2026-06-20). No implementation started.**
+> **Status: Implementation started (2026-06-20). `useCwaFormInput` reactive state + validate stub + onInput debounce complete (23 tests passing). Next: `useCwaForm` (submit lifecycle + submitAttempted flag) and `validate()` HTTP implementation.**
 > Researched from legacy branches (`legacy` / `legacy-dev`). Key pivot vs. legacy: **no built-in input components** — composables only; consuming app brings its own inputs (Nuxt UI, plain HTML, whatever).
 
 ### Core design principle
@@ -1176,8 +1187,8 @@ The sample component in the playground demonstrates the pattern using Nuxt UI �
 
 All steps follow TDD: propose test → agree → write test → write code.
 
-1. `useCwaFormInput` — value, `vars`, debounced PATCH validate, displayErrors gate
-2. `useCwaForm` — submit lifecycle, submitAttempted broadcast, formErrors
+1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy. **validate HTTP body is the next step.**
+2. `useCwaForm` — submit lifecycle, submitAttempted broadcast, formErrors; also wire up `validate()` HTTP call in `useCwaFormInput` (PATCH/POST to `vars.action` using root form method)
 3. `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
 4. `useCwaFormCollection` — prototype cloning, entry add/remove
 5. Sample `CwaComponentContactForm.vue` in playground (documentation/example)
