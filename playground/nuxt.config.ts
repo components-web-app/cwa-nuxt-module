@@ -6,6 +6,7 @@ export default defineNuxtConfig({
     './../src/layer',
   ],
   modules: [
+    '@nuxt/ui',
     '@nuxt/image',
     '@nuxt/test-utils/module',
     '@nuxtjs/seo',
@@ -65,6 +66,10 @@ export default defineNuxtConfig({
   },
   cwa: {
     resources: {
+      Form: {
+        name: 'Example Form',
+        description: '<p>Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.</p>',
+      },
       NavigationLink: {
         name: 'Link',
         description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>',

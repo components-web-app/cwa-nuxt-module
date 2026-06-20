@@ -1,5 +1,6 @@
 @layer theme, base, cwa, components, utilities;
 
+@import "@nuxt/ui";
 @import "../../../../node_modules/tailwindcss/theme.css" layer(theme);
 @import "../../../../node_modules/tailwindcss/preflight.css" layer(base);
 @import "../../../../node_modules/tailwindcss/utilities.css" layer(utilities);

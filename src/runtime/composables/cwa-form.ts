@@ -18,6 +18,20 @@ export const useCwaForm = (iri: Ref<string | undefined>) => {
 
   const formErrors = computed(() => rootFormVars.value?.errors ?? [])
 
+  const unregisteredFieldErrors = computed(() => {
+    if (!iri.value) return []
+    const form = $cwa.forms.getForm(iri.value).value
+    if (!form) return []
+    const registered = new Set(Object.keys($cwa.forms.getFieldValues(iri.value)))
+    const rootKey = Object.keys(form).find(k => !k.includes('[')) ?? ''
+    const errors: string[] = []
+    for (const [key, view] of Object.entries(form)) {
+      if (key === rootKey || registered.has(key)) continue
+      if (view.vars?.errors?.length) errors.push(...view.vars.errors)
+    }
+    return errors
+  })
+
   const submit = async () => {
     if (!iri.value || !rootFormVars.value) return
 
@@ -43,5 +57,6 @@ export const useCwaForm = (iri: Ref<string | undefined>) => {
     submitting,
     success,
     formErrors,
+    unregisteredFieldErrors,
   }
 }

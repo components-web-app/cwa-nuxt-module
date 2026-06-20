@@ -30,7 +30,10 @@ function makeFormStore(method = 'POST') {
       },
     },
     'contact_form[name]': {
-      vars: { full_name: 'contact_form[name]', value: 'Alice' },
+      vars: { full_name: 'contact_form[name]', value: 'Alice', errors: [] as string[] },
+    },
+    'contact_form[email]': {
+      vars: { full_name: 'contact_form[email]', value: '', errors: [] as string[] },
     },
   })
 }
@@ -159,6 +162,54 @@ describe('useCwaForm', () => {
       mockGetForm.mockReturnValue(computed(() => undefined))
       const { formErrors } = useCwaForm(iri)
       expect(formErrors.value).toEqual([])
+    })
+  })
+
+  describe('unregisteredFieldErrors', () => {
+    test('returns empty array when all field errors belong to registered fields', () => {
+      const formStore = makeFormStore()
+      mockGetForm.mockReturnValue(computed(() => formStore))
+      // name is registered, email is registered
+      mockGetFieldValues.mockReturnValue({ 'contact_form[name]': 'Alice', 'contact_form[email]': '' })
+      const { unregisteredFieldErrors } = useCwaForm(iri)
+      formStore['contact_form[name]'].vars.errors = ['Name error']
+      expect(unregisteredFieldErrors.value).toEqual([])
+    })
+
+    test('returns errors for fields in formView that are not registered', () => {
+      const formStore = makeFormStore()
+      mockGetForm.mockReturnValue(computed(() => formStore))
+      // Only name is registered; email is NOT registered
+      mockGetFieldValues.mockReturnValue({ 'contact_form[name]': 'Alice' })
+      formStore['contact_form[email]'].vars.errors = ['Email is required']
+      const { unregisteredFieldErrors } = useCwaForm(iri)
+      expect(unregisteredFieldErrors.value).toEqual(['Email is required'])
+    })
+
+    test('does not include root form errors (those belong to formErrors)', () => {
+      const formStore = makeFormStore()
+      mockGetForm.mockReturnValue(computed(() => formStore))
+      mockGetFieldValues.mockReturnValue({})
+      formStore['contact_form'].vars.errors = ['Root error']
+      const { unregisteredFieldErrors } = useCwaForm(iri)
+      expect(unregisteredFieldErrors.value).toEqual([])
+    })
+
+    test('updates reactively when store errors change', () => {
+      const formStore = makeFormStore()
+      mockGetForm.mockReturnValue(computed(() => formStore))
+      mockGetFieldValues.mockReturnValue({})
+      const { unregisteredFieldErrors } = useCwaForm(iri)
+      expect(unregisteredFieldErrors.value).toEqual([])
+      formStore['contact_form[email]'].vars.errors = ['Email is required']
+      expect(unregisteredFieldErrors.value).toEqual(['Email is required'])
+    })
+
+    test('returns empty array when iri is undefined', () => {
+      iri.value = undefined
+      mockGetForm.mockReturnValue(computed(() => undefined))
+      const { unregisteredFieldErrors } = useCwaForm(iri)
+      expect(unregisteredFieldErrors.value).toEqual([])
     })
   })
 
