@@ -132,22 +132,11 @@ export default class FetchStatusManager {
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
     const fetchStatus = this.fetcherStore.fetches[event.token]
 
-    // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
-    if (fetchStatus?.abort) {
-      this.resourcesStore.setResourceFetchError({
-        iri: event.resource,
-        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)),
-        isCurrent,
-      })
-      return
-    }
-
-    if (!isCurrent) {
-      this.resourcesStore.setResourceFetchError({
-        iri: event.resource,
-        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current.`)),
-        isCurrent,
-      })
+    // Aborted or stale-token fetches: do not update the resource state.
+    // The resource already has either a previous SUCCESS state (valid cached data) or an
+    // IN_PROGRESS state (the current fetch token will resolve it). Overwriting with ERROR
+    // here has no HTTP status code and causes spurious "Unknown error" flashes in ResourceLoader.
+    if (fetchStatus?.abort || !isCurrent) {
       return
     }
 

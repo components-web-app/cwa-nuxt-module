@@ -351,7 +351,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(response).toBeUndefined()
   })
 
-  test('If fetching token is aborted, update the resources store with an error message once. Do not call setResourceFetchStatus', () => {
+  test('If fetching token is aborted, return undefined without touching the resource store', () => {
     const useStoreImplementation = {
       isCurrentFetchingToken: vi.fn(() => false),
       fetches: {
@@ -373,17 +373,12 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     })
 
     expect(useStoreImplementation.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
-
-    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
-      iri: '/some-resource',
-      isCurrent: false,
-      error: createCwaResourceError(new Error('Not Saved. Fetching token \'my-token\' has been aborted.')),
-    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
     expect(response).toBeUndefined()
   })
 
-  test('If fetching token is not aborted, but not current update the resources store with an error message once. Do not call setResourceFetchStatus', () => {
+  test('If fetching token is not aborted but not current, return undefined without touching the resource store', () => {
     const useStoreImplementation = {
       isCurrentFetchingToken: vi.fn(() => false),
       fetches: {
@@ -403,12 +398,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     })
 
     expect(useStoreImplementation.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
-
-    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
-      iri: '/some-resource',
-      isCurrent: false,
-      error: createCwaResourceError(new Error('Not Saved. Fetching token \'my-token\' is no longer current.')),
-    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
     expect(response).toBeUndefined()
   })
