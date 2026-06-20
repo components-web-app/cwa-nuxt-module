@@ -5,6 +5,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import RoutesTab from './RoutesTab.vue'
 import RoutesTabView from './RoutesTabView.vue'
 import RoutesTabManage from './RoutesTabManage.vue'
+import RoutesTabForwardTo from './RoutesTabForwardTo.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 const { mockUseItemPage, mockReveal } = vi.hoisted(() => ({
@@ -230,6 +231,97 @@ describe('RoutesTab', () => {
       await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
       await flushPromises()
       expect(updateResource).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('forward-to outbound redirect', () => {
+    function setupForwardItemPage(redirect: string | null = null) {
+      mockUseItemPage.mockReturnValue({
+        isLoading: ref(false),
+        isUpdating: ref(false),
+        localResourceData: ref({ path: '/topic-1' }),
+        resource: ref({ '@id': '/_api/_/routes//topic-1', 'path': '/topic-1', 'redirect': redirect }),
+        loadResource: vi.fn(),
+        deleteResource: vi.fn(),
+        saveResource: vi.fn().mockResolvedValue({ '@id': '/_api/_/routes//topic-1', 'path': '/topic-1' }),
+        resetResource: vi.fn(),
+        apiState: ref({ status: 'SUCCESS', path: '/_api/_/routes//topic-1/redirects' }),
+      })
+    }
+
+    test('shows RoutesTabForwardTo when view emits changePage "forward-to"', async () => {
+      setupForwardItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
+      expect(wrapper.findComponent(RoutesTabForwardTo).exists()).toBe(true)
+    })
+
+    test('patches current route with the selected redirect IRI', async () => {
+      setupForwardItemPage()
+      const updateResource = vi.fn().mockResolvedValue({})
+      mockCwa(() => ref(null), { updateResource })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
+      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('create', '/_api/_/routes//topic-1/chapter-one')
+      await flushPromises()
+      expect(updateResource).toHaveBeenCalledWith({
+        endpoint: '/_api/_/routes//topic-1',
+        data: { redirect: '/_api/_/routes//topic-1/chapter-one' },
+      })
+    })
+
+    test('returns to view screen after setting forward', async () => {
+      setupForwardItemPage()
+      mockCwa(() => ref(null), { updateResource: vi.fn().mockResolvedValue({}) })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
+      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('create', '/_api/_/routes//topic-1/chapter-one')
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
+    })
+
+    test('patches redirect to null when view emits remove-forward', async () => {
+      setupForwardItemPage('/_api/_/routes//topic-1/chapter-one')
+      const updateResource = vi.fn().mockResolvedValue({})
+      mockCwa(() => ref(null), { updateResource })
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('remove-forward')
+      await flushPromises()
+      expect(updateResource).toHaveBeenCalledWith({
+        endpoint: '/_api/_/routes//topic-1',
+        data: { redirect: null },
+      })
+    })
+
+    test('passes forwardToPath derived from resource.redirect IRI to RoutesTabView', () => {
+      setupForwardItemPage('/_api/_/routes//topic-1/chapter-one')
+      mockCwa()
+      const wrapper = mountTab()
+      expect(wrapper.findComponent(RoutesTabView).props('forwardToPath')).toBe('/topic-1/chapter-one')
+    })
+
+    test('passes undefined forwardToPath when resource has no redirect', () => {
+      setupForwardItemPage(null)
+      mockCwa()
+      const wrapper = mountTab()
+      expect(wrapper.findComponent(RoutesTabView).props('forwardToPath')).toBeUndefined()
+    })
+
+    test('passes currentRouteIri to RoutesTabForwardTo for self-redirect guard', async () => {
+      setupForwardItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
+      expect(wrapper.findComponent(RoutesTabForwardTo).props('currentRouteIri')).toBe('/_api/_/routes//topic-1')
+    })
+
+    test('passes initialIri from existing redirect to RoutesTabForwardTo', async () => {
+      setupForwardItemPage('/_api/_/routes//topic-1/chapter-one')
+      mockCwa()
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
+      expect(wrapper.findComponent(RoutesTabForwardTo).props('initialIri')).toBe('/_api/_/routes//topic-1/chapter-one')
     })
   })
 })

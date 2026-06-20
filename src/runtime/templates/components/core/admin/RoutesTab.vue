@@ -6,8 +6,10 @@
           :resource="resource"
           :is-loading="isLoadingRoute"
           :parent-has-no-route="parentHasNoRoute"
+          :forward-to-path="forwardToPath"
           @deleted="handleRedirectDeleted"
           @change-page="handleChangePage"
+          @remove-forward="handleRemoveForwardTo"
         />
         <div v-if="childRoutes.length">
           <span class="cwa:text-xs cwa:text-stone-400 cwa:uppercase cwa:tracking-wide">Child routes</span>
@@ -68,6 +70,15 @@
             @create="handleCreateRedirect"
           />
         </div>
+
+        <div v-if="currentScreen === 'forward-to'">
+          <RoutesTabForwardTo
+            :disable-buttons="disableButtons"
+            :current-route-iri="resource['@id']"
+            :initial-iri="resource.redirect || undefined"
+            @create="handleSetForwardTo"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -82,11 +93,12 @@ import { useCwa, navigateTo, useRoute } from '#imports'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
+import RoutesTabForwardTo from '#cwa/templates/components/core/admin/RoutesTabForwardTo.vue'
 import type { RouteHierarchyNodeData } from '#cwa/templates/components/core/admin/RouteHierarchyNode.vue'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
-export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
+export type RouteScreens = 'view' | 'manage-route' | 'create-redirect' | 'forward-to'
 
 const props = defineProps<{
   pageResource: CwaResource
@@ -119,6 +131,12 @@ const parentRoutePrefix = computed(() => {
   return routeIri.replace(/^.*\/_\/routes\//, '')
 })
 const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
+
+const forwardToPath = computed(() => {
+  const redirectIri = resource.value?.redirect
+  if (!redirectIri) return undefined
+  return redirectIri.replace(/^.*\/_\/routes\//, '')
+})
 
 const routeIriFromPage = computed(() => (props.pageResource.route))
 const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
@@ -257,6 +275,27 @@ async function handleRedirectDeleted() {
   await loadResource()
 }
 
+async function handleSetForwardTo(targetIri: string) {
+  submitting.value = true
+  await $cwa.resourcesManager.updateResource({
+    endpoint: resource.value?.['@id'],
+    data: { redirect: targetIri },
+  })
+  submitting.value = false
+  handleChangePage('view')
+  await loadResource()
+}
+
+async function handleRemoveForwardTo() {
+  submitting.value = true
+  await $cwa.resourcesManager.updateResource({
+    endpoint: resource.value?.['@id'],
+    data: { redirect: null },
+  })
+  submitting.value = false
+  await loadResource()
+}
+
 watch(routeIriFromPage, async () => {
   await loadResource()
 })
@@ -289,8 +328,8 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   },
   endpoint,
   iri: routeIriFromPage,
-  // exclude this field when updating the resource or creating
-  excludeFields: ['redirectedFrom'],
+  // exclude these fields — managed by their own dedicated flows
+  excludeFields: ['redirectedFrom', 'redirect'],
 })
 
 watch(resource, (res) => {

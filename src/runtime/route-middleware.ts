@@ -65,7 +65,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   const handleRouteRedirect = async (resource: CwaResource | undefined) => {
     // only check for the redirect path, we know the resource returned is the primary resource,
     // and we have requested to fetch a route, so will be a route resource.
-    if (resource?.redirectPath) {
+    if (resource?.redirectPath && !nuxtApp.$cwa.admin?.isEditing) {
       // we are not just returning the route to redirect to for client side, and that's all navigateTo does if processing middleware it true
       if (isClient && nuxtApp._processingMiddleware) {
         await waitForMiddleware()
