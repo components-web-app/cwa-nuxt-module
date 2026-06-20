@@ -2,6 +2,7 @@ import { computed, reactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import type CwaFetch from './fetcher/cwa-fetch'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
+import type { CwaResource } from '../resources/resource-utils'
 
 export interface ViewVars {
   full_name: string
@@ -50,12 +51,14 @@ function bracketToNested(flat: Record<string, any>): Record<string, any> {
     const parts = key.replace(/\]/g, '').split('[')
     let current = result
     for (let i = 0; i < parts.length - 1; i++) {
-      if (typeof current[parts[i]] !== 'object' || current[parts[i]] === null) {
-        current[parts[i]] = {}
+      const part = parts[i] as string
+      if (typeof current[part] !== 'object' || current[part] === null) {
+        current[part] = {}
       }
-      current = current[parts[i]]
+      current = current[part]
     }
-    current[parts[parts.length - 1]] = value
+    const lastPart = parts[parts.length - 1] as string
+    current[lastPart] = value
   }
   return result
 }
@@ -97,6 +100,30 @@ export default class Forms {
     return { ...this._fieldValues[iri] }
   }
 
+  private normalizeFormResponseId(resource: CwaResource): CwaResource {
+    const id = resource['@id']
+    const normalizedId = id.endsWith('/submit') ? id.slice(0, -'/submit'.length) : id
+    const normalized: CwaResource = normalizedId !== id ? { ...resource, '@id': normalizedId } : resource
+
+    // The 422/200 response from /submit may clear action/method in the root formView vars.
+    // Preserve them from the existing stored resource so subsequent submissions still go to the right URL.
+    const existingData = this.resourcesStore.current.byId[normalizedId]?.data
+    const existingVars = existingData?.formView?.vars
+    if (existingVars?.action || existingVars?.method) {
+      const responseVars = normalized.formView?.vars ?? {}
+      normalized.formView = {
+        ...normalized.formView,
+        vars: {
+          ...responseVars,
+          ...(existingVars.action && !responseVars.action ? { action: existingVars.action } : {}),
+          ...(existingVars.method && !responseVars.method ? { method: existingVars.method } : {}),
+        },
+      }
+    }
+
+    return normalized
+  }
+
   public async validateField(endpoint: string, body: Record<string, any>): Promise<void> {
     try {
       const response = await this.cwaFetch.fetch(endpoint, {
@@ -108,12 +135,12 @@ export default class Forms {
         body: bracketToNested(body),
       })
       if (response?.['@id']) {
-        this._resourcesStore.saveResource({ resource: response })
+        this._resourcesStore.saveResource({ resource: this.normalizeFormResponseId(response) })
       }
     }
     catch (e: any) {
       if (e?.data?.['@id'] && e.data?.['@type'] !== 'Error') {
-        this._resourcesStore.saveResource({ resource: e.data })
+        this._resourcesStore.saveResource({ resource: this.normalizeFormResponseId(e.data) })
       }
     }
   }
@@ -139,7 +166,7 @@ export default class Forms {
     }
     catch (e: any) {
       if (e?.data?.['@id']) {
-        this._resourcesStore.saveResource({ resource: e.data })
+        this._resourcesStore.saveResource({ resource: this.normalizeFormResponseId(e.data) })
         return { success: false, formErrors: e.data?.formView?.vars?.errors ?? [] }
       }
       return { success: false }

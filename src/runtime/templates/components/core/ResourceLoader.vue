@@ -71,6 +71,10 @@ const warningPlaceholder = computed((): string | undefined => {
     return `Resource '${props.iri}' has not been requested`
   }
   if (hasError.value && !hasSilentError.value) {
+    // SSR resources with no data are re-fetched on mount — suppress the transient error flash
+    if (resource.value?.apiState.ssr && resource.value?.data === undefined) {
+      return undefined
+    }
     const state = resource.value?.apiState as CwaResourceApiStateError
     const statusCode = state.error?.statusCode
     const statusMessage = state.error?.statusMessage

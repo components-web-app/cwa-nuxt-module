@@ -144,7 +144,7 @@ const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.val
 const disableButtons = computed(() => submitting.value || isUpdating.value)
 
 const submitting = ref(false)
-const currentScreen = ref<'view' | 'manage-route' | 'create-redirect'>('view')
+const currentScreen = ref<RouteScreens>('view')
 const childRoutes = ref<RouteHierarchyNodeData[]>([])
 
 function flattenRouteNodes(nodes: RouteHierarchyNodeData[], depth = 0): Array<RouteHierarchyNodeData & { depth: number }> {

@@ -3,6 +3,9 @@
 @layer theme, base, cwa, components, utilities;
 @layer theme {
   :root, :host {
+    --cwa-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+    --cwa-color-amber-400: oklch(82.8% 0.189 84.429);
     --cwa-color-yellow-500: oklch(79.5% 0.184 86.047);
     --cwa-color-blue-500: oklch(62.3% 0.214 259.815);
     --cwa-color-blue-600: #2563eb;
@@ -287,6 +290,9 @@
 }
 .cwa\:mb-2 {
   margin-bottom: calc(var(--cwa-spacing) * 2);
+}
+.cwa\:mb-3 {
+  margin-bottom: calc(var(--cwa-spacing) * 3);
 }
 .cwa\:mb-4 {
   margin-bottom: calc(var(--cwa-spacing) * 4);
@@ -1260,6 +1266,9 @@
 .cwa\:align-middle {
   vertical-align: middle;
 }
+.cwa\:font-mono {
+  font-family: var(--cwa-font-mono);
+}
 .cwa\:text-2xl {
   font-size: var(--cwa-text-2xl);
   line-height: var(--tw-leading, var(--cwa-text-2xl--line-height));
@@ -1333,6 +1342,9 @@
 }
 .cwa\:text-pretty {
   text-wrap: pretty;
+}
+.cwa\:text-amber-400 {
+  color: var(--cwa-color-amber-400);
 }
 .cwa\:text-blue-600 {
   color: var(--cwa-color-blue-600);
