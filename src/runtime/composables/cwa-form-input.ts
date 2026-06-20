@@ -52,11 +52,14 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
     hasBlurred.value = true
   }
 
+  const validating = ref(false)
+
   const result = {
     vars,
     value,
     errors,
     valid,
+    validating,
     displayErrors,
     onBlur,
     validate: async (extraData?: Record<string, any>): Promise<void> => {
@@ -64,7 +67,9 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
       const rootKey = fullName.includes('[') ? fullName.substring(0, fullName.indexOf('[')) : fullName
       const rootVars = $cwa.forms.getForm(iri.value).value?.[rootKey]?.vars
       if (!rootVars?.action || rootVars.method?.toUpperCase() !== 'PATCH') return
+      validating.value = true
       await $cwa.forms.validateField(rootVars.action, { [fullName]: value.value, ...extraData })
+      validating.value = false
     },
     onInput: null as unknown as () => void,
   }

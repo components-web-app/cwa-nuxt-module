@@ -70,6 +70,13 @@ const warningPlaceholder = computed((): string | undefined => {
   if (!resource.value) {
     return `Resource '${props.iri}' has not been requested`
   }
+  if (hasError.value && !hasSilentError.value) {
+    const state = resource.value?.apiState as CwaResourceApiStateError
+    const statusCode = state.error?.statusCode
+    const statusMessage = state.error?.statusMessage
+    const detail = statusCode ? `${statusCode}${statusMessage ? ` ${statusMessage}` : ''}` : 'Unknown error'
+    return `Error loading resource '${props.iri}': ${detail}`
+  }
   if (resourceUiComponent.value && !resolvedComponent.value) {
     return `The component '${resourceUiComponent.value}' for resource '${props.iri}' cannot be resolved`
   }

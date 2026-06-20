@@ -366,8 +366,31 @@ describe('ResourceLoader', () => {
           uiComponent: 'Mock',
         },
         apiState: {
+          status: CwaResourceApiStatuses.SUCCESS,
+        },
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should show error warning for non-silent (5xx) resource errors', () => {
+      const wrapper = createWrapper({
+        data: undefined,
+        apiState: {
           status: CwaResourceApiStatuses.ERROR,
-          error: {},
+          error: { statusCode: 500, statusMessage: 'Internal Server Error' },
+        },
+      })
+
+      expect(wrapper.element).toMatchSnapshot()
+    })
+
+    test('should NOT show error warning for silent (4xx) resource errors', () => {
+      const wrapper = createWrapper({
+        data: undefined,
+        apiState: {
+          status: CwaResourceApiStatuses.ERROR,
+          error: { statusCode: 404, statusMessage: 'Not Found' },
         },
       })
 

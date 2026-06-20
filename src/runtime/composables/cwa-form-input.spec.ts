@@ -285,6 +285,30 @@ describe('useCwaFormInput', () => {
       expect(mockValidateField).toHaveBeenCalledWith('/_/contact_requests', { 'contact_form[name]': 'Alice' })
     })
 
+    test('validating is true during validateField and false after', async () => {
+      let seenDuringCall = false
+      mockValidateField.mockImplementation(async () => {
+        seenDuringCall = true
+      })
+      const formData = makeFormData({ value: 'Alice' }, 'PATCH')
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate, validating } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(validating.value).toBe(false)
+      const validatePromise = validate()
+      expect(validating.value).toBe(true)
+      await validatePromise
+      expect(seenDuringCall).toBe(true)
+      expect(validating.value).toBe(false)
+    })
+
+    test('validating stays false when validate is a no-op (POST form)', async () => {
+      const formData = makeFormData({ value: 'Alice' }, 'POST')
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate, validating } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(validating.value).toBe(false)
+    })
+
     test('validate merges extraData into the body', async () => {
       const formData = makeFormData({ value: 'abc' }, 'PATCH')
       mockGetForm.mockReturnValue(computed(() => formData))
