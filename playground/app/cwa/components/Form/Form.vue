@@ -290,7 +290,7 @@ const developer = useCwaFormInput(iriRef, 'example_form[developer]')
 // Symfony: vars.value is always '1'; track the boolean state via vars.checked.
 const checkbox = useCwaFormInput(iriRef, 'example_form[randomCheckbox]')
 const isChecked = computed({
-  get: () => checkbox.vars.value?.checked ?? false,
+  get: () => !!checkbox.value.value,
   set: (v: boolean) => {
     checkbox.value.value = v ? '1' : ''
     checkbox.onInput()

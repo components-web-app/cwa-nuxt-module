@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import debounce from 'lodash-es/debounce'
 import { useCwa } from '#cwa/composables/cwa'
 
-export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) => {
+export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, opts?: { blurTrigger?: Ref<boolean> }) => {
   const $cwa = useCwa()
 
   const vars = computed(() => {
@@ -54,7 +54,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string) 
 
   const displayErrors = computed(
     () =>
-      hasBlurred.value
+      (opts?.blurTrigger !== undefined ? opts.blurTrigger.value : hasBlurred.value)
       || (hasPreviouslyBeenValid.value && valid.value === false)
       || $cwa.forms.isSubmitAttempted(iri.value ?? ''),
   )

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useCwaFormInput } from '#cwa/composables/cwa-form-input'
 
 const mockGetForm = vi.hoisted(() => vi.fn())
@@ -53,6 +53,7 @@ describe('useCwaFormInput', () => {
   beforeEach(() => {
     iri.value = '/_/form_components/123'
     vi.clearAllMocks()
+    mockIsSubmitAttempted.mockReturnValue(false)
   })
 
   describe('vars', () => {
@@ -243,6 +244,20 @@ describe('useCwaFormInput', () => {
       mockGetForm.mockReturnValue(computed(() => formData))
       mockIsSubmitAttempted.mockReturnValue(true)
       const { displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(displayErrors.value).toBe(true)
+    })
+  })
+
+  describe('blurTrigger option', () => {
+    test('uses blurTrigger instead of own hasBlurred when provided', async () => {
+      const formData = makeFormData({ errors: ['Required'], valid: false })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const blurTrigger = ref(false)
+      const { displayErrors, onBlur } = useCwaFormInput(iri, 'contact_form[name]', { blurTrigger })
+      onBlur()
+      expect(displayErrors.value).toBe(false)
+      blurTrigger.value = true
+      await nextTick()
       expect(displayErrors.value).toBe(true)
     })
   })
