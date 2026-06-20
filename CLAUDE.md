@@ -758,14 +758,30 @@ All open issues from [components-web-app/cwa-nuxt-module](https://github.com/com
 
 ### Features / Enhancements
 
-**[#188](https://github.com/components-web-app/cwa-nuxt-module/issues/188) — OG image defaults for CWA pages**
-Implement default Open Graph image templates so CWA pages have usable OG images without bespoke per-project setup.
-
 **[#172](https://github.com/components-web-app/cwa-nuxt-module/issues/172) — Form component sample + composables**
 A sample CWA form component and the composables needed to build forms are required as a documented starting point for consuming apps.
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
+
+---
+
+## Fixed: Default OG image via nuxt-og-image (#188)
+
+**Files:** `src/layer/components/og-image/CwaDefault.satori.vue` (new), `src/runtime/templates/cwa-page.vue`, `src/module.ts`
+
+`cwa-page.vue` calls `defineOgImage('CwaDefault', { title, description })` using the same `pageTitle` computed already used by `useHead` (leaf-first concatenation across depth groups for nested pages). The Satori template (`CwaDefault.satori.vue`) lives in the Nuxt layer at `src/layer/` so nuxt-og-image's layer scan picks it up automatically.
+
+**Type registration:** `addTypeTemplate` in `module.ts` augments `#og-image/components → OgImageComponents` with `CwaDefault`, making the type available in both the module's and consuming apps' type contexts (the module's own `.nuxt/` context doesn't include the layer, so auto-discovery alone is insufficient).
+
+**Override:** Consuming apps call `defineOgImage(...)` in their own page template component — same default key `"og"` replaces the module's call.
+
+**Testing:** `nuxt-og-image` exits without registering imports when `ssr: false` (the `@nuxt/test-utils` default). Setting `ogImage: { enabled: !process.env.VITEST }` in `playground/nuxt.config.ts` registers no-op mock imports instead, so `mockNuxtImport('defineOgImage')` works.
+
+**`nuxt-og-image` integration notes:**
+- Component files must use a renderer suffix: `.satori.vue`, `.takumi.vue`, or `.browser.vue`
+- `registerOgComponentDir(root)` looks for `root/og-image` (and other dirs) — registering the `og-image/` dir directly as a Nuxt component dir does NOT cause nuxt-og-image to scan it (it would look for `og-image/og-image` subdirectory). The layer approach is correct.
+- `installModule('nuxt-og-image')` in `module.ts` ensures it is registered for all consuming apps regardless of whether they list it in their own modules
 
 ---
 
