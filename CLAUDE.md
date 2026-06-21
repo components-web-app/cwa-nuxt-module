@@ -1241,6 +1241,17 @@ All steps follow TDD: propose test → agree → write test → write code.
 4. ✅ `useCwaFormCollection` — prototype cloning, entry add/remove
 5. ✅ Sample form component in playground (`playground/app/cwa/components/ExampleForm/ExampleForm.vue`) — all field types from `ExampleFormType` with Nuxt UI; sub-components `FormChildEntry.vue` + `FormTextEntry.vue` for collection entries
 
+**Bug fixes (2026-06-21):**
+
+- **Untouched fields showing as valid (green) after sibling validates**: Sending all field values in every validate PATCH (needed to prevent collection clearing — see below) causes the API to return `submitted: true, valid: true` for every constraint-free field, even ones the user never touched. Fix: `valid` is now gated on `hasBlurred || hasInteracted || isSubmitAttempted`. `hasInteracted` is set when `validate()` is called (i.e. the user has typed in this field). Sibling PATCH responses can no longer make an untouched field appear green.
+- **Collection entry children not validating on input**: New entries added via `addEntry()` had `vars.value` populated from `_localEntries` so `validate()` did not bail early. But `hasInteracted` being false meant `valid` always returned `null` after the first response, so no green check appeared. Fixed by the same `hasInteracted` gate — after the user types and the debounce fires, `validate()` sets `hasInteracted = true` so the subsequent API response is surfaced.
+
+**Known remaining concerns (2026-06-21):**
+
+- **`hasInteracted` gate + sibling response resetting store state**: If field A has `hasInteracted = true` and then field B validates (which sends all field values including A's), the API response includes A with potentially a different `submitted` state. The gate keeps the *display* correct (still shows A's last known valid state) but the store data for A could silently go stale. In practice, A's value IS always included in sibling PATCH bodies (via `getFieldValues`), so the API should return A's state correctly. Watch for regressions where A's visual state resets unexpectedly after B validates.
+- **Concurrent collection entry validation**: If two collection entries are edited in rapid succession (faster than the 300ms debounce), their PATCH responses could interleave. Each response overwrites the full formView in the store, potentially resetting the other entry's `submitted`/`valid` state. The `hasInteracted` gate keeps the visual state from flickering, but the underlying store data may be briefly inconsistent. The debounce makes this rare in practice.
+- **Per-request scoping as a future alternative**: A cleaner architecture would scope each validation response to the field that requested it — `validateField` returns the parsed formView, each `useCwaFormInput` stores its own field's `vars` locally, and the global store is only written for `action`/`method` preservation. This would eliminate all cross-field store pollution. Not worth the refactor now, but worth revisiting if the interleaving issue becomes a real problem.
+
 **Bug fixes (2026-06-20):**
 
 - **`addEntry()` always no-op**: `getForm()` was discarding `prototype` — it's a sibling of `vars` in the API response (`ApiFormView: { vars, children, prototype }`), not a key inside `vars`. `createFormViewObject` now copies `prototype` into the `FormView` entry. `useCwaFormCollection` reads from `formEntry.prototype` (not `vars.prototype`). Spec `makeCollectionFormData` was also wrong (had `prototype` inside `vars`) — now corrected.
