@@ -55,11 +55,11 @@ const statusMessages: Record<number, string> = {
 const is404 = statusCode === 404
 const isAuthError = [401, 403].includes(statusCode)
 const statusMessage = computed(() => {
-  if (_error.statusMessage) {
-    return _error.statusMessage
-  }
   if (statusMessages[statusCode]) {
     return statusMessages[statusCode]
+  }
+  if (_error.statusMessage) {
+    return _error.statusMessage
   }
   return 'Internal Server Error'
 })
