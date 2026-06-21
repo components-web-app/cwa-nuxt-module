@@ -157,21 +157,24 @@ describe('useCwaFormInput', () => {
     test('is null when vars.valid is null', () => {
       const formData = makeFormData({ valid: null, submitted: true })
       mockGetForm.mockReturnValue(computed(() => formData))
-      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      const { valid, onBlur } = useCwaFormInput(iri, 'contact_form[name]')
+      onBlur()
       expect(valid.value).toBeNull()
     })
 
     test('is true when vars.valid is true and submitted is true', () => {
       const formData = makeFormData({ valid: true, submitted: true })
       mockGetForm.mockReturnValue(computed(() => formData))
-      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      const { valid, onBlur } = useCwaFormInput(iri, 'contact_form[name]')
+      onBlur()
       expect(valid.value).toBe(true)
     })
 
     test('is false when vars.valid is false and submitted is true', () => {
       const formData = makeFormData({ valid: false, submitted: true })
       mockGetForm.mockReturnValue(computed(() => formData))
-      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      const { valid, onBlur } = useCwaFormInput(iri, 'contact_form[name]')
+      onBlur()
       expect(valid.value).toBe(false)
     })
 
@@ -192,11 +195,44 @@ describe('useCwaFormInput', () => {
     test('updates reactively when submitted transitions to true', async () => {
       const formData = makeFormData({ valid: null, submitted: false })
       mockGetForm.mockReturnValue(computed(() => formData))
-      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      const { valid, onBlur } = useCwaFormInput(iri, 'contact_form[name]')
+      onBlur()
       expect(valid.value).toBeNull()
       formData['contact_form[name]'].vars.submitted = true
       formData['contact_form[name]'].vars.valid = true
       await new Promise(r => setTimeout(r, 0))
+      expect(valid.value).toBe(true)
+    })
+
+    test('is null for untouched field even when API says submitted and valid', () => {
+      const formData = makeFormData({ valid: true, submitted: true, errors: [] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      // no blur, no validate(), no submit attempted — sibling validated and API marked this field valid
+      expect(valid.value).toBeNull()
+    })
+
+    test('returns true after blur when API says submitted and valid', () => {
+      const formData = makeFormData({ valid: true, submitted: true, errors: [] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { valid, onBlur } = useCwaFormInput(iri, 'contact_form[name]')
+      onBlur()
+      expect(valid.value).toBe(true)
+    })
+
+    test('returns true after submitAttempted even without blur', () => {
+      const formData = makeFormData({ valid: true, submitted: true, errors: [] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      mockIsSubmitAttempted.mockReturnValue(true)
+      const { valid } = useCwaFormInput(iri, 'contact_form[name]')
+      expect(valid.value).toBe(true)
+    })
+
+    test('returns true after validate() call without blur (fixes collection entry validation)', async () => {
+      const formData = makeFormData({ valid: true, submitted: true, errors: [] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { valid, validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
       expect(valid.value).toBe(true)
     })
   })
@@ -219,12 +255,16 @@ describe('useCwaFormInput', () => {
     })
 
     test('becomes true when field was previously valid then becomes invalid, without blur', async () => {
+      mockValidateField.mockResolvedValue(undefined)
       const formData = makeFormData({ valid: null, submitted: false })
       mockGetForm.mockReturnValue(computed(() => formData))
-      const { displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
+      const { displayErrors, validate } = useCwaFormInput(iri, 'contact_form[name]')
       expect(displayErrors.value).toBe(false)
 
-      // simulate API returning submitted:true + valid:true after first validation
+      // User typed in the field — triggers hasInteracted via validate()
+      await validate()
+
+      // simulate API returning submitted:true + valid:true
       formData['contact_form[name]'].vars.submitted = true
       formData['contact_form[name]'].vars.valid = true
       await new Promise(r => setTimeout(r, 0))

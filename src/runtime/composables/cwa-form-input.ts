@@ -40,14 +40,17 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
   })
 
   const errors = computed(() => vars.value?.errors ?? [])
-  const valid = computed<boolean | null>(() => {
-    if (!vars.value?.submitted) return null
-    return vars.value?.valid ?? null
-  })
 
   const hasBlurred = ref(false)
+  const hasInteracted = ref(false)
   const hasPreviouslyBeenValid = ref(false)
   const validating = ref(false)
+
+  const valid = computed<boolean | null>(() => {
+    if (!vars.value?.submitted) return null
+    if (!hasBlurred.value && !hasInteracted.value && !$cwa.forms.isSubmitAttempted(iri.value ?? '')) return null
+    return vars.value?.valid ?? null
+  })
 
   watch(valid, (v) => {
     if (v === true) hasPreviouslyBeenValid.value = true
@@ -76,6 +79,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
     onBlur,
     validate: async (extraData?: Record<string, any>): Promise<void> => {
       if (!iri.value || !vars.value) return
+      hasInteracted.value = true
       validating.value = true
       // Include all registered field values so the API sees the full form context and
       // returns validation state for all fields — prevents one field's response from
