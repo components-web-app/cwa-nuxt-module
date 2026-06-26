@@ -39,7 +39,7 @@ describe('useCwaLayout', () => {
   })
 
   test('layout returns current layout resource', () => {
-    mockLayoutResource.value = { data: { '@type': 'Layout', title: 'My Layout' } }
+    mockLayoutResource.value = { data: { '@type': 'Layout', 'title': 'My Layout' } }
     const { layout } = useCwaLayout()
     expect(layout.value).toEqual(mockLayoutResource.value)
   })
