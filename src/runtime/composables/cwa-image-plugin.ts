@@ -1,6 +1,7 @@
 import { computed, useTemplateRef } from 'vue'
+import type { ComputedRef } from 'vue'
 import type { HTMLImageElement } from 'happy-dom'
-import type { ImageOpsType } from '#cwa/composables/cwa-image'
+import type { ImageOpsType, MediaFile } from '#cwa/composables/cwa-image'
 import { useCwaImage } from '#cwa/composables/cwa-image'
 import type { CwaResourcePlugin } from './cwa-component'
 
@@ -11,13 +12,13 @@ export const withImage = (imageOps?: ImagePluginOps): CwaResourcePlugin<{
   displayMedia: ReturnType<typeof useCwaImage>['displayMedia']
   handleLoad: ReturnType<typeof useCwaImage>['handleLoad']
   loaded: ReturnType<typeof useCwaImage>['loaded']
-  mediaObjects: ReturnType<typeof computed>
+  mediaObjects: ComputedRef<Record<string, MediaFile[]>>
 }> => {
   return (ctx) => {
     const { iri, resource } = ctx
 
-    const mediaObjects = computed<Record<string, any> | undefined>(() => {
-      return resource.value?.data?._metadata?.mediaObjects
+    const mediaObjects = computed<Record<string, MediaFile[]>>(() => {
+      return resource.value?.data?._metadata?.mediaObjects ?? {}
     })
 
     const imageRef = imageOps?.imageRef || useTemplateRef<HTMLImageElement>('image')

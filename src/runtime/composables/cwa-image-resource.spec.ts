@@ -55,10 +55,10 @@ describe('useCwaImageResource', () => {
     expect(result.value).toEqual(mediaObjects)
   })
 
-  test('returns undefined mediaObjects when resource has no data', () => {
+  test('returns empty object mediaObjects when resource has no data', () => {
     mockGetResource.mockReturnValue(ref(undefined))
     const { mediaObjects } = useCwaImageResource(iri)
-    expect(mediaObjects.value).toBeUndefined()
+    expect(mediaObjects.value).toEqual({})
   })
 
   test('delegates contentUrl from useCwaImage', () => {

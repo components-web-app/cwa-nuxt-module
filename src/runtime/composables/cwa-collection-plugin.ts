@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -7,10 +8,10 @@ import { useQueryBoundModel } from '#imports'
 import type { CwaResourcePlugin } from './cwa-component'
 
 export const withCollection = (): CwaResourcePlugin<{
-  collectionItems: ReturnType<typeof computed<CwaResource[] | undefined>>
-  isLoadingCollection: ReturnType<typeof ref<boolean>>
-  pageModel: ReturnType<typeof ref<number>>
-  totalPages: ReturnType<typeof ref<number>>
+  collectionItems: ComputedRef<CwaResource[] | undefined>
+  isLoadingCollection: Ref<boolean>
+  pageModel: Ref<number>
+  totalPages: Ref<number>
   goToNextPage: () => void
   goToPreviousPage: () => void
   changePage: (page: number) => void

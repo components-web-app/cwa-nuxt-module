@@ -38,9 +38,9 @@ describe('withImage', () => {
     })
   })
 
-  test('returns undefined mediaObjects when resource has no data', () => {
+  test('returns empty object mediaObjects when resource has no data', () => {
     const { mediaObjects } = withImage()(makeCtx())
-    expect(mediaObjects.value).toBeUndefined()
+    expect(mediaObjects.value).toEqual({})
   })
 
   test('computes mediaObjects from resource._metadata', () => {
