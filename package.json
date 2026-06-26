@@ -29,8 +29,12 @@
       ]
     }
   },
+  "bin": {
+    "cwa": "./bin/cwa.mjs"
+  },
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
   "scripts": {
     "build": "pnpm run clean-dist && pnpm run copy-layer && nuxt-module-build build && pnpm run tailwind:main && pnpm run tailwind:base",
