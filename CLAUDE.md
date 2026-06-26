@@ -317,8 +317,8 @@ Plugin system via `useCwaComponent`. `useCwaResource` signature unchanged (BC sa
 **[#238](https://github.com/components-web-app/cwa-nuxt-module/issues/238) — DX: `useCwaComponent(props)` — single composable call** ✅ Complete
 `useCwaComponent(props, plugins?, ops?)` in `src/runtime/composables/cwa-component.ts`. Returns `resource` directly (no `getResource` two-step). Stretch goal (`defineCwaComponent()` Vite macro) remains future work.
 
-**[#237](https://github.com/components-web-app/cwa-nuxt-module/issues/237) — DX: `npx cwa make:component` cross-stack generator**
-Interactive CLI generating the Vue file with correct boilerplate and printing the `make:api-component` command for the API side.
+**[#237](https://github.com/components-web-app/cwa-nuxt-module/issues/237) — DX: `npx cwa make:component` cross-stack generator** ✅ Complete
+Interactive CLI at `bin/cwa.mjs` (published via `"bin": { "cwa": "./bin/cwa.mjs" }`). Prompts for name (PascalCase), type (basic/image/collection), and API behaviours (timestamped/publishable/uploadable). Writes `app/cwa/components/<Name>/<Name>.vue` with `useCwaComponent` boilerplate and prints the `php bin/console make:api-component` command. Pure template logic in `src/cli/templates.ts` is unit-tested at `src/cli/templates.spec.ts`.
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
