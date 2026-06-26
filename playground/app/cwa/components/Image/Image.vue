@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import type { IriProp } from '#cwa/composables/cwa-resource'
+import { useCwaComponent, withImage } from '#imports'
 
 const props = defineProps<IriProp>()
 const { exposeMeta, contentUrl, displayMedia, handleLoad, loaded } = useCwaComponent(props, [withImage({ imagineFilterName: 'thumbnail' })], {
