@@ -1,8 +1,9 @@
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import isEqual from 'lodash-es/isEqual'
-import { computed, getCurrentInstance, onMounted, watch } from 'vue'
+import { computed, getCurrentInstance, onMounted } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from './cwa'
+import { useCwaAutoClass } from './cwa-auto-class'
 import type { StyleOptions } from '#cwa/admin/manageable-resource'
 
 export type IriProp = {
@@ -66,35 +67,7 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     return $cwa.resources.getResource(iri.value)?.value?.data?.uiClassNames
   })
 
-  if (ops?.autoClass !== false) {
-    const activeSet: string[] = []
-
-    // classList.add/remove/contains require individual tokens — split space-separated entries
-    function tokenize(classes: string[]): string[] {
-      return classes.flatMap(c => c.split(/\s+/).filter(Boolean))
-    }
-
-    function applyClasses(newClasses: string[] | undefined) {
-      const el = instance?.proxy?.$el
-      if (!el || el.nodeType !== 1 || !el.isConnected) return
-      const tokens = tokenize(newClasses ?? [])
-      if (tokens.length > 0 && tokens.every((cls: string) => el.classList.contains(cls))) {
-        // All classes already present — user is managing them manually; stay passive
-        activeSet.length = 0
-        return
-      }
-      const toRemove = activeSet.filter((c: string) => !tokens.includes(c))
-      const toAdd = tokens.filter((c: string) => !el.classList.contains(c))
-      for (const cls of toRemove) el.classList.remove(cls)
-      for (const cls of toAdd) el.classList.add(cls)
-      activeSet.length = 0
-      activeSet.push(...tokens)
-    }
-
-    onMounted(() => applyClasses(uiClassNames.value))
-
-    watch(uiClassNames, newClasses => applyClasses(newClasses), { flush: 'post' })
-  }
+  useCwaAutoClass(uiClassNames, ops)
 
   const getCurrentStyleName = (resource: CwaResource) => {
     if (!uiStyles?.classes) return
