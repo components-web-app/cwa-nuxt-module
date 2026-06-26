@@ -217,6 +217,17 @@ describe('CWA resources composable', () => {
       expect(mockClassList.add).not.toHaveBeenCalled()
     })
 
+    test('splits space-separated class entries into individual tokens', () => {
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { $el: mockEl } } as any)
+      mockCwa.resources.getResource.mockReturnValue(ref({ data: { uiClassNames: ['text-xl font-bold', 'p-4'] } }))
+
+      useCwaResource(ref('mock-iri'))
+
+      expect(mockClassList.add).toHaveBeenCalledWith('text-xl')
+      expect(mockClassList.add).toHaveBeenCalledWith('font-bold')
+      expect(mockClassList.add).toHaveBeenCalledWith('p-4')
+    })
+
     test('returns uiClassNames computed', () => {
       mockCwa.resources.getResource.mockReturnValue(ref({ data: { uiClassNames: ['text-xl'] } }))
 

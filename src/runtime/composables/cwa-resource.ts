@@ -69,21 +69,26 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   if (ops?.autoClass !== false) {
     const activeSet: string[] = []
 
+    // classList.add/remove/contains require individual tokens — split space-separated entries
+    function tokenize(classes: string[]): string[] {
+      return classes.flatMap(c => c.split(/\s+/).filter(Boolean))
+    }
+
     function applyClasses(newClasses: string[] | undefined) {
       const el = instance?.proxy?.$el
       if (!el || el.nodeType !== 1 || !el.isConnected) return
-      const classes = newClasses ?? []
-      if (classes.length > 0 && classes.every((cls: string) => el.classList.contains(cls))) {
+      const tokens = tokenize(newClasses ?? [])
+      if (tokens.length > 0 && tokens.every((cls: string) => el.classList.contains(cls))) {
         // All classes already present — user is managing them manually; stay passive
         activeSet.length = 0
         return
       }
-      const toRemove = activeSet.filter((c: string) => !classes.includes(c))
-      const toAdd = classes.filter((c: string) => !el.classList.contains(c))
+      const toRemove = activeSet.filter((c: string) => !tokens.includes(c))
+      const toAdd = tokens.filter((c: string) => !el.classList.contains(c))
       for (const cls of toRemove) el.classList.remove(cls)
       for (const cls of toAdd) el.classList.add(cls)
       activeSet.length = 0
-      activeSet.push(...classes)
+      activeSet.push(...tokens)
     }
 
     onMounted(() => applyClasses(uiClassNames.value))
