@@ -305,20 +305,10 @@ The goal is a polished, consistent component kit for the admin UI with no third-
 
 ## Open GitHub Issues
 
-All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20.
+All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-26.
 
 **[#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236) — Feature: CWA Admin UI Component Kit**
 See `## Future: CWA Admin UI Component Kit` above.
-
-
-**[#239](https://github.com/components-web-app/cwa-nuxt-module/issues/239) — DX: `useCwaResource` extensible composable pipeline** ✅ Complete
-Plugin system via `useCwaComponent`. `useCwaResource` signature unchanged (BC safe). Built-in factories: `withCollection()` (`cwa-collection-plugin.ts`), `withImage(imageOps?)` (`cwa-image-plugin.ts`). Old composables deprecated. See `## Composable pipeline design` below.
-
-**[#238](https://github.com/components-web-app/cwa-nuxt-module/issues/238) — DX: `useCwaComponent(props)` — single composable call** ✅ Complete
-`useCwaComponent(props, plugins?, ops?)` in `src/runtime/composables/cwa-component.ts`. Returns `resource` directly (no `getResource` two-step). Stretch goal (`defineCwaComponent()` Vite macro) remains future work.
-
-**[#237](https://github.com/components-web-app/cwa-nuxt-module/issues/237) — DX: `npx cwa make:component` cross-stack generator** ✅ Complete
-Interactive CLI at `bin/cwa.mjs` (published via `"bin": { "cwa": "./bin/cwa.mjs" }`). Prompts for name (PascalCase), type (basic/image/collection), and API behaviours (timestamped/publishable/uploadable). Writes `app/cwa/components/<Name>/<Name>.vue` with `useCwaComponent` boilerplate and prints the `php bin/console make:api-component` command. Pure template logic in `src/cli/templates.ts` is unit-tested at `src/cli/templates.spec.ts`.
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
@@ -328,9 +318,6 @@ TipTap v3 dropped Tippy.js in favour of `@floating-ui/dom`; `tippyOptions` is si
 
 **[#242](https://github.com/components-web-app/cwa-nuxt-module/issues/242) — Test coverage: reach 70% statement coverage**
 Currently ~55.6% (2026-06-17). Target ~4,447 of 6,353 statements. High-ROI: `resources-manager.ts` (~33%), `resource-stack-manager.ts` (~60%), `html-content.ts` (0%), `useDataResolver.ts` (0%).
-
-**[#243](https://github.com/components-web-app/cwa-nuxt-module/issues/243) — Feature: auto-apply uiClassNames to component root element** ✅ Complete
-`useCwaResource` (and `useCwaComponent`) auto-applies `uiClassNames` to the root element. On mount and on change it checks whether all target classes are already present — if so, it stays passive (user is managing them manually via `:class`); otherwise it adds missing classes and removes ones it previously added. Uses `flush: 'post'` watcher so Vue's own `:class` updates land first. Opt out per component: `useCwaComponent(props, [], { autoClass: false })`. `uiClassNames` is now returned from both composables for manual placement (e.g. on an inner element).
 
 ---
 
