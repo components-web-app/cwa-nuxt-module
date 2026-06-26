@@ -13,9 +13,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCwa } from '#imports'
+import { useCwa, useCwaLayout } from '#imports'
 
 const $cwa = useCwa()
+useCwaLayout()
 
 const percent = computed(() => $cwa.resources.pageLoadProgress.value.percent || 3)
 const showPageLoadBar = computed(() => percent.value < 100)
