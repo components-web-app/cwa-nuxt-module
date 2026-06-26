@@ -26,7 +26,7 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
   ops?: CwaResourceUtilsOps,
 ) => {
   const iri = toRef(props, 'iri')
-  const { getResource, $cwa, exposeMeta, getCurrentStyleName } = useCwaResource(iri, ops)
+  const { getResource, $cwa, exposeMeta, getCurrentStyleName, uiClassNames } = useCwaResource(iri, ops)
   const resource = getResource()
 
   const ctx: CwaResourcePluginContext = { iri, resource, $cwa }
@@ -37,10 +37,11 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
     exposeMeta: typeof exposeMeta
     $cwa: typeof $cwa
     getCurrentStyleName: typeof getCurrentStyleName
+    uiClassNames: typeof uiClassNames
   }
 
   return Object.assign(
-    { resource, exposeMeta, $cwa, getCurrentStyleName } satisfies BaseReturn,
+    { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames } satisfies BaseReturn,
     ...pluginResults,
   ) as BaseReturn & PluginResults<P>
 }

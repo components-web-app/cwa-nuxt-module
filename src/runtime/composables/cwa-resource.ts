@@ -1,7 +1,7 @@
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import isEqual from 'lodash-es/isEqual'
-import { computed, getCurrentInstance, onMounted } from 'vue'
-import type { Ref } from 'vue'
+import { computed, getCurrentInstance, onMounted, watch } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from './cwa'
 import type { StyleOptions } from '#cwa/admin/manageable-resource'
 
@@ -12,9 +12,14 @@ export type IriProp = {
 export interface CwaResourceUtilsOps {
   name?: string
   styles?: StyleOptions
+  autoClass?: boolean
   manager?: {
     disabled?: boolean
   }
+}
+
+export interface CwaResourceUiClassNames {
+  uiClassNames: ComputedRef<string[] | undefined>
 }
 
 export interface CwaResourceMeta {
@@ -57,6 +62,35 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     return computed(() => $cwa.resources.getResource(iri.value).value)
   }
 
+  const uiClassNames = computed<string[] | undefined>(() => {
+    return $cwa.resources.getResource(iri.value)?.value?.data?.uiClassNames
+  })
+
+  if (ops?.autoClass !== false) {
+    const activeSet: string[] = []
+
+    function applyClasses(newClasses: string[] | undefined) {
+      const el = instance?.proxy?.$el
+      if (!el || el.nodeType !== 1 || !el.isConnected) return
+      const classes = newClasses ?? []
+      if (classes.length > 0 && classes.every((cls: string) => el.classList.contains(cls))) {
+        // All classes already present — user is managing them manually; stay passive
+        activeSet.length = 0
+        return
+      }
+      const toRemove = activeSet.filter((c: string) => !classes.includes(c))
+      const toAdd = classes.filter((c: string) => !el.classList.contains(c))
+      for (const cls of toRemove) el.classList.remove(cls)
+      for (const cls of toAdd) el.classList.add(cls)
+      activeSet.length = 0
+      activeSet.push(...classes)
+    }
+
+    onMounted(() => applyClasses(uiClassNames.value))
+
+    watch(uiClassNames, newClasses => applyClasses(newClasses), { flush: 'post' })
+  }
+
   const getCurrentStyleName = (resource: CwaResource) => {
     if (!uiStyles?.classes) return
     const currentClassNames = resource.uiClassNames
@@ -73,5 +107,6 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     getResource,
     exposeMeta,
     getCurrentStyleName,
+    uiClassNames,
   }
 }
