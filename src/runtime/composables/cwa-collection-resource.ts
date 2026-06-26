@@ -1,131 +1,19 @@
 import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import type { LocationQuery } from 'vue-router'
 import type { CwaResourceUtilsOps } from './cwa-resource'
-import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
-import { useCwa, useCwaResource, useQueryBoundModel } from '#imports'
-import type { CwaResource } from '#cwa/resources/resource-utils'
+import { useCwaResource } from './cwa-resource'
+import { withCollection } from './cwa-collection-plugin'
 
+/**
+ * @deprecated Use `useCwaComponent(props, [withCollection()])` instead.
+ */
 export const useCwaCollectionResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
   const cwaResource = useCwaResource(iri, ops)
   const resource = cwaResource.getResource()
-
-  const isLoadingCollection = ref(false)
-  const fetchedCollectionItems = ref<CwaResource[]>()
-  const loadCounter = ref(0)
-
-  const $cwa = useCwa()
-  const route = useRoute()
-  // const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
-  const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
-
-  const collectionItems = computed<CwaResource[] | undefined>(() => {
-    return fetchedCollectionItems.value || resource.value?.data?.collection?.['member']
-  })
-
-  const dataResourceIri = computed(() => {
-    return resource.value?.data?.resourceIri
-  })
-
-  const totalPages = ref(1)
-
-  function populateCollectionData(resource?: { collection?: { member: CwaResource[], view: { last: string } } } & CwaResource) {
-    if (resource?.collection?.['member']) {
-      fetchedCollectionItems.value = resource?.collection?.['member']
-      const lastPagePath = resource?.collection?.['view']?.['last']
-      if (!lastPagePath) {
-        totalPages.value = 1
-      }
-      else {
-        const urlParams = new URLSearchParams(lastPagePath.split('?')[1])
-        const pageQueryParam = urlParams.get('page')
-        totalPages.value = pageQueryParam ? (parseInt(pageQueryParam) || 1) : 1
-      }
-    }
-  }
-
-  async function reloadCollection() {
-    if (!dataResourceIri.value) {
-      return
-    }
-    const currentLoadCounter = ++loadCounter.value
-    isLoadingCollection.value = true
-
-    const { response } = $cwa.fetch({ path: iri.value })
-    const { _data: resource } = await response
-
-    if (currentLoadCounter === loadCounter.value) {
-      populateCollectionData(resource)
-      isLoadingCollection.value = false
-    }
-  }
-
-  function goToNextPage() {
-    if (pageModel.value >= totalPages.value) {
-      return
-    }
-    changePage(pageModel.value + 1)
-  }
-
-  function goToPreviousPage() {
-    if (!pageModel.value || pageModel.value <= 1) {
-      return
-    }
-    changePage(pageModel.value - 1)
-  }
-
-  function changePage(newPageNumber: number) {
-    pageModel.value = newPageNumber
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'smooth',
-    })
-  }
-
-  // so components can be loaded in background still for the component manager to get metadata
-  if (route) {
-    watch(() => route.query, async (newQuery, oldQuery) => {
-      const cleanPaginationFromQuery = (q: LocationQuery) => {
-        const cleanQuery = { ...q }
-        delete cleanQuery.perPage
-        delete cleanQuery.page
-        return cleanQuery
-      }
-      const cleanedOld = cleanPaginationFromQuery(oldQuery)
-      const cleanedNew = cleanPaginationFromQuery(newQuery)
-      if (JSON.stringify(cleanedOld) !== JSON.stringify(cleanedNew)) {
-        pageModel.value = 1
-      }
-
-      if (JSON.stringify(oldQuery) === JSON.stringify(newQuery)) {
-        return
-      }
-      await reloadCollection()
-    })
-  }
-
-  populateCollectionData(resource.value?.data)
-
-  watch(() => resource.value?.data, (newData) => {
-    if (newData) {
-      populateCollectionData(newData)
-    }
-  })
-
-  const { getResourceRoute } = useCwaResourceRoute()
+  const collection = withCollection()({ iri, resource, $cwa: cwaResource.$cwa })
 
   return {
     ...cwaResource,
     resource,
-    collectionItems,
-    isLoadingCollection,
-    pageModel,
-    totalPages,
-    goToNextPage,
-    goToPreviousPage,
-    changePage,
-    resolveResourceLink: getResourceRoute,
+    ...collection,
   }
 }

@@ -26,17 +26,12 @@ vi.mock('#cwa/composables/cwa-resource', () => ({
   useCwaResource: vi.fn(() => ({
     getResource: mockGetResource,
     exposeMeta: {},
+    $cwa: { fetch: mockFetch },
   })),
 }))
 
 vi.mock('#cwa/composables/useCwaResourceRoute', () => ({
   useCwaResourceRoute: vi.fn(() => ({ getResourceRoute: mockGetResourceRoute })),
-}))
-
-vi.mock('#cwa/composables/cwa', () => ({
-  useCwa: vi.fn(() => ({
-    fetch: mockFetch,
-  })),
 }))
 
 vi.mock('#cwa/composables/cwa-query-bound-model', () => ({

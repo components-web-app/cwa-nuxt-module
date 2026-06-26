@@ -32,14 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
-import { useCwaImageResource } from '#imports'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 
 const props = defineProps<IriProp>()
-const iri = toRef(props, 'iri')
-
-const { exposeMeta, contentUrl, displayMedia, handleLoad, loaded } = useCwaImageResource(iri, { imagineFilterName: 'thumbnail' }, {
+const { exposeMeta, contentUrl, displayMedia, handleLoad, loaded } = useCwaComponent(props, [withImage({ imagineFilterName: 'thumbnail' })], {
   styles: {
     classes: {
       'my style': ['text-xl'],

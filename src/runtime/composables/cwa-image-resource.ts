@@ -1,33 +1,22 @@
-import { type ImageOpsType, type MediaFile, useCwaImage } from '#cwa/composables/cwa-image'
-import type { HTMLImageElement } from 'happy-dom'
-import { useTemplateRef, computed } from 'vue'
 import type { Ref } from 'vue'
-import { useCwaResource } from './cwa-resource'
+import type { ImageOpsType } from '#cwa/composables/cwa-image'
 import type { CwaResourceUtilsOps } from './cwa-resource'
+import { useCwaResource } from './cwa-resource'
+import { withImage } from './cwa-image-plugin'
 
-export const useCwaImageResource = (iri: Ref<string>, imageOps?: Pick<Partial<ImageOpsType>, 'imageRef'> & Omit<ImageOpsType, 'mediaObjects' | 'imageRef'>, ops?: CwaResourceUtilsOps) => {
+type ImageOps = Pick<Partial<ImageOpsType>, 'imageRef'> & Omit<ImageOpsType, 'mediaObjects' | 'imageRef'>
+
+/**
+ * @deprecated Use `useCwaComponent(props, [withImage(imageOps)])` instead.
+ */
+export const useCwaImageResource = (iri: Ref<string>, imageOps?: ImageOps, ops?: CwaResourceUtilsOps) => {
   const cwaResource = useCwaResource(iri, ops)
   const resource = cwaResource.getResource()
-
-  const mediaObjects = computed<Record<string, MediaFile[]>>(() => {
-    return resource.value?.data?._metadata.mediaObjects
-  })
-  const imageRef = imageOps?.imageRef || useTemplateRef<HTMLImageElement>('image')
-
-  const {
-    contentUrl,
-    displayMedia,
-    handleLoad,
-    loaded,
-  } = useCwaImage(iri, { ...imageOps, imageRef, mediaObjects })
+  const image = withImage(imageOps)({ iri, resource, $cwa: cwaResource.$cwa })
 
   return {
     ...cwaResource,
-    contentUrl,
-    displayMedia,
-    handleLoad,
-    loaded,
     resource,
-    mediaObjects,
+    ...image,
   }
 }

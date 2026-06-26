@@ -182,19 +182,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ### Coverage progress
 
-**Target: 70% statement coverage** (6353 statements total, ~4447 needed).
-
-| Date | Stmt % | Notes |
-|------|--------|-------|
-| Baseline | ~42% | Before coverage push |
-| 2026-06-10 | 44.56% | actions.ts, resources.ts, storage.ts, cwa-resource-model.ts |
-| 2026-06-11 | 47.97% | cwa-select-input, cwa-collection-resource, cwa-image, cwa-image-resource, ComponentGroup.Util.Positions debounce, resource-stack-manager listenCurrentIri |
-| 2026-06-11 | 48.44% | resource-stack-manager isComponentGroupDisabled + filterDisabledStackItems (3rd constructor arg was missing from test factory) |
-| 2026-06-12 | 49.95% | resource-stack-manager completeStack/selectStackIndex/insertResourceStackItem/redrawFocus/removeFocusComponent; manageable-resource private getters; api-documentation getComponentMetadata; cwa.ts delegation methods; cwa-resource detached DOM + getCurrentStyleName; cwa-resource-manageable watcher/listener branches |
-| 2026-06-15 | 55.91% | resources-manager: deleteResource, doResourceRequest (errors/callbacks/fetchBatch/404 swallow), updateResource branches (FormData/headers/not-persisted/publish/forcePublishedVersion), getWaitForRequestPromise bug fix (reactive .value guard + wrong loop nesting), confirmDiscardAddingResource event-set paths, initAddResource, setAddResourceEventResource, addResourceAction (guard clauses/sort-value/componentPositions/publish/pageDataProperty/requestCompleteFn) |
-| 2026-06-15 | 56.46% | resource-stack-manager: currentIri forcePublishedVersion branches, resetStack(true), getClosestStackItemByType matching/non-matching, selectStackIndex (not-editing/empty/out-of-range/confirm-dialog confirmed+cancelled), listenEditModeChange _isEditingLayout reset, contextStack truthy/falsy lastContextTarget, isPopulating+isContextPopulating truthy cases |
-| 2026-06-16 | ~56.5% | ModalRadioTabs (new component, fully tested), useParentPageDataLoader (new composable, fully tested), PageAdminModal+PageDataAdminModal updated with tab-radio parent picker (Bug 1+2 fixes) |
-| 2026-06-17 | 55.58% | Steps 8+9 code added net new statements; fetcher/resources/CwaPage/cwa-page/RoutesTab/RoutesTabManage/PageAdminModal/PageDataAdminModal specs all present. Slight % drop from new code volume. |
+**Target: 70% statement coverage** (6353 statements total, ~4447 needed). Last recorded: **~55.6%** (2026-06-17, after nested sub-pages Steps 8–9).
 
 **Key patterns established:**
 - `vi.mock('#imports')` does NOT intercept compiled SFC auto-imports — use `mockNuxtImport('fnName', () => impl)` from `@nuxt/test-utils/runtime` instead. Also mock `useError` and `useRoute` when testing `useHead` title logic to prevent happy-dom localStorage errors polluting `useError()`.
@@ -212,501 +200,67 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 - `html-content.ts` (0%) — ~77 lines, creates Vue apps dynamically (hard to unit test)
 - `useDataResolver.ts` (0%) — ~121 lines, uses Vue internals (hard to unit test)
 
-## Planned Feature: Nested Sub-Pages
+---
 
-> **Status: All steps complete (1–9). Nested sub-pages feature done.**
-> Companion plan: see `## Feature: Nested Sub-Pages` in the API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
+## Nested Sub-Pages
 
-### What we want
+> **Status: Complete.** All steps done including RoutesTabManage prefix/suffix redesign, cascade child paths, outbound forward UI, and auto-fallback `<CwaPage />`.
+> Companion plan: API Components Bundle CLAUDE.md (`/Users/danielwest/Documents/GitHub/_CWA/api-components-bundle/CLAUDE.md`).
 
-Pages support sub-pages. A conference page renders a tab bar and a child-page slot; child pages fill that slot. Structure is admin-manageable and reusable across projects. Rendering depth is driven by data (the manifest's `resource_iris` depth groups), not URL structure.
+### How the API models hierarchy
 
-### How the API models it
-
-`AbstractPage` (base of both `Page` and `AbstractPageData`) has two fields for hierarchy:
+`AbstractPage` (base of both `Page` and `AbstractPageData`) has:
 
 - `parentPage: ?Page` — parent is a `Page` entity (mutually exclusive with `parentPageData`)
-- `parentPageData: ?AbstractPageData` — parent is any `AbstractPageData` subclass (mutually exclusive with `parentPage`)
+- `parentPageData: ?AbstractPageData` — parent is any `AbstractPageData` subclass
 
-**There is no `nested` boolean.** Having a parent means the page is nested inside it — the relationship itself is the signal.
+**There is no `nested` boolean.** Having a parent IS the signal. Both fields are in `Route:manifest:read`.
 
-Both fields carry `#[Groups(['Route:manifest:read'])]`, as does the `route` back-reference on `AbstractPage`. `ResourceManifestNormalizer` walks the normalised structure and emits `resource_iris` as a **`string[][]`** grouped by depth: index 0 = root/shallowest resources, last index = the requested page's resources. The `parentPage`/`parentPageData` fields are the depth boundaries. All IRIs across all groups are fetched in parallel.
+### Manifest format
 
-**Exact manifest response for a nested PageData route** (`GET /_/resource_manifest//conference/programme`):
+`GET /_/resource_manifest/{id}` returns `{ "resource_iris": string[][] }` — index = rendering depth, root first:
+
 ```json
 {
   "resource_iris": [
-    ["/_/routes//conference", "/_/abstract_page_data/parent-uuid", "/_/pages/parent-template-uuid"],
-    ["/_/routes//conference/programme", "/_/abstract_page_data/child-uuid", "/_/pages/child-template-uuid"]
+    ["/_/routes//conference", "/_/page_data/parent-uuid", "/_/pages/parent-template-uuid", "/_/component_groups/cg-uuid"],
+    ["/_/routes//conference/programme", "/_/page_data/child-uuid", "/_/pages/child-template-uuid"]
   ]
 }
 ```
 
-For a flat (non-nested) page, `resource_iris` always has one inner array: `[["/_/routes//my-route", ...]]`.
-
-`parentPage` and `parentPageData` are also exposed on every individual resource GET response (not just the manifest), so the admin/draft path can walk the chain IRI-by-IRI without a manifest.
-
-### Manifest depth group anatomy
-
-Each inner array (`resource_iris[depth]`) is a flat list of all IRIs that belong to that rendering depth. A real group with a page template and one component group looks like:
-
-```
-[
-  "/_/routes//conference",           ← ROUTE
-  "/_/page_data/xxx/parent-uuid",    ← PAGE_DATA (content entity — title, custom fields)
-  "/_/pages/conference-template-uuid", ← PAGE (template — uiComponent, layout IRI, componentGroup IRIs)
-  "/_/component_groups/cg-uuid",     ← COMPONENT_GROUP
-  "/_/component_positions/pos-uuid"  ← COMPONENT_POSITION (sortValue, resolved component IRI or null)
-]
-```
-
-**What each IRI type carries when fetched:**
-
-| IRI prefix | Entity | Key fields returned |
-|---|---|---|
-| `/_/routes/` | Route | `page` IRI OR `pageData` IRI (one of, not both) |
-| `/_/page_data/` | PageData | All content fields (title, custom fields etc.) + `page` template IRI |
-| `/_/pages/` | Page | `uiComponent`, `layout` IRI, `componentGroups` array of IRIs |
-| `/_/component_groups/` | ComponentGroup | `componentPositions` (embedded objects with `component` IRI + `sortValue`) |
-| `/_/component_positions/` | ComponentPosition | `component` IRI (resolved, see below), `sortValue` |
-
-**How to identify the Page template vs the PageData in a depth group:**
-
-The Route entity is the authoritative link. When you fetch the Route IRI from a depth group, the response includes either `page: "/_/pages/..."` (for Page-based routes) or `pageData: "/_/page_data/..."` (for PageData-based routes). This is how the module should determine the content entity for each depth:
-
-- `route.page` is non-null → this is a Page-based depth; the Page entity is both the template and the content
-- `route.pageData` is non-null → this is a PageData-based depth; the PageData entity is the content; the Page template IRI comes from `pageData.page`
-
-Alternatively, identify by resource type:
-- First IRI in the group matching `PAGE_DATA` resource type (`/page_data/` prefix) → content entity
-- First IRI in the group matching `PAGE` resource type (`/_/pages/` prefix) → rendering template
-
-**~~Bug: `pageIriAtDepth` surfaces only the Page template, not the PageData~~ — FIXED**
-
-`pageDataIriAtDepth(depth)` added to `resources.ts` (parallel to `pageIriAtDepth`). `CwaPage.vue` now provides `'cwa-page-data-iri'` as a `ComputedRef<string | undefined>` at each depth. Template authors inject it to read PageData fields directly (title, dates, etc.) via `useCwaResource(pageDataIri)`. Returns `undefined` for Page-backed depths (no PageData in the depth group).
-
-### Component data: how the API populates positions
-
-The manifest is a rich prefetch list — not just Route/PageData/Page IRIs. Because `Page.componentGroups`, `ComponentGroup.componentPositions`, and `ComponentPosition.component` are all in `Route:manifest:read`, the manifest already contains:
-
-- **ComponentGroup IRIs** (from `page.componentGroups`)
-- **ComponentPosition IRIs** (embedded within each ComponentGroup in the normalized output)
-- **Static component IRIs** (from `position.component`, for positions with a direct component reference)
-
-**What the manifest cannot include**: component IRIs for `pageDataProperty` positions. The API's `ComponentPositionNormalizer` resolves `pageDataProperty` using a `path` HTTP request header. During manifest generation that header is absent, so those positions remain `component: null` in the manifest output.
-
-**The fetch model is one primary parallel batch with a small rolling follow-up:**
-
-1. **Fetch the manifest** → get `resource_iris[depth]` arrays (includes CG, CP, and static component IRIs)
-2. **Fetch ALL manifest IRIs in one parallel batch** — when CG requests are sent with the `path` header, `ComponentPositionNormalizer` resolves `pageDataProperty` slots server-side and returns the actual component IRIs in the CG response body
-3. **De-dupe and follow-up** — component IRIs returned from CG responses that are not already in-flight get queued immediately. Static component IRIs are already being fetched (they were in the manifest). `pageDataProperty` component IRIs are the only additions. De-duplication means no double requests.
-
-The total serial depth is: **manifest → parallel batch (everything) → tiny parallel follow-up (pageDataProperty component IRIs only)**. In practice the follow-up fires as the first CG responses arrive, so it is effectively a single rolling parallel fetch.
-
-**`pageDataProperty` resolution is server-side, not the module's responsibility.**
-
-`ComponentPosition` has two modes:
-- `component` set directly → static component; IRI is already in the manifest; fetched in the initial batch
-- `pageDataProperty = 'heroImage'` → dynamic slot; API's `ComponentPositionNormalizer` intercepts normalization, reads `pageData->heroImage` via the `path` header, substitutes the real component IRI into `position.component`
-
-**From the module's perspective, every ComponentPosition response always has a `component` IRI (or null if no component is configured) — `pageDataProperty` is never visible on the public path.** No client-side resolution needed.
-
-For admin users, `pageDataProperty` is exposed via `ComponentPosition:read:role_admin` for the admin UI.
-
-### Route lifecycle (critical context)
-
-Routes are the **publication mechanism**. A `PageData` entity exists and is editable in the admin before it has a `Route`. The parent/child relationship is set on `PageData` during drafting — before either page has a public URL. This is why hierarchy lives on `AbstractPage`, not `Route`.
-
-### Planned discussion: nested page route UI/UX
-
-> **Status: investigated, needs design decision before implementation.**
-
-#### How the API works (established facts)
-
-**Route entity** (`Route.php`): a standalone entity with `path` (full URL path, unique), `name` (unique slug), `redirect` (→ another Route), `redirectedFrom` (collection of redirecting routes), `page` or `pageData` (one-to-one to the content entity). Routes are a separate resource — not embedded on Page/PageData.
-
-**Two ways to create/set a route:**
-1. `POST /_/routes` — manual: submit `{ path, name, page|pageData }`. The module submits `name = path` automatically (see `RoutesTab.vue` `validate()` hook). The full path is always stored — there is no "suffix" field.
-2. `POST /_/routes/generate` — auto-generate: submit `{ page|pageData }`. The API's `RouteGenerator.create()` slugifies the title, then checks `page.getParentPageRoute()` and **prepends the parent's path** as a prefix. So for a child under `/conference`, the generated path is `/conference/chapter-title`. This endpoint is the only one that applies the prefix automatically.
-
-**Update via PATCH/PUT** — `RouteEventListener.onPostWrite()` fires and if the path changed, automatically creates a redirect from the old path to the new one. This is transparent to the module.
-
-**No cascade on parent route change** — if the parent's path changes from `/conference` to `/summit`, child routes (e.g. `/conference/programme`) are NOT automatically updated. However, child routes do **not** break functionally: the manifest is assembled by walking the `parentPage`/`parentPageData` entity chain, not URL structure. Navigating to `/conference/programme` still produces the correct manifest (`irisByDepth[0]` = `/summit` parent resources, `irisByDepth[1]` = `/programme` child resources) and renders correctly. The only impact is URL-convention/SEO: the child's URL prefix no longer matches the parent's canonical path. Tab-bar links stored as hard-coded route paths (rather than resolved from route entities) would also point to stale sibling paths.
-
-**Draft state** — a child page can exist with no route. `getParentPageRoute()` returns null when the parent also has no route. `RouteGenerator` then generates just the slug with no prefix.
-
----
-
-#### What the current module UI does
-
-**`RoutesTab.vue`** (inside Page/PageData modal, "Routes" tab):
-- Reads `parentPage || parentPageData` from the page resource → looks up parent resource in store → reads `data.route` (the route IRI, e.g. `/_/routes//conference`) → strips `/_/routes/` to get the path → shows as static text "Route prefix: /conference"
-- This is purely informational. It is visible on the *view* screen only.
-- Three screens: `view` (shows current path + Edit button + redirects tree), `manage-route` (edit form), `create-redirect`.
-
-**`RoutesTabManage.vue`** (the edit form):
-- A single full-path text input bound to `localResourceData.path` — e.g. the user must type `/conference/programme` in full.
-- "SEO recommendation" = `'/' + slugify(title.toLowerCase())` — **this does NOT include the parent prefix**. For a nested page the recommendation shows just `/programme` instead of `/conference/programme`. The "Apply" button calls `handleGenerateRoute` which posts to `/routes/generate` — the API correctly adds the prefix server-side, so the *apply* flow is right but the *display* is wrong/misleading.
-- No parent prefix is shown in the edit form.
-
-**`RoutesTabView.vue`** (the view screen):
-- Shows the route path via `ModalInfo`.
-- Shows a redirects tree (`RouteRedirectsTree`).
-- "Create New Route" button (when no route) or "Edit" button (when route exists).
-
-**Standalone routes admin page** (`_cwa/routes.vue`):
-- Flat list of all routes, ordered by date/path.
-- Each row shows the path + the associated page/pageData reference + link to that page's admin modal.
-- No hierarchy — doesn't show parent/child relationships.
-
----
-
-#### Design decisions (resolved)
-
-1. **Edit form uses an input group: editable prefix + editable suffix.** The `manage-route` screen shows the parent's current route path as a pre-filled prefix field alongside a suffix text input. The prefix defaults to the parent's route path (e.g. `/conference`) to encourage correct URL structure, but the user can change it — including clearing it to `/` to intentionally break from the hierarchy convention. The module assembles the full path (`prefix + suffix`) before saving. This guides toward the right structure without enforcing it.
-
-2. **SEO recommendation encourages proper URL structure.** The recommended suffix is the slugified page/pageData title (e.g. `/programme`). The full recommended path (`/conference/programme`) is shown as a preview assembled from the current prefix + recommended suffix. "Apply SEO" still calls `POST /_/routes/generate` — the API handles redirect creation and other side effects that a local computation would miss.
-
-3. **Cascade child path updates via a new API contract.** Two flows trigger this:
-
-   **Manual path edit (primary flow):** When saving a changed path via `PATCH /_/routes/{id}`, the module checks whether the parent page has any child routes before saving. If yes, it asks: "Update child routes to use the new prefix? (children using a different prefix will be unchanged)." If confirmed, includes `cascadeChildPaths: true` in the PATCH body. The API applies the prefix substitution and creates redirects for all affected children within the same transaction.
-
-   **"Apply SEO" on a parent with existing children (secondary flow):** `POST /_/routes/generate` returns the newly generated path. The module compares it against the old path. If the path changed AND the parent has child routes, it offers a follow-up confirmation and issues a second `PATCH /_/routes/{id}` with `cascadeChildPaths: true` (the path is now the new value, old path passed as context — see API contract detail). This keeps the generate endpoint simple; cascade is always a `PATCH` concern.
-
-   In both cases the API finds all pages/pageData whose chain leads to this route's page, identifies their routes that currently use the old path as a prefix, replaces the prefix, and creates redirects from old → new paths. Children using a different prefix are untouched. See API bundle CLAUDE.md for the required implementation detail.
-
-4. **No route, no child routes — disabled by security.** If a parent page has no route, its resources are protected by the security layer (resources without a route are not publicly accessible). A child route pointing into an unreachable parent is therefore broken for public users, not just inconvenient. Child route creation and editing is **disabled** in the UI when the parent has no route, with explanation: "Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first." An existing child route from before the parent's route was removed stays in the database but shows as inactive with the same reason.
-
----
-
-#### Questions for the design discussion
-
-(All resolved above. No open questions remain on the route UI design.)
-
-### Rendering: `<CwaPage />`
-
-Nested page rendering uses a single mechanism for all access contexts: `<CwaPage />`, which is data-driven, not URL-depth-driven.
-
-**For public routes:** `cwa-page.vue` reads the manifest's `resource_iris` depth groups. Index 0 = root page resources, last index = the requested page's resources. `<CwaPage />` renders the stack from root to leaf. Keepalive is managed by the component — if depth-0 resources are unchanged on navigation, the parent layer is preserved without re-render.
-
-**For admin/draft access:** A nested page in draft has no public Route. `cwa-page.vue` is accessed via the entity IRI directly. `GET /_/resource_manifest/{uuid}` returns the same `resource_iris: string[][]` structure for any `Page` or `AbstractPageData` UUID, collapsing 4+ serial round trips into one parallel batch. The `parentPage`/`parentPageData` chain walk is a fallback only.
-
-There is no URL-segment-depth dependency. The URL can be anything; depth is always derived from data.
-
----
-
-### Display switching — two gates (critical context for Steps 1 and 3)
-
-There are two independent mechanisms that control when the displayed page changes during navigation. Both must be understood before touching Step 3.
-
-**Gate 1 — `isFetchResolving` (manifest completion check, `getter-utils.ts:34`)**
-
-```ts
-return !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
-```
-
-Currently checks `resources === undefined` — type-agnostic gate that holds open until `finishManifestFetch` is called (which sets `resources`). **In Step 4 this will be replaced with a `fetchComplete` boolean** — the `resources` field will be renamed `irisByDepth` and set *before* the batch starts (when the manifest HTTP response arrives), so it can no longer double as a "batch complete" signal. The gate becomes `!manifest.fetchComplete`.
-
-**Gate 2 — `displayFetchStatus` early-switch (`resources.ts:74`)**
-
-```ts
-const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
-if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
-  const pageResource = this.getResource(pageIri).value
-  if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-    return fetchingStatus  // switch display NOW, before manifest batch completes
-  }
-}
-```
-
-An early-switch optimisation: if the target page is already in the store (previously visited), switch the display immediately without waiting for the full manifest fetch to complete. The cached data shows instantly; any updated data replaces it as responses arrive.
-
-Currently `getPageIriByFetchStatus` derives the page IRI from `fetchStatus.path` — always the **leaf/child** page. For non-nested pages that is the only page, so it works correctly.
-
-**The nested page problem with the current early-switch:**
-
-For a nested page at `/conference/programme`, `fetchStatus.path` = the child route. The early-switch checks the **child** IRI against `currentIds`. This creates three navigation scenarios:
-
-| Scenario | Early-switch behaviour | Correct? |
-|---|---|---|
-| First visit to `/conference/programme` | Child not in `currentIds` — no early-switch, wait for Gate 1 | Yes |
-| Return to `/conference/programme` (same URL) | Child in `currentIds`, parent also cached from prior visit — switches immediately | Yes |
-| `/conference/programme` → `/conference/speakers` (sibling nav) | `/speakers` child not in `currentIds` — no early-switch, wait for all resources including parent | Sub-optimal — parent is cached and could render immediately |
-
-For sibling navigation (third case), the parent frame is already in the store but the current logic won't early-switch because it only checks the child IRI. The user sits waiting for all resources when the parent frame could have rendered immediately.
-
-**Required fix (Step 5):** `displayFetchStatus` must become depth-aware. When a manifest with multiple depth groups is present, check the **depth-0 (root/parent)** page IRI against `currentIds` instead of the leaf. If the root is cached, switch display immediately — child data loads progressively and replaces cached data when fetched. This collapses all three scenarios into correct behaviour:
-
-- First visit: depth-0 not in `currentIds` → wait for Gate 1 (all resources loaded)
-- Return visit / same-page refresh: depth-0 in `currentIds` → switch immediately, refreshed data replaces stale data as it arrives
-- Sibling nav: depth-0 (shared parent) in `currentIds` → parent frame renders immediately, child slot fills progressively
-
-The depth-0 page IRI comes from `manifest.irisByDepth[0]` (available as soon as the manifest HTTP response arrives, before the batch fetch completes — set by the new early action in Step 4). For flat pages `irisByDepth` has one inner array; the logic is identical.
-
----
-
-### What already exists in this module (relevant files)
-
-- **`src/runtime/api/fetcher/fetcher.ts`** — Steps 1–4 complete. `fetchManifest()` calls `setManifestIrisByDepth` before `fetchBatch`; `finishManifestFetch` just sets `fetchComplete = true`. PAGE/PAGE_DATA IRIs get `manifestPath = /_/resource_manifest/{uuid}`.
-- **`src/runtime/api/fetcher/fetch-status-manager.ts`** — delegates `setManifestIrisByDepth` to the store.
-- **`src/runtime/storage/stores/fetcher/state.ts`** — `FetchManifestInterface` has `irisByDepth?: string[][]` and `fetchComplete?: true`. Steps 1–4 complete.
-- **`src/runtime/storage/stores/fetcher/actions.ts`** — `setManifestIrisByDepth` sets `irisByDepth` pre-batch; `finishManifestFetch` sets `fetchComplete = true`. Steps 1–4 complete.
-- **`src/runtime/storage/stores/fetcher/getter-utils.ts`** — `isFetchResolving` checks `!manifest.fetchComplete`. Step 4 complete.
-- **`src/runtime/resources/resource-utils.ts`** — `resourceTypeToAssociatedResourceProperties`: `PAGE` and `PAGE_DATA` include `parentPage`/`parentPageData`. Step 2 complete.
-- **`src/runtime/resources/resources.ts`** — `pageIriAtDepth(depth)` returns the PAGE IRI at the given render depth from `irisByDepth[depth]`; falls back to `getPageIriByFetchStatus` for depth 0 when no manifest. `displayFetchStatus` early-switch uses depth-0 IRI from `irisByDepth[0]` (or leaf fallback). Steps 1–5 complete.
-- **`src/runtime/templates/cwa-page.vue`** — provides `'cwa-page-depth' = 0`, renders `<CwaPage />`. Step 6 complete.
-- **`src/runtime/templates/components/main/CwaPage.vue`** — injects `'cwa-page-depth'` (default 0), renders `pageIriAtDepth(depth)` via `ResourceLoader`, provides `depth + 1`. Step 6 complete.
-
-### Planned changes (Nuxt module)
-
-**Step 1 — Adapt manifest consumption to `resource_iris: string[][]`** ✅ DONE
-
-Files changed: `fetcher.ts`, `state.ts`, `actions.ts`.
-
-`resource_iris` is now `string[][]`. Changes:
-- `FetchManifestInterface.resources` → `string[][]` (was `string[]`)
-- `ManifestSuccessFetchEvent.resources` → `string[][]`
-- `fetchManifest()` uses `.flat()` to produce `string[]` for `fetchBatch`; passes full `string[][]` to `finishManifestFetch`
-
-Behaviour is identical to before for flat pages (`[[...]]`). Multi-depth groups are all fetched in parallel (flattened) and the full 2D array is stored for later depth-aware use.
-
-**Step 2 — Add `parentPage`/`parentPageData` to associated resource properties** ✅ DONE
-
-Files changed: `resource-utils.ts`, `fetcher.ts`, `getters.ts`.
-
-- Renamed `resourceTypeToNestedResourceProperties` → `resourceTypeToAssociatedResourceProperties` (also `TypeToNestedPropertiesMap` → `TypeToAssociatedPropertiesMap`) — map covers all associated resources to pre-fetch, not just downward children
-- Renamed `fetchNestedResources` → `fetchAssociatedResources` throughout
-- Added `'parentPage'` and `'parentPageData'` to `PAGE` and `PAGE_DATA` entries — fetcher now follows the parent chain for admin/draft access
-- Exported `parentResourceProperties` constant from `resource-utils.ts`
-- In `getChildIris` (`getters.ts`), skip `parentResourceProperties` entries — parent pages are independent admin roots, not children of the child page
-
-**Step 3 — API bundle: unified `/_/resource_manifest/{id}` endpoint** ✅ DONE *(API work)*
-
-`GET /_/resource_manifest/{id}` is now live. The `{id}` segment is matched with `requirements: ['id' => '(.+)']` to capture the full string including slashes.
-
-- **`{id}` starts with `/`** → resolved as a Route path (same as the previous `routes_manifest` endpoint)
-- **`{id}` is a UUID** → resolved as a `Page` or `AbstractPageData` entity (new; admin/draft access)
-- **Security**: delegates to `RouteVoter::READ_ROUTE` for routes; `AbstractRoutableVoter::READ_ROUTABLE` for page entities. Public pages are accessible without auth; draft/unpublished entities require admin.
-- **Response**: `{ "resource_iris": string[][] }` — same format in both cases
-
-The fetcher already uses `/_/resource_manifest/${route.path}` for public navigation. The next module-side task (Step 4+) is to call `/_/resource_manifest/${uuid}` for admin/draft access and wire `manifestPath` accordingly.
-
-**Step 4 — Fetch state: `irisByDepth` + `fetchComplete` + per-depth resolution tracking** ✅ DONE
-
-Files changed: `state.ts`, `actions.ts`, `getter-utils.ts`, `fetcher.ts`, `fetch-status-manager.ts`.
-
-**State changes (`FetchManifestInterface`):**
-```ts
-interface FetchManifestInterface {
-  path: string
-  irisByDepth?: string[][]  // set when manifest HTTP response arrives — before batch starts
-  fetchComplete?: true       // set when batch completes — gates isFetchResolving
-  error?: CwaResourceErrorObject
-}
-```
-
-- `resources` renamed to `irisByDepth` — set by a new `setManifestIrisByDepth` action called immediately when the manifest HTTP response arrives, *before* `fetchBatch` is called
-- `fetchComplete` replaces the `resources === undefined` gate in `isFetchResolving` — the gate becomes `!manifest.fetchComplete`
-- `ManifestSuccessFetchEvent` drops `resources` payload; `finishManifestFetch` just sets `fetchComplete = true`
-- `fetcher.ts`: after `resources = response._data?.resource_iris || []`, immediately call `setManifestIrisByDepth({ token, irisByDepth: resources })`, then `fetchBatch`, then `finishManifestFetch`
-
-**Per-depth resolution** — computed reactively in `resources.ts` from `irisByDepth[n]` vs store state. No extra state field needed. A depth group is "resolved" when every IRI in `irisByDepth[n]` has a non-IN_PROGRESS status in the resources store (or was absent from the store and has since loaded). This drives the early-switch minimum-resources check.
-
-**Early-switch (`displayFetchStatus`)** — check `manifest.irisByDepth[0]` for the depth-0 page IRI (available as soon as the manifest response arrives, before the batch). If depth-0 IRI is in `currentIds` and status is SUCCESS, switch display immediately. Flat pages have `irisByDepth` with one inner array — logic is identical.
-
-**Step 5 — Depth-aware `pageIriAtDepth` and `displayFetchStatus` depth-0 check** ✅ DONE
-
-File: `src/runtime/resources/resources.ts`.
-
-- **`getPageIriFromDepthGroup(group: string[])`** (private) — finds the first PAGE-type IRI in a depth group
-- **`pageIriAtDepth(depth: number): ComputedRef<string | undefined>`** (public) — returns the PAGE IRI at the given depth from `displayFetchStatus.manifest?.irisByDepth[depth]`; falls back to `getPageIriByFetchStatus` for depth 0 when no `irisByDepth`, returns `undefined` for depth > 0 when no manifest
-- **`displayFetchStatus` early-switch** — when `fetchingStatus.manifest?.irisByDepth[0]` is present, uses the depth-0 PAGE IRI for the early-switch check instead of the leaf IRI; falls back to `getPageIriByFetchStatus` only when no `irisByDepth`
-
-**Step 6 — `cwa-page.vue` depth-aware rendering** ✅ DONE
-
-Files: `src/runtime/templates/cwa-page.vue`, new `src/runtime/templates/components/main/CwaPage.vue` (auto-imported as `<CwaPage />`).
-
-**Design (agreed):**
-
-- `cwa-page.vue` (Nuxt catch-all page in the layer) provides `depth = 0` and renders `<CwaPage />`.
-- `<CwaPage />` (new public Vue component, auto-imported with `Cwa` prefix) reads `depth` from `inject`, renders `pageIriAtDepth(depth)` via `ResourceLoader` with prefix `CwaPage`, then `provide`s `depth + 1` so any nested `<CwaPage />` in a child template renders the next level automatically.
-- Consuming app page templates place `<CwaPage />` wherever the child page should appear — no depth number needed.
-- **SSR**: not relevant — page isn't shown until fully loaded server-side.
-- **Client-side progressive rendering**: all resources fetch in parallel. Depth-0 renders immediately (from cache on sibling nav or once manifest arrives). Depth > 0 renders as soon as `pageIriAtDepth(depth)` returns a value (i.e. `irisByDepth[depth]` is available and the PAGE IRI is resolved). Until that moment, `<CwaPage />` renders nothing — matching existing component behaviour where unloaded slots are simply absent.
-
-**Future — loading placeholders (not in this step):** Once `<CwaPage />` is in place, a configurable CSS placeholder can be shown while depth > 0 is loading: a mid-gray rounded rectangle that pulses or has a gradient-wipe shimmer (similar to the No Image placeholder). This is part of a broader plan to support loading placeholders for any component being fetched. For now, rendering nothing is the correct default.
-
-**Step 7 — Keepalive** ✅ DONE
-
-File: `src/runtime/templates/components/main/CwaPage.vue`.
-
-`<ResourceLoader>` inside `<CwaPage />` is wrapped in `<KeepAlive>` with `:key="pageIri"`. Each unique IRI gets its own cached component instance. When the user navigates away and returns to the same page, the cached instance is reactivated (scroll position, internal state preserved) rather than remounted. Depth-0 IRI stays stable during sibling navigation (via the `displayFetchStatus` early-switch) so the parent layer is never unmounted at all — KeepAlive provides the additional benefit of state preservation when navigating back to a previously-visited child depth.
-
-**Future design question — shared component group across layouts**
-
-If Layout A and Layout B both reference the same `ComponentGroup` IRI, today's architecture re-mounts that group each time the layout changes (the whole layout tree is replaced). The *data* in the store is already shared, but the *component instance* is not. Truly sharing the instance would require hoisting the shared group outside the layout tree and rendering it independently (a "portal" pattern), with KeepAlive preserving the instance across layout switches. This is architecturally significant and independent of nested pages — do not tackle it as part of Step 7. Needs its own design discussion before any implementation.
-
-**Step 8 — Admin UI: nested page management** ✅ DONE
-
-Files changed: `useParentPageLoader.ts` (new), `useParentPageDataLoader.ts` (new), `ModalRadioTabs.vue` (new), `PageAdminModal.vue`, `PageDataAdminModal.vue`, `RoutesTab.vue`.
-
-**Design (resolved):**
-- **Top bar** — no structural change. Depth switching lives inside the modal.
-- **`useParentPageLoader`** — new composable fetching `/_/pages` (all pages, `noQuery: true`) with stale-request cancellation. Shared by both modals.
-- **`useParentPageDataLoader`** — new composable loading page data types from API docs (filtering out `AbstractPageData`) then instances per type via `docs.entrypoint[key]`. Stale-request cancellation on both. Exposes `fqcnToEntrypointKey` for type derivation.
-- **`ModalRadioTabs`** — pill-tab radio component (None / Page / Data) used in both modals to select the parent type. Emits `update:modelValue` with the selected value.
-- **Parent picker** — tab-radio drives `parentType` computed (two-way). Selecting "Page" shows `ModalSelect` for `parentPage`; selecting "Data" shows type dropdown then instance dropdown for `parentPageData`. Switching tabs clears the opposing field.
-- **Page UI/Style visibility** — always visible in `PageAdminModal` (Bug 1 fixed — root page owns the template but child pages also need a template).
-- **"Dynamic Page" visibility** — always visible in `PageDataAdminModal` (Bug 1 fixed — every PageData must have a page template).
-- **Depth switcher ("Viewing" dropdown)** — both modals build a `depthChain` computed by walking `parentPage`/`parentPageData` from `$cwa.resources.getResource()`. When chain length > 1, a "Viewing" `ModalSelect` is shown above `ResourceModalTabs`. Changing selection updates `displayIri`, which drives `useItemPage` (replacing `toRef(props, 'iri')`). Labels use `reference` for Page resources and `title` for PageData resources.
-- **Route prefix display** — `RoutesTab` derives `parentIri` from `props.pageResource.parentPage || parentPageData`, looks up the parent in the store, and strips `/_/routes/` from the route IRI to display "Route prefix: /conference" above the route view. Hidden when no parent or parent has no route.
-- **Init from store** — a `watch` on the resource data restores `selectedParentDataType` when data first loads (not `onMounted`): if `data.parentPageData` is set, its `@type` is looked up via `getResource`, converted to an entrypoint key via `fqcnToEntrypointKey`, and assigned to `selectedParentDataType`. This repopulates the Data instance dropdown when re-opening a modal for an existing nested resource.
-
-
-
----
-
-### Concrete scenario: Event page with hero + sub-page tabs
-
-This is the primary use case driving the nested sub-pages feature and the bugs below.
-
-**Structure:**
-- An events section uses a `PageData` type (e.g. `EventData`) backed by a shared Page template (`EventTemplate`).
-- Each event has title, dates, and a hero image stored on its `EventData` entity.
-- The event page renders: a hero section (event-specific title/dates/image) + a tab navigation bar.
-- Each tab links to a child sub-page (e.g. Line-up, Tickets, Location) — each is also a `PageData` entity with `parentPageData = eventData`.
-- When navigating between tabs, the hero + nav bar must stay mounted (KeepAlive depth-0, already implemented in Step 7). Only the child slot (depth-1) changes.
-- Static parent pages (via `parentPage`) follow the same pattern — the parent's content stays stable, the child slot changes.
-
-**What the template needs (now implemented):**
-
-`EventTemplate.vue` receives `props.iri` = the Page template IRI. `CwaPage.vue` provides `'cwa-page-data-iri'` (a `ComputedRef<string | undefined>`) at each depth. Template pattern for reading PageData fields:
+- `{id}` starting with `/` → resolved as Route path; UUID → resolved as Page or AbstractPageData entity (admin/draft access)
+- `irisByDepth` is stored in `FetchManifestInterface` — set immediately when the manifest HTTP response arrives, before `fetchBatch`
+- `fetchComplete` gates `isFetchResolving` (not `irisByDepth`) — see `getter-utils.ts`
+
+### Rendering
+
+- `cwa-page.vue` provides `depth = 0`, renders `<CwaPage />`
+- `<CwaPage />` injects `'cwa-page-depth'`, renders `pageIriAtDepth(depth)` via `ResourceLoader` with prefix `CwaPage`, provides `depth + 1`
+- Consuming app page templates place `<CwaPage />` wherever the child page slot should appear
+- Auto-fallback: if depth N template lacks `<CwaPage />` but depth N+1 resources exist, a fallback `<CwaPage :auto-fallback="true" />` is appended after mount
+- KeepAlive wraps `<ResourceLoader>` with `:key="pageIri"` — depth-0 stays mounted during sibling navigation via early-switch
+
+**Template pattern for reading PageData fields:**
 
 ```ts
 const pageDataIri = inject<ComputedRef<string | undefined>>('cwa-page-data-iri')
-// Read event-specific fields (title, dates, etc.) directly from the PageData entity
 const { resource } = useCwaResource(pageDataIri)
 ```
 
-**Per-instance component content uses `pageDataProperty` positions — NOT the PageData IRI as a ComponentGroup location.** The Page template has a `ComponentPosition` with `pageDataProperty = 'heroImage'` (or similar). The API's `ComponentPositionNormalizer` resolves that to the actual component IRI from the current PageData entity's property. The template's `<CwaComponentGroup>` always uses `location = props.iri` (the shared Page template IRI) — the component group is attached to the template, and positions within it resolve per-instance content dynamically.
+`CwaPage.vue` provides `'cwa-page-data-iri'` at each depth. Returns `undefined` for Page-backed depths. `pageDataProperty` positions are resolved server-side — the module sees a `component` IRI, never a `pageDataProperty` string on the public path.
 
-**Note for fixture maintainers (components-web-app):** See `components-web-app/CLAUDE.md` for the correct fixture setup: `pageDataProperty` positions must be added to the Page template's component group; per-instance component IRIs are stored as properties on each PageData entity.
 
----
+### Design decisions (reference)
 
-**~~Known bug: `path` header is leaf-only — parent `pageDataProperty` positions fail when a child page is active~~ — FIXED**
-
-`fetch-status-manager.ts` now builds `_iriToDepth: Map<string, number>` and `_depthPaths: Map<number, string>` when `setManifestIrisByDepth` is called. `createRequestHeaders` in `fetcher.ts` calls `fetchStatusManager.getPathForDepth(depth)` (looked up via `_iriToDepth`) and sends that as `requestHeaders.path` instead of the global `primaryFetchPath`. `fetchAssociatedResources` follow-ups propagate depth downward via `setIriDepth` so every associated resource inherits its parent's depth. Falls back to `primaryFetchPath` for resources not in the manifest.
-
-**~~Known bug: layout component groups (nav links) not rendered for unauthenticated users~~ — FIXED (both sides)**
-
-The API was returning `componentGroups` on a `Layout` resource as **embedded JSON-LD objects**, not IRI strings. `fetchAssociatedResources` was pushing raw objects into `nestedIris`; `fetchBatch` then tried to call `path.split('?')` on an object — a TypeError silently swallowed, so the component groups were never fetched.
-
-**Module fix (committed):** Array items in `fetchAssociatedResources` now extract `@id` when the value is an object:
-```ts
-for (const value of propIris) {
-  const iri = typeof value === 'string' ? value : value?.['@id']
-  if (iri) nestedIris.push(iri)
-}
-```
-
-**API fix (committed 2026-06-16):** `Layout` now has an explicit `Layout:read` normalization group. `getComponentGroups()` is overridden in `Layout.php` with `#[ApiProperty(readableLink: false, writableLink: false)]`, so AP4 always returns IRI strings. The module's `@id` extraction is now a defensive fallback only.
-
-**~~Known gap: `pageDataProperty` component IRIs missing from manifests~~ — FIXED**
-
-`ComponentPositionNormalizer.normalizeForPageData()` previously resolved `pageDataProperty` slots via the `path` HTTP request header — absent during manifest generation. As a result, manifest responses for routes with pageDataProperty positions had `component: null` for those slots, and the component IRIs never appeared in `resource_iris`.
-
-**API fix (committed 2026-06-16):** `PageDataNormalizer` now injects `cwa_current_page_data` into the serialization context when `Route:manifest:read` is active. `ComponentPositionNormalizer` reads this context key first and falls back to the HTTP header only for non-manifest normalizations. `ManifestDepthGroupTrait.collectCurrentDepth()` now also collects string IRI values that AP4 emits for related resources where readableLink is auto-computed as false (e.g. component IRIs from `ComponentPosition.component` where `AbstractComponent` has no `Route:manifest:read` fields). Internal blank node resources (`/.well-known/genid/...`) are excluded so AP4-internal metadata IRIs (`pageDataMetadata` etc.) are not leaked into `resource_iris`.
-
-The total serial depth for a manifest fetch is now: **manifest → parallel batch (everything, including resolved pageDataProperty component IRIs) → no follow-up needed for static positions** (they were already in the manifest). `pageDataProperty` component IRIs still require a follow-up only when they differ between pageData instances and haven't been pre-fetched.
-
-**Step 9 — Tests (Vitest)** ✅ DONE
-
-Specs: `fetcher.spec.ts`, `fetch-status-manager.spec.ts`, `resources.spec.ts`, `CwaPage.spec.ts`, `cwa-page.spec.ts`, `RoutesTab.spec.ts`, `RoutesTabManage.spec.ts`, `PageAdminModal.spec.ts`, `PageDataAdminModal.spec.ts`, `ModalRadioTabs.spec.ts`, `useParentPageLoader.spec.ts`, `useParentPageDataLoader.spec.ts`.
-
-**Step 10 — Auto-fallback `<CwaPage />`** ✅ DONE
-
-**What it does:** If the page template at depth N does not include a `<CwaPage />` (i.e. no child-depth content slot), but the current navigation has resources at depth N+1 (i.e. a child page exists), `CwaPage.vue` automatically appends a fallback `<CwaPage />` at the bottom of the rendered content. Developer convenience / safety net — production templates should always include `<CwaPage />` explicitly.
-
-**Design decisions:**
-- `mounted = ref(false)`, set true in `onMounted` — gates the fallback behind the first render cycle. Prevents flash on CSR initial render (fallback only appears after children have had a chance to register) and prevents double-rendering on SSR (`onMounted` never fires server-side, so `mounted` stays false and the fallback is never added to SSR output).
-- `childRegistered = ref(false)` — tracks whether a non-fallback child `<CwaPage />` has called the `'cwa-register-child-page'` provide callback during its own `setup()`.
-- Each `CwaPage.vue` provides `'cwa-register-child-page': (depth: number) => void` for its own direct children.
-- Each non-fallback `<CwaPage />` calls `inject('cwa-register-child-page')?.(depth)` synchronously in `setup()`. This is synchronous so by the time parent's `onMounted` fires, all synchronously-mounted template children have already registered.
-- `autoFallback?: boolean` prop — when `true`, the component skips self-registration. Prevents the auto-fallback from immediately unregistering itself.
-- `showAutoChildPage = computed(() => mounted.value && depthCount.value > depth + 1 && !childRegistered.value)`
-- Fallback rendered as `<CwaPage :auto-fallback="true" />` at the end of `CwaPage.vue`'s template.
-- Recursive: the auto-fallback itself follows the same logic — if depth+2 exists and it also lacks a `<CwaPage />`, it adds one, and so on.
-- For async/lazy template components there is still a brief flash (fallback appears at mount, hides when the async component resolves and registers). Acceptable — standard Nuxt globally-registered components are synchronous.
-
-**`mockCwa` update required:** Add `depthCount` to the mock (second arg changes from a raw `pageDataIri` string to an options object `{ pageDataIri?, depthCount? }`). Update affected call sites in the existing tests.
-
-**Agreed Vitest tests (add to `CwaPage.spec.ts`):**
-```ts
-describe('auto-fallback CwaPage', () => {
-  test('does not render fallback when depthCount is 1 (flat page)', async () => {
-    mockCwa('/_/pages/conf-uuid', { depthCount: 1 })
-    const wrapper = mount(CwaPage, { shallow: true })
-    await wrapper.vm.$nextTick()
-    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(false)
-  })
-
-  test('renders fallback CwaPage after mount when depthCount > depth + 1 and no child registered', async () => {
-    mockCwa('/_/pages/conf-uuid', { depthCount: 2 })
-    const wrapper = mount(CwaPage, { shallow: true })
-    await wrapper.vm.$nextTick()
-    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(true)
-  })
-
-  test('hides fallback after a child registers at the expected depth', async () => {
-    mockCwa('/_/pages/conf-uuid', { depthCount: 2 })
-    const wrapper = mount(CwaPage, { shallow: true })
-    await wrapper.vm.$nextTick()
-    const register = (wrapper.vm.$.provides as any)['cwa-register-child-page'] as (d: number) => void
-    register(1) // depth-0 parent; child expected at depth 1
-    await wrapper.vm.$nextTick()
-    expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(false)
-  })
-
-  test('non-fallback CwaPage registers itself with the parent callback', () => {
-    mockCwa('/_/pages/conf-uuid')
-    const register = vi.fn()
-    mount(CwaPage, {
-      shallow: true,
-      global: { provide: { 'cwa-register-child-page': register, 'cwa-page-depth': 3 } },
-    })
-    expect(register).toHaveBeenCalledWith(3)
-  })
-
-  test('autoFallback=true prevents self-registration', () => {
-    mockCwa('/_/pages/conf-uuid')
-    const register = vi.fn()
-    mount(CwaPage, {
-      shallow: true,
-      props: { autoFallback: true },
-      global: { provide: { 'cwa-register-child-page': register } },
-    })
-    expect(register).not.toHaveBeenCalled()
-  })
-})
-```
-
-**Files to change:** `src/runtime/templates/components/main/CwaPage.vue`, `src/runtime/templates/components/main/CwaPage.spec.ts`.
-
-**Note on `PageDataAdminModal` parent picker:** Verified (2026-06-19) that `AbstractPageData` entities DO support `parentPage`/`parentPageData` via the API — confirmed by `abstract_page_data.schema.json` and `DoctrineContext.php`. The parent picker section in `PageDataAdminModal.vue` is correct and should stay. Child `PageData` entities (e.g. LineupData with `parentPageData = eventData`) set their parent through this UI.
-
-### Design decisions
-
-- **No `$nested` boolean** — parent = nested, always. The presence of `$parentPage`/`$parentPageData` is the signal.
-- **Single rendering mechanism** — `<CwaPage />` (`cwa-page.vue`) handles all contexts. Depth comes from `manifest.irisByDepth` groups or from walking the `parentPage`/`parentPageData` chain. No URL-segment-depth dependency.
-- **`resource_iris` is `string[][]`** — index = rendering depth, root first. The module reads the array index directly; no client-side traversal needed to determine depth.
-- **Manifest required in both public and admin contexts** — without a manifest, fetching a page by IRI is 4+ serial round trips (page → groups → positions → components). The API bundle must expose a manifest endpoint for non-route entity access. The chain walk is a fallback, not the primary path.
-- **`irisByDepth` set before batch starts** — when the manifest HTTP response arrives, `irisByDepth` is stored immediately (before `fetchBatch`). This decouples "we know the depth structure" from "the batch has completed" and enables the depth-0 early-switch.
-- **`fetchComplete` replaces `resources === undefined` gate** — `isFetchResolving` checks `!manifest.fetchComplete` instead of `manifest.resources === undefined`. These are the same thing in the current code; the rename just makes the intent explicit and frees `irisByDepth` to be set earlier.
-- **Route concatenation is recommended, not required** — `RouteGenerator` prefixes child paths for clean URLs; the rendering mechanism does not depend on URL structure.
-- **Hierarchy on AbstractPage, not Route** — must be settable before publication.
-- **Keepalive by depth group** — if the same IRIs appear at depth 0 across two navigations, the parent layer is preserved without re-render.
-- **Early-switch is depth-0 aware** — `displayFetchStatus` checks `manifest.irisByDepth?.[0]` for the root page IRI against `currentIds`, not the leaf. If cached, display switches immediately and stale data is replaced as fresh responses arrive. Covers first visits (wait), return visits and same-page refreshes (switch immediately), and sibling navigation (parent frame renders, child loads progressively).
+- **No `$nested` boolean** — parent = nested; `parentPage`/`parentPageData` presence is the signal
+- **Single rendering mechanism** — `<CwaPage />` handles all contexts; depth from `irisByDepth`, not URL structure
+- **`resource_iris` is `string[][]`** — index = rendering depth, root first; read directly, no client traversal
+- **Manifest for both public and admin** — UUID-based manifest collapses 4+ serial round trips into one parallel batch
+- **`irisByDepth` set before batch starts** — decouples "we know depth structure" from "batch complete"
+- **Early-switch is depth-0 aware** — `displayFetchStatus` checks `irisByDepth[0]` root page against `currentIds`; covers first visits (wait), return visits (switch immediately), sibling nav (parent renders, child loads progressively)
+- **Route concatenation recommended, not required** — rendering never depends on URL structure
+- **Hierarchy on AbstractPage, not Route** — settable before publication (before any route exists)
 
 ---
 
@@ -721,264 +275,59 @@ The module uses **Tailwind v4** (`tailwindcss: ^4.2.4`, `@tailwindcss/postcss: ^
 @import 'tailwindcss/utilities' prefix(cwa);
 ```
 
-This means every Tailwind class in the module must use the `cwa:` prefix (e.g. `cwa:flex`, `cwa:bg-dark`). The compiled output is committed to the repo at `src/runtime/templates/assets/cwa.css`.
+Every Tailwind class in the module must use the `cwa:` prefix (e.g. `cwa:flex`, `cwa:bg-dark`). The compiled output is committed at `src/runtime/templates/assets/cwa.css`.
 
-**Custom theme** is declared in `@theme {}` blocks — replaces the v3 `theme` key. **Plugins** use `@plugin` directive — replaces v3 `plugins` array. **Base reset** (`tailwind-base.css`) imports only `tailwindcss/preflight` layer(base), consumed by the layer.
+**Custom theme** is declared in `@theme {}` blocks. **Plugins** use `@plugin` directive. **Base reset** (`tailwind-base.css`) imports only `tailwindcss/preflight` layer(base).
 
-**Build:** `postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css` via `@tailwindcss/postcss`. Vite integration (`@tailwindcss/vite`) is available but not used for the pre-compiled admin CSS — it is used by the playground for the app-side CSS.
-
----
-
-## Future: CWA Admin UI Component Kit
-
-The goal is a polished, consistent component kit for the admin UI — similar in scope to what Nuxt UI provides but built entirely inside this module with no third-party design system dependency.
-
-**Why not Nuxt UI:** Adding it as a module dependency would force every consuming app to carry Nuxt UI as a transitive dep. More critically, CSS isolation would break: Nuxt UI injects its own theme tokens and utility classes globally, so a consuming app's Nuxt UI configuration (colours, fonts, spacing) would bleed into — and potentially override — the admin UI styles. The `cwa:` prefix isolation only protects Tailwind utilities; it does not protect against a shared Nuxt UI runtime injecting conflicting CSS variables or component styles.
-
-**The right approach:** A self-contained component library scoped entirely within this module — styled exclusively with the `cwa:` prefixed Tailwind utilities already in place. No runtime CSS injected by a third party; no shared design tokens with the consuming app. The admin UI stays visually consistent regardless of what CSS framework or configuration the consuming app uses.
-
-**Nuxt UI as a structural reference:** Nuxt UI's source is a good model for how to organise the kit — its separation of base/variant/size layers, slot-based composition, and headless-first primitives are patterns worth following. Refer to it when designing new components, but implement everything natively using our own `cwa:` Tailwind classes.
-
-**Surface areas that need components:**
-
-- **Modal UI** — inputs, selects, textareas, radio tab groups, checkboxes, buttons, info fields, section labels. These already exist in `src/runtime/templates/components/core/admin/form/` in rough form and need to be consolidated into a coherent kit.
-- **Standalone admin pages** (`src/layer/pages/_cwa/`) — list views, data tables, form layouts, page-level navigation. These pages currently inherit ad-hoc styles and would benefit from shared layout primitives.
-- **Manager bar** — the resource manager panel (`LazyCwaAdminResourceManager`) needs alternative style variants; the current dark-panel aesthetic should be one option, not the only one. Tab bars, stack breadcrumbs, and focus overlays are all candidates for themeable base components.
-- **Base primitives** — tabs (headless, composable into modal tabs, manager tabs, radio tabs), dropdowns, badges, tooltips. Build the headless logic once; apply variant styles on top. This mirrors how Nuxt UI structures `UTab` / `USelect` etc.
-
-**Scope:** Admin-only. Public-facing CWA components (`CwaComponent*`, layouts, page templates) are owned by consuming apps and intentionally unstyled by this module.
+**Build:** `postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css` via `@tailwindcss/postcss`.
 
 ---
 
-## Fixed: Route redirect — outbound forward and admin UI
+## Future: CWA Admin UI Component Kit (#236)
 
-### How the current system works (investigated 2026-06-20)
+The goal is a polished, consistent component kit for the admin UI with no third-party design system dependency.
 
-`RouteNormalizer.php` (API bundle) already handles outbound redirects correctly. When a `Route` has `redirect → another Route`:
-1. Walks the redirect chain to the final destination
-2. Copies the destination's `page`/`pageData` onto the source (for SSR render-before-redirect)
-3. Adds `redirectPath: "/destination-path"` to the normalised output
+**Why not Nuxt UI:** A module dependency forces it as a transitive dep on all consuming apps. Nuxt UI injects its own theme tokens globally — a consuming app's Nuxt UI config (colours, fonts, spacing) would bleed into and override admin UI styles. The `cwa:` prefix isolation only protects Tailwind utilities; it cannot protect against a shared Nuxt UI runtime.
 
-The module's `route-middleware.ts` already checks `resource?.redirectPath` and calls `navigateTo(resource.redirectPath, { redirectCode: 308 })`. So the redirect mechanics are fully implemented — **no module code change needed for following redirects**.
+**Approach:** Self-contained component library scoped entirely within this module, styled exclusively with `cwa:` prefixed Tailwind utilities. Nuxt UI's source is a good structural reference — its slot-based composition and headless-first primitives are patterns worth following, implemented natively.
 
-### The gap: no admin UI to set an outbound forward
+**Surface areas:**
+- **Modal UI** — inputs, selects, textareas, radio tab groups, checkboxes, buttons, info fields, section labels (`src/runtime/templates/components/core/admin/form/`)
+- **Standalone admin pages** (`src/layer/pages/_cwa/`) — list views, data tables, form layouts
+- **Manager bar** — resource manager panel tab bars, stack breadcrumbs, focus overlays; themeable base components
+- **Base primitives** — tabs (headless, composable), dropdowns, badges, tooltips
 
-The current `RoutesTabView.vue` "Redirects" section only handles **inbound** redirects: other routes that point TO this page (`redirectedFrom`). The "+" button creates a new empty route with `redirect` pointing here. There is no UI to set the current route to forward visitors to a different page.
+**Scope:** Admin-only. Public-facing CWA components remain unstyled.
 
-### Use case: parent page forwarding to default child
-
-`/topic-1` has its own `pageData` content AND the admin wants visitors to `/topic-1` to automatically be sent to `/topic-1/chapter-one`. This is done by setting `redirect` on the `/topic-1` Route entity to point at `/topic-1/chapter-one`'s Route IRI. The `RouteNormalizer` handles the rest.
-
-**Child manifest is unaffected:** `redirect` is not in the `Route:manifest:read` group. When `/topic-1/chapter-one` fetches its manifest, the parent route's `redirect` field is invisible. `resource_iris[0]` still contains the parent's resources and renders correctly as the ancestor layer.
-
-### UX design (agreed 2026-06-20)
-
-Split the current "Redirects" section in `RoutesTabView.vue` into two clearly labelled sections:
-
-**1. "Forward visitors to"** (new — the outbound `redirect` field):
-- Default state: "None — visitors see this page's content" + [Set] button
-- When set: shows the target path + [Edit] [Remove] buttons + warning "Visitors to /topic-1 are sent here automatically. This page's own content is not shown directly."
-- [Set] / [Edit] → new `forward-to` screen: a route path input (or search picker) that PATCHes `redirect` on the current route with the target route's IRI
-- [Remove] → PATCHes `redirect: null`
-
-**2. "Incoming redirects"** (rename of existing "Redirects" section):
-- Same as current — `redirectedFrom` tree + "+" to create a new inbound redirect
-- The rename removes the directional ambiguity in the current "Redirects" label
-
-### Files to change
-
-- `src/runtime/templates/components/core/admin/RoutesTabView.vue` — split into two sections, rename "Redirects" → "Incoming redirects", add "Forward visitors to" section
-- `src/runtime/templates/components/core/admin/RoutesTab.vue` — add `forward-to` screen case to the screen switcher; pass `resource.redirect` (the outbound redirect IRI) and a `save-forward` handler
-- New component `RoutesTabForwardTo.vue` (or inline in RoutesTab) — route path input + save/remove logic; PATCH `redirect` field on the current route
-
-**TDD:** Propose Vitest tests before implementing.
+---
 
 ---
 
 ## Open GitHub Issues
 
-All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20 (re-checked same date). Check this list before starting new work — many may already be fixed.
-
-### UX / Admin
-
-### Features / Enhancements
+All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-20.
 
 **[#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236) — Feature: CWA Admin UI Component Kit**
-Build a self-contained component kit for the admin UI covering modal inputs, selects, buttons, tabs, info fields, and standalone admin page layouts. Structured similarly to Nuxt UI (slot-based composition, headless-first primitives, base/variant/size layers) but implemented entirely within this module using `cwa:` prefixed Tailwind utilities — no Nuxt UI dependency (would bleed its theme tokens into consuming apps). Surface areas: modal form controls (`src/runtime/templates/components/core/admin/form/`), standalone admin pages (`src/layer/pages/_cwa/`), manager bar (tab bars, stack breadcrumbs, focus overlays), and base headless primitives (tabs, dropdowns, badges, tooltips). Admin-only; public-facing components remain unstyled.
+See `## Future: CWA Admin UI Component Kit` above.
 
-**[#239](https://github.com/components-web-app/cwa-nuxt-module/issues/239) — DX: `useCwaResource` extensible composable pipeline**
-The parallel composables (`useCwaCollectionResource`, `useCwaImageResource`, etc.) cannot be combined — calling two on the same component requires manual threading. Proposes a plugin/middleware pattern so behaviour is layered: `useCwaResource(props, [withCollection(), withPublishable()])`. Each plugin receives the current resource state and returns additional reactive properties. Third-party libraries could ship their own plugins without forking internals.
 
-**[#238](https://github.com/components-web-app/cwa-nuxt-module/issues/238) — DX: `useCwaComponent(props)` — single composable call to replace boilerplate**
-Every CWA component repeats the same block (`defineProps`, `useCwaResource`, `useCwaIsAdmin`, etc.). Missing pieces cause silent runtime bugs (no admin UI, no loading state). Proposes a single `useCwaComponent(props)` macro composable that returns everything a standard component needs. Stretch goal: a `defineCwaComponent()` Vite macro so even the `iri` prop declaration is implicit.
+**[#239](https://github.com/components-web-app/cwa-nuxt-module/issues/239) — DX: `useCwaResource` extensible composable pipeline** ✅ Complete
+Plugin system via `useCwaComponent`. `useCwaResource` signature unchanged (BC safe). Built-in factories: `withCollection()` (`cwa-collection-plugin.ts`), `withImage(imageOps?)` (`cwa-image-plugin.ts`). Old composables deprecated. See `## Composable pipeline design` below.
 
-> **Depends on #239** if the extensible pipeline approach is adopted first.
+**[#238](https://github.com/components-web-app/cwa-nuxt-module/issues/238) — DX: `useCwaComponent(props)` — single composable call** ✅ Complete
+`useCwaComponent(props, plugins?, ops?)` in `src/runtime/composables/cwa-component.ts`. Returns `resource` directly (no `getResource` two-step). Stretch goal (`defineCwaComponent()` Vite macro) remains future work.
 
 **[#237](https://github.com/components-web-app/cwa-nuxt-module/issues/237) — DX: `npx cwa make:component` cross-stack generator**
-Creating a new CWA component requires coordinated steps across two codebases with no single entry point. Proposes an interactive CLI command that generates the Vue file with correct boilerplate pre-filled and prints the `make:api-component` command to run on the API side (and the `nuxt.config` snippet if the component is a PageData property).
-
-**[#172](https://github.com/components-web-app/cwa-nuxt-module/issues/172) — Form component sample + composables** ✅ DONE
-All four composables (`useCwaFormInput`, `useCwaForm`, `useCwaFormRepeated`, `useCwaFormCollection`) are complete. Sample component (`ExampleForm`) is in both the playground and components-web-app. Bug fixes applied 2026-06-20.
-
-> **See `## Planned Feature: Form Composables & Sample Component (#172)` below for full design detail.**
+Interactive CLI generating the Vue file with correct boilerplate and printing the `make:api-component` command for the API side.
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
 
----
-
-## Fixed: Default OG image via nuxt-og-image (#188)
-
-**Files:** `src/layer/components/og-image/CwaDefault.satori.vue` (new), `src/runtime/templates/cwa-page.vue`, `src/module.ts`
-
-`cwa-page.vue` calls `defineOgImage('CwaDefault', { title, description })` using the same `pageTitle` computed already used by `useHead` (leaf-first concatenation across depth groups for nested pages). The Satori template (`CwaDefault.satori.vue`) lives in the Nuxt layer at `src/layer/` so nuxt-og-image's layer scan picks it up automatically.
-
-**Type registration:** `addTypeTemplate` in `module.ts` augments `#og-image/components → OgImageComponents` with `CwaDefault`, making the type available in both the module's and consuming apps' type contexts (the module's own `.nuxt/` context doesn't include the layer, so auto-discovery alone is insufficient).
-
-**Override:** Consuming apps call `defineOgImage(...)` in their own page template component — same default key `"og"` replaces the module's call.
-
-**Testing:** `nuxt-og-image` exits without registering imports when `ssr: false` (the `@nuxt/test-utils` default). Setting `ogImage: { enabled: !process.env.VITEST }` in `playground/nuxt.config.ts` registers no-op mock imports instead, so `mockNuxtImport('defineOgImage')` works.
-
-**`nuxt-og-image` integration notes:**
-- Component files must use a renderer suffix: `.satori.vue`, `.takumi.vue`, or `.browser.vue`
-- `registerOgComponentDir(root)` looks for `root/og-image` (and other dirs) — registering the `og-image/` dir directly as a Nuxt component dir does NOT cause nuxt-og-image to scan it (it would look for `og-image/og-image` subdirectory). The layer approach is correct.
-- `installModule('nuxt-og-image')` in `module.ts` ensures it is registered for all consuming apps regardless of whether they list it in their own modules
-
----
-
-## Fixed: pageDataProperty position UI — two-step picker (#234)
-
-**Files:** `src/runtime/templates/components/main/admin/_common/useDynamicPositionSelectOptions.ts`, `src/runtime/templates/components/main/admin/resource-manager/_tabs/position/DynamicPage.vue`, `src/runtime/types/index.ts`
-
-`DynamicPage.vue` shows two `ModalSelect` dropdowns — first selects the PageData type, second shows filtered properties for that type. Labels use camelCase/PascalCase → Title Case by default; configurable per-field via `cwa.pageData[TypeName].properties[field]` in `nuxt.config.ts`. `allowedComponents` on the parent ComponentGroup filters the property list (strips API path prefix). Saves `pageDataClass` + `pageDataProperty` together in one PATCH. Re-open reads `pageDataClass` directly from position data. Incomplete-state validation (type set, no field) shows warning + cancel. "Make static" button shown only when a component is already assigned to the position.
-
----
-
-## Fixed: Centralise transition classes into useTransitions() (#189)
-
-**File:** `src/runtime/composables/transitions.ts`
-
-All `<Transition>` / `<TransitionGroup>` components previously had hardcoded inline class props. Added 7 new keys to `useTransitions()` — `dropdown`, `overlay`, `slideUp`, `menu`, `notification`, `spinner`, `progressBar` — and migrated every component to `v-bind` from the composable. All transition styles now live in one file.
-
-**Note:** When destructuring from `useTransitions()`, check for identifier conflicts with existing local variables (e.g. `menu` was already a template ref in `Menu.vue` — renamed to `menuTransition`).
-
----
-
-## Fixed: ComponentPosition sort value collisions on insert (#224 Bug 2)
-
-Before inserting a new component, the module PATCHes all positions in the containing group with `sortValue >= newSortValue` (in descending order to avoid intermediate collisions) to shift them up by 1. Previously, "add before X" gave the new position the same `sortValue` as X, and "add after X" could collide with the next position — both caused the API to return positions in undefined order after save. A cleaner atomic API-side fix (auto-shift on collision inside the POST transaction) is documented in the api-components-bundle CLAUDE.md.
-
----
-
-## Fixed: `allowedComponents` not enforced for `pageDataProperty` positions (#151)
-
-Module-side UX enforcement tracked in [#234](https://github.com/components-web-app/cwa-nuxt-module/issues/234) (two-step type/property picker filtering candidates to `allowedComponents`).
-
-**API read-side is fixed** (api-components-bundle commit `2305ad89`, `88262abe`): positions whose resolved component type is not in `allowedComponents` return `component: null`. Doctrine proxy class names are now handled correctly so anonymous users also see the correct filtering.
-
-**API write-side is now fixed (api-components-bundle, pending commit, closes #170):** `ComponentPosition` stores `pageDataClass` (FQCN) alongside `pageDataProperty`. Both must be set together. `ComponentPositionValidator` validates: (1) `pageDataClass` is a known PageData resource; (2) `pageDataProperty` is a component-typed property on it; (3) the resolved type is in `allowedComponents` if set. The API returns 422 on any violation.
-
-**Module action required:** Send `pageDataClass` in the POST/PATCH body when creating or updating `pageDataProperty` positions. The `pageDataClass` value is already available from the type dropdown selection in `DynamicPage.vue`. Existing positions expose `pageDataClass` via the admin read group so the re-open flow can read it directly.
-
----
-
-## Fixed: Default layout not applied when consuming app adds custom layouts (#197)
-
-`module.ts` now runs a second `extendPages` pass after adding CWA pages. Any page without `meta.layout` (checked as `=== undefined` to preserve `layout: false`) gets `options.layoutName || 'cwa-root-layout'` set, regardless of how many layouts the consuming app has added.
-
----
-
-## Fixed: Same-origin absolute URLs treated as external in useHtmlContent
-
-**File:** `src/runtime/composables/component/html-content.ts`
-
-`hrefToUrl()` used `new URL(href)` which succeeds for any valid absolute URL (including `https://localhost:3002/some/path`). These were returned unchanged, and `CwaLink` saw them as external links (different from a bare path string), opening them in a new tab.
-
-**Fix:** After a successful `new URL(href)`, check `url.hostname === window.location.hostname`. If same hostname, return `url.pathname + url.search + url.hash` so the router treats it as an internal path. Hostname-only (not full origin) comparison handles dev environments where links may be stored without the port (e.g. `https://localhost/page` vs `https://localhost:3002/page`) — the protocol and port may differ but the destination is still the same app. SSR guard: the check is gated on `typeof window !== 'undefined'`; on the server, absolute URLs pass through unchanged (no `window` available).
-
----
-
-## Future Ideas
-
-### `mockCwaResource` test utility
-A developer-facing helper that sets up the Pinia resource store with a mock resource, making it possible to unit-test components that use `useCwaResource` without spinning up the full stack. API sketch:
-
-```ts
-import { mockCwaResource } from '@cwa/nuxt/test-utils'
-
-const { wrapper } = mockCwaResource('/component/titles/123', {
-    '@type': 'Title',
-    title: 'Hello world',
-    uiClassNames: ''
-})
-```
-
-Should integrate with Vitest + `@vue/test-utils`. The utility creates a minimal Pinia store context with the resource pre-populated so `getResource()` returns it immediately. Keep it in a separate `test-utils` export so it doesn't add to production bundle size.
-
-### `defineCwaComponent()` macro
-A shorthand that inlines the four mandatory lines every display component must have:
-
-```ts
-// Instead of:
-const props = defineProps<IriProp>()
-const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
-const resource = getResource()
-defineExpose(exposeMeta)
-
-// A developer could write:
-const resource = defineCwaComponent()
-```
-
-Would need to be a Vite/unplugin macro (not a runtime composable) so `defineProps` and `defineExpose` can be called at the correct scope. Worth implementing once the composable API is stable — reduces boilerplate for every component author.
-
----
-
-## Known Bug: TipTap bubble/floating menu obscured by CWA overlay
-
-**File:** `playground/app/components/TipTapHtmlEditor.vue`
-
-TipTap v3 (`@tiptap/vue-3` ≥ 3.x) replaced Tippy.js with `@floating-ui/dom`. The `tippyOptions` prop on `<bubble-menu>` and `<floating-menu>` **no longer exists** — it is silently ignored. Setting `zIndex` via `tippyOptions` has no effect.
-
-The `BubbleMenu` component renders `h("div", { ref: root, ...attrs }, slots.default)`. The `BubbleMenuView` removes that element from its initial location and re-appends it via `appendTo` (defaulting to `this.view.dom.parentElement`). The element is appended inside the TipTap editor's DOM tree, which is inside a stacking context below the CWA overlay (`--cwa-z-index-overlay: 750`).
-
-**Things tried and failed:**
-- `tippyOptions` — prop doesn't exist in v3; silently ignored
-- `appendTo: () => document.body` — breaks menu visibility entirely; floating-ui's `position: absolute` coordinate calculation diverges from the viewport-relative `getBoundingClientRect()` rect when the element's offset parent changes to `<body>`
-- `strategy: 'fixed'` in `:options` + `style="z-index: 760"` — bubble menu does not appear when text is highlighted
-
-**What's known:** `attrs` (including `style` and `class`) do fall through to the root div via `...attrs` in TipTap's render function. The `BubbleMenuView.show()` appends the element via `appendTo`; `BubbleMenuView.updatePosition()` calls `computePosition` async then applies `position`, `left`, `top`. The `getShouldShow` default uses `view.hasFocus()` to gate visibility.
-
-**Next investigation needed:** Determine exactly why the bubble menu is not appearing at all. Check whether `getShouldShow` is returning false (focus detection issue), whether `updatePosition` is applying incorrect coordinates, or whether there is a different stacking context issue specific to the CWA admin context.
-
----
-
-## Fixed: `allowedComponents` filter in add-component dialog always empty
-
-**File:** `src/runtime/api/api-documentation.ts` — `getComponentMetadata()`.
-
-The API entrypoint returns component collection endpoints with the app's API base path prefix (e.g. `/_api/component/navigation_links`), while `allowedComponents` stored in the DB and returned in resource responses uses the path without that prefix (`/component/navigation_links`). The `includes()` comparison in `AddComponentDialog.vue` compared these two incompatible strings — always false — so the add-component dialog showed nothing when `allowedComponents` was configured.
-
-**Fix:** In `getComponentMetadata`, after classifying the endpoint type via `getResourceTypeFromIri`, the stored `endpoint` is normalised: strip the API path prefix (`ResourceTypeFromIri.getPathPrefix()`) and any absolute URL origin. The `cwaFetch.onRequest` handler already handles both prefixed and prefix-free paths for outbound API calls, so passing the normalised endpoint for `createResource` is safe.
-
----
-
-## Fixed: Route selector click reliability in SearchResource (#235)
-
-**File:** `src/runtime/templates/components/ui/form/SearchResource.vue`
-
-Two root causes in `handleOptionClick`:
-
-1. **"Nothing happens"** — The input's `blur` event fired on mousedown (before the click), triggering `unfocus()` → 100ms timer → panel removed from DOM before click registered. Fixed: `@mousedown.prevent` on the results panel keeps focus on the input during click.
-
-2. **"Value appears but not saved"** — The headlessui `close()` call attempted focus-restoration to a non-existent `PopoverButton`, risking side effects that could reset `iri.value` before the PATCH debounce fired. Fixed: removed `close()` (panel visibility is controlled by our own `open` computed, not headlessui state). Also removed the dead `searchValue.value = resourcePropertyValue.value` assignment (immediately overridden by `watch(value)`).
-
----
-
-## Fixed: ComponentGroupUtilSynchronizer spurious PATCH when `allowedComponents` absent
-
-**Files:** `ComponentGroup.Util.Synchronizer.ts` `updateAllowedComponents()` (module) + `ComponentGroup.php` `#[Groups]` (bundle).
-
-`?? null` coercion treated `undefined` (field absent from embedded response) as `null` (explicitly unset), causing a spurious PATCH that overwrote richer SSR store data with bare IRI strings and blanked navigation. Fixed: module returns early when `stored === undefined`; bundle adds `Layout:read` / `Page:read` to `allowedComponents` groups so the field is always present.
+**[#241](https://github.com/components-web-app/cwa-nuxt-module/issues/241) — Bug: TipTap bubble/floating menu obscured by CWA overlay**
+TipTap v3 dropped Tippy.js in favour of `@floating-ui/dom`; `tippyOptions` is silently ignored. Menu renders inside the editor's stacking context, below `--cwa-z-index-overlay: 750`. `appendTo: () => document.body` breaks positioning; `strategy: 'fixed'` + inline z-index stops the menu appearing entirely. Root cause unknown — next step is diagnosing whether `getShouldShow` (focus detection), `updatePosition` coordinates, or a stacking context issue is responsible. File: `playground/app/components/TipTapHtmlEditor.vue`.
+
+**[#242](https://github.com/components-web-app/cwa-nuxt-module/issues/242) — Test coverage: reach 70% statement coverage**
+Currently ~55.6% (2026-06-17). Target ~4,447 of 6,353 statements. High-ROI: `resources-manager.ts` (~33%), `resource-stack-manager.ts` (~60%), `html-content.ts` (0%), `useDataResolver.ts` (0%).
 
 ---
 
@@ -986,294 +335,152 @@ Two root causes in `handleOptionClick`:
 
 The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.
 
-**Do not pass PHP FQCNs to the prop.** The prop is front-end-facing and expects collection IRIs that map to the API collection endpoints.
+**Do not pass PHP FQCNs to the prop.**
 
-For reference, the three layers use different input formats:
 | Layer | Input format | Conversion |
 |---|---|---|
 | `<CwaComponentGroup :allowed-components>` prop | Prefix-free IRI (e.g. `/component/navigation_links`) | Synchroniser adds prefix before PATCH/POST |
 | API PATCH `allowedComponents` field | Prefixed IRI or PHP FQCN | Server converts FQCN → IRI automatically |
 | `CwaFixtureBuilder->group('nav', allow: [NavigationLink::class])` | PHP FQCN | Builder converts FQCN → IRI before persisting |
 
-The module does not need to handle FQCN → IRI conversion. The prop must always receive prefix-free IRIs.
-
-### IRI prefix normalisation (FIXED)
-
-The API path prefix (e.g. `/_api`) is derived at runtime from `new URL(apiUrl).pathname` and stored on `ResourceTypeFromIri`. The synchroniser calls `ResourceTypeFromIri.getPathPrefix()` and normalises incoming prop values before comparing or PATCHing:
-
-```ts
-// normalizeAllowedComponents in ComponentGroup.Util.Synchronizer.ts
-const prefix = ResourceTypeFromIri.getPathPrefix()
-return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
-```
-
-This ensures:
-- Stored values in the DB always include the prefix → `ComponentPositionValidator` comparison succeeds
-- Props can be written without the prefix (and the module's own test fixtures do so)
-- Already-prefixed values (e.g. from consuming apps written before this fix) are not double-prefixed
-
-`AddComponentDialog` strips the prefix from stored `allowedComponents` before the `includes()` comparison against `getComponentMetadata()` endpoints (which are already prefix-free after the `ddd900ee` normalisation). Both sides are always compared without prefix.
+**IRI prefix normalisation:** The API path prefix (e.g. `/_api`) is derived at runtime from `new URL(apiUrl).pathname` via `ResourceTypeFromIri.getPathPrefix()`. The synchroniser normalises incoming prop values; `AddComponentDialog` strips the prefix before comparing against `getComponentMetadata()` endpoints (already prefix-free). Both sides are always compared without prefix.
 
 ---
 
-## Planned Feature: Form Composables & Sample Component (#172)
+## Form Composables (#172) ✅ Complete
 
-> **Status: Complete. All composables and sample component done in module + playground + components-web-app. Bug fixes applied 2026-06-20.**
-> Researched from legacy branches (`legacy` / `legacy-dev`). Key pivot vs. legacy: **no built-in input components** — composables only; consuming app brings its own inputs (Nuxt UI, plain HTML, whatever).
+> All four composables and the sample component are done. See `playground/app/cwa/components/ExampleForm/` for the reference implementation.
 
 ### Core design principle
 
-The module provides **scaffolding composables**, not input components. A consuming app wraps their own inputs in `useCwaFormInput` to get validation state, and wraps their form in `useCwaForm` to get submit/success/error state. The user's template is completely free to use any UI library.
+The module provides **scaffolding composables only** — no built-in input components. Consuming apps wrap their own inputs.
 
-```vue
-<!-- Example: contact form CWA component, using Nuxt UI inputs -->
-<script setup lang="ts">
-const props = defineProps<IriProp>()
-const { resource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
-defineExpose(exposeMeta)
+### API formView shape
 
-const form = useCwaForm(toRef(props, 'iri'))
-const name = useCwaFormInput(toRef(props, 'iri'), 'contact_form[name]')
-const email = useCwaFormInput(toRef(props, 'iri'), 'contact_form[email]')
-const message = useCwaFormInput(toRef(props, 'iri'), 'contact_form[message]')
-</script>
+Every form resource has a `formView` tree with `vars`, `children`, and optionally `prototype` (for CollectionType). Key `vars` fields:
+- `full_name` — submit key (e.g. `contact_form[name]`)
+- `action` — endpoint for both per-field PATCH and final submit (format: `{absolute-iri}/submit`)
+- `method` — `"POST"` (create) or `"PATCH"` (edit)
+- `valid: null | true | false` — `null` = untouched
+- `errors: string[]` — populated after validation or submit
+- `value`, `label`, `required`, `block_prefixes`, `attr` — field metadata
+- Choice fields: `choices`, `expanded` (true = radio/checkbox, false = select), `multiple`
+- Checkbox: `checked` boolean — initialise `value` from `vars.checked ? '1' : null`, NOT from `vars.value`
 
-<template>
-  <form @submit.prevent="form.submit()">
-    <UFormField :label="name.label.value" :error="name.displayErrors.value ? name.errors.value[0] : undefined">
-      <UInput v-model="name.value.value" @blur="name.onBlur" @input="name.onInput" />
-    </UFormField>
-    <UFormField :label="email.label.value" :error="email.displayErrors.value ? email.errors.value[0] : undefined">
-      <UInput v-model="email.value.value" type="email" @blur="email.onBlur" @input="email.onInput" />
-    </UFormField>
-    <UFormField :label="message.label.value" :error="message.displayErrors.value ? message.errors.value[0] : undefined">
-      <UTextarea v-model="message.value.value" @blur="message.onBlur" @input="message.onInput" />
-    </UFormField>
-    <p v-if="form.formErrors.value.length">{{ form.formErrors.value[0] }}</p>
-    <UButton type="submit" :loading="form.submitting.value">Send</UButton>
-    <p v-if="form.success.value">Thank you!</p>
-  </form>
-</template>
+### Public composable API
+
+```ts
+// Per-field
+const { value, vars, errors, valid, displayErrors, onBlur, onInput, validate } =
+  useCwaFormInput(toRef(props, 'iri'), 'contact_form[email]')
+
+// Form-level submit
+const { submit, submitting, success, formErrors, unregisteredFieldErrors } =
+  useCwaForm(toRef(props, 'iri'))
+
+// RepeatedType (password + confirm)
+const { first, second } = useCwaFormRepeated(toRef(props, 'iri'), 'reset_password[password]')
+
+// CollectionType
+const { entries, addEntry, removeEntry, vars } =
+  useCwaFormCollection(toRef(props, 'iri'), 'tags')
 ```
 
-### What the API provides
+**`displayErrors`** is true when: field blurred, OR field previously valid then became invalid (show immediately), OR submit was attempted. `valid` is gated on `hasBlurred || hasInteracted || isSubmitAttempted` — prevents untouched fields going green because a sibling PATCH included them.
 
-Every form resource has a `formView` tree. Each node has:
+**Checkbox pattern:** `!!checkbox.value.value` as getter; `v ? '1' : null` as setter. Unchecked value must be `null` (not `""`) — Symfony's `BooleanToStringTransformer` maps only `null` → `false`.
 
-```json
-{
-  "formView": {
-    "vars": {
-      "id": "contact_form",
-      "full_name": "contact_form",
-      "action": "/_/contact_requests",
-      "method": "POST",
-      "valid": null,
-      "submitted": false,
-      "errors": []
-    },
-    "children": {
-      "name": {
-        "vars": {
-          "full_name": "contact_form[name]",
-          "action": "/_/contact_requests",
-          "valid": null,
-          "errors": [],
-          "label": "Your name",
-          "required": true,
-          "value": ""
-        }
-      }
-    }
-  }
-}
-```
+**CollectionType:** Prototype is at `formEntry.prototype` (not `vars.prototype`). `addEntry()` deep-clones it, replaces `__name__` with the next index.
 
-- `vars.valid: null | true | false` — `null` = untouched, never initialise as `true`
-- `vars.errors: string[]` — populated after validation PATCH or submit POST/PATCH
-- `vars.action` — endpoint for both the per-field realtime PATCH and the final submit
-- `vars.method` — `"POST"` (create) or `"PATCH"` (edit existing resource). Both are valid — public forms may be either.
-- `vars.full_name` — the submit key (e.g. `contact_form[name]`)
-
-**Realtime validation:** PATCH to `vars.action` with just the changed field. Returns `200` (valid, formView updated) or `422` (invalid, formView with field errors). The API validates only what it receives. Correlated fields (password + confirm) send the sibling value in `extraData`.
-
-**Final submit:** POST or PATCH to root `vars.action`. `201`/`200` = success. `422` = full formView with all field errors.
-
-Both flows save the response to the resource store. `useCwaFormInput` reads errors reactively from the store.
-
-### What already exists in this module
-
-| File | What it does |
+| Legacy type | Composable |
 |---|---|
-| `src/runtime/api/forms.ts` | `getForm(iri)` — flattens `formView` into `Map<full_name, FormView>`. `getFormViewErrors(iri, field)` reads errors reactively. No submit/validate logic. |
-| `src/runtime/composables/reset-password.ts` | Ad-hoc POST → 422 pattern — blueprint for the submit flow |
-| `useCwaResourceModel` | Debounced PATCH with cancel-on-new — blueprint for per-field validation |
+| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` |
+| `choice` | `useCwaFormInput` — read `vars.choices`, `expanded`, `multiple` |
+| `repeated` | `useCwaFormRepeated` |
+| `collection` | `useCwaFormCollection` |
+| `button` / `submit` | `useCwaForm.submitting` + `submit()` |
 
-### Planned composables
+### Known concerns
 
-#### `useCwaFormInput(iri, fullName, opts?)`
-
-Per-field composable. The consuming app calls this for each field and binds the returned state to their input component.
-
-```ts
-const {
-  value,          // Ref<any> — two-way, bind to v-model
-  vars,           // ComputedRef<FormFieldVars | undefined> — full field vars from API (label, required, choices, expanded, multiple, attr, block_prefixes, ...)
-  errors,         // ComputedRef<string[]> — from store, always current
-  valid,          // ComputedRef<boolean | null> — null until first validation
-  displayErrors,  // ComputedRef<boolean> — true when errors should be shown to user
-  onBlur,         // () => void — call from @blur
-  onInput,        // () => void — call from @input/@update:modelValue
-  validate,       // (extraData?: Record<string, any>) => void — trigger immediately (used by useCwaFormRepeated)
-} = useCwaFormInput(toRef(props, 'iri'), 'contact_form[email]')
-```
-
-**`displayErrors` rule (agreed):**
-Errors are shown when ANY of these are true:
-- The field has been blurred (user left the field at least once)
-- `valid` was previously `true` and is now `false` (field went from valid → invalid while user is still typing — show the error immediately rather than waiting for blur, because they already know this field is being validated)
-- A submit was attempted (see `useCwaForm` below)
-
-This means: on first interaction, errors are suppressed until blur. After a field has ever been valid, errors appear immediately on re-invalidation. On failed submit, all errors appear everywhere.
-
-```ts
-const hasPreviouslyBeenValid = ref(false)
-const hasBlurred = ref(false)
-
-watch(valid, (v) => { if (v === true) hasPreviouslyBeenValid.value = true })
-
-const displayErrors = computed(() =>
-  hasBlurred.value ||
-  (hasPreviouslyBeenValid.value && valid.value === false) ||
-  submitAttempted.value  // from form-level state keyed by iri
-)
-```
-
-**Validation cadence (agreed):**
-- `onInput` → debounced PATCH (300ms), cancel-on-new-value
-- `onBlur` → sets `hasBlurred = true`; triggers immediate PATCH if value has changed since last validation; always shows errors after
-
-**`vars` exposes all field metadata from the API** — label, required, errors, block_prefixes, and type-specific fields. For `choice` fields:
-```ts
-// vars.value contains choice-specific metadata
-// vars.choices — [{ label: 'Option A', value: '1' }, ...]
-// vars.expanded — true = render as radio/checkboxes, false = <select>
-// vars.multiple — true = multi-select / checkbox group
-// vars.attr — HTML attributes from Symfony (placeholder, maxlength, type, ...)
-```
-The consuming app reads `vars` to decide how to render — e.g. a choice field might render as `<select>`, radio buttons, or checkboxes depending on `vars.expanded` and `vars.multiple`.
-
-#### `useCwaFormRepeated(iri, fullName)`
-
-Dedicated composable for Symfony's `RepeatedType` — two fields that must match (e.g. new password + confirm password). Each validates with the other's current value as `extraData`.
-
-```ts
-const {
-  first,   // same shape as useCwaFormInput — bind to first input
-  second,  // same shape as useCwaFormInput — bind to second input
-} = useCwaFormRepeated(toRef(props, 'iri'), 'reset_password[password]')
-```
-
-Internally uses two `useCwaFormInput` instances (`fullName + '[first]'` and `fullName + '[second]'`). Each `onInput`/`onBlur` call triggers cross-validation by passing the sibling's current value as `extraData`. Uses `'__FAKE__'` when the sibling is blank so the API validates the pair even when one side is empty.
-
-#### `useCwaFormCollection(iri, collectionFullName)`
-
-For Symfony `CollectionType` — a dynamic list of entries the user can add/remove.
-
-```ts
-const {
-  entries,      // ComputedRef<string[]> — full_name keys of current entries (e.g. ['tags[0]', 'tags[1]'])
-  addEntry,     // () => void — clones vars.prototype (replacing __name__ with next index), adds to local state
-  removeEntry,  // (fullName: string) => void
-  vars,         // ComputedRef<FormFieldVars> — the collection-level vars (allow_add, allow_delete, prototype)
-} = useCwaFormCollection(toRef(props, 'iri'), 'tags')
-```
-
-Template iterates `entries`, calls `useCwaFormInput(iri, entryFullName)` per entry, renders the user's own input per entry. The full collection (all active entries) is included in the submit body by `useCwaForm`.
-
-**Prototype cloning:** `vars.prototype` is a `FormView` node with `__name__` as the placeholder. `addEntry()` deep-clones it, replaces all occurrences of `__name__` in `full_name` values with the next index, and adds it to a local reactive array. This local array is what `entries` exposes.
-
-#### `useCwaForm(iri)`
-
-Form-level composable. Handles submit lifecycle and broadcasts "submit attempted" to all active `useCwaFormInput` instances for the same IRI.
-
-```ts
-const {
-  submit,       // () => Promise<void> — POST/PATCH to root vars.action
-  submitting,   // Ref<boolean>
-  success,      // Ref<boolean>
-  formErrors,   // ComputedRef<string[]> — root-level errors (not field-specific)
-} = useCwaForm(toRef(props, 'iri'))
-```
-
-**Submit flow:**
-1. Set `submitAttempted = true` in IRI-keyed state → all `useCwaFormInput` instances for this IRI immediately reveal their errors via `displayErrors`
-2. Call `resourcesManager.doResourceRequest` (POST or PATCH, driven by `vars.method`)
-3. On `201`/`200`: set `success = true`, clear `submitAttempted`
-4. On `422`: save response to store (field errors now in store, already showing via `displayErrors`); set `formErrors` from root `vars.errors`
-
-**"Submit attempted" broadcast without provide/inject:**
-`submitAttempted` is stored in a reactive map keyed by IRI inside `$cwa.forms` (or a composable-local store). Both `useCwaForm` and `useCwaFormInput` read the same reactive flag by IRI — no Vue component hierarchy dependency.
-
-### No built-in input components
-
-The module ships **zero** form input components. The block-prefix component resolution system from the legacy codebase is **not replicated**. Consuming apps use whatever UI library or plain HTML inputs they prefer. The composables are the entire public surface.
-
-The sample component in the playground demonstrates the pattern using Nuxt UI — this is documentation/example only, not a shipped component.
-
-### API error response shapes (reference)
-
-**Realtime PATCH per-field:**
-- `200` → `vars.valid: true`, `vars.errors: []`
-- `422` → `vars.valid: false`, `vars.errors: ["This value is not valid."]`
-
-**Final submit POST/PATCH:**
-- `201`/`200` → success resource (not a formView)
-- `422` → full formView with all field errors populated, root `vars.errors` for form-level errors
-
-### Implementation order
-
-All steps follow TDD: propose test → agree → write test → write code.
-
-1. ✅ `useCwaFormInput` — reactive state (`vars`, `value`, `errors`, `valid`, `displayErrors`, `onBlur`), `validate` stub, `onInput` debounce (300ms). `value` is local (not Pinia), initialised from `vars.value`, resets on `iri` change. `onInput` calls `result.validate()` at fire time so tests can replace it with a spy.
-2. ✅ `useCwaForm` + `validate()` HTTP — `Forms` class gets `cwaFetch`, `submitAttempted` reactive map, `fieldValues` reactive map, `validateField()`, `submitForm()`. `useCwaFormInput.validate()` PATCHes `{iri}/submit` with `{ [fullName]: value, ...extraData }`. `useCwaFormInput` registers/syncs its `value` into `$cwa.forms.fieldValues` and clears on unmount. `displayErrors` also opens when `$cwa.forms.isSubmitAttempted(iri)`. `useCwaForm` reads field values from `$cwa.forms.getFieldValues(iri)`, submits via `$cwa.forms.submitForm()`, sets `success/submitting/formErrors/unregisteredFieldErrors`, and broadcasts `submitAttempted` on failure / clears it on success. `formErrors` is a reactive computed from root form `vars.errors` in the store. `unregisteredFieldErrors` surfaces errors for formView fields not bound to any `useCwaFormInput` instance — prevents silent error loss.
-3. ✅ `useCwaFormRepeated` — cross-validated pair wrapping two `useCwaFormInput` instances
-4. ✅ `useCwaFormCollection` — prototype cloning, entry add/remove
-5. ✅ Sample form component in playground (`playground/app/cwa/components/ExampleForm/ExampleForm.vue`) — all field types from `ExampleFormType` with Nuxt UI; sub-components `FormChildEntry.vue` + `FormTextEntry.vue` for collection entries
-
-**Bug fixes (2026-06-21):**
-
-- **Untouched fields showing as valid (green) after sibling validates**: Sending all field values in every validate PATCH (needed to prevent collection clearing — see below) causes the API to return `submitted: true, valid: true` for every constraint-free field, even ones the user never touched. Fix: `valid` is now gated on `hasBlurred || hasInteracted || isSubmitAttempted`. `hasInteracted` is set when `validate()` is called (i.e. the user has typed in this field). Sibling PATCH responses can no longer make an untouched field appear green.
-- **Collection entry children not validating on input**: New entries added via `addEntry()` had `vars.value` populated from `_localEntries` so `validate()` did not bail early. But `hasInteracted` being false meant `valid` always returned `null` after the first response, so no green check appeared. Fixed by the same `hasInteracted` gate — after the user types and the debounce fires, `validate()` sets `hasInteracted = true` so the subsequent API response is surfaced.
-
-**Known remaining concerns (2026-06-21):**
-
-- **`hasInteracted` gate + sibling response resetting store state**: If field A has `hasInteracted = true` and then field B validates (which sends all field values including A's), the API response includes A with potentially a different `submitted` state. The gate keeps the *display* correct (still shows A's last known valid state) but the store data for A could silently go stale. In practice, A's value IS always included in sibling PATCH bodies (via `getFieldValues`), so the API should return A's state correctly. Watch for regressions where A's visual state resets unexpectedly after B validates.
-- **Concurrent collection entry validation**: If two collection entries are edited in rapid succession (faster than the 300ms debounce), their PATCH responses could interleave. Each response overwrites the full formView in the store, potentially resetting the other entry's `submitted`/`valid` state. The `hasInteracted` gate keeps the visual state from flickering, but the underlying store data may be briefly inconsistent. The debounce makes this rare in practice.
-- **Per-request scoping as a future alternative**: A cleaner architecture would scope each validation response to the field that requested it — `validateField` returns the parsed formView, each `useCwaFormInput` stores its own field's `vars` locally, and the global store is only written for `action`/`method` preservation. This would eliminate all cross-field store pollution. Not worth the refactor now, but worth revisiting if the interleaving issue becomes a real problem.
-
-**Bug fixes (2026-06-20):**
-
-- **`addEntry()` always no-op**: `getForm()` was discarding `prototype` — it's a sibling of `vars` in the API response (`ApiFormView: { vars, children, prototype }`), not a key inside `vars`. `createFormViewObject` now copies `prototype` into the `FormView` entry. `useCwaFormCollection` reads from `formEntry.prototype` (not `vars.prototype`). Spec `makeCollectionFormData` was also wrong (had `prototype` inside `vars`) — now corrected.
-- **Per-field validation always 200, no errors**: `FormApiEventListener.getData()` only processes form data when the path ends with `/submit`. `validateField` was PATCHing `iri.value` directly — the API ignored the form body and returned 200 as a plain entity response. Fix: `validate()` now calls `validateField(\`${iri.value}/submit\`, ...)`. The submit endpoint URL is also in `rootFormVars.action` (set by `FormViewFactory` to `{absolute-iri}/submit`). See api-components-bundle CLAUDE.md for the security note — the `/submit` endpoint inherits the Form entity's access control.
-- **Checkbox non-responsive**: `useCwaFormInput` was initialising `value` from `vars.value` which for `CheckboxType` is always `'1'` (the submit attribute), not the checked state. Fix: when `block_prefixes` includes `'checkbox'`, initialise `value` from `vars.checked ? '1' : null`. The consuming app getter uses `!!checkbox.value.value` (reads local ref, immediate feedback) — NOT `checkbox.vars.value?.checked` (reads store, snaps back after click until PATCH returns). Unchecked value is `null` so Symfony's `BooleanToStringTransformer` correctly maps it to `false` — `""` was treated as checked. See components-web-app CLAUDE.md for the correct template pattern.
-
-**Full legacy field type coverage via composables:**
-
-| Legacy type | Composable | Notes |
-|---|---|---|
-| `text`, `email`, `password`, `textarea`, `checkbox` | `useCwaFormInput` | `vars.attr.type` drives HTML type; `value` is `'1'`/`null` for checkbox (not boolean); `!!value.value` gives the boolean |
-| `choice` | `useCwaFormInput` | Template reads `vars.choices`, `vars.expanded`, `vars.multiple` to decide `<select>` vs radio/checkbox group |
-| `repeated` | `useCwaFormRepeated` | Two sub-inputs with cross-validation |
-| `collection` | `useCwaFormCollection` | Prototype from `formEntry.prototype` (NOT `vars.prototype`); entry add/remove; template iterates `entries` and calls `useCwaFormInput` per entry |
-| `button` / `submit` | `useCwaForm.submitting` + `submit()` | No dedicated composable needed |
+- **`hasInteracted` + sibling response:** When field B validates, it sends all field values including A's. The API returns A's state too, which may differ from A's last-known state. The gate prevents display flickering but store data for A could silently go stale. Watch for A's visual state resetting unexpectedly after B validates.
+- **Concurrent collection entry validation:** Rapid edits across two entries (faster than 300ms debounce) cause PATCH responses to interleave — each overwrites the full formView, potentially resetting the other entry's state briefly. The debounce makes this rare in practice.
 
 ---
 
-## Fixed: Unchecked checkbox unchecked value is `null`
+## Composable pipeline design (#238 / #239)
 
-`useCwaFormInput` initialises unchecked checkboxes with `null` (not `""`). Symfony's `BooleanToStringTransformer` maps only `null` → `false`; any non-null string (including `""`) maps to `true`, so sending `""` silently treated unchecked boxes as checked and suppressed validation errors on `NotBlank`/`IsTrue` constraints.
+`useCwaComponent` is the recommended entry point for app-level CWA components. `useCwaResource` remains unchanged for power users.
 
-**Consuming app template pattern:** `!!checkbox.value.value` for the boolean getter, `v ? '1' : null` for the boolean setter. The playground `ExampleForm.vue` implements this pattern.
+### Plugin type
 
-**Enhancement (future):** Expose `booleanValue: ComputedRef<boolean>` from `useCwaFormInput` when `block_prefixes` includes `'checkbox'`, so templates use `v-model="checkbox.booleanValue"` instead of the getter/setter boilerplate.
+```ts
+interface CwaResourcePluginContext {
+  iri: Ref<string>
+  resource: ComputedRef<CwaResource | undefined>
+  $cwa: Cwa
+}
+type CwaResourcePlugin<T extends object = object> = (ctx: CwaResourcePluginContext) => T
+```
+
+Plugins are factory functions: they close over their own options and return a function receiving the shared context.
+
+### useCwaComponent
+
+```ts
+// src/runtime/composables/cwa-component.ts
+useCwaComponent(props: IriProp, plugins?: CwaResourcePlugin[], ops?: CwaResourceUtilsOps)
+```
+
+- Calls `useCwaResource(toRef(props, 'iri'), ops)` internally
+- Calls `getResource()` and exposes `resource` directly (no two-step)
+- Runs each plugin with `{ iri, resource, $cwa }` context, merges results into return
+- `defineExpose(exposeMeta)` still required in the component (cannot be automated without a Vite macro)
+
+### DX before / after
+
+```ts
+// Before (Title.vue):
+const props = defineProps<IriProp>()
+const { getResource, exposeMeta } = useCwaResource(toRef(props, 'iri'))
+const resource = getResource()
+defineExpose(exposeMeta)
+
+// After:
+const props = defineProps<IriProp>()
+const { resource, exposeMeta } = useCwaComponent(props)
+defineExpose(exposeMeta)
+
+// With plugins (combination previously impossible):
+const props = defineProps<IriProp>()
+const { resource, exposeMeta, collectionItems } = useCwaComponent(props, [withCollection()])
+defineExpose(exposeMeta)
+```
+
+### Built-in plugins
+
+| Factory | Extracts from | Factory opts |
+|---|---|---|
+| `withCollection()` | `useCwaCollectionResource` | none currently |
+| `withImage(imageOps?)` | `useCwaImageResource` | `imagineFilterName`, `imageRef` |
+
+`useCwaCollectionResource` and `useCwaImageResource` are reimplemented as thin wrappers over these plugins. Their public signatures are unchanged (BC safe).
+
+---
+
+## Future Ideas
+
+### `mockCwaResource` test utility
+A developer-facing helper for unit-testing components that use `useCwaResource` without spinning up the full stack:
+
+```ts
+import { mockCwaResource } from '@cwa/nuxt/test-utils'
+const { wrapper } = mockCwaResource('/component/titles/123', { '@type': 'Title', title: 'Hello world' })
+```
+
+Keep in a separate `test-utils` export so it doesn't add to production bundle size.
+
+### `defineCwaComponent()` macro
+Shorthand replacing the four mandatory lines every display component has (`defineProps`, `useCwaResource`, `getResource`, `defineExpose`). Would need to be a Vite/unplugin macro — not a runtime composable — so `defineProps` and `defineExpose` can be called at the correct scope.
+
+---
+

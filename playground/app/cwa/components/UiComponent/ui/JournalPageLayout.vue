@@ -16,13 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaResource } from '#imports'
 
-// Setup the resource
 const props = defineProps<IriProp>()
-const iriRef = toRef(props, 'iri')
-const { exposeMeta } = useCwaResource(iriRef, { name: 'Journal Page' })
+const { exposeMeta } = useCwaComponent(props, undefined, { name: 'Journal Page' })
 defineExpose(exposeMeta)
 </script>
