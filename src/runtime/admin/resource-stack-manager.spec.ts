@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { consola as logger } from 'consola'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { CwaResourceTypes } from '#cwa/resources/resource-utils'
@@ -15,6 +15,18 @@ vi.mock('vue', async () => {
 
 vi.mock('vuejs-confirm-dialog', () => ({ createConfirmDialog: vi.fn() }))
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
+  default: { name: 'ComponentFocus', render: () => null },
+}))
+
+// Provide a real container element so createApp().mount() works in createFocusComponent
+const mockVueAppContainer = vi.hoisted(() => ({ value: null as null | HTMLElement }))
+vi.mock('#imports', () => ({
+  useNuxtApp: () => ({ vueApp: { _container: mockVueAppContainer.value } }),
+}))
+vi.mock('#app/nuxt', () => ({
+  useNuxtApp: () => ({ vueApp: { _container: mockVueAppContainer.value } }),
+}))
 
 function createResourceManager(mockStore?: any) {
   const mockAdminStore = {
@@ -784,6 +796,294 @@ describe('Resource Manager', () => {
     test('handles when neither focusComponent nor focusWrapper is set', () => {
       const { manager } = createResourceManager()
       expect(() => (manager as any).removeFocusComponent()).not.toThrow()
+    })
+  })
+
+  describe('showManager watcher → removeFocusComponent', () => {
+    test('the showManager watcher callback removes the focus component when showManager becomes false', () => {
+      const { manager } = createResourceManager()
+      const removeSpy = vi.spyOn(manager as any, 'removeFocusComponent')
+
+      // The 4th watch() call (line 75) is: watch(showManager, newValue => !newValue && removeFocusComponent())
+      const watchCalls = vi.mocked(watch).mock.calls
+      const showManagerWatchCall = watchCalls.find(call => call[0] === manager.showManager)
+      expect(showManagerWatchCall).toBeDefined()
+      const callback = showManagerWatchCall![1] as (v: boolean) => void
+
+      callback(false)
+      expect(removeSpy).toHaveBeenCalledOnce()
+
+      removeSpy.mockClear()
+      callback(true)
+      expect(removeSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('handleCurrentStackItemChange (private)', () => {
+    test('caches the stack item, then calls scrollIntoView and createFocusComponent', async () => {
+      const { manager } = createResourceManager()
+      const scrollSpy = vi.spyOn(manager as any, 'scrollIntoView').mockImplementation(() => {})
+      const createFocusSpy = vi.spyOn(manager as any, 'createFocusComponent').mockImplementation(() => {})
+      const item = { iri: '/component/1', domElements: ref([]), childIris: ref([]) }
+
+      await (manager as any).handleCurrentStackItemChange(item)
+
+      expect((manager as any).cachedCurrentStackItem.value).toBe(item)
+      expect(scrollSpy).toHaveBeenCalledOnce()
+      expect(createFocusSpy).toHaveBeenCalledOnce()
+    })
+
+    test('caches undefined when stack item is undefined', async () => {
+      const { manager } = createResourceManager()
+      vi.spyOn(manager as any, 'scrollIntoView').mockImplementation(() => {})
+      vi.spyOn(manager as any, 'createFocusComponent').mockImplementation(() => {})
+      ;(manager as any).cachedCurrentStackItem.value = { iri: '/old' }
+
+      await (manager as any).handleCurrentStackItemChange(undefined)
+
+      expect((manager as any).cachedCurrentStackItem.value).toBeUndefined()
+    })
+  })
+
+  describe('confirmStackChange (private) - fromContext cancel branch', () => {
+    test('calls resetStack(true) and returns false when cancelled from context', async () => {
+      const { manager } = createResourceManager()
+      const resetSpy = vi.spyOn(manager, 'resetStack')
+      vi.mocked(createConfirmDialog).mockReturnValue({
+        reveal: vi.fn().mockResolvedValue({ isCanceled: true }),
+      } as any)
+
+      const result = await (manager as any).confirmStackChange({ title: 't', content: 'c' }, true)
+
+      expect(result).toBe(false)
+      expect(resetSpy).toHaveBeenCalledWith(true)
+    })
+
+    test('restores cached new stack and returns true when confirmed (not from context)', async () => {
+      const { manager } = createResourceManager()
+      const newStack = [{ iri: '/new', domElements: ref([]), childIris: ref([]) }]
+      const prevStack = [{ iri: '/prev', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).currentResourceStack.value = newStack
+      ;(manager as any).previousResourceStack.value = prevStack
+      vi.mocked(createConfirmDialog).mockReturnValue({
+        reveal: vi.fn().mockResolvedValue({ isCanceled: false }),
+      } as any)
+
+      const result = await (manager as any).confirmStackChange({ title: 't', content: 'c' }, false)
+
+      expect(result).toBe(true)
+      // current stack first swapped to previous, then restored to cached new stack on confirm
+      expect((manager as any).currentResourceStack.value).toBe(newStack)
+    })
+  })
+
+  describe('insertResourceStackItem - existing item without childIris', () => {
+    test('appends when an existing item has falsy childIris value', () => {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: true }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+          findAllPublishableIris: vi.fn((iri: string) => [iri]),
+        }),
+      }
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      // existing item whose childIris.value is undefined → findIndex callback returns false (line 375)
+      const existing = { iri: '/_/component_groups/grp1', domElements: ref([]), childIris: { value: undefined } as any }
+      ;(manager as any).currentResourceStack.value = [existing]
+      const child = { iri: '/component/child1', domElements: ref([]), childIris: ref([]) }
+
+      ;(manager as any).insertResourceStackItem(child, false)
+
+      const stack = (manager as any).currentResourceStack.value
+      // no match found → appended at end
+      expect(stack[stack.length - 1]).toBe(child)
+    })
+  })
+
+  describe('refreshFocusForIri', () => {
+    test('updates domElements for the matching stack item and recreates the focus component', () => {
+      const { manager } = createResourceManager()
+      const createFocusSpy = vi.spyOn(manager as any, 'createFocusComponent').mockImplementation(() => {})
+      const oldEls = ref<HTMLElement[]>([])
+      const item = { iri: '/component/1', domElements: oldEls, childIris: ref([]) }
+      const other = { iri: '/component/2', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [other, item]
+
+      const newEls = ref<HTMLElement[]>([])
+      manager.refreshFocusForIri('/component/1', newEls)
+
+      expect(item.domElements).toBe(newEls)
+      expect(createFocusSpy).toHaveBeenCalledOnce()
+    })
+
+    test('does not change any item when iri is not in stack but still recreates focus component', () => {
+      const { manager } = createResourceManager()
+      const createFocusSpy = vi.spyOn(manager as any, 'createFocusComponent').mockImplementation(() => {})
+      const original = ref<HTMLElement[]>([])
+      const item = { iri: '/component/1', domElements: original, childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [item]
+
+      manager.refreshFocusForIri('/component/does-not-exist', ref<HTMLElement[]>([]))
+
+      expect(item.domElements).toBe(original)
+      expect(createFocusSpy).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('createFocusComponent (private)', () => {
+    function createManagerForFocus() {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: true }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+        }),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+    }
+
+    beforeEach(() => {
+      mockVueAppContainer.value = document.createElement('div')
+      document.body.appendChild(mockVueAppContainer.value)
+    })
+
+    test('returns early without mounting when there is no current iri / stack item', () => {
+      const manager = createManagerForFocus()
+      manager.showManager.value = false // currentStackItem → undefined
+      const removeSpy = vi.spyOn(manager as any, 'removeFocusComponent')
+
+      ;(manager as any).createFocusComponent()
+
+      expect(removeSpy).toHaveBeenCalledOnce()
+      expect((manager as any).focusComponent).toBeUndefined()
+      expect((manager as any).focusWrapper).toBeUndefined()
+    })
+
+    test('mounts a focus component into the vue app container when an iri and stack item exist', () => {
+      const manager = createManagerForFocus()
+      manager.showManager.value = true
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([]), childIris: ref([]) }]
+
+      ;(manager as any).createFocusComponent()
+
+      expect((manager as any).focusComponent).toBeDefined()
+      expect((manager as any).focusProxy).toBeDefined()
+      const wrapper: HTMLElement = (manager as any).focusWrapper
+      expect(wrapper).toBeDefined()
+      expect(wrapper.className).toContain('cwa:focus-wrapper')
+      expect(mockVueAppContainer.value!.contains(wrapper)).toBe(true)
+
+      // cleanup
+      ;(manager as any).removeFocusComponent()
+    })
+  })
+
+  describe('scrollIntoView (private)', () => {
+    function createManagerForScroll() {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: true }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({
+          state: reactive({}),
+          isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+        }),
+      }
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      manager.showManager.value = true
+      return manager
+    }
+
+    beforeEach(() => vi.restoreAllMocks())
+
+    test('returns early when there is no current stack item', () => {
+      const manager = createManagerForScroll()
+      manager.showManager.value = false
+      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+      ;(manager as any).scrollIntoView()
+      expect(scrollToSpy).not.toHaveBeenCalled()
+    })
+
+    test('does not scroll when element is inside the viewport', () => {
+      const manager = createManagerForScroll()
+      const el = document.createElement('div')
+      el.getBoundingClientRect = () => ({ top: 200, left: 10, bottom: 300, right: 100 }) as DOMRect
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([el]), childIris: ref([]) }]
+      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+
+      ;(manager as any).scrollIntoView()
+
+      expect(scrollToSpy).not.toHaveBeenCalled()
+    })
+
+    test('scrolls to the first element when it is outside the viewport', () => {
+      const manager = createManagerForScroll()
+      const el = document.createElement('div')
+      // top < yOffset (100) → outside viewport
+      el.getBoundingClientRect = () => ({ top: 10, left: 10, bottom: 50, right: 100 }) as DOMRect
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([el]), childIris: ref([]) }]
+      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+
+      ;(manager as any).scrollIntoView()
+
+      expect(scrollToSpy).toHaveBeenCalledOnce()
+      const arg = scrollToSpy.mock.calls[0][0] as ScrollToOptions
+      expect(arg.behavior).toBe('smooth')
+      // y = top (10) + scrollY (0) - yOffset (100) = -90
+      expect(arg.top).toBe(10 + window.scrollY - 100)
+    })
+
+    test('ignores non-element nodes and uses the first element node', () => {
+      const manager = createManagerForScroll()
+      const textNode = document.createTextNode('text') as unknown as HTMLElement
+      const el = document.createElement('div')
+      el.getBoundingClientRect = () => ({ top: 5, left: 0, bottom: 20, right: 50 }) as DOMRect
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([textNode, el]), childIris: ref([]) }]
+      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+
+      ;(manager as any).scrollIntoView()
+
+      expect(scrollToSpy).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('isElementOutsideViewport (private)', () => {
+    function createBareManager() {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: false }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false) }),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+    }
+
+    test('returns true when element top is above the yOffset', () => {
+      const manager = createBareManager()
+      const el = document.createElement('div')
+      el.getBoundingClientRect = () => ({ top: 10, left: 10, bottom: 50, right: 50 }) as DOMRect
+      expect((manager as any).isElementOutsideViewport(el)).toBe(true)
+    })
+
+    test('returns false when element is fully within viewport', () => {
+      const manager = createBareManager()
+      const el = document.createElement('div')
+      el.getBoundingClientRect = () => ({ top: 150, left: 10, bottom: 200, right: 50 }) as DOMRect
+      expect((manager as any).isElementOutsideViewport(el)).toBe(false)
+    })
+
+    test('reduces visible height by the manager spacer height when present', () => {
+      const manager = createBareManager()
+      const spacer = document.createElement('div')
+      spacer.id = 'cwa-manager-spacer'
+      Object.defineProperty(spacer, 'offsetHeight', { value: 400, configurable: true })
+      document.body.appendChild(spacer)
+
+      const el = document.createElement('div')
+      // bottom (innerHeight - 200) is within full innerHeight but below (innerHeight - 400 spacer)
+      const bottom = window.innerHeight - 200
+      el.getBoundingClientRect = () => ({ top: 150, left: 10, bottom, right: 50 }) as DOMRect
+
+      expect((manager as any).isElementOutsideViewport(el)).toBe(true)
+
+      spacer.remove()
     })
   })
 })

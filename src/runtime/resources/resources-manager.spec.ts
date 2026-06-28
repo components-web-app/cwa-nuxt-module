@@ -960,4 +960,419 @@ describe('Resources manager', () => {
       )
     })
   })
+
+  describe('reqCount watcher (line 79)', () => {
+    test('resets reqCount to 0 when it reaches 10000', async () => {
+      const { resourcesManager } = createResourcesManager()
+      // reqCount is a private ref; mutate it directly and let the watcher fire
+      ;(resourcesManager as any).reqCount.value = 10000
+      // allow the Vue watcher to run
+      await new Promise(resolve => setTimeout(resolve, 0))
+      expect((resourcesManager as any).reqCount.value).toBe(0)
+    })
+
+    test('does not reset reqCount when below the threshold', async () => {
+      const { resourcesManager } = createResourcesManager()
+      ;(resourcesManager as any).reqCount.value = 9999
+      await new Promise(resolve => setTimeout(resolve, 0))
+      expect((resourcesManager as any).reqCount.value).toBe(9999)
+    })
+  })
+
+  describe('requestCount getter caching (line 91)', () => {
+    test('returns the same cached computed ref on subsequent calls', () => {
+      const { resourcesManager } = createResourcesManager()
+      const first = resourcesManager.requestCount
+      const second = resourcesManager.requestCount
+      expect(second).toBe(first)
+    })
+  })
+
+  describe('getWaitForRequestPromise (additional branches)', () => {
+    test('treats an in-flight DELETE (no data) for the same endpoint as a conflict (line 105)', async () => {
+      const { resourcesManager } = createResourcesManager()
+      // Inject a delete-style request (no `data` on the event) directly into requestsInProgress
+      const requests = (resourcesManager as any).requestsInProgress
+      requests.delete = {
+        1: {
+          event: { endpoint: '/delete-endpoint' },
+          args: ['/delete-endpoint', { method: 'DELETE', headers: {} }],
+        },
+      }
+
+      let resolved = false
+      const wait = resourcesManager
+        .getWaitForRequestPromise('/delete-endpoint', 'field')
+        .then(() => { resolved = true })
+
+      await Promise.resolve()
+      // DELETE in-flight for the same endpoint -> hasRequestConflict returns true (line 105) -> pending
+      expect(resolved).toBe(false)
+
+      // remove the conflicting request to trigger the watcher and resolve the wait promise
+      delete requests.delete
+      await wait
+      expect(resolved).toBe(true)
+    })
+
+    test('stays pending while an unrelated conflicting request is still in flight (line 119)', async () => {
+      let resolveFirst!: (v: any) => void
+      let resolveSecond!: (v: any) => void
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      cwaFetch.fetch
+        .mockReturnValueOnce(new Promise(r => (resolveFirst = r)))
+        .mockReturnValueOnce(new Promise(r => (resolveSecond = r)))
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+
+      // two concurrent conflicting requests for the same endpoint/property
+      const p1 = resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'a' } })
+      const p2 = resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'b' } })
+      await Promise.resolve()
+
+      let resolved = false
+      const wait = resourcesManager
+        .getWaitForRequestPromise('/endpoint', 'field')
+        .then(() => { resolved = true })
+
+      await Promise.resolve()
+      expect(resolved).toBe(false)
+
+      // resolve only the first request - watcher fires but conflict still exists (line 119 `return`)
+      resolveFirst({ '@id': '/endpoint/1' })
+      await p1
+      await Promise.resolve()
+      expect(resolved).toBe(false)
+
+      // resolve the second - conflict clears and the wait promise resolves
+      resolveSecond({ '@id': '/endpoint/2' })
+      await p2
+      await wait
+      expect(resolved).toBe(true)
+    })
+  })
+
+  describe('updateResource non-persisted array merge (line 196)', () => {
+    test('concatenates array fields when merging an unpersisted resource update', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager()
+      resourcesStoreActions.getResource.mockReturnValue({
+        data: {
+          '@id': '/things/1',
+          '@type': 'Thing',
+          'tags': ['existing'],
+          '_metadata': { persisted: false },
+        },
+      })
+      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      await resourcesManager.updateResource({ endpoint: '/things/1', data: { tags: ['added'] } })
+      expect(cwaFetch.fetch).not.toHaveBeenCalled()
+      const saved = saveSpy.mock.calls[0]![0] as any
+      // mergeWith customizer returns b.concat(a) => incoming first, existing appended
+      expect(saved.resource.tags).toEqual(['added', 'existing'])
+    })
+  })
+
+  describe('initAddResource findClosestPositionFromGroupEvent (line 391)', () => {
+    test('leaves closest.position undefined when the target group has no positions', async () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      const store = (resourcesManager as any)._resourcesStore
+      store.current = {
+        byId: {
+          '/_/component_groups/g1': {
+            data: { componentPositions: [] },
+          },
+        },
+      }
+      await resourcesManager.initAddResource('/_/component_groups/g1', true, [])
+      expect(resourcesManager.addResourceEvent.value?.closest.position).toBeUndefined()
+    })
+
+    test('leaves closest.position undefined when the target group resource is missing positions key', async () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      const store = (resourcesManager as any)._resourcesStore
+      store.current = {
+        byId: {
+          '/_/component_groups/g1': {
+            data: {},
+          },
+        },
+      }
+      await resourcesManager.initAddResource('/_/component_groups/g1', true, [])
+      expect(resourcesManager.addResourceEvent.value?.closest.position).toBeUndefined()
+    })
+  })
+
+  describe('addResourceAction getPositionSortValue branches', () => {
+    function setupAddingStore(resourcesManager: ResourcesManager, opts: {
+      addEventOverrides?: any
+      storeAddingPosition?: string
+      extraGetResource?: (iri: string) => any
+    } = {}) {
+      const newResourceIri = '/_/new-resource'
+      const newResourceData = {
+        '@id': newResourceIri,
+        '@type': 'Component',
+        '_metadata': {
+          persisted: true,
+          adding: { endpoint: '/component', isPublishable: false, instantAdd: false },
+        },
+      } as any
+      const store = (resourcesManager as any)._resourcesStore
+      store.adding = { resource: newResourceIri, position: opts.storeAddingPosition }
+      store.getResource = vi.fn().mockImplementation((iri: string) => {
+        if (iri === newResourceIri) return { data: newResourceData }
+        return opts.extraGetResource?.(iri) ?? undefined
+      })
+      resourcesManager.addResourceEvent.value = {
+        targetIri: '/_/component_positions/p1',
+        addAfter: null,
+        closest: {},
+        ...opts.addEventOverrides,
+      } as any
+      return { newResourceData, store }
+    }
+
+    test('sortValue defaults to 0 when target group has no componentPositions (line 507)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_groups/g1',
+          addAfter: true,
+          closest: { group: '/_/component_groups/g1' },
+        },
+        extraGetResource: (iri: string) => {
+          if (iri === '/_/component_groups/g1') return { data: { componentPositions: [] } }
+        },
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.sortValue).toBe(0)
+    })
+
+    test('sortValue defaults to 0 when only the new resource is in the group (line 513)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_groups/g1',
+          addAfter: true,
+          closest: { group: '/_/component_groups/g1' },
+        },
+        extraGetResource: (iri: string) => {
+          if (iri === '/_/component_groups/g1') {
+            return { data: { componentPositions: ['/_/component_positions/__new__'] } }
+          }
+        },
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.sortValue).toBe(0)
+    })
+
+    test('sortValue defaults to 0 when target position cannot be resolved (line 518)', async () => {
+      // positionsWithoutNew has an entry but addAfter picks an index that is undefined
+      // - simulate by making positionsWithoutNew non-empty but the target lookup falsy.
+      // We achieve "targetPosition undefined" by having a single empty-string entry that
+      // does not end with NEW but is falsy when indexed - instead use addAfter=false with
+      // a positions array whose first element is an empty string.
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_groups/g1',
+          addAfter: false,
+          closest: { group: '/_/component_groups/g1' },
+        },
+        extraGetResource: (iri: string) => {
+          if (iri === '/_/component_groups/g1') {
+            return { data: { componentPositions: [''] } }
+          }
+        },
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.sortValue).toBe(0)
+    })
+
+    test('sortValue defaults to 0 when adding before/after a resource with no closest position (lines 525-526)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_positions/p1',
+          addAfter: true,
+          closest: {}, // no position
+        },
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.sortValue).toBe(0)
+    })
+
+    test('sortValue defaults to 0 when closest position resource is not found (lines 528-530)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStore(resourcesManager, {
+        addEventOverrides: {
+          targetIri: '/_/component_positions/p1',
+          addAfter: true,
+          closest: { position: '/_/component_positions/missing' },
+        },
+        // extraGetResource returns undefined for the missing position
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.sortValue).toBe(0)
+    })
+
+    test('uses the closest position sortValue when adding after a resource (line 532)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStore(resourcesManager, {
+        storeAddingPosition: undefined,
+        addEventOverrides: {
+          targetIri: '/_/component_positions/p1',
+          addAfter: true,
+          closest: { position: '/_/component_positions/p1' },
+        },
+        extraGetResource: (iri: string) => {
+          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 7 } }
+        },
+      })
+      await resourcesManager.addResourceAction()
+      // addAfter => existingSortValue + 1
+      expect(newResourceData.sortValue).toBe(8)
+    })
+  })
+
+  describe('addResourceAction position post data (lines 548, 550, 553)', () => {
+    function setupAddingStoreWithPosition(resourcesManager: ResourcesManager, opts: {
+      positionIri?: string
+      positionData?: any
+      addEventOverrides?: any
+    } = {}) {
+      const newResourceIri = '/_/new-resource'
+      const newResourceData = {
+        '@id': newResourceIri,
+        '@type': 'Component',
+        '_metadata': {
+          persisted: true,
+          adding: { endpoint: '/component', isPublishable: false, instantAdd: false },
+        },
+      } as any
+      const store = (resourcesManager as any)._resourcesStore
+      store.adding = { resource: newResourceIri, position: opts.positionIri }
+      store.getResource = vi.fn().mockImplementation((iri: string) => {
+        if (iri === newResourceIri) return { data: newResourceData }
+        if (opts.positionIri && iri === opts.positionIri && opts.positionData !== undefined) {
+          return { data: opts.positionData }
+        }
+        return undefined
+      })
+      resourcesManager.addResourceEvent.value = {
+        targetIri: '/_/component_positions/p1',
+        addAfter: true,
+        closest: { position: '/_/component_positions/p1' },
+        ...opts.addEventOverrides,
+      } as any
+      return { newResourceData, store }
+    }
+
+    test('throws when the position resource being added cannot be found (lines 548, 550)', async () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      setupAddingStoreWithPosition(resourcesManager, {
+        positionIri: '/_/component_positions/new-pos',
+        positionData: undefined, // not found in store
+        addEventOverrides: {
+          targetIri: '/_/component_positions/p1',
+          addAfter: true,
+          closest: { position: '/_/component_positions/p1' },
+        },
+      })
+      await expect(resourcesManager.addResourceAction()).rejects.toThrow('Position resource being added not found')
+    })
+
+    test('builds componentPositions post data stripping @id/@type/component and setting sortValue (line 553)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
+      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const { newResourceData } = setupAddingStoreWithPosition(resourcesManager, {
+        positionIri: '/_/component_positions/new-pos',
+        positionData: {
+          '@id': '/_/component_positions/new-pos',
+          '@type': 'ComponentPosition',
+          'component': '/component/existing',
+          'sortValue': 2,
+          'extra': 'keep-me',
+        },
+        addEventOverrides: {
+          targetIri: '/_/component_positions/p1',
+          addAfter: true,
+          closest: { position: '/_/component_positions/p1' },
+        },
+      })
+      await resourcesManager.addResourceAction()
+      expect(newResourceData.componentPositions).toHaveLength(1)
+      const positionPostData = newResourceData.componentPositions[0]
+      expect(positionPostData['@id']).toBeUndefined()
+      expect(positionPostData['@type']).toBeUndefined()
+      expect(positionPostData.component).toBeUndefined()
+      expect(positionPostData.extra).toBe('keep-me')
+      // closest position p1 not in store -> existingSortValue undefined -> newSortValue 0
+      expect(positionPostData.sortValue).toBe(0)
+    })
+  })
+
+  describe('getRefreshPositions and group getters (lines 638, 646-648, 658, 665)', () => {
+    test('returns empty refresh positions when no positionIri provided (line 638)', () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      const result = (resourcesManager as any).getRefreshPositions(undefined)
+      expect(result).toEqual([])
+    })
+
+    test('returns positions from the insertion index onward, excluding NEW (lines 646-648)', () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      const store = (resourcesManager as any)._resourcesStore
+      store.getResource = vi.fn().mockImplementation((iri: string) => {
+        if (iri === '/_/component_groups/g1') {
+          return {
+            data: {
+              componentPositions: [
+                '/_/component_positions/p1',
+                '/_/component_positions/p2',
+                '/_/component_positions/p3',
+                '/_/component_positions/__new__',
+              ],
+            },
+          }
+        }
+      })
+      resourcesManager.addResourceEvent.value = {
+        targetIri: '/_/component_positions/p2',
+        addAfter: null,
+        closest: { group: '/_/component_groups/g1' },
+      } as any
+      const result = (resourcesManager as any).getRefreshPositions('/_/component_positions/p2')
+      // from p2 onward, with NEW filtered out
+      expect(result).toEqual([
+        '/_/component_positions/p2',
+        '/_/component_positions/p3',
+      ])
+    })
+
+    test('groupResource getter returns undefined when no addResourceEvent group (line 658)', () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      // no addResourceEvent set
+      expect((resourcesManager as any).groupResource).toBeUndefined()
+      // addResourceEvent set but without closest.group
+      resourcesManager.addResourceEvent.value = { targetIri: '/x', addAfter: null, closest: {} } as any
+      expect((resourcesManager as any).groupResource).toBeUndefined()
+    })
+
+    test('groupResourcePositions getter returns undefined when groupResource is undefined (line 665)', () => {
+      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+      expect((resourcesManager as any).groupResourcePositions).toBeUndefined()
+    })
+  })
 })

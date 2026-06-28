@@ -1,11 +1,57 @@
 // @vitest-environment nuxt
 
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import Auth, { CwaAuthStatus } from './auth'
 import { useRoute } from '#app'
 import { ref } from '#imports'
+
+// Mutable hoisted state to drive the source-module mocks used by clearSession branch tests.
+// auth.ts imports useNuxtApp/useRoute/useRouter via #imports, which re-exports useNuxtApp from
+// '#app/nuxt' and useRoute/useRouter from '#app/composables/router' — so those are the modules to mock.
+// Plain objects only (vi.hoisted cannot use ref/reactive).
+const nuxtMockState = vi.hoisted(() => ({
+  enabled: false,
+  nuxtApp: { _processingMiddleware: false } as any,
+  nuxtAppThrows: false,
+  route: { meta: {} } as any,
+  routerReplace: vi.fn(),
+}))
+
+vi.mock('#app/nuxt', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#app/nuxt')>()
+  return {
+    ...actual,
+    useNuxtApp: (...args: any[]) => {
+      if (!nuxtMockState.enabled) {
+        return (actual.useNuxtApp as any)(...args)
+      }
+      if (nuxtMockState.nuxtAppThrows) {
+        throw new Error('useNuxtApp unavailable')
+      }
+      return nuxtMockState.nuxtApp
+    },
+  }
+})
+
+vi.mock('#app/composables/router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#app/composables/router')>()
+  return {
+    ...actual,
+    useRoute: (...args: any[]) => (nuxtMockState.enabled ? nuxtMockState.route : (actual.useRoute as any)(...args)),
+    useRouter: (...args: any[]) => (nuxtMockState.enabled ? { replace: nuxtMockState.routerReplace } : (actual.useRouter as any)(...args)),
+  }
+})
+
+afterEach(() => {
+  nuxtMockState.enabled = false
+  nuxtMockState.nuxtApp = { _processingMiddleware: false }
+  nuxtMockState.nuxtAppThrows = false
+  nuxtMockState.route = { meta: {} }
+  nuxtMockState.routerReplace = vi.fn()
+  vi.restoreAllMocks()
+})
 
 function createAuth() {
   const mockUserData = {
@@ -226,6 +272,191 @@ describe('Auth', () => {
             plainPassword: mockPayload.passwords,
           },
         },
+      })
+    })
+  })
+
+  describe('resendVerifyEmail', () => {
+    const mockUserName = 'george'
+
+    test('should return result IF request succeeds', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockResult = { success: true }
+
+      cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+
+      const result = await auth.resendVerifyEmail(mockUserName)
+
+      expect(result).toEqual(mockResult)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/resend-verify-email/${mockUserName}`, {
+        retry: 0,
+      })
+    })
+
+    test('should return error IF request fails with a FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new FetchError('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      const result = await auth.resendVerifyEmail(mockUserName)
+
+      expect(result).toEqual(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/resend-verify-email/${mockUserName}`, {
+        retry: 0,
+      })
+    })
+
+    test('should throw error IF request fails AND error is not instance of FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      await expect(auth.resendVerifyEmail(mockUserName)).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/resend-verify-email/${mockUserName}`, {
+        retry: 0,
+      })
+    })
+  })
+
+  describe('resendVerifyNewEmail', () => {
+    const mockUserName = 'george'
+
+    test('should return result IF request succeeds', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockResult = { success: true }
+
+      cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+
+      const result = await auth.resendVerifyNewEmail(mockUserName)
+
+      expect(result).toEqual(mockResult)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/resend-verify-new-email/${mockUserName}`, {
+        retry: 0,
+      })
+    })
+
+    test('should return error IF request fails with a FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new FetchError('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      const result = await auth.resendVerifyNewEmail(mockUserName)
+
+      expect(result).toEqual(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/resend-verify-new-email/${mockUserName}`, {
+        retry: 0,
+      })
+    })
+
+    test('should throw error IF request fails AND error is not instance of FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      await expect(auth.resendVerifyNewEmail(mockUserName)).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`/resend-verify-new-email/${mockUserName}`, {
+        retry: 0,
+      })
+    })
+  })
+
+  describe('confirmEmail', () => {
+    const mockEvent = {
+      username: 'george',
+      newEmail: 'new@example.com',
+      token: 'tok123',
+    }
+    const expectedPath = `/confirm-email/${encodeURIComponent(mockEvent.username)}/${encodeURIComponent(mockEvent.newEmail)}/${encodeURIComponent(mockEvent.token)}`
+
+    test('should return result IF request succeeds', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockResult = { success: true }
+
+      cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+
+      const result = await auth.confirmEmail(mockEvent)
+
+      expect(result).toEqual(mockResult)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(expectedPath, {
+        retry: 0,
+      })
+    })
+
+    test('should return error IF request fails with a FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new FetchError('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      const result = await auth.confirmEmail(mockEvent)
+
+      expect(result).toEqual(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(expectedPath, {
+        retry: 0,
+      })
+    })
+
+    test('should throw error IF request fails AND error is not instance of FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      await expect(auth.confirmEmail(mockEvent)).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(expectedPath, {
+        retry: 0,
+      })
+    })
+  })
+
+  describe('verifyEmail', () => {
+    const mockEvent = {
+      username: 'george',
+      token: 'tok123',
+    }
+    const expectedPath = `/verify-email/${encodeURIComponent(mockEvent.username)}/${encodeURIComponent(mockEvent.token)}`
+
+    test('should return result IF request succeeds', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockResult = { success: true }
+
+      cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+
+      const result = await auth.verifyEmail(mockEvent)
+
+      expect(result).toEqual(mockResult)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(expectedPath, {
+        retry: 0,
+      })
+    })
+
+    test('should return error IF request fails with a FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new FetchError('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      const result = await auth.verifyEmail(mockEvent)
+
+      expect(result).toEqual(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(expectedPath, {
+        retry: 0,
+      })
+    })
+
+    test('should throw error IF request fails AND error is not instance of FetchError', async () => {
+      const { auth, cwaFetch } = createAuth()
+      const mockError = new Error('oops')
+
+      cwaFetch.fetch = vi.fn().mockRejectedValue(mockError)
+
+      await expect(auth.verifyEmail(mockEvent)).rejects.toThrow(mockError)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(expectedPath, {
+        retry: 0,
       })
     })
   })
@@ -467,6 +698,28 @@ describe('Auth', () => {
     })
   })
 
+  describe('isAdmin getter', () => {
+    test('should return true IF user has the admin role', () => {
+      const { auth, authStore } = createAuth()
+
+      authStore.useStore().data.user = {
+        roles: [CwaUserRoles.ADMIN],
+      }
+
+      expect(auth.isAdmin.value).toBe(true)
+    })
+
+    test('should return false IF user does NOT have the admin role', () => {
+      const { auth, authStore } = createAuth()
+
+      authStore.useStore().data.user = {
+        roles: [CwaUserRoles.USER],
+      }
+
+      expect(auth.isAdmin.value).toBe(false)
+    })
+  })
+
   describe('loginRequest', () => {
     const credentials = { username: 'mock-user', password: 'sEcrEt' }
 
@@ -533,6 +786,78 @@ describe('Auth', () => {
       expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
       expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
       expect(fetcher.fetchRoute).toHaveBeenCalledWith(useRoute())
+    })
+
+    test('should return early WITHOUT clearing resources IF processing middleware', async () => {
+      const {
+        auth,
+        authStore,
+        mercure,
+        fetcherStore,
+        resourcesStore,
+        fetcher,
+        admin,
+        cookie,
+      } = createAuth()
+
+      nuxtMockState.enabled = true
+      nuxtMockState.nuxtApp = { _processingMiddleware: true }
+
+      await auth.clearSession()
+
+      // Early-return work still happens
+      expect(authStore.useStore().data.user).toEqual(undefined)
+      expect(cookie.value).toBe('0')
+      expect(admin.toggleEdit).toHaveBeenCalledWith(false)
+
+      // But everything after the early return is skipped
+      expect(mercure.init).not.toHaveBeenCalled()
+      expect(fetcherStore.useStore().clearFetches).not.toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).not.toHaveBeenCalled()
+      expect(fetcher.fetchRoute).not.toHaveBeenCalled()
+    })
+
+    test('should treat throwing useNuxtApp as processing middleware AND return early', async () => {
+      const {
+        auth,
+        mercure,
+        fetcherStore,
+        resourcesStore,
+        fetcher,
+      } = createAuth()
+
+      nuxtMockState.enabled = true
+      nuxtMockState.nuxtAppThrows = true
+
+      await auth.clearSession()
+
+      expect(mercure.init).not.toHaveBeenCalled()
+      expect(fetcherStore.useStore().clearFetches).not.toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).not.toHaveBeenCalled()
+      expect(fetcher.fetchRoute).not.toHaveBeenCalled()
+    })
+
+    test('should redirect to root WITHOUT fetching route IF current route is an admin route', async () => {
+      const {
+        auth,
+        mercure,
+        fetcherStore,
+        resourcesStore,
+        fetcher,
+      } = createAuth()
+
+      nuxtMockState.enabled = true
+      nuxtMockState.nuxtApp = { _processingMiddleware: false }
+      nuxtMockState.route = { meta: { cwa: { admin: true } } }
+      const replaceSpy = nuxtMockState.routerReplace
+
+      await auth.clearSession()
+
+      expect(mercure.init).toHaveBeenCalledWith(true)
+      expect(fetcherStore.useStore().clearFetches).toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
+      expect(replaceSpy).toHaveBeenCalledWith('/')
+      expect(fetcher.fetchRoute).not.toHaveBeenCalled()
     })
   })
 

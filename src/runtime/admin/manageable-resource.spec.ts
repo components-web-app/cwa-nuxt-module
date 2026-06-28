@@ -105,6 +105,17 @@ vi.mock('vue', async () => {
   }
 })
 
+const watchOnceMock = vi.fn()
+vi.mock('@vueuse/core', () => ({
+  watchOnce: (...args: any[]) => watchOnceMock(...args),
+}))
+
+vi.mock('consola', () => ({
+  consola: {
+    error: vi.fn(),
+  },
+}))
+
 interface DummyDom {
   nodeValue?: string
   nodeType: 1 | 2 | 3
@@ -473,6 +484,263 @@ describe('ManageableResource Class', () => {
       expect(ManagerTabsResolver.default.mock.results[0].value.resolve).toHaveBeenCalledWith(
         expect.objectContaining({ resourceType: 'COMPONENT' }),
       )
+    })
+  })
+
+  describe('elements getter', () => {
+    test('returns the live domElements ref', () => {
+      const { instance } = createManageableResource()
+      expect(instance.elements).toBe(instance.domElements)
+      const els = [createDomElement(1)]
+      instance.domElements.value = els
+      expect(instance.elements.value).toEqual(els)
+    })
+  })
+
+  describe('componentMountedListener early returns', () => {
+    test('does nothing when there is no currentIri', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref(undefined)
+      const childIrisSpy = vi.spyOn(instance, 'childIris', 'get')
+      instance.componentMountedListener('/something')
+      expect(childIrisSpy).not.toHaveBeenCalled()
+    })
+
+    test('does nothing when the mounted iri equals the currentIri', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      const childIrisSpy = vi.spyOn(instance, 'childIris', 'get')
+      instance.componentMountedListener('/abc')
+      expect(childIrisSpy).not.toHaveBeenCalled()
+    })
+
+    test('returns early when a child re-init is already pending', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      instance.pendingChildMountedReInit = true
+      const childIrisSpy = vi.spyOn(instance, 'childIris', 'get')
+      instance.componentMountedListener('/child')
+      expect(childIrisSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('componentMountedListener placeholder handling', () => {
+    test('expands placeholder iri to publishable iris and treats it as a child', async () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      ;($cwa.resources as any).findAllPublishableIris.mockImplementation((iri: string) => [iri, '/published'])
+      vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => ['/published']))
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementation(() => {})
+      vi.spyOn(instance, 'addClickEventListeners').mockImplementation(() => {})
+
+      instance.componentMountedListener('/child_placeholder')
+
+      // placeholder iri itself + published iris from the stripped iri
+      expect(($cwa.resources as any).findAllPublishableIris).toHaveBeenCalledWith('/child')
+      // cascade emitted synchronously to grandparents with the currentIri
+      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/abc')
+
+      await nextTick()
+      expect(instance.removeClickEventListeners).toHaveBeenCalled()
+      expect(instance.addClickEventListeners).toHaveBeenCalled()
+      expect(instance.pendingChildMountedReInit).toBe(false)
+    })
+
+    test('nextTick callback returns early if currentIri cleared before flush', async () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => ['/child']))
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementation(() => {})
+      vi.spyOn(instance, 'addClickEventListeners').mockImplementation(() => {})
+      ;($cwa.resources as any).findAllPublishableIris.mockImplementation((iri: string) => [iri])
+
+      instance.componentMountedListener('/child')
+      // simulate the resource being cleared before nextTick flushes
+      instance.isIriInit = false
+
+      await nextTick()
+      expect(instance.removeClickEventListeners).not.toHaveBeenCalled()
+      expect(instance.addClickEventListeners).not.toHaveBeenCalled()
+      expect(instance.pendingChildMountedReInit).toBe(false)
+    })
+  })
+
+  describe('mockChildMounted function', () => {
+    test('refreshes listeners and emits componentMounted with currentIri', () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementation(() => {})
+      vi.spyOn(instance, 'addClickEventListeners').mockImplementation(() => {})
+
+      instance.mockChildMounted()
+
+      expect(instance.removeClickEventListeners).toHaveBeenCalled()
+      expect(instance.addClickEventListeners).toHaveBeenCalled()
+      expect(instance.addClickEventListeners.mock.invocationCallOrder[0])
+        .toBeGreaterThan(instance.removeClickEventListeners.mock.invocationCallOrder[0])
+      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/abc')
+    })
+
+    test('does not emit when there is no currentIri', () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref(undefined)
+      vi.spyOn(instance, 'removeClickEventListeners').mockImplementation(() => {})
+      vi.spyOn(instance, 'addClickEventListeners').mockImplementation(() => {})
+
+      instance.mockChildMounted()
+
+      expect(instance.removeClickEventListeners).toHaveBeenCalled()
+      expect(instance.addClickEventListeners).toHaveBeenCalled()
+      expect($cwa.admin.eventBus.emit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('selectResourceListener function', () => {
+    test('triggers a click when the selected iri matches currentIri', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      const triggerSpy = vi.spyOn(instance, 'triggerClick').mockImplementation(() => Promise.resolve())
+      instance.selectResourceListener('/abc')
+      expect(triggerSpy).toHaveBeenCalled()
+    })
+
+    test('does nothing when the selected iri does not match currentIri', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      const triggerSpy = vi.spyOn(instance, 'triggerClick').mockImplementation(() => Promise.resolve())
+      instance.selectResourceListener('/other')
+      expect(triggerSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('childIris getter with currentIri set', () => {
+    test('returns getChildIris result using the addResourceEvent', () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      const addResourceEvent = { some: 'event' }
+      ;($cwa.resourcesManager as any).addResourceEvent.value = addResourceEvent
+      ;($cwa.resources as any).getChildIris.mockReturnValue(['/child-1', '/child-2'])
+
+      expect(instance.childIris.value).toEqual(['/child-1', '/child-2'])
+      expect(($cwa.resources as any).getChildIris).toHaveBeenCalledWith('/abc', addResourceEvent)
+    })
+  })
+
+  describe('triggerClick function', () => {
+    test('dispatches a click immediately when dom elements already exist', async () => {
+      const { instance } = createManageableResource()
+      const dispatchEvent = vi.fn()
+      instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
+
+      await instance.triggerClick()
+
+      expect(dispatchEvent).toHaveBeenCalledTimes(1)
+      const dispatched = dispatchEvent.mock.calls[0][0]
+      expect(dispatched.type).toBe('click')
+      expect(dispatched.bubbles).toBe(true)
+      expect(watchOnceMock).not.toHaveBeenCalled()
+    })
+
+    test('waits for dom elements to appear via watchOnce then dispatches', async () => {
+      const { instance } = createManageableResource()
+      instance.domElements.value = []
+      const dispatchEvent = vi.fn()
+
+      // watchOnce immediately invokes the callback simulating dom elements appearing
+      watchOnceMock.mockImplementation((_source, cb) => {
+        instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
+        cb(instance.domElements.value)
+        return vi.fn()
+      })
+
+      await instance.triggerClick()
+
+      expect(watchOnceMock).toHaveBeenCalled()
+      expect(dispatchEvent).toHaveBeenCalledTimes(1)
+    })
+
+    test('watchOnce callback does not resolve while dom elements remain empty', async () => {
+      const { instance } = createManageableResource()
+      instance.domElements.value = []
+
+      // callback invoked with an empty array should NOT resolve the promise
+      watchOnceMock.mockImplementation((_source, cb) => {
+        cb([])
+        return vi.fn()
+      })
+
+      let settled = false
+      const promise = instance.triggerClick().then(() => {
+        settled = true
+      })
+
+      await nextTick()
+      expect(settled).toBe(false)
+
+      // now make elements appear and trigger the watch callback again
+      const dispatchEvent = vi.fn()
+      instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
+      const cb = watchOnceMock.mock.calls[0][1]
+      cb(instance.domElements.value)
+
+      await promise
+      expect(settled).toBe(true)
+      expect(dispatchEvent).toHaveBeenCalled()
+    })
+
+    test('logs an error when resolved but no dom element is found', async () => {
+      const { consola } = await import('consola')
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/missing')
+      instance.domElements.value = []
+
+      // watchOnce resolves the promise but leaves domElements empty (length check passes
+      // via a transient value that is reset before the await completes)
+      watchOnceMock.mockImplementation((_source, cb) => {
+        // resolve by reporting a non-empty array, but the actual ref stays empty
+        cb([{ nodeType: 1 }])
+        return vi.fn()
+      })
+
+      await instance.triggerClick()
+
+      expect((consola.error as any)).toHaveBeenCalledWith(
+        'Manageable resource listener called to select component, but no dom elements found.',
+        '/missing',
+      )
+    })
+  })
+
+  describe('getCurrentStackItem error path', () => {
+    test('throws when currentResource is not defined', () => {
+      const { instance } = createManageableResource()
+      vi.spyOn(instance, 'currentResource', 'get').mockReturnValue(undefined)
+      instance.currentIri = ref('/abc')
+      expect(() => instance.getCurrentStackItem(null)).toThrow(
+        'Cannot get a currentStackItem when currentResource or currentIri is not defined',
+      )
+    })
+
+    test('throws when currentIri is not defined', () => {
+      const { instance } = createManageableResource()
+      vi.spyOn(instance, 'currentResource', 'get').mockReturnValue({ iri: '/abc' })
+      instance.currentIri = ref(undefined)
+      expect(() => instance.getCurrentStackItem(null)).toThrow(
+        'Cannot get a currentStackItem when currentResource or currentIri is not defined',
+      )
+    })
+  })
+
+  describe('resourceConfig getter no resourcesConfig', () => {
+    test('returns undefined when $cwa.resourcesConfig is falsy', () => {
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
+      ;($cwa as any).resourcesConfig = undefined
+      instance.currentIri = ref('/component/1')
+      expect((instance as any).resourceConfig).toBeUndefined()
     })
   })
 
