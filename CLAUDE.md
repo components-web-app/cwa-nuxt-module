@@ -311,6 +311,9 @@ All open issues from [components-web-app/cwa-nuxt-module](https://github.com/com
 **[#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236) — Feature: CWA Admin UI Component Kit**
 See `## Future: CWA Admin UI Component Kit` above.
 
+**[#247](https://github.com/components-web-app/cwa-nuxt-module/issues/247) — Admin UI CSS isolation: app global element styles bleed into the admin UI**
+Consuming-app global element CSS (`h1/h2/h3`, `a`, `button`, …) restyles the CWA admin UI. Two compounding causes: (1) CWA's compiled CSS loads into a low-priority `@layer cwa`, and **unlayered** app CSS beats every layer — so a plain `h1 { color: red }` outranks `.cwa\:text-light` despite lower specificity; (2) much of the admin UI is bare semantic tags (`<h3>` in `header/_parts/Menu.vue`, `<p>/<b>` in `RoutesTabManage.vue`) with no scoped defense. No isolation boundary exists today. Recommended fix (under #236): a `.cwa-admin` root wrapper + scope CWA utilities under it (specificity win) + scoped defensive reset + layer-order guidance. Shadow DOM rejected as too heavy.
+
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
 
