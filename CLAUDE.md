@@ -182,7 +182,7 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ### Coverage progress
 
-**Target: 70% statement coverage** (6353 statements total, ~4447 needed). Last recorded: **~55.6%** (2026-06-17, after nested sub-pages Steps 8–9).
+**Target: 70% statement coverage — ✅ ACHIEVED.** Last recorded: **71.0%** (5021/7071 statements, 2026-06-28). Branches 65.5%, functions 65.5%, lines 71.5%.
 
 **Key patterns established:**
 - `vi.mock('#imports')` does NOT intercept compiled SFC auto-imports — use `mockNuxtImport('fnName', () => impl)` from `@nuxt/test-utils/runtime` instead. Also mock `useError` and `useRoute` when testing `useHead` title logic to prevent happy-dom localStorage errors polluting `useError()`.
@@ -194,11 +194,9 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 - Capturing Vue watcher callbacks: `vi.spyOn(vue, 'watch').mockImplementation((_source, cb) => { watchCallback = cb; return vi.fn() })`
 - Private TypeScript class getters: access via `(instance as any).prop` at runtime despite compile-time `private` modifier
 
-**High-ROI remaining targets (uncovered statements est.):**
-- `resources-manager.ts` (33.2%) — ~380 statements, very complex class (CRUD, confirm dialogs)
-- `resource-stack-manager.ts` (~60%) — remaining private methods/watchers
-- `html-content.ts` (0%) — ~77 lines, creates Vue apps dynamically (hard to unit test)
-- `useDataResolver.ts` (0%) — ~121 lines, uses Vue internals (hard to unit test)
+**Files brought to ~100% during the 70% push (2026-06-28):** `api/auth.ts`, `admin/manageable-resource.ts`, `admin/resource-stack-manager.ts`, `resources/resources-manager.ts`, `server/server-middleware.ts`, `composables/popper.ts`, `composables/component/html-content.ts`, `templates/components/core/useDataResolver.ts`, and the admin Vue components (`ResourceManager`, `ComponentFocus`, `LayoutPageOverlay`, `Header`, `DataPage`, `DynamicPage`, `ListContent`, `PageAdminModal`, `PageDataAdminModal`, `RoutesTab`).
+
+**Largest remaining 0% file (intentionally skipped):** `templates/components/ui/BackgroundParticles.vue` (~379 statements) — canvas particle animation, low value to unit-test.
 
 ---
 
@@ -319,8 +317,38 @@ Admin UI functionality to duplicate an existing resource (page, component, etc.)
 **[#241](https://github.com/components-web-app/cwa-nuxt-module/issues/241) — Bug: TipTap bubble/floating menu obscured by CWA overlay**
 TipTap v3 dropped Tippy.js in favour of `@floating-ui/dom`; `tippyOptions` is silently ignored. Menu renders inside the editor's stacking context, below `--cwa-z-index-overlay: 750`. `appendTo: () => document.body` breaks positioning; `strategy: 'fixed'` + inline z-index stops the menu appearing entirely. Root cause unknown — next step is diagnosing whether `getShouldShow` (focus detection), `updatePosition` coordinates, or a stacking context issue is responsible. File: `playground/app/components/TipTapHtmlEditor.vue`.
 
-**[#242](https://github.com/components-web-app/cwa-nuxt-module/issues/242) — Test coverage: reach 70% statement coverage**
-Currently ~55.6% (2026-06-17). Target ~4,447 of 6,353 statements. High-ROI: `resources-manager.ts` (~33%), `resource-stack-manager.ts` (~60%), `html-content.ts` (0%), `useDataResolver.ts` (0%).
+**[#242](https://github.com/components-web-app/cwa-nuxt-module/issues/242) — Test coverage: reach 70% statement coverage** ✅ Complete
+Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` above for the files covered.
+
+---
+
+## Bug: flash of blank page when a primary fetch resolves to a redirect / page-less route
+
+**Reported from:** SRNTE (`/next-conference` route). Investigated 2026-06-30. Not yet ticketed.
+
+### Symptom
+Navigating *through* a route that immediately redirects elsewhere — a redirect Route resource, or a non-CWA Nuxt page that calls `navigateTo` in middleware — briefly blanks the currently-displayed page before the destination page paints.
+
+### Root cause
+`displayFetchStatus` (`src/runtime/resources/resources.ts`) is correct: while a new primary fetch is in progress it keeps the previously-rendered page visible, only early-switching once the new page resource is `SUCCESS` and its layout/pageData are ready, otherwise falling back to `resolvedSuccessFetchStatus`.
+
+The gap is in `finishFetch` (`src/runtime/storage/stores/fetcher/actions.ts`, ~line 183): when **any** primary fetch finishes it is promoted to `primaryFetch.successToken` and the previous success token is deleted — with **no check that the finished fetch actually resolved to a renderable page**. A Route resource that is a redirect (`redirectPath`, no `page`) therefore becomes the displayed success state. `resolvedSuccessFetchStatus` (`storage/stores/fetcher/getters.ts`) now points at a page-less fetch, so `getPageIriByFetchStatus` / `getLayoutIriByFetchStatus` return `undefined` → the layout slot and page render blank until the redirect *target's* fetch completes.
+
+In short: the display **resets before the new page is ready** whenever the "new page" is actually a redirect. This is the general form of the SRNTE `/next-conference` flash — that route is a client-side redirect equivalent, and the same blanking applies to any API-driven redirect Route resource.
+
+### Proposed fix (for discussion — TDD)
+`finishFetch` (or the `resolvedSuccessFetchStatus` getter) should not promote a primary fetch to the displayed success state when that fetch resolved to a redirect / has no resolvable page IRI. The previous success token and its resources should be retained until the redirect *target* fetch completes, so the old page stays on screen across the redirect hop.
+
+**Proposed test (fetcher store + resources):**
+- Given a resolved primary fetch A with a page + layout (currently displayed),
+- when a primary fetch B for a redirect route resolves (Route resource with `redirectPath`, no `page`),
+- then `displayFetchStatus` / `resolvedSuccessFetchStatus` still resolve to A's page (no blank) and A's fetch status is not deleted, until the redirect-target fetch C resolves.
+
+### App-side mitigation (proposed in SRNTE, keeps `/next-conference` as a stable URL)
+1. Point the in-app "Next Conference" nav link directly at `nextConference.routePath` (as `HeroSection.vue` already does) so in-app navigation never hops through the redirect route.
+2. Mark `next-conference.vue` with `definePageMeta({ cwa: { disabled: true } })` so a direct/external hit doesn't fire a doomed primary fetch.
+
+This removes the SRNTE symptom, but the module fix above is still wanted so any API-driven redirect Route resource is robust without per-app workarounds.
 
 ---
 
