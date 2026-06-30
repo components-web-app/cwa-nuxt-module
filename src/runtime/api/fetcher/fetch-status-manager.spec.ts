@@ -708,8 +708,17 @@ describe('FetchStatusManager -> abortFetch', () => {
       abortFetch,
     }
     const result = fetchStatusManager.abortFetch('my-token')
-    expect(abortFetch).toHaveBeenCalledWith({ token: 'my-token' })
+    expect(abortFetch).toHaveBeenCalledWith({ token: 'my-token', reason: undefined })
     expect(result).toBe('anything')
+  })
+
+  test('An abort reason is forwarded to the store action', () => {
+    const abortFetch = vi.fn(() => 'anything')
+    fetchStatusManager._fetcherStore = {
+      abortFetch,
+    }
+    fetchStatusManager.abortFetch('my-token', 'redirect')
+    expect(abortFetch).toHaveBeenCalledWith({ token: 'my-token', reason: 'redirect' })
   })
 })
 

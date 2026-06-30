@@ -8,12 +8,15 @@ interface FetchManifestInterface {
   error?: CwaResourceErrorObject
 }
 
+export type FetchAbortReason = 'redirect'
+
 export interface FetchStatus {
   path: string
   isPrimary: boolean
   resources: string[]
   manifest?: FetchManifestInterface
   abort?: true
+  abortReason?: FetchAbortReason
   timestamp: number
 }
 

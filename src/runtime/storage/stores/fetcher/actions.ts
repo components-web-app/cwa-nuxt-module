@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
 import { consola as logger } from 'consola'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
-import type { CwaFetcherStateInterface, FetchStatus } from './state'
+import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
@@ -54,6 +54,7 @@ export interface ManifestErrorFetchEvent {
 
 interface AbortFetchEvent {
   token: string
+  reason?: FetchAbortReason
 }
 
 export interface CwaFetcherActionsInterface {
@@ -79,6 +80,9 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     abortFetch(event: AbortFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
+      if (event.reason) {
+        fetchStatus.abortReason = event.reason
+      }
     },
     setManifestIrisByDepth(event: SetManifestIrisByDepthEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
@@ -187,6 +191,19 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         !fetchStatus.isPrimary
       ) {
         // chain not needed anymore, will not be referenced anywhere
+        delete fetcherState.fetches[event.token]
+        return
+      }
+
+      // A primary fetch aborted as a redirect (see fetcher `doRedirect`) resolved to a page-less
+      // route. Promoting it to the displayed success state would blank the current page until the
+      // redirect target loads. Keep the previous success page on screen: clear the fetching token
+      // and drop this redirect fetch, leaving the previous success token and its resources
+      // untouched. The redirect target fetch (request "C") becomes the new primary fetch and takes
+      // over when it resolves — or, if it fails (404/401/500), it is NOT aborted so it falls
+      // through to normal promotion and surfaces the error page via showError.
+      if (fetchStatus.abortReason === 'redirect' && event.token === fetcherState.primaryFetch.fetchingToken) {
+        fetcherState.primaryFetch.fetchingToken = undefined
         delete fetcherState.fetches[event.token]
         return
       }

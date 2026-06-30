@@ -19,7 +19,7 @@ import { isCwaResource, ResourceTypeFromIri } from '../../resources/resource-uti
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
-import type { FetchStatus } from '#cwa/storage/stores/fetcher/state'
+import type { FetchAbortReason, FetchStatus } from '#cwa/storage/stores/fetcher/state'
 import { clearError, useError } from '#imports'
 
 export interface FinishFetchResourceEvent {
@@ -286,8 +286,8 @@ export default class FetchStatusManager {
     return this.fetcherStore.isCurrentFetchingToken(token)
   }
 
-  public abortFetch(token: string) {
-    return this.fetcherStore.abortFetch({ token })
+  public abortFetch(token: string, reason?: FetchAbortReason) {
+    return this.fetcherStore.abortFetch({ token, reason })
   }
 
   // todo: test

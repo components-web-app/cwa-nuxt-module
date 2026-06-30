@@ -54,6 +54,16 @@ describe('Fetcher store action -> abortFetch', () => {
       token: 'existing-token',
     })
     expect(fetcherState.fetches['existing-token'].abort).toBe(true)
+    expect(fetcherState.fetches['existing-token'].abortReason).toBeUndefined()
+  })
+
+  test('A fetch token can be marked as aborted with a reason', () => {
+    fetcherActions.abortFetch({
+      token: 'existing-token',
+      reason: 'redirect',
+    })
+    expect(fetcherState.fetches['existing-token'].abort).toBe(true)
+    expect(fetcherState.fetches['existing-token'].abortReason).toBe('redirect')
   })
 })
 
@@ -319,6 +329,74 @@ describe('Fetcher store action -> finishFetch', () => {
     })
     expect(fetcherState.primaryFetch.successToken).toBe('existing-primary-token')
     expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+  })
+
+  describe('redirect retention (flash fix)', () => {
+    test('A primary fetch aborted as a redirect does not become the success token and the previous success page is retained', () => {
+      // page A is currently displayed
+      fetcherState.primaryFetch.successToken = 'existing-token'
+      // the redirect fetch is the current fetching token and was aborted as a redirect
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      existingPrimaryFetchState.abort = true
+      existingPrimaryFetchState.abortReason = 'redirect'
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      // previous success page A is kept on screen, untouched
+      expect(fetcherState.primaryFetch.successToken).toBe('existing-token')
+      expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
+      // the redirect fetch is cleared out and never displayed
+      expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+      expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
+    })
+
+    test('A primary fetch aborted WITHOUT a redirect reason (e.g. superseded/stale) still promotes normally — only redirects are retained', () => {
+      fetcherState.primaryFetch.successToken = 'existing-token'
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      // aborted but not a redirect — the generic abort flag must NOT trigger retention
+      existingPrimaryFetchState.abort = true
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBe('existing-primary-token')
+      expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+      // previous success A is deleted as part of normal promotion
+      expect(fetcherState.fetches['existing-token']).toBeUndefined()
+    })
+
+    test('A redirect-aborted fetch that is no longer the fetching token (superseded) is simply deleted, leaving the success token untouched', () => {
+      fetcherState.primaryFetch.successToken = 'existing-token'
+      fetcherState.primaryFetch.fetchingToken = 'a-newer-token'
+      existingPrimaryFetchState.abort = true
+      existingPrimaryFetchState.abortReason = 'redirect'
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBe('existing-token')
+      expect(fetcherState.primaryFetch.fetchingToken).toBe('a-newer-token')
+      expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
+    })
+
+    test('A redirect on first load (no previous success token) leaves nothing displayed rather than a page-less redirect', () => {
+      fetcherState.primaryFetch.successToken = undefined
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      existingPrimaryFetchState.abort = true
+      existingPrimaryFetchState.abortReason = 'redirect'
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBeUndefined()
+      expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+      expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
+    })
   })
 })
 

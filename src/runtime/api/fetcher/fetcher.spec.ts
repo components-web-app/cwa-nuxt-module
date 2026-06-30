@@ -411,7 +411,7 @@ describe('Fetcher -> fetchResource', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledTimes(1)
-    expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token')
+    expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token', 'redirect')
   })
 })
 

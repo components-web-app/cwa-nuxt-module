@@ -182,7 +182,7 @@ export default class Fetcher {
       && resource?.redirectPath
 
     if (doRedirect) {
-      this.fetchStatusManager.abortFetch(startFetchResult.token)
+      this.fetchStatusManager.abortFetch(startFetchResult.token, 'redirect')
     }
     else if (resource && shallowFetch !== true) {
       // Wait for the manifest batch to complete before traversing associated resources.
