@@ -315,7 +315,10 @@ See `## Future: CWA Admin UI Component Kit` above.
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
 
 **[#245](https://github.com/components-web-app/cwa-nuxt-module/issues/245) — Investigate: do redirects fail on rapid repeated clicks?**
-Diagnostic. Surfaced during the redirect flash fix. Static tracing suggests the redirect resolution logic is correct; any remaining symptom is likely a `route-middleware.ts` navigation-timing race (`waitForMiddleware` / `_processingMiddleware` / `navigateTo`). Reproduce first; close + delete the stale `todo` if no bug exists. See `## Bug: flash of blank page ... ✅ Fixed → Follow-up`.
+Diagnostic. Surfaced during the redirect flash fix. Static tracing suggests the redirect resolution logic is correct; any remaining symptom is likely a `route-middleware.ts` navigation-timing race (`waitForMiddleware` / `_processingMiddleware` / `navigateTo`). Reproduce first (needs the #246 harness); close + delete the stale `todo` if no bug exists. See `## Bug: flash of blank page ... ✅ Fixed → Follow-up`.
+
+**[#246](https://github.com/components-web-app/cwa-nuxt-module/issues/246) — Integration/e2e tests with recorded API responses**
+Stand up a replay layer: record real API responses (routes, manifests, nested batches, redirects, 404/401/500, Mercure `link` headers) into committed cassettes and replay them at the `ofetch`/`cwa-fetch.ts` boundary so the full pipeline (fetcher → stores → middleware → render) runs deterministically with no live API. Enables end-to-end regressions the unit suite structurally can't catch — the redirect flash fix, the #245 navigation race, nested sub-pages, error-page takeover.
 
 **[#241](https://github.com/components-web-app/cwa-nuxt-module/issues/241) — Bug: TipTap bubble/floating menu obscured by CWA overlay**
 TipTap v3 dropped Tippy.js in favour of `@floating-ui/dom`; `tippyOptions` is silently ignored. Menu renders inside the editor's stacking context, below `--cwa-z-index-overlay: 750`. `appendTo: () => document.body` breaks positioning; `strategy: 'fixed'` + inline z-index stops the menu appearing entirely. Root cause unknown — next step is diagnosing whether `getShouldShow` (focus detection), `updatePosition` coordinates, or a stacking context issue is responsible. File: `playground/app/components/TipTapHtmlEditor.vue`.
