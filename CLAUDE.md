@@ -317,6 +317,12 @@ Consuming-app global element CSS (`h1/h2/h3`, `a`, `button`, …) restyles the C
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
 
+**[#248](https://github.com/components-web-app/cwa-nuxt-module/issues/248) — Replace deprecated `installModule` with `moduleDependencies`**
+`@nuxt/kit`'s `installModule` is `@deprecated Use module dependencies`. `module.ts` uses `await installModule('nuxt-og-image')` in `setup`. Migrate to the `moduleDependencies` field on `defineNuxtModule` and drop the import. Mechanical; verify OG-image + sitemap handlers still work.
+
+**[#249](https://github.com/components-web-app/cwa-nuxt-module/issues/249) — Position-restricted components (only addable where explicitly allowed)**
+Let a component be opt-in only: hidden from the add dialog and rejected unless a group's `allowedComponents` explicitly lists it. The API **already enforces** this server-side via `AbstractComponent::isPositionRestricted()` + `ComponentPositionValidator` (`restrictedMessage`). Gaps: (1) API prerequisite — expose `isPositionRestricted` in the component metadata the front-end reads; (2) module — add it to `ApiDocumentationComponentMetadata` and have `AddComponentDialog.findAvailableComponents` exclude restricted components from unrestricted groups. See `## allowedComponents format contract`.
+
 **[#245](https://github.com/components-web-app/cwa-nuxt-module/issues/245) — Investigate: do redirects fail on rapid repeated clicks?**
 Diagnostic. Surfaced during the redirect flash fix. Static tracing suggests the redirect resolution logic is correct; any remaining symptom is likely a `route-middleware.ts` navigation-timing race (`waitForMiddleware` / `_processingMiddleware` / `navigateTo`). Reproduce first (needs the #246 harness); close + delete the stale `todo` if no bug exists. See `## Bug: flash of blank page ... ✅ Fixed → Follow-up`.
 
