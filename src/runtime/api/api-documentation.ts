@@ -12,6 +12,10 @@ export interface ApiDocumentationComponentMetadata {
   resourceName: string
   endpoint: string
   isPublishable: boolean
+  // Locked contract (#249): component type is opt-in only — placeable/offerable only where a
+  // group's allowedComponents explicitly lists it. Derived from the Hydra supportedClass entry;
+  // absent ⇒ false.
+  explicitAllowOnly: boolean
 }
 
 export interface ApiDocumentationComponentMetadataCollection {
@@ -86,6 +90,16 @@ export default class ApiDocumentation {
       {} as { [key: string]: string[] },
     )
 
+    // Locked contract (#249): read the class-level `explicitAllowOnly` flag from each
+    // supportedClass entry (absent ⇒ false). Not a property, so tracked separately to `properties`.
+    const explicitAllowOnlyByClass = docs['supportedClass'].reduce(
+      (obj, supportedClass) => {
+        obj[supportedClass['title']] = supportedClass['explicitAllowOnly'] === true
+        return obj
+      },
+      {} as { [key: string]: boolean },
+    )
+
     const metadata: ApiDocumentationComponentMetadataCollection = {}
     const typeCheckArray = [CwaResourceTypes.COMPONENT]
     if (includePosition) {
@@ -101,6 +115,7 @@ export default class ApiDocumentation {
         //   continue
         // }
         const isPublishable = properties?.[resourceName]?.includes('publishedAt') || false
+        const explicitAllowOnly = explicitAllowOnlyByClass?.[resourceName] || false
         // Normalize endpoint: strip API path prefix and origin so the stored value matches
         // the format used in allowedComponents (e.g. /component/navigation_links, not /_api/component/navigation_links)
         const prefix = ResourceTypeFromIri.getPathPrefix()
@@ -118,6 +133,7 @@ export default class ApiDocumentation {
           resourceName,
           endpoint: normalizedEndpoint,
           isPublishable,
+          explicitAllowOnly,
         }
       }
     }

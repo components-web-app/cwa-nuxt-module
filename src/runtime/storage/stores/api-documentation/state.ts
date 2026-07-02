@@ -27,6 +27,10 @@ export interface CwaApiDocumentationDataInterface {
       '@type': string
       'title': string
       'description': string
+      // CWA extension (locked contract, cwa-nuxt-module#249): class-level flag marking a
+      // component type as opt-in only — placeable only where a group's allowedComponents lists it.
+      // Absent ⇒ false.
+      'explicitAllowOnly'?: boolean
       'supportedOperation': Array<{
         '@type': Array<string> | string
         'method': string

@@ -76,6 +76,7 @@ import {
 } from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/resource-manager/_parts/available-components'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadata
@@ -162,11 +163,11 @@ async function findAvailableComponents(allowedComponents: undefined | string[], 
   const normalizedAllowed = prefix
     ? allowedComponents?.map(iri => iri.startsWith(prefix) ? iri.slice(prefix.length) : iri)
     : allowedComponents
-  const filteredAllowed = normalizedAllowed
-    ? asEntries.filter(
-        ([_, value]) => (normalizedAllowed.includes(value.endpoint)),
-      )
-    : asEntries
+  // Mirror the server rule (#249): restricted-to-allowed when the group lists allowedComponents;
+  // otherwise offer everything except `explicitAllowOnly` (opt-in-only) types.
+  const filteredAllowed = asEntries.filter(
+    ([_, value]) => isComponentAllowedInGroup(value, normalizedAllowed),
+  )
   // if no config, the front-end component does not exist to add
   const filteredHasResourceConfig = filteredAllowed.filter(([name]) => $cwa.resourcesConfig?.[name])
   const mapped = filteredHasResourceConfig.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig[name] }]))

@@ -209,9 +209,32 @@ describe('API Documentation getComponentMetadata functionality', () => {
     vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs())
     const result = await apiDoc.getComponentMetadata()
     expect(result).toEqual({
-      MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true },
-      Another: { resourceName: 'Another', endpoint: '/component/another', isPublishable: false },
+      MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true, explicitAllowOnly: false },
+      Another: { resourceName: 'Another', endpoint: '/component/another', isPublishable: false, explicitAllowOnly: false },
     })
+  })
+
+  test('reads the class-level explicitAllowOnly flag (true when present, false when absent or falsy)', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs({
+      entrypoint: {
+        restricted: '/component/restricted',
+        open: '/component/open',
+        falsyFlag: '/component/falsy_flag',
+      },
+      docs: {
+        supportedClass: [
+          { title: 'Restricted', supportedProperty: [{ title: 'title' }], explicitAllowOnly: true },
+          { title: 'Open', supportedProperty: [{ title: 'title' }] },
+          // any non-true value (e.g. accidental falsy) must resolve to false
+          { title: 'FalsyFlag', supportedProperty: [{ title: 'title' }], explicitAllowOnly: false },
+        ],
+      },
+    }))
+    const result = await apiDoc.getComponentMetadata()
+    expect(result?.Restricted?.explicitAllowOnly).toBe(true)
+    expect(result?.Open?.explicitAllowOnly).toBe(false)
+    expect(result?.FalsyFlag?.explicitAllowOnly).toBe(false)
   })
 
   test('includes COMPONENT_POSITION types when includePosition is true', async () => {
@@ -230,8 +253,8 @@ describe('API Documentation getComponentMetadata functionality', () => {
     }))
     const result = await apiDoc.getComponentMetadata(false, true)
     expect(result).toEqual({
-      MyPosition: { resourceName: 'MyPosition', endpoint: '/_/component_positions/1', isPublishable: false },
-      MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true },
+      MyPosition: { resourceName: 'MyPosition', endpoint: '/_/component_positions/1', isPublishable: false, explicitAllowOnly: false },
+      MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true, explicitAllowOnly: false },
     })
   })
 
@@ -268,7 +291,7 @@ describe('API Documentation getComponentMetadata functionality', () => {
       }))
       const result = await apiDoc.getComponentMetadata()
       expect(result).toEqual({
-        MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true },
+        MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true, explicitAllowOnly: false },
       })
     }
     finally {
