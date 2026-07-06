@@ -77,6 +77,7 @@ import {
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/resource-manager/_parts/available-components'
+import { canInsertSelection } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-selection'
 
 interface MergedComponentMetadata {
   apiMetadata: ApiDocumentationComponentMetadata
@@ -135,7 +136,7 @@ const buttons = computed<ActionButton[]>(() => {
       color: 'blue',
       buttonClass: 'cwa:min-w-[120px]',
       callbackFn: handleAdd,
-      disabled: !selectedComponent.value,
+      disabled: !canInsertSelection(selectedComponent.value, selectedDynamicType.value, selectedDynamicProperty.value),
     },
     {
       label: 'Cancel',
