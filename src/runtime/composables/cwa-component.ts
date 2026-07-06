@@ -28,7 +28,9 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
   const iri = toRef(props, 'iri')
   const { getResource, $cwa, exposeMeta, getCurrentStyleName, uiClassNames } = useCwaResource(iri, ops)
   const resource = getResource()
-  const componentGroupIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value)
+  // Published IRI of the current component (resolves the live/published equivalent when this is a
+  // draft). Intended as the reference to use when adding a component group to this component.
+  const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value)
   const ctx: CwaResourcePluginContext = { iri, resource, $cwa }
   const pluginResults = (plugins ?? []).map(plugin => plugin(ctx))
 
@@ -38,11 +40,11 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
     $cwa: typeof $cwa
     getCurrentStyleName: typeof getCurrentStyleName
     uiClassNames: typeof uiClassNames
-    componentGroupIri: typeof componentGroupIri
+    publishedIri: typeof publishedIri
   }
 
   return Object.assign(
-    { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, componentGroupIri } satisfies BaseReturn,
+    { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, publishedIri } satisfies BaseReturn,
     ...pluginResults,
   ) as BaseReturn & PluginResults<P>
 }
