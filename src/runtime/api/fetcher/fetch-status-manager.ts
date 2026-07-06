@@ -20,6 +20,7 @@ import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 import type { FetchAbortReason, FetchStatus } from '#cwa/storage/stores/fetcher/state'
+import { flattenManifestNode } from '#cwa/storage/stores/fetcher/manifest-utils'
 import { clearError, useError } from '#imports'
 
 export interface FinishFetchResourceEvent {
@@ -255,8 +256,9 @@ export default class FetchStatusManager {
     this._depthPaths = new Map()
     const prefix = ResourceTypeFromIri.getPathPrefix() || ''
     const routePathPrefix = `${prefix}/_/routes/`
-    for (let depth = 0; depth < event.irisByDepth.length; depth++) {
-      for (const iri of event.irisByDepth[depth]!) {
+    const irisByDepth = event.resourceIris.map(flattenManifestNode)
+    for (let depth = 0; depth < irisByDepth.length; depth++) {
+      for (const iri of irisByDepth[depth]!) {
         this._iriToDepth.set(iri, depth)
         if (!this._depthPaths.has(depth) && iri.startsWith(routePathPrefix)) {
           this._depthPaths.set(depth, iri.substring(routePathPrefix.length))

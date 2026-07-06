@@ -480,7 +480,7 @@ describe('Fetcher -> fetchManifest', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: [['/resolve-resource']],
+              resource_iris: [{ iri: '/resolve-resource', children: [] }],
             },
           })
         }, 1)
@@ -500,7 +500,7 @@ describe('Fetcher -> fetchManifest', () => {
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
-    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({ irisByDepth: [['/resolve-resource']], token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({ resourceIris: [{ iri: '/resolve-resource', children: [] }], token: 'any' })
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource'], token: 'any' })
     expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mock.invocationCallOrder[0]).lessThan(FetchStatusManager.mock.instances[0].setManifestIrisByDepth.mock.invocationCallOrder[0])
@@ -516,7 +516,7 @@ describe('Fetcher -> fetchManifest', () => {
       }
       const response = new Promise((resolve) => {
         setTimeout(() => {
-          resolve({ _data: { resource_iris: [['/resolve-resource']] } })
+          resolve({ _data: { resource_iris: [{ iri: '/resolve-resource', children: [] }] } })
         }, 1)
       })
       return { response }
@@ -547,7 +547,7 @@ describe('Fetcher -> fetchManifest', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: [['/manifest-resource-iri']],
+              resource_iris: [{ iri: '/manifest-resource-iri', children: [] }],
             },
           })
         }, 1)
@@ -565,7 +565,7 @@ describe('Fetcher -> fetchManifest', () => {
     await fetcher.fetchResource(fetchResourceEvent)
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({
-      irisByDepth: [['/manifest-resource-iri']],
+      resourceIris: [{ iri: '/manifest-resource-iri', children: [] }],
       token: 'any',
     })
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
@@ -574,10 +574,15 @@ describe('Fetcher -> fetchManifest', () => {
     })
   })
 
-  test('fetchBatch receives all IRIs flattened when manifest has multiple depth groups', async () => {
-    const nestedIris = [
-      ['/routes/parent', '/pages/parent-template'],
-      ['/routes/child', '/pages/child-template'],
+  test('fetchBatch receives every IRI flattened across depth trees and their nested children', async () => {
+    // Each depth is a nested tree; fetchBatch must receive every IRI, depth-first.
+    const resourceTree = [
+      { iri: '/routes/parent', children: [
+        { iri: '/pages/parent-template', children: [
+          { iri: '/component_groups/cg', children: [{ iri: '/component/hero', children: [] }] },
+        ] },
+      ] },
+      { iri: '/routes/child', children: [{ iri: '/pages/child-template', children: [] }] },
     ]
     vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
       if (event.path !== '/my-manifest') {
@@ -585,7 +590,7 @@ describe('Fetcher -> fetchManifest', () => {
       }
       const response = new Promise((resolve) => {
         setTimeout(() => {
-          resolve({ _data: { resource_iris: nestedIris } })
+          resolve({ _data: { resource_iris: resourceTree } })
         }, 1)
       })
       return { response }
@@ -595,11 +600,11 @@ describe('Fetcher -> fetchManifest', () => {
     await delay(2)
 
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({
-      paths: ['/routes/parent', '/pages/parent-template', '/routes/child', '/pages/child-template'],
+      paths: ['/routes/parent', '/pages/parent-template', '/component_groups/cg', '/component/hero', '/routes/child', '/pages/child-template'],
       token: 'any',
     })
     expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({
-      irisByDepth: nestedIris,
+      resourceIris: resourceTree,
       token: 'any',
     })
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
@@ -1011,7 +1016,10 @@ describe('Fetcher -> fetchBatch', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: ['/resolve-resource', '/resolve-another-resource'],
+              resource_iris: [
+                { iri: '/resolve-resource', children: [] },
+                { iri: '/resolve-another-resource', children: [] },
+              ],
             },
           })
         }, 1)

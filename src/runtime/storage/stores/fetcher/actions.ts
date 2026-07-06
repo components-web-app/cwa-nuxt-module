@@ -2,8 +2,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
 import { consola as logger } from 'consola'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
-import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus } from './state'
+import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus, NestedJsonStructure } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
+import { flattenManifestNode } from './manifest-utils'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
 export interface StartFetchEvent {
@@ -43,7 +44,7 @@ export interface ManifestSuccessFetchEvent {
 
 export interface SetManifestIrisByDepthEvent {
   token: string
-  irisByDepth: string[][]
+  resourceIris: NestedJsonStructure[]
 }
 
 export interface ManifestErrorFetchEvent {
@@ -89,7 +90,10 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (!fetchStatus.manifest) {
         throw new Error(`Cannot set manifest IRIs by depth for '${event.token}'. The manifest was never started.`)
       }
-      fetchStatus.manifest.irisByDepth = event.irisByDepth
+      // Retain the raw tree for future placeholder rendering; derive the flat per-depth IRI lists
+      // that existing consumers (pageIriAtDepth, early-switch, fetch batch) read.
+      fetchStatus.manifest.resourceTree = event.resourceIris
+      fetchStatus.manifest.irisByDepth = event.resourceIris.map(flattenManifestNode)
     },
     finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus

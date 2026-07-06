@@ -11,6 +11,8 @@ import type {
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
+import type { NestedJsonStructure } from '../../storage/stores/fetcher/state'
+import { flattenManifestNode } from '../../storage/stores/fetcher/manifest-utils'
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
@@ -204,16 +206,16 @@ export default class Fetcher {
   }
 
   private async fetchManifest(event: FetchManifestEvent): Promise<void> {
-    let resources: string[][] = []
+    let resourceTree: NestedJsonStructure[] = []
     try {
       const result = this.fetch({
         path: event.manifestPath,
       })
       const response = await result.response
-      resources = response._data?.resource_iris || []
+      resourceTree = response._data?.resource_iris || []
       if (this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
-        this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, irisByDepth: resources })
-        const flatPaths = resources.flat()
+        this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, resourceIris: resourceTree })
+        const flatPaths = resourceTree.flatMap(flattenManifestNode)
         if (flatPaths.length) {
           // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
           await this.fetchBatch({ paths: flatPaths, token: event.token })

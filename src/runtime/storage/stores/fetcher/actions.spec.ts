@@ -579,25 +579,34 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toBeUndefined()
   })
 
-  test('setManifestIrisByDepth stores depth groups on the manifest', () => {
-    const irisByDepth = [['/parent-route', '/parent-page'], ['/child-route', '/child-page']]
+  test('setManifestIrisByDepth retains the raw tree and stores the flattened depth groups on the manifest', () => {
+    // Each depth is a nested tree; flattening a depth (node iri + descendants, depth-first) yields
+    // the flat per-depth IRI list existing consumers read.
+    const resourceIris = [
+      { iri: '/parent-route', children: [{ iri: '/parent-page', children: [] }] },
+      { iri: '/child-route', children: [{ iri: '/child-page', children: [] }] },
+    ]
     fetcherActions.setManifestIrisByDepth({
       token: 'existing-token-with-manifest',
-      irisByDepth,
+      resourceIris,
     })
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toStrictEqual(irisByDepth)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resourceTree).toStrictEqual(resourceIris)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toStrictEqual([
+      ['/parent-route', '/parent-page'],
+      ['/child-route', '/child-page'],
+    ])
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBeUndefined()
   })
 
   test('setManifestIrisByDepth throws if token does not exist', () => {
     expect(() => {
-      fetcherActions.setManifestIrisByDepth({ token: 'non-existent', irisByDepth: [] })
+      fetcherActions.setManifestIrisByDepth({ token: 'non-existent', resourceIris: [] })
     }).toThrowError('The fetch chain token \'non-existent\' does not exist')
   })
 
   test('setManifestIrisByDepth throws if manifest was never started', () => {
     expect(() => {
-      fetcherActions.setManifestIrisByDepth({ token: 'existing-token-no-manifest', irisByDepth: [] })
+      fetcherActions.setManifestIrisByDepth({ token: 'existing-token-no-manifest', resourceIris: [] })
     }).toThrowError('Cannot set manifest IRIs by depth for \'existing-token-no-manifest\'. The manifest was never started.')
   })
 

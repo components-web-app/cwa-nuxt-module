@@ -744,6 +744,10 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
 describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDepthForIri / getPathForDepth / registerIriDepth)', () => {
   let fetchStatusManager: FetchStatusManager
 
+  // Build a depth tree node from a flat IRI list (first = root, rest = direct children); it flattens
+  // back to the same flat list the depth-tracking logic previously received directly.
+  const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })
+
   beforeEach(() => {
     fetchStatusManager = createFetchStatusManager()
     fetchStatusManager._fetcherStore = { setManifestIrisByDepth: vi.fn() }
@@ -764,9 +768,9 @@ describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDept
   test('setManifestIrisByDepth maps every IRI in each depth group to its depth index', () => {
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
-      irisByDepth: [
-        ['/_/routes//topic-1', '/_/pages/parent-template', '/_/component_positions/parent-cp'],
-        ['/_/routes//topic-1/chapter-one', '/_/pages/child-template', '/_/component_positions/child-cp'],
+      resourceIris: [
+        depthNode(['/_/routes//topic-1', '/_/pages/parent-template', '/_/component_positions/parent-cp']),
+        depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template', '/_/component_positions/child-cp']),
       ],
     })
     expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1')).toBe(0)
@@ -781,9 +785,9 @@ describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDept
   test('getPathForDepth returns the path derived from the ROUTE IRI in each depth group', () => {
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
-      irisByDepth: [
-        ['/_/pages/parent-template', '/_/routes//topic-1'],
-        ['/_/routes//topic-1/chapter-one', '/_/pages/child-template'],
+      resourceIris: [
+        depthNode(['/_/pages/parent-template', '/_/routes//topic-1']),
+        depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template']),
       ],
     })
     expect(fetchStatusManager.getPathForDepth(0)).toBe('/topic-1')
@@ -794,11 +798,11 @@ describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDept
   test('setManifestIrisByDepth replaces previous depth tracking data', () => {
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
-      irisByDepth: [['/_/routes//old', '/_/pages/old-page']],
+      resourceIris: [depthNode(['/_/routes//old', '/_/pages/old-page'])],
     })
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
-      irisByDepth: [['/_/routes//new', '/_/pages/new-page']],
+      resourceIris: [depthNode(['/_/routes//new', '/_/pages/new-page'])],
     })
     expect(fetchStatusManager.getDepthForIri('/_/pages/old-page')).toBeUndefined()
     expect(fetchStatusManager.getDepthForIri('/_/pages/new-page')).toBe(0)
@@ -817,7 +821,7 @@ describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDept
     }
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
-      irisByDepth: [['/_/routes//topic-1', '/_/pages/parent']],
+      resourceIris: [depthNode(['/_/routes//topic-1', '/_/pages/parent'])],
     })
     expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
 
@@ -834,7 +838,7 @@ describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDept
     }
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
-      irisByDepth: [['/_/routes//topic-1', '/_/pages/parent']],
+      resourceIris: [depthNode(['/_/routes//topic-1', '/_/pages/parent'])],
     })
     fetchStatusManager.startFetch({ path: '/new', isPrimary: false })
 

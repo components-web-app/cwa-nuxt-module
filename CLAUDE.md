@@ -216,27 +216,34 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 ### Manifest format
 
-`GET /_/resource_manifest/{id}` returns `{ "resource_iris": string[][] }` — index = rendering depth, root first:
+`GET /_/resource_manifest/{id}` returns `{ "resource_iris": NestedJsonStructure[] }` — outer array indexed by rendering depth (root first); each depth is a recursive tree node `{ iri, children }` preserving component containment:
 
 ```json
 {
   "resource_iris": [
-    ["/_/routes//conference", "/_/page_data/parent-uuid", "/_/pages/parent-template-uuid", "/_/component_groups/cg-uuid"],
-    ["/_/routes//conference/programme", "/_/page_data/child-uuid", "/_/pages/child-template-uuid"]
+    { "iri": "/_/routes//conference", "children": [ { "iri": "/_/page_data/parent-uuid", "children": [ { "iri": "/_/pages/parent-template-uuid", "children": [ { "iri": "/_/component_groups/cg-uuid", "children": [] } ] } ] } ] },
+    { "iri": "/_/routes//conference/programme", "children": [ { "iri": "/_/page_data/child-uuid", "children": [ { "iri": "/_/pages/child-template-uuid", "children": [] } ] } ] }
   ]
 }
 ```
 
 - `{id}` starting with `/` → resolved as Route path; UUID → resolved as Page or AbstractPageData entity (admin/draft access)
-- `irisByDepth` is stored in `FetchManifestInterface` — set immediately when the manifest HTTP response arrives, before `fetchBatch`
+- `resourceTree` (the raw `NestedJsonStructure[]`) and the derived flat `irisByDepth: string[][]` are both stored in `FetchManifestInterface` — set immediately when the manifest HTTP response arrives, before `fetchBatch`
 - `fetchComplete` gates `isFetchResolving` (not `irisByDepth`) — see `getter-utils.ts`
 
-> **Planned change — nested per-depth manifest (module #250, API `api-components-bundle` #197):**
-> `resource_iris` keeps its **outer array indexed by depth** (root first), but each depth's payload changes from a flat `string[]` to a recursive tree `NestedJsonStructure = { iri, children: NestedJsonStructure[] }`, preserving component containment for future placeholder/skeleton rendering (to mitigate layout shift):
-> ```json
-> { "resource_iris": [ { "iri": "/_/routes//conference", "children": [ { "iri": "/_/page_data/…", "children": [ … ] } ] }, { "iri": "/_/routes//conference/programme", "children": [ … ] } ] }
-> ```
-> Page nesting → outer array index (unchanged); component nesting → the per-depth tree; flat page → single-element array. **`irisByDepth`/`pageIriAtDepth(depth)` semantics are unchanged** — only the per-depth construction changes: **flatten** each depth's tree (collect `iri` recursively) to build the `fetchBatch` list, and keep the tree for future placeholders. **Breaking change — ships in lockstep with API #197; agree the transition (hard-swap vs. new `manifest` key + deprecate) on #197 first.** Do not implement until that is settled.
+> **✅ Migrated to the nested per-depth manifest (module #250, API `api-components-bundle` #197).**
+> `resource_iris` is now `NestedJsonStructure[]` — outer array by depth (root first); each depth is a recursive `{ iri, children }` tree (children always present; empty for leaves; `iri` is a bespoke DTO field, not `@id`). Preserves component containment for future placeholder/skeleton rendering.
+>
+> **What landed (module side):**
+> - `NestedJsonStructure` type + `resourceTree?: NestedJsonStructure[]` on `FetchManifestInterface` (`storage/stores/fetcher/state.ts`) — the raw tree is retained for the *future* placeholder work; **no rendering change yet**.
+> - Pure `flattenManifestNode(node): string[]` (`storage/stores/fetcher/manifest-utils.ts`, unit-tested) — node `iri` + all descendants' `iri`, depth-first.
+> - Construction changed, **semantics unchanged**: `irisByDepth: string[][]` is derived by flattening each depth's tree (`resourceIris.map(flattenManifestNode)`) in the store action; `fetchBatch` input is `resourceTree.flatMap(flattenManifestNode)` in `fetcher.ts`; `_iriToDepth`/`_depthPaths` in `fetch-status-manager.ts` flatten the tree for the same maps. All `pageIriAtDepth`/early-switch consumers in `resources.ts` read `irisByDepth` unchanged.
+> - `setManifestIrisByDepth` event now carries `{ token, resourceIris: NestedJsonStructure[] }` (was `irisByDepth: string[][]`).
+> - Fetcher spec manifest fixtures updated to the nested shape.
+>
+> **Deliberate follow-up (not done):** per-node placeholder metadata (UI name, dimensions, position sort…) — do not add fields to `NestedJsonStructure` until that work starts. The retained `resourceTree` is the hook for it.
+>
+> **API emit reference:** each depth node's `iri` is the resource IRI; `children` are the nested/related resource IRIs reachable without crossing the `parentPage`/`parentPageData` boundary (route → pageData → page → componentGroups → positions → components). Blank-node/internal IRIs are excluded (same exclusions as the old flat list).
 
 ### Rendering
 
@@ -260,7 +267,7 @@ const { resource } = useCwaResource(pageDataIri)
 
 - **No `$nested` boolean** — parent = nested; `parentPage`/`parentPageData` presence is the signal
 - **Single rendering mechanism** — `<CwaPage />` handles all contexts; depth from `irisByDepth`, not URL structure
-- **`resource_iris` is `string[][]`** — index = rendering depth, root first; read directly, no client traversal
+- **`resource_iris` is `NestedJsonStructure[]`** — outer array = rendering depth (root first); each depth a `{ iri, children }` tree. Flattened per-depth into `irisByDepth: string[][]` for existing consumers; raw tree retained as `resourceTree` for future placeholder rendering
 - **Manifest for both public and admin** — UUID-based manifest collapses 4+ serial round trips into one parallel batch
 - **`irisByDepth` set before batch starts** — decouples "we know depth structure" from "batch complete"
 - **Early-switch is depth-0 aware** — `displayFetchStatus` checks `irisByDepth[0]` root page against `currentIds`; covers first visits (wait), return visits (switch immediately), sibling nav (parent renders, child loads progressively)
