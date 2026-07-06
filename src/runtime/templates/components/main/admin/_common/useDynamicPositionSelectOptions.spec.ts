@@ -5,7 +5,7 @@ import { useDynamicPositionSelectOptions } from './useDynamicPositionSelectOptio
 
 function makeCwa(opts: {
   docs?: any
-  componentMetadata?: Record<string, { endpoint: string, isPublishable: boolean }>
+  componentMetadata?: Record<string, { endpoint: string, isPublishable: boolean, explicitAllowOnly?: boolean }>
   pageDataConfig?: Record<string, any>
 } = {}) {
   return {
@@ -124,6 +124,36 @@ describe('useDynamicPositionSelectOptions', () => {
       const { getPropertyOptions } = useDynamicPositionSelectOptions(cwa)
       const options = await getPropertyOptions('App\\Entity\\EventData', ['/_api/component/images'])
       expect(options).toHaveLength(1)
+    })
+
+    test('excludes a property whose component is explicitAllowOnly when the group is unrestricted (#249)', async () => {
+      const docs = { pageDataMetadata: { member: [eventDataMember] } }
+      const cwa = makeCwa({
+        docs,
+        componentMetadata: {
+          Image: { endpoint: '/component/images', isPublishable: false, explicitAllowOnly: true },
+          Link: { endpoint: '/component/links', isPublishable: false, explicitAllowOnly: false },
+        },
+      })
+      const { getPropertyOptions } = useDynamicPositionSelectOptions(cwa)
+      const options = await getPropertyOptions('App\\Entity\\EventData', null)
+      expect(options).toHaveLength(1)
+      expect(options[0].value).toBe('ticketLink')
+    })
+
+    test('includes an explicitAllowOnly component property when the group explicitly lists it', async () => {
+      const docs = { pageDataMetadata: { member: [eventDataMember] } }
+      const cwa = makeCwa({
+        docs,
+        componentMetadata: {
+          Image: { endpoint: '/component/images', isPublishable: false, explicitAllowOnly: true },
+          Link: { endpoint: '/component/links', isPublishable: false, explicitAllowOnly: false },
+        },
+      })
+      const { getPropertyOptions } = useDynamicPositionSelectOptions(cwa)
+      const options = await getPropertyOptions('App\\Entity\\EventData', ['/component/images'])
+      expect(options).toHaveLength(1)
+      expect(options[0].value).toBe('heroImage')
     })
   })
 })
