@@ -518,6 +518,9 @@
 .cwa\:max-w-lg {
   max-width: var(--cwa-container-lg);
 }
+.cwa\:max-w-prose {
+  max-width: 65ch;
+}
 .cwa\:max-w-sm {
   max-width: var(--cwa-container-sm);
 }

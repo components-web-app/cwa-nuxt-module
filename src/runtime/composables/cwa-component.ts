@@ -1,4 +1,4 @@
-import { toRef } from 'vue'
+import { computed, toRef } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type Cwa from '#cwa/cwa'
 import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
@@ -28,7 +28,7 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
   const iri = toRef(props, 'iri')
   const { getResource, $cwa, exposeMeta, getCurrentStyleName, uiClassNames } = useCwaResource(iri, ops)
   const resource = getResource()
-
+  const componentGroupIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value)
   const ctx: CwaResourcePluginContext = { iri, resource, $cwa }
   const pluginResults = (plugins ?? []).map(plugin => plugin(ctx))
 
@@ -38,10 +38,11 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
     $cwa: typeof $cwa
     getCurrentStyleName: typeof getCurrentStyleName
     uiClassNames: typeof uiClassNames
+    componentGroupIri: typeof componentGroupIri
   }
 
   return Object.assign(
-    { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames } satisfies BaseReturn,
+    { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, componentGroupIri } satisfies BaseReturn,
     ...pluginResults,
   ) as BaseReturn & PluginResults<P>
 }
