@@ -148,6 +148,11 @@ describe('CWA module', () => {
   })
 
   describe('setup', () => {
+    test('does not call the deprecated installModule — deps are declared via moduleDependencies (#248)', async () => {
+      await prepareMockNuxt()
+      expect(nuxtKit.installModule).not.toHaveBeenCalled()
+    })
+
     test('should add aliases with result of resolved paths', async () => {
       const mockNuxt = await prepareMockNuxt()
       const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve

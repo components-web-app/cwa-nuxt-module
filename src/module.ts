@@ -13,7 +13,6 @@ import {
   createResolver,
   defineNuxtModule,
   extendPages,
-  installModule,
   resolveAlias,
   updateTemplates,
   useLogger,
@@ -129,8 +128,6 @@ export default defineNuxtModule<CwaModuleOptions>({
   async setup(options, nuxt) {
     const logger = useLogger(NAME)
     const { resolve } = createResolver(import.meta.url)
-
-    await installModule('nuxt-og-image')
 
     const { version, name } = JSON.parse(
       readFileSync(resolve('../package.json'), 'utf8'),
