@@ -331,6 +331,9 @@ Consuming-app global element CSS (`h1/h2/h3`, `a`, `button`, …) restyles the C
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
 
+**[#251](https://github.com/components-web-app/cwa-nuxt-module/issues/251) — Feature: `CwaComponentGroup` emits `componentsLoaded` / `componentsUpdated`**
+`CwaComponentGroup` fires `componentsLoaded` (Vue emit) once all initial positions' components reach a terminal API state (`apiState.status` non-`IN_PROGRESS`, `data` where available), payload = loaded component IDs; `componentsUpdated` on later persisted add/publish/remove. Excludes temporary/unpersisted (`__new__`/`adding`) components — optional separate event if a consumer needs those. Open decisions in the issue: emit vs. event bus, payload shape (component vs. position IRI), error/publish/nested-group semantics, debounce.
+
 **[#248](https://github.com/components-web-app/cwa-nuxt-module/issues/248) — Replace deprecated `installModule` with `moduleDependencies`**
 `@nuxt/kit`'s `installModule` is `@deprecated Use module dependencies`. `module.ts` uses `await installModule('nuxt-og-image')` in `setup`. Migrate to the `moduleDependencies` field on `defineNuxtModule` and drop the import. Mechanical; verify OG-image + sitemap handlers still work.
 
