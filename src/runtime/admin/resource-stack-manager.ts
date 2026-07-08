@@ -237,6 +237,11 @@ export default class ResourceStackManager {
     return isContext ? this.lastContextTarget : this.currentClickTarget
   }
 
+  private hasActiveTextSelection() {
+    const selection = typeof window !== 'undefined' ? window.getSelection() : null
+    return !!selection && !selection.isCollapsed && selection.toString().trim().length > 0
+  }
+
   public completeStack(event: AddToStackWindowEvent, isContext?: boolean, type?: undefined | 'page' | 'layout') {
     if (type) {
       this.isLayoutStack.value = type === 'layout'
@@ -249,6 +254,16 @@ export default class ResourceStackManager {
   }
 
   private _addToStack(event: AddToStackEvent | AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
+    // A click that is the tail of a text-selection drag (e.g. highlighting text inside an inline
+    // editor and releasing over a parent, or within the component being edited) must NOT rebuild
+    // the selection stack — that would either steal the selection to an ancestor (#254) or, because
+    // the window/root click then resets an empty stack, deselect the component entirely. Bail out so
+    // the current selection is preserved untouched. Genuine clicks collapse the selection on
+    // mousedown, so this only trips on a drag-release. Context (right-click) is left alone.
+    if (!isContext && this.hasActiveTextSelection()) {
+      return
+    }
+
     const currentTarget = this.getCurrentTarget(!!isContext)
 
     const { clickTarget, ...resourceStackItem } = event

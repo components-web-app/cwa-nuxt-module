@@ -485,49 +485,6 @@ describe('ManageableResource Class', () => {
         expect.objectContaining({ resourceType: 'COMPONENT' }),
       )
     })
-
-    test('ignores a click that ends a text-selection drag (non-collapsed selection) — #254', () => {
-      const { instance, $cwa } = createManageableResource()
-      vi.spyOn(instance, 'currentResource', 'get').mockReturnValue({ iri: '/mock' })
-      instance.currentIri = ref('/mock')
-      vi.spyOn(window, 'getSelection').mockReturnValue({ isCollapsed: false, toString: () => 'highlighted text' } as any)
-
-      instance.clickListener({ type: 'click', target: 'mock' })
-
-      expect($cwa.admin.resourceStackManager.addToStack).not.toHaveBeenCalled()
-    })
-
-    test('still selects on a normal click when the selection is collapsed — #254', () => {
-      const { instance, $cwa } = createManageableResource()
-      vi.spyOn(instance, 'displayName', 'get').mockReturnValue('name')
-      vi.spyOn(instance, 'resourceConfig', 'get').mockReturnValue(null)
-      vi.spyOn(instance, 'currentResource', 'get').mockReturnValue({ iri: '/mock' })
-      vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => []))
-      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
-      vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockReturnValue([])
-      instance.currentIri = ref('/mock')
-      vi.spyOn(window, 'getSelection').mockReturnValue({ isCollapsed: true, toString: () => '' } as any)
-
-      instance.clickListener({ type: 'click', target: 'mock' })
-
-      expect($cwa.admin.resourceStackManager.addToStack).toHaveBeenCalled()
-    })
-
-    test('contextmenu is not blocked by an active text selection — #254', () => {
-      const { instance, $cwa } = createManageableResource()
-      vi.spyOn(instance, 'displayName', 'get').mockReturnValue('name')
-      vi.spyOn(instance, 'resourceConfig', 'get').mockReturnValue(null)
-      vi.spyOn(instance, 'currentResource', 'get').mockReturnValue({ iri: '/mock' })
-      vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => []))
-      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
-      vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockReturnValue([])
-      instance.currentIri = ref('/mock')
-      vi.spyOn(window, 'getSelection').mockReturnValue({ isCollapsed: false, toString: () => 'x' } as any)
-
-      instance.clickListener({ type: 'contextmenu', target: 'mock' })
-
-      expect($cwa.admin.resourceStackManager.addToStack).toHaveBeenCalledWith(expect.anything(), true, instance.ops)
-    })
   })
 
   describe('elements getter', () => {

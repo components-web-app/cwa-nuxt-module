@@ -217,6 +217,53 @@ describe('Resource Manager', () => {
         expect(manager.currentClickTarget.value).toEqual('new')
       })
 
+      test('preserves the current stack and does nothing when a text-selection drag is active (#254)', () => {
+        const mockStore = { state: { isEditing: true } }
+        const mockIri = '/mock'
+        const { manager } = createResourceManager(mockStore)
+        const resetSpy = vi.spyOn(manager, 'resetStack')
+        const insertSpy = vi.spyOn(manager, 'insertResourceStackItem').mockImplementation(() => {})
+        const selectionSpy = vi.spyOn(window, 'getSelection').mockReturnValue({ isCollapsed: false, toString: () => 'highlighted' } as any)
+        manager.currentClickTarget = ref(null)
+        manager.currentResourceStack = ref([{ iri: mockIri }])
+
+        manager.addToStack({ iri: '/other', clickTarget: 'x' })
+
+        expect(resetSpy).not.toHaveBeenCalled()
+        expect(insertSpy).not.toHaveBeenCalled()
+        expect(manager.currentResourceStack.value).toEqual([{ iri: mockIri }])
+        selectionSpy.mockRestore()
+      })
+
+      test('a collapsed selection does not trigger the guard — normal selection proceeds', () => {
+        const mockStore = { state: { isEditing: true } }
+        const { manager } = createResourceManager(mockStore)
+        const insertSpy = vi.spyOn(manager, 'insertResourceStackItem').mockImplementation(() => {})
+        const selectionSpy = vi.spyOn(window, 'getSelection').mockReturnValue({ isCollapsed: true, toString: () => '' } as any)
+        manager.currentClickTarget = ref(null)
+        manager.currentResourceStack = ref([])
+
+        manager.addToStack({ iri: '/mock', clickTarget: 'x' })
+
+        expect(insertSpy).toHaveBeenCalledTimes(1)
+        selectionSpy.mockRestore()
+      })
+
+      test('context (right-click) is not blocked by an active text selection', () => {
+        const mockStore = { state: { isEditing: true } }
+        const { manager } = createResourceManager(mockStore)
+        const insertSpy = vi.spyOn(manager, 'insertResourceStackItem').mockImplementation(() => {})
+        const selectionSpy = vi.spyOn(window, 'getSelection').mockReturnValue({ isCollapsed: false, toString: () => 'x' } as any)
+        manager.currentClickTarget = ref(null)
+        manager.lastContextTarget = ref(null)
+        manager.currentResourceStack = ref([])
+
+        manager.addToStack({ iri: '/mock', clickTarget: 'x' }, true)
+
+        expect(insertSpy).toHaveBeenCalledTimes(1)
+        selectionSpy.mockRestore()
+      })
+
       test('should NOT add item to stack IF item has no iri', () => {
         const mockStore = { state: { isEditing: true } }
         const { manager } = createResourceManager(mockStore)

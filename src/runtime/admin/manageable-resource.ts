@@ -248,21 +248,7 @@ export default class ManageableResource {
       return
     }
 
-    // Ignore a click that is the tail end of a text-selection drag — e.g. selecting text inside an
-    // inline editor (TipTap) and releasing the mouse over a parent component. The browser dispatches
-    // that click on the common ancestor, which would otherwise steal the selection away from the
-    // editor. A genuine component click has a collapsed selection (mousedown places the caret), so
-    // this only trips on the drag-release. contextmenu is left alone so right-click-to-copy works.
-    if (evt.type === 'click' && this.hasActiveTextSelection()) {
-      return
-    }
-
     this.$cwa.admin.resourceStackManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu', this.ops)
-  }
-
-  private hasActiveTextSelection() {
-    const selection = typeof window !== 'undefined' ? window.getSelection() : null
-    return !!selection && !selection.isCollapsed && selection.toString().trim().length > 0
   }
 
   private getCurrentStackItem(clickTarget: EventTarget | null) {
