@@ -293,6 +293,14 @@ Every Tailwind class in the module must use the `cwa:` prefix (e.g. `cwa:flex`, 
 
 **Build:** `postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css` via `@tailwindcss/postcss`.
 
+### CSS isolation & consuming-app styling guidance (#247 — by design)
+
+The consuming app imports the module CSS into a **low cascade layer** (`@import ".../cwa.css" layer(cwa)`). This is **intentional**: it lets app authors' own CSS win over CWA styles so their site is unhindered (before layers there were many override headaches). The trade-off: because **unlayered CSS beats every layer**, an app's **unscoped global element styles** (`h1 { color: red }`, `a { … }`, `button { … }`) also beat CWA's layered styles — including the admin UI, which renders inside the app's DOM.
+
+**This is not fixable module-side without exactly the interference the layered import avoids** (`!important`, a second unlayered admin bundle, or Shadow DOM — all rejected). And unscoped global element selectors are an anti-pattern regardless: they leak into *everything* (third-party widgets, embeds, component libraries), not just CWA.
+
+**Guidance for consuming apps:** scope your global element styles — put site typography on a content wrapper / `.prose` / a `@layer` / the Tailwind typography plugin, rather than bare `h1{}`/`a{}`/`button{}` selectors. A developer who scopes their globals (as they should) automatically leaves the CWA admin chrome — and all other third-party UI — untouched. If a specific admin element ever proves particularly fragile, spot-harden that one element narrowly rather than building a general isolation layer.
+
 ---
 
 ## Future: CWA Admin UI Component Kit (#236)
@@ -331,8 +339,8 @@ See `## Future: CWA Admin UI Component Kit` above.
 **[#254](https://github.com/components-web-app/cwa-nuxt-module/issues/254) — Bug: text-selection drag ending outside an inline editor deselects the component** ✅ Fixed
 Highlighting text in an inline editor (TipTap `HtmlContent`) and releasing the mouse over a parent component fired a `click` on the common ancestor, stealing the selection. `ManageableResource.clickListener` (`admin/manageable-resource.ts`) now ignores a `click` when there's a non-collapsed `window.getSelection()` (the tail of a drag-select) — genuine clicks collapse the selection on mousedown so they're unaffected; `contextmenu` left unguarded.
 
-**[#247](https://github.com/components-web-app/cwa-nuxt-module/issues/247) — Admin UI CSS isolation: app global element styles bleed into the admin UI**
-Consuming-app global element CSS (`h1/h2/h3`, `a`, `button`, …) restyles the CWA admin UI. Two compounding causes: (1) CWA's compiled CSS loads into a low-priority `@layer cwa`, and **unlayered** app CSS beats every layer — so a plain `h1 { color: red }` outranks `.cwa\:text-light` despite lower specificity; (2) much of the admin UI is bare semantic tags (`<h3>` in `header/_parts/Menu.vue`, `<p>/<b>` in `RoutesTabManage.vue`) with no scoped defense. No isolation boundary exists today. Recommended fix (under #236): a `.cwa-admin` root wrapper + scope CWA utilities under it (specificity win) + scoped defensive reset + layer-order guidance. Shadow DOM rejected as too heavy.
+**[#247](https://github.com/components-web-app/cwa-nuxt-module/issues/247) — Admin UI CSS isolation: app global element styles bleed into the admin UI** ✅ Resolved (closed — by design)
+Consuming-app **unscoped** global element CSS (`h1/h2/h3`, `a`, `button`, …) restyles the admin UI because CWA loads into a low `@layer cwa` (intentional, so app CSS wins for public components) and unlayered app CSS beats every layer. **Decision: not fixable module-side without the interference the layered import deliberately avoids** (`!important` / a second unlayered admin bundle / Shadow DOM — all rejected). Unscoped global element selectors are an anti-pattern anyway (they leak into all third-party UI). Resolved as **guidance**: apps should scope their global element styles — see `## Tailwind v4 → CSS isolation & consuming-app styling guidance`. Spot-harden individual admin elements only if one proves genuinely fragile.
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
