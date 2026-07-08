@@ -1044,6 +1044,19 @@ describe('Resource Manager', () => {
 
       expect(scrollToSpy).toHaveBeenCalledOnce()
     })
+
+    test('does not scroll a large component whose bottom is already in view (#253)', () => {
+      const manager = createManagerForScroll()
+      const el = document.createElement('div')
+      // tall element scrolled so its top is far above the fold but its bottom is in the viewport
+      el.getBoundingClientRect = () => ({ top: -2000, left: 0, bottom: 400, right: 100 }) as DOMRect
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([el]), childIris: ref([]) }]
+      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+
+      ;(manager as any).scrollIntoView()
+
+      expect(scrollToSpy).not.toHaveBeenCalled()
+    })
   })
 
   describe('isElementOutsideViewport (private)', () => {
@@ -1069,7 +1082,7 @@ describe('Resource Manager', () => {
       expect((manager as any).isElementOutsideViewport(el)).toBe(false)
     })
 
-    test('reduces visible height by the manager spacer height when present', () => {
+    test('reduces the visible area by the manager spacer height when present', () => {
       const manager = createBareManager()
       const spacer = document.createElement('div')
       spacer.id = 'cwa-manager-spacer'
@@ -1077,13 +1090,28 @@ describe('Resource Manager', () => {
       document.body.appendChild(spacer)
 
       const el = document.createElement('div')
-      // bottom (innerHeight - 200) is within full innerHeight but below (innerHeight - 400 spacer)
-      const bottom = window.innerHeight - 200
-      el.getBoundingClientRect = () => ({ top: 150, left: 10, bottom, right: 50 }) as DOMRect
+      // top sits in the band the spacer covers: below (innerHeight - 400) but above innerHeight.
+      // With the spacer it is entirely below the visible area (outside); without it, it is in view.
+      el.getBoundingClientRect = () => ({ top: window.innerHeight - 300, left: 10, bottom: window.innerHeight - 250, right: 50 }) as DOMRect
 
       expect((manager as any).isElementOutsideViewport(el)).toBe(true)
-
       spacer.remove()
+      expect((manager as any).isElementOutsideViewport(el)).toBe(false)
+    })
+
+    test('returns false for a large element straddling the viewport (top above the fold, bottom below) — #253', () => {
+      const manager = createBareManager()
+      const el = document.createElement('div')
+      // e.g. a tall HTML Content area scrolled so its bottom is in view; its top is far above.
+      el.getBoundingClientRect = () => ({ top: -2000, left: 0, bottom: window.innerHeight + 500, right: 50 }) as DOMRect
+      expect((manager as any).isElementOutsideViewport(el)).toBe(false)
+    })
+
+    test('returns true when the element is entirely below the visible area', () => {
+      const manager = createBareManager()
+      const el = document.createElement('div')
+      el.getBoundingClientRect = () => ({ top: window.innerHeight + 50, left: 10, bottom: window.innerHeight + 200, right: 50 }) as DOMRect
+      expect((manager as any).isElementOutsideViewport(el)).toBe(true)
     })
   })
 })

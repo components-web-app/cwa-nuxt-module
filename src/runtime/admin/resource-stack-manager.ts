@@ -464,12 +464,18 @@ export default class ResourceStackManager {
   private isElementOutsideViewport(el: HTMLElement) {
     const { top, left, bottom, right } = el.getBoundingClientRect()
     const { innerHeight, innerWidth } = window
-    let visibleHeight = innerHeight
+    let visibleBottom = innerHeight
     const managerSpacer = document.getElementById('cwa-manager-spacer')
     if (managerSpacer) {
-      visibleHeight -= managerSpacer.offsetHeight
+      visibleBottom -= managerSpacer.offsetHeight
     }
-    return top < this.yOffset || left < 0 || bottom > visibleHeight || right > innerWidth
+    // "Outside" only when the element does NOT overlap the visible region
+    // [yOffset, visibleBottom] × [0, innerWidth] — i.e. it is entirely above/below/left/right.
+    // A large element that straddles the viewport overlaps it and is left in place, so selecting it
+    // no longer scrolls to its top when part of it (e.g. its bottom) is already in view (#253).
+    const outsideVertically = bottom <= this.yOffset || top >= visibleBottom
+    const outsideHorizontally = right <= 0 || left >= innerWidth
+    return outsideVertically || outsideHorizontally
   }
 
   private listenEditModeChange(isEditing: boolean) {
