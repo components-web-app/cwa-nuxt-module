@@ -5,7 +5,19 @@ import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 
-export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'Image') => {
+// Ready-to-spread bindings for `CwaUiFormFile` (`v-bind="upload.bind"`). Covers the input's
+// `v-model`, `fileExists`, `disabled` and its `change`/`delete` events — `label`/`accept` are left
+// to the caller so each field keeps its own UI. Typed against the component's contract.
+export interface CwaResourceUploadBind {
+  'modelValue': string | number | undefined | null
+  'onUpdate:modelValue': (value: string | number | undefined | null) => void
+  'fileExists': boolean
+  'disabled': boolean
+  'onChange': (newFile: File | undefined) => Promise<void>
+  'onDelete': () => Promise<void>
+}
+
+export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'File') => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
@@ -73,11 +85,23 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     updating.value = false
   }
 
+  const bind = computed<CwaResourceUploadBind>(() => ({
+    'modelValue': filenameInputModel.value,
+    'onUpdate:modelValue': (value) => {
+      filenameInputModel.value = (value ?? '') as string
+    },
+    'fileExists': fileExists.value,
+    'disabled': updating.value,
+    'onChange': handleInputChangeFile,
+    'onDelete': handleInputDeleteFile,
+  }))
+
   return {
     filenameInputModel,
     updating,
     fileExists,
     handleInputChangeFile,
     handleInputDeleteFile,
+    bind,
   }
 }

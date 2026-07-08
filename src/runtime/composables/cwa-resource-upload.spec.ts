@@ -69,12 +69,41 @@ describe('useCwaResourceUpload', () => {
       expect(filenameInputModel.value).toBe('')
       resourceRef.value = { data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '2.4 MB' }] } } } }
       await nextTick()
-      expect(filenameInputModel.value).toBe('Existing Image (2.4 MB)')
+      // default fileDisplayType is now 'File'
+      expect(filenameInputModel.value).toBe('Existing File (2.4 MB)')
+    })
+
+    test('fileDisplayType overrides the display label', async () => {
+      const resourceRef = ref<any>({ data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '1 KB' }] } } } })
+      mockGetResource.mockReturnValue(resourceRef)
+      const { filenameInputModel } = useCwaResourceUpload(iri, 'file', 'Image')
+      expect(filenameInputModel.value).toBe('Existing Image (1 KB)')
     })
 
     test('filenameInputModel is empty when no file data', () => {
       const { filenameInputModel } = useCwaResourceUpload(iri)
       expect(filenameInputModel.value).toBe('')
+    })
+  })
+
+  describe('bind', () => {
+    test('exposes CwaUiFormFile bindings that reflect state and wire the handlers', () => {
+      mockGetResource.mockReturnValue(ref({
+        data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '1.2 MB' }] } } },
+      }))
+      const upload = useCwaResourceUpload(iri)
+      const b = upload.bind.value
+      expect(b.modelValue).toBe('Existing File (1.2 MB)')
+      expect(b.fileExists).toBe(true)
+      expect(b.disabled).toBe(false)
+      expect(b.onChange).toBe(upload.handleInputChangeFile)
+      expect(b.onDelete).toBe(upload.handleInputDeleteFile)
+    })
+
+    test('onUpdate:modelValue writes back to filenameInputModel', () => {
+      const { bind, filenameInputModel } = useCwaResourceUpload(iri)
+      bind.value['onUpdate:modelValue']('changed')
+      expect(filenameInputModel.value).toBe('changed')
     })
   })
 
