@@ -241,7 +241,27 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 > - `setManifestIrisByDepth` event now carries `{ token, resourceIris: NestedJsonStructure[] }` (was `irisByDepth: string[][]`).
 > - Fetcher spec manifest fixtures updated to the nested shape.
 >
-> **Deliberate follow-up (not done):** per-node placeholder metadata (UI name, dimensions, position sort…) — do not add fields to `NestedJsonStructure` until that work starts. The retained `resourceTree` is the hook for it.
+> **Decision (API #198 CLOSED — won't-do):** the manifest will **not** carry per-node metadata. The resource type is fully derivable from the IRI, so there's nothing the API can usefully add. Do **not** add fields to `NestedJsonStructure`.
+> - Coarse type ← IRI prefix (`getResourceTypeFromIri`).
+> - Specific component type ← `/component/{collection}/{uuid}`; reverse the `{collection}` segment via the `resourceName → endpoint` map `getComponentMetadata` already builds (e.g. `/component/images/…` → `Image`).
+> - Nesting + order ← the tree shape and `children` order.
+> - Instance dimensions are the only non-derivable thing, and they deliberately don't belong in the manifest (would embed component internals + couple the manifest cache to component edits). Skeleton shape/dimension defaults are **front-end config per component type**, not API data.
+
+### 🆕 Requested feature (raise a module issue) — developer-defined component placeholder templates (anti-flicker / anti-layout-shift)
+
+**Please open a cwa-nuxt-module issue for this.** API side is settled: no change (api-components-bundle #198 closed as won't-do — rationale above).
+
+**Goal:** let a developer register a **front-end-only placeholder/loading template per component type**, rendered in a component's slot **while its API resource is still loading**, so we (optionally) reserve correct space and show a tailored skeleton instead of a bare spinner/loader icon that pops in and shifts layout.
+
+**Why it's viable with no API help:** the nested manifest (`resourceTree`) already gives us, up front (before `fetchBatch` resolves), the **full tree of IRIs about to load** plus their **nesting + order** — everything needed to lay out placeholders — and each IRI yields its component type (derivation above). So we can pick the right placeholder per node with **zero extra API calls and zero manifest metadata**.
+
+**Shape to explore (design in the issue):**
+- A convention for authoring a placeholder alongside a component — e.g. `app/cwa/components/<Name>/placeholder.vue` (mirrors the existing `admin/` + `ui/` subdir scanning in `module.ts` → `cwa-options.ts`), auto-registered as the loading template for `CwaComponent<Name>`.
+- `ResourceLoader` / `CwaComponentGroup` render the resolved placeholder (keyed by IRI-derived type) until the resource fetch resolves, then swap to the real component — placeholder ideally occupying the same box to avoid CLS.
+- Opt-in: no placeholder registered ⇒ current behaviour (or a generic default); developers choose per component whether to bother.
+- Consider driving pre-content layout straight from `resourceTree` so ancestors/siblings can reserve space before any child resolves.
+
+**Explicitly front-end only** — no API/manifest change; purely a rendering/config feature in the module. Cross-ref: api-components-bundle #198 (closed, won't-do).
 >
 > **API emit reference:** each depth node's `iri` is the resource IRI; `children` are the nested/related resource IRIs reachable without crossing the `parentPage`/`parentPageData` boundary (route → pageData → page → componentGroups → positions → components). Blank-node/internal IRIs are excluded (same exclusions as the old flat list).
 
@@ -365,8 +385,8 @@ Diagnostic. Surfaced during the redirect flash fix. Static tracing suggests the 
 **[#246](https://github.com/components-web-app/cwa-nuxt-module/issues/246) — Integration/e2e tests with recorded API responses**
 Stand up a replay layer: record real API responses (routes, manifests, nested batches, redirects, 404/401/500, Mercure `link` headers) into committed cassettes and replay them at the `ofetch`/`cwa-fetch.ts` boundary so the full pipeline (fetcher → stores → middleware → render) runs deterministically with no live API. Enables end-to-end regressions the unit suite structurally can't catch — the redirect flash fix, the #245 navigation race, nested sub-pages, error-page takeover.
 
-**[#241](https://github.com/components-web-app/cwa-nuxt-module/issues/241) — Bug: TipTap bubble/floating menu obscured by CWA overlay** 🔬 Fix applied — awaiting live verification
-Root cause found: `TipTapHtmlEditor.vue` configured the menus with `:tippy-options`, which **TipTap v3 silently ignores** (it replaced Tippy with `@floating-ui/dom`). The real v3 props are `appendTo` and `options` (Floating UI config incl. `strategy`). With none set, the menu renders inline in the editor subtree with default `strategy: 'absolute'`, so `z-index: 760` can't reliably clear the `z-overlay` (750) `LayoutPageOverlay`. Prior failed attempts likely passed `appendTo`/`strategy` via the ignored `tippyOptions`, or set `appendTo: body` **without** `strategy: 'fixed'` (→ off-screen, "not appearing"). **Fix (playground `TipTapHtmlEditor.vue`):** replaced `:tippy-options` with `:append-to="() => document.body"` + `:options="{ strategy: 'fixed' }"` on both menus (kept `z-index: 760`). App-side fix (the editor is app-provided); the module just supplies the overlay + z-scale. **Needs visual verification in the running playground before closing** — the `appendTo`/`fixed`/`shouldShow` interaction can't be checked headlessly.
+**[#241](https://github.com/components-web-app/cwa-nuxt-module/issues/241) — Bug: TipTap bubble/floating menu obscured by CWA overlay** ✅ Fixed (closed, verified live)
+Root cause: `TipTapHtmlEditor.vue` configured the menus with `:tippy-options`, which **TipTap v3 silently ignores** (it replaced Tippy with `@floating-ui/dom`). The real v3 props are `appendTo` and `options` (Floating UI config incl. `strategy`). With none set, the menu renders inline in the editor subtree with default `strategy: 'absolute'`, so `z-index: 760` can't clear the `z-overlay` (750) `LayoutPageOverlay`. **Fix (app-side `TipTapHtmlEditor.vue`):** replaced `:tippy-options` with `:append-to="appendToBody"` (a `script setup` const `() => document.body` — `document` isn't accessible from a template expression, which broke earlier inline attempts) + `:options="{ strategy: 'fixed' }"` on both menus, keeping `z-index: 760`. Applied to both the module **playground** and the **components-web-app** demo (demo also needed the `z-index: 760` added). The module only supplies the overlay + z-scale; the actual fix lives in the app's editor.
 
 **[#242](https://github.com/components-web-app/cwa-nuxt-module/issues/242) — Test coverage: reach 70% statement coverage** ✅ Complete
 Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` above for the files covered.
