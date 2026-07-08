@@ -9,17 +9,14 @@ describe('generateComponentTemplate', () => {
     expect(result).toContain('useCwaComponent(props)')
     expect(result).toContain('defineProps<IriProp>')
     expect(result).toContain('defineExpose(exposeMeta)')
-    expect(result).not.toContain('withImage')
+    expect(result).not.toContain('withFile')
     expect(result).not.toContain('withCollection')
   })
 
-  test('image includes withImage and its return values', () => {
-    const result = generateComponentTemplate('image')
-    expect(result).toContain('withImage()')
-    expect(result).toContain('contentUrl')
-    expect(result).toContain('displayMedia')
-    expect(result).toContain('handleLoad')
-    expect(result).toContain('loaded')
+  test('file includes withFile and the files map', () => {
+    const result = generateComponentTemplate('file')
+    expect(result).toContain('withFile()')
+    expect(result).toContain('files')
   })
 
   test('collection includes withCollection and its return values', () => {

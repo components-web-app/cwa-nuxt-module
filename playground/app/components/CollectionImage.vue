@@ -10,7 +10,7 @@
     >
       <NuxtImg
         v-if="loaded"
-        ref="image"
+        ref="file"
         :src="contentUrl"
         :width="displayMedia?.width"
         :height="displayMedia?.height"
@@ -27,8 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
-import { useCwa, useCwaImageResource } from '#imports'
+import { useCwa, useCwaFileField } from '#imports'
 
 const props = defineProps<{
   iri: string
@@ -40,5 +39,5 @@ await $cwa.fetchResource({
   path: props.iri,
 })
 
-const { contentUrl, displayMedia, handleLoad, loaded } = useCwaImageResource(toRef(props, 'iri'), { imagineFilterName: 'thumbnail' })
+const { contentUrl, displayMedia, handleLoad, loaded } = useCwaFileField(props, { imagineFilterName: 'thumbnail' })
 </script>

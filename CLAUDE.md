@@ -519,12 +519,14 @@ defineExpose(exposeMeta)
 
 ### Built-in plugins
 
-| Factory | Extracts from | Factory opts |
+| Factory | Backed by | Factory opts |
 |---|---|---|
 | `withCollection()` | `useCwaCollectionResource` | none currently |
-| `withImage(imageOps?)` | `useCwaImageResource` | `imagineFilterName`, `imageRef` |
+| `withFile(fileOps?)` | `useCwaFile` | `fileProp`, `imagineFilterName`, `imageRef` |
 
-`useCwaCollectionResource` and `useCwaImageResource` are reimplemented as thin wrappers over these plugins. Their public signatures are unchanged (BC safe).
+`useCwaCollectionResource` is a thin wrapper over its plugin (BC safe).
+
+**File fields (#252 — renamed from Image):** the file APIs handle any uploadable file, not just images. `withFile()` exposes a field under a single **`files` map keyed by `fileProp`** (default `'file'`) on the `useCwaComponent` return — use it multiple times for multiple fields (`files.heroImage.contentUrl`, `files.thumbnail.contentUrl`). Entries are `reactive`, so nested refs unwrap in templates (no `.value`). `useCwaComponent`'s plugin merge **accumulates** the `files` key across plugins rather than shallow-overwriting it. The default template ref name for load detection is the `fileProp`. For the per-field, named-at-call-site style, `useCwaFileField(props, { fileProp })` returns the flat refs (`contentUrl`, `displayMedia`, `handleLoad`, `loaded`) — same `useCwaFile` under the hood. Old `withImage`/`useCwaImage`/`useCwaImageResource`/`ImageOpsType` were **removed** (hard swap, pre-alpha). CLI scaffold type `'image'` → `'file'`. **Admin side of #252 (bind object + `<CwaResourceFileField>` wrapper) still TODO.**
 
 ---
 

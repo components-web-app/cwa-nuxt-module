@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { ref, computed } from 'vue'
-import { useCwaImage } from '#cwa/composables/cwa-image'
-import type { ImageOpsType } from '#cwa/composables/cwa-image'
+import { useCwaFile } from '#cwa/composables/cwa-file'
+import type { FileOpsType } from '#cwa/composables/cwa-file'
 
 const mockQuery = vi.hoisted(() => ({ value: '' }))
 
@@ -18,7 +18,7 @@ vi.mock('vue', async () => {
   return { ...mod, onMounted: vi.fn(fn => fn()) }
 })
 
-function makeOps(overrides: Partial<ImageOpsType> = {}): ImageOpsType {
+function makeOps(overrides: Partial<FileOpsType> = {}): FileOpsType {
   return {
     // explicit complete:false + naturalHeight:0 avoids the onMounted auto-load path
     imageRef: ref({ complete: false, naturalHeight: 0 } as any),
@@ -27,7 +27,7 @@ function makeOps(overrides: Partial<ImageOpsType> = {}): ImageOpsType {
   }
 }
 
-describe('useCwaImage', () => {
+describe('useCwaFile', () => {
   const iri = ref('/resources/1')
 
   beforeEach(() => {
@@ -37,7 +37,7 @@ describe('useCwaImage', () => {
 
   describe('handleLoad', () => {
     test('sets loaded to true', () => {
-      const { handleLoad, loaded } = useCwaImage(iri, makeOps())
+      const { handleLoad, loaded } = useCwaFile(iri, makeOps())
       expect(loaded.value).toBe(false)
       handleLoad()
       expect(loaded.value).toBe(true)
@@ -47,13 +47,13 @@ describe('useCwaImage', () => {
   describe('displayMedia', () => {
     test('returns undefined when mediaObjects is empty', () => {
       const ops = makeOps({ mediaObjects: computed(() => ({})) })
-      const { displayMedia } = useCwaImage(iri, ops)
+      const { displayMedia } = useCwaFile(iri, ops)
       expect(displayMedia.value).toBeUndefined()
     })
 
     test('returns undefined when fileProperty has no media items', () => {
       const ops = makeOps({ mediaObjects: computed(() => ({ file: [] })) })
-      const { displayMedia } = useCwaImage(iri, ops)
+      const { displayMedia } = useCwaFile(iri, ops)
       expect(displayMedia.value).toBeUndefined()
     })
 
@@ -64,7 +64,7 @@ describe('useCwaImage', () => {
         imagineFilterName: 'thumb',
         mediaObjects: computed(() => ({ file: [original, thumbnail] })),
       })
-      const { displayMedia } = useCwaImage(iri, ops)
+      const { displayMedia } = useCwaFile(iri, ops)
       expect(displayMedia.value).toEqual(thumbnail)
     })
 
@@ -74,7 +74,7 @@ describe('useCwaImage', () => {
         imagineFilterName: 'thumb',
         mediaObjects: computed(() => ({ file: [first] })),
       })
-      const { displayMedia } = useCwaImage(iri, ops)
+      const { displayMedia } = useCwaFile(iri, ops)
       expect(displayMedia.value).toEqual(first)
     })
 
@@ -84,7 +84,7 @@ describe('useCwaImage', () => {
         fileProp: 'avatar',
         mediaObjects: computed(() => ({ avatar: [media] })),
       })
-      const { displayMedia } = useCwaImage(iri, ops)
+      const { displayMedia } = useCwaFile(iri, ops)
       expect(displayMedia.value).toEqual(media)
     })
   })
@@ -92,7 +92,7 @@ describe('useCwaImage', () => {
   describe('contentUrl', () => {
     test('returns undefined when no displayMedia', () => {
       const ops = makeOps({ mediaObjects: computed(() => ({})) })
-      const { contentUrl } = useCwaImage(iri, ops)
+      const { contentUrl } = useCwaFile(iri, ops)
       expect(contentUrl.value).toBeUndefined()
     })
 
@@ -101,7 +101,7 @@ describe('useCwaImage', () => {
       const { useCwaResourceEndpoint } = await import('#cwa/composables/cwa-resource-endpoint')
       vi.mocked(useCwaResourceEndpoint).mockReturnValueOnce({ endpoint: ref('/my/resource'), query: ref('') } as any)
       const ops = makeOps({ mediaObjects: computed(() => ({ file: [media] })) })
-      const { contentUrl } = useCwaImage(iri, ops)
+      const { contentUrl } = useCwaFile(iri, ops)
       expect(contentUrl.value).toBe('/image.jpg')
     })
 
@@ -111,7 +111,7 @@ describe('useCwaImage', () => {
       const { useCwaResourceEndpoint } = await import('#cwa/composables/cwa-resource-endpoint')
       vi.mocked(useCwaResourceEndpoint).mockReturnValueOnce({ endpoint: ref('/my/resource'), query: queryRef } as any)
       const ops = makeOps({ mediaObjects: computed(() => ({ file: [media] })) })
-      const { contentUrl } = useCwaImage(iri, ops)
+      const { contentUrl } = useCwaFile(iri, ops)
       expect(contentUrl.value).toBe('/image.jpg?size=large')
     })
   })
@@ -120,21 +120,21 @@ describe('useCwaImage', () => {
     test('calls handleLoad if imageRef is complete', () => {
       const imageEl = { complete: true, naturalHeight: 0 }
       const ops = makeOps({ imageRef: ref(imageEl as any) })
-      const { loaded } = useCwaImage(iri, ops)
+      const { loaded } = useCwaFile(iri, ops)
       expect(loaded.value).toBe(true)
     })
 
     test('calls handleLoad if naturalHeight is non-zero', () => {
       const imageEl = { complete: false, naturalHeight: 100 }
       const ops = makeOps({ imageRef: ref(imageEl as any) })
-      const { loaded } = useCwaImage(iri, ops)
+      const { loaded } = useCwaFile(iri, ops)
       expect(loaded.value).toBe(true)
     })
 
     test('does not call handleLoad if image is not loaded', () => {
       const imageEl = { complete: false, naturalHeight: 0 }
       const ops = makeOps({ imageRef: ref(imageEl as any) })
-      const { loaded } = useCwaImage(iri, ops)
+      const { loaded } = useCwaFile(iri, ops)
       expect(loaded.value).toBe(false)
     })
   })

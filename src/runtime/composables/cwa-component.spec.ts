@@ -73,4 +73,31 @@ describe('useCwaComponent', () => {
     expect(result.resource).toBeDefined()
     expect(result.exposeMeta).toBeDefined()
   })
+
+  describe('files map accumulation (withFile)', () => {
+    test('accumulates the `files` key across multiple plugins instead of overwriting', () => {
+      const hero = { contentUrl: '/hero.jpg' }
+      const thumb = { contentUrl: '/thumb.jpg' }
+      const result = useCwaComponent({ iri: '/component/1' }, [
+        () => ({ files: { heroImage: hero } }),
+        () => ({ files: { thumbnail: thumb } }),
+      ])
+      expect((result as any).files).toEqual({ heroImage: hero, thumbnail: thumb })
+    })
+
+    test('a file plugin can also contribute non-files keys, merged normally', () => {
+      const field = { contentUrl: '/f.jpg' }
+      const extra = ref('x')
+      const result = useCwaComponent({ iri: '/component/1' }, [
+        () => ({ files: { file: field }, extra }),
+      ])
+      expect((result as any).files).toEqual({ file: field })
+      expect((result as any).extra).toBe(extra)
+    })
+
+    test('no `files` key when no plugin provides one', () => {
+      const result = useCwaComponent({ iri: '/component/1' }, [() => ({ a: 1 })])
+      expect('files' in result).toBe(false)
+    })
+  })
 })

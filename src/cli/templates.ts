@@ -1,4 +1,4 @@
-export type ComponentType = 'basic' | 'image' | 'collection'
+export type ComponentType = 'basic' | 'file' | 'collection'
 
 export interface ApiCommandOpts {
   timestamped?: boolean
@@ -20,9 +20,9 @@ export function generateComponentTemplate(type: ComponentType): string {
   if (type === 'basic') {
     scriptLines.push(`const { resource, exposeMeta } = useCwaComponent(props)`)
   }
-  else if (type === 'image') {
+  else if (type === 'file') {
     scriptLines.push(
-      `const { resource, exposeMeta, contentUrl, displayMedia, handleLoad, loaded } = useCwaComponent(props, [withImage()])`,
+      `const { resource, exposeMeta, files } = useCwaComponent(props, [withFile()])`,
     )
   }
   else if (type === 'collection') {

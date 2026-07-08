@@ -18,9 +18,9 @@ function generateComponentTemplate(type) {
     `const props = defineProps<IriProp>()`,
   ]
 
-  if (type === 'image') {
+  if (type === 'file') {
     lines.push(
-      `const { resource, exposeMeta, contentUrl, displayMedia, handleLoad, loaded } = useCwaComponent(props, [withImage()])`,
+      `const { resource, exposeMeta, files } = useCwaComponent(props, [withFile()])`,
     )
   }
   else if (type === 'collection') {
@@ -119,7 +119,7 @@ while (true) {
 
 const type = await askChoice(`\nComponent type:`, [
   { value: 'basic', label: 'Basic', description: 'Standard resource component' },
-  { value: 'image', label: 'Image', description: 'Includes withImage() plugin (media objects, contentUrl)' },
+  { value: 'file', label: 'File', description: 'Includes withFile() plugin (uploadable file fields, files map)' },
   { value: 'collection', label: 'Collection', description: 'Includes withCollection() plugin (pagination, filters)' },
 ])
 
@@ -128,7 +128,7 @@ const timestamped = await askYesNo(`Add --timestamped behaviour (createdAt / upd
 const publishable = await askYesNo(`Add --publishable behaviour (draft / published lifecycle)?`)
 const uploadable = await askYesNo(
   `Add --uploadable behaviour (file upload)?`,
-  type === 'image',
+  type === 'file',
 )
 
 rl.close()

@@ -43,8 +43,24 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
     publishedIri: typeof publishedIri
   }
 
-  return Object.assign(
-    { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, publishedIri } satisfies BaseReturn,
-    ...pluginResults,
-  ) as BaseReturn & PluginResults<P>
+  // Merge plugin results. The `files` key (from `withFile`) is accumulated across plugins — keyed
+  // by `fileProp` — rather than shallow-overwritten, so a component can expose multiple file fields
+  // under one `files` map. All other keys merge as a normal shallow assign.
+  const merged: Record<string, unknown> = { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, publishedIri } satisfies BaseReturn
+  const files: Record<string, unknown> = {}
+  for (const pluginResult of pluginResults) {
+    if (pluginResult && typeof pluginResult === 'object' && 'files' in pluginResult) {
+      const { files: pluginFiles, ...rest } = pluginResult as { files: Record<string, unknown> }
+      Object.assign(files, pluginFiles)
+      Object.assign(merged, rest)
+    }
+    else {
+      Object.assign(merged, pluginResult)
+    }
+  }
+  if (Object.keys(files).length) {
+    merged.files = files
+  }
+
+  return merged as BaseReturn & PluginResults<P>
 }
