@@ -65,6 +65,10 @@ import { ComponentGroupUtilSynchronizer } from '#cwa/templates/components/main/C
 import {
   useComponentGroupPositions,
 } from '#cwa/templates/components/main/ComponentGroup.Util.Positions'
+import {
+  useComponentGroupEvents,
+} from '#cwa/templates/components/main/ComponentGroup.Util.Events'
+import type { CwaComponentGroupPair } from '#cwa/templates/components/main/ComponentGroup.Util.Events'
 import ComponentPosition from '#cwa/templates/components/core/ComponentPosition.vue'
 import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -84,6 +88,11 @@ useCwaResourceManageable(iri)
 
 type PropsType = { reference: string, locationReference?: string, location: string, allowedComponents?: string[] | null }
 const props = withDefaults(defineProps<PropsType>(), { allowedComponents: null })
+
+const emit = defineEmits<{
+  componentsLoaded: [pairs: CwaComponentGroupPair[]]
+  componentsUpdated: [pairs: CwaComponentGroupPair[]]
+}>()
 
 const locationResource = computed(() => {
   return $cwa.resources.getResource(props.location).value
@@ -119,6 +128,11 @@ const showLoader = computed(() => {
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
 const { groupIsReordering, componentPositions } = useComponentGroupPositions(iri, $cwa)
+
+useComponentGroupEvents(componentPositions, $cwa, {
+  onLoaded: pairs => emit('componentsLoaded', pairs),
+  onUpdated: pairs => emit('componentsUpdated', pairs),
+})
 
 const nestedClasses = computed(() => {
   if (!groupIsReordering.value) {
