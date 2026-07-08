@@ -60,6 +60,7 @@ interface AbortFetchEvent {
 
 export interface CwaFetcherActionsInterface {
   abortFetch(event: AbortFetchEvent): void
+  setDisplayedToken(token: string): void
   setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void
   finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
@@ -77,12 +78,34 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     return fetchStatus
   }
 
+  // Delete a fetch from the chain unless it is still referenced by one of the primary tokens.
+  // Protects `displayedToken` (the page currently on screen) from being cleaned up while a
+  // superseded fetch is being held on screen. See #256.
+  function cleanupFetch(token?: string) {
+    if (!token) {
+      return
+    }
+    const { fetchingToken, successToken, displayedToken } = fetcherState.primaryFetch
+    if (token === fetchingToken || token === successToken || token === displayedToken) {
+      return
+    }
+    delete fetcherState.fetches[token]
+  }
+
   return {
     abortFetch(event: AbortFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
       if (event.reason) {
         fetchStatus.abortReason = event.reason
+      }
+    },
+    setDisplayedToken(token: string) {
+      const previous = fetcherState.primaryFetch.displayedToken
+      fetcherState.primaryFetch.displayedToken = token
+      // the previously-displayed fetch is no longer on screen — clean it up if nothing else needs it
+      if (previous && previous !== token) {
+        cleanupFetch(previous)
       }
     },
     setManifestIrisByDepth(event: SetManifestIrisByDepthEvent) {
@@ -195,7 +218,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         !fetchStatus.isPrimary
       ) {
         // chain not needed anymore, will not be referenced anywhere
-        delete fetcherState.fetches[event.token]
+        cleanupFetch(event.token)
         return
       }
 
@@ -208,17 +231,25 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       // through to normal promotion and surfaces the error page via showError.
       if (fetchStatus.abortReason === 'redirect' && event.token === fetcherState.primaryFetch.fetchingToken) {
         fetcherState.primaryFetch.fetchingToken = undefined
-        delete fetcherState.fetches[event.token]
+        cleanupFetch(event.token)
         return
       }
 
       const initialFetchingToken = fetcherState.primaryFetch.fetchingToken
       const initialSuccessToken = fetcherState.primaryFetch.successToken
+      const initialDisplayedToken = fetcherState.primaryFetch.displayedToken
 
       // update the token references
       if (event.token === initialFetchingToken) {
         fetcherState.primaryFetch.fetchingToken = undefined
         fetcherState.primaryFetch.successToken = event.token
+        // a fully-resolved page is now what is on screen — advance the displayed reference to it
+        fetcherState.primaryFetch.displayedToken = event.token
+      }
+
+      // the previously-displayed (superseded) page is no longer needed once a new page is displayed
+      if (initialDisplayedToken && fetcherState.primaryFetch.displayedToken !== initialDisplayedToken) {
+        cleanupFetch(initialDisplayedToken)
       }
 
       // we should delete an old success token if a new one is being set
@@ -226,11 +257,11 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (
         initialSuccessToken && fetcherState.primaryFetch.successToken !== initialSuccessToken
       ) {
-        delete fetcherState.fetches[initialSuccessToken]
+        cleanupFetch(initialSuccessToken)
       }
 
       if (event.token !== fetcherState.primaryFetch.successToken) {
-        delete fetcherState.fetches[event.token]
+        cleanupFetch(event.token)
       }
     },
     addFetchResource(event: AddFetchResourceEvent) {
@@ -247,6 +278,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     clearFetches() {
       fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = undefined
+      fetcherState.primaryFetch.displayedToken = undefined
       for (const token of Object.keys(fetcherState.fetches)) {
         delete fetcherState.fetches[token]
       }

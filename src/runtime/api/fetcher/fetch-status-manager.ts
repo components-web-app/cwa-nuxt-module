@@ -15,7 +15,7 @@ import type {
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type { CwaResourceError } from '../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import { isCwaResource, ResourceTypeFromIri } from '../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri, isCwaResource, ResourceTypeFromIri } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
@@ -98,15 +98,37 @@ export default class FetchStatusManager {
   }
 
   public startFetch(event: _StartFetchEvent): StartFetchResponse {
+    // capture the page currently being loaded before it is superseded by this new primary fetch
+    const outgoingFetchingToken = event.isPrimary ? this.fetcherStore.primaryFetch.fetchingToken : undefined
     if (event.isPrimary) {
       this._iriToDepth = new Map()
       this._depthPaths = new Map()
     }
     const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
+      // If the fetch we just superseded had already rendered its page, keep it on screen while this
+      // new one loads (rather than reverting to the last fully-resolved success). See #256.
+      if (
+        startFetchStatus.continue
+        && outgoingFetchingToken
+        && outgoingFetchingToken !== startFetchStatus.token
+        && this.fetchHasDisplayablePage(outgoingFetchingToken)
+      ) {
+        this.fetcherStore.setDisplayedToken(outgoingFetchingToken)
+      }
       this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
     }
     return startFetchStatus
+  }
+
+  // Whether a fetch's depth-0 page resource has data in the store — i.e. it was actually rendered.
+  private fetchHasDisplayablePage(token: string): boolean {
+    const depth0 = this.fetcherStore.fetches[token]?.manifest?.irisByDepth?.[0]
+    if (!depth0) {
+      return false
+    }
+    const pageIri = depth0.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
+    return !!(pageIri && this.resourcesStore.current.byId?.[pageIri]?.data)
   }
 
   public startFetchResource(event: AddFetchResourceEvent): boolean {

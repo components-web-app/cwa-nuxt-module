@@ -97,7 +97,7 @@ export class Resources {
               if (irisByDepth?.[0]) {
                 const pageDataIri = this.getPageDataIriFromDepthGroup(irisByDepth[0])
                 if (pageDataIri && !this.getResource(pageDataIri).value?.data) {
-                  return this.fetcherStore.resolvedSuccessFetchStatus
+                  return this.fetcherStore.resolvedDisplayFetchStatus
                 }
               }
               return fetchingStatus
@@ -106,7 +106,10 @@ export class Resources {
         }
       }
     }
-    return this.fetcherStore.resolvedSuccessFetchStatus
+    // While a new page loads, hold the page that is actually on screen (`displayedToken`) rather than
+    // the last fully-resolved success — so rapid navigation never reverts to a page from several
+    // clicks ago. See #256.
+    return this.fetcherStore.resolvedDisplayFetchStatus
   }
 
   private get pageLoadResources() {

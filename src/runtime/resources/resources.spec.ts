@@ -33,6 +33,7 @@ function createResources(mockFetcherStoreResponse: any = undefined, mockResource
         },
         fetches: {},
         resolvedSuccessFetchStatus: computed(() => ({ path: '/test', isPrimary: true, resources: ['1', '2'] })),
+        resolvedDisplayFetchStatus: computed(() => ({ path: '/test', isPrimary: true, resources: ['1', '2'] })),
       }
     },
   }
@@ -134,6 +135,7 @@ describe('Resources', () => {
           fetchingToken: null,
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
       }
 
       const { resources } = createResources(mockFetcherStore)
@@ -149,6 +151,7 @@ describe('Resources', () => {
           fetchingToken: 'mock',
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: {},
       }
 
@@ -165,6 +168,7 @@ describe('Resources', () => {
           fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: {
           abcd: { test: true },
         },
@@ -185,6 +189,7 @@ describe('Resources', () => {
           fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: {
           abcd: { test: true },
         },
@@ -213,6 +218,7 @@ describe('Resources', () => {
           fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: {
           abcd: { test: true },
         },
@@ -242,6 +248,7 @@ describe('Resources', () => {
           fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: {
           abcd: { test: true },
         },
@@ -281,6 +288,7 @@ describe('Resources', () => {
           fetchingToken: 'abcd' as string | null,
         },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: {
           abcd: resourceStatus,
         },
@@ -317,6 +325,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: { success: 'mock' },
+        resolvedDisplayFetchStatus: { success: 'mock' },
         fetches: { abcd: resourceStatus },
       }
 
@@ -342,6 +351,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: { abcd: fetchingStatus },
       }
 
@@ -369,6 +379,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: { success: 'mock' },
+        resolvedDisplayFetchStatus: { success: 'mock' },
         fetches: { abcd: resourceStatus },
       }
 
@@ -403,6 +414,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: { abcd: resourceStatus },
       }
 
@@ -435,6 +447,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: mockStatus,
+        resolvedDisplayFetchStatus: mockStatus,
         fetches: { abcd: resourceStatus },
       }
 
@@ -466,6 +479,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: { mock: 'old' },
+        resolvedDisplayFetchStatus: { mock: 'old' },
         fetches: { abcd: resourceStatus },
       }
 
@@ -496,6 +510,7 @@ describe('Resources', () => {
       const mockFetcherStore = {
         primaryFetch: { fetchingToken: 'abcd' as string | null },
         resolvedSuccessFetchStatus: { mock: 'old' },
+        resolvedDisplayFetchStatus: { mock: 'old' },
         fetches: { abcd: resourceStatus },
       }
 

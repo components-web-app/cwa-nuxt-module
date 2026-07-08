@@ -331,6 +331,30 @@ describe('Fetcher store action -> finishFetch', () => {
     expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
   })
 
+  describe('displayed token (last-displayed retention #256)', () => {
+    test('On promotion the displayed token advances to the new success token', () => {
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      fetcherActions.finishFetch({ token: 'existing-primary-token' })
+      expect(fetcherState.primaryFetch.displayedToken).toBe('existing-primary-token')
+    })
+
+    test('On promotion a previously-displayed superseded fetch is cleaned up', () => {
+      fetcherState.fetches['held-token'] = reactive({ path: '/held', resources: ['/held'], isPrimary: true, timestamp: 0 })
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      fetcherState.primaryFetch.displayedToken = 'held-token'
+      fetcherActions.finishFetch({ token: 'existing-primary-token' })
+      expect(fetcherState.primaryFetch.displayedToken).toBe('existing-primary-token')
+      expect(fetcherState.fetches['held-token']).toBeUndefined()
+    })
+
+    test('A held displayed fetch is NOT deleted when it is also the finishing success token being retained', () => {
+      // displayed = the currently shown page; a non-primary chain finishing must not remove it
+      fetcherState.primaryFetch.displayedToken = 'existing-token'
+      fetcherActions.finishFetch({ token: 'existing-token' })
+      expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
+    })
+  })
+
   describe('redirect retention (flash fix)', () => {
     test('A primary fetch aborted as a redirect does not become the success token and the previous success page is retained', () => {
       // page A is currently displayed
@@ -397,6 +421,56 @@ describe('Fetcher store action -> finishFetch', () => {
       expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
       expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
     })
+  })
+})
+
+describe('Fetcher store action -> setDisplayedToken', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+
+  beforeEach(() => {
+    fetcherState = state()
+    fetcherState.fetches['old-displayed'] = reactive({ path: '/old', resources: ['/old'], isPrimary: true, timestamp: 0 })
+    fetcherState.fetches['new-displayed'] = reactive({ path: '/new', resources: ['/new'], isPrimary: true, timestamp: 0 })
+    fetcherActions = actions(fetcherState, getters(fetcherState))
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Sets the displayed token', () => {
+    fetcherActions.setDisplayedToken('new-displayed')
+    expect(fetcherState.primaryFetch.displayedToken).toBe('new-displayed')
+  })
+
+  test('Cleans up the previously displayed fetch when it is replaced', () => {
+    fetcherState.primaryFetch.displayedToken = 'old-displayed'
+    fetcherActions.setDisplayedToken('new-displayed')
+    expect(fetcherState.primaryFetch.displayedToken).toBe('new-displayed')
+    expect(fetcherState.fetches['old-displayed']).toBeUndefined()
+  })
+
+  test('Does NOT clean up the previously displayed fetch if it is still the success token', () => {
+    fetcherState.primaryFetch.displayedToken = 'old-displayed'
+    fetcherState.primaryFetch.successToken = 'old-displayed'
+    fetcherActions.setDisplayedToken('new-displayed')
+    expect(fetcherState.fetches['old-displayed']).toBeDefined()
+  })
+})
+
+describe('Fetcher store action -> clearFetches', () => {
+  test('Resets the displayed token along with fetching and success tokens', () => {
+    const fetcherState = state()
+    fetcherState.primaryFetch.fetchingToken = 'f'
+    fetcherState.primaryFetch.successToken = 's'
+    fetcherState.primaryFetch.displayedToken = 'd'
+    fetcherState.fetches['f'] = reactive({ path: '/f', resources: [], isPrimary: true, timestamp: 0 })
+    const fetcherActions = actions(fetcherState, getters(fetcherState))
+    fetcherActions.clearFetches()
+    expect(fetcherState.primaryFetch.displayedToken).toBeUndefined()
+    expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+    expect(fetcherState.primaryFetch.successToken).toBeUndefined()
   })
 })
 

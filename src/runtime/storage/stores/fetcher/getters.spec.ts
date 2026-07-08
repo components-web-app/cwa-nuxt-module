@@ -100,6 +100,60 @@ describe('FetcherStore getters -> resolvedSuccessFetchStatus', () => {
   })
 })
 
+describe('FetcherStore getters -> resolvedDisplayFetchStatus', () => {
+  let state: CwaFetcherStateInterface
+  let getterFns: CwaFetcherGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+    fetcherGetterUtilsMock.getFetchStatusByToken.mockReset()
+    fetcherGetterUtilsMock.isFetchResolving.mockReset()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Prefers the displayed token status when set', () => {
+    state.primaryFetch.displayedToken = 'displayed-token'
+    state.primaryFetch.successToken = 'success-token'
+    const displayedStatus = { path: '/displayed' }
+    fetcherGetterUtilsMock.getFetchStatusByToken.mockImplementation((token: string) => (token === 'displayed-token' ? displayedStatus : { path: '/success' }))
+    expect(getterFns.resolvedDisplayFetchStatus.value).toBe(displayedStatus)
+    // does not need to consult the success token / resolving state when a displayed token resolves
+    expect(fetcherGetterUtilsMock.isFetchResolving).not.toHaveBeenCalled()
+  })
+
+  test('Falls back to the resolved success token when nothing is displayed', () => {
+    state.primaryFetch.successToken = 'success-token'
+    const successStatus = { path: '/success' }
+    fetcherGetterUtilsMock.getFetchStatusByToken.mockImplementation(() => successStatus)
+    fetcherGetterUtilsMock.isFetchResolving.mockImplementation(() => false)
+    expect(getterFns.resolvedDisplayFetchStatus.value).toBe(successStatus)
+  })
+
+  test('Falls back to success but returns undefined while the success token is still resolving', () => {
+    state.primaryFetch.successToken = 'success-token'
+    fetcherGetterUtilsMock.getFetchStatusByToken.mockImplementation(() => ({ path: '/success' }))
+    fetcherGetterUtilsMock.isFetchResolving.mockImplementation(() => true)
+    expect(getterFns.resolvedDisplayFetchStatus.value).toBeUndefined()
+  })
+
+  test('Falls back to success when the displayed token no longer exists', () => {
+    state.primaryFetch.displayedToken = 'gone'
+    state.primaryFetch.successToken = 'success-token'
+    const successStatus = { path: '/success' }
+    fetcherGetterUtilsMock.getFetchStatusByToken.mockImplementation((token: string) => (token === 'gone' ? undefined : successStatus))
+    fetcherGetterUtilsMock.isFetchResolving.mockImplementation(() => false)
+    expect(getterFns.resolvedDisplayFetchStatus.value).toBe(successStatus)
+  })
+
+  test('Returns undefined when neither displayed nor success token is set', () => {
+    expect(getterFns.resolvedDisplayFetchStatus.value).toBeUndefined()
+  })
+})
+
 describe('FetcherStore getters -> fetchesResolved', () => {
   let state: CwaFetcherStateInterface
   let getterFns: CwaFetcherGettersInterface

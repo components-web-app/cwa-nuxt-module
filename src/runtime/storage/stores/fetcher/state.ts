@@ -42,6 +42,11 @@ export interface CwaFetcherStateInterface {
   primaryFetch: {
     fetchingToken?: string
     successToken?: string
+    // The fetch whose page is currently on screen — may be a fully-resolved success OR a page that
+    // early-switched into view but was superseded before it finished. The anti-flash hold
+    // (`resolvedDisplayFetchStatus`) reads this so navigation never reverts past the page the user
+    // was actually looking at. See #256.
+    displayedToken?: string
   }
   fetches: FetcherChainInterface
 }
