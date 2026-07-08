@@ -247,9 +247,9 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 > - Nesting + order ← the tree shape and `children` order.
 > - Instance dimensions are the only non-derivable thing, and they deliberately don't belong in the manifest (would embed component internals + couple the manifest cache to component edits). Skeleton shape/dimension defaults are **front-end config per component type**, not API data.
 
-### 🆕 Requested feature (raise a module issue) — developer-defined component placeholder templates (anti-flicker / anti-layout-shift)
+### Component loaders/placeholders — anti-flicker / anti-layout-shift ([#255](https://github.com/components-web-app/cwa-nuxt-module/issues/255))
 
-**Please open a cwa-nuxt-module issue for this.** API side is settled: no change (api-components-bundle #198 closed as won't-do — rationale above).
+**Raised as [#255](https://github.com/components-web-app/cwa-nuxt-module/issues/255).** API side is settled: no change (api-components-bundle #198 closed as won't-do — rationale above). Front-end only. Minimal per-item UI hints from the API were considered but deferred — they'd couple the manifest cache to component/UI edits, hurting cacheability, responsiveness and speed.
 
 **Goal:** let a developer register a **front-end-only placeholder/loading template per component type**, rendered in a component's slot **while its API resource is still loading**, so we (optionally) reserve correct space and show a tailored skeleton instead of a bare spinner/loader icon that pops in and shifts layout.
 
@@ -364,6 +364,9 @@ Consuming-app **unscoped** global element CSS (`h1/h2/h3`, `a`, `button`, …) r
 
 **[#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157) — Clone a resource**
 Admin UI functionality to duplicate an existing resource (page, component, etc.).
+
+**[#255](https://github.com/components-web-app/cwa-nuxt-module/issues/255) — Component loaders/placeholders (anti-flicker + developer skeleton templates)**
+Two phases: (1) reduce the bare `<Spinner>` flicker/layout-shift in `ResourceLoader.vue` / `ComponentGroup.vue` during loads; (2) opt-in per-component-type placeholder templates (`app/cwa/components/<Name>/placeholder.vue`, scanned like `admin/`/`ui/`) rendered until the resource resolves, laid out from the `resourceTree` (#250) so space is reserved (anti-CLS). Component type derived from the IRI — **no API/manifest metadata** (#198 won't-do; API UI hints deferred for cacheability/speed). Front-end only. See `## Nested Sub-Pages → Component loaders/placeholders`. **Next up: implementing the loader anti-flicker fixes.**
 
 **[#251](https://github.com/components-web-app/cwa-nuxt-module/issues/251) — Feature: `CwaComponentGroup` emits `componentsLoaded` / `componentsUpdated`** ✅ Complete (closed)
 `CwaComponentGroup` **Vue-emits** `componentsLoaded` once all of the group's **own** positions resolve to a persisted component in a terminal API state (`SUCCESS`/`ERROR`, not `IN_PROGRESS`), then a **distinct** `componentsUpdated` (debounced) on later persisted add/publish/remove. **Payload = `{ component, position }[]`** (component IRI + its position IRI). Locked decisions: Vue emits (not the bus); pairs payload; distinct update event; own-positions-only (nested groups emit their own). Temporary/unpersisted (`__new__` / `_metadata.adding`) components are **excluded** (never fire); errored/absent components count as terminal (don't hang the event) but are **omitted from the payload**. Logic lives in the testable `useComponentGroupEvents` (`ComponentGroup.Util.Events.ts`), wired in `ComponentGroup.vue`.
