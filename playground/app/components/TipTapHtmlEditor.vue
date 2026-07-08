@@ -3,7 +3,7 @@
     <bubble-menu
       class="bg-stone-700 text-stone-100 rounded overflow-hidden text-sm"
       style="z-index: 760"
-      :append-to="() => document.body"
+      :append-to="appendToBody"
       :options="{ strategy: 'fixed' }"
       :editor="editor"
       :update-delay="0"
@@ -33,7 +33,7 @@
     <floating-menu
       class="floating-menu bg-stone-200 text-stone-700 rounded overflow-hidden"
       style="z-index: 760"
-      :append-to="() => document.body"
+      :append-to="appendToBody"
       :options="{ strategy: 'fixed' }"
       :editor="editor"
       :update-delay="0"
@@ -73,6 +73,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['update:modelValue'])
+
+// Render the menus at the top level so they escape the editor's stacking context and clear the CWA
+// page overlay. `document` isn't available in the template expression scope, so define it here.
+const appendToBody = () => document.body
 
 // reactive updating of the model
 const value = computed({
