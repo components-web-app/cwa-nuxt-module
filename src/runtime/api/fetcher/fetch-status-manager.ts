@@ -121,14 +121,19 @@ export default class FetchStatusManager {
     return startFetchStatus
   }
 
-  // Whether a fetch's depth-0 page resource has data in the store — i.e. it was actually rendered.
+  // Whether a fetch was fully rendered — EVERY depth's page resource has data in the store. A
+  // partially-loaded nested view (e.g. the shared parent at depth 0 loaded but the child at depth 1
+  // still loading) must NOT be held as the displayed page, or clicking away leaves the user stuck on
+  // a parent + spinning child instead of falling back to the last fully-loaded page. See #256.
   private fetchHasDisplayablePage(token: string): boolean {
-    const depth0 = this.fetcherStore.fetches[token]?.manifest?.irisByDepth?.[0]
-    if (!depth0) {
+    const irisByDepth = this.fetcherStore.fetches[token]?.manifest?.irisByDepth
+    if (!irisByDepth?.length) {
       return false
     }
-    const pageIri = depth0.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
-    return !!(pageIri && this.resourcesStore.current.byId?.[pageIri]?.data)
+    return irisByDepth.every((depthGroup) => {
+      const pageIri = depthGroup.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
+      return !!(pageIri && this.resourcesStore.current.byId?.[pageIri]?.data)
+    })
   }
 
   public startFetchResource(event: AddFetchResourceEvent): boolean {
@@ -316,7 +321,12 @@ export default class FetchStatusManager {
 
   // todo: test
   public clearPrimaryFetch() {
+    // Reset the whole primary-fetch state. Previously only successToken was cleared, leaving a stale
+    // fetchingToken/displayedToken pointing at an abandoned fetch (e.g. navigating to a cwa-disabled
+    // page while a CWA fetch was in flight), which could keep the CWA view stuck. See #256.
     this.fetcherStore.primaryFetch.successToken = undefined
+    this.fetcherStore.primaryFetch.fetchingToken = undefined
+    this.fetcherStore.primaryFetch.displayedToken = undefined
   }
 
   public get primaryFetchPath(): string | undefined {

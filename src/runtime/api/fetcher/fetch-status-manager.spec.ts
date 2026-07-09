@@ -236,6 +236,28 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
   })
 })
 
+describe('FetchStatusManager -> clearPrimaryFetch', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('resets the fetching, success and displayed tokens', () => {
+    fetchStatusManager._fetcherStore = {
+      primaryFetch: { fetchingToken: 'f', successToken: 's', displayedToken: 'd' },
+    }
+    fetchStatusManager.clearPrimaryFetch()
+    expect(fetchStatusManager._fetcherStore.primaryFetch.fetchingToken).toBeUndefined()
+    expect(fetchStatusManager._fetcherStore.primaryFetch.successToken).toBeUndefined()
+    expect(fetchStatusManager._fetcherStore.primaryFetch.displayedToken).toBeUndefined()
+  })
+})
+
 describe('FetchStatusManager -> startFetchResource', () => {
   let fetchStatusManager: FetchStatusManager
 

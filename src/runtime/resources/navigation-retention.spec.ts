@@ -116,6 +116,18 @@ function fullyLoad(page: ReturnType<typeof buildPage>): string {
   return token
 }
 
+// Fully load an arbitrary (possibly multi-depth) view from an explicit tree + resource list.
+function fullyLoadView(routeIri: string, tree: NestedJsonStructure[], resourceList: CwaResource[]): string {
+  const token = startPrimary(routeIri, `${routeIri}/manifest`)
+  deliverManifest(token, tree)
+  for (const resource of resourceList) {
+    beginResource(token, resource['@id'])
+    resolveResource(resource)
+  }
+  fetcherStore.finishFetch({ token })
+  return token
+}
+
 // ---- the invariant assertion ----------------------------------------------
 
 function displayFetchStatus() {
@@ -215,6 +227,53 @@ describe('#256 navigation retention', () => {
 
     // the superseded, held B fetch is cleaned up once C is displayed (no leak)
     expect(fetcherStore.primaryFetch.displayedToken).toBe(fetcherStore.primaryFetch.successToken)
+  })
+
+  test('clicking away (to home) while a nested child is still loading does NOT get stuck holding the half-loaded nested page', () => {
+    const parent = buildPage('parent')
+    const overview = buildPage('overview')
+    const child2 = buildPage('child2')
+    const home = buildPage('home')
+
+    const overviewNested: NestedJsonStructure[] = [parent.tree[0], overview.tree[0]]
+    const child2Nested: NestedJsonStructure[] = [parent.tree[0], child2.tree[0]]
+
+    // 1. On the nested overview page, fully loaded (depth-0 parent + depth-1 overview).
+    fullyLoadView(overview.routeIri, overviewNested, [...parent.resourcesList, ...overview.resourcesList])
+    expect(resources.pageIriAtDepth(0).value).toBe(parent.pageIri)
+    expect(resources.pageIriAtDepth(1).value).toBe(overview.pageIri)
+
+    // 2. Navigate to sibling nested page child2 — parent early-switches back in, but child2's depth-1
+    //    page NEVER loads and the fetch is NOT finished (the user clicks away first).
+    const tokenChild2 = startPrimary(child2.routeIri, `${child2.routeIri}/manifest`)
+    deliverManifest(tokenChild2, child2Nested)
+    for (const resource of parent.resourcesList) {
+      beginResource(tokenChild2, resource['@id'])
+      resolveResource(resource)
+    }
+    // child2's own depth-1 resources are deliberately NOT loaded
+
+    // 3. Navigate to home before child2 finished.
+    const tokenHome = startPrimary(home.routeIri, `${home.routeIri}/manifest`)
+
+    // The held view must not be a half-loaded nested page whose depth-1 child has no data —
+    // that renders parent + a stuck child spinner. It should hold a fully-loaded page instead.
+    const heldDepth1 = resources.pageIriAtDepth(1).value
+    if (heldDepth1) {
+      expect(
+        resources.getResource(heldDepth1).value?.data,
+        'held view depth-1 must have data (not a half-loaded nested page)',
+      ).toBeTruthy()
+    }
+
+    // 4. Home finishes and must take over the display.
+    deliverManifest(tokenHome, home.tree)
+    for (const resource of home.resourcesList) {
+      beginResource(tokenHome, resource['@id'])
+      resolveResource(resource)
+    }
+    fetcherStore.finishFetch({ token: tokenHome })
+    expect(resources.pageIriAtDepth(0).value).toBe(home.pageIri)
   })
 
   test('navigating to a nested child never blanks the shared parent (depth 0)', () => {
