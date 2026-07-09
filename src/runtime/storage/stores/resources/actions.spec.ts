@@ -939,47 +939,6 @@ describe('resources action -> clearResources', () => {
   })
 })
 
-describe('resources action -> evictResources (#257 route-cache LRU)', () => {
-  function buildState() {
-    const resourcesState = state()
-    resourcesState.current.byId = {
-      '/component/keep': { apiState: { status: undefined }, data: { '@id': '/component/keep', '@type': 'Component', '_metadata': { persisted: true } } },
-      '/component/gone': { apiState: { status: undefined }, data: { '@id': '/component/gone', '@type': 'Component', '_metadata': { persisted: true } } },
-      '/_/component_positions/1': { apiState: { status: undefined }, data: { '@id': '/_/component_positions/1', '@type': 'ComponentPosition', '_metadata': { persisted: true } } },
-    }
-    resourcesState.current.allIds = ['/component/keep', '/component/gone', '/_/component_positions/1']
-    resourcesState.current.publishableMapping = [{ publishedIri: '/component/gone', draftIri: '/component/gone-draft' }, { publishedIri: '/component/keep', draftIri: '/component/keep-draft' }]
-    resourcesState.current.positionsByComponent = { '/component/gone': ['/_/component_positions/1'], '/component/keep': ['/_/component_positions/1'] }
-    return resourcesState
-  }
-
-  test('does nothing for an empty list', () => {
-    const resourcesState = buildState()
-    const before = { ...resourcesState.current.byId }
-    actions(resourcesState, getters(resourcesState)).evictResources([])
-    expect(resourcesState.current.byId).toEqual(before)
-  })
-
-  test('removes the resources from byId and allIds, leaving others intact', () => {
-    const resourcesState = buildState()
-    actions(resourcesState, getters(resourcesState)).evictResources(['/component/gone'])
-    expect(resourcesState.current.byId['/component/gone']).toBeUndefined()
-    expect(resourcesState.current.byId['/component/keep']).toBeDefined()
-    expect(resourcesState.current.allIds).toEqual(['/component/keep', '/_/component_positions/1'])
-  })
-
-  test('cleans mapping entries: publishableMapping rows and component→positions references', () => {
-    const resourcesState = buildState()
-    actions(resourcesState, getters(resourcesState)).evictResources(['/component/gone', '/_/component_positions/1'])
-    // publishableMapping row referencing the evicted published IRI is dropped; the other kept
-    expect(resourcesState.current.publishableMapping).toEqual([{ publishedIri: '/component/keep', draftIri: '/component/keep-draft' }])
-    // the evicted component's own mapping entry is deleted...
-    expect(resourcesState.current.positionsByComponent['/component/gone']).toBeUndefined()
-    // ...and the evicted position IRI is removed from the remaining component's list
-    expect(resourcesState.current.positionsByComponent['/component/keep']).toEqual([])
-  })
-})
-
 describe('resources action -> resetNewResource', () => {
   test('does nothing when adding.value is undefined', () => {
     const resourcesState = state()

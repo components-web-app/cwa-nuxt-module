@@ -46,9 +46,6 @@ export interface CwaModuleOptions {
   siteConfig: Partial<SiteConfigParams>
   resources: CwaResourcesMeta
   pagesDepth?: number
-  // Max number of routes kept in the instant-revisit cache (#257). Default 50. Set 0 to disable
-  // eviction (unbounded — not recommended on large sites).
-  routeCacheLimit?: number
   layouts?: {
     [type: string]: CwaUiMeta
   }

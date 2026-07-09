@@ -1,4 +1,4 @@
-import { markRaw, reactive } from 'vue'
+import { reactive } from 'vue'
 import type { CwaResourceErrorObject } from '../../../errors/cwa-resource-error'
 
 // A node in the nested per-depth manifest tree the API returns as `resource_iris` (module #250 /
@@ -38,19 +38,6 @@ export interface FetcherChainInterface {
   [token: string]: FetchStatus
 }
 
-// A retained per-route manifest structure, kept after the fetch itself is cleaned up so a revisit
-// can lay out + locate the page instantly (from this + the resource data still in `byId`) without a
-// fresh manifest round-trip. IRIs only — cheap. The bounded LRU (#257) evicts these; evicting an
-// entry cascade-drops the `byId` resources it exclusively owns (reference-counted).
-export interface RouteCacheEntry {
-  resourceTree: NestedJsonStructure[]
-  irisByDepth: string[][]
-  // flattened, de-duplicated list of every resource IRI this route needs (all depths)
-  resourceIris: string[]
-  cachedAt: number
-  lastAccessed: number
-}
-
 export interface CwaFetcherStateInterface {
   primaryFetch: {
     fetchingToken?: string
@@ -62,16 +49,11 @@ export interface CwaFetcherStateInterface {
     displayedToken?: string
   }
   fetches: FetcherChainInterface
-  // Route path → retained manifest structure. Intentionally NOT reactive (`markRaw`): it is read
-  // imperatively when priming a revisit, so it should not add Vue proxy overhead per cached route.
-  // See #257.
-  routeCache: Map<string, RouteCacheEntry>
 }
 
 export default function (): CwaFetcherStateInterface {
   return {
     primaryFetch: reactive({}),
     fetches: reactive({}),
-    routeCache: markRaw(new Map<string, RouteCacheEntry>()),
   }
 }
