@@ -250,7 +250,7 @@ describe('Cwa class test', () => {
   test('FetchStatusManager is initialised', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(FetchStatusManager).toBeCalledWith(stores.fetcher, Mercure.mock.results[0].value, ApiDocumentation.mock.results[0].value, stores.resources)
+    expect(FetchStatusManager).toBeCalledWith(stores.fetcher, Mercure.mock.results[0].value, ApiDocumentation.mock.results[0].value, stores.resources, undefined)
   })
 
   test('Fetcher is initialised', () => {

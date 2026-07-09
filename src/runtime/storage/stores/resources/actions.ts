@@ -60,6 +60,7 @@ export interface CwaResourcesActionsInterface {
   initNewResource (addResourceEvent: AddResourceEvent, resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void
   resetCurrentResources (currentIds?: string[]): void
   clearResources (): void
+  evictResources (iris: string[]): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent | SaveNewResourceEvent): void
@@ -488,6 +489,33 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.current.positionsByComponent = {}
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
+    },
+    // Remove specific resources from the store (used by the route-cache LRU when evicting a route
+    // whose resources are no longer referenced by any retained route or the current page). Unlike
+    // `deleteResource`, this is a plain cache eviction — no position/publishable cascade. See #257.
+    evictResources(iris: string[]): void {
+      if (!iris.length) {
+        return
+      }
+      const evictSet = new Set(iris)
+      for (const iri of iris) {
+        delete resourcesState.current.byId[iri]
+        // if the evicted resource is a component, drop its component→positions mapping
+        if (resourcesState.current.positionsByComponent[iri]) {
+          delete resourcesState.current.positionsByComponent[iri]
+        }
+      }
+      resourcesState.current.allIds = resourcesState.current.allIds.filter(id => !evictSet.has(id))
+      resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
+        mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
+      )
+      // remove any evicted position IRIs from the remaining component→positions mappings
+      for (const componentIri of Object.keys(resourcesState.current.positionsByComponent)) {
+        const positions = resourcesState.current.positionsByComponent[componentIri]
+        if (positions) {
+          resourcesState.current.positionsByComponent[componentIri] = positions.filter(positionIri => !evictSet.has(positionIri))
+        }
+      }
     },
     setResourceFetchStatus(event: SetResourceStatusEvent): void {
       const data = initResource({

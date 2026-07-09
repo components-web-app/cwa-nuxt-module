@@ -23,6 +23,7 @@ import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import { FinishFetchManifestType } from '#cwa/storage/stores/fetcher/actions'
 import FetchStatusManager from '#cwa/api/fetcher/fetch-status-manager'
+import { flattenManifestNode } from '#cwa/storage/stores/fetcher/manifest-utils'
 import type { NestedJsonStructure } from '#cwa/storage/stores/fetcher/state'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
@@ -164,23 +165,25 @@ describe('#256 navigation retention', () => {
       expect(resources.getResource(iri).value?.data, `precondition: ${iri} cached`).toBeTruthy()
     }
 
-    // Navigate BACK to page A — every step must keep A's cached content visible (or B's until switch).
+    // Navigate BACK to page A. A is fully cached (structure + data), so #257 switches to it
+    // INSTANTLY — no hold-B window — and then revalidates in the background, never blanking.
     const token = startPrimary(a.routeIri, `${a.routeIri}/manifest`)
-    assertNeverBlank('after startFetch(A) — still showing B', a.iris, b.pageIri)
+    assertNeverBlank('after startFetch(A) — A shown instantly from cache', a.iris, a.pageIri)
 
     deliverManifest(token, a.tree)
-    assertNeverBlank('after A manifest arrives', a.iris)
+    assertNeverBlank('after A manifest arrives', a.iris, a.pageIri)
 
-    // batch re-fetches A's (cached) resources — each flips to IN_PROGRESS; data must survive
+    // background revalidation re-fetches A's (cached) resources — each flips to IN_PROGRESS; data
+    // must survive AND A must stay displayed (not revert to B) throughout
     for (const resource of a.resourcesList) {
       beginResource(token, resource['@id'])
-      assertNeverBlank(`after ${resource['@id']} → IN_PROGRESS`, a.iris)
+      assertNeverBlank(`after ${resource['@id']} → IN_PROGRESS`, a.iris, a.pageIri)
     }
 
     // resources resolve back to SUCCESS
     for (const resource of a.resourcesList) {
       resolveResource(resource)
-      assertNeverBlank(`after ${resource['@id']} resolves`, a.iris)
+      assertNeverBlank(`after ${resource['@id']} resolves`, a.iris, a.pageIri)
     }
 
     fetcherStore.finishFetch({ token })
@@ -311,5 +314,135 @@ describe('#256 navigation retention', () => {
     fetcherStore.finishFetch({ token })
     assertNeverBlank('nested: after finishFetch', p.iris, p.pageIri)
     expect(resources.pageIriAtDepth(1).value).toBe(child.pageIri)
+  })
+
+  // ---- #257 instant page revisit + route cache -----------------------------
+
+  test('#257: a fully-loaded route caches its manifest structure, surviving navigation away', () => {
+    const a = buildPage('a')
+    const b = buildPage('b')
+
+    fullyLoad(a) // load + promote A → its structure should be cached
+    fullyLoad(b) // navigate to B — A's fetch is cleaned up, but the cache must remain
+
+    const cached = fetcherStore.routeCache.get(a.routeIri)
+    expect(cached).toBeDefined()
+    expect(cached!.irisByDepth).toEqual(a.tree.map(flattenManifestNode))
+    expect(cached!.resourceIris).toEqual(expect.arrayContaining(a.iris))
+    // A's resource DATA is also still in byId (retained today) — together these are enough to
+    // render A instantly on revisit without a manifest round-trip.
+    expect(resources.getResource(a.pageIri).value?.data).toBeTruthy()
+  })
+
+  test('#257: the route cache is bounded by routeCacheLimit — LRU evicts oldest routes + their owned resources', async () => {
+    // small limit so we can force eviction with a few routes
+    manager = new FetchStatusManager(fetcherStoreDef, {} as never, {} as never, resourcesStoreDef, 2)
+    const pages = [buildPage('p0'), buildPage('p1'), buildPage('p2')]
+
+    for (const p of pages) {
+      const token = startPrimary(p.routeIri, `${p.routeIri}/manifest`)
+      deliverManifest(token, p.tree)
+      for (const r of p.resourcesList) {
+        beginResource(token, r['@id'])
+        resolveResource(r)
+      }
+      await manager.finishFetch({ token }) // manager.finishFetch runs the LRU
+    }
+
+    // limit 2 → the least-recently-used route (p0) is evicted; the 2 newest stay
+    expect(fetcherStore.routeCache.has(pages[0].routeIri)).toBe(false)
+    expect(fetcherStore.routeCache.has(pages[1].routeIri)).toBe(true)
+    expect(fetcherStore.routeCache.has(pages[2].routeIri)).toBe(true)
+    // p0's exclusively-owned resources are dropped from byId; the current page (p2) is untouched
+    expect(resources.getResource(pages[0].pageIri).value?.data).toBeFalsy()
+    expect(resources.getResource(pages[2].pageIri).value?.data).toBeTruthy()
+  })
+
+  test('#257: LRU eviction is reference-counted — a shared resource survives while another route needs it', async () => {
+    const parent = buildPage('shared-parent')
+    const child1 = buildPage('child1')
+    const child2 = buildPage('child2')
+    const c1Route = '/_/routes//s/child1'
+    const c2Route = '/_/routes//s/child2'
+    const nested1: NestedJsonStructure[] = [parent.tree[0], child1.tree[0]]
+    const nested2: NestedJsonStructure[] = [parent.tree[0], child2.tree[0]]
+
+    manager = new FetchStatusManager(fetcherStoreDef, {} as never, {} as never, resourcesStoreDef, 1)
+
+    // load nested route 1 (parent + child1)
+    let token = startPrimary(c1Route, `${c1Route}/manifest`)
+    deliverManifest(token, nested1)
+    for (const r of [...parent.resourcesList, ...child1.resourcesList]) {
+      beginResource(token, r['@id'])
+      resolveResource(r)
+    }
+    await manager.finishFetch({ token })
+
+    // load nested route 2 (parent + child2) — shares the parent's resources; limit 1 evicts route 1
+    token = startPrimary(c2Route, `${c2Route}/manifest`)
+    deliverManifest(token, nested2)
+    for (const r of [...parent.resourcesList, ...child2.resourcesList]) {
+      beginResource(token, r['@id'])
+      resolveResource(r)
+    }
+    await manager.finishFetch({ token })
+
+    // route 1 evicted, route 2 kept
+    expect(fetcherStore.routeCache.has(c1Route)).toBe(false)
+    expect(fetcherStore.routeCache.has(c2Route)).toBe(true)
+    // child1's OWN resource is dropped, but the SHARED parent survives (route 2 still needs it)
+    expect(resources.getResource(child1.pageIri).value?.data).toBeFalsy()
+    expect(resources.getResource(parent.pageIri).value?.data).toBeTruthy()
+  })
+
+  test('#257: revisiting a fully-cached route renders instantly with NO manifest round-trip, then revalidates', () => {
+    const a = buildPage('a')
+    const b = buildPage('b')
+
+    fullyLoad(a) // cache A's structure + data
+    fullyLoad(b) // now displaying B
+    expect(resources.pageIriAtDepth(0).value).toBe(b.pageIri)
+
+    // Navigate back to A. The fetch has started but NO manifest or resources have been delivered for
+    // this new fetch yet — A must already be on screen, primed from cache.
+    const token = startPrimary(a.routeIri, `${a.routeIri}/manifest`)
+    expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
+    expect(resources.getResource(a.pageIri).value?.data).toBeTruthy()
+
+    // The fetch still runs (continue:true) — revalidation delivers fresh data and patches in place,
+    // never blanking (data present throughout).
+    deliverManifest(token, a.tree)
+    for (const resource of a.resourcesList) {
+      beginResource(token, resource['@id'])
+      expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
+    }
+    for (const resource of a.resourcesList) {
+      resolveResource(resource)
+    }
+    fetcherStore.finishFetch({ token })
+    expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
+  })
+
+  test('#257: a route that is NOT fully cached (a resource evicted) falls back to a normal fetch', () => {
+    const a = buildPage('a')
+    const b = buildPage('b')
+
+    fullyLoad(a)
+    fullyLoad(b)
+
+    // simulate one of A's resources having been evicted from the store (LRU, or never-cached)
+    delete (resourcesStore.current.byId as Record<string, unknown>)[a.compIri]
+
+    // revisiting A must NOT instantly claim to be ready — it falls back to holding B until A reloads
+    const token = startPrimary(a.routeIri, `${a.routeIri}/manifest`)
+    expect(resources.pageIriAtDepth(0).value).toBe(b.pageIri) // still B (no instant prime)
+
+    deliverManifest(token, a.tree)
+    for (const resource of a.resourcesList) {
+      beginResource(token, resource['@id'])
+      resolveResource(resource)
+    }
+    fetcherStore.finishFetch({ token })
+    expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
   })
 })

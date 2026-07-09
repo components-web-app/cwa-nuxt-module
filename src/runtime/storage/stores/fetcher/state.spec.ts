@@ -8,6 +8,7 @@ describe('Fetcher State context', () => {
     expect(initialState).toStrictEqual({
       primaryFetch: reactive({}),
       fetches: reactive({}),
+      routeCache: new Map(),
     })
   })
 })

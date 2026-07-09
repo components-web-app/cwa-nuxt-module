@@ -92,6 +92,23 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     delete fetcherState.fetches[token]
   }
 
+  // Retain a successfully-fetched route's manifest structure (IRIs only) so a later revisit can lay
+  // out + locate the page instantly, without waiting for a fresh manifest round-trip. See #257.
+  function cacheRoute(fetchStatus: FetchStatus) {
+    const manifest = fetchStatus.manifest
+    if (!manifest?.resourceTree || !manifest.irisByDepth) {
+      // no manifest (e.g. a direct single-resource fetch) — nothing structural to retain
+      return
+    }
+    fetcherState.routeCache.set(fetchStatus.path, {
+      resourceTree: manifest.resourceTree,
+      irisByDepth: manifest.irisByDepth,
+      resourceIris: [...new Set(manifest.irisByDepth.flat())],
+      cachedAt: (new Date()).getTime(),
+      lastAccessed: (new Date()).getTime(),
+    })
+  }
+
   return {
     abortFetch(event: AbortFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
@@ -245,6 +262,8 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         fetcherState.primaryFetch.successToken = event.token
         // a fully-resolved page is now what is on screen — advance the displayed reference to it
         fetcherState.primaryFetch.displayedToken = event.token
+        // retain this route's manifest structure so a later revisit can render instantly (#257)
+        cacheRoute(fetchStatus)
       }
 
       // the previously-displayed (superseded) page is no longer needed once a new page is displayed
