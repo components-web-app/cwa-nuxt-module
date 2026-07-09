@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, useTemplateRef, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -103,7 +103,11 @@ const showSpacer = computed(() => {
 })
 
 const selectedTab = computed(() => {
-  return currentStackItem.value?.managerTabs?.[selectedIndex.value]
+  // the tab component lives in the reactive `currentStackItem`; hand `<component :is>` the raw
+  // definition so Vue doesn't render (and warn about) a reactive component object. No reactivity
+  // change — the stack item stays reactive, only the rendered component reference is raw.
+  const tab = currentStackItem.value?.managerTabs?.[selectedIndex.value]
+  return tab ? toRaw(tab) : tab
 })
 
 watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () => {

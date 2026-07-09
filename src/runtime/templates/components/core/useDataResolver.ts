@@ -3,6 +3,7 @@ import {
   defineComponent,
   h, onBeforeUnmount, onMounted,
   ref,
+  toRaw,
   watch,
   render,
 } from 'vue'
@@ -25,10 +26,14 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
     (props: { component: ManagerTab, cProps: any }, { expose }) => {
       const metadata = ref<T | null>(null)
       const resolved = ref(false)
+      // `props.component` arrives as a reactive proxy (it lives in the reactive `components` ref of
+      // the caller). A component definition needs no reactivity, and handing a reactive object to
+      // `h()` triggers a Vue perf warning — so unwrap to the raw definition. The caller's ref stays
+      // fully reactive; only the component object passed to the renderer is raw.
       const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent> | undefined
         = typeof props.component === 'string'
           ? globalComponents[props.component]
-          : props.component
+          : toRaw(props.component)
 
       if (possibleAsyncDefinition === undefined) {
         throw new Error('Cannot load metadata for component')
