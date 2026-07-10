@@ -30,7 +30,7 @@ const { resource, exposeMeta, $cwa } = useCwaComponent(props, undefined, {
   styles: {
     multiple: true,
     classes: {
-      'Black Background': ['bg-black border border-white p-2'],
+      'Black Background': 'bg-black border border-white p-2',
     },
   },
 })

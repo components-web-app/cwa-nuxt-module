@@ -59,18 +59,20 @@ function mountUi() {
   return mount(Ui, { global: { stubs } })
 }
 
+function setStyles(multiple: boolean) {
+  uiComponentModel.value = null
+  uiClassNamesModel.value = null
+  currentStackItem.value = {
+    ui: [],
+    styles: { value: { multiple, classes: {
+      Bordered: 'border border-gray-200',
+      Rounded: 'rounded',
+    } } },
+  }
+}
+
 describe('Ui tab — multiple styles', () => {
-  beforeEach(() => {
-    uiComponentModel.value = null
-    uiClassNamesModel.value = null
-    currentStackItem.value = {
-      ui: [],
-      styles: { value: { multiple: true, classes: {
-        Bordered: ['border', 'border-gray-200'],
-        Rounded: ['rounded'],
-      } } },
-    }
-  })
+  beforeEach(() => setStyles(true))
 
   test('renders the styles select in multiple mode with style-name options', () => {
     const wrapper = mountUi()
@@ -99,6 +101,42 @@ describe('Ui tab — multiple styles', () => {
     uiClassNamesModel.value = ['rounded']
     const wrapper = mountUi()
     wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', [])
+    await nextTick()
+    expect(uiClassNamesModel.value).toBeNull()
+  })
+})
+
+describe('Ui tab — single style', () => {
+  beforeEach(() => setStyles(false))
+
+  test('renders a single (non-multiple) select with a Default option plus style names', () => {
+    const wrapper = mountUi()
+    const select = wrapper.findComponent(CwaUiSelectStub)
+    expect(select.props('multiple')).toBe(false)
+    expect(select.props('options')).toEqual([
+      { label: 'Default', value: null },
+      { label: 'Bordered', value: 'Bordered' },
+      { label: 'Rounded', value: 'Rounded' },
+    ])
+  })
+
+  test('selecting one style stores a one-element uiClassNames', async () => {
+    const wrapper = mountUi()
+    wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', 'Bordered')
+    await nextTick()
+    expect(uiClassNamesModel.value).toEqual(['border border-gray-200'])
+  })
+
+  test('reflects the current single selection as its style name', () => {
+    uiClassNamesModel.value = ['border border-gray-200']
+    const wrapper = mountUi()
+    expect(wrapper.findComponent(CwaUiSelectStub).props('modelValue')).toBe('Bordered')
+  })
+
+  test('selecting Default (null) clears uiClassNames', async () => {
+    uiClassNamesModel.value = ['rounded']
+    const wrapper = mountUi()
+    wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', null)
     await nextTick()
     expect(uiClassNamesModel.value).toBeNull()
   })

@@ -245,13 +245,23 @@ describe('CWA resources composable', () => {
       expect(result).toBeUndefined()
     })
 
-    test('returns style name when uiClassNames match a class entry', () => {
+    test('returns style name when a uiClassNames entry matches a style class string (array declaration normalised)', () => {
       const mockIri = ref('mock-iri')
       const { getCurrentStyleName } = useCwaResource(mockIri, {
+        // array-declared styles are normalised to a joined class string; each selected style is one
+        // uiClassNames entry
         styles: { classes: { small: ['text-sm', 'p-2'], large: ['text-lg', 'p-4'] } },
       })
-      const result = getCurrentStyleName({ uiClassNames: ['text-lg', 'p-4'] } as any)
+      const result = getCurrentStyleName({ uiClassNames: ['text-lg p-4'] } as any)
       expect(result).toBe('large')
+    })
+
+    test('returns style name for a string-declared style', () => {
+      const mockIri = ref('mock-iri')
+      const { getCurrentStyleName } = useCwaResource(mockIri, {
+        styles: { classes: { small: 'text-sm p-2', large: 'text-lg p-4' } },
+      })
+      expect(getCurrentStyleName({ uiClassNames: ['text-sm p-2'] } as any)).toBe('small')
     })
 
     test('returns undefined when no class entry matches', () => {

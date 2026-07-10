@@ -17,7 +17,9 @@ import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/
 
 export type StyleOptions = {
   multiple?: boolean
-  classes: { [name: string]: string[] }
+  // each style is a class string (e.g. 'border border-gray-200'); a string[] is also accepted and
+  // normalised by joining. Stored in the resource's `uiClassNames` as one entry per selected style.
+  classes: { [name: string]: string | string[] }
 }
 
 export type ManageableResourceOps = Ref<{

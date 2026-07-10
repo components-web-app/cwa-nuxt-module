@@ -1,9 +1,9 @@
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import isEqual from 'lodash-es/isEqual'
 import { computed, getCurrentInstance, onMounted } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaAutoClass } from './cwa-auto-class'
+import { deriveSelectedStyles } from './cwa-styles'
 import type { StyleOptions } from '#cwa/admin/manageable-resource'
 
 export type IriProp = {
@@ -69,14 +69,10 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
 
   useCwaAutoClass(uiClassNames, ops)
 
+  // The first selected style name (styles map to one uiClassNames entry each — see cwa-styles).
   const getCurrentStyleName = (resource: CwaResource) => {
     if (!uiStyles?.classes) return
-    const currentClassNames = resource.uiClassNames
-    for (const [name, classes] of Object.entries(uiStyles.classes)) {
-      if (isEqual(currentClassNames, classes)) {
-        return name
-      }
-    }
+    return deriveSelectedStyles(resource.uiClassNames, uiStyles.classes)[0]
   }
 
   return {
