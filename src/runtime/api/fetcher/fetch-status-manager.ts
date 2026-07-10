@@ -12,6 +12,7 @@ import type {
   SetManifestIrisByDepthEvent,
   StartFetchEvent, StartFetchResponse,
 } from '../../storage/stores/fetcher/actions'
+import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type { CwaResourceError } from '../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
@@ -19,7 +20,7 @@ import { CwaResourceTypes, getResourceTypeFromIri, isCwaResource, ResourceTypeFr
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
-import type { FetchAbortReason, FetchStatus } from '#cwa/storage/stores/fetcher/state'
+import type { FetchAbortReason, FetchStatus, RouteCacheEntry } from '#cwa/storage/stores/fetcher/state'
 import { flattenManifestNode } from '#cwa/storage/stores/fetcher/manifest-utils'
 import { clearError, useError } from '#imports'
 
@@ -56,17 +57,22 @@ export default class FetchStatusManager {
 
   private _iriToDepth = new Map<string, number>()
   private _depthPaths = new Map<number, string>()
+  // Max routes retained in the instant-revisit cache (#257). Overridable via the `cwa` nuxt config.
+  private readonly routeCacheLimit: number
 
   constructor(
     fetcherStoreDefinition: FetcherStore,
     mercure: Mercure,
     apiDocumentation: ApiDocumentation,
     resourcesStoreDefinition: ResourcesStore,
+    routeCacheLimit = 50,
   ) {
     this.mercure = mercure
     this.apiDocumentation = apiDocumentation
     this._fetcherStore = fetcherStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
+    // 0 (or negative) disables eviction — unbounded cache
+    this.routeCacheLimit = routeCacheLimit
   }
 
   public async getFetchedCurrentResource(iri: string, timeout?: number): Promise<CwaResource | undefined> {
@@ -116,9 +122,40 @@ export default class FetchStatusManager {
       ) {
         this.fetcherStore.setDisplayedToken(outgoingFetchingToken)
       }
-      this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
+
+      // #257 instant revisit: if we already hold this route's structure AND all its resources are
+      // still in the store, prime the new fetch from cache so it renders IMMEDIATELY (existing
+      // early-switch fires on the first render). The fetch still runs (continue:true) to revalidate
+      // and patch any changed data in place — non-blanking thanks to #256.
+      const cached = startFetchStatus.continue ? this.getCachedRoute(event.path) : undefined
+      if (cached && this.fetcherStore.fetches[startFetchStatus.token]?.manifest) {
+        this.setManifestIrisByDepth({ token: startFetchStatus.token, resourceIris: cached.resourceTree })
+        this.fetcherStore.finishManifestFetch({ token: startFetchStatus.token, type: FinishFetchManifestType.SUCCESS })
+        this.resourcesStore.resetCurrentResources(cached.resourceIris)
+        // this cached page is what's on screen NOW — mark it displayed so background revalidation
+        // (which flips its resources to IN_PROGRESS) doesn't fall the hold back to the previous page.
+        this.fetcherStore.setDisplayedToken(startFetchStatus.token)
+      }
+      else {
+        this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
+      }
     }
     return startFetchStatus
+  }
+
+  // A route revisit is instantly renderable when we retained its manifest structure AND every
+  // resource it needs is still in the store. Touches recency for the LRU. See #257.
+  private getCachedRoute(path: string): RouteCacheEntry | undefined {
+    const cached = this.fetcherStore.routeCache.get(path)
+    if (!cached) {
+      return undefined
+    }
+    const allResourcesPresent = cached.resourceIris.every(iri => !!this.resourcesStore.current.byId?.[iri]?.data)
+    if (!allResourcesPresent) {
+      return undefined
+    }
+    cached.lastAccessed = (new Date()).getTime()
+    return cached
   }
 
   // Whether a fetch was fully rendered — EVERY depth's page resource has data in the store. A
@@ -232,6 +269,70 @@ export default class FetchStatusManager {
   public async finishFetch(event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
     this.fetcherStore.finishFetch(event)
+    // the route was just cached by finishFetch — keep the cache within its route-count limit
+    this.enforceRouteCacheLimit()
+  }
+
+  // Route-count LRU for the instant-revisit cache (#257). When over the limit, evict the
+  // least-recently-accessed routes and drop the `byId` resources they exclusively owned —
+  // reference-counted so shared layouts/groups/parents survive, and never evicting the route(s)
+  // backing the current fetch tokens or any resource on the current page / in an in-flight fetch.
+  private enforceRouteCacheLimit(): void {
+    const routeCache = this.fetcherStore.routeCache
+    // limit <= 0 disables eviction (unbounded)
+    if (this.routeCacheLimit <= 0 || routeCache.size <= this.routeCacheLimit) {
+      return
+    }
+    const protectedPaths = this.activeRoutePaths()
+    const evictionQueue = [...routeCache.entries()]
+      .filter(([path]) => !protectedPaths.has(path))
+      .sort((a, b) => a[1].lastAccessed - b[1].lastAccessed)
+
+    while (routeCache.size > this.routeCacheLimit && evictionQueue.length) {
+      const next = evictionQueue.shift()
+      if (!next) {
+        break
+      }
+      const [path, entry] = next
+      routeCache.delete(path)
+      const droppable = entry.resourceIris.filter(iri => !this.isResourceReferencedByCache(iri) && !this.isResourceProtectedFromEviction(iri))
+      this.resourcesStore.evictResources(droppable)
+    }
+  }
+
+  // Route paths backing the fetching / success / displayed tokens — must never be evicted.
+  private activeRoutePaths(): Set<string> {
+    const paths = new Set<string>()
+    const { fetchingToken, successToken, displayedToken } = this.fetcherStore.primaryFetch
+    for (const token of [fetchingToken, successToken, displayedToken]) {
+      const path = token ? this.fetcherStore.fetches[token]?.path : undefined
+      if (path) {
+        paths.add(path)
+      }
+    }
+    return paths
+  }
+
+  private isResourceReferencedByCache(iri: string): boolean {
+    for (const entry of this.fetcherStore.routeCache.values()) {
+      if (entry.resourceIris.includes(iri)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // A resource on the current page or being loaded by any live fetch must not be evicted.
+  private isResourceProtectedFromEviction(iri: string): boolean {
+    if (this.resourcesStore.current.currentIds.includes(iri)) {
+      return true
+    }
+    for (const fetchStatus of Object.values(this.fetcherStore.fetches)) {
+      if (fetchStatus.resources.includes(iri)) {
+        return true
+      }
+    }
+    return false
   }
 
   private finishFetchShowError(fetchStatus: FetchStatus | undefined, eventResource: string) {

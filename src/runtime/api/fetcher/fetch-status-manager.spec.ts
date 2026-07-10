@@ -76,6 +76,7 @@ function createFetchStatusManager(): FetchStatusManager {
     fetches: {},
     primaryFetch: {},
     setDisplayedToken: vi.fn(),
+    routeCache: new Map(),
   }
   const resourcesUseStoreResult = {
     saveResource: vi.fn(),
@@ -224,6 +225,7 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
       startFetch: vi.fn(() => (startFetchResponse)),
       primaryFetch: {},
       setDisplayedToken: vi.fn(),
+      routeCache: new Map(),
     }
     const startFetchEvent: StartFetchEvent = {
       path: '/fetch-path',
@@ -627,6 +629,7 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
     const finishFetch = vi.fn(() => Promise.resolve('anything'))
     fetchStatusManager._fetcherStore = {
       finishFetch,
+      routeCache: new Map(),
     }
     vi.spyOn(fetchStatusManager, 'computedFetchChainComplete').mockImplementation(() => {
       return computed(() => true)
@@ -846,6 +849,7 @@ describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDept
       startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
       primaryFetch: {},
       setDisplayedToken: vi.fn(),
+      routeCache: new Map(),
     }
     fetchStatusManager.setManifestIrisByDepth({
       token: 'token',
