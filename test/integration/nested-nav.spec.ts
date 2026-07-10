@@ -1,21 +1,8 @@
-// @vitest-environment happy-dom
-import { describe, test, expect, vi } from 'vitest'
-
-vi.mock('#imports', () => ({
-  useError: () => ({ value: undefined }),
-  clearError: () => {},
-}))
-
-vi.mock('nuxt/app', () => ({
-  showError: () => {},
-  navigateTo: () => {},
-  useRequestURL: () => ({ pathname: '/', search: '' }),
-  useResponseHeader: () => ({ value: undefined }),
-}))
-
-const { buildHarness } = await import('./harness')
-const { flush } = await import('./replay-cwa-fetch')
-const cassette = (await import('../cassettes/topic-1-nested.json')).default
+// @vitest-environment nuxt
+import { describe, test, expect } from 'vitest'
+import { buildHarness } from './harness'
+import { flush } from './replay-cwa-fetch'
+import cassette from '../cassettes/topic-1-nested.json'
 
 // depth-0 = "Topic 1" parent page; depth-1 = chapter-one page (from the recorded manifest)
 const TOPIC1_PAGE = '/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad'
