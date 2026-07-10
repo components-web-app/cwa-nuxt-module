@@ -341,6 +341,12 @@ The goal is a polished, consistent component kit for the admin UI with no third-
 
 **Scope:** Admin-only. Public-facing CWA components remain unstyled.
 
+**Decision — build on Headless UI, not from scratch:** the kit **wraps `@headlessui/vue`** (already a direct dep) and styles it entirely with `cwa:` utilities to mirror the Nuxt UI look/API. Headless UI is *unstyled behaviour only* — it does **not** inject a theme or config into consuming apps the way Nuxt UI does, so the isolation concern doesn't apply to it. This buys battle-tested keyboard/ARIA/focus behaviour (and native `multiple`, plus `Combobox` for a future searchable `SelectMenu`) without reimplementing an accessible listbox. Nuxt UI's source is a free/OSS styling + structure reference we can copy from.
+
+**Progress — first component landed: `CwaUiSelect`** (`templates/components/ui/Select.vue`, auto-imports `CwaUiSelect`; Nuxt UI `USelect` equivalent). Wraps Headless UI `Listbox`; props `options`/`modelValue`/`multiple`/`placeholder`/`disabled` via the extended `SelectInputProps` + `useCwaSelectInput` (which now also returns `selectedOptions` + `displayLabel`, and coerces the value to an array in multiple mode). The old `CwaUiFormSelect` (`ui/form/Select.vue`) is superseded — its only consumer (`_tabs/component/Ui.vue`) now uses `CwaUiSelect`; retire it in a follow-up. Next planned: a searchable `SelectMenu` (Headless UI `Combobox`) for route lookup.
+
+**Multiple component styles (`StyleOptions.multiple`) — now wired.** A component may declare `styles: { multiple: true, classes: { <name>: string[] } }`. The UI tab's Style select renders `multiple` and the resource's flat `uiClassNames: string[]` stores **one entry per selected style** — that style's classes **joined into a single space-separated string** (`cwa-styles.ts`: `mergeSelectedStyles` / `deriveSelectedStyles`, pure + unit-tested). So selecting `Bordered ['border','border-gray-200']` + `Rounded ['rounded']` saves `['border border-gray-200','rounded']` (1:1 with styles, no duplicate class tokens; detection = exact string match, in declaration order). **Single-style mode is unchanged** — it still stores the one style's raw class array as the value and matches via `getCurrentStyleName` (`cwa-resource.ts`). The two modes are mutually exclusive per component.
+
 ---
 
 ---

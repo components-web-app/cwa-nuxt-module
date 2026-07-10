@@ -100,4 +100,46 @@ describe('useCwaSelectInput', () => {
       expect(container).toBe(mockContainer)
     })
   })
+
+  describe('multiple mode', () => {
+    test('value getter coerces a missing/non-array modelValue to []', () => {
+      const { value } = useCwaSelectInput(makeProps({ multiple: true, modelValue: undefined }), vi.fn())
+      expect(value.value).toEqual([])
+    })
+
+    test('value getter returns the array as-is when provided', () => {
+      const { value } = useCwaSelectInput(makeProps({ multiple: true, modelValue: ['a', 'b'] }), vi.fn())
+      expect(value.value).toEqual(['a', 'b'])
+    })
+
+    test('selectedOptions returns every option in the array', () => {
+      const { selectedOptions } = useCwaSelectInput(makeProps({ multiple: true, modelValue: ['a', 'b'] }), vi.fn())
+      expect(selectedOptions.value).toEqual([
+        { label: 'First', value: 'a' },
+        { label: 'Second', value: 'b' },
+      ])
+    })
+
+    test('displayLabel joins selected labels', () => {
+      const { displayLabel } = useCwaSelectInput(makeProps({ multiple: true, modelValue: ['a', 'b'] }), vi.fn())
+      expect(displayLabel.value).toBe('First, Second')
+    })
+
+    test('displayLabel falls back to placeholder when nothing selected', () => {
+      const { displayLabel } = useCwaSelectInput(makeProps({ multiple: true, modelValue: [], placeholder: 'Default' }), vi.fn())
+      expect(displayLabel.value).toBe('Default')
+    })
+  })
+
+  describe('displayLabel (single mode)', () => {
+    test('shows the selected option label', () => {
+      const { displayLabel } = useCwaSelectInput(makeProps({ modelValue: 'b' }), vi.fn())
+      expect(displayLabel.value).toBe('Second')
+    })
+
+    test('prefers the placeholder over the first-option fallback when unmatched', () => {
+      const { displayLabel } = useCwaSelectInput(makeProps({ modelValue: 'z', placeholder: 'Pick one' }), vi.fn())
+      expect(displayLabel.value).toBe('Pick one')
+    })
+  })
 })
