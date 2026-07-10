@@ -28,9 +28,11 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
   const iri = toRef(props, 'iri')
   const { getResource, $cwa, exposeMeta, getCurrentStyleName, uiClassNames } = useCwaResource(iri, ops)
   const resource = getResource()
-  // Published IRI of the current component (resolves the live/published equivalent when this is a
-  // draft). Intended as the reference to use when adding a component group to this component.
-  const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value)
+  // The canonical component IRI to use as a component-group location: the live/published equivalent
+  // when this is a draft, falling back to this component's own IRI when it has never been published
+  // (an unpublished draft is still a valid group location). `findPublishedComponentIri` returns
+  // undefined in that case by design (other callers rely on it), so we default to `iri` here.
+  const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value ?? iri.value)
   const ctx: CwaResourcePluginContext = { iri, resource, $cwa }
   const pluginResults = (plugins ?? []).map(plugin => plugin(ctx))
 

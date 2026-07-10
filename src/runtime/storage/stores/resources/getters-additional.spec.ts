@@ -204,6 +204,14 @@ describe('getters -> findPublishedComponentIri / findDraftComponentIri', () => {
     expect(getterFns.findPublishedComponentIri.value('/non-existent')).toBeUndefined()
   })
 
+  test('findPublishedComponentIri returns undefined for a draft that has never been published (callers rely on this)', () => {
+    state.current.byId['/component/unpublished-draft'] = {
+      apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      data: { '@id': '/component/unpublished-draft', '@type': 'Component', '_metadata': { publishable: { published: false } } },
+    }
+    expect(getterFns.findPublishedComponentIri.value('/component/unpublished-draft')).toBeUndefined()
+  })
+
   test('findDraftComponentIri returns iri when resource is draft', () => {
     state.current.byId['/component/draft'] = {
       apiState: { status: CwaResourceApiStatuses.SUCCESS },

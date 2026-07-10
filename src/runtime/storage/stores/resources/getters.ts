@@ -250,6 +250,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         if (isPublished) {
           return iri
         }
+        // a draft: its mapped published IRI, or undefined when it has never been published. Callers
+        // that need "no published version exists" (e.g. the Publish toggle, resource-stack-manager)
+        // rely on this undefined — do NOT fall back to the draft iri here.
         return draftToPublishedIris.value[iri]
       }
     }),
