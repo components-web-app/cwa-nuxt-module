@@ -417,6 +417,25 @@ Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` a
 
 ---
 
+## Bug: empty component-group `location` when adding a component to an unpublished draft ✅ Fixed
+
+**Reported from:** SRNTE (adding a component inside a static page nested in a data page). Fixed 2026-07-10.
+
+### Symptom
+Adding a component raised a red box: **"The location provided `` is not a current resource"** (`ComponentGroup.vue` — `:location` was empty). Refreshing the page made it show (the unpublished draft is local-only and vanishes on reload).
+
+### Root cause
+`useCwaComponent` computed `publishedIri` as `findPublishedComponentIri(iri).value` with no fallback. `findPublishedComponentIri` (`storage/stores/resources/getters.ts`) returns `undefined` for a **draft that has never been published** — and that `undefined` is **relied on by other callers** (the `Publish.vue` toggle target, `resource-stack-manager`'s `forcePublishedVersion`), so it must not be changed to fall back at the getter. A never-published draft is still a valid component-group location, so passing `undefined` as `<CwaComponentGroup :location>` produced the empty-location warning.
+
+### Fix (landed)
+Scoped to `useCwaComponent` (`src/runtime/composables/cwa-component.ts`), **not** the getter:
+```ts
+const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value ?? iri.value)
+```
+Falls back to the component's own IRI when there is no published version. The getter keeps returning `undefined` (comment added) so `Publish.vue` / `resource-stack-manager` are unaffected.
+
+---
+
 ## Bug: flash of blank page when a primary fetch resolves to a redirect / page-less route ✅ Fixed
 
 **Reported from:** SRNTE (`/next-conference` route). Investigated & fixed 2026-06-30.
