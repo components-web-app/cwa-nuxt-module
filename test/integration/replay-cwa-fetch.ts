@@ -84,7 +84,7 @@ export class ReplayCwaFetch {
   }
 
   private request(url: string): Promise<unknown> {
-    const path = url.split('?')[0]
+    const path = url.split('?')[0] ?? url
     this.requestLog.push(path)
     const entry = this.entryFor(path)
     const produce = () => {
