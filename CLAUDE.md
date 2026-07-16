@@ -452,6 +452,26 @@ Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` a
 
 ---
 
+## Bug: `[nuxt] instance unavailable` — SSR auth cookies dropped on nested resources ✅ Fixed ([#263](https://github.com/components-web-app/cwa-nuxt-module/issues/263))
+
+Fixed 2026-07-16. `CwaFetch`'s ofetch `onRequest` interceptor called `useRequestHeaders(['cookie'])`, which threw for every nested/batch resource during SSR.
+
+**The reported mechanism ("ofetch runs interceptors asynchronously") is wrong** — `$fetchRaw`'s body runs synchronously up to its first `await`, and `callHooks` is invoked before it suspends, so `onRequest` inherits its *caller's* context.
+
+**Real mechanism:** `useRequestHeaders` → `useRequestEvent` → `useNuxtApp()`, which **throws** (not `tryUseNuxtApp`). Nuxt's `asyncContext` defaults to `false`, so unctx holds the instance in a plain module variable and clears it at the first suspension (`callAsync`: `currentInstance = void 0`). Its `__restore()` hook only applies to code rewritten by `unctx/transform` — a **closed list** (`defineNuxtPlugin`, `defineNuxtRouteMiddleware`, `defineNuxtComponent`, `definePageMeta`). **`fetcher.ts` is an untransformed plain class, so every `await` in it destroys the Nuxt context for everything downstream.** The primary fetch reaches `onRequest` synchronously and works; everything after `await result.response` (`fetcher.ts:214`) → `fetchBatch` threw. ofetch's retry path (`await new Promise(setTimeout)` → re-enter) loses it too.
+
+**Why it hid:** the throw surfaces as a *rejected promise*, so `fetcher.ts:169` caught it and marked each nested resource errored rather than crashing. And `credentials: 'include'` does nothing server-side (no cookie jar in undici) — that header `append` is the **only** SSR cookie forwarding — so authenticated SSR requests silently downgraded to anonymous. Not a regression despite the "latest deps" framing: `asyncContext: false` is unchanged and the interceptor hasn't changed since `dfcf3406` (Jan 2025).
+
+**Fix:** capture the cookie **eagerly in the constructor** (live Nuxt context, via the plugin) and close over it; `onRequest` stays synchronous and context-free.
+
+> **⚠️ Why this is safe, and the one way to make it catastrophic.** Exactly one `CwaFetch` exists per `Cwa` per plugin invocation — i.e. **per SSR request** (`new Cwa(` and `new CwaFetch(` each have exactly one non-spec call site: `plugin.ts:14`, `cwa.ts:71`). The captured cookie **must stay in the constructor closure**. Hoisting it to module scope — as `ResourceTypeFromIri` (`resource-utils.ts:79`) does with its shared singleton, mutated per-request from `cwa.ts:68` — would leak one user's auth cookie into another user's request. The constructor already requires Nuxt context (`useRuntimeConfig()`, `useCookie()`), so eager capture widens nothing, and the only cookie mutations (`signIn`/`signOut`) are client-side, so it cannot go stale mid-render.
+
+**Rejected:** `runWithContext()` in the interceptor (always returns a Promise server-side → forces an async interceptor and changes timing); app-side `experimental.asyncContext: true` (a mitigation that pushes the burden onto every consuming app).
+
+**Testing note:** `cwa-fetch.spec.ts` moved to `@vitest-environment nuxt` + `mockNuxtImport('useRequestHeaders', ...)` — the pre-existing `vi.mock('#imports', ...)` **was not intercepting at all**, which went unnoticed because no test ever invoked `onRequest`. Uses `useProcess()` rather than `import.meta.server` because `import.meta.server` isn't settable in this test env (see the `test.todo` in `process.spec.ts`).
+
+---
+
 ## Bug: dynamic position loses its `component` after an SSR load of a nested page ✅ Fixed ([#261](https://github.com/components-web-app/cwa-nuxt-module/issues/261))
 
 **Reported from:** SRNTE (a nested static page whose parent is a data page using the dynamic page template). Fixed 2026-07-16.
