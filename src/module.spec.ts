@@ -222,6 +222,60 @@ describe('CWA module', () => {
       })
     })
 
+    /**
+     * `staticRender` tells `ResourceLoader` to re-fetch payload-hydrated resources on mount. It has
+     * to be resolved at build time: an ISR/SWR-cached response is indistinguishable from a fresh SSR
+     * one at runtime, and when served from cache the server never ran. See #262.
+     */
+    describe('staticRender detection from routeRules', () => {
+      async function getStaticRender(nuxtOptions: any, moduleOptions: any = {}) {
+        await prepareMockNuxt({ mock: true, ...moduleOptions }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            runtimeConfig: { public: { cwa: {} } },
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+            sitemap: {},
+            ...nuxtOptions,
+          },
+        })
+        const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
+        const contents = await getContents({ app: { components: [] } })
+        return JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0]).staticRender
+      }
+
+      test('is false when the app has no routeRules', async () => {
+        expect(await getStaticRender({})).toBe(false)
+      })
+
+      test('is false when routeRules contain no static rules', async () => {
+        expect(await getStaticRender({ routeRules: { '/**': { ssr: true }, '/api/**': { cors: true } } })).toBe(false)
+      })
+
+      test.each([
+        ['isr', { '/**': { isr: true } }],
+        ['swr', { '/**': { swr: 60 } }],
+        ['prerender', { '/': { prerender: true } }],
+      ])('is true when any route rule is %s', async (_name, routeRules) => {
+        expect(await getStaticRender({ routeRules })).toBe(true)
+      })
+
+      test('detects rules declared under nitro.routeRules', async () => {
+        expect(await getStaticRender({ nitro: { routeRules: { '/**': { isr: true } } } })).toBe(true)
+      })
+
+      test('an explicit staticRender option overrides detection', async () => {
+        expect(await getStaticRender({ routeRules: { '/**': { isr: true } } }, { staticRender: false })).toBe(false)
+        expect(await getStaticRender({}, { staticRender: true })).toBe(true)
+      })
+    })
+
     test('should add template', async () => {
       const mockOptions = {
         mock: true,
@@ -289,7 +343,8 @@ export const options:CwaModuleOptions = {
         "CwaComponentHtmlContentUiAltUi"
       ]
     }
-  }
+  },
+  "staticRender": false
 }
 export const currentModulePackageInfo:{ version: string, name: string } = {
   "version": "1.0.0",

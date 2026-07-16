@@ -227,7 +227,23 @@ export default defineNuxtModule<CwaModuleOptions>({
           return b.concat(a)
         }
       })
-      return { ...options, resources }
+      return { ...options, resources, staticRender: options.staticRender ?? hasStaticRouteRules() }
+    }
+
+    // Does this app serve any HTML generated ahead of time? Prerendered/ISR/SWR routes ship resource
+    // data in the payload that may be arbitrarily stale, so `ResourceLoader` re-fetches on mount.
+    //
+    // This has to be answered at build time: an ISR- or SWR-cached response is byte-identical to a
+    // fresh SSR one from the client's point of view, and when it is served from cache the server did
+    // not run at all, so nothing can stamp it. The previous runtime heuristic compared the server's
+    // `fetchedAt` against the browser's clock, which measured device clock skew rather than
+    // staleness. `routeRules` is a fact the build already knows.
+    //
+    // Deliberately global rather than per-route: one ISR route means any given render MAY be cached,
+    // and re-fetching live data is the safe default. Apps can override with `cwa.staticRender`.
+    function hasStaticRouteRules(): boolean {
+      const routeRules = { ...nuxt.options.routeRules, ...nuxt.options.nitro?.routeRules }
+      return Object.values(routeRules).some(rule => !!(rule?.isr || rule?.swr || rule?.prerender))
     }
 
     nuxt.hook('modules:done', () => {

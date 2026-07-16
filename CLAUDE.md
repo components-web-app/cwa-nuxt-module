@@ -477,8 +477,33 @@ Moved the depth tracking into the **fetcher store** (`iriDepths` / `depthPaths` 
 
 Reproduction + regression guard: `api/fetcher/nested-page-hydration.spec.ts` — drives the real stores through the SSR primary fetch, then simulates hydration by constructing a **new** `FetchStatusManager` over the same store, with a stubbed API that models the page-data resolution (resolves only for the `/conference` parent path). Asserts the **outcome** (the position still has its `component`), so it fails whether the fallout is a placeholder or nothing. Store behaviour moved to `storage/stores/fetcher/actions.spec.ts` ("depth tracking" describe); the manager spec's equivalent block now pins delegation.
 
-### Known related bug (NOT fixed here) — [#260](https://github.com/components-web-app/cwa-nuxt-module/issues/260)
-`ComponentPosition.vue` gates its admin-only placeholder on `v-else-if="$cwa.auth.isAdmin"` — a **nested** access to a getter returning `computed()`, which Vue does not auto-unwrap, so it's always truthy and logged-out users see the admin placeholder. (Same trap as `upload.bind` in #252; `.value` is needed.) The nameless placeholder is the tell: `pageDataProperty` is `ComponentPosition:read:role_admin`, so non-admins never receive it. A third instance of the same trap: `ResourceLoader.vue` uses bare `hasSilentError` (a `ComputedRef`) instead of `.value` inside `ssrNoDataWithSilentError`, collapsing it to `ssr && data === undefined`.
+---
+
+## Bug: nested `ComputedRef` accesses never unwrapped ✅ Fixed ([#260](https://github.com/components-web-app/cwa-nuxt-module/issues/260))
+
+Fixed 2026-07-16. Surfaced while investigating #261 — it's why that bug showed logged-out users an admin placeholder instead of degrading silently.
+
+**The trap** (same as `upload.bind` in #252): Vue only auto-unwraps refs that are **top-level setup bindings**. `$cwa` is the top-level binding, so `$cwa.auth.isAdmin` is a *nested* access returning the `ComputedRef` **object** — always truthy.
+
+1. **`ComponentPosition.vue`** — `v-else-if="$cwa.auth.isAdmin"` was effectively `v-else`, so **every visitor** saw the admin-only placeholder. Now `.value`. The *nameless* placeholder is the tell that it's the logged-out view: `pageDataProperty` is serialised `ComponentPosition:read:role_admin`, so non-admins never receive it and `:name` is `undefined`.
+2. **`ResourceLoader.vue`** — `ssrNoDataWithSilentError` used bare `hasSilentError` (a `ComputedRef`), collapsing the condition to `ssr && data === undefined`, so **any** dataless SSR resource re-fetched regardless of error. Now `.value`.
+
+**Both were invisible to the suite, and one test passed for the wrong reason.** `ComponentPosition.spec.ts` mocked `useCwa()` with **no `auth` key at all** and always supplied a truthy `componentIri`, so the placeholder branch never rendered. `ResourceLoader.spec.ts`'s "no silent error" test used `data: null`, which exits on the `data === undefined` check and never reaches the silent-error condition — changing it to `undefined` made it fail. **When mocking a getter that returns `computed()`, the mock MUST be a real `computed`** — a plain `false` passes while hiding the production bug.
+
+**Audit done:** swept every nested `$cwa.*` access in templates against the getters that return `computed()` — `isAdmin` was the only one. Not affected: `admin.isEditing` / `admin.navigationGuardDisabled` (plain store state), `auth.user` / `resources.hasNewResources` / `config` (Pinia unwraps store state + getters). `Cwa.isStaticRender` deliberately returns a **plain boolean** for this reason.
+
+---
+
+## Bug: SSR resources re-fetched on a cross-clock 5s timer ✅ Fixed ([#262](https://github.com/components-web-app/cwa-nuxt-module/issues/262))
+
+Fixed 2026-07-16. `ResourceLoader.isOutdated` re-fetched any SSR resource whose `apiState.fetchedAt` was >5s old — but `fetchedAt` is stamped with the **server's** clock and compared against the **browser's**, so it measured staleness *plus device clock skew*. A client clock >5s fast re-fetched the whole page on every server-side load; a slow clock never refreshed cached content. No threshold fixes a cross-clock comparison. Likely the trigger for #261, and explains its intermittency.
+
+**Vestigial**: the original mechanism was `prerendered = !!nuxtApp.payload.prerenderedAt` (#136/#138). `24a94f78` swapped it for a timer to also catch **ISR** (where Nuxt sets no `prerenderedAt`); `45f66d00` made it per-resource `> 5000`. Nothing prerenders today — the playground's `routeRules` are commented out — so it only ever fired on live SSR pages.
+
+**Fix** — the render being static is a fact, not a duration:
+- **Runtime**: `Cwa.prerendered` ← `payload.prerenderedAt`, set by the plugin. Exact, but true prerendering only.
+- **Build**: `staticRender` ← `module.ts` scans `routeRules` + `nitro.routeRules` for `isr`/`swr`/`prerender`, baked into `cwa-options.ts`. Overridable via `cwa: { staticRender: true }`. Needed because an ISR/SWR response is byte-identical to a fresh SSR one at runtime, and when served from cache the server never ran — there is nothing to detect.
+- `Cwa.isStaticRender` combines them (plain boolean, see #260). Detection is **global, not per-route**: one ISR route means any render may be cached, and re-fetching live data is the safe default.
 
 ---
 

@@ -49,6 +49,12 @@ export interface CwaModuleOptions {
   // Max number of routes kept in the instant-revisit cache (#257). Default 50. Set 0 to disable
   // eviction (unbounded — not recommended on large sites).
   routeCacheLimit?: number
+  // Whether the app serves HTML generated ahead of time (prerender / ISR / SWR route rules), in
+  // which case resource data hydrated from the payload may be arbitrarily stale and is re-fetched on
+  // mount. Auto-detected at build from the app's `routeRules` — set explicitly only to override.
+  // True prerendering is additionally detected at runtime via Nuxt's `payload.prerenderedAt`; ISR
+  // and SWR have no client-visible signal, hence the build-time flag.
+  staticRender?: boolean
   layouts?: {
     [type: string]: CwaUiMeta
   }

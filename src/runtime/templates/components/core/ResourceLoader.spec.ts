@@ -19,7 +19,7 @@ vi.mock('vue', async () => {
   }
 })
 
-function createWrapper(resource?: any, status?: CwaAuthStatus, component?: any) {
+function createWrapper(resource?: any, status?: CwaAuthStatus, component?: any, isStaticRender = false) {
   // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => ({
     auth: {
@@ -31,7 +31,7 @@ function createWrapper(resource?: any, status?: CwaAuthStatus, component?: any) 
     resources: {
       getResource: vi.fn(() => ref(resource)),
     },
-    prerendered: ref(),
+    isStaticRender,
   }))
 
   return mount(ResourceLoader, {
@@ -297,7 +297,9 @@ describe('ResourceLoader', () => {
       })
 
       test('should NOT fetch resource IF ssr flag for api state is true AND resource has no data AND no silent error', async () => {
-        const resource = { apiState: { ssr: true, status: CwaResourceApiStatuses.SUCCESS }, data: null }
+        // `data: undefined` (not null) is what `ssrNoDataWithSilentError` actually tests for — with
+        // `null` this exited on the data check and never exercised the silent-error condition.
+        const resource = { apiState: { ssr: true, status: CwaResourceApiStatuses.SUCCESS }, data: undefined }
         const wrapper = createWrapper(resource)
 
         await wrapper.vm.methods.fetchResource()
@@ -313,6 +315,47 @@ describe('ResourceLoader', () => {
 
         expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
       })
+    })
+  })
+
+  /**
+   * A prerendered/ISR/SWR route serves HTML generated ahead of time, so the resource data hydrated
+   * from the payload can be arbitrarily stale — re-fetch on mount so the render reflects live data.
+   *
+   * This is deliberately NOT time-based. It used to compare `apiState.fetchedAt` (stamped with the
+   * SERVER's clock during SSR) against `new Date()` in the BROWSER, which measures staleness plus
+   * device clock skew — so a user whose clock ran >5s fast re-fetched every resource on every
+   * server-side load, and a user whose clock ran slow never refreshed ISR content at all. No
+   * threshold fixes a cross-clock comparison; the render being static is a fact the build and the
+   * Nuxt payload already know.
+   */
+  describe('static render re-fetch', () => {
+    const ssrSuccess = (extra: any = {}) => ({
+      apiState: { ssr: true, status: CwaResourceApiStatuses.SUCCESS, fetchedAt: (new Date()).getTime(), ...extra },
+      data: { mock: true },
+    })
+
+    test('re-fetches an SSR resource on mount when the render is static', () => {
+      const wrapper = createWrapper(ssrSuccess(), undefined, undefined, true)
+      expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
+    })
+
+    test('does NOT re-fetch on a live SSR render, however old fetchedAt looks', () => {
+      // A minute in the "past" — i.e. a client clock running a minute fast against the server clock
+      // that stamped `fetchedAt` (or simply a slow render). A live SSR render is fresh by
+      // definition, so the timestamp must not enter into the decision at all.
+      const wrapper = createWrapper(ssrSuccess({ fetchedAt: (new Date()).getTime() - 60000 }), undefined, undefined, false)
+      expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
+    })
+
+    test('does NOT re-fetch a resource that was already fetched client-side, even on a static render', () => {
+      const wrapper = createWrapper(ssrSuccess({ ssr: false }), undefined, undefined, true)
+      expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
+    })
+
+    test('does NOT re-fetch a resource that has not successfully loaded', () => {
+      const wrapper = createWrapper(ssrSuccess({ status: CwaResourceApiStatuses.IN_PROGRESS }), undefined, undefined, true)
+      expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
     })
   })
 

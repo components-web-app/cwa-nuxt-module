@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { useCookie, useRuntimeConfig } from '#imports'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { CwaModuleOptions, CwaResourcesMeta } from '#cwa/types'
@@ -31,6 +32,10 @@ export default class Cwa {
   private readonly cwaFetch: CwaFetch
 
   public readonly siteConfig: SiteConfig
+
+  // Set from Nuxt's `payload.prerenderedAt` by the plugin — true only when this page's HTML was
+  // prerendered at build time. ISR/SWR have no equivalent runtime signal (see `isStaticRender`).
+  public readonly prerendered = ref<boolean>(false)
 
   // public resources repository and utility getters
   public readonly resources: Resources
@@ -131,6 +136,26 @@ export default class Cwa {
   public async initClientSide() {
     await this.auth.init()
     this.mercure.init()
+  }
+
+  /**
+   * Whether the HTML for this page was generated ahead of time, so resource data hydrated from the
+   * payload may be arbitrarily stale and should be re-fetched (see `ResourceLoader`).
+   *
+   * Two signals, because no single one covers both cases:
+   * - `prerendered` — Nuxt's `payload.prerenderedAt`, exact, but set only for true prerendering.
+   * - `options.staticRender` — detected at build from the app's ISR/SWR/prerender `routeRules`. An
+   *   ISR/SWR response is indistinguishable from a fresh SSR one at runtime, and when it is served
+   *   from cache the server never ran, so there is nothing to detect client-side.
+   *
+   * Deliberately not time-based: comparing the server-stamped `fetchedAt` against the browser's
+   * clock measured device skew rather than staleness.
+   *
+   * Returns a plain boolean (not a `ComputedRef`) so it cannot be misread as truthy when accessed
+   * without `.value` — see #260.
+   */
+  public get isStaticRender(): boolean {
+    return this.prerendered.value || !!this.options.staticRender
   }
 
   public get resourcesConfig(): CwaResourcesMeta {

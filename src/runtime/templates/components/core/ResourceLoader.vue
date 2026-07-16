@@ -136,8 +136,11 @@ const resolvedComponent = computed(() => {
   return resourceUiComponent.value
 })
 
+// A 4xx during SSR may just mean the server had no auth — retry client-side, where we may. Note
+// `hasSilentError.value`: without it this was always truthy and the silent-error condition never
+// applied, so ANY dataless SSR resource re-fetched. See #260.
 const ssrNoDataWithSilentError = computed(() => {
-  return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError
+  return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError.value
 })
 
 const ssrPositionHasPartialData = computed(() => {
@@ -166,16 +169,15 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
     && $cwa.auth.user
 })
 
-// With ISR when the page is loaded it could be cached, this should trigger on front-end still and can send a request to update/check the component from the API again
-const isOutdated = computed(() => {
+// A prerendered/ISR/SWR page serves HTML generated ahead of time, so resource data hydrated from the
+// payload can be arbitrarily stale — re-fetch it so the render reflects live data. Only applies to
+// resources fetched during SSR; anything already fetched client-side is live. See #262.
+const isStaticRender = computed(() => {
   const apiState = resource.value?.apiState
-  // if we have fetched successfully already and have a timestamp for when that was, or it was loaded client-side already
-  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.fetchedAt || !apiState.ssr) {
-    return
+  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.ssr) {
+    return false
   }
-  const nowTime = (new Date()).getTime()
-  const timeDifference = nowTime - apiState.fetchedAt
-  return timeDifference > 5000
+  return $cwa.isStaticRender
 })
 
 async function clientFetchResource() {
@@ -204,10 +206,8 @@ const methods = {
 }
 
 onMounted(() => {
-  isOutdated.value && clientFetchResource()
+  isStaticRender.value && clientFetchResource()
 
-  // if has a silent error, we are client-side and last attempt was not while logged in
-  // todo: NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true,
   })
@@ -216,6 +216,4 @@ onMounted(() => {
 defineExpose({
   resourceComponent,
 })
-
-// TODO - NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft
 </script>
