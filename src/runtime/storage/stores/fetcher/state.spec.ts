@@ -9,6 +9,8 @@ describe('Fetcher State context', () => {
       primaryFetch: reactive({}),
       fetches: reactive({}),
       routeCache: new Map(),
+      iriDepths: reactive({}),
+      depthPaths: reactive({}),
     })
   })
 })

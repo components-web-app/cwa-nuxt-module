@@ -16,12 +16,11 @@ import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type { CwaResourceError } from '../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import { CwaResourceTypes, getResourceTypeFromIri, isCwaResource, ResourceTypeFromIri } from '../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri, isCwaResource } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 import type { FetchAbortReason, FetchStatus, RouteCacheEntry } from '#cwa/storage/stores/fetcher/state'
-import { flattenManifestNode } from '#cwa/storage/stores/fetcher/manifest-utils'
 import { clearError, useError } from '#imports'
 
 export interface FinishFetchResourceEvent {
@@ -55,8 +54,6 @@ export default class FetchStatusManager {
   private readonly _fetcherStore: CwaFetcherStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
 
-  private _iriToDepth = new Map<string, number>()
-  private _depthPaths = new Map<number, string>()
   // Max routes retained in the instant-revisit cache (#257). Overridable via the `cwa` nuxt config.
   private readonly routeCacheLimit: number
 
@@ -107,8 +104,7 @@ export default class FetchStatusManager {
     // capture the page currently being loaded before it is superseded by this new primary fetch
     const outgoingFetchingToken = event.isPrimary ? this.fetcherStore.primaryFetch.fetchingToken : undefined
     if (event.isPrimary) {
-      this._iriToDepth = new Map()
-      this._depthPaths = new Map()
+      this.fetcherStore.resetIriDepths()
     }
     const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
@@ -380,32 +376,20 @@ export default class FetchStatusManager {
   }
 
   public setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void {
-    this._iriToDepth = new Map()
-    this._depthPaths = new Map()
-    const prefix = ResourceTypeFromIri.getPathPrefix() || ''
-    const routePathPrefix = `${prefix}/_/routes/`
-    const irisByDepth = event.resourceIris.map(flattenManifestNode)
-    for (let depth = 0; depth < irisByDepth.length; depth++) {
-      for (const iri of irisByDepth[depth]!) {
-        this._iriToDepth.set(iri, depth)
-        if (!this._depthPaths.has(depth) && iri.startsWith(routePathPrefix)) {
-          this._depthPaths.set(depth, iri.substring(routePathPrefix.length))
-        }
-      }
-    }
+    // the store derives the depth lookups from the manifest as it stores it
     this.fetcherStore.setManifestIrisByDepth(event)
   }
 
   public getDepthForIri(iri: string): number | undefined {
-    return this._iriToDepth.get(iri)
+    return this.fetcherStore.iriDepths[iri]
   }
 
   public getPathForDepth(depth: number): string | undefined {
-    return this._depthPaths.get(depth)
+    return this.fetcherStore.depthPaths[depth]
   }
 
   public registerIriDepth(iri: string, depth: number): void {
-    this._iriToDepth.set(iri, depth)
+    this.fetcherStore.registerIriDepth({ iri, depth })
   }
 
   public finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void {

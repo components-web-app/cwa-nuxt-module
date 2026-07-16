@@ -695,3 +695,103 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.error).toStrictEqual(newError.asObject)
   })
 })
+
+/**
+ * Depth tracking drives the depth-aware `path` request header: a depth-0 resource must be requested
+ * with the depth-0 route path so the API resolves a dynamic position's `pageDataProperty` against
+ * the correct page data.
+ *
+ * These behaviours previously lived on `FetchStatusManager` as in-memory Maps. They were moved here
+ * because in-memory state does not survive the SSR→client payload — the client builds a fresh
+ * manager, runs no manifest fetch, and every client-side re-fetch after a server-side load then sent
+ * the current (child) route path, so the parent data page's components silently vanished.
+ * See `api/fetcher/nested-page-hydration.spec.ts` for the end-to-end reproduction.
+ */
+describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / registerIriDepth / resetIriDepths)', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+  let currentGetters: CwaFetcherGettersInterface
+
+  // Build a depth tree node from a flat IRI list (first = root, rest = direct children); it flattens
+  // back to the same flat list the depth-tracking logic receives.
+  const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })
+
+  function setManifest(resourceIris: ReturnType<typeof depthNode>[]) {
+    fetcherActions.setManifestIrisByDepth({ token: 'existing-token', resourceIris })
+  }
+
+  beforeEach(() => {
+    fetcherState = state()
+    fetcherState.fetches['existing-token'] = reactive({
+      path: '/existing-path',
+      resources: [],
+      isPrimary: true,
+      timestamp: 0,
+      manifest: { path: '/some-manifest-path' },
+    })
+    currentGetters = getters(fetcherState)
+    fetcherActions = actions(fetcherState, currentGetters)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('depth tracking is empty before any manifest is set', () => {
+    expect(fetcherState.iriDepths['/_/routes//topic-1']).toBeUndefined()
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth maps every IRI in each depth group to its depth index', () => {
+    setManifest([
+      depthNode(['/_/routes//topic-1', '/_/pages/parent-template', '/_/component_positions/parent-cp']),
+      depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template', '/_/component_positions/child-cp']),
+    ])
+    expect(fetcherState.iriDepths['/_/routes//topic-1']).toBe(0)
+    expect(fetcherState.iriDepths['/_/pages/parent-template']).toBe(0)
+    expect(fetcherState.iriDepths['/_/component_positions/parent-cp']).toBe(0)
+    expect(fetcherState.iriDepths['/_/routes//topic-1/chapter-one']).toBe(1)
+    expect(fetcherState.iriDepths['/_/pages/child-template']).toBe(1)
+    expect(fetcherState.iriDepths['/_/component_positions/child-cp']).toBe(1)
+    expect(fetcherState.iriDepths['/unknown']).toBeUndefined()
+  })
+
+  test('the path for each depth is derived from the ROUTE IRI in that depth group', () => {
+    setManifest([
+      depthNode(['/_/pages/parent-template', '/_/routes//topic-1']),
+      depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/topic-1')
+    expect(fetcherState.depthPaths[1]).toBe('/topic-1/chapter-one')
+    expect(fetcherState.depthPaths[2]).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth replaces previous depth tracking data', () => {
+    setManifest([depthNode(['/_/routes//old', '/_/pages/old-page'])])
+    setManifest([depthNode(['/_/routes//new', '/_/pages/new-page'])])
+    expect(fetcherState.iriDepths['/_/pages/old-page']).toBeUndefined()
+    expect(fetcherState.iriDepths['/_/pages/new-page']).toBe(0)
+    expect(fetcherState.depthPaths[0]).toBe('/new')
+  })
+
+  test('registerIriDepth adds an IRI the manifest did not contain', () => {
+    fetcherActions.registerIriDepth({ iri: '/component/some-uuid', depth: 0 })
+    expect(fetcherState.iriDepths['/component/some-uuid']).toBe(0)
+  })
+
+  test('resetIriDepths clears all depth tracking', () => {
+    setManifest([depthNode(['/_/routes//topic-1', '/_/pages/parent'])])
+    fetcherActions.registerIriDepth({ iri: '/component/some-uuid', depth: 0 })
+    fetcherActions.resetIriDepths()
+    expect(fetcherState.iriDepths['/_/pages/parent']).toBeUndefined()
+    expect(fetcherState.iriDepths['/component/some-uuid']).toBeUndefined()
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
+  })
+
+  test('clearFetches clears depth tracking', () => {
+    setManifest([depthNode(['/_/routes//topic-1', '/_/pages/parent'])])
+    fetcherActions.clearFetches()
+    expect(fetcherState.iriDepths['/_/pages/parent']).toBeUndefined()
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
+  })
+})

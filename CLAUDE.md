@@ -292,6 +292,7 @@ const { resource } = useCwaResource(pageDataIri)
 - **`resource_iris` is `NestedJsonStructure[]`** — outer array = rendering depth (root first); each depth a `{ iri, children }` tree. Flattened per-depth into `irisByDepth: string[][]` for existing consumers; raw tree retained as `resourceTree` for future placeholder rendering
 - **Manifest for both public and admin** — UUID-based manifest collapses 4+ serial round trips into one parallel batch
 - **`irisByDepth` set before batch starts** — decouples "we know depth structure" from "batch complete"
+- **Depth tracking lives in the fetcher store, never in memory** — `iriDepths` (IRI → depth) and `depthPaths` (depth → route path) are store state, derived by the `setManifestIrisByDepth` action (+ the `registerIriDepth` action for nested IRIs the manifest doesn't contain), reset per primary fetch via `resetIriDepths`. They drive the depth-aware `path` request header (`createRequestHeaders`), and **must survive the SSR→client payload**: the client builds a fresh `FetchStatusManager` and runs no manifest fetch, so in-memory Maps would start empty and every client-side re-fetch after a server-side load would fall back to `primaryFetchPath` — the *child* route. See "Bug: dynamic position loses its component after an SSR load of a nested page" below.
 - **Early-switch is depth-0 aware** — `displayFetchStatus` checks `irisByDepth[0]` root page against `currentIds`; covers first visits (wait), return visits (switch immediately), sibling nav (parent renders, child loads progressively)
 - **Route concatenation recommended, not required** — rendering never depends on URL structure
 - **Hierarchy on AbstractPage, not Route** — settable before publication (before any route exists)
@@ -448,6 +449,36 @@ Root cause: `TipTapHtmlEditor.vue` configured the menus with `:tippy-options`, w
 
 **[#242](https://github.com/components-web-app/cwa-nuxt-module/issues/242) — Test coverage: reach 70% statement coverage** ✅ Complete
 Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` above for the files covered.
+
+---
+
+## Bug: dynamic position loses its `component` after an SSR load of a nested page ✅ Fixed ([#261](https://github.com/components-web-app/cwa-nuxt-module/issues/261))
+
+**Reported from:** SRNTE (a nested static page whose parent is a data page using the dynamic page template). Fixed 2026-07-16.
+
+### Symptom
+On a **server-side load/refresh** of the nested child page, the parent data page rendered correctly and then, moments later, its content vanished — leaving a component-position placeholder (admin) or nothing (logged out). Intermittent. Client-side *navigation* to the same page was unaffected.
+
+### Root cause
+The `path` request header is depth-aware (`createRequestHeaders`, `api/fetcher/fetcher.ts`): a depth-0 resource must be requested with the **depth-0 route path**, so the API resolves the position's `pageDataProperty` against the **parent's** page data (`ComponentPositionNormalizer::normalizeForPageData` → `PageDataProvider::getPageData()`, which reads the `path` header).
+
+That lookup was backed by `_iriToDepth` / `_depthPaths` — **in-memory Maps on `FetchStatusManager`**, populated only by `setManifestIrisByDepth` (a live manifest fetch, or the #257 route-cache prime). On SSR the *server* built them and fetched everything correctly; the Pinia store hydrated fine, but the **client constructed a fresh `FetchStatusManager` with empty maps and never rebuilt them** — no manifest fetch runs client-side. Any client-side re-fetch then fell back to `primaryFetchPath` = the **child** route, a static page with no page data → API returned `component: null` → the component disappeared.
+
+The client re-fetch comes from `ResourceLoader`'s `onMounted` paths: `isOutdated` (SSR data >5s old — ISR/CDN-cached), `ssrPositionHasPartialData` (admin; fires for *every* position because `usesPageTemplate` is a depth-0 global check, true whenever the parent is a data page), `refetchPublishedSsrResourceToResolveDraft` (admin), and `ssrNoDataWithSilentError`.
+
+**Not Mercure** (ruled out): Mercure only fires when a resource actually *changes*, and although `mercure.ts` does force-refetch `ComponentPosition` messages (it knows dynamic positions can't be resolved in a Mercure serialisation — the `'no_path'` branch — so it re-checks staleness itself), it saves with `isNew: true`, staging into the **temporary `new` store** awaiting merge rather than overwriting `current.byId`. It shares the same header path, so it was latent, but it is not the trigger.
+
+Only **depth-0** resources broke: the fallback path is the current route, which for a depth-1 resource is coincidentally correct — hence the *parent* data page vanishing while the nested child stayed.
+
+`registerIriDepth` was collateral: `fetcher.ts` only registers nested IRIs `if (parentDepth !== undefined)`, so with empty maps those registrations never happened either.
+
+### Fix (landed)
+Moved the depth tracking into the **fetcher store** (`iriDepths` / `depthPaths` — plain objects, so they serialise into the payload), derived by the `setManifestIrisByDepth` action; `registerIriDepth` / `resetIriDepths` are now store actions. `FetchStatusManager` delegates. Single source of truth, no SSR desync possible. `registerIriDepth` is preserved intact — deriving from `irisByDepth` alone would have dropped IRIs the manifest never contained.
+
+Reproduction + regression guard: `api/fetcher/nested-page-hydration.spec.ts` — drives the real stores through the SSR primary fetch, then simulates hydration by constructing a **new** `FetchStatusManager` over the same store, with a stubbed API that models the page-data resolution (resolves only for the `/conference` parent path). Asserts the **outcome** (the position still has its `component`), so it fails whether the fallout is a placeholder or nothing. Store behaviour moved to `storage/stores/fetcher/actions.spec.ts` ("depth tracking" describe); the manager spec's equivalent block now pins delegation.
+
+### Known related bug (NOT fixed here) — [#260](https://github.com/components-web-app/cwa-nuxt-module/issues/260)
+`ComponentPosition.vue` gates its admin-only placeholder on `v-else-if="$cwa.auth.isAdmin"` — a **nested** access to a getter returning `computed()`, which Vue does not auto-unwrap, so it's always truthy and logged-out users see the admin placeholder. (Same trap as `upload.bind` in #252; `.value` is needed.) The nameless placeholder is the tell: `pageDataProperty` is `ComponentPosition:read:role_admin`, so non-admins never receive it. A third instance of the same trap: `ResourceLoader.vue` uses bare `hasSilentError` (a `ComputedRef`) instead of `.value` inside `ssrNoDataWithSilentError`, collapsing it to `ssr && data === undefined`.
 
 ---
 

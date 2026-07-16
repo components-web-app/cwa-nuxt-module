@@ -188,7 +188,7 @@ export default class Fetcher {
     }
     else if (resource && shallowFetch !== true) {
       // Wait for the manifest batch to complete before traversing associated resources.
-      // This ensures _iriToDepth and _depthPaths are populated so createRequestHeaders
+      // This ensures the store's depth tracking is populated so createRequestHeaders
       // sends the correct depth-aware path for every follow-up request. fetchAssociatedResources
       // still runs as a safety pass for anything the manifest did not include.
       if (manifestPromise) {

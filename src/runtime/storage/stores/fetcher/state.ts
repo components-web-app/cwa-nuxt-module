@@ -16,7 +16,7 @@ interface FetchManifestInterface {
   // component containment for future placeholder/skeleton rendering — retained but not yet rendered.
   resourceTree?: NestedJsonStructure[]
   // Derived: each depth's tree flattened to its flat IRI list. Existing consumers
-  // (`pageIriAtDepth`, early-switch, `_iriToDepth`, fetch batch) read this unchanged.
+  // (`pageIriAtDepth`, early-switch, `iriDepths`, fetch batch) read this unchanged.
   irisByDepth?: string[][]
   fetchComplete?: true
   error?: CwaResourceErrorObject
@@ -66,6 +66,21 @@ export interface CwaFetcherStateInterface {
   // imperatively when priming a revisit, so it should not add Vue proxy overhead per cached route.
   // See #257.
   routeCache: Map<string, RouteCacheEntry>
+  // Depth structure of the CURRENT primary fetch, driving the depth-aware `path` request header:
+  // resource IRI → rendering depth, and depth → that depth's route path. Derived from the manifest
+  // tree, plus `registerIriDepth` for nested IRIs the manifest did not itself contain.
+  //
+  // A depth-0 resource MUST be requested with the depth-0 route path, or the API resolves a dynamic
+  // position's `pageDataProperty` against the wrong page data. On a nested route the fallback (the
+  // current route path) points at the CHILD — a static page with no page data — so the position
+  // comes back with `component: null` and the parent data page's content vanishes.
+  //
+  // This lives in the store, NOT on `FetchStatusManager`, because it must survive the SSR→client
+  // payload: the client builds a fresh manager and runs no manifest fetch, so in-memory maps would
+  // start empty and every client-side re-fetch after a server-side load would send the wrong path.
+  // Reset per primary fetch (see `resetIriDepths`). Plain objects so they serialise. See #261.
+  iriDepths: Record<string, number>
+  depthPaths: Record<number, string>
 }
 
 export default function (): CwaFetcherStateInterface {
@@ -73,5 +88,7 @@ export default function (): CwaFetcherStateInterface {
     primaryFetch: reactive({}),
     fetches: reactive({}),
     routeCache: markRaw(new Map<string, RouteCacheEntry>()),
+    iriDepths: reactive({}),
+    depthPaths: reactive({}),
   }
 }

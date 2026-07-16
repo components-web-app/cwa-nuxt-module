@@ -226,6 +226,7 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
       primaryFetch: {},
       setDisplayedToken: vi.fn(),
       routeCache: new Map(),
+      resetIriDepths: vi.fn(),
     }
     const startFetchEvent: StartFetchEvent = {
       path: '/fetch-path',
@@ -770,112 +771,62 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
   })
 })
 
-describe('FetchStatusManager -> depth tracking (setManifestIrisByDepth / getDepthForIri / getPathForDepth / registerIriDepth)', () => {
+describe('FetchStatusManager -> depth tracking (delegates to the fetcher store)', () => {
+  // The depth lookups themselves live in the fetcher store so they survive the SSR->client payload
+  // (see `storage/stores/fetcher/actions.spec.ts` for their behaviour, and
+  // `nested-page-hydration.spec.ts` for why). The manager's remaining job is to delegate.
   let fetchStatusManager: FetchStatusManager
 
-  // Build a depth tree node from a flat IRI list (first = root, rest = direct children); it flattens
-  // back to the same flat list the depth-tracking logic previously received directly.
   const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })
 
   beforeEach(() => {
     fetchStatusManager = createFetchStatusManager()
-    fetchStatusManager._fetcherStore = { setManifestIrisByDepth: vi.fn() }
+    fetchStatusManager._fetcherStore = {
+      iriDepths: { '/_/pages/parent': 0 },
+      depthPaths: { 0: '/topic-1' },
+      setManifestIrisByDepth: vi.fn(),
+      registerIriDepth: vi.fn(),
+      resetIriDepths: vi.fn(),
+      startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
+      primaryFetch: {},
+      setDisplayedToken: vi.fn(),
+      routeCache: new Map(),
+    }
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('getDepthForIri returns undefined before any manifest is set', () => {
-    expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1')).toBeUndefined()
-  })
-
-  test('getPathForDepth returns undefined before any manifest is set', () => {
-    expect(fetchStatusManager.getPathForDepth(0)).toBeUndefined()
-  })
-
-  test('setManifestIrisByDepth maps every IRI in each depth group to its depth index', () => {
-    fetchStatusManager.setManifestIrisByDepth({
-      token: 'token',
-      resourceIris: [
-        depthNode(['/_/routes//topic-1', '/_/pages/parent-template', '/_/component_positions/parent-cp']),
-        depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template', '/_/component_positions/child-cp']),
-      ],
-    })
-    expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1')).toBe(0)
-    expect(fetchStatusManager.getDepthForIri('/_/pages/parent-template')).toBe(0)
-    expect(fetchStatusManager.getDepthForIri('/_/component_positions/parent-cp')).toBe(0)
-    expect(fetchStatusManager.getDepthForIri('/_/routes//topic-1/chapter-one')).toBe(1)
-    expect(fetchStatusManager.getDepthForIri('/_/pages/child-template')).toBe(1)
-    expect(fetchStatusManager.getDepthForIri('/_/component_positions/child-cp')).toBe(1)
+  test('getDepthForIri reads the depth from the store', () => {
+    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
     expect(fetchStatusManager.getDepthForIri('/unknown')).toBeUndefined()
   })
 
-  test('getPathForDepth returns the path derived from the ROUTE IRI in each depth group', () => {
-    fetchStatusManager.setManifestIrisByDepth({
-      token: 'token',
-      resourceIris: [
-        depthNode(['/_/pages/parent-template', '/_/routes//topic-1']),
-        depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template']),
-      ],
-    })
+  test('getPathForDepth reads the path from the store', () => {
     expect(fetchStatusManager.getPathForDepth(0)).toBe('/topic-1')
-    expect(fetchStatusManager.getPathForDepth(1)).toBe('/topic-1/chapter-one')
     expect(fetchStatusManager.getPathForDepth(2)).toBeUndefined()
   })
 
-  test('setManifestIrisByDepth replaces previous depth tracking data', () => {
-    fetchStatusManager.setManifestIrisByDepth({
-      token: 'token',
-      resourceIris: [depthNode(['/_/routes//old', '/_/pages/old-page'])],
-    })
-    fetchStatusManager.setManifestIrisByDepth({
-      token: 'token',
-      resourceIris: [depthNode(['/_/routes//new', '/_/pages/new-page'])],
-    })
-    expect(fetchStatusManager.getDepthForIri('/_/pages/old-page')).toBeUndefined()
-    expect(fetchStatusManager.getDepthForIri('/_/pages/new-page')).toBe(0)
-    expect(fetchStatusManager.getPathForDepth(0)).toBe('/new')
+  test('setManifestIrisByDepth passes the event to the store, which derives the depths', () => {
+    const event = { token: 'token', resourceIris: [depthNode(['/_/routes//topic-1', '/_/pages/parent'])] }
+    fetchStatusManager.setManifestIrisByDepth(event)
+    expect(fetchStatusManager._fetcherStore.setManifestIrisByDepth).toHaveBeenCalledWith(event)
   })
 
-  test('registerIriDepth adds an IRI to the depth map', () => {
+  test('registerIriDepth passes the IRI and depth to the store', () => {
     fetchStatusManager.registerIriDepth('/component/some-uuid', 0)
-    expect(fetchStatusManager.getDepthForIri('/component/some-uuid')).toBe(0)
+    expect(fetchStatusManager._fetcherStore.registerIriDepth).toHaveBeenCalledWith({ iri: '/component/some-uuid', depth: 0 })
   })
 
   test('startFetch with isPrimary clears depth tracking', () => {
-    fetchStatusManager._fetcherStore = {
-      setManifestIrisByDepth: vi.fn(),
-      startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
-      primaryFetch: {},
-      setDisplayedToken: vi.fn(),
-      routeCache: new Map(),
-    }
-    fetchStatusManager.setManifestIrisByDepth({
-      token: 'token',
-      resourceIris: [depthNode(['/_/routes//topic-1', '/_/pages/parent'])],
-    })
-    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
-
     fetchStatusManager.startFetch({ path: '/new', isPrimary: true })
-
-    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBeUndefined()
-    expect(fetchStatusManager.getPathForDepth(0)).toBeUndefined()
+    expect(fetchStatusManager._fetcherStore.resetIriDepths).toHaveBeenCalled()
   })
 
   test('startFetch without isPrimary preserves depth tracking', () => {
-    fetchStatusManager._fetcherStore = {
-      setManifestIrisByDepth: vi.fn(),
-      startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
-    }
-    fetchStatusManager.setManifestIrisByDepth({
-      token: 'token',
-      resourceIris: [depthNode(['/_/routes//topic-1', '/_/pages/parent'])],
-    })
     fetchStatusManager.startFetch({ path: '/new', isPrimary: false })
-
-    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
-    expect(fetchStatusManager.getPathForDepth(0)).toBe('/topic-1')
+    expect(fetchStatusManager._fetcherStore.resetIriDepths).not.toHaveBeenCalled()
   })
 })
 

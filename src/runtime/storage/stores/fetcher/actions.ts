@@ -5,6 +5,7 @@ import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus, NestedJsonStructure } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
 import { flattenManifestNode } from './manifest-utils'
+import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
 export interface StartFetchEvent {
@@ -58,10 +59,17 @@ interface AbortFetchEvent {
   reason?: FetchAbortReason
 }
 
+export interface RegisterIriDepthEvent {
+  iri: string
+  depth: number
+}
+
 export interface CwaFetcherActionsInterface {
   abortFetch(event: AbortFetchEvent): void
   setDisplayedToken(token: string): void
   setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void
+  registerIriDepth(event: RegisterIriDepthEvent): void
+  resetIriDepths(): void
   finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
@@ -90,6 +98,15 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       return
     }
     delete fetcherState.fetches[token]
+  }
+
+  function clearIriDepths() {
+    for (const key of Object.keys(fetcherState.iriDepths)) {
+      delete fetcherState.iriDepths[key]
+    }
+    for (const key of Object.keys(fetcherState.depthPaths)) {
+      delete fetcherState.depthPaths[Number(key)]
+    }
   }
 
   // Retain a successfully-fetched route's manifest structure (IRIs only) so a later revisit can lay
@@ -133,7 +150,30 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       // Retain the raw tree for future placeholder rendering; derive the flat per-depth IRI lists
       // that existing consumers (pageIriAtDepth, early-switch, fetch batch) read.
       fetchStatus.manifest.resourceTree = event.resourceIris
-      fetchStatus.manifest.irisByDepth = event.resourceIris.map(flattenManifestNode)
+      const irisByDepth = event.resourceIris.map(flattenManifestNode)
+      fetchStatus.manifest.irisByDepth = irisByDepth
+
+      // Derive the depth lookups that drive the depth-aware `path` request header. Kept here, in the
+      // store, so they survive the SSR→client payload alongside the manifest they come from.
+      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+      const routePathPrefix = `${prefix}/_/routes/`
+      clearIriDepths()
+      for (let depth = 0; depth < irisByDepth.length; depth++) {
+        for (const iri of irisByDepth[depth]!) {
+          fetcherState.iriDepths[iri] = depth
+          if (fetcherState.depthPaths[depth] === undefined && iri.startsWith(routePathPrefix)) {
+            fetcherState.depthPaths[depth] = iri.substring(routePathPrefix.length)
+          }
+        }
+      }
+    },
+    // Nested resources discovered while traversing a fetched resource inherit their parent's depth —
+    // they are not in the manifest, so they have no depth of their own to derive. See `fetcher.ts`.
+    registerIriDepth(event: RegisterIriDepthEvent) {
+      fetcherState.iriDepths[event.iri] = event.depth
+    },
+    resetIriDepths() {
+      clearIriDepths()
     },
     finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus
@@ -305,6 +345,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       for (const token of Object.keys(fetcherState.fetches)) {
         delete fetcherState.fetches[token]
       }
+      clearIriDepths()
     },
   }
 }
