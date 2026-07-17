@@ -61,7 +61,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
     })
   }
 
-  // todo: redirects do not work if clicking on route that should redirect quickly multiple times
   const handleRouteRedirect = async (resource: CwaResource | undefined) => {
     // only check for the redirect path, we know the resource returned is the primary resource,
     // and we have requested to fetch a route, so will be a route resource.
@@ -103,7 +102,12 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
 
   nuxtApp.$cwa.fetchRoute(to)
     .then(async (resource: CwaResource | undefined) => {
-      // check if the request finishing is still current to perform redirect
+      // Suppress a redirect from a navigation that has already been replaced (rapid repeat clicks on
+      // a redirect route). A superseded fetch usually resolves `undefined` — its token is no longer
+      // current, so `finishFetchResource` bails — but not always: once the winning click has saved
+      // the route resource, a late superseded response short-circuits on the cached SUCCESS and
+      // resolves WITH `redirectPath`. Unguarded, that stale click fires a second `navigateTo` and
+      // yanks the user back to the target from wherever they navigated next. See #245.
       if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
         return
       }

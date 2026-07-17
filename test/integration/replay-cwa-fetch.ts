@@ -130,6 +130,23 @@ export class ReplayCwaFetch {
     return releasing.length
   }
 
+  /**
+   * Release only the MOST RECENTLY queued request matching, leaving any earlier matches in flight.
+   * Repeat clicks on one route queue several requests on an identical path, which `release` cannot
+   * tell apart — this is the lever that lets the NEWER click win while an older one is still
+   * pending, so the older can then be resolved LATE (after it has been superseded).
+   */
+  public releaseLatest(match: string | ((path: string) => boolean)): boolean {
+    const predicate = typeof match === 'function' ? match : (path: string) => path === match
+    const index = this.queue.map(q => predicate(q.path)).lastIndexOf(true)
+    if (index === -1) {
+      return false
+    }
+    const [releasing] = this.queue.splice(index, 1)
+    releasing?.settle()
+    return true
+  }
+
   /** release everything currently pending (requests queued during release go to the next batch) */
   public releaseAll(): number {
     const releasing = this.queue
