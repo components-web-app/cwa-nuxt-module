@@ -165,25 +165,63 @@ export default defineNuxtConfig({
       // `if (!('navigateFallback' in options.workbox))` and defaults it to '/', which would serve
       // the '/' app shell for every SSR navigation. Presence of the key is what disables it.
       navigateFallback: null,
-      // App-shell precache ONLY. There is deliberately NO `runtimeCaching` for the CWA API.
-      //
-      // ⚠️ SECURITY (#258) — do not add one without reading the issue. Draft and published
-      // responses share an IDENTICAL URL: the primary fetch requests `/_/routes/{path}` and
-      // `/_/resource_manifest/{path}` (api/fetcher/fetcher.ts) with no `?published=` marker, and
-      // the API decides draft-vs-published from the auth cookie alone (every request is
-      // `credentials: 'include'`, api/fetcher/cwa-fetch.ts). The API does not send `Vary: Cookie`,
-      // so the Cache API cannot partition anon from authed entries, and a Workbox `urlPattern`
-      // match callback must be SYNCHRONOUS — so it cannot read auth state either (a service
-      // worker has no `document.cookie`; `cookieStore` is async and Chromium-only).
-      //
-      // Net: a URL-keyed SW cache cannot tell an admin's draft from a public response. Caching
-      // these would let an admin's draft be replayed to the next anonymous visitor on the same
-      // device/profile. A URL denylist cannot fix this — there is no distinguishing URL.
-      //
-      // Also note a broad API-origin urlPattern would match the Mercure SSE stream and break
-      // real-time updates. Offline data belongs in the page-side IndexedDB tier (#257/#259),
-      // where auth state IS readable, not in the service worker.
+      // App-shell precache.
       globPatterns: ['**/*.{js,mjs,ts,json,css,html,png,svg,ico,jpg,jpeg,webp}'],
+      // CWA API runtime caching — safe as of api-components-bundle #200 (`CacheHeadersEventListener`,
+      // merged to main). See #258 for the full design.
+      //
+      // Why this is now safe. Draft and published responses share an IDENTICAL URL — the primary
+      // fetch requests `/_/routes/{path}` and `/_/resource_manifest/{path}` (api/fetcher/fetcher.ts)
+      // with no `?published=` marker, and the API decides draft-vs-published from the auth cookie
+      // alone. A URL-keyed cache therefore cannot tell an admin's draft from a public response, and
+      // a `urlPattern` callback is synchronous so it cannot read auth state (a SW has no
+      // `document.cookie`; `cookieStore` is async + Chromium-only). The fix is NOT a URL denylist —
+      // there is no distinguishing URL. Instead the API now marks any authenticated response on an
+      // affected resource (Route, ResourceManifest, ComponentPosition, any Publishable) with
+      // `Cache-Control: private, no-store`; anonymous responses stay `public`. `cacheWillUpdate`
+      // below drops anything carrying `no-store`, so the SW cache only ever holds public data —
+      // the same rule Souin enforces at the edge.
+      //
+      // NetworkFirst, not SWR: the SW cache is only ever READ offline. Online the network always
+      // wins, so an anonymous visitor can never be served a cached draft even in the window before
+      // the `no-store` marker is seen. The residual offline concern (a cache outliving a
+      // logout/session-expiry on one device) is handled by purging the caches on sign-out and on
+      // any 401 — an app-side concern, see #258.
+      runtimeCaching: [
+        {
+          // Anchored to the API path prefix so the Mercure SSE stream (a different path) is NOT
+          // matched — a broad API-origin pattern would swallow it and break real-time updates.
+          urlPattern: ({ url }) => /\/_api\/(?:_\/(?:routes|resource_manifest|pages|layouts|component_groups|component_positions)|page_data|component)\b/.test(url.pathname),
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'cwa-api',
+            networkTimeoutSeconds: 3,
+            cacheableResponse: {
+              // Only 200s AND drop anything the API marked non-cacheable. Workbox does not honour
+              // `Cache-Control: no-store` for an explicitly-configured route, so this is asserted
+              // explicitly via a header check.
+              statuses: [200],
+              headers: {},
+            },
+            plugins: [
+              {
+                // The authoritative gate: never store a response the API flagged as personalised.
+                cacheWillUpdate: async ({ response }) => {
+                  const cc = response.headers.get('cache-control') || ''
+                  if (/no-store|private/.test(cc)) {
+                    return null
+                  }
+                  return response.status === 200 ? response : null
+                },
+              },
+            ],
+            expiration: {
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 * 24, // short — the offline tier is a convenience, not a store
+            },
+          },
+        },
+      ],
     },
     client: {
       installPrompt: true,
