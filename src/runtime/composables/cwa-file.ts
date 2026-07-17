@@ -60,8 +60,21 @@ export const useCwaFile = (iri: Ref<string>, ops: FileOpsType): CwaFileReturnTyp
     return `${mediaUrl}${query.value}`
   })
 
+  // An <img> that was already loaded (from cache) before the `@load` listener was attached never
+  // fires it, so detect that on mount. The ref is not necessarily a bare <img> though: `ref="file"`
+  // on a COMPONENT (`<NuxtImg ref="file">`) resolves to the component instance, a ref name that
+  // doesn't match `fileProp` resolves to null, and a file field needn't be an image at all. In each
+  // of those `naturalHeight` is `undefined` — and `undefined !== 0` is TRUE, which flipped `loaded`
+  // on mount before the image had loaded and made the placeholder vanish instantly.
   onMounted(() => {
-    if (ops.imageRef.value?.complete || ops.imageRef.value?.naturalHeight !== 0) {
+    const target = ops.imageRef.value as { $el?: unknown } | null
+    // unwrap a component instance to its root element
+    const el = (target && '$el' in target ? target.$el : target) as HTMLImageElement | null
+    // Only an <img> can report its own load state. Anything else must wait for `@load`.
+    if (!el || typeof el.naturalHeight !== 'number') {
+      return
+    }
+    if (el.complete || el.naturalHeight !== 0) {
       handleLoad()
     }
   })

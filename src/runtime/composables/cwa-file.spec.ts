@@ -137,5 +137,43 @@ describe('useCwaFile', () => {
       const { loaded } = useCwaFile(iri, ops)
       expect(loaded.value).toBe(false)
     })
+
+    /**
+     * The ref is not always a bare `<img>`. `ref="file"` on a COMPONENT (`<NuxtImg ref="file">`, as
+     * the playground uses) resolves to the component instance; a ref name that doesn't match
+     * `fileProp` resolves to null; a file field needn't be an image at all.
+     *
+     * In every one of those cases `naturalHeight` is `undefined`, and `undefined !== 0` is TRUE — so
+     * `loaded` flipped true on mount, before the image had loaded, and the placeholder vanished
+     * instantly. Anything we cannot positively identify as a loaded <img> must wait for `@load`.
+     */
+    describe('when the ref is not a bare img element', () => {
+      test('resolves a component instance to its root element and respects its load state', () => {
+        // <NuxtImg ref="file"> — useTemplateRef gives the component, whose $el is the real <img>
+        const component = { $el: { complete: false, naturalHeight: 0 } }
+        const ops = makeOps({ imageRef: ref(component as any) })
+        const { loaded } = useCwaFile(iri, ops)
+        expect(loaded.value).toBe(false)
+      })
+
+      test('a component instance whose image is already loaded still auto-loads', () => {
+        const component = { $el: { complete: true, naturalHeight: 100 } }
+        const ops = makeOps({ imageRef: ref(component as any) })
+        const { loaded } = useCwaFile(iri, ops)
+        expect(loaded.value).toBe(true)
+      })
+
+      test('does not auto-load when the ref is missing (e.g. ref name does not match fileProp)', () => {
+        const ops = makeOps({ imageRef: ref(null) as any })
+        const { loaded } = useCwaFile(iri, ops)
+        expect(loaded.value).toBe(false)
+      })
+
+      test('does not auto-load when the ref is a non-image element', () => {
+        const ops = makeOps({ imageRef: ref({ tagName: 'DIV' } as any) })
+        const { loaded } = useCwaFile(iri, ops)
+        expect(loaded.value).toBe(false)
+      })
+    })
   })
 })
