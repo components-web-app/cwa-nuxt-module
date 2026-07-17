@@ -527,6 +527,41 @@ Fixed 2026-07-16. `ResourceLoader.isOutdated` re-fetched any SSR resource whose 
 
 ---
 
+## Bug: an API URL with no path prefix breaks all resource typing and depth headers ✅ Fixed ([#266](https://github.com/components-web-app/cwa-nuxt-module/issues/266))
+
+Fixed 2026-07-17. Found while investigating #264.
+
+### Symptom
+An app whose API is deployed at a **bare host** — `https://api.example.com`, `http://api:8000` — got `getResourceTypeFromIri()` returning `undefined` for **every IRI**, and the depth-aware `path` header (#261) never resolving. CWA was comprehensively broken for that deployment shape, which is supported: the API can be deployed anywhere.
+
+### Root cause
+`cwa.ts:68` stores the API URL's pathname as the prefix: `ResourceTypeFromIri.setPathPrefix((new URL(this.apiUrl)).pathname)`. For a bare host that pathname is **`'/'`, not `''`** — so "the API is at the domain root" was stored as a *prefix of `/`*, and every consumer treated that single slash as a string to strip or concatenate:
+
+1. **Resource typing** — `_call` did `iri.replace(this.pathPrefix, '')`, so `'/_/routes//conference'.replace('/', '')` ate the IRI's **leading slash** → `'_/routes//conference'` → `startsWith('/_/routes/')` false → `undefined` for every IRI, across the 16 non-spec files that use it.
+2. **Depth headers** — `fetcher.ts:349` and `storage/stores/fetcher/actions.ts:158` build `` `${prefix}/_/routes/` `` → `'//_/routes/'`, which matches nothing. The `path` header silently fell back to `primaryFetchPath`, **reintroducing #261's symptom for every path-less deployment regardless of the #261 fix**.
+3. **Latent** — `iri.replace(prefix, '')` replaces the **first occurrence anywhere**, not a leading prefix.
+
+### Fix (landed)
+Normalised at the single write point, `ResourceTypeFromIriCls.setPathPrefix` (`resources/resource-utils.ts`) — **none of the 23 call sites changed**, since every consumer already handles an absent prefix (`getPathPrefix() || ''`), so one write-point fix covers typing *and* the depth headers:
+```ts
+// a root pathname means "no prefix"
+this.pathPrefix = !prefix || prefix === '/' ? undefined : prefix
+```
+Plus a leading-only strip in `_call` (`startsWith` + `slice`, replacing `String.replace`'s first-occurrence-anywhere).
+
+The `ResourceTypeFromIri` **singleton design is untouched** — that hazard is #264, tracked separately.
+
+### Why it was never caught
+The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so everything works. And **`resource-utils.spec.ts` never called `setPathPrefix` at all** — the entire prefix mechanism was untested in either shape.
+
+`resource-utils.spec.ts` gained the coverage it never had: `getResourceTypeFromIri` across an unset prefix / `/_api` / `/` for **every** resource type, plus nested-route and collection IRIs, `getPathPrefix()` normalisation, and the leading-only strip. `fetcher.spec.ts` pins that a root API URL still produces `/_/routes/`-based depth paths (guarding the #261 interaction). All 11 + 1 failed first for the right reason (bare-host cases returning `undefined`; the header carrying a raw `/_/routes//conference`) while the `/_api` cases passed throughout.
+
+> **`setPathPrefix` is a module-level singleton shared across the whole run** — always reset it in `afterEach`, or the prefix leaks into unrelated spec files.
+
+**Known, out of scope:** an API URL with a *trailing* slash (`https://localhost/_api/` → pathname `/_api/`) stores `/_api/`, so stripping leaves `component/x` with no leading slash. Pre-existing and unaffected by this fix; not part of #266's agreed scope.
+
+---
+
 ## Bug: empty component-group `location` when adding a component to an unpublished draft ✅ Fixed
 
 **Reported from:** SRNTE (adding a component inside a static page nested in a data page). Fixed 2026-07-10.

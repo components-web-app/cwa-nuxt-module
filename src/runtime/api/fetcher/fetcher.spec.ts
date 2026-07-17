@@ -8,7 +8,7 @@ import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { CwaResourceTypes } from '../../resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import Fetcher from './fetcher'
@@ -742,6 +742,8 @@ describe('Fetcher -> createRequestHeaders', () => {
   })
 
   afterEach(() => {
+    // module-level singleton — must not leak the prefix into other tests or spec files
+    ResourceTypeFromIri.setPathPrefix(undefined)
     vi.clearAllMocks()
   })
 
@@ -782,6 +784,26 @@ describe('Fetcher -> createRequestHeaders', () => {
     FetchStatusManager.mock.instances[0].getPathForDepth.mockReturnValue(undefined)
     await fetcher.fetchResource({ path: '/some-path' })
     expect(fetcher.createRequestHeaders).toReturnWith({ path: '/primary-fetch-path', preload: undefined })
+  })
+
+  // #266 — an API deployed at a bare host stores a path prefix of '/' (`new URL(apiUrl).pathname`).
+  // `${prefix}/_/routes/` then built '//_/routes/', which matches nothing, so the route prefix was
+  // never stripped and the `path` header carried the raw route IRI — silently reintroducing #261
+  // for every path-less deployment. A root pathname must normalise to "no prefix".
+  test('an API url with no path prefix still resolves the /_/routes/ prefix for the path header', async () => {
+    ResourceTypeFromIri.setPathPrefix('/')
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_/routes//conference')
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/conference', preload: undefined })
+  })
+
+  test('an API url with a path prefix resolves the prefixed /_/routes/ prefix for the path header', async () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_api/_/routes//conference')
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/conference', preload: undefined })
   })
 })
 

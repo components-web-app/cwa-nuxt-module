@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import type {
   CwaResource } from './resource-utils'
 import {
@@ -8,6 +8,7 @@ import {
   CwaResourceTypes,
   isCwaResource, isCwaResourceSame,
   resourceTypeToAssociatedResourceProperties,
+  ResourceTypeFromIri,
 } from './resource-utils'
 
 describe('Resource isCwaResourceSame function', () => {
@@ -171,6 +172,88 @@ describe('Resource Utilities getResourceTypeFromIri function', () => {
   })
   test('COMPONENT type', () => {
     expect(getResourceTypeFromIri('/component/abcdefg')).toBe(CwaResourceTypes.COMPONENT)
+  })
+})
+
+describe('Resource Utilities getResourceTypeFromIri path prefix handling', () => {
+  // `ResourceTypeFromIri` is a module-level singleton shared by every spec in the run — always
+  // restore it, or the prefix leaks into unrelated files.
+  afterEach(() => {
+    ResourceTypeFromIri.setPathPrefix(undefined)
+  })
+
+  const typeIriSuffixes: [CwaResourceTypes, string][] = [
+    [CwaResourceTypes.ROUTE, '/_/routes/abcdefg'],
+    [CwaResourceTypes.PAGE, '/_/pages/abcdefg'],
+    [CwaResourceTypes.PAGE_DATA, '/page_data/abcdefg'],
+    [CwaResourceTypes.LAYOUT, '/_/layouts/abcdefg'],
+    [CwaResourceTypes.COMPONENT_GROUP, '/_/component_groups/abcdefg'],
+    [CwaResourceTypes.COMPONENT_POSITION, '/_/component_positions/abcdefg'],
+    [CwaResourceTypes.COMPONENT, '/component/abcdefg'],
+  ]
+
+  describe('prefix is unset', () => {
+    test.each(typeIriSuffixes)('%s is resolved from a prefix-free IRI', (type, iri) => {
+      ResourceTypeFromIri.setPathPrefix(undefined)
+      expect(getResourceTypeFromIri(iri)).toBe(type)
+    })
+  })
+
+  describe('API deployed under a path prefix (`https://localhost/_api` → pathname `/_api`)', () => {
+    test.each(typeIriSuffixes)('%s is resolved once the `/_api` prefix is stripped', (type, iri) => {
+      ResourceTypeFromIri.setPathPrefix('/_api')
+      expect(getResourceTypeFromIri(`/_api${iri}`)).toBe(type)
+    })
+  })
+
+  // #266 — the regression. `new URL('https://api.example.com').pathname` is '/', NOT ''. Storing
+  // that single slash as a prefix made `iri.replace('/', '')` eat the IRI's LEADING slash, so
+  // every IRI failed `startsWith('/_/routes/')` and the whole module lost resource typing.
+  describe('API deployed at a bare host (`https://api.example.com` → pathname `/`)', () => {
+    test.each(typeIriSuffixes)('%s is still resolved when the API URL has no path prefix', (type, iri) => {
+      ResourceTypeFromIri.setPathPrefix('/')
+      expect(getResourceTypeFromIri(iri)).toBe(type)
+    })
+
+    test('a nested route IRI is still resolved', () => {
+      ResourceTypeFromIri.setPathPrefix('/')
+      expect(getResourceTypeFromIri('/_/routes//conference')).toBe(CwaResourceTypes.ROUTE)
+    })
+
+    test('a collection IRI is still resolved', () => {
+      ResourceTypeFromIri.setPathPrefix('/')
+      expect(getResourceTypeFromIri('/component')).toBe(CwaResourceTypes.COMPONENT)
+    })
+
+    test('getPathPrefix() returns undefined — a root pathname means "no prefix"', () => {
+      ResourceTypeFromIri.setPathPrefix('/')
+      expect(ResourceTypeFromIri.getPathPrefix()).toBeUndefined()
+    })
+  })
+
+  test('getPathPrefix() returns a real prefix unchanged', () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    expect(ResourceTypeFromIri.getPathPrefix()).toBe('/_api')
+  })
+
+  // The prefix must be stripped from the START only. `iri.replace(prefix, '')` removes the first
+  // occurrence ANYWHERE, so an IRI that merely *contains* the prefix was rewritten from the wrong
+  // position. The IRIs below are synthetic: mid-IRI removal cannot change a `startsWith` match
+  // (removing from the middle leaves the start intact), so the only observable divergence is the
+  // collection-IRI equality branch — where a first-occurrence strip fabricates a false match.
+  describe('the prefix is stripped from the start only, not the first occurrence anywhere', () => {
+    test('an IRI merely containing the prefix is not rewritten into a false collection-IRI match', () => {
+      ResourceTypeFromIri.setPathPrefix('/_api')
+      // '/compon/_apient'.replace('/_api', '') === '/component' — a first-occurrence strip would
+      // report this as the COMPONENT collection IRI. It does not start with '/_api', so the prefix
+      // must be left alone and the IRI left untyped.
+      expect(getResourceTypeFromIri('/compon/_apient')).toBeUndefined()
+    })
+
+    test('a genuinely prefixed IRI is still stripped', () => {
+      ResourceTypeFromIri.setPathPrefix('/_api')
+      expect(getResourceTypeFromIri('/_api/component')).toBe(CwaResourceTypes.COMPONENT)
+    })
   })
 })
 
