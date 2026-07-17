@@ -61,10 +61,13 @@ export class ResourceTypeFromIriCls extends Function {
   // (`getPathPrefix() || ''`), so handling the root case here fixes resource typing and the
   // depth-aware `path` header (#261) together.
   setPathPrefix(prefix?: string) {
-    // An API deployed at a bare host (`https://api.example.com`) has a pathname of '/', not ''.
-    // That is "no prefix" — storing the slash makes consumers strip the IRI's leading slash and
-    // build nonsense like '//_/routes/'. See #266.
-    this.pathPrefix = !prefix || prefix === '/' ? undefined : prefix
+    // Trailing slashes carry no meaning in a path prefix, and every consumer concatenates or strips
+    // it against IRIs that always start with '/'. Trimming them handles both shapes that broke:
+    // an API at a bare host (`https://api.example.com` → pathname '/') and an apiUrl configured
+    // with a trailing slash (`https://localhost/_api/` → '/_api/'). Left as-is, the first makes
+    // consumers eat the IRI's leading slash and build nonsense like '//_/routes/', and the second
+    // leaves '_/routes/…' unmatched. A prefix of only slashes is no prefix. See #266.
+    this.pathPrefix = prefix?.replace(/\/+$/, '') || undefined
   }
 
   getPathPrefix() {

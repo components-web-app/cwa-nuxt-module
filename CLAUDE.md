@@ -558,7 +558,7 @@ The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so 
 
 > **`setPathPrefix` is a module-level singleton shared across the whole run** — always reset it in `afterEach`, or the prefix leaks into unrelated spec files.
 
-**Known, out of scope:** an API URL with a *trailing* slash (`https://localhost/_api/` → pathname `/_api/`) stores `/_api/`, so stripping leaves `component/x` with no leading slash. Pre-existing and unaffected by this fix; not part of #266's agreed scope.
+**Trailing slashes also fixed** (follow-up, same issue): an API URL written `https://localhost/_api/` yields pathname `/_api/`, so stripping left `_/routes/…` with no leading slash — the same failure by a different route. Rather than special-casing `'/'`, `setPathPrefix` now **trims trailing slashes** (`prefix?.replace(/\/+$/, '') || undefined`), which subsumes both shapes under one rule: *trailing slashes carry no meaning in a path prefix, and a prefix of only slashes is no prefix*. Covers `/` → `undefined`, `//` → `undefined`, `/_api/` → `/_api`, `/_api` → `/_api`.
 
 ---
 

@@ -231,6 +231,27 @@ describe('Resource Utilities getResourceTypeFromIri path prefix handling', () =>
     })
   })
 
+  // A trailing slash on the configured apiUrl (`https://localhost/_api/`) yields the pathname
+  // `/_api/`. Stripping that leaves `_/routes/…` with no leading slash — the same failure as the
+  // bare-host case. A trailing slash carries no meaning in a path prefix.
+  describe('API URL configured with a trailing slash (`https://localhost/_api/` → pathname `/_api/`)', () => {
+    test.each(typeIriSuffixes)('%s is still resolved', (type, iri) => {
+      ResourceTypeFromIri.setPathPrefix('/_api/')
+      expect(getResourceTypeFromIri(`/_api${iri}`)).toBe(type)
+    })
+
+    test('getPathPrefix() returns the prefix without its trailing slash', () => {
+      ResourceTypeFromIri.setPathPrefix('/_api/')
+      expect(ResourceTypeFromIri.getPathPrefix()).toBe('/_api')
+    })
+
+    test('a bare host written with a trailing slash is still "no prefix"', () => {
+      ResourceTypeFromIri.setPathPrefix('//')
+      expect(ResourceTypeFromIri.getPathPrefix()).toBeUndefined()
+      expect(getResourceTypeFromIri('/_/routes//conference')).toBe(CwaResourceTypes.ROUTE)
+    })
+  })
+
   test('getPathPrefix() returns a real prefix unchanged', () => {
     ResourceTypeFromIri.setPathPrefix('/_api')
     expect(ResourceTypeFromIri.getPathPrefix()).toBe('/_api')
