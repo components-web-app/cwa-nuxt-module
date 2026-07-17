@@ -31,10 +31,15 @@
 </template>
 
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwaComponent, withFile } from '#imports'
 
 const props = defineProps<IriProp>()
-const { exposeMeta, files } = useCwaComponent(props, [withFile({ imagineFilterName: 'thumbnail' })])
+// Opt in to the already-loaded-on-mount check by registering the ref ourselves (#267 — it is no
+// longer implicit). `ref="file"` is on <NuxtImg>, so this resolves to the component instance;
+// useCwaFile unwraps it to its root <img> via $el.
+const imageRef = useTemplateRef<unknown>('file')
+const { exposeMeta, files } = useCwaComponent(props, [withFile({ imagineFilterName: 'thumbnail', imageRef })])
 defineExpose(exposeMeta)
 </script>

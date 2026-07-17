@@ -1,17 +1,19 @@
-import { computed, toRef, useTemplateRef } from 'vue'
-import type { HTMLImageElement } from 'happy-dom'
+import { computed, toRef } from 'vue'
 import type { FileOpsType, MediaFile, CwaFileReturnType } from '#cwa/composables/cwa-file'
 import { useCwaFile } from '#cwa/composables/cwa-file'
 import { useCwa } from '#cwa/composables/cwa'
 import type { IriProp } from './cwa-resource'
 
-export type FileFieldOps = Pick<Partial<FileOpsType>, 'imageRef'> & Omit<FileOpsType, 'mediaObjects' | 'imageRef'>
+export type FileFieldOps = Omit<FileOpsType, 'mediaObjects'>
 
 // Standalone per-field variant of the file resolver — the same thing `withFile` uses under the
-// hood, but named at the call site so a component can wire N file fields without collisions:
+// hood, but named at the call site so a component can wire N file fields:
 //   const hero  = useCwaFileField(props, { fileProp: 'heroImage' })
 //   const thumb = useCwaFileField(props, { fileProp: 'thumbnail' })
-// The default template ref name for load detection is the `fileProp` (override via `imageRef`).
+// `imageRef` is optional and NEVER registered implicitly (#267): a template ref was previously
+// auto-created from the `fileProp`, which made two calls sharing a `fileProp` collide on the same
+// key — a Vue dev warning but a hard `TypeError: Cannot redefine property` in a production build.
+// Pass `useTemplateRef('...')` yourself if you want the already-loaded-on-mount check.
 export const useCwaFileField = (props: IriProp, fileOps?: FileFieldOps): CwaFileReturnType => {
   const $cwa = useCwa()
   const iri = toRef(props, 'iri')
@@ -21,12 +23,8 @@ export const useCwaFileField = (props: IriProp, fileOps?: FileFieldOps): CwaFile
     return resource.value?.data?._metadata?.mediaObjects ?? {}
   })
 
-  const fileProp = fileOps?.fileProp || 'file'
-  const imageRef = fileOps?.imageRef || useTemplateRef<HTMLImageElement>(fileProp)
-
   return useCwaFile(iri, {
     ...fileOps,
-    imageRef,
     mediaObjects,
   })
 }

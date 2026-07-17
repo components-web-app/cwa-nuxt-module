@@ -175,5 +175,23 @@ describe('useCwaFile', () => {
         expect(loaded.value).toBe(false)
       })
     })
+
+    // #267: `imageRef` is optional and no longer auto-registered, so the common case is now no ref
+    // at all. There is nothing to inspect, so the check is skipped and `@load` drives `loaded`.
+    describe('when no imageRef is supplied', () => {
+      test('skips the mount check without throwing and waits for @load', () => {
+        const ops: FileOpsType = { mediaObjects: computed(() => ({})) }
+        let loaded: ReturnType<typeof useCwaFile>['loaded']
+        expect(() => ({ loaded } = useCwaFile(iri, ops))).not.toThrow()
+        expect(loaded!.value).toBe(false)
+      })
+
+      test('handleLoad still marks it loaded', () => {
+        const ops: FileOpsType = { mediaObjects: computed(() => ({})) }
+        const { handleLoad, loaded } = useCwaFile(iri, ops)
+        handleLoad()
+        expect(loaded.value).toBe(true)
+      })
+    })
   })
 })

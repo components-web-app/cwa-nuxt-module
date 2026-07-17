@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { ref, computed } from 'vue'
+import { ref, computed, useTemplateRef } from 'vue'
 import * as cwaFileModule from '#cwa/composables/cwa-file'
 import { useCwaFileField } from '#cwa/composables/cwa-file-field'
 
@@ -60,10 +60,22 @@ describe('useCwaFileField', () => {
     expect(passed.mediaObjects.value).toEqual({})
   })
 
-  test('defaults the template ref name to the fileProp', () => {
+  // #267: the template ref used to be auto-registered from the `fileProp`, so two calls sharing a
+  // `fileProp` collided on the same key — a warning in dev but `TypeError: Cannot redefine
+  // property` in a production build. Registration is now the caller's job.
+  test('never registers a template ref implicitly', () => {
     useCwaFileField({ iri: '/resources/1' }, { fileProp: 'thumbnail' })
+    expect(vi.mocked(useTemplateRef)).not.toHaveBeenCalled()
     const passed = vi.mocked(cwaFileModule.useCwaFile).mock.calls[0]![1]
-    expect(passed.imageRef.value).toEqual({ __ref: 'thumbnail' })
+    expect(passed.imageRef).toBeUndefined()
+  })
+
+  test('passes an explicitly supplied imageRef through', () => {
+    const imageRef = ref(null)
+    useCwaFileField({ iri: '/resources/1' }, { fileProp: 'thumbnail', imageRef })
+    const passed = vi.mocked(cwaFileModule.useCwaFile).mock.calls[0]![1]
+    expect(passed.imageRef).toBe(imageRef)
+    expect(vi.mocked(useTemplateRef)).not.toHaveBeenCalled()
   })
 
   test('passes imagineFilterName through', () => {

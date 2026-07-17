@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { ref, computed } from 'vue'
+import { ref, computed, useTemplateRef } from 'vue'
 import * as cwaFileModule from '#cwa/composables/cwa-file'
 import { withFile } from '#cwa/composables/cwa-file-plugin'
 
@@ -73,9 +73,12 @@ describe('withFile', () => {
     )
   })
 
-  test('uses default imageRef from useTemplateRef when none provided', () => {
-    withFile()(makeCtx())
+  // #267: see the matching test in cwa-file-field.spec.ts — the implicit registration keyed on
+  // `fileProp` is what made a second call with the same key throw in a production build.
+  test('never registers a template ref implicitly', () => {
+    withFile({ fileProp: 'heroImage' })(makeCtx())
+    expect(vi.mocked(useTemplateRef)).not.toHaveBeenCalled()
     const passed = vi.mocked(cwaFileModule.useCwaFile).mock.calls[0]![1]
-    expect(passed.imageRef).toEqual(expect.objectContaining({ value: null }))
+    expect(passed.imageRef).toBeUndefined()
   })
 })
