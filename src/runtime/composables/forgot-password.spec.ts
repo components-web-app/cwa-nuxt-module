@@ -1,11 +1,13 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { createFetchError } from 'ofetch'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useForgotPassword } from '#cwa/composables/forgot-password'
 
+// `vi.mock('#imports')` does NOT intercept — see #265. Use mockNuxtImport.
 const mockNavigateTo = vi.hoisted(() => vi.fn())
-vi.mock('#imports', () => ({ navigateTo: mockNavigateTo }))
+mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 function makeFetchError(status: number, message?: string, statusMessage?: string) {
   return createFetchError({
@@ -94,10 +96,17 @@ describe('useForgotPassword', () => {
     expect(error.value).toBe('Unexpected error')
   })
 
-  // navigateTo from #imports resolves via Vite alias at build time; testing via
-  // vi.mock('#imports') doesn't intercept the compiled path. Use mockNuxtImport
-  // macro (requires @vitest-environment nuxt + nuxt test-utils module transform).
-  test.todo('doSubmit calls navigateTo("/login") when already successful')
+  test('doSubmit calls navigateTo("/login") when already successful', async () => {
+    mockAuth.forgotPassword.mockResolvedValue({})
+    const { doSubmit, credentials, success } = useForgotPassword()
+    credentials.username = 'user@example.com'
+    await doSubmit()
+    expect(success.value).toBe(true)
+
+    mockNavigateTo.mockClear()
+    await doSubmit()
+    expect(mockNavigateTo).toHaveBeenCalledWith('/login')
+  })
 
   test('submitting is true during API call and false after', async () => {
     let capturedSubmitting: boolean | undefined

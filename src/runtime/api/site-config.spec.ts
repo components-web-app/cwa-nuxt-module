@@ -1,11 +1,14 @@
-// @vitest-environment happy-dom
+// @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import SiteConfig from '#cwa/api/site-config'
 
+// `vi.mock('#imports')` does NOT intercept in any env — the factory is silently
+// ignored and the real binding is used (see #265). This spec previously ran the
+// real nuxt-site-config `updateSiteConfig`, which threw `[nuxt] instance
+// unavailable` into site-config.ts's swallowing `.catch()`. Use mockNuxtImport.
 const mockUpdateSiteConfig = vi.hoisted(() => vi.fn())
-vi.mock('#imports', () => ({
-  updateSiteConfig: mockUpdateSiteConfig,
-}))
+mockNuxtImport('updateSiteConfig', () => mockUpdateSiteConfig)
 
 function buildSiteConfig(opts: {
   serverConfig?: Record<string, any> | null
@@ -181,6 +184,20 @@ describe('SiteConfig', () => {
       })
       siteConfig.saveConfig({ sitemapXml: '<urlset></urlset>' })
       expect(mockFetch).toHaveBeenCalled()
+    })
+
+    // Guards #265: proves the updateSiteConfig mock actually intercepts. Without a
+    // live mock the real nuxt-site-config `updateSiteConfig` runs, throws
+    // `[nuxt] instance unavailable`, and the `.catch()` silently flips hasError.
+    test('calls updateSiteConfig with the resolved site config after a successful save', async () => {
+      const { siteConfig } = buildSiteConfig({
+        serverConfig: { siteName: 'Old Name' },
+        fetchResponse: { key: 'siteName', value: 'New Name' },
+      })
+      siteConfig.saveConfig({ siteName: 'New Name' })
+      await vi.waitFor(() => expect(mockUpdateSiteConfig).toHaveBeenCalledTimes(1))
+      expect(mockUpdateSiteConfig).toHaveBeenCalledWith(expect.objectContaining({ name: 'New Name' }))
+      expect(siteConfig.apiState.hasError.value).toBe(false)
     })
   })
 

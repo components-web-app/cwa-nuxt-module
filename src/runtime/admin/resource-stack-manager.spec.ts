@@ -19,11 +19,10 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vu
   default: { name: 'ComponentFocus', render: () => null },
 }))
 
-// Provide a real container element so createApp().mount() works in createFocusComponent
+// Provide a real container element so createApp().mount() works in createFocusComponent.
+// `vi.mock('#imports')` is silently ignored (#265), so mocking `#app/nuxt` is what
+// actually intercepts here: the real `#imports` re-exports `useNuxtApp` from it.
 const mockVueAppContainer = vi.hoisted(() => ({ value: null as null | HTMLElement }))
-vi.mock('#imports', () => ({
-  useNuxtApp: () => ({ vueApp: { _container: mockVueAppContainer.value } }),
-}))
 vi.mock('#app/nuxt', () => ({
   useNuxtApp: () => ({ vueApp: { _container: mockVueAppContainer.value } }),
 }))

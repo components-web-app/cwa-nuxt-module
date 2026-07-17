@@ -2,11 +2,13 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { FetchError } from 'ofetch'
 import { createFetchError } from 'ofetch'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useLogin } from '#cwa/composables/login'
 
+// `vi.mock('#imports')` does NOT intercept — see #265. Use mockNuxtImport.
 const mockNavigateTo = vi.hoisted(() => vi.fn())
-vi.mock('#imports', () => ({ navigateTo: mockNavigateTo }))
+mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 function makeFetchError(opts: { status?: number, message?: string, statusMessage?: string } = {}): FetchError {
   return createFetchError({
@@ -53,10 +55,12 @@ describe('useLogin', () => {
     expect(submitting.value).toBe(false)
   })
 
-  // navigateTo from #imports resolves via Vite alias at build time; testing via
-  // vi.mock('#imports') doesn't intercept the compiled path. Use mockNuxtImport
-  // macro (requires @vitest-environment nuxt + nuxt test-utils module transform).
-  test.todo('signIn success calls navigateTo("/")')
+  test('signIn success calls navigateTo("/")', async () => {
+    mockAuth.signIn.mockResolvedValue({ '@id': '/user/1' })
+    const { signIn } = useLogin()
+    await signIn()
+    expect(mockNavigateTo).toHaveBeenCalledWith('/')
+  })
 
   test('signIn FetchError with data.message sets error from message', async () => {
     mockAuth.signIn.mockResolvedValue(makeFetchError({ message: 'Invalid credentials' }))
