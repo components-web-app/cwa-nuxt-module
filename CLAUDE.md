@@ -599,6 +599,21 @@ The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so 
 
 ---
 
+## Bug: deleting the page you are on from the header settings modal left you on a dead page ✅ Fixed
+
+Deleting a page from the header **page settings** modal (`PageResourceAdminModal` inside `Header.vue`) dropped the admin on a 404 instead of an admin listing.
+
+**Root cause — the redirect ran too late.** `Header.vue` did redirect (`@reload="goToAdminPagesView"` → `router.replace('/_cwa/pages')`), but `reload` is emitted from `useItemPage`'s **`saveCompleteFn`**, which `doResourceRequest` (`resources/resources-manager.ts:315`) only calls **after** `removeResource` (line 306) has already torn the page and its cascade out of the store. The unawaited `router.replace` then raced a page that no longer had any resources. `PageDataAdminModal.vue` and `RoutesTab.vue` already used the earlier hook — **`requestCompleteFn` (line 297), which runs before the removal** — and were unaffected.
+
+**Fix:** `PageResourceAdminModal.handleDeleteClick` navigates from `requestCompleteFn` and **awaits** it, so we have left the page before the resource is deleted from the store. It only does so when the modal is for the page currently on screen (`props.iri === $cwa.resources.displayPageIri.value`) — from `/_cwa/routes/[iri]` the modal overlay's own back-to-list behaviour is unchanged. Destination follows `PageDataAdminModal`: a Page → `_cwa-pages`, a PageData → `_cwa-data-type` for its type (`fqcnToEntrypointKey`), falling back to `_cwa-data`.
+
+- `query: { cwa_force: 'true' }` is included so the admin `NavigationGuard` cannot silently swallow the navigation (`abortNavigation()` with no argument returns `false` — a **silent** block, no error page). Same precedent as `goToTemplate`; the guard strips the query before redirecting, so the final URL is clean.
+- `Header.goToAdminPagesView` is kept as a fallback but now returns early when `pageIsAdmin` — otherwise its unconditional `/_cwa/pages` would override the modal's data-type destination once the modal has already navigated.
+
+Tests: `PageResourceAdminModal.spec.ts` (new — asserts the callback is passed as the **`requestCompleteFn`** argument, both destinations, the no-key fallback, and no navigation when the deleted page is not the one on screen) + a `Header.spec.ts` case for the fallback guard.
+
+---
+
 ## Bug: empty component-group `location` when adding a component to an unpublished draft ✅ Fixed
 
 **Reported from:** SRNTE (adding a component inside a static page nested in a data page). Fixed 2026-07-10.

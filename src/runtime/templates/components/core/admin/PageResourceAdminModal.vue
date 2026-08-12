@@ -207,7 +207,7 @@
             <div>
               <CwaUiFormButton
                 :disabled="isUpdating"
-                @click="deleteResource()"
+                @click="handleDeleteClick"
               >
                 Delete
               </CwaUiFormButton>
@@ -366,6 +366,34 @@ function saveResource(close = false) {
 function saveTitle() {
   if (isAdding.value) return
   return saveResource()
+}
+
+// Are we editing the settings of the page currently on screen? (rather than viewing this modal from
+// an admin listing, where the route already takes care of where to go next)
+const isDeletingDisplayedPage = computed(() => !!props.iri && props.iri === $cwa.resources.displayPageIri.value)
+
+// Where to send the user once the page they are on no longer exists.
+const adminListingLink = computed(() => {
+  if (isDisplayingPage.value) {
+    return { name: '_cwa-pages', query: { cwa_force: 'true' } }
+  }
+  const key = resource.value?.['@type'] ? fqcnToEntrypointKey(resource.value['@type']) : undefined
+  return key
+    ? { name: '_cwa-data-type', params: { type: key }, query: { cwa_force: 'true' } }
+    : { name: '_cwa-data', query: { cwa_force: 'true' } }
+})
+
+function handleDeleteClick() {
+  if (!isDeletingDisplayedPage.value) {
+    return deleteResource()
+  }
+  // We must leave BEFORE the resource is removed from the store, otherwise the user is left on a
+  // page that no longer exists. `requestCompleteFn` runs after the API request but before
+  // `removeResource` — `saveCompleteFn` (which emits `reload`) runs after it, which is too late.
+  const destination = adminListingLink.value
+  return deleteResource(undefined, async () => {
+    await navigateTo(destination)
+  })
 }
 
 async function goToTemplate() {

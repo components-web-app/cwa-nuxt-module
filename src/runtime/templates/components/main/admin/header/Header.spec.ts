@@ -392,6 +392,18 @@ describe('Header', () => {
       await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('reload')
       expect(replaceMock).toHaveBeenCalledWith('/_cwa/pages')
     })
+
+    test('@reload does not navigate once the modal has already taken us to an admin page', async () => {
+      mockCwa({ admin: buildAdmin({ isEditing: false }) })
+      const wrapper = mountHeader()
+      const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
+      await span!.trigger('click')
+      // deleting the page we are on navigates to the relevant admin listing from the modal itself,
+      // before the resource is removed from the store - this fallback must not override it
+      mockRouteMeta.cwa = { admin: true }
+      await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('reload')
+      expect(replaceMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('isNavEnabled model', () => {
