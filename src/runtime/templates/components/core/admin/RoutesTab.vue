@@ -96,6 +96,7 @@ import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManag
 import RoutesTabForwardTo from '#cwa/templates/components/core/admin/RoutesTabForwardTo.vue'
 import type { RouteHierarchyNodeData } from '#cwa/templates/components/core/admin/RouteHierarchyNode.vue'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 export type RouteScreens = 'view' | 'manage-route' | 'create-redirect' | 'forward-to'
@@ -111,6 +112,7 @@ const emit = defineEmits<{
 
 const $cwa = useCwa()
 const route = useRoute()
+const { getInternalResourceLink } = useCwaResourceRoute()
 
 const parentIri = computed(() => props.pageResource.parentPage || props.pageResource.parentPageData)
 const parentResource = computed(() => parentIri.value ? $cwa.resources.getResource(parentIri.value).value : null)
@@ -267,8 +269,12 @@ async function handleDeleteRoute() {
   const deletingPath = resource.value?.path
   const requestCompleteFn = (_?: CwaResource) => {
     if (deletingPath === route.path) {
-      // if we are viewing the page via the route, reload the page via the direct IRI now the route no longer exists
-      navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
+      // if we are viewing the page via the route, reload the page via the direct IRI now the route no longer exists.
+      // it MUST go through getInternalResourceLink - the IRI is a route param of the `_cwa-resource-page` route, not
+      // a path. Navigating to the bare IRI string matches the catch-all instead, where `cwaPage0` is never set, so
+      // the fetcher requests `/_/routes/<the whole IRI>` and the primary fetch 404s.
+      const iri = $cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value
+      iri && navigateTo(getInternalResourceLink(iri))
     }
   }
 

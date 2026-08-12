@@ -599,6 +599,27 @@ The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so 
 
 ---
 
+## Bug: navigating to a resource by bare IRI always 404s ✅ Fixed
+
+**This was the actual cause of the reported "delete the page → 404" screenshot** (URL `/_api/_/pages/{uuid}`, CWA 404 page, URL unchanged). Nothing to do with the delete itself.
+
+**A resource IRI is a route *param*, never a path.** `getInternalResourceLink(iri)` (`composables/useCwaResourceRoute.ts`) returns `{ name: '_cwa-resource-page', params: { cwaPage0: iri } }`, and **`cwaPage0` exists only on that route** (`layer/pages/_cwa/[cwaPage0].vue`). The module's own catch-alls are `/`, `/:cwaPage1`, `/:cwaPage1/:cwaPage2`… (`createDefaultCwaPages`, `module.ts:41-44`) — **there is no `cwaPage0` among them**.
+
+So `navigateTo(pageIri)` with a bare IRI string matches a catch-all with `params.cwaPage0` undefined, and `fetcher.fetchRoute` falls through to the route branch, requesting `/_/routes/` **+ the whole IRI**:
+
+| Navigation | primary fetch |
+|---|---|
+| `navigateTo('/_api/_/pages/{uuid}')` | `/_api/_/routes//_api/_/pages/{uuid}` → **always 404** |
+| `navigateTo(getInternalResourceLink(iri))` | `/_api/_/pages/{uuid}` + `/_api/_/resource_manifest/{uuid}` ✅ |
+
+A 404 on a **primary** fetch whose path is the resource sets `showErrorPage` (`finishFetchShowError` = `isPrimary && path === resource`) → `showError` → the error page renders with the URL unchanged. Exactly the screenshot.
+
+**Fixed in both offenders** — `RoutesTab.handleDeleteRoute` and `RouteRedirectsTree.deleteRoute`, which deliberately fall back to the IRI view when you delete the route you are currently viewing ("reload the page via the direct IRI now the route no longer exists"). The *intent* was right; they passed the bare IRI. Both now use `getInternalResourceLink(iri)` and no-op when there is no IRI.
+
+**Why it survived:** `RoutesTab.spec.ts`'s test for this asserted only `expect(() => capturedFn!()).not.toThrow()` — it "exercised the navigateTo branch" without ever asserting the destination, so any destination passed. It now asserts the named route (and fails against the old code, verified by mutation); `RouteRedirectsTree` had no spec at all and now has one. Invariant pinned end-to-end in `test/integration/iri-view-nav.spec.ts`, which drives the real fetcher and shows both request shapes.
+
+---
+
 ## Bug: deleting the page you are on from the header settings modal left you on a dead page ✅ Fixed
 
 Deleting a page from the header **page settings** modal (`PageResourceAdminModal` inside `Header.vue`) dropped the admin on a 404 instead of an admin listing.

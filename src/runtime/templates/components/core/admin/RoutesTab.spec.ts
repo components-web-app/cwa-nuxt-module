@@ -2,6 +2,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import RoutesTab from './RoutesTab.vue'
 import RoutesTabView from './RoutesTabView.vue'
 import RoutesTabManage from './RoutesTabManage.vue'
@@ -10,10 +11,13 @@ import RoutesTabAddRedirect from './RoutesTabAddRedirect.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
-const { mockUseItemPage, mockReveal } = vi.hoisted(() => ({
+const { mockUseItemPage, mockReveal, mockNavigateTo } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockReveal: vi.fn(),
+  mockNavigateTo: vi.fn(),
 }))
+
+mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('vuejs-confirm-dialog', () => ({
@@ -579,8 +583,77 @@ describe('RoutesTab', () => {
       await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
       await flushPromises()
       expect(capturedFn).toBeTypeOf('function')
-      // invoking it should not throw and exercises the navigateTo branch
-      expect(() => capturedFn!()).not.toThrow()
+      capturedFn!()
+      // MUST be the `_cwa-resource-page` named route, not the bare IRI string: `cwaPage0` is only a
+      // param of that route, so navigating to the IRI as a path matches the catch-all instead and
+      // the primary fetch requests `/_/routes/<whole IRI>` - a guaranteed 404.
+      expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/p' } })
+    })
+
+    test('requestCompleteFn uses the page data IRI on a data page', async () => {
+      let capturedFn: ((r?: any) => void) | undefined
+      const deleteResource = vi.fn((_: any, fn: (r?: any) => void) => {
+        capturedFn = fn
+        return Promise.resolve()
+      })
+      mockUseItemPage.mockReturnValue({
+        isLoading: ref(false),
+        isUpdating: ref(false),
+        localResourceData: ref({ path: '/' }),
+        resource: ref({ '@id': '/_/routes//', 'path': '/', 'route': null }),
+        loadResource: vi.fn(),
+        deleteResource,
+        saveResource: vi.fn(),
+        resetResource: vi.fn(),
+        apiState: ref({ status: 'SUCCESS', path: '/_/routes///redirects' }),
+      })
+      mockCwaFull({
+        resources: {
+          getResource: vi.fn(() => ref(null)),
+          isDataPage: ref(true),
+          pageDataIri: ref('/_/page_data/d'),
+          pageIri: ref('/_/pages/p'),
+        },
+      })
+      const wrapper = mountTab({ route: null })
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+      capturedFn!()
+      expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/page_data/d' } })
+    })
+
+    test('requestCompleteFn does not navigate when there is no page IRI to fall back to', async () => {
+      let capturedFn: ((r?: any) => void) | undefined
+      const deleteResource = vi.fn((_: any, fn: (r?: any) => void) => {
+        capturedFn = fn
+        return Promise.resolve()
+      })
+      mockUseItemPage.mockReturnValue({
+        isLoading: ref(false),
+        isUpdating: ref(false),
+        localResourceData: ref({ path: '/' }),
+        resource: ref({ '@id': '/_/routes//', 'path': '/', 'route': null }),
+        loadResource: vi.fn(),
+        deleteResource,
+        saveResource: vi.fn(),
+        resetResource: vi.fn(),
+        apiState: ref({ status: 'SUCCESS', path: '/_/routes///redirects' }),
+      })
+      mockCwaFull({
+        resources: {
+          getResource: vi.fn(() => ref(null)),
+          isDataPage: ref(false),
+          pageDataIri: ref(undefined),
+          pageIri: ref(undefined),
+        },
+      })
+      const wrapper = mountTab({ route: null })
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+      capturedFn!()
+      expect(mockNavigateTo).not.toHaveBeenCalled()
     })
   })
 
