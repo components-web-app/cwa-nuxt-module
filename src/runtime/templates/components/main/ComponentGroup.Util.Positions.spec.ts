@@ -35,7 +35,7 @@ function buildCwa(positions: string[], resources: Record<string, any> = {}, iri 
       })),
     },
     resourcesManager: {
-      saveResource: vi.fn(),
+      storeResource: vi.fn(),
       updateResource: vi.fn().mockResolvedValue(undefined),
     },
   }
@@ -112,14 +112,14 @@ describe('useComponentGroupPositions', () => {
       mockCwa.admin.resourceStackManager.getState.mockReturnValue(false)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      expect(mockCwa.resourcesManager.saveResource).not.toHaveBeenCalled()
+      expect(mockCwa.resourcesManager.storeResource).not.toHaveBeenCalled()
     })
 
     test('does nothing when positionIri is not in positions', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/z', location: 'next' })
-      expect(mockCwa.resourcesManager.saveResource).not.toHaveBeenCalled()
+      expect(mockCwa.resourcesManager.storeResource).not.toHaveBeenCalled()
     })
 
     test('location: next moves position forward and updates sortDisplayNumbers', () => {
@@ -128,8 +128,8 @@ describe('useComponentGroupPositions', () => {
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
       // After moving 'a' from index 0 to 1: ['b','a','c']
       // sortDisplayNumbers: b=1, a=2, c=3
-      expect(mockCwa.resourcesManager.saveResource).toHaveBeenCalledTimes(3)
-      const calls = mockCwa.resourcesManager.saveResource.mock.calls
+      expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(3)
+      const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/b']).toBe(1)
       expect(updated['/_/component_positions/a']).toBe(2)
@@ -141,7 +141,7 @@ describe('useComponentGroupPositions', () => {
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/c', location: 'previous' })
       // After moving 'c' from index 2 to 1: ['a','c','b']
-      const calls = mockCwa.resourcesManager.saveResource.mock.calls
+      const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/a']).toBe(1)
       expect(updated['/_/component_positions/c']).toBe(2)
@@ -153,7 +153,7 @@ describe('useComponentGroupPositions', () => {
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'previous' })
       // newIndex = -1 → clamped to 0 → no move
-      const calls = mockCwa.resourcesManager.saveResource.mock.calls
+      const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/a']).toBe(1)
     })
@@ -163,7 +163,7 @@ describe('useComponentGroupPositions', () => {
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 3 })
       // newIndex = 3 - 1 = 2 → ['b','c','a']
-      const calls = mockCwa.resourcesManager.saveResource.mock.calls
+      const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/a']).toBe(3)
       expect(updated['/_/component_positions/b']).toBe(1)
@@ -187,7 +187,7 @@ describe('useComponentGroupPositions', () => {
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
       // 'missing' has no resource data — should be skipped (only 2 saveResource calls)
-      expect(mockCwa.resourcesManager.saveResource).toHaveBeenCalledTimes(2)
+      expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -233,7 +233,7 @@ describe('useComponentGroupPositions', () => {
           })),
         },
         resourcesManager: {
-          saveResource: vi.fn(({ resource }) => {
+          storeResource: vi.fn(({ resource }) => {
             positionResources[resource['@id']] = { ...resource, _metadata: { ...resource._metadata } }
           }),
           updateResource: vi.fn().mockResolvedValue(undefined),
@@ -333,7 +333,7 @@ describe('useComponentGroupPositions', () => {
       await nextTick()
       // updateRelatedLocalSortValues should have been called; check saveResource was called for the updated positions
       // positions b and c (between old index 0 and new index 2) should have sortValue decremented by 1
-      const saveResourceCalls = mockCwa.resourcesManager.saveResource.mock.calls
+      const saveResourceCalls = mockCwa.resourcesManager.storeResource.mock.calls
       const relatedCalls = saveResourceCalls.filter(([{ resource }]: any) =>
         resource['@id'] !== '/_/component_positions/a',
       )

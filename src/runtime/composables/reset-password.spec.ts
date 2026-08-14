@@ -12,7 +12,7 @@ mockNuxtImport('useRoute', () => () => ({ params: mockParams }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 const mockResourcesManager = vi.hoisted(() => ({
-  saveResource: vi.fn(),
+  storeResource: vi.fn(),
   removeResource: vi.fn(),
 }))
 const mockAuth = vi.hoisted(() => ({
@@ -110,7 +110,7 @@ describe('useResetPassword', () => {
       mockAuth.resetPassword.mockResolvedValue(fetchError)
       const { resetPassword } = useResetPassword()
       await resetPassword()
-      expect(mockResourcesManager.saveResource).toHaveBeenCalledWith({ resource: fetchError.data })
+      expect(mockResourcesManager.storeResource).toHaveBeenCalledWith({ resource: fetchError.data })
     })
 
     test('sets generic error message for unexpected FetchError', async () => {
@@ -129,7 +129,7 @@ describe('useResetPassword', () => {
       const { resetPassword } = useResetPassword()
       // first call sets submittedFormIri
       await resetPassword()
-      expect(mockResourcesManager.saveResource).toHaveBeenCalledTimes(1)
+      expect(mockResourcesManager.storeResource).toHaveBeenCalledTimes(1)
       // second call should remove the previous resource
       mockAuth.resetPassword.mockResolvedValue({})
       await resetPassword()

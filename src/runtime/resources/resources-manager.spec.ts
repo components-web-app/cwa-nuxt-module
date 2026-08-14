@@ -90,7 +90,7 @@ describe('Resources manager', () => {
           test: true,
         },
       }
-      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       cwaFetch.fetch.mockResolvedValue(mockResource)
 
       await resourcesManager.createResource(mockPayload)
@@ -118,7 +118,7 @@ describe('Resources manager', () => {
         },
       }
       fetchPath.value = 'primary-path'
-      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       cwaFetch.fetch.mockResolvedValue(mockResource)
 
       await resourcesManager.createResource(mockPayload)
@@ -148,7 +148,7 @@ describe('Resources manager', () => {
           test: true,
         },
       }
-      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       cwaFetch.fetch.mockResolvedValue(mockResource)
 
       await resourcesManager.updateResource(mockPayload)
@@ -167,7 +167,7 @@ describe('Resources manager', () => {
     })
   })
 
-  describe('saveResource', () => {
+  describe('storeResource', () => {
     test('should save resource', () => {
       const { resourcesManager, resourceStore } = createResourcesManager()
       const mockCwaResource: CwaResource = {
@@ -182,7 +182,7 @@ describe('Resources manager', () => {
 
       resourceStore.useStore().saveResource.mockReturnValue(mockResult)
 
-      const result = resourcesManager.saveResource(mockPayload)
+      const result = resourcesManager.storeResource(mockPayload)
 
       expect(resourceStore.useStore().saveResource).toHaveBeenCalledWith(mockPayload)
       expect(result).toEqual(mockResult)
@@ -407,7 +407,7 @@ describe('Resources manager', () => {
     test('uses POST method when event.data is FormData', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager()
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.updateResource({ endpoint: '/things/1', data: new FormData() })
       expect(cwaFetch.fetch).toHaveBeenCalledWith(
         '/things/1',
@@ -418,7 +418,7 @@ describe('Resources manager', () => {
     test('merges event headers into the request headers', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager()
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.updateResource({
         endpoint: '/things/1',
         data: {},
@@ -440,7 +440,7 @@ describe('Resources manager', () => {
           '_metadata': { persisted: false },
         },
       })
-      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.updateResource({ endpoint: '/things/1', data: { name: 'new' } })
       expect(cwaFetch.fetch).not.toHaveBeenCalled()
       expect(saveSpy).toHaveBeenCalled()
@@ -465,7 +465,7 @@ describe('Resources manager', () => {
         }
       })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const past = new Date(Date.now() - 1000).toISOString()
       await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: past } })
       expect(mockAdmin!.emptyStack).toHaveBeenCalled()
@@ -490,7 +490,7 @@ describe('Resources manager', () => {
         }
       })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
       const past = new Date(Date.now() - 1000).toISOString()
       await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: past } })
@@ -507,7 +507,7 @@ describe('Resources manager', () => {
         },
       })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/1-draft' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.updateResource({ endpoint: '/things/1', data: { name: 'updated' } })
       expect(mockAdmin!.resourceStackManager.forcePublishedVersion.value).toBe(false)
     })
@@ -676,7 +676,7 @@ describe('Resources manager', () => {
     test('sets componentPositions to [targetIri] when addAfter is null and no pageDataProperty', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupStore(resourcesManager, {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
@@ -695,7 +695,7 @@ describe('Resources manager', () => {
     test('sets sortValue from group last position when addAfter=true and targetIri is a COMPONENT_GROUP', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_groups/g1',
@@ -716,7 +716,7 @@ describe('Resources manager', () => {
     test('sets sortValue from group first position when addAfter=false and targetIri is a COMPONENT_GROUP', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_groups/g1',
@@ -738,7 +738,7 @@ describe('Resources manager', () => {
     test('shifts existing positions up before inserting to avoid sort value collisions', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
       setupStore(resourcesManager, {
         addEventOverrides: {
@@ -763,7 +763,7 @@ describe('Resources manager', () => {
     test('does not shift when adding to end of group (add after last position)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
       const { newResourceData } = setupStore(resourcesManager, {
         addEventOverrides: {
@@ -786,7 +786,7 @@ describe('Resources manager', () => {
     test('sets publishedAt when publish=true', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupStore(resourcesManager, {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
@@ -797,7 +797,7 @@ describe('Resources manager', () => {
     test('sets publishedAt to null when publish=false', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupStore(resourcesManager, {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
@@ -814,7 +814,7 @@ describe('Resources manager', () => {
       })
       const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/new' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       setupStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_positions/p1',
@@ -833,7 +833,7 @@ describe('Resources manager', () => {
     test('clears addResourceEvent after successful create via requestCompleteFn', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       setupStore(resourcesManager, {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
@@ -853,7 +853,7 @@ describe('Resources manager', () => {
       let resolveRequest!: (v: any) => void
       const { resourcesManager, cwaFetch } = createResourcesManager()
       cwaFetch.fetch.mockReturnValue(new Promise(r => (resolveRequest = r)))
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
 
       resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'value' } })
 
@@ -874,7 +874,7 @@ describe('Resources manager', () => {
       let resolveRequest!: (v: any) => void
       const { resourcesManager, cwaFetch } = createResourcesManager()
       cwaFetch.fetch.mockReturnValue(new Promise(r => (resolveRequest = r)))
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
 
       resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'value' }, source: 'my-source' })
 
@@ -908,7 +908,7 @@ describe('Resources manager', () => {
       const mockResource = { '@id': '/things/1', '@type': 'Thing' }
       cwaFetch.fetch.mockResolvedValue(mockResource)
       const requestCompleteFn = vi.fn()
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {}, requestCompleteFn })
       expect(requestCompleteFn).toHaveBeenCalledWith(mockResource)
     })
@@ -918,7 +918,7 @@ describe('Resources manager', () => {
       const mockResource = { '@id': '/things/1', '@type': 'Thing' }
       cwaFetch.fetch.mockResolvedValue(mockResource)
       const saveCompleteFn = vi.fn()
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {}, saveCompleteFn })
       expect(saveCompleteFn).toHaveBeenCalledWith(mockResource)
     })
@@ -928,7 +928,7 @@ describe('Resources manager', () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ fetcher: mockFetcher })
       const mockResource = { '@id': '/things/1', 'componentPositions': ['/positions/a', '/positions/b'] }
       cwaFetch.fetch.mockResolvedValue(mockResource)
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {} })
       expect(mockFetcher.fetchBatch).toHaveBeenCalledWith(
         expect.objectContaining({ paths: expect.arrayContaining(['/positions/a', '/positions/b']) }),
@@ -941,7 +941,7 @@ describe('Resources manager', () => {
       const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager({ fetcher: mockFetcher })
       const mockResource = { '@id': '/things/1', 'componentPositions': ['/positions/a'] }
       cwaFetch.fetch.mockResolvedValue(mockResource)
-      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {} })
       expect(errorStoreActions.error).not.toHaveBeenCalled()
       expect(saveSpy).toHaveBeenCalled()
@@ -952,7 +952,7 @@ describe('Resources manager', () => {
       const mockFetcher = { fetchBatch: vi.fn().mockRejectedValue(serverError) }
       const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager({ fetcher: mockFetcher })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/things/1', 'componentPositions': ['/positions/a'] })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.createResource({ endpoint: '/api/things', data: {} })
       expect(errorStoreActions.error).toHaveBeenCalledWith(
         expect.objectContaining({ endpoint: '/api/things' }),
@@ -1022,7 +1022,7 @@ describe('Resources manager', () => {
       cwaFetch.fetch
         .mockReturnValueOnce(new Promise(r => (resolveFirst = r)))
         .mockReturnValueOnce(new Promise(r => (resolveSecond = r)))
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
 
       // two concurrent conflicting requests for the same endpoint/property
       const p1 = resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'a' } })
@@ -1062,7 +1062,7 @@ describe('Resources manager', () => {
           '_metadata': { persisted: false },
         },
       })
-      const saveSpy = vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.updateResource({ endpoint: '/things/1', data: { tags: ['added'] } })
       expect(cwaFetch.fetch).not.toHaveBeenCalled()
       const saved = saveSpy.mock.calls[0]![0] as any
@@ -1134,7 +1134,7 @@ describe('Resources manager', () => {
     test('sortValue defaults to 0 when target group has no componentPositions (line 507)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_groups/g1',
@@ -1152,7 +1152,7 @@ describe('Resources manager', () => {
     test('sortValue defaults to 0 when only the new resource is in the group (line 513)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_groups/g1',
@@ -1177,7 +1177,7 @@ describe('Resources manager', () => {
       // a positions array whose first element is an empty string.
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_groups/g1',
@@ -1197,7 +1197,7 @@ describe('Resources manager', () => {
     test('sortValue defaults to 0 when adding before/after a resource with no closest position (lines 525-526)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_positions/p1',
@@ -1212,7 +1212,7 @@ describe('Resources manager', () => {
     test('sortValue defaults to 0 when closest position resource is not found (lines 528-530)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStore(resourcesManager, {
         addEventOverrides: {
           targetIri: '/_/component_positions/p1',
@@ -1228,7 +1228,7 @@ describe('Resources manager', () => {
     test('uses the closest position sortValue when adding after a resource (line 532)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStore(resourcesManager, {
         storeAddingPosition: undefined,
         addEventOverrides: {
@@ -1296,7 +1296,7 @@ describe('Resources manager', () => {
     test('builds componentPositions post data stripping @id/@type/component and setting sortValue (line 553)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'saveResource').mockImplementation(() => {})
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const { newResourceData } = setupAddingStoreWithPosition(resourcesManager, {
         positionIri: '/_/component_positions/new-pos',
         positionData: {

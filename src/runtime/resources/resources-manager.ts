@@ -196,7 +196,7 @@ export class ResourcesManager {
           return b.concat(a)
         }
       })
-      this.saveResource({
+      this.storeResource({
         resource: newResource,
       })
       return
@@ -298,7 +298,7 @@ export class ResourcesManager {
         await event.requestCompleteFn(resource as CwaResource | undefined)
       }
       if ('data' in event) {
-        this.saveResource({
+        this.storeResource({
           resource,
         })
       }
@@ -341,8 +341,15 @@ export class ResourcesManager {
     this.errorStore.removeById(id)
   }
 
-  // @internal - just used in reset-password.ts - should be private and refactored for that use case
-  public saveResource(event: SaveResourceEvent | SaveNewResourceEvent) {
+  // @internal — MODULE USE ONLY. Writes straight to the store and makes NO API request, so it is
+  // not a way for an application to persist anything: apps use createResource / updateResource /
+  // deleteResource, or useCwaResourceModel. Named `storeResource` (not `saveResource`) precisely so
+  // that is unambiguous at the call site. Cannot be private — three module call sites live outside
+  // this class: `composables/reset-password.ts` (stashing a 422 form response so the form
+  // composables can render its errors) and `ComponentGroup.Util.Positions.ts` ×2 (projecting a
+  // reorder locally — the display sort number, and the sortValue shuffle the server will perform —
+  // to avoid re-fetching every position).
+  public storeResource(event: SaveResourceEvent | SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
 

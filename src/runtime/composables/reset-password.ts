@@ -40,7 +40,7 @@ export const useResetPassword = () => {
       return 'The reset link is invalid or has expired. Please restart the reset password process.'
     }
     if (fetchError.status === 422) {
-      $cwa.resourcesManager.saveResource({
+      $cwa.resourcesManager.storeResource({
         resource: fetchError.data,
       })
       submittedFormIri.value = fetchError.data['@id']

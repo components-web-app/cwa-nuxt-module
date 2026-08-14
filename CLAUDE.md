@@ -599,6 +599,22 @@ The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so 
 
 ---
 
+## `ResourcesManager.saveResource` → `storeResource` ([#282](https://github.com/components-web-app/cwa-nuxt-module/issues/282))
+
+Renamed 2026-08-14. **It writes straight to the store and makes NO API request** — the old name read like "persist this", which is exactly the misreading that produced the issue. Apps write via `createResource` / `updateResource` / `deleteResource` or `useCwaResourceModel`; `storeResource` is **module-internal** and stays marked `@internal`.
+
+Free rename — verified there are **no consuming-app usages at all**: srnte, smoking-in-england-cwa, cymru-kitchens-cwa and alcohol-in-england do not reference `resourcesManager` in any form.
+
+**Why it can't simply be private.** Three module call sites live outside the class:
+- `composables/reset-password.ts` — stashes a 422 form response so the form composables can render its errors (`api/forms.ts` does the same thing directly against the store in `validateField`/`submitForm`).
+- `ComponentGroup.Util.Positions.ts` ×2 — projects a reorder **locally**: the display sort number, and the `sortValue` shuffle the server will perform. Deliberately store-only, to avoid re-fetching every position.
+
+Those are legitimate local-only writes with no API equivalent (`updateResource` would PATCH). Making it private would mean hoisting reorder logic into `ResourcesManager`, which is worse cohesion — that logic belongs next to `ComponentGroup`. TypeScript cannot express "module-internal but not app-facing" across files, so `@internal` + the name + the docs *are* the mechanism.
+
+**History (for context):** `b7e59e48` (Mar 2023) introduced it as a convenience wrapper so `createResource`/`updateResource` could stop calling `resourcesStore.saveResource` directly, and made it public in the same commit purely because the then-layer reset-password page needed the 422 stash. It was never designed as app-facing API.
+
+---
+
 ## Docs-audit issue batch (#269–#283) — triage + fixes (2026-08-14)
 
 A full docs accuracy audit filed #269–#283. **Every claim was re-verified against the code before acting** — three did not hold up. Worth remembering: an audit finding is a hypothesis, not a defect.
