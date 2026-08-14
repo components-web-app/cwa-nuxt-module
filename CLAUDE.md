@@ -599,6 +599,48 @@ The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so 
 
 ---
 
+## Mercure: connection loss and recovery ✅ ([#286](https://github.com/components-web-app/cwa-nuxt-module/issues/286))
+
+The EventSource previously had **only** `onmessage` — no `onerror`, no `onopen`, no `online` listener. A dropped connection was therefore silent, and recovery relied entirely on the browser replaying missed events via `Last-Event-ID`, **which only backfills if the hub runs an event store** — the template's default deployment configures none. Everything that happened while disconnected was lost and the store sat quietly stale.
+
+**We do not trust replay.** On reconnect we refetch what is on screen. The design turns on a property of the store worth knowing: **`saveResource({ isNew: true })` discards an unchanged resource** (`isCwaResourceSame`, `storage/stores/resources/actions.ts:252`) and clears any stale pending entry. So revalidation can run unconditionally — an uneventful reconnect shows the user *nothing*, and a genuine change surfaces the **existing** "content is outdated / Update" notice (`OutdatedContentNotice` ← `hasNewResources`) rather than rewriting the page underneath them. That also answers the issue's open UI question: no new UI needed.
+
+- `connected: Ref<boolean | undefined>` on the mercure store. **`undefined` until the first open is load-bearing** — it distinguishes an initial connect (nothing missed, do not revalidate) from a reconnect. A plain `false` default would refetch everything immediately after the first page load.
+- `onerror` → records the loss (early-returns if already known, so a flapping connection does not spam).
+- `onopen` → records connected; revalidates only when it was a reconnect.
+- `online` → a **hint only**, acted on identically. It reports interface state, not hub reachability, so it is never treated as proof; harmless if the hub is still down, as the refetch just fails and nothing is staged.
+- Revalidation defers behind the same `requestsInProgress` guard the message queue uses — staging mid-fetch would compare against a `currentIds` set that is still changing.
+
+`mercure/state.spec.ts` pins the exact initial state shape, so it needed the new field adding.
+
+---
+
+## `cwa-auth` / `cwa-admin` route middleware + login redirect ✅ ([#271](https://github.com/components-web-app/cwa-nuxt-module/issues/271))
+
+Apps had to hand-roll route protection, and `useLogin()` hard-coded `navigateTo('/')` so a `?redirect=` round trip could not be built on top of it.
+
+**Middleware** — `src/layer/middleware/cwa-auth.ts` and `cwa-admin.ts`, auto-registered by the layer, opted into per page with `definePageMeta({ middleware: 'cwa-auth' })`. Named with the `cwa-` prefix deliberately so they cannot collide with an app's own `auth`/`admin` middleware.
+
+**Both `await $cwa.auth.init()` before deciding, and that is the critical part.** `signedIn` is derived from a cookie that can outlive the session, and `isAdmin` reads roles off the *fetched user*, which only `init()`/`refreshUser()` populates. Deciding first would bounce a legitimate admin off their own page on a server-rendered load — worse than no guard at all. This is SSR-safe because `CwaFetch` captures the request cookie eagerly (#263), and `clearSession()` early-returns while middleware is processing.
+
+A signed-in non-admin goes **home, not to login** (mirroring the long-standing `_cwa/index.vue` guard) — they will not gain the role by signing in again, so login would be a loop.
+
+**`useLogin(ops?)`** takes `redirect?: MaybeRefOrGetter<string | undefined>`, resolved at sign-in time, defaulting to the current route's `redirect` query parameter — which is exactly what the middleware sets, so the round trip needs no app code. **`resolveRedirectTarget` hardens it against open redirect**: the target is attacker-supplied via a query string, so anything that is not a plain internal path falls back to `/` — external URLs, protocol-relative `//host`, `/\host` (several browsers normalise it to `//host`), relative paths, and a repeated parameter arriving as an array.
+
+---
+
+## Sitemap: exclude routes that are not pages ✅ ([#278](https://github.com/components-web-app/cwa-nuxt-module/issues/278) — partial, rest needs the API)
+
+`server/cwa-urls.get.ts` mapped **every** Route to a sitemap URL. Now excluded: **redirect routes** (a Route with `redirect`/`redirectPath` 308s elsewhere — advertising it to search engines is wrong), routes with **neither `page` nor `pageData`** (they render nothing), and members without a usable `path`.
+
+Two details that make it safe:
+- **The redirect check must come first.** The API's `RouteNormalizer` copies the *final* route's `page`/`pageData` onto a redirect route when serialising, so a redirect can carry a populated `page` and would otherwise look like a real page.
+- **Filtering is on positive evidence only.** Null values are omitted from API responses, so an absent key is indistinguishable from a shallower collection serialisation. If *no* member exposes `page`/`pageData`, that filter is skipped entirely rather than emptying the sitemap. A missing URL is worse than an extra one.
+
+**Deliberately not done — needs API support:** publish/visibility filtering (Route is not publishable and the collection does not expose its page's publish state) and `priority`/`changefreq` (no such properties exist on the API's Route, and the admin exposes none).
+
+---
+
 ## `ResourcesManager.saveResource` → `storeResource` ([#282](https://github.com/components-web-app/cwa-nuxt-module/issues/282))
 
 Renamed 2026-08-14. **It writes straight to the store and makes NO API request** — the old name read like "persist this", which is exactly the misreading that produced the issue. Apps write via `createResource` / `updateResource` / `deleteResource` or `useCwaResourceModel`; `storeResource` is **module-internal** and stays marked `@internal`.

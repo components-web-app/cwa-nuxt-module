@@ -7,6 +7,9 @@ describe('Mercure State context', () => {
     const initialState = state()
     expect(initialState).toStrictEqual({
       hub: ref(null),
+      // undefined, not false: it distinguishes "never connected" (an initial connect, nothing has
+      // been missed) from "was connected and dropped" (reconnect, revalidate). See #286.
+      connected: ref(undefined),
     })
   })
 })
