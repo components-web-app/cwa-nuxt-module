@@ -13,8 +13,11 @@
             <ModalSelect
               v-model="localResourceData.uiComponent"
               label="Layout UI"
-              :options="layoutComponentOptions"
+              :options="layoutUiOptions"
             />
+            <CwaUiAlertWarning v-if="unresolvableUiComponent">
+              <p>The component '{{ unresolvableUiComponent }}' for resource '{{ localResourceData['@id'] }}' cannot be resolved</p>
+            </CwaUiAlertWarning>
           </div>
           <div v-if="layoutStyleOptions.length">
             <ModalSelect
@@ -120,6 +123,32 @@ const layoutComponentOptions = computed(() => {
     })
   }
   return options
+})
+
+// The stored uiComponent when the app no longer registers a component by that name (renamed or
+// deleted). Kept separate from `layoutComponentOptions` because that computed is read eagerly to
+// build `defaultResource` below, before `localResourceData` is initialised.
+const unresolvableUiComponent = computed<string | undefined>(() => {
+  const storedUiComponent = localResourceData.value?.uiComponent
+  if (!storedUiComponent || layoutComponentNames.value.includes(storedUiComponent)) {
+    return undefined
+  }
+  return storedUiComponent
+})
+
+// Surface the real stored state: an unresolvable value still gets an option so the select is not
+// blank, clearly marked. Purely presentational - the resource is never modified.
+const layoutUiOptions = computed<SelectOption[]>(() => {
+  if (!unresolvableUiComponent.value) {
+    return layoutComponentOptions.value
+  }
+  return [
+    ...layoutComponentOptions.value,
+    {
+      label: `${cleanUiName(unresolvableUiComponent.value)} (component not found)`,
+      value: unresolvableUiComponent.value,
+    },
+  ]
 })
 
 const layoutStyleOptions = computed(() => {

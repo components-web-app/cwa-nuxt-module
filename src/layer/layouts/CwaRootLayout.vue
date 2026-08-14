@@ -13,6 +13,9 @@
         class="cwa:absolute cwa:top-0 cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-50"
       />
     </ClientOnly>
+    <CwaUiAlertWarning v-if="unresolvableWarning">
+      <p>{{ unresolvableWarning }}</p>
+    </CwaUiAlertWarning>
     <component
       :is="resolvedComponent"
       v-if="resolvedComponent"
@@ -43,6 +46,7 @@
 
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance, watch, nextTick } from 'vue'
+import { consola as logger } from 'consola'
 import { DialogsWrapper } from 'vuejs-confirm-dialog'
 import { useRouter } from 'vue-router'
 import { useWindowScroll } from '@vueuse/core'
@@ -102,10 +106,42 @@ watch(hasNamedLayout, (isNamed) => {
   }
 })
 
+// The name a layout asks for, when it does not resolve to a registered component - i.e. the app
+// renamed or deleted it, leaving the stored `uiComponent` dangling. Vue would render an unresolvable
+// name as an UNKNOWN HTML ELEMENT, so the page content survives but every bit of layout chrome is
+// lost and it reads as a blank page. Only strings can dangle; the default layout is a component. #277
+const unresolvableUiComponent = computed<string | undefined>(() => {
+  const components = instance?.appContext.components
+  if (typeof components !== 'object') {
+    return
+  }
+  const name = layoutUiComponent.value
+  if (typeof name !== 'string' || name in components) {
+    return
+  }
+  return name
+})
+
+const unresolvableWarning = computed(() => {
+  if (!unresolvableUiComponent.value) {
+    return
+  }
+  const iri = $cwa.resources.layoutIri.value
+  return `The layout component '${unresolvableUiComponent.value}' for resource '${iri}' cannot be resolved`
+})
+
+// Shout, but keep the site up: falling back means one dangling value cannot take every page down,
+// while the warning above makes the fault impossible to miss (an admin fixes it on the layout).
+watch(unresolvableWarning, (warning) => {
+  warning && logger.warn(warning)
+}, { immediate: true })
+
 // todo: adjust to not be global https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
 const resolvedComponent = computed(() => {
-  // todo: add checks to ensure component exists - otherwise output a warning and/or default
   if (typeof instance?.appContext.components !== 'object') {
+    return LazyCwaDefaultLayout
+  }
+  if (unresolvableUiComponent.value) {
     return LazyCwaDefaultLayout
   }
   // If we're momentarily without a named layout but we know a layout IRI exists (the layout

@@ -632,6 +632,23 @@ A full docs accuracy audit filed #269–#283. **Every claim was re-verified agai
 
 ---
 
+## Bug: a layout with an unresolvable `uiComponent` rendered a blank page silently ✅ Fixed ([#277](https://github.com/components-web-app/cwa-nuxt-module/issues/277))
+
+When an app renames or deletes a layout component, the Layout resource's stored `uiComponent` dangles. **Vue renders an unresolvable name as an unknown HTML element** (`<cwalayoutdeletedbyapp>`), not as nothing — so the page content is technically still in the DOM, but inside an unstyled inline element with every bit of layout chrome gone. That is what reads as a blank page.
+
+**Decision (Daniel): fall back *and* shout — never silently.** A layout is site-wide, so replacing everything with an alert (exact `ResourceLoader` parity) would let one dangling value take the whole public site down — worse than the bug. Instead:
+
+- **Render side** (`layer/layouts/CwaRootLayout.vue`): `unresolvableUiComponent` checks the name against `instance.appContext.components` (only strings can dangle — the default layout is a component object). When set, `resolvedComponent` falls back to `LazyCwaDefaultLayout` so content still renders, a `CwaUiAlertWarning` renders above it reusing `ResourceLoader`'s message shape, and a `consola.warn` goes to the logs. The `stableLayoutUiComponent` anti-flash logic is untouched. Replaces the `todo` that sat at line 107.
+- **Admin side** (`layer/pages/_cwa/index/layouts/[iri].vue`): the select silently showed *nothing* selected, since options are built only from registered `CwaLayout*` names. A stored value outside that list now gets an appended `<CleanName> (component not found)` option so the select shows the real state, plus a `CwaUiAlertWarning` beneath it. Purely presentational — nothing is mutated or saved.
+
+**Two gotchas worth keeping:**
+- The not-found option **must** live in its own computed, not inside `layoutComponentOptions` — that one is read eagerly at `:173` for `defaultResource`, *before* `localResourceData` is destructured from `useItemPage`, so referencing it there is a TDZ `ReferenceError`.
+- **`vi.mock('#components')` fails outright** — `Error: Missing "#components" specifier in "nuxt" package`. It is a nuxt *virtual* module: a plain `import { componentNames } from '#components'` in a spec resolves fine, but vitest's mock-path resolver falls through to Node's `imports` field and dies. Specs must work from the real playground component names. (Same family as the `vi.mock('#imports')` trap.)
+
+Tests: `CwaRootLayout.spec.ts` (+4) and a new `layouts/[iri].spec.ts` (11). Note the "content still renders" assertion must target the **opening tag** (`<cwalayoutdeletedbyapp`) — the bare name now legitimately appears in the warning text.
+
+---
+
 ## Bug: CwaRootLayout captured the site config at setup ✅ Fixed ([#285](https://github.com/components-web-app/cwa-nuxt-module/issues/285))
 
 `CwaRootLayout.vue` resolved `const siteConfigVar = $cwa.siteConfig.config` **once at setup** and read `siteConfigVar.concatTitle` inside the `useHead` `titleTemplate` callback. `getConfig` returns `mergeConfig(...)`, which builds a **fresh object** every recompute (`Object.assign({}, …)`), so the captured reference was a snapshot: changing the setting in `/_cwa/settings` had no effect until a full page reload, and because the callback never touched the computed, `useHead` had no reason to re-run either.
