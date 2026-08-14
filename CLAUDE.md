@@ -599,6 +599,47 @@ The playground uses `apiUrl: 'https://localhost/_api'` → pathname `/_api`, so 
 
 ---
 
+## Docs-audit issue batch (#269–#283) — triage + fixes (2026-08-14)
+
+A full docs accuracy audit filed #269–#283. **Every claim was re-verified against the code before acting** — three did not hold up. Worth remembering: an audit finding is a hypothesis, not a defect.
+
+### Fixed
+
+- **[#281](https://github.com/components-web-app/cwa-nuxt-module/issues/281) — `useResendVerifyEmail()` hit the wrong endpoint for any non-`'current'` type.** `type` had no default and the branch was `if (type === 'current') … else resendVerifyNewEmail`, so anything unexpected (including a JS caller passing nothing) requested a *pending email change* verification. It failed **invisibly**: with no pending change the API's `ResendVerifyNewEmailAddressAction` returns 200 with no email sent, so the composable set `success = true`. Fixed by defaulting `type` to `'current'` **and** inverting the branch — either alone leaves a hole.
+- **[#272](https://github.com/components-web-app/cwa-nuxt-module/issues/272) — manager-tab `disabled` typed too narrowly** (typecheck-only). Widened to `disabled?: boolean | Ref<boolean>`; zero runtime change. `MaybeRefOrGetter`/`toRef` rejected — a getter would be type-admitted but wrapped by `ref()` as a function-valued ref, advertising a shape the runtime does not support. **The issue's "the tab is then permanently disabled" claim is wrong**: `ref()` returns an existing ref unchanged and `ManagerTabs.vue` deep-unwraps it through the tabs array. Note `pnpm run test:types` does **not** cover type-level spec assertions — `tsconfig.json` excludes `**/*.spec.ts`, and `exclude` does not filter files added via `files`.
+- **[#280](https://github.com/components-web-app/cwa-nuxt-module/issues/280) — pageData `metaFields[].type` declared but ignored.** Typed `'input' | 'select'` (`types/index.ts:69`) yet both admin modals rendered an unconditional `<ModalSelect v-for>`, so `type: 'input'` silently became an empty dropdown. Both now dispatch on `field.type` inside a keyed `<template v-for>`. `ModalInput`'s own `type` prop is the **HTML input type** and is deliberately not passed.
+- **[#269](https://github.com/components-web-app/cwa-nuxt-module/issues/269) — `resources.page` / `.pageData` / `.displayPage` now always return a `ComputedRef`.** They early-returned a bare `undefined`, so the type was `ComputedRef | undefined` and `resources.page.value` threw — inconsistent with `resources.layout`. Each now wraps the lookup in one `computed()` returning `undefined` internally (a copy of the `layout` pattern). Backwards compatible: `.value` yields the same as before, so every existing `?.value` call site is untouched (the optional chain is simply now redundant).
+- **[#276](https://github.com/components-web-app/cwa-nuxt-module/issues/276) — `<CwaComponentGroup>`'s `location` is now optional.** While `undefined` — the normal state when bound to the asynchronously-resolving `$cwa.resources.layoutIri.value` — the group renders nothing and does not start its synchroniser, so apps no longer need a `v-if` guard to suppress the "The location provided `` is not a current resource" alert. **That alert is deliberately preserved** for a location that *is* set but does not resolve (an empty string still counts as set), so genuine mistakes are not swallowed. Load-bearing consequence: the group now mounts *before* `layoutIri` resolves, so the synchroniser is started from a `watch` on `props.location` (first defined value wins) instead of directly in `onMounted`, which would otherwise never see the location and silently break admin group creation.
+- **[#275](https://github.com/components-web-app/cwa-nuxt-module/issues/275) — `useHtmlContent` leaked a Vue app per link and never re-converted anchors.** The watcher source was the *container element ref*, so changed `v-html` in a still-mounted element left new `<a>` tags unconverted (internal links caused full page loads), and `createApp(...).mount(...)` per link was never paired with `unmount()`. Now `useHtmlContent(container, html?)` takes an **optional** HTML source and watches `[container, () => toValue(html)]` with **`flush: 'post'`** — pre-flush would re-convert the *outgoing* HTML, before Vue writes the new content. Backwards compatible (1-arg calls behave as before) but **call sites must pass their `htmlContent` computed to get re-conversion** — playground and the components-web-app template updated. MutationObserver rejected: it needs disconnect/reconnect guarding around our own DOM writes, and any DOM-derived trigger risks re-converting `CwaLink`'s own rendered anchors.
+- **[#279](https://github.com/components-web-app/cwa-nuxt-module/issues/279) — `realtime_validate_disabled` was never read.** The API emits it on the **root** form vars (`AbstractType::buildView`, whitelisted in `FormView::OUTPUT_VARS`, required by `form_view_root.schema.json`), and **`UserLoginType` and `PasswordUpdateType` both set it `true`** — so login and password-update forms were PATCHing `{iri}/submit` on every keystroke, sending credentials to the API per keypress. `useCwaFormInput` now reads it via `fullName.split('[')[0]` and short-circuits the debounced `onInput`. The gate is deliberately narrow — an explicit `validate()` from a consuming app still fires — and is read at **debounce fire time** (a `computed`, not a setup capture) so a late-arriving form resource is respected.
+
+### Closed as invalid / rejected
+
+- **[#274](https://github.com/components-web-app/cwa-nuxt-module/issues/274) — INVALID.** `cwa-page.vue:78` is correct as written. The claim followed the getter's *declaration* but not Pinia: site-config is a **setup store**, which Pinia wraps in `reactive()`, so `store.getConfig` unwraps to a plain `SiteConfigParams` at runtime **and** in types. Adding `.value` would break it.
+- **[#270](https://github.com/components-web-app/cwa-nuxt-module/issues/270) — reactivity claim wrong, change rejected.** `auth.user`/`.roles` are class getters over a `reactive()` store, re-invoked per access — there is no setup-time snapshot. Wrapping them in `computed()` would be breaking **and** would re-introduce the #260 nested-ref trap (a nested `$cwa.auth.user` in a template would become a permanently-truthy `ComputedRef`). Same reasoning as `Cwa.isStaticRender` returning a plain boolean.
+- **[#263](https://github.com/components-web-app/cwa-nuxt-module/issues/263) — closed.** The constructor-capture fix is present (`api/fetcher/cwa-fetch.ts:16-35`) and covered; the `fix pending verification` label referred to a production-build check, which the suite cannot prove.
+
+### Testing lessons from this batch
+
+- **A test that only asserts "does not throw" asserts nothing.** `RoutesTab.spec.ts` exercised the post-delete `navigateTo` branch without checking the destination — which is exactly how the bare-IRI 404 (below) survived.
+- **`mockImplementationOnce` queues survive `vi.clearAllMocks()`.** A leftover queued `getResource` leaked between `ComponentGroup` tests, making `locationResource` truthy and suppressing the alert — two snapshots had recorded "renders nothing" and were passing *for the wrong reason*, and outcomes were order-dependent. Reset mocks in `afterEach`.
+- **Leaked fake timers mask real failures.** A failing assertion between `vi.useFakeTimers()` and `vi.useRealTimers()` leaked into three later `cwa-form-input` tests, which then hit the 5s timeout — 5 failures reported where there were 2. `afterEach(() => vi.useRealTimers())` added.
+- **A mocked `watch` that is a no-op silently disables the code under test.** `ComponentGroup.spec.ts`'s `vue` mock stubbed `watch` as `vi.fn(() => {})`; it is now `vi.fn(mod.watch)` — still a spy, real behaviour.
+
+### Adjacent finding — API bundle
+
+`api_components_resend_email_verification` is registered at **`/verify-email/{username}/{token}`**, byte-identical to `api_components_verify_email` two entries above (`security.php:37-45`). Symfony resolves duplicate paths to the first match, so `ResendVerifyEmailAddressAction` is unreachable and **`/resend-verify-email/{username}` — the path this module calls (`api/auth.ts:97`) — is registered nowhere**. Logged in the bundle's own CLAUDE.md. With #281 fixed, that path will now be exercised and 404.
+
+---
+
+## Bug: CwaRootLayout captured the site config at setup ✅ Fixed ([#285](https://github.com/components-web-app/cwa-nuxt-module/issues/285))
+
+`CwaRootLayout.vue` resolved `const siteConfigVar = $cwa.siteConfig.config` **once at setup** and read `siteConfigVar.concatTitle` inside the `useHead` `titleTemplate` callback. `getConfig` returns `mergeConfig(...)`, which builds a **fresh object** every recompute (`Object.assign({}, …)`), so the captured reference was a snapshot: changing the setting in `/_cwa/settings` had no effect until a full page reload, and because the callback never touched the computed, `useHead` had no reason to re-run either.
+
+Fixed by reading the getter **inside** the callback. Not an unwrapping bug — see #274 above; the defect was purely reading the value outside the reactive callback. New `CwaRootLayout.spec.ts` captures the `titleTemplate` via a mocked `useHead` and flips the config after mount (fails against the old code).
+
+---
+
 ## Bug: navigating to a resource by bare IRI always 404s ✅ Fixed
 
 **This was the actual cause of the reported "delete the page → 404" screenshot** (URL `/_api/_/pages/{uuid}`, CWA 404 page, URL unchanged). Nothing to do with the delete itself.

@@ -23,7 +23,6 @@
             </div>
             <div class="grow w-auto flex gap-x-3 md:gap-x-5 justify-end items-center">
               <CwaComponentGroup
-                v-if="$cwa.resources.layoutIri.value"
                 reference="top"
                 :location="$cwa.resources.layoutIri.value"
                 :allowed-components="['/component/navigation_links']"

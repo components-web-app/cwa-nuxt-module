@@ -18,18 +18,20 @@ export const useResendVerifyEmail = () => {
     }
   }
 
-  async function resendVerifyEmail(username: string, type: 'current' | 'new') {
+  async function resendVerifyEmail(username: string, type: 'current' | 'new' = 'current') {
     if (!username) {
       error.value = 'Please enter a username'
       return
     }
     submitting.value = true
     error.value = undefined
+    // only an explicit 'new' targets the pending email change endpoint - anything
+    // else (including a JS caller passing nothing) verifies the current address
     const callFunction = (type: 'current' | 'new') => {
-      if (type === 'current') {
-        return $cwa.auth.resendVerifyEmail(username)
+      if (type === 'new') {
+        return $cwa.auth.resendVerifyNewEmail(username)
       }
-      return $cwa.auth.resendVerifyNewEmail(username)
+      return $cwa.auth.resendVerifyEmail(username)
     }
     const response = await callFunction(type)
     if (response instanceof FetchError) {

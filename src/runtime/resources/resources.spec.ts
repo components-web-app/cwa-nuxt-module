@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, isRef, ref } from 'vue'
 import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import * as utils from '#cwa/resources/resource-utils'
@@ -1210,10 +1210,10 @@ describe('Resources', () => {
   })
 
   describe('page getter', () => {
-    test('Returns undefined if no pageIri value', () => {
+    test('Returns a ComputedRef resolving to undefined if no pageIri value', () => {
       const { resources } = createResources()
-      vi.spyOn(resources, 'pageIri', 'get').mockImplementationOnce(() => computed(() => undefined))
-      expect(resources.page).toBeUndefined()
+      vi.spyOn(resources, 'pageIri', 'get').mockImplementation(() => computed(() => undefined))
+      expect(resources.page.value).toBeUndefined()
     })
 
     test('Returns getResource result passing pageIri as a parameter', () => {
@@ -1410,9 +1410,9 @@ describe('Resources', () => {
       }
       const { resources } = createResources(undefined, mockStore)
       // Override pageData getter on instance to control what it returns
-      const pageDataResult = pageDataValues !== null
-        ? computed(() => ({ apiState: { status: 1 as any, headers: {}, fetchedAt: 0 }, data: pageDataValues }))
-        : undefined
+      const pageDataResult = computed(() => (pageDataValues !== null
+        ? { apiState: { status: 1 as any, headers: {}, fetchedAt: 0 }, data: pageDataValues }
+        : undefined))
       Object.defineProperty(resources, 'pageData', {
         get: () => pageDataResult,
         configurable: true,
@@ -1500,10 +1500,10 @@ describe('Resources', () => {
   })
 
   describe('displayPage getter', () => {
-    test('returns undefined when displayPageIri is not set', () => {
+    test('returns a ComputedRef resolving to undefined when displayPageIri is not set', () => {
       const { resources } = createResources()
       vi.spyOn(resources, 'displayPageIri', 'get').mockReturnValue(computed(() => undefined))
-      expect(resources.displayPage).toBeUndefined()
+      expect(resources.displayPage.value).toBeUndefined()
     })
 
     test('returns getResource result when displayPageIri is set', () => {
@@ -1514,10 +1514,49 @@ describe('Resources', () => {
     })
   })
 
+  describe('#269: page, pageData and displayPage always return a ComputedRef', () => {
+    const getters = [
+      { name: 'page', iriGetter: 'pageIri', iri: '/_/pages/1' },
+      { name: 'pageData', iriGetter: 'pageDataIri', iri: '/page_data/1' },
+      { name: 'displayPage', iriGetter: 'displayPageIri', iri: '/page_data/1' },
+    ] as const
+
+    test.each(getters)('$name returns a ComputedRef resolving to undefined when $iriGetter is not set', ({ name, iriGetter }) => {
+      const { resources } = createResources()
+      vi.spyOn(resources, iriGetter, 'get').mockReturnValue(computed(() => undefined))
+      expect(isRef(resources[name])).toBe(true)
+      expect(resources[name].value).toBeUndefined()
+    })
+
+    test.each(getters)('$name resolves the resource when $iriGetter is set', ({ name, iriGetter, iri }) => {
+      const { resources } = createResources()
+      const resource = { data: { '@id': iri } }
+      vi.spyOn(resources, iriGetter, 'get').mockReturnValue(computed(() => iri))
+      const spy = vi.spyOn(resources, 'getResource').mockReturnValue(computed(() => resource) as any)
+      expect(isRef(resources[name])).toBe(true)
+      expect(resources[name].value).toBe(resource)
+      expect(spy).toHaveBeenCalledWith(iri)
+    })
+
+    test.each(getters)('a captured $name ref becomes populated once $iriGetter resolves', ({ name, iriGetter, iri }) => {
+      const { resources } = createResources()
+      const resource = { data: { '@id': iri } }
+      const iriRef = ref<string | undefined>(undefined)
+      vi.spyOn(resources, iriGetter, 'get').mockReturnValue(computed(() => iriRef.value))
+      vi.spyOn(resources, 'getResource').mockImplementation(id => computed(() => (id === iri ? resource : undefined)) as any)
+
+      const captured = resources[name]
+      expect(captured.value).toBeUndefined()
+
+      iriRef.value = iri
+      expect(captured.value).toBe(resource)
+    })
+  })
+
   describe('usesPageTemplate, isDataPage, isDynamicPage', () => {
     test('usesPageTemplate returns false when page has no data', () => {
       const { resources } = createResources()
-      vi.spyOn(resources, 'page', 'get').mockReturnValue(undefined)
+      vi.spyOn(resources, 'page', 'get').mockReturnValue(computed(() => undefined))
       expect(resources.usesPageTemplate.value).toBe(false)
     })
 

@@ -144,11 +144,12 @@ watch(() => $cwa.admin.isEditing, async () => {
 })
 
 const showAdmin = $cwa.auth.isAdmin
-// resolve the store inside setup
-const siteConfigVar = $cwa.siteConfig.config
 useHead({
   titleTemplate: () => {
-    if (siteConfigVar.concatTitle) {
+    // read the getter INSIDE the callback: `getConfig` returns a fresh object from `mergeConfig` on
+    // every recompute, so resolving it once at setup leaves this reading a snapshot - the setting
+    // would not take effect until a page reload, and nothing would track the computed to re-run us
+    if ($cwa.siteConfig.config.concatTitle) {
       return '%s %separator %siteName'
     }
     return '%s'

@@ -338,22 +338,28 @@ export class Resources {
     })
   }
 
-  public get pageData() {
-    if (!this.pageDataIri.value) {
-      return
-    }
-    return this.getResource(this.pageDataIri.value)
+  public get pageData(): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const pageDataIri = this.pageDataIri.value
+      if (!pageDataIri) {
+        return
+      }
+      return this.getResource(pageDataIri).value
+    })
   }
 
   public get pageIri(): ComputedRef<string | undefined> {
     return computed(() => this.getPageIriByFetchStatus(this.displayFetchStatus))
   }
 
-  public get page() {
-    if (!this.pageIri.value) {
-      return
-    }
-    return this.getResource(this.pageIri.value)
+  public get page(): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const pageIri = this.pageIri.value
+      if (!pageIri) {
+        return
+      }
+      return this.getResource(pageIri).value
+    })
   }
 
   public get displayPageIri() {
@@ -365,11 +371,14 @@ export class Resources {
     })
   }
 
-  public get displayPage() {
-    if (!this.displayPageIri.value) {
-      return
-    }
-    return this.getResource(this.displayPageIri.value)
+  public get displayPage(): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const displayPageIri = this.displayPageIri.value
+      if (!displayPageIri) {
+        return
+      }
+      return this.getResource(displayPageIri).value
+    })
   }
 
   public get layoutIri(): ComputedRef<string | undefined> {

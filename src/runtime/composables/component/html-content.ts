@@ -1,11 +1,22 @@
-import { createApp, h, onBeforeUnmount, onMounted, watch } from 'vue'
-import type { Ref, WatchStopHandle, App } from 'vue'
+import { createApp, h, onBeforeUnmount, onMounted, toValue, watch } from 'vue'
+import type { Ref, WatchStopHandle, App, MaybeRefOrGetter } from 'vue'
 import { useRouter } from 'vue-router'
 import { CwaLink } from '#components'
 
-export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
+/**
+ * Converts anchors within rendered HTML content into mounted `CwaLink` components.
+ *
+ * @param container the element holding the rendered HTML (usually a `v-html` target)
+ * @param html the HTML source rendered into the container. Optional, but without it the
+ *   anchors can only be converted once — pass it so that new anchors are converted when the
+ *   content changes while the same container element stays mounted.
+ */
+export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeRefOrGetter<string | undefined>) => {
   const router = useRouter()
   let watchStopHandle: undefined | WatchStopHandle
+  // Every app we have mounted into the container. Vue apps are not garbage collected while
+  // mounted, so these must be unmounted before re-converting and when the component unmounts.
+  const mountedApps: App<Element>[] = []
 
   function convertAnchor(anchor: HTMLElement): App<Element> | undefined {
     const href = anchor.getAttribute('href')
@@ -61,7 +72,16 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
     return app
   }
 
+  function unmountApps() {
+    while (mountedApps.length) {
+      mountedApps.pop()?.unmount()
+    }
+  }
+
   function replaceAnchors() {
+    // The previous content (and the elements those apps were mounted into) has been replaced
+    unmountApps()
+
     if (typeof container.value?.getElementsByTagName !== 'function') {
       return
     }
@@ -77,18 +97,23 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>) => {
           parent.replaceChild(linkContainer, anchor)
           // mount the NuxtLink component in the span
           nuxtLink.mount(linkContainer)
+          mountedApps.push(nuxtLink)
         }
       }
     })
   }
 
   onMounted(() => {
-    watchStopHandle = watch(container, replaceAnchors, {
+    // `flush: 'post'` so the callback runs after Vue has written the new content into the
+    // container — a pre-flush watcher would re-convert the outgoing HTML
+    watchStopHandle = watch([container, () => toValue(html)], replaceAnchors, {
       immediate: true,
+      flush: 'post',
     })
   })
 
   onBeforeUnmount(() => {
     watchStopHandle && watchStopHandle()
+    unmountApps()
   })
 }

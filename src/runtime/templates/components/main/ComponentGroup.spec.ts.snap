@@ -10,7 +10,21 @@ exports[`ComponentGroup > snapshots > should match snapshot IF loader is shown 1
 </div>
 `;
 
-exports[`ComponentGroup > snapshots > should match snapshot IF resource is not found 1`] = `<!--v-if-->`;
+exports[`ComponentGroup > snapshots > should match snapshot IF resource is not found 1`] = `
+<div
+  data-v-app=""
+>
+  
+  <!--cwa-start-->
+  <div>
+    <cwauialertwarning-stub>
+       The location provided \`mockLocation\` is not a current resource 
+    </cwauialertwarning-stub>
+  </div>
+  <!--cwa-end-->
+  
+</div>
+`;
 
 exports[`ComponentGroup > snapshots > should match snapshot IF there are component positions defined 1`] = `
 <div
@@ -46,7 +60,21 @@ exports[`ComponentGroup > snapshots > should match snapshot IF there are compone
 </div>
 `;
 
-exports[`ComponentGroup > snapshots > should match snapshot IF there are no component positions defined 1`] = `<!--v-if-->`;
+exports[`ComponentGroup > snapshots > should match snapshot IF there are no component positions defined 1`] = `
+<div
+  data-v-app=""
+>
+  
+  <!--cwa-start-->
+  <div>
+    <cwauialertwarning-stub>
+       The location provided \`mockLocation\` is not a current resource 
+    </cwauialertwarning-stub>
+  </div>
+  <!--cwa-end-->
+  
+</div>
+`;
 
 exports[`ComponentGroup > snapshots > should match snapshot IF user is logged in but there are no positions 1`] = `
 <div

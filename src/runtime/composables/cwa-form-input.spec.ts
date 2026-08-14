@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { useCwaFormInput } from '#cwa/composables/cwa-form-input'
 
@@ -30,7 +30,7 @@ function makeFormData(overrides: Record<string, any> = {}, rootMethod = 'PATCH')
         full_name: 'contact_form',
         action: '/_/contact_requests',
         method: rootMethod,
-      },
+      } as Record<string, any>,
     },
     'contact_form[name]': {
       vars: {
@@ -56,6 +56,12 @@ describe('useCwaFormInput', () => {
     iri.value = '/_/form_components/123'
     vi.clearAllMocks()
     mockIsSubmitAttempted.mockReturnValue(false)
+  })
+
+  // A failing assertion between useFakeTimers() and useRealTimers() would otherwise
+  // leak fake timers into every later test that awaits a real setTimeout.
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('vars', () => {
@@ -453,6 +459,77 @@ describe('useCwaFormInput', () => {
       const { validate } = useCwaFormInput(iri, 'contact_form[name]')
       await validate()
       expect(mockValidateField).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('realtime_validate_disabled', () => {
+    test('onInput does not validate when the root form sets realtime_validate_disabled: true', () => {
+      vi.useFakeTimers()
+      const formData = makeFormData()
+      formData['contact_form'].vars.realtime_validate_disabled = true
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const result = useCwaFormInput(iri, 'contact_form[name]')
+      const validateSpy = vi.fn()
+      result.validate = validateSpy
+
+      result.onInput()
+      vi.advanceTimersByTime(300)
+      expect(validateSpy).not.toHaveBeenCalled()
+      expect(mockValidateField).not.toHaveBeenCalled()
+      vi.useRealTimers()
+    })
+
+    test('onInput still validates when realtime_validate_disabled is explicitly false', () => {
+      vi.useFakeTimers()
+      const formData = makeFormData()
+      formData['contact_form'].vars.realtime_validate_disabled = false
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const result = useCwaFormInput(iri, 'contact_form[name]')
+      const validateSpy = vi.fn()
+      result.validate = validateSpy
+
+      result.onInput()
+      vi.advanceTimersByTime(300)
+      expect(validateSpy).toHaveBeenCalledTimes(1)
+      vi.useRealTimers()
+    })
+
+    test('the flag is read from the root form entry, not the field entry', () => {
+      vi.useFakeTimers()
+      const formData = makeFormData({ realtime_validate_disabled: true })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const result = useCwaFormInput(iri, 'contact_form[name]')
+      const validateSpy = vi.fn()
+      result.validate = validateSpy
+
+      result.onInput()
+      vi.advanceTimersByTime(300)
+      expect(validateSpy).toHaveBeenCalledTimes(1)
+      vi.useRealTimers()
+    })
+
+    test('the flag is re-read when the form data changes, not captured at setup', () => {
+      vi.useFakeTimers()
+      const formData = makeFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const result = useCwaFormInput(iri, 'contact_form[name]')
+      const validateSpy = vi.fn()
+      result.validate = validateSpy
+
+      formData['contact_form'].vars.realtime_validate_disabled = true
+      result.onInput()
+      vi.advanceTimersByTime(300)
+      expect(validateSpy).not.toHaveBeenCalled()
+      vi.useRealTimers()
+    })
+
+    test('an explicit validate() call is not gated by realtime_validate_disabled', async () => {
+      const formData = makeFormData({ value: 'Alice' })
+      formData['contact_form'].vars.realtime_validate_disabled = true
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', { 'contact_form[name]': 'Alice' })
     })
   })
 

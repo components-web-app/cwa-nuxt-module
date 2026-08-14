@@ -193,6 +193,68 @@ describe('useHtmlContent', () => {
     expect(createdApps.list).toHaveLength(0)
   })
 
+  test('re-converts anchors when the html source changes', async () => {
+    const container = setupContainer('<a href="/one">1</a>')
+    const html = ref<string | undefined>('<a href="/one">1</a>')
+    useHtmlContent(container, html)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(1)
+    expect(lastRender.props.to).toBe('/one')
+
+    // Vue re-renders the v-html binding: the container element is unchanged but its
+    // innerHTML is replaced wholesale (destroying the span the previous app was mounted in)
+    container.value!.innerHTML = '<a href="/two">2</a>'
+    html.value = '<a href="/two">2</a>'
+    await nextTick()
+
+    expect(createdApps.list).toHaveLength(2)
+    expect(lastRender.props.to).toBe('/two')
+  })
+
+  test('unmounts previously mounted apps before re-converting', async () => {
+    const container = setupContainer('<a href="/one">1</a>')
+    const html = ref<string | undefined>('<a href="/one">1</a>')
+    useHtmlContent(container, html)
+    mounted.cb?.()
+    const firstApp = createdApps.list[0]
+    expect(firstApp.unmount).not.toHaveBeenCalled()
+
+    container.value!.innerHTML = '<a href="/two">2</a>'
+    html.value = '<a href="/two">2</a>'
+    await nextTick()
+
+    expect(firstApp.unmount).toHaveBeenCalledTimes(1)
+    // the newly created app is left mounted
+    expect(createdApps.list[1].unmount).not.toHaveBeenCalled()
+  })
+
+  test('unmounts all mounted apps on component unmount', () => {
+    const container = setupContainer('<a href="/one">1</a><a href="/two">2</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(2)
+
+    beforeUnmount.cb?.()
+
+    expect(createdApps.list[0].unmount).toHaveBeenCalledTimes(1)
+    expect(createdApps.list[1].unmount).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not unmount an app that was never mounted', () => {
+    const container = setupContainer('<span />')
+    const orphan = document.createElement('a')
+    orphan.setAttribute('href', '/p')
+    vi.spyOn(container.value!, 'getElementsByTagName').mockReturnValue([orphan] as any)
+
+    useHtmlContent(container)
+    mounted.cb?.()
+    beforeUnmount.cb?.()
+
+    expect(createdApps.list).toHaveLength(1)
+    expect(createdApps.list[0].mount).not.toHaveBeenCalled()
+    expect(createdApps.list[0].unmount).not.toHaveBeenCalled()
+  })
+
   test('does not mount when anchor has no parent node', () => {
     const container = setupContainer('<a href="/p">x</a>')
     // detach the anchor so it has no parentNode at replacement time

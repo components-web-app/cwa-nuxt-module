@@ -145,13 +145,22 @@
               >No template selected</span>
             </div>
             <div v-if="pageDataConfig?.metaFields">
-              <ModalSelect
+              <template
                 v-for="field of pageDataConfig.metaFields"
                 :key="`field-${field.field}`"
-                v-model="localResourceData[field.field]"
-                :label="field.label"
-                :options="field.options || []"
-              />
+              >
+                <ModalInput
+                  v-if="field.type === 'input'"
+                  v-model="localResourceData[field.field]"
+                  :label="field.label"
+                />
+                <ModalSelect
+                  v-else
+                  v-model="localResourceData[field.field]"
+                  :label="field.label"
+                  :options="field.options || []"
+                />
+              </template>
             </div>
           </template>
           <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">

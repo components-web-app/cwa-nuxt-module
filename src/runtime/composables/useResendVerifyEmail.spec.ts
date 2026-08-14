@@ -58,6 +58,31 @@ describe('useResendVerifyEmail', () => {
     expect(mockAuth.resendVerifyEmail).not.toHaveBeenCalled()
   })
 
+  test('defaults to the current address endpoint when no type is passed', async () => {
+    mockAuth.resendVerifyEmail.mockResolvedValue({})
+    const { resendVerifyEmail } = useResendVerifyEmail()
+    await resendVerifyEmail('user@example.com')
+    expect(mockAuth.resendVerifyEmail).toHaveBeenCalledWith('user@example.com')
+    expect(mockAuth.resendVerifyNewEmail).not.toHaveBeenCalled()
+  })
+
+  test('defaults to the current address endpoint when type is explicitly undefined', async () => {
+    mockAuth.resendVerifyEmail.mockResolvedValue({})
+    const { resendVerifyEmail } = useResendVerifyEmail()
+    await resendVerifyEmail('user@example.com', undefined)
+    expect(mockAuth.resendVerifyEmail).toHaveBeenCalledWith('user@example.com')
+    expect(mockAuth.resendVerifyNewEmail).not.toHaveBeenCalled()
+  })
+
+  test('only an explicit "new" type reaches the pending email change endpoint', async () => {
+    mockAuth.resendVerifyEmail.mockResolvedValue({})
+    const { resendVerifyEmail } = useResendVerifyEmail()
+    // a JS caller passing an unexpected value must not silently hit the wrong endpoint
+    await resendVerifyEmail('user@example.com', 'bogus' as unknown as 'current' | 'new')
+    expect(mockAuth.resendVerifyNewEmail).not.toHaveBeenCalled()
+    expect(mockAuth.resendVerifyEmail).toHaveBeenCalledWith('user@example.com')
+  })
+
   test('success is true on successful response', async () => {
     mockAuth.resendVerifyEmail.mockResolvedValue({})
     const { resendVerifyEmail, success } = useResendVerifyEmail()

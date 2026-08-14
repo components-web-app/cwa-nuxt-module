@@ -31,7 +31,7 @@
     </div>
     <!--cwa-end-->
   </template>
-  <template v-else-if="!locationResource && !$cwa.resources.isLoading.value">
+  <template v-else-if="hasLocation && !locationResource && !$cwa.resources.isLoading.value">
     <!--cwa-start-->
     <div>
       <CwaUiAlertWarning>
@@ -60,6 +60,7 @@ import {
   onMounted,
   onBeforeUnmount,
   defineAsyncComponent,
+  watch,
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/templates/components/main/ComponentGroup.Util.Synchronizer'
 import {
@@ -86,8 +87,13 @@ const $cwa = useCwa()
 
 useCwaResourceManageable(iri)
 
-type PropsType = { reference: string, locationReference?: string, location: string, allowedComponents?: string[] | null }
+type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: string[] | null }
 const props = withDefaults(defineProps<PropsType>(), { allowedComponents: null })
+
+// `location` is usually a resource IRI which is undefined until its resource resolves - e.g.
+// `$cwa.resources.layoutIri.value` in a layout. Until we have one there is nothing to render and
+// nothing to warn about. A location which IS provided but does not resolve still shows the warning.
+const hasLocation = computed(() => props.location !== undefined)
 
 const emit = defineEmits<{
   componentsLoaded: [pairs: CwaComponentGroupPair[]]
@@ -95,6 +101,9 @@ const emit = defineEmits<{
 }>()
 
 const locationResource = computed(() => {
+  if (props.location === undefined) {
+    return
+  }
   return $cwa.resources.getResource(props.location).value
 })
 
@@ -113,6 +122,10 @@ const signedInAndResourceExists = computed(() => {
 })
 
 const showLoader = computed(() => {
+  // without a location we do not know what we are waiting for - render nothing at all
+  if (!hasLocation.value) {
+    return false
+  }
   // is the whole resource chain loading is not loading, do not show the group as loading
   if (!$cwa.resources.isLoading.value) {
     return false
@@ -149,16 +162,26 @@ function getResourceKey(positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
+let syncWatcherStarted = false
+
 onMounted(() => {
   if (isNewPosition.value) {
     return
   }
-  componentGroupSynchronizer.createSyncWatcher({
-    resource,
-    location: props.location,
-    fullReference,
-    allowedComponents: props.allowedComponents,
-  })
+  // the location may not be resolved when we mount - the synchronizer needs a real location to
+  // create or attach a component group, so start it as soon as one is available
+  watch(() => props.location, (location) => {
+    if (syncWatcherStarted || location === undefined) {
+      return
+    }
+    syncWatcherStarted = true
+    componentGroupSynchronizer.createSyncWatcher({
+      resource,
+      location,
+      fullReference,
+      allowedComponents: props.allowedComponents,
+    })
+  }, { immediate: true })
 })
 
 onBeforeUnmount(() => {

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 
 // vi.hoisted runs before imports, so we cannot use `ref` from vue inside it.
@@ -46,6 +46,29 @@ describe('useCwaResourceManagerTab', () => {
     test('disabled is true when options.disabled is true', () => {
       const { exposeMeta } = useCwaResourceManagerTab({ name: 'General', disabled: true })
       expect(exposeMeta.disabled.value).toBe(true)
+    })
+
+    test('disabled accepts a ref and unwraps to its boolean value', () => {
+      const disabled = ref(true)
+      const { exposeMeta } = useCwaResourceManagerTab({ name: 'General', disabled })
+      expect(exposeMeta.disabled.value).toBe(true)
+    })
+
+    test('disabled stays reactive when a ref is passed', () => {
+      const disabled = ref(false)
+      const { exposeMeta } = useCwaResourceManagerTab({ name: 'General', disabled })
+      expect(exposeMeta.disabled.value).toBe(false)
+      disabled.value = true
+      expect(exposeMeta.disabled.value).toBe(true)
+    })
+
+    test('disabled stays reactive when a computed is passed', () => {
+      const source = ref('/other/resource')
+      const disabled = computed(() => source.value !== '/current/resource')
+      const { exposeMeta } = useCwaResourceManagerTab({ name: 'General', disabled })
+      expect(exposeMeta.disabled.value).toBe(true)
+      source.value = '/current/resource'
+      expect(exposeMeta.disabled.value).toBe(false)
     })
   })
 

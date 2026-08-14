@@ -4,6 +4,8 @@ import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PageResourceAdminModal from './PageResourceAdminModal.vue'
+import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
@@ -29,15 +31,18 @@ function setup(opts: {
   resource?: any
   displayPageIri?: string | undefined
   fqcnToEntrypointKey?: (t: string) => any
+  pageDataConfig?: any
+  localDataOverrides?: Record<string, any>
 } = {}) {
   const iri = opts.iri ?? '/_/pages/uuid-self'
-  const localResourceData = ref({
+  const localResourceData = ref<Record<string, any>>({
     '@id': iri,
     'reference': 'My Page',
     'title': '',
     'metaDescription': '',
     'parentPage': null,
     'parentPageData': null,
+    ...opts.localDataOverrides,
   })
 
   const handlers = {
@@ -64,7 +69,7 @@ function setup(opts: {
     loadDataInstances: vi.fn(),
     fqcnToEntrypointKey: vi.fn(opts.fqcnToEntrypointKey ?? ((t: string) => t)),
   })
-  mockUseDataType.mockReturnValue({ pageDataConfig: ref(null) })
+  mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
@@ -96,7 +101,17 @@ function setup(opts: {
     },
   })
 
-  return { wrapper, handlers }
+  return { wrapper, handlers, localResourceData }
+}
+
+// The meta fields block only renders for a non-Page resource (page data)
+function setupPageData(opts: { pageDataConfig?: any, localDataOverrides?: Record<string, any> } = {}) {
+  return setup({
+    iri: '/page_data/uuid-self',
+    resourceType: 'App\\Entity\\EventData',
+    resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData' },
+    ...opts,
+  })
 }
 
 async function clickDelete(wrapper: ReturnType<typeof setup>['wrapper']) {
@@ -155,5 +170,62 @@ describe('PageResourceAdminModal delete', () => {
     await clickDelete(wrapper)
     expect(handlers.deleteResource).toHaveBeenCalledWith()
     expect(mockNavigateTo).not.toHaveBeenCalled()
+  })
+})
+
+describe('PageResourceAdminModal meta fields config', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('renders a ModalInput for a meta field declaring type "input" and a ModalSelect otherwise', () => {
+    const { wrapper } = setupPageData({
+      pageDataConfig: {
+        metaFields: [
+          { field: 'subtitle', type: 'input', label: 'Subtitle' },
+          { field: 'category', type: 'select', label: 'Category', options: [{ label: 'A', value: 'a' }] },
+          { field: 'status', label: 'Status' },
+        ],
+      },
+      localDataOverrides: { subtitle: 'Hello', category: 'a', status: null },
+    })
+    const inputLabels = wrapper.findAllComponents(ModalInput).map(i => i.props('label'))
+    const selectLabels = wrapper.findAllComponents(ModalSelect).map(s => s.props('label'))
+
+    expect(inputLabels).toContain('Subtitle')
+    expect(selectLabels).not.toContain('Subtitle')
+    // an explicit 'select' and an entry with no type both keep rendering as a select
+    expect(selectLabels).toEqual(expect.arrayContaining(['Category', 'Status']))
+    expect(inputLabels).not.toContain('Category')
+    expect(inputLabels).not.toContain('Status')
+  })
+
+  test('binds the current value of a type "input" meta field', () => {
+    const { wrapper } = setupPageData({
+      pageDataConfig: { metaFields: [{ field: 'subtitle', type: 'input', label: 'Subtitle' }] },
+      localDataOverrides: { subtitle: 'Hello' },
+    })
+    const input = wrapper.findAllComponents(ModalInput).find(i => i.props('label') === 'Subtitle')
+    expect(input?.props('modelValue')).toBe('Hello')
+  })
+
+  test('v-model on a type "input" meta field writes back to localResourceData', async () => {
+    const { wrapper, localResourceData } = setupPageData({
+      pageDataConfig: { metaFields: [{ field: 'subtitle', type: 'input', label: 'Subtitle' }] },
+      localDataOverrides: { subtitle: 'Hello' },
+    })
+    const input = wrapper.findAllComponents(ModalInput).find(i => i.props('label') === 'Subtitle')
+    await input!.vm.$emit('update:modelValue', 'Updated')
+    expect(localResourceData.value.subtitle).toBe('Updated')
+  })
+
+  test('v-model on a select meta field still writes back to localResourceData', async () => {
+    const { wrapper, localResourceData } = setupPageData({
+      pageDataConfig: { metaFields: [{ field: 'category', type: 'select', label: 'Category', options: [{ label: 'A', value: 'a' }] }] },
+      localDataOverrides: { category: null },
+    })
+    const select = wrapper.findAllComponents(ModalSelect).find(s => s.props('label') === 'Category')
+    await select!.vm.$emit('update:modelValue', 'a')
+    expect(localResourceData.value.category).toBe('a')
   })
 })

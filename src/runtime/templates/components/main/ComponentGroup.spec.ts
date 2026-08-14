@@ -25,7 +25,7 @@ vi.mock('./ComponentGroup.Util.Positions', () => {
   return {
     useComponentGroupPositions: vi.fn(() => {
       return {
-        componentPositions: undefined,
+        componentPositions: computed(() => undefined),
         groupIsReordering: computed(() => false),
       }
     }),
@@ -36,7 +36,9 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    watch: vi.fn(() => {}),
+    // spied so call arguments can be asserted, but still the real implementation - the component
+    // relies on a watcher to start the synchronizer once `location` resolves
+    watch: vi.fn(mod.watch),
   }
 })
 
@@ -49,14 +51,7 @@ const mockCwaResources = {
   newResource: vi.fn().mockImplementation(() => computed(() => undefined)),
 }
 
-function createWrapper({
-  isLoading = false,
-  reference = mockReference,
-  location = mockLocation,
-  allowedComponents = [],
-  signedIn = false,
-  isEditing = true,
-}: {
+function createWrapper(ops: {
   isLoading?: boolean
   reference?: string
   location?: string
@@ -64,6 +59,15 @@ function createWrapper({
   signedIn?: boolean
   isEditing?: boolean
 } = {}) {
+  const {
+    isLoading = false,
+    reference = mockReference,
+    allowedComponents = [],
+    signedIn = false,
+    isEditing = true,
+  } = ops
+  // `location` must be able to be explicitly undefined, so a default parameter cannot be used
+  const location = 'location' in ops ? ops.location : mockLocation
   // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
@@ -105,6 +109,10 @@ function createWrapper({
 describe('ComponentGroup', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    // `mockImplementationOnce` queues survive `vi.clearAllMocks()` - an unconsumed one would leak
+    // into the next test and silently change what it renders
+    mockCwaResources.getResource.mockReset().mockImplementation(() => vue.computed(() => undefined))
+    mockCwaResources.getComponentGroupByReference.mockReset()
   })
 
   describe('computed properties', () => {
@@ -244,7 +252,7 @@ describe('ComponentGroup', () => {
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
           return mockGroupElement
         })
-        useComponentGroupPositions.mockReturnValueOnce({ componentPositions: mockComponentPositions, groupIsReordering: computed(() => false) })
+        useComponentGroupPositions.mockReturnValueOnce({ componentPositions: computed(() => mockComponentPositions), groupIsReordering: computed(() => false) })
         const wrapper = createWrapper()
 
         expect(wrapper.vm.componentPositions).toEqual(mockComponentPositions)
@@ -350,6 +358,54 @@ describe('ComponentGroup', () => {
     })
   })
 
+  describe('optional location', () => {
+    function mockSynchronizer() {
+      const createSyncWatcher = vi.fn()
+      ComponentGroupUtilSynchronizer.mockImplementationOnce(function () {
+        return { createSyncWatcher, stopSyncWatcher: vi.fn() }
+      })
+      return createSyncWatcher
+    }
+
+    test('should render nothing IF no location is provided', () => {
+      const wrapper = createWrapper({ location: undefined })
+
+      expect(wrapper.html()).toEqual('<!--v-if-->')
+    })
+
+    test('should render nothing - not a loader - IF no location is provided while resources are loading', () => {
+      const wrapper = createWrapper({ location: undefined, isLoading: true })
+
+      expect(wrapper.html()).toEqual('<!--v-if-->')
+    })
+
+    test('should NOT start the synchronizer IF no location is provided', () => {
+      const createSyncWatcher = mockSynchronizer()
+
+      createWrapper({ location: undefined })
+
+      expect(createSyncWatcher).not.toHaveBeenCalled()
+    })
+
+    test('should start the synchronizer once a location becomes available', async () => {
+      const createSyncWatcher = mockSynchronizer()
+
+      const wrapper = createWrapper({ location: undefined })
+      expect(createSyncWatcher).not.toHaveBeenCalled()
+
+      await wrapper.setProps({ location: mockLocation })
+
+      expect(createSyncWatcher).toHaveBeenCalledTimes(1)
+      expect(createSyncWatcher.mock.calls[0][0].location).toEqual(mockLocation)
+    })
+
+    test('should STILL warn IF a location is provided but does not resolve to a resource', () => {
+      const wrapper = createWrapper()
+
+      expect(wrapper.html()).toContain('The location provided `mockLocation` is not a current resource')
+    })
+  })
+
   describe('props', () => {
     test('should pass correct uiComponent objects per each ResourceLoader component', () => {
       vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => {
@@ -371,7 +427,7 @@ describe('ComponentGroup', () => {
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return mockGroupElement
       })
-      useComponentGroupPositions.mockReturnValueOnce({ componentPositions: mockComponentPositions, groupIsReordering: computed(() => false) })
+      useComponentGroupPositions.mockReturnValueOnce({ componentPositions: computed(() => mockComponentPositions), groupIsReordering: computed(() => false) })
       const wrapper = createWrapper()
 
       const resourceLoaders = wrapper.findAllComponents({ name: 'ResourceLoader' })
@@ -461,7 +517,7 @@ describe('ComponentGroup', () => {
       vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => {
         return mockGroupElement
       })
-      useComponentGroupPositions.mockReturnValueOnce({ componentPositions: mockComponentPositions, groupIsReordering: computed(() => false) })
+      useComponentGroupPositions.mockReturnValueOnce({ componentPositions: computed(() => mockComponentPositions), groupIsReordering: computed(() => false) })
       const wrapper = createWrapper()
 
       expect(wrapper.element).toMatchSnapshot()
