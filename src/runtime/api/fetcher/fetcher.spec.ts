@@ -373,7 +373,6 @@ describe('Fetcher -> fetchResource', () => {
     vi.spyOn(fetcher, 'fetchManifest').mockReturnValue(manifestPromise)
 
     let associatedCalledAt = 0
-    let manifestResolvedAt = 0
     let tick = 0
     vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {
       associatedCalledAt = ++tick
@@ -390,7 +389,7 @@ describe('Fetcher -> fetchResource', () => {
 
     // Resolve manifest after a tick so we can verify ordering
     await Promise.resolve()
-    manifestResolvedAt = ++tick
+    const manifestResolvedAt = ++tick
     resolveManifest()
 
     await fetchPromise

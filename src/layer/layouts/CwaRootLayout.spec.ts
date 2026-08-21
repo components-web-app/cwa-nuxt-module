@@ -40,7 +40,8 @@ function setup(opts: SetupOpts = {}) {
   const state = reactive({ concatTitle: opts.concatTitle ?? false, siteName: 'Site' })
   const merged = computed(() => ({ ...state }))
 
-  // @ts-expect-error partial mock
+  // a partial mock of the whole Cwa surface: cast once at the boundary rather than per property,
+  // which is also what keeps the playground's vue-tsc (it typechecks the layer) happy
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     auth: { isAdmin: computed(() => false) },
     admin: reactive({ isEditing: false }),
@@ -53,7 +54,7 @@ function setup(opts: SetupOpts = {}) {
         return merged.value
       },
     },
-  }))
+  } as unknown as ReturnType<typeof cwaComposable.useCwa>))
 
   const wrapper = mount(CwaRootLayout, {
     shallow: true,

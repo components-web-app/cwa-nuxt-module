@@ -8,7 +8,6 @@
 </template>
 
 <script setup lang="ts">
-import type { UseHeadOptions } from '@unhead/vue'
 import { useElementSize } from '@vueuse/core'
 import { computed, provide, useTemplateRef, watch } from 'vue'
 import { withoutTrailingSlash } from 'ufo'
@@ -29,7 +28,10 @@ watch([width, height], () => {
   $cwa.admin.emitRedraw()
 })
 
-const minimalPriority: UseHeadOptions = {
+// deliberately untyped: two @unhead/vue majors resolve in this tree (nuxt 4.5 uses v3, the SEO
+// modules pull v2), so importing UseHeadOptions here picks whichever hoists and clashes with the
+// options type nuxt's own useHead expects. The inferred shape is checked against it either way.
+const minimalPriority = {
   // give nuxt.config values higher priority
   tagPriority: 101,
 }

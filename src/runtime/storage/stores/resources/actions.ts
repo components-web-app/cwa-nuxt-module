@@ -20,7 +20,7 @@ import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 import { navigateTo, showError, useRequestURL, useResponseHeader } from 'nuxt/app'
 import { parse as parseCookie } from 'set-cookie-parser'
-import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'
+import { type SetCookie, stringifySetCookie } from 'cookie'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -587,7 +587,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
           const currentSetCookieHeader = useResponseHeader('Set-Cookie')
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
-            return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
+            // cookie v2: serialize() became stringifySetCookie(), taking the whole cookie object.
+            // set-cookie-parser's parsed shape is already { name, value, ...attributes }.
+            return stringifySetCookie(cookie as SetCookie)
           })
           if (import.meta.server && (error.statusCode === 401 || error.statusCode === 403)) {
             const url = useRequestURL()

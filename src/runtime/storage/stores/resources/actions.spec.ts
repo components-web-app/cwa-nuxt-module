@@ -655,6 +655,29 @@ describe('resources action setResourceFetchError', () => {
     expect(createError).toHaveBeenCalledWith(createErrorObj)
     expect(app.showError).toHaveBeenCalledWith(createErrorObj)
   })
+
+  test('forwards the upstream Set-Cookie headers onto our own response', async () => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    const responseHeader: { value: string[] | undefined } = { value: undefined }
+    vi.spyOn(app, 'useResponseHeader').mockReturnValueOnce(responseHeader as never)
+
+    // setCookieHeaders is a getter over the upstream response headers
+    const error = createCwaResourceError({
+      statusMessage: 'unauthorized',
+      statusCode: 401,
+      response: {
+        headers: {
+          getSetCookie: () => ['cwa_auth=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict'],
+        },
+      },
+    })
+
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
+
+    expect(app.useResponseHeader).toHaveBeenCalledWith('Set-Cookie')
+    // re-serialised from the parsed attributes, so the attribute order is the library's, not ours
+    expect(responseHeader.value).toEqual(['cwa_auth=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict'])
+  })
 })
 
 describe('resources action -> setResourceFetchStatus dynamic position', () => {

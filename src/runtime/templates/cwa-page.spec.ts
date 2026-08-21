@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
-import { ref } from 'vue'
-import { describe, expect, test, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CwaPage from './cwa-page.vue'
@@ -8,6 +9,22 @@ import * as cwaComposable from '#cwa/composables/cwa'
 
 let capturedHeadConfig: { title: () => string | null | undefined } | undefined
 let capturedOgImageArgs: any[] = []
+
+const emitRedraw = vi.fn()
+
+// `var` + assignment inside the hoisted factory: the component watches these, so they have to be
+// real refs, which vi.hoisted cannot create
+// eslint-disable-next-line no-var
+var mockElementSize: { width: Ref<number>, height: Ref<number> }
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@vueuse/core')>()
+  const { ref: vueRef } = await import('vue')
+  mockElementSize = { width: vueRef(0), height: vueRef(0) }
+  return {
+    ...actual,
+    useElementSize: () => mockElementSize,
+  }
+})
 
 mockNuxtImport('useHead', () => (config: any) => {
   capturedHeadConfig = config
@@ -33,11 +50,18 @@ function mockCwaWithDepths(
       }),
     },
     siteConfig: { config: { fallbackTitle: fallbackTitleEnabled } },
+    admin: { emitRedraw },
   }))
   mount(CwaPage, { shallow: true })
 }
 
 describe('CWA page', () => {
+  beforeEach(() => {
+    emitRedraw.mockClear()
+    mockElementSize.width.value = 0
+    mockElementSize.height.value = 0
+  })
+
   function createWrapper() {
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
       resources: {
@@ -50,6 +74,7 @@ describe('CWA page', () => {
           fallbackTitle: true,
         },
       },
+      admin: { emitRedraw },
     }))
 
     return mount(CwaPage, {
@@ -60,6 +85,22 @@ describe('CWA page', () => {
   test('should render CwaPage component', () => {
     const wrapper = createWrapper()
     expect(wrapper.findComponent({ name: 'CwaPage' }).exists()).toBe(true)
+  })
+
+  test('emits an admin redraw when the page element resizes', async () => {
+    createWrapper()
+    expect(emitRedraw).not.toHaveBeenCalled()
+
+    // counts rather than exact calls: wrappers mounted by earlier tests are never unmounted and
+    // share these mocked size refs, so each change fires one watcher per live instance
+    mockElementSize.width.value = 800
+    await nextTick()
+    const afterWidth = emitRedraw.mock.calls.length
+    expect(afterWidth).toBeGreaterThan(0)
+
+    mockElementSize.height.value = 600
+    await nextTick()
+    expect(emitRedraw.mock.calls.length).toBeGreaterThan(afterWidth)
   })
 
   test('provides cwa-page-depth as 0', () => {

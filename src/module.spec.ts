@@ -110,7 +110,7 @@ describe('CWA module', () => {
 
       expect(moduleDependencies).toEqual({
         '@pinia/nuxt': {
-          version: '^0.11.3',
+          version: '^1.0.2',
           optional: false,
         },
         '@nuxtjs/robots': {

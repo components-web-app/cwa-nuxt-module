@@ -302,6 +302,29 @@ const { resource } = useCwaResource(pageDataIri)
 
 ---
 
+## Dependencies
+
+Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:
+
+**`typescript` is held at `^6.0.3`.** Excluded from the update deliberately — TS 7 conflicts with `vue-tsc`. pnpm's `!pattern` exclusion works: `pnpm up --latest -r "!typescript"`.
+
+**`vite` is pinned to `^8.2.2` by a catch-all override, and that is what lets nuxt 4.5 and vitest coexist.** Nuxt 4.5's `@nuxt/vite-builder` requires `vite ^8.2.0`; plenty of other packages (`@nuxt/devtools`, the SEO modules, `@tailwindcss/vite`) still ask for `^7`. Without the override the tree holds **both**, and the nuxt config hands vitest's vite-7 plugin container a rolldown builtin plugin, so **every test file fails to start** with `Missing field 'moduleType'` (`Plugin: builtin:replace`). Vitest 4.1 already accepts `vite ^8` as a peer — the versions are compatible, the *mixed tree* is not. The override replaced the old `vite@>=7.0.0 <=7.3.4: ^7.3.5` security pin, which is now redundant.
+
+**`@pinia/nuxt` moved 0.11 → 1.0 (pinia 3 → 4), so `moduleDependencies` in `module.ts` now requires `^1.0.2`** — a **breaking change for consuming apps**, which must upgrade pinia with the module. Nuxt validates this itself and refuses to start on a mismatch (`Module @pinia/nuxt version (x) does not satisfy (y)`).
+
+Two API migrations came with it:
+
+- **`cookie` v2 renamed `serialize()` to `stringifySetCookie()`**, which takes the whole cookie object instead of `(name, value, options)`. `set-cookie-parser`'s parsed shape already matches, so `storage/stores/resources/actions.ts` passes it straight through. That path — forwarding upstream `Set-Cookie` headers onto our response when showing an error page — had **no test at all**; it has one now. Attribute order in the re-serialised header is the library's, not the upstream server's.
+- **`@unhead/vue` resolves at two majors in this tree** (nuxt 4.5 uses v3, the SEO modules pull v2), so importing `UseHeadOptions` in `cwa-page.vue` picked whichever hoisted and clashed with the options type nuxt's own `useHead` expects. The annotation is dropped — the inferred shape is still checked against `useHead`.
+
+**`unbuild` is now an explicit devDependency.** `build.config.ts` imports `defineBuildConfig` from it directly; it only ever resolved via hoisting from `@nuxt/module-builder`, which is fragile — a `pnpm add` of anything else can dissolve the hoist and break `vue-tsc` with `Cannot find module 'unbuild'`.
+
+**Security overrides** (`pnpm-workspace.yaml`) still carry the transitive pins the update cannot reach on its own — `tar`, `sharp`, `valibot` and the rest. A pin whose range still matches an installed version does **not** force a re-resolve, so bumping the *floor* alone is not enough: move the match key too (`tar@<=7.5.15: ^7.5.16` → `tar@<=7.5.20: ^7.5.21`). New pinned versions also need adding to `minimumReleaseAgeExclude`.
+
+**Verification after any dependency change:** `pnpm run dev:prepare` first (regenerates stubs and the playground), then `test`, `test:types` (module **and** playground), `lint`, `build`, `dev:build`, and boot `dev:http` — the module build passing does not prove the vite/nuxt pairing works, and the playground typecheck covers layer files the module's own `tsconfig` excludes.
+
+---
+
 ## Tailwind v4
 
 The module uses **Tailwind v4** (`tailwindcss: ^4.2.4`, `@tailwindcss/postcss: ^4.2.4`, `@tailwindcss/vite: ^4.2.4`). The build is CSS-first — no `tailwind.config.js`. All configuration lives in `src/tailwind/tailwind-cwa.css`.

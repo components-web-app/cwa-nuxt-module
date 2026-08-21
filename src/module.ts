@@ -56,7 +56,7 @@ function createDefaultCwaPages(
   function createTree(currentDepth: number) {
     const page = getPage(currentDepth)
     if (currentDepth < maxDepth) {
-      const child = createTree(++currentDepth)
+      const child = createTree(currentDepth + 1)
       page.children = [child]
     }
     return page
@@ -70,7 +70,7 @@ export const NAME = '@cwa/nuxt' as const
 export default defineNuxtModule<CwaModuleOptions>({
   moduleDependencies: {
     '@pinia/nuxt': {
-      version: '^0.11.3',
+      version: '^1.0.2',
       optional: false,
     },
     '@nuxtjs/robots': {

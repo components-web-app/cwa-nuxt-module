@@ -206,13 +206,12 @@ export default class Fetcher {
   }
 
   private async fetchManifest(event: FetchManifestEvent): Promise<void> {
-    let resourceTree: NestedJsonStructure[] = []
     try {
       const result = this.fetch({
         path: event.manifestPath,
       })
       const response = await result.response
-      resourceTree = response._data?.resource_iris || []
+      const resourceTree: NestedJsonStructure[] = response._data?.resource_iris || []
       if (this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
         this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, resourceIris: resourceTree })
         const flatPaths = resourceTree.flatMap(flattenManifestNode)
