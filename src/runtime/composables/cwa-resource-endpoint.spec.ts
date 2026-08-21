@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { ref, shallowReactive } from 'vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import * as resourceUtils from '#cwa/resources/resource-utils'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
@@ -28,10 +28,12 @@ describe('useCwaResourceEndpoint', () => {
     resources: {
       getResource: vi.fn(() => mockResource),
     },
-    admin: {
+    // shallowReactive so `isEditing` is tracked (it is `reactive()` store state in the app) while
+    // `forcePublishedVersion` stays a raw ref rather than being unwrapped by a deep reactive()
+    admin: shallowReactive({
       resourceStackManager: { forcePublishedVersion },
       isEditing: false,
-    },
+    }),
   }
 
   beforeEach(() => {
@@ -94,6 +96,59 @@ describe('useCwaResourceEndpoint', () => {
 
     const { query } = useCwaResourceEndpoint(iri)
     expect(query.value).toBe('')
+  })
+
+  describe('the query keeps following its inputs after setup', () => {
+    // Regression: `query` was written by a watcher on `applyPostfix`, so it only changed when
+    // `applyPostfix` did. Toggling the Publish tab from live back to draft leaves `applyPostfix`
+    // true (the resource is still publishable), so the query stayed `?published=true` and the next
+    // write was sent to the version the user was not looking at.
+    test('follows forcePublishedVersion flipping from live back to draft', () => {
+      const iri = ref<string | undefined>('/my/resource')
+      mockResource.value = { data: { '@id': '/my/resource', '@type': 'Component' } }
+      mockCwa.admin.isEditing = true
+      vi.mocked(resourceUtils.getPublishedResourceState).mockReturnValue(true)
+
+      const { endpoint, query } = useCwaResourceEndpoint(iri)
+      expect(query.value).toBe('')
+
+      forcePublishedVersion.value = true
+      expect(query.value).toBe('?published=true')
+
+      forcePublishedVersion.value = false
+      expect(query.value).toBe('?published=false')
+      expect(endpoint.value).toBe('/my/resource?published=false')
+    })
+
+    test('follows edit mode being turned off', () => {
+      const iri = ref<string | undefined>('/my/resource')
+      mockResource.value = { data: { '@id': '/my/resource', '@type': 'Component' } }
+      mockCwa.admin.isEditing = true
+      forcePublishedVersion.value = false
+      vi.mocked(resourceUtils.getPublishedResourceState).mockReturnValue(true)
+
+      const { query } = useCwaResourceEndpoint(iri)
+      expect(query.value).toBe('?published=false')
+
+      mockCwa.admin.isEditing = false
+      expect(query.value).toBe('?published=true')
+    })
+
+    test('clears once the resource is no longer publishable', () => {
+      const iri = ref<string | undefined>('/my/resource')
+      mockResource.value = { data: { '@id': '/my/resource', '@type': 'Component' } }
+      mockCwa.admin.isEditing = true
+      forcePublishedVersion.value = true
+      vi.mocked(resourceUtils.getPublishedResourceState).mockReturnValue(true)
+
+      const { query } = useCwaResourceEndpoint(iri)
+      expect(query.value).toBe('?published=true')
+
+      // the stack switched to the draft version of the same component
+      vi.mocked(resourceUtils.getPublishedResourceState).mockReturnValue(false)
+      mockResource.value = { data: { '@id': '/my/resource', '@type': 'Component' } }
+      expect(query.value).toBe('')
+    })
   })
 
   test('endpoint combines iri, postfix, and query', () => {

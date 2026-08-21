@@ -489,6 +489,20 @@ Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` a
 
 ---
 
+## Bug: the `?published=` query went stale, sending writes to the wrong version ✅ Fixed
+
+`useCwaResourceEndpoint` builds the endpoint every admin write goes to (`useCwaResourceModel`, `useCwaResourceUpload`) and the media URL `useCwaFile` reads. It held `query` as a **ref written by `watch(applyPostfix, …)`** — so the query only recomputed when `applyPostfix` *changed*, not when the values it is built from changed.
+
+`applyPostfix` is `(forcePublishedVersion !== undefined || !isEditing) && publishableState === true`, and `query` is `(forcePublishedVersion || !isEditing) ? '?published=true' : '?published=false'`. Both read `forcePublishedVersion`, but only the first one gated the write. So toggling the Publish tab from **live back to draft** leaves `applyPostfix` `true` — the resource is still publishable — the watcher never fires, and the query stays `?published=true`. The next write is then sent to **the version the user is not looking at**. Same for edit mode being turned off while a published resource is selected.
+
+It was partly self-masking: `applyPostfix` usually *does* flip as `currentIri` switches to the draft version (a draft's `publishableState` is `false`), which resets the query — so it only bites when the current resource stays published across the change.
+
+**Fix:** `applyPostfix` and `query` are both plain `computed`s — derived, never assigned — and the two watchers plus their `onBeforeUnmount` teardown are gone (a derived value needs no teardown, and the composable no longer requires a component instance). That also makes the query **synchronous**: the old watchers were pre-flush, so a request fired in the same tick as a toggle used the previous value even when the watcher would eventually have been right.
+
+**Why the existing tests missed it:** every case built the composable, read `query.value` once, and never changed anything afterwards — which is exactly the state the watcher got right. The three added cases in `cwa-resource-endpoint.spec.ts` mutate after setup (`forcePublishedVersion` live→draft, edit mode off, resource becoming a draft) and fail against the old implementation. `isEditing` is `shallowReactive` in the spec mock so it can be flipped — shallow deliberately, so the nested `forcePublishedVersion` stays a raw ref instead of being unwrapped.
+
+---
+
 ## Bug: deselecting a component style left its classes on the element ✅ Fixed
 
 `useCwaAutoClass` (applied by `useCwaResource` and `useCwaLayout`) kept a record — `activeSet` — of the classes it had put on the root element, so it could remove them when the style changed. It had a passive-detection heuristic on top: if **every** wanted token was already on the element, assume an owner (the component's own `:class`, or `ResourceLoader`'s `:class="resourceClassNames"`) is applying them, do nothing, **and clear `activeSet`**.
