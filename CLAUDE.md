@@ -489,6 +489,28 @@ Reached **71.0%** statement coverage (2026-06-28). See `### Coverage progress` a
 
 ---
 
+## Bug: deselecting a component style left its classes on the element ✅ Fixed
+
+`useCwaAutoClass` (applied by `useCwaResource` and `useCwaLayout`) kept a record — `activeSet` — of the classes it had put on the root element, so it could remove them when the style changed. It had a passive-detection heuristic on top: if **every** wanted token was already on the element, assume an owner (the component's own `:class`, or `ResourceLoader`'s `:class="resourceClassNames"`) is applying them, do nothing, **and clear `activeSet`**.
+
+That test is wrong, because "all wanted tokens are present" is also true when the new set is a **subset** of what the composable itself applied. Three real failures, all in **active** mode (no parent binding — a layout via `CwaRootLayout`, or any component that does not inherit the fallthrough class):
+
+| transition | old behaviour | correct |
+|---|---|---|
+| style `A` → a subset of `A` | unchanged | the dropped classes removed |
+| multiple-select `A+B` → `B` | unchanged | only `A`'s classes removed |
+| a style repeating a class from the template's own static `class`, then changed | strips the template's class | template class untouched |
+
+The middle row is the visible one: **deselect one style of a multiple selection and nothing happens.**
+
+**Fix:** drop the heuristic entirely and only ever remove what the composable itself added — `activeSet` becomes `(previous ∩ wanted) ∪ actually-added`. Passive mode then falls out for free rather than being detected: when an owner already applies the classes nothing is ever added, so `activeSet` stays empty and no class is ever stolen. It also stops the composable removing a class that came from the component's own markup.
+
+**Why the existing tests missed it:** `cwa-resource.spec.ts` / `cwa-layout.spec.ts` mock `classList` (`contains: () => true/false` as a constant), so no test ever observed the resulting DOM, and the passive cases asserted against a `contains` that could not go stale. `cwa-auto-class.spec.ts` mounts **real elements** in both modes and asserts `element.className` — 3 of its 13 cases fail against the old implementation.
+
+**Note on scope:** components rendered through `ResourceLoader` are passive (it binds `:class` from the resource's `uiClassNames`), and Vue's own class patch keeps those correct — verified across every transition, including multiple-select deselect. So this bug is live for **layouts** today, and for any component whose root does not receive the fallthrough class.
+
+---
+
 ## Bug: `[nuxt] instance unavailable` — SSR auth cookies dropped on nested resources ✅ Fixed ([#263](https://github.com/components-web-app/cwa-nuxt-module/issues/263))
 
 Fixed 2026-07-16. `CwaFetch`'s ofetch `onRequest` interceptor called `useRequestHeaders(['cookie'])`, which threw for every nested/batch resource during SSR.
