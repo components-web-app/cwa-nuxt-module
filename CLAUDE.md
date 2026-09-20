@@ -383,6 +383,27 @@ The goal is a polished, consistent component kit for the admin UI with no third-
 
 ---
 
+## API change: Route-level live / scheduled publication date (api-components-bundle#224 — front-end: [#287](https://github.com/components-web-app/cwa-nuxt-module/issues/287))
+
+**Landed on the API side.** Recorded here so the module stays in sync; no module code has been written for it yet.
+
+`Route` gains **`liveAt`** — a nullable date-time, readable and writable **only by `ROLE_ADMIN`** (it is simply absent from an anonymous route response). Three states: a past date is live, a future date is scheduled, `null` is draft / taken offline with the URL reserved.
+
+The API resolves an **effective** go-live by inheritance and gates on that, so the module must not compute liveness from `liveAt` alone:
+- effective = the **latest** date among the route's own `liveAt` and that of every ancestor page **that has a Route**; `null` anywhere in that set means not live
+- an ancestor page with **no Route** contributes nothing and is skipped, so a routed child under an unrouted template page stays live
+
+What the module will see:
+- a gated route is **404** on `GET /_/routes/{path}` and `GET /_/resource_manifest/{id}` for anonymous visitors, and is absent from anonymous route and page collections — this is the sitemap source, so [#278](https://github.com/components-web-app/cwa-nuxt-module/issues/278) gets scheduled-route exclusion for free
+- admins resolve, preview and edit it normally, and **drafts and scheduled routes still appear in the admin route collection** so they can be picked in link/route selectors before launch
+- a route redirecting to a gated target still returns `redirectPath`, but **not** the target's `page`/`pageData` IRI — following the redirect is the only way through, and it 404s until go-live
+- **known boundary:** a *component* reachable only via a gated route returns **401**, not 404. The API checks component access through an internal sub-request that deliberately still sees the 403. Do not treat a component 401 as an auth prompt in this case.
+- gated denials are `Cache-Control: no-store`; anonymous route/page collection responses have `s-maxage` capped at the next go-live moment
+
+`Route` is **not** `#[Publishable]` and has no draft twin, so `_metadata.publishable`, `publishedResource`/`draftResource` and `?published=` do not apply to it. `liveAt` is deliberately *not* named `publishedAt` partly because `getComponentMetadata` infers `isPublishable` from the presence of a `publishedAt` property (`api-documentation.ts`); keep that inference away from routes.
+
+---
+
 ## Open GitHub Issues
 
 All open issues from [components-web-app/cwa-nuxt-module](https://github.com/components-web-app/cwa-nuxt-module/issues). Last synced 2026-06-26.
