@@ -425,16 +425,6 @@ describe('ManageableResource Class', () => {
       }, false, instance.ops)
     })
 
-    // domElements is passed as the LIVE ref so ComponentFocus reacts to DOM changes while
-    // a resource is selected (e.g. the user switches UI variant and new elements mount).
-    //
-    // Because it is live, consumers must NOT use :static based on resourceStack to keep
-    // Headless UI containers open. resourceStack returns [] while a click is being processed,
-    // causing isEditing to flicker false for one flush cycle — the container unmounts and
-    // clears domElements before ComponentFocus can read them.
-    //
-    // The correct approach: let Headless UI open/close naturally. When the container is open
-    // and the user clicks a child component, the click is captured before any close() fires.
     test('domElements is the live ref so ComponentFocus updates when DOM changes after selection', () => {
       const { instance, $cwa } = createManageableResource()
 
@@ -453,11 +443,8 @@ describe('ManageableResource Class', () => {
 
       const [[passedStackItem]] = $cwa.admin.resourceStackManager.addToStack.mock.calls
 
-      // Stack item holds the SAME ref — not a copy
       expect(passedStackItem.domElements).toBe(instance.domElements)
 
-      // When addClickEventListeners() refreshes elements (e.g. after a UI variant switch
-      // causes new DOM nodes to mount), the live ref propagates to ComponentFocus automatically
       const el2 = { nodeType: 1, id: 'el2' }
       instance.domElements.value = [el2]
       expect(passedStackItem.domElements.value).toEqual([el2])
@@ -537,9 +524,7 @@ describe('ManageableResource Class', () => {
 
       instance.componentMountedListener('/child_placeholder')
 
-      // placeholder iri itself + published iris from the stripped iri
       expect(($cwa.resources as any).findAllPublishableIris).toHaveBeenCalledWith('/child')
-      // cascade emitted synchronously to grandparents with the currentIri
       expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/abc')
 
       await nextTick()
@@ -558,7 +543,6 @@ describe('ManageableResource Class', () => {
       ;($cwa.resources as any).findAllPublishableIris.mockImplementation((iri: string) => [iri])
 
       instance.componentMountedListener('/child')
-      // simulate the resource being cleared before nextTick flushes
       instance.isIriInit = false
 
       await nextTick()
@@ -649,7 +633,6 @@ describe('ManageableResource Class', () => {
       instance.domElements.value = []
       const dispatchEvent = vi.fn()
 
-      // watchOnce immediately invokes the callback simulating dom elements appearing
       watchOnceMock.mockImplementation((_source, cb) => {
         instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
         cb(instance.domElements.value)
@@ -666,7 +649,6 @@ describe('ManageableResource Class', () => {
       const { instance } = createManageableResource()
       instance.domElements.value = []
 
-      // callback invoked with an empty array should NOT resolve the promise
       watchOnceMock.mockImplementation((_source, cb) => {
         cb([])
         return vi.fn()
@@ -680,7 +662,6 @@ describe('ManageableResource Class', () => {
       await nextTick()
       expect(settled).toBe(false)
 
-      // now make elements appear and trigger the watch callback again
       const dispatchEvent = vi.fn()
       instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
       const cb = watchOnceMock.mock.calls[0][1]
@@ -697,10 +678,7 @@ describe('ManageableResource Class', () => {
       instance.currentIri = ref('/missing')
       instance.domElements.value = []
 
-      // watchOnce resolves the promise but leaves domElements empty (length check passes
-      // via a transient value that is reset before the await completes)
       watchOnceMock.mockImplementation((_source, cb) => {
-        // resolve by reporting a non-empty array, but the actual ref stays empty
         cb([{ nodeType: 1 }])
         return vi.fn()
       })

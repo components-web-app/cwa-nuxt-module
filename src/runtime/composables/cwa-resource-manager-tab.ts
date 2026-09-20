@@ -5,7 +5,6 @@ import { useCwa } from '#cwa/composables/cwa'
 export interface CwaResourceManagerTabOptions {
   name: string
   order?: number
-  // a ref/computed is passed straight through by `ref()` below, so a tab can disable itself conditionally
   disabled?: boolean | Ref<boolean>
 }
 

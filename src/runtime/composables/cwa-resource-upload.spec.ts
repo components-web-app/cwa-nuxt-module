@@ -15,7 +15,6 @@ vi.mock('#cwa/composables/cwa', () => ({
   }),
 }))
 
-// Two separate endpoint calls are made: one for upload, one for delete
 let endpointCallCount = 0
 vi.mock('#cwa/composables/cwa-resource-endpoint', () => ({
   useCwaResourceEndpoint: () => {
@@ -69,7 +68,6 @@ describe('useCwaResourceUpload', () => {
       expect(filenameInputModel.value).toBe('')
       resourceRef.value = { data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '2.4 MB' }] } } } }
       await nextTick()
-      // default fileDisplayType is now 'File'
       expect(filenameInputModel.value).toBe('Existing File (2.4 MB)')
     })
 
@@ -180,10 +178,6 @@ describe('useCwaResourceUpload', () => {
     })
   })
 
-  // Two independent fields (e.g. `file` + `preview`) over the SAME resource iri. They share only the
-  // resource; each instance must read/write its own `mediaObjects[filename]` key. This guards against
-  // the fields visibly coupling — if they ever do, it is a resource-data/store issue (a mediaObjects
-  // key going missing), NOT this composable. See api-components-bundle #199 for the data-side context.
   describe('two-field independence (file + preview on one resource)', () => {
     const withBoth = () => ref<any>({
       data: { _metadata: { mediaObjects: {
@@ -204,10 +198,9 @@ describe('useCwaResourceUpload', () => {
       mockGetResource.mockReturnValue(withBoth())
       const file = useCwaResourceUpload(iri, 'file')
       const preview = useCwaResourceUpload(iri, 'preview')
-      // File.vue does `value.value = file.name` on select → onUpdate:modelValue
       file.bind.value['onUpdate:modelValue']('newly-picked.png')
       expect(file.filenameInputModel.value).toBe('newly-picked.png')
-      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)') // unchanged
+      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)')
     })
 
     test('a full-resource update keeping both keys leaves the other field intact', async () => {
@@ -215,7 +208,6 @@ describe('useCwaResourceUpload', () => {
       mockGetResource.mockReturnValue(resourceRef)
       const file = useCwaResourceUpload(iri, 'file')
       const preview = useCwaResourceUpload(iri, 'preview')
-      // API returns a WHOLE new resource object (new refs) with both keys still present
       resourceRef.value = {
         data: { _metadata: { mediaObjects: {
           file: [{ formattedFileSize: '9 MB' }],
@@ -224,7 +216,7 @@ describe('useCwaResourceUpload', () => {
       }
       await nextTick()
       expect(file.filenameInputModel.value).toBe('Existing File (9 MB)')
-      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)') // must NOT couple
+      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)')
     })
   })
 })

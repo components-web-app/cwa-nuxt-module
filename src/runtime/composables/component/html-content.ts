@@ -3,19 +3,9 @@ import type { Ref, WatchStopHandle, App, MaybeRefOrGetter } from 'vue'
 import { useRouter } from 'vue-router'
 import { CwaLink } from '#components'
 
-/**
- * Converts anchors within rendered HTML content into mounted `CwaLink` components.
- *
- * @param container the element holding the rendered HTML (usually a `v-html` target)
- * @param html the HTML source rendered into the container. Optional, but without it the
- *   anchors can only be converted once — pass it so that new anchors are converted when the
- *   content changes while the same container element stays mounted.
- */
 export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeRefOrGetter<string | undefined>) => {
   const router = useRouter()
   let watchStopHandle: undefined | WatchStopHandle
-  // Every app we have mounted into the container. Vue apps are not garbage collected while
-  // mounted, so these must be unmounted before re-converting and when the component unmounts.
   const mountedApps: App<Element>[] = []
 
   function convertAnchor(anchor: HTMLElement): App<Element> | undefined {
@@ -28,18 +18,13 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeR
     function hrefToUrl(href: string) {
       try {
         const url = new URL(href)
-        // Same-host absolute URLs — strip origin so the router treats them as internal paths.
-        // Hostname-only comparison (not full origin) handles dev environments where links may be
-        // stored without the port (e.g. https://localhost/page vs https://localhost:3002/page).
         if (typeof window !== 'undefined' && url.hostname === window.location.hostname) {
           return url.pathname + url.search + url.hash
         }
         return href
       }
       catch (err) {
-        // Absolute paths starting with '/' are valid router paths — return as-is
         if (href.startsWith('/')) return href
-        // Bare words (e.g. lipsum "0") — prefix with // to treat as external rather than router path
         return `//${href}`
       }
     }
@@ -79,7 +64,6 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeR
   }
 
   function replaceAnchors() {
-    // The previous content (and the elements those apps were mounted into) has been replaced
     unmountApps()
 
     if (typeof container.value?.getElementsByTagName !== 'function') {
@@ -104,8 +88,6 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeR
   }
 
   onMounted(() => {
-    // `flush: 'post'` so the callback runs after Vue has written the new content into the
-    // container — a pre-flush watcher would re-convert the outgoing HTML
     watchStopHandle = watch([container, () => toValue(html)], replaceAnchors, {
       immediate: true,
       flush: 'post',

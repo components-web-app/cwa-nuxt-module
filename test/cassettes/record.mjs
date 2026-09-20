@@ -1,14 +1,9 @@
 #!/usr/bin/env node
 /**
- * #246 — Record real CWA API responses into a replay cassette for deterministic integration tests.
- *
  * Usage (dev API must be running; self-signed cert is accepted):
  *   node test/cassettes/record.mjs <cassette-name> <routePath> [routePath...]
  *
  * e.g. node test/cassettes/record.mjs topic-1-nested /topic-1 /topic-1/chapter-one /topic-1/chapter-two /
- *
- * For each route path it records the route resource, its manifest, and every resource IRI in the
- * manifest tree (deduped). Keyed by the exact request path the fetcher issues (with the /_api prefix).
  */
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'

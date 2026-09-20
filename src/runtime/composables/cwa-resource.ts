@@ -42,7 +42,6 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     // we need to emit this after we have already init manageable component so the first click event is this resource to clear the stack
     // otherwise the stack will not be cleared when the first event already is a resource existing in the current stack, clicking from one to another in same group
     // this is for adding a new resource where click events have already been assigned to the group etc. and clicking between components
-    // Guard: skip emit when rendered in a detached DOM tree (e.g. useDataResolver metadata extraction) — those renders should not trigger admin re-init on page components.
     const el = instance?.proxy?.$el
     if (el && !el.isConnected) {
       return
@@ -69,7 +68,6 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
 
   useCwaAutoClass(uiClassNames, ops)
 
-  // The first selected style name (styles map to one uiClassNames entry each — see cwa-styles).
   const getCurrentStyleName = (resource: CwaResource) => {
     if (!uiStyles?.classes) return
     return deriveSelectedStyles(resource.uiClassNames, uiStyles.classes)[0]

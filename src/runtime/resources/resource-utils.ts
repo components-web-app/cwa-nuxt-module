@@ -57,16 +57,7 @@ const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
 export class ResourceTypeFromIriCls extends Function {
   private pathPrefix: string | undefined
 
-  // Normalise at this single write point — every consumer already copes with an absent prefix
-  // (`getPathPrefix() || ''`), so handling the root case here fixes resource typing and the
-  // depth-aware `path` header (#261) together.
   setPathPrefix(prefix?: string) {
-    // Trailing slashes carry no meaning in a path prefix, and every consumer concatenates or strips
-    // it against IRIs that always start with '/'. Trimming them handles both shapes that broke:
-    // an API at a bare host (`https://api.example.com` → pathname '/') and an apiUrl configured
-    // with a trailing slash (`https://localhost/_api/` → '/_api/'). Left as-is, the first makes
-    // consumers eat the IRI's leading slash and build nonsense like '//_/routes/', and the second
-    // leaves '_/routes/…' unmatched. A prefix of only slashes is no prefix. See #266.
     this.pathPrefix = prefix?.replace(/\/+$/, '') || undefined
   }
 
@@ -75,8 +66,6 @@ export class ResourceTypeFromIriCls extends Function {
   }
 
   _call(iri: string): CwaResourceTypes | undefined {
-    // Strip the prefix from the START only — `String.replace` would remove the first occurrence
-    // anywhere, rewriting an IRI that merely contains the prefix from the wrong position.
     const iriToCompare = this.pathPrefix && iri.startsWith(this.pathPrefix) ? iri.slice(this.pathPrefix.length) : iri
     for (const type of Object.values(CwaResourceTypes)) {
       const prefix: string = resourceTypeToIriPrefix[type]

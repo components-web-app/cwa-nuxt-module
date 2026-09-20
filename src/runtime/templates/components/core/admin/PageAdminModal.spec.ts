@@ -235,7 +235,6 @@ describe('PageAdminModal', () => {
       const conferenceBtn = wrapper.findAll('button[type="button"]').find(b => b.text().trim() === 'Conference')
       expect(conferenceBtn).toBeTruthy()
       await conferenceBtn!.trigger('click')
-      // the active class should now be applied to the Conference button
       expect(conferenceBtn!.classes()).toContain('cwa:bg-stone-700/80')
     })
 
@@ -247,14 +246,11 @@ describe('PageAdminModal', () => {
       })
       const text = wrapper.text()
       expect(text).toContain('Titled Page')
-      // parent has neither reference nor title, falls back to the iri
       expect(text).toContain('/_/pages/uuid-2')
     })
   })
 })
 
-// Richer helper that returns the wrapper together with the reactive refs/mocks
-// so we can drive watchers, save/delete handlers, and onMounted side-effects.
 function setupRich(opts: {
   localDataOverrides?: Record<string, any>
   getResource?: (iri: string) => any
@@ -361,7 +357,6 @@ describe('PageAdminModal additional coverage', () => {
       const { wrapper, localResourceData, saveResource } = setupRich({
         localDataOverrides: { parentPage: null, parentPageData: '/page_data/foo' },
       })
-      // parentType derived from parentPageData -> 'data', so parentPage should be cleared, parentPageData kept
       const buttons = wrapper.findAllComponents({ name: 'CwaUiFormButton' })
       const saveClose = buttons.find(b => b.text().includes('& Close'))
       expect(saveClose).toBeTruthy()
@@ -379,7 +374,6 @@ describe('PageAdminModal additional coverage', () => {
       expect(saveBtn).toBeTruthy()
       await saveBtn!.trigger('click')
       expect(saveResource).toHaveBeenCalledWith(false)
-      // parentType is 'page', so parentPageData cleared, parentPage kept
       expect(localResourceData.value.parentPageData).toBeNull()
       expect(localResourceData.value.parentPage).toBe('/_/pages/uuid-2')
     })
@@ -416,7 +410,6 @@ describe('PageAdminModal additional coverage', () => {
       const { wrapper, saveResource } = setupRich({ isAdding: false })
       saveResource.mockClear()
       await wrapper.findComponent({ name: 'ResourceModal' }).vm.$emit('save')
-      // local saveResource() -> _saveResource(close) with default close=false
       expect(saveResource).toHaveBeenCalledWith(false)
     })
   })
@@ -438,7 +431,6 @@ describe('PageAdminModal additional coverage', () => {
         localDataOverrides: { parentPageData: null, parentPage: null },
         dataTypes: [{ resourceClass: 'App\\Entity\\BlogPost' }],
       })
-      // Switch the parent radio to "data" to reveal the type select
       await wrapper.findComponent({ name: 'ModalRadioTabs' }).vm.$emit('update:modelValue', 'data')
       await nextTick()
       const typeSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Parent Data Type')
@@ -468,7 +460,6 @@ describe('PageAdminModal additional coverage', () => {
       const options = instanceSelect!.props('options') as Array<{ label: string, value: string | null }>
       expect(options).toContainEqual({ label: 'Select…', value: null })
       expect(options).toContainEqual({ label: 'Alpha', value: '/page_data/a' })
-      // instance without title falls back to its @id
       expect(options).toContainEqual({ label: '/page_data/b', value: '/page_data/b' })
     })
 
@@ -483,7 +474,6 @@ describe('PageAdminModal additional coverage', () => {
       await typeSelect!.vm.$emit('update:modelValue', 'blogPost')
       await nextTick()
       localResourceData.value.parentPageData = '/page_data/a'
-      // change again -> oldKey is non-null so parentPageData should be cleared
       await typeSelect!.vm.$emit('update:modelValue', 'newsItem')
       await nextTick()
       expect(localResourceData.value.parentPageData).toBeNull()
@@ -502,7 +492,6 @@ describe('PageAdminModal additional coverage', () => {
         },
       })
       await nextTick()
-      // parentType should be 'data' and the instance select should be visible & resolved
       const typeSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Parent Data Type')
       expect(typeSelect).toBeTruthy()
       const instanceSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Parent Data')
@@ -570,7 +559,6 @@ describe('PageAdminModal additional coverage', () => {
       })
       await flushPromises()
       expect(localResourceData.value.layout).toBe('/_/layouts/default')
-      // sanity: no close emitted since layouts exist
       expect(wrapper.emitted('close')).toBeFalsy()
     })
   })
@@ -578,7 +566,6 @@ describe('PageAdminModal additional coverage', () => {
   describe('view link', () => {
     test('renders the eye/view link when not hidden and not adding', () => {
       const { wrapper } = setupRich({ isAdding: false })
-      // The view link lives in the #icons slot and contains the eye icon
       const html = wrapper.html()
       expect(html.toLowerCase()).toContain('eyeicon')
     })

@@ -11,9 +11,6 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
     return $cwa.forms.getForm(iri.value).value?.[fullName]?.vars
   })
 
-  // Emitted by the API on the ROOT form vars only (Symfony form option
-  // `realtime_validate_disabled`, e.g. the login and password-update forms).
-  // When set, the form has opted out of per-keystroke validation requests.
   const realtimeValidateDisabled = computed(() => {
     if (!iri.value) return false
     const rootName = fullName.split('[')[0]
@@ -91,9 +88,6 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
       if (!iri.value || !vars.value) return
       hasInteracted.value = true
       validating.value = true
-      // Include all registered field values so the API sees the full form context and
-      // returns validation state for all fields — prevents one field's response from
-      // clearing the validation state of other collection entries in the store.
       await $cwa.forms.validateField(`${iri.value}/submit`, {
         ...$cwa.forms.getFieldValues(iri.value),
         [fullName]: value.value,
@@ -105,9 +99,6 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
   }
 
   result.onInput = debounce(() => {
-    // Checked at fire time so a late-arriving form resource is still respected.
-    // Only the input-driven path is gated — an explicit validate() call is the
-    // consuming app's deliberate choice.
     if (realtimeValidateDisabled.value) return
     return result.validate()
   }, 300)

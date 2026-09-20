@@ -260,7 +260,6 @@ describe('Group synchronizer', () => {
         auth.signedIn.value = true
         await nextTick()
 
-        // prop was '/component/nav' but PATCH must send '/_api/component/nav' to match stored format
         expect(resourcesManager.updateResource).not.toHaveBeenCalled()
       }
       finally {

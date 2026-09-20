@@ -187,15 +187,6 @@ describe('Mercure -> init', () => {
   })
 })
 
-// #286 - the EventSource previously had ONLY an onmessage handler: no onerror, no onopen, no
-// online listener. A drop was therefore silent, and recovery relied entirely on the browser replaying
-// missed events via Last-Event-ID, which only backfills if the hub runs an event store. Without one,
-// everything that happened while disconnected is lost and the store sits quietly stale.
-//
-// Revalidation deliberately reuses the Mercure save path (`isNew: true`), because the resources store
-// already no-ops an unchanged resource (`isCwaResourceSame`) - so a reconnect where nothing changed
-// shows the user nothing at all, and a reconnect where something did changed surfaces the existing
-// "content is outdated / Update" notice rather than swapping content underneath them.
 describe('Mercure -> connection loss and recovery (#286)', () => {
   let mercure: Mercure
 

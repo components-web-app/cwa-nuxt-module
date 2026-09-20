@@ -164,8 +164,6 @@ async function findAvailableComponents(allowedComponents: undefined | string[], 
   const normalizedAllowed = prefix
     ? allowedComponents?.map(iri => iri.startsWith(prefix) ? iri.slice(prefix.length) : iri)
     : allowedComponents
-  // Mirror the server rule (#249): restricted-to-allowed when the group lists allowedComponents;
-  // otherwise offer everything except `explicitAllowOnly` (opt-in-only) types.
   const filteredAllowed = asEntries.filter(
     ([_, value]) => isComponentAllowedInGroup(value, normalizedAllowed),
   )

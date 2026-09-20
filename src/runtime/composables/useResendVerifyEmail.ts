@@ -25,8 +25,6 @@ export const useResendVerifyEmail = () => {
     }
     submitting.value = true
     error.value = undefined
-    // only an explicit 'new' targets the pending email change endpoint - anything
-    // else (including a JS caller passing nothing) verifies the current address
     const callFunction = (type: 'current' | 'new') => {
       if (type === 'new') {
         return $cwa.auth.resendVerifyNewEmail(username)

@@ -199,7 +199,6 @@ describe('Resources -> deleteResource', () => {
 
     resourcesActions.deleteResource({ resource: positionIri, noCascade: true })
 
-    // position deleted, but group componentPositions unchanged
     expect(resourcesState.current.byId[positionIri]).toBeUndefined()
     expect(resourcesState.current.byId[groupIri].data?.componentPositions).toEqual([positionIri])
   })
@@ -234,7 +233,6 @@ describe('Resources -> deleteResource', () => {
     resourcesActions.deleteResource({ resource: componentIri, noCascade: true })
 
     expect(resourcesState.current.byId[componentIri]).toBeUndefined()
-    // position not deleted because noCascade
     expect(resourcesState.current.byId[positionIri]).toBeDefined()
   })
 
@@ -247,7 +245,6 @@ describe('Resources -> deleteResource', () => {
     const publishedIri = '/component/published-1'
     const positionIri = '/_/component_positions/pos-1'
 
-    // Set up publishable mapping so findAllPublishableIris returns both IRIs
     resourcesState.current.publishableMapping = [{ publishedIri, draftIri }]
     resourcesState.current.byId[draftIri] = {
       apiState: { status: undefined },
@@ -271,7 +268,6 @@ describe('Resources -> deleteResource', () => {
 
     resourcesActions.deleteResource({ resource: draftIri })
 
-    // Position should now reference the published version
     expect(resourcesState.current.byId[positionIri]?.data?.component).toBe(publishedIri)
     expect(resourcesState.current.byId[draftIri]).toBeUndefined()
   })
@@ -661,7 +657,6 @@ describe('resources action setResourceFetchError', () => {
     const responseHeader: { value: string[] | undefined } = { value: undefined }
     vi.spyOn(app, 'useResponseHeader').mockReturnValueOnce(responseHeader as never)
 
-    // setCookieHeaders is a getter over the upstream response headers
     const error = createCwaResourceError({
       statusMessage: 'unauthorized',
       statusCode: 401,
@@ -675,7 +670,6 @@ describe('resources action setResourceFetchError', () => {
     await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
 
     expect(app.useResponseHeader).toHaveBeenCalledWith('Set-Cookie')
-    // re-serialised from the parsed attributes, so the attribute order is the library's, not ours
     expect(responseHeader.value).toEqual(['cwa_auth=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict'])
   })
 })
@@ -726,7 +720,6 @@ describe('resources action -> setResourceFetchStatus dynamic position', () => {
     }
     resourcesState.current.allIds.push(iri)
 
-    // Pass matching headers so getHeaders(event).path === getHeaders(originalApiState).path
     resourcesActions.setResourceFetchStatus({ iri, isComplete: false, path: '/page-a', headers: { path: '/page-a' } })
     expect(resourcesState.current.byId[iri].data).toBeDefined()
   })
@@ -774,7 +767,6 @@ describe('resources action -> saveResource', () => {
     })
     expect(resourcesState.current.byId.id.data).toStrictEqual(resource)
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
-    // resource was not already in currentIds — CRUD saves must not add to currentIds (#198)
     expect(resourcesState.current.currentIds).toStrictEqual([])
   })
 
@@ -994,11 +986,8 @@ describe('resources action -> evictResources (#257 route-cache LRU)', () => {
   test('cleans mapping entries: publishableMapping rows and component→positions references', () => {
     const resourcesState = buildState()
     actions(resourcesState, getters(resourcesState)).evictResources(['/component/gone', '/_/component_positions/1'])
-    // publishableMapping row referencing the evicted published IRI is dropped; the other kept
     expect(resourcesState.current.publishableMapping).toEqual([{ publishedIri: '/component/keep', draftIri: '/component/keep-draft' }])
-    // the evicted component's own mapping entry is deleted...
     expect(resourcesState.current.positionsByComponent['/component/gone']).toBeUndefined()
-    // ...and the evicted position IRI is removed from the remaining component's list
     expect(resourcesState.current.positionsByComponent['/component/keep']).toEqual([])
   })
 })
@@ -1020,7 +1009,6 @@ describe('resources action -> resetNewResource', () => {
     const resourcesActions = actions(resourcesState, resourcesGetters)
 
     const resourceIri = '__new__'
-    // Resource exists in byId but has no data
     resourcesState.current.byId[resourceIri] = { apiState: { status: undefined } }
     resourcesState.current.allIds.push(resourceIri)
     resourcesState.adding.value = { resource: resourceIri }

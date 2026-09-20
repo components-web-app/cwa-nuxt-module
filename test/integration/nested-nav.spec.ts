@@ -15,15 +15,12 @@ describe('#246 integration — nested navigation replay', () => {
     await h.fetcher.fetchRoute(h.route('/topic-1/chapter-one'))
     await flush()
 
-    // the real request sequence was issued against the replay
     expect(h.replay.requestLog).toContain('/_api/_/routes//topic-1/chapter-one')
     expect(h.replay.requestLog).toContain('/_api/_/resource_manifest//topic-1/chapter-one')
 
-    // the nested view resolved: depth-0 parent (Topic 1) + depth-1 child (chapter-one)
     expect(h.resources.pageIriAtDepth(0).value).toBe(TOPIC1_PAGE)
     expect(h.resources.pageIriAtDepth(1).value).toBe(CHAPTER_ONE_PAGE)
 
-    // and the page resources actually have data in the store
     expect(h.resources.getResource(TOPIC1_PAGE).value?.data).toBeTruthy()
     expect(h.resources.getResource(CHAPTER_ONE_PAGE).value?.data).toBeTruthy()
   })

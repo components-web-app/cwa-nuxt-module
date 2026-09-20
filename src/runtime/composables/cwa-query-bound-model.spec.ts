@@ -21,7 +21,6 @@ vi.mock('vue-router', async () => {
 
 describe('useQueryBoundModel', () => {
   beforeEach(() => {
-    // clear the reactive mock query
     for (const key of Object.keys(mockQuery)) {
       delete mockQuery[key]
     }
@@ -75,7 +74,6 @@ describe('useQueryBoundModel', () => {
       const { model } = useQueryBoundModel('page')
       model.value = '2'
       await nextTick()
-      // allow debounce to fire (it's 10ms by default, flush with vi fake timers or wait)
       await new Promise(resolve => setTimeout(resolve, 20))
       expect(mockRouterReplace).toHaveBeenCalledWith(
         expect.objectContaining({ query: expect.objectContaining({ page: '2' }) }),

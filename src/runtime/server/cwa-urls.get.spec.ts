@@ -62,8 +62,6 @@ describe('cwa-urls sitemap source', () => {
   })
 
   test('excludes a redirect route even though the API propagates the target page onto it', async () => {
-    // RouteNormalizer copies the final route's page/pageData onto a redirect route when
-    // serialising, so a redirect can carry a `page` - only `redirect` proves it is a redirect.
     mockFetcher.mockResolvedValue(collection([
       route('/topic-1', {
         redirect: '/_/routes//topic-1/chapter-one',
@@ -99,8 +97,6 @@ describe('cwa-urls sitemap source', () => {
   })
 
   test('keeps every route when no member exposes page or pageData at all', async () => {
-    // A shallower collection serialisation must never silently empty the sitemap - with no
-    // positive evidence that the fields exist we cannot judge, so we include.
     mockFetcher.mockResolvedValue(collection([
       route('/one'),
       route('/two'),

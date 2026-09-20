@@ -7,10 +7,6 @@ import Auth, { CwaAuthStatus } from './auth'
 import { useRoute } from '#app'
 import { ref } from '#imports'
 
-// Mutable hoisted state to drive the source-module mocks used by clearSession branch tests.
-// auth.ts imports useNuxtApp/useRoute/useRouter via #imports, which re-exports useNuxtApp from
-// '#app/nuxt' and useRoute/useRouter from '#app/composables/router' — so those are the modules to mock.
-// Plain objects only (vi.hoisted cannot use ref/reactive).
 const nuxtMockState = vi.hoisted(() => ({
   enabled: false,
   nuxtApp: { _processingMiddleware: false } as any,
@@ -805,12 +801,10 @@ describe('Auth', () => {
 
       await auth.clearSession()
 
-      // Early-return work still happens
       expect(authStore.useStore().data.user).toEqual(undefined)
       expect(cookie.value).toBe('0')
       expect(admin.toggleEdit).toHaveBeenCalledWith(false)
 
-      // But everything after the early return is skipped
       expect(mercure.init).not.toHaveBeenCalled()
       expect(fetcherStore.useStore().clearFetches).not.toHaveBeenCalled()
       expect(resourcesStore.useStore().clearResources).not.toHaveBeenCalled()

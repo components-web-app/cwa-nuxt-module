@@ -60,7 +60,6 @@ describe('CwaPage', () => {
   test('sets pageIri as key on ResourceLoader so KeepAlive caches per IRI', () => {
     const iri = '/_/pages/conf-uuid'
     mockCwa(iri)
-    // Explicit stub (non-shallow) gives a real component instance with $.vnode accessible
     const wrapper = mount(CwaPage, {
       global: {
         stubs: { ResourceLoader: { name: 'ResourceLoader', props: ['iri', 'componentPrefix'], template: '<div />' } },

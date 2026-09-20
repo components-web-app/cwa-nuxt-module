@@ -97,7 +97,6 @@ describe('SearchResource', () => {
       expect(wrapper.find('[data-testid="results-panel"]').exists()).toBe(true)
 
       await wrapper.find('input').trigger('blur')
-      // not yet hidden — unfocus has a 100ms delay
       expect(wrapper.find('[data-testid="results-panel"]').exists()).toBe(true)
 
       vi.advanceTimersByTime(100)
@@ -123,9 +122,7 @@ describe('SearchResource', () => {
       const wrapper = mountComp()
       await openDropdown(wrapper)
 
-      // mousedown on panel — with @mousedown.prevent the input won't blur
       await wrapper.find('[data-testid="results-panel"]').trigger('mousedown')
-      // panel should still be visible (focussed not changed by mousedown alone)
       expect(wrapper.find('[data-testid="results-panel"]').exists()).toBe(true)
     })
   })
@@ -140,7 +137,6 @@ describe('SearchResource', () => {
       await buttons[0].trigger('click')
 
       expect(wrapper.emitted('update:modelValue')).toBeTruthy()
-      // results are reversed in displaySearchResults, so index 0 is the last result
       const emittedValue = wrapper.emitted('update:modelValue')![0][0]
       expect(typeof emittedValue === 'string' && emittedValue.startsWith('/_/routes/')).toBe(true)
     })
@@ -164,7 +160,6 @@ describe('SearchResource', () => {
       await openDropdown(wrapper)
 
       await wrapper.find('input').trigger('blur')
-      // panel still visible — unfocus has not fired yet
       expect(wrapper.find('[data-testid="results-panel"]').exists()).toBe(true)
     })
 

@@ -4,7 +4,6 @@ import { reactive, ref, nextTick } from 'vue'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import { useComponentGroupEvents } from './ComponentGroup.Util.Events'
 
-// A reactive resource store keyed by IRI; getResource returns a { value } wrapper like $cwa does.
 let store: Record<string, any>
 
 function makeCwa() {
@@ -65,8 +64,8 @@ describe('useComponentGroupEvents', () => {
 
   test('excludes temporary (__new__ / adding) and errored/absent components from the payload but does not hang on them', async () => {
     store['/p1'] = position('/c1')
-    store['/p2'] = position('__new__') // temporary add — skipped
-    store['/p3'] = position('/c3') // errored — terminal, excluded from payload
+    store['/p2'] = position('__new__')
+    store['/p3'] = position('/c3')
     store['/c1'] = component(CwaResourceApiStatuses.SUCCESS)
     store['/c3'] = reactive({ apiState: { status: CwaResourceApiStatuses.ERROR }, data: undefined })
     const onLoaded = vi.fn()
@@ -86,14 +85,13 @@ describe('useComponentGroupEvents', () => {
     await nextTick()
     expect(onLoaded).toHaveBeenCalledTimes(1)
 
-    // add a second, persisted component
     store['/p2'] = position('/c2')
     store['/c2'] = component(CwaResourceApiStatuses.SUCCESS)
     positions.value = ['/p1', '/p2']
     await nextTick()
-    vi.runAllTimers() // flush debounce
+    vi.runAllTimers()
 
-    expect(onLoaded).toHaveBeenCalledTimes(1) // not re-fired
+    expect(onLoaded).toHaveBeenCalledTimes(1)
     expect(onUpdated).toHaveBeenCalledTimes(1)
     expect(onUpdated).toHaveBeenCalledWith([
       { component: '/c1', position: '/p1' },

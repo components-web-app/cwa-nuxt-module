@@ -370,7 +370,6 @@ describe('RoutesTab', () => {
       mockCwaFull({ fetch })
       const wrapper = mountTab()
       await flushPromises()
-      // fetched against the route children endpoint
       expect(fetch).toHaveBeenCalledWith({ path: '/_/routes//conference/programme/children' })
       const text = wrapper.text()
       expect(text).toContain('Child routes')
@@ -413,7 +412,6 @@ describe('RoutesTab', () => {
       mockCwaFull({ fetch })
       const wrapper = mountTab()
       await flushPromises()
-      // immediate watch with res null takes the else branch -> no fetch, no child routes rendered
       expect(fetch).not.toHaveBeenCalled()
       expect(wrapper.text()).not.toContain('Child routes')
     })
@@ -558,7 +556,6 @@ describe('RoutesTab', () => {
         capturedFn = fn
         return Promise.resolve()
       })
-      // current route.path in the nuxt test env is '/'; set the resource path to match
       mockUseItemPage.mockReturnValue({
         isLoading: ref(false),
         isUpdating: ref(false),
@@ -584,9 +581,6 @@ describe('RoutesTab', () => {
       await flushPromises()
       expect(capturedFn).toBeTypeOf('function')
       capturedFn!()
-      // MUST be the `_cwa-resource-page` named route, not the bare IRI string: `cwaPage0` is only a
-      // param of that route, so navigating to the IRI as a path matches the catch-all instead and
-      // the primary fetch requests `/_/routes/<whole IRI>` - a guaranteed 404.
       expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/p' } })
     })
 
@@ -701,7 +695,6 @@ describe('RoutesTab', () => {
       mountTab()
       await flushPromises()
       loadResource.mockClear()
-      // numeric SUCCESS enum + path missing the /redirects suffix triggers the fix
       apiState.value = { status: CwaResourceApiStatuses.SUCCESS, path: '/_/routes//conference/programme' }
       await flushPromises()
       expect(isLoading.value).toBe(true)

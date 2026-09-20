@@ -121,7 +121,6 @@ describe('FetcherStore getters -> resolvedDisplayFetchStatus', () => {
     const displayedStatus = { path: '/displayed' }
     fetcherGetterUtilsMock.getFetchStatusByToken.mockImplementation((token: string) => (token === 'displayed-token' ? displayedStatus : { path: '/success' }))
     expect(getterFns.resolvedDisplayFetchStatus.value).toBe(displayedStatus)
-    // does not need to consult the success token / resolving state when a displayed token resolves
     expect(fetcherGetterUtilsMock.isFetchResolving).not.toHaveBeenCalled()
   })
 

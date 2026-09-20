@@ -47,9 +47,6 @@ const uiOptions = computed(() => {
   return options
 })
 
-// Styles map to the resource's flat `uiClassNames: string[]` as one entry per selected style (its
-// class string — see cwa-styles), for BOTH single and multiple select. The select operates on style
-// NAMES; single mode picks at most one (with a "Default"/none option), multiple picks several.
 const styleClasses = computed<Record<string, string | string[]>>(() => current.value?.styles?.value?.classes || {})
 const isMultipleStyles = computed(() => !!current.value?.styles?.value?.multiple)
 const showStyleSelect = computed(() => Object.keys(styleClasses.value).length > 0)
@@ -62,7 +59,6 @@ const singleStyleOptions = computed<SelectOption[]>(() => [
   ...styleNameOptions.value,
 ])
 
-// multiple: array of selected names <-> one uiClassNames entry per style
 const selectedStyleNames = computed<string[]>({
   get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value),
   set: (names) => {
@@ -70,7 +66,6 @@ const selectedStyleNames = computed<string[]>({
     uiClassNamesModel.model.value = merged.length ? merged : null
   },
 })
-// single: at most one selected name <-> a one-element (or null) uiClassNames
 const selectedStyleName = computed<string | null>({
   get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value)[0] ?? null,
   set: (name) => {

@@ -126,8 +126,6 @@ describe('useComponentGroupPositions', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      // After moving 'a' from index 0 to 1: ['b','a','c']
-      // sortDisplayNumbers: b=1, a=2, c=3
       expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(3)
       const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
@@ -140,7 +138,6 @@ describe('useComponentGroupPositions', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/c', location: 'previous' })
-      // After moving 'c' from index 2 to 1: ['a','c','b']
       const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/a']).toBe(1)
@@ -152,7 +149,6 @@ describe('useComponentGroupPositions', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'previous' })
-      // newIndex = -1 → clamped to 0 → no move
       const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/a']).toBe(1)
@@ -162,7 +158,6 @@ describe('useComponentGroupPositions', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 3 })
-      // newIndex = 3 - 1 = 2 → ['b','c','a']
       const calls = mockCwa.resourcesManager.storeResource.mock.calls
       const updated = Object.fromEntries(calls.map(([{ resource }]: any) => [resource['@id'], resource._metadata.sortDisplayNumber]))
       expect(updated['/_/component_positions/a']).toBe(3)
@@ -186,7 +181,6 @@ describe('useComponentGroupPositions', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(sparsePositions, sparseResources)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      // 'missing' has no resource data — should be skipped (only 2 saveResource calls)
       expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(2)
     })
   })
@@ -201,7 +195,6 @@ describe('useComponentGroupPositions', () => {
     })
 
     function buildDynamicCwa(initialPositions: string[], initialResources: Record<string, any>) {
-      // reactive deep-copy so Vue computed can track sortDisplayNumber changes via saveResource
       const positionResources = reactive(JSON.parse(JSON.stringify(initialResources)))
 
       let capturedHandler: ((e: ReorderEvent) => void) | undefined
@@ -220,7 +213,6 @@ describe('useComponentGroupPositions', () => {
           emitRedraw: vi.fn(),
         },
         resources: {
-          // return positions sorted by current sortDisplayNumber so debounce sees the new order
           getOrderedPositionsForGroup: vi.fn(() => {
             return [...initialPositions].sort((a, b) => {
               const aNum = positionResources[a]?._metadata?.sortDisplayNumber ?? positionResources[a]?.sortValue ?? 0
@@ -272,7 +264,6 @@ describe('useComponentGroupPositions', () => {
       const initialPositions = ['/_/component_positions/a', '/_/component_positions/b']
       const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
       useComponentGroupPositions(iriRef, mockCwa)
-      // moving 'a' previous → clamped to index 0 = no change
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'previous' })
       vi.advanceTimersByTime(1100)
       await nextTick()
@@ -321,18 +312,14 @@ describe('useComponentGroupPositions', () => {
         ['/_/component_positions/a', '/_/component_positions/b', '/_/component_positions/c', '/_/component_positions/d'],
         positionResources,
       )
-      // resolve updateResource immediately
       mockCwa.resourcesManager.updateResource.mockResolvedValue(undefined)
       useComponentGroupPositions(iriRef, mockCwa)
-      // move 'a' (index 0) to index 2 (location 3)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 3 })
       vi.advanceTimersByTime(1100)
       await nextTick()
       await nextTick()
       await Promise.resolve()
       await nextTick()
-      // updateRelatedLocalSortValues should have been called; check saveResource was called for the updated positions
-      // positions b and c (between old index 0 and new index 2) should have sortValue decremented by 1
       const saveResourceCalls = mockCwa.resourcesManager.storeResource.mock.calls
       const relatedCalls = saveResourceCalls.filter(([{ resource }]: any) =>
         resource['@id'] !== '/_/component_positions/a',

@@ -67,9 +67,7 @@ describe('Storage addUniquePromise', () => {
     const result = storage.addUniquePromise('scope', 'key', async () => {
       resolved = true
     })
-    // first call returns undefined (no return statement for new keys)
     expect(result).toBeUndefined()
-    // wait for microtask queue to flush
     await Promise.resolve()
     expect(resolved).toBe(true)
   })
@@ -80,8 +78,8 @@ describe('Storage addUniquePromise', () => {
     const fn = () => new Promise<void>((resolve) => {
       resolveFn = resolve
     })
-    storage.addUniquePromise('scope', 'key', fn) // first call - starts promise
-    const p2 = storage.addUniquePromise('scope', 'key', fn) // second call - returns existing
+    storage.addUniquePromise('scope', 'key', fn)
+    const p2 = storage.addUniquePromise('scope', 'key', fn)
     expect(p2).toBeInstanceOf(Promise)
     resolveFn!()
   })
@@ -89,7 +87,6 @@ describe('Storage addUniquePromise', () => {
   test('allows a new fn call after previous key completed', async () => {
     const storage = new Storage('test')
     storage.addUniquePromise('scope', 'key', () => Promise.resolve())
-    // wait for promise to complete and delete key
     await new Promise(resolve => setTimeout(resolve, 0))
     let ran = false
     storage.addUniquePromise('scope', 'key', async () => {

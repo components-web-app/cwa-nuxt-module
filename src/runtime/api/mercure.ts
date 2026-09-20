@@ -90,9 +90,6 @@ export default class Mercure {
     this.listenForOnline()
   }
 
-  // The browser fires `online` on the network INTERFACE coming back, which is not proof the hub is
-  // reachable - so it is only a hint, and we act on it exactly as we would a reconnect: revalidate.
-  // Harmless if the hub is still down, because the refetch simply fails and nothing is staged.
   private listenForOnline() {
     if (this.onlineListenerAttached || typeof window === 'undefined') {
       return
@@ -114,8 +111,6 @@ export default class Mercure {
   }
 
   private handleConnectionOpen() {
-    // `connected` is undefined until the first open: an initial connection has missed nothing, so
-    // revalidating then would be a pointless refetch of everything we just loaded.
     const isReconnect = this.mercureStore.connected === false
     this.mercureStore.connected = true
     if (!isReconnect) {
@@ -125,18 +120,6 @@ export default class Mercure {
     this.revalidateCurrentResources()
   }
 
-  /**
-   * Refetch everything currently on screen and stage it exactly as a Mercure message would.
-   *
-   * We do NOT trust the hub to replay what we missed: `Last-Event-ID` only backfills if the hub runs
-   * an event store, and the default template deployment does not configure one - so anything that
-   * happened while we were disconnected would otherwise be lost silently.
-   *
-   * Staging with `isNew: true` is what makes this safe to run unconditionally: the resources store
-   * discards an unchanged resource (`isCwaResourceSame`), so an uneventful reconnect shows the user
-   * nothing, and a genuine change surfaces the existing "content is outdated" notice instead of
-   * rewriting the page underneath them.
-   */
   private revalidateCurrentResources() {
     const run = async () => {
       const currentIds = [...this.resourcesStore.current.currentIds]
@@ -154,8 +137,6 @@ export default class Mercure {
       }
     }
 
-    // Same deferral the message queue uses - revalidating mid-fetch would stage resources against a
-    // set of current IDs that is already changing.
     if (!this.requestsInProgress.value) {
       return run()
     }

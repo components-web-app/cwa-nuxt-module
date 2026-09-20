@@ -77,7 +77,6 @@ describe('useResendVerifyEmail', () => {
   test('only an explicit "new" type reaches the pending email change endpoint', async () => {
     mockAuth.resendVerifyEmail.mockResolvedValue({})
     const { resendVerifyEmail } = useResendVerifyEmail()
-    // a JS caller passing an unexpected value must not silently hit the wrong endpoint
     await resendVerifyEmail('user@example.com', 'bogus' as unknown as 'current' | 'new')
     expect(mockAuth.resendVerifyNewEmail).not.toHaveBeenCalled()
     expect(mockAuth.resendVerifyEmail).toHaveBeenCalledWith('user@example.com')

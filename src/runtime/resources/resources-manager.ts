@@ -341,14 +341,7 @@ export class ResourcesManager {
     this.errorStore.removeById(id)
   }
 
-  // @internal — MODULE USE ONLY. Writes straight to the store and makes NO API request, so it is
-  // not a way for an application to persist anything: apps use createResource / updateResource /
-  // deleteResource, or useCwaResourceModel. Named `storeResource` (not `saveResource`) precisely so
-  // that is unambiguous at the call site. Cannot be private — three module call sites live outside
-  // this class: `composables/reset-password.ts` (stashing a 422 form response so the form
-  // composables can render its errors) and `ComponentGroup.Util.Positions.ts` ×2 (projecting a
-  // reorder locally — the display sort number, and the sortValue shuffle the server will perform —
-  // to avoid re-fetching every position).
+  // @internal
   public storeResource(event: SaveResourceEvent | SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
@@ -490,9 +483,6 @@ export class ResourcesManager {
 
     const refreshEndpoints: string[] = []
 
-    // The group IRI whose positions may need to be shifted before inserting the new component.
-    // When targetIri IS the group (add to start/end), use it directly; otherwise use the
-    // closest group from the resource stack (the group that contains the target position).
     const shiftGroupIri = getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP
       ? addEvent.targetIri
       : addEvent.closest.group
@@ -572,10 +562,6 @@ export class ResourcesManager {
         refreshEndpoints.push(...this.getRefreshPositions(positionIri))
       })()
 
-      // Shift existing positions up to make room for the new one at capturedSortValue.
-      // Without this, "add before" gives the new position the same sortValue as the target,
-      // and "add after" may collide with the position immediately following the target.
-      // Patching from highest sortValue downward avoids intermediate collisions.
       if (shiftGroupIri && capturedSortValue !== undefined) {
         const groupData = this.resourcesStore.getResource(shiftGroupIri)?.data
         if (groupData?.componentPositions) {

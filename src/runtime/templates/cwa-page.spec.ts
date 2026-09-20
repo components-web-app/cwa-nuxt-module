@@ -12,8 +12,6 @@ let capturedOgImageArgs: any[] = []
 
 const emitRedraw = vi.fn()
 
-// `var` + assignment inside the hoisted factory: the component watches these, so they have to be
-// real refs, which vi.hoisted cannot create
 // eslint-disable-next-line no-var
 var mockElementSize: { width: Ref<number>, height: Ref<number> }
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -91,8 +89,6 @@ describe('CWA page', () => {
     createWrapper()
     expect(emitRedraw).not.toHaveBeenCalled()
 
-    // counts rather than exact calls: wrappers mounted by earlier tests are never unmounted and
-    // share these mocked size refs, so each change fires one watcher per live instance
     mockElementSize.width.value = 800
     await nextTick()
     const afterWidth = emitRedraw.mock.calls.length
@@ -139,7 +135,6 @@ describe('CWA page', () => {
 
     test('returns fallback value when no titles at any depth and fallback enabled', () => {
       mockCwaWithDepths([{}], true)
-      // fallbackTitle: route.path = '/' in test env → last segment empty → null
       expect(capturedHeadConfig!.title()).toBeNull()
     })
 

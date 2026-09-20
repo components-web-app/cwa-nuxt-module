@@ -49,8 +49,6 @@ describe('cwa-admin middleware', () => {
     expect(nuxt.navigateTo).not.toHaveBeenCalled()
   })
 
-  // Mirrors the long-standing guard in `_cwa/index.vue` — a signed-in non-admin is not going to
-  // gain the role by logging in again, so bouncing them to login would be a loop, not a fix.
   test('sends a signed-in non-admin home, not to login', async () => {
     mockCwa({ signedIn: true, isAdmin: false })
     await cwaAdminMiddleware(createRoute(), createRoute())
@@ -66,8 +64,6 @@ describe('cwa-admin middleware', () => {
     })
   })
 
-  // `isAdmin` reads roles off the fetched user, which is populated by init(). Deciding before that
-  // resolves would bounce a legitimate admin off their own page on a server-rendered load.
   test('resolves the user before deciding, so an admin is never wrongly bounced', async () => {
     const { init } = mockCwa({ signedIn: true, isAdmin: true })
     await cwaAdminMiddleware(createRoute(), createRoute())

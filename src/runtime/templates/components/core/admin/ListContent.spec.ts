@@ -5,7 +5,6 @@ import { mount, flushPromises } from '@vue/test-utils'
 import ListContent from './ListContent.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-// Reactive route mock shared across the spec
 // eslint-disable-next-line no-var
 var mockRoute: { query: Record<string, any> }
 vi.mock('vue-router', async () => {
@@ -15,8 +14,6 @@ vi.mock('vue-router', async () => {
   return { ...mod, useRoute: () => mockRoute, useRouter: () => ({ replace: vi.fn() }) }
 })
 
-// useQueryBoundModel is auto-imported from #imports → source module.
-// The shared holder exposes the real refs the component mutates.
 const models = vi.hoisted(() => ({ pageModel: null as any, perPageModel: null as any }))
 vi.mock('#cwa/composables/cwa-query-bound-model', async () => {
   const { ref } = await import('vue')
@@ -90,7 +87,6 @@ describe('ListContent', () => {
   })
 
   test('shows the spinner while loading on initial mount', () => {
-    // fetch never resolves so loading stays true
     mockCwa({ fetchImpl: vi.fn(() => ({ response: new Promise(() => {}) })) })
     const wrapper = mountComponent()
     expect(wrapper.findComponent(SpinnerStub).exists()).toBe(true)
@@ -196,8 +192,6 @@ describe('ListContent', () => {
     const wrapper = mountComponent()
     await flushPromises()
     await nextTick()
-    // items stays empty (data is falsy, member assignment skipped) but loading
-    // is cleared unconditionally → "no items found" message renders.
     expect(wrapper.findComponent(SpinnerStub).exists()).toBe(false)
     expect(wrapper.text()).toContain('Sorry, no items found')
   })
@@ -210,8 +204,6 @@ describe('ListContent', () => {
       models.pageModel.value = 4
       mockRoute.query = { filter: 'abc' }
       await flushPromises()
-      // pageModel ref is reset to 1 by the watcher
-      // verify via re-fetch behaviour: changing query triggers reload
       expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2)
     })
 
@@ -220,7 +212,6 @@ describe('ListContent', () => {
       mountComponent()
       await flushPromises()
       const callsAfterMount = fetchMock.mock.calls.length
-      // assigning same object reference does not change deep value
       await flushPromises()
       expect(fetchMock.mock.calls.length).toBe(callsAfterMount)
     })

@@ -14,14 +14,11 @@ vi.mock('../composables/useItemPage', () => ({
   useItemPage: mockUseItemPage,
 }))
 
-// `#components` is a nuxt virtual module and cannot be vi.mock'ed (its id does not resolve outside
-// the nuxt vite plugins), so the resolvable set is the playground's real registered layouts.
 const resolvableLayoutNames = componentNames.filter((n: string) => n.startsWith('CwaLayout'))
 const resolvableLayoutName = resolvableLayoutNames[0]
 const otherResolvableLayoutName = resolvableLayoutNames[1]
 const unresolvableLayoutName = 'CwaLayoutRenamedAway'
 
-// keyed by the "clean" name (the CwaLayout prefix stripped)
 const layoutsConfig = { [resolvableLayoutName.replace(/^CwaLayout/, '')]: { name: 'Configured Name' } }
 
 function expectedResolvableOptions() {

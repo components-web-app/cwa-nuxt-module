@@ -20,7 +20,6 @@ vi.mock('vue', async () => {
 
 function makeOps(overrides: Partial<FileOpsType> = {}): FileOpsType {
   return {
-    // explicit complete:false + naturalHeight:0 avoids the onMounted auto-load path
     imageRef: ref({ complete: false, naturalHeight: 0 } as any),
     mediaObjects: computed(() => ({})),
     ...overrides,
@@ -138,18 +137,8 @@ describe('useCwaFile', () => {
       expect(loaded.value).toBe(false)
     })
 
-    /**
-     * The ref is not always a bare `<img>`. `ref="file"` on a COMPONENT (`<NuxtImg ref="file">`, as
-     * the playground uses) resolves to the component instance; a ref name that doesn't match
-     * `fileProp` resolves to null; a file field needn't be an image at all.
-     *
-     * In every one of those cases `naturalHeight` is `undefined`, and `undefined !== 0` is TRUE — so
-     * `loaded` flipped true on mount, before the image had loaded, and the placeholder vanished
-     * instantly. Anything we cannot positively identify as a loaded <img> must wait for `@load`.
-     */
     describe('when the ref is not a bare img element', () => {
       test('resolves a component instance to its root element and respects its load state', () => {
-        // <NuxtImg ref="file"> — useTemplateRef gives the component, whose $el is the real <img>
         const component = { $el: { complete: false, naturalHeight: 0 } }
         const ops = makeOps({ imageRef: ref(component as any) })
         const { loaded } = useCwaFile(iri, ops)
@@ -176,8 +165,6 @@ describe('useCwaFile', () => {
       })
     })
 
-    // #267: `imageRef` is optional and no longer auto-registered, so the common case is now no ref
-    // at all. There is nothing to inspect, so the check is skipped and `@load` drives `loaded`.
     describe('when no imageRef is supplied', () => {
       test('skips the mount check without throwing and waits for @load', () => {
         const ops: FileOpsType = { mediaObjects: computed(() => ({})) }

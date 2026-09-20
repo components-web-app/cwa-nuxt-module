@@ -26,7 +26,6 @@ describe('site-config store actions', () => {
     test('converts "false" string — stores processApiValue behavior', () => {
       const { s, a } = setup()
       a.setConfigParameter('sitemapEnabled', 'false')
-      // store's processApiValue: Boolean('false') = true (legacy behavior)
       expect(s.config.value.sitemapEnabled).toBe(true)
     })
 

@@ -104,7 +104,6 @@ function setup(opts: {
   return { wrapper, handlers, localResourceData }
 }
 
-// The meta fields block only renders for a non-Page resource (page data)
 function setupPageData(opts: { pageDataConfig?: any, localDataOverrides?: Record<string, any> } = {}) {
   return setup({
     iri: '/page_data/uuid-self',
@@ -129,8 +128,6 @@ describe('PageResourceAdminModal delete', () => {
     await clickDelete(wrapper)
     expect(handlers.deleteResource).toHaveBeenCalled()
 
-    // must navigate from requestCompleteFn (2nd arg) - it runs before the resource is removed from
-    // the store, unlike saveCompleteFn which would leave the user on a page that no longer exists
     const requestCompleteFn = handlers.deleteResource.mock.calls[0][1]
     expect(requestCompleteFn).toBeInstanceOf(Function)
     await requestCompleteFn()
@@ -194,7 +191,6 @@ describe('PageResourceAdminModal meta fields config', () => {
 
     expect(inputLabels).toContain('Subtitle')
     expect(selectLabels).not.toContain('Subtitle')
-    // an explicit 'select' and an entry with no type both keep rendering as a select
     expect(selectLabels).toEqual(expect.arrayContaining(['Category', 'Status']))
     expect(inputLabels).not.toContain('Category')
     expect(inputLabels).not.toContain('Status')

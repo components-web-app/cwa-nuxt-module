@@ -229,8 +229,6 @@ describe('getters -> findPublishedComponentIri / findDraftComponentIri', () => {
   })
 
   test('findDraftComponentIri treats non-existent resource as draft and returns its IRI', () => {
-    // findIsPublishedByIri returns false (not undefined) for missing resources,
-    // so the IRI itself is returned as the "draft" IRI
     expect(getterFns.findDraftComponentIri.value('/non-existent')).toBe('/non-existent')
   })
 })

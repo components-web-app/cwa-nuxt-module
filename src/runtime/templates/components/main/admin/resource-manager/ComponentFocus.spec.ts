@@ -5,11 +5,8 @@ import { mount } from '@vue/test-utils'
 import ComponentFocus from './ComponentFocus.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-// uuid is mocked so assignReorderId is deterministic
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'mock-reorder-id') }))
 
-// useElementSize / useWindowSize are mocked — happy-dom does not implement
-// ResizeObserver and we want to control the reactive width/height values.
 const { elementSizeInstances, windowSizeRef } = vi.hoisted(() => ({
   elementSizeInstances: [] as Array<{ width: any, height: any, stop: any }>,
   windowSizeRef: { width: null as any, height: null as any },
@@ -29,7 +26,6 @@ vi.mock('@vueuse/core', async () => {
   }
 })
 
-// Shared admin event bus mock so we can capture the registered handlers.
 const eventHandlers: Record<string, ((...args: any[]) => void)> = {}
 
 function makeEventBus() {
@@ -59,7 +55,6 @@ function mockCwa(getResourceImpl: (iri: string) => any = () => ref(undefined)) {
   }))
 }
 
-// A fake DOM element implementing the minimal interface ComponentFocus needs.
 function makeEl(rect: Partial<DOMRect>, nodeType = 1) {
   return {
     nodeType,
@@ -83,14 +78,11 @@ function mountFocus({
   const domElementsRef = computed(() => els)
   const wrapper = mount(ComponentFocus, {
     props: {
-      // These props are themselves refs/computed in real usage (passed by
-      // resource-stack-manager via createApp), so we pass refs here too.
       iri: iriRef,
       domElements: domElementsRef,
     } as any,
     global: {
       stubs: {
-        // client-only renders its default slot synchronously
         'client-only': { template: '<div><slot /></div>' },
       },
     },
@@ -123,8 +115,8 @@ describe('ComponentFocus', () => {
       const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
       expect(style).toContain('top: 10px')
       expect(style).toContain('left: 20px')
-      expect(style).toContain('width: 100px') // right(120) - left(20)
-      expect(style).toContain('height: 50px') // bottom(60) - top(10)
+      expect(style).toContain('width: 100px')
+      expect(style).toContain('height: 50px')
     })
 
     test('takes the union (min top/left, max width/height) across multiple elements', () => {
@@ -138,11 +130,7 @@ describe('ComponentFocus', () => {
       const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
       expect(style).toContain('top: 10px')
       expect(style).toContain('left: 5px')
-      // width = max(right) - min(left) = 200 - 5 = 195
       expect(style).toContain('width: 195px')
-      // height is computed as max(bottom - top) where top is the running min at
-      // the time each element is processed. el1: 100-50=50; el2: top becomes 10,
-      // 80-10=70 → max is 70.
       expect(style).toContain('height: 70px')
     })
 
@@ -152,7 +140,6 @@ describe('ComponentFocus', () => {
         els: [makeEl({ top: 10, left: 20, right: 120, bottom: 60 }, 3 /* text node */)],
       })
       const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
-      // No element contributed → top/left remain the huge clear coords, width/height 0
       expect(style).toContain('width: 0px')
       expect(style).toContain('height: 0px')
     })
@@ -233,8 +220,6 @@ describe('ComponentFocus', () => {
     test('reorder event assigns a new reorderId from uuid', async () => {
       mockCwa()
       const { wrapper } = mountFocus()
-      // reorderId feeds the position computed; trigger the handler then assert
-      // the computed re-runs without error.
       eventHandlers.reorder()
       await nextTick()
       expect(wrapper.find('div.cwa\\:animate-pulse').exists()).toBe(true)
@@ -261,7 +246,6 @@ describe('ComponentFocus', () => {
 
     test('stops previous instances and recreates when domElements change', async () => {
       mockCwa()
-      // Use a mutable ref of elements so the watched computed changes.
       const elsRef = ref<HTMLElement[]>([makeEl({ top: 0, left: 0, right: 10, bottom: 10 })])
       const iriRef = ref<string | undefined>('/component/foo')
       mount(ComponentFocus, {
@@ -280,7 +264,7 @@ describe('ComponentFocus', () => {
       ]
       await nextTick()
       expect(firstInstance.stop).toHaveBeenCalled()
-      expect(elementSizeInstances.length).toBe(3) // 1 original + 2 new
+      expect(elementSizeInstances.length).toBe(3)
     })
   })
 
@@ -296,7 +280,6 @@ describe('ComponentFocus', () => {
   describe('drawCanvas', () => {
     test('draws onto the canvas 2d context when available', async () => {
       mockCwa()
-      // Provide a fake 2d context since happy-dom canvas getContext returns null.
       const ctx = {
         reset: vi.fn(),
         beginPath: vi.fn(),
@@ -317,7 +300,6 @@ describe('ComponentFocus', () => {
       expect(getContextSpy).toHaveBeenCalledWith('2d')
       expect(ctx.reset).toHaveBeenCalled()
       expect(ctx.rect).toHaveBeenCalled()
-      // drawRoundedRect issues 4 arcTo calls
       expect(ctx.arcTo).toHaveBeenCalledTimes(4)
       expect(ctx.fill).toHaveBeenCalled()
       getContextSpy.mockRestore()

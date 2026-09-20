@@ -58,8 +58,6 @@ describe('useCwaFormInput', () => {
     mockIsSubmitAttempted.mockReturnValue(false)
   })
 
-  // A failing assertion between useFakeTimers() and useRealTimers() would otherwise
-  // leak fake timers into every later test that awaits a real setTimeout.
   afterEach(() => {
     vi.useRealTimers()
   })
@@ -214,7 +212,6 @@ describe('useCwaFormInput', () => {
       const formData = makeFormData({ valid: true, submitted: true, errors: [] })
       mockGetForm.mockReturnValue(computed(() => formData))
       const { valid } = useCwaFormInput(iri, 'contact_form[name]')
-      // no blur, no validate(), no submit attempted — sibling validated and API marked this field valid
       expect(valid.value).toBeNull()
     })
 
@@ -267,10 +264,8 @@ describe('useCwaFormInput', () => {
       const { displayErrors, validate } = useCwaFormInput(iri, 'contact_form[name]')
       expect(displayErrors.value).toBe(false)
 
-      // User typed in the field — triggers hasInteracted via validate()
       await validate()
 
-      // simulate API returning submitted:true + valid:true
       formData['contact_form[name]'].vars.submitted = true
       formData['contact_form[name]'].vars.valid = true
       await new Promise(r => setTimeout(r, 0))
@@ -301,7 +296,6 @@ describe('useCwaFormInput', () => {
         resolveValidate = r
       }))
 
-      // field has been blurred with a previous error — displayErrors would normally be true
       const formData = makeFormData({ value: 'Alice', submitted: true, valid: false, errors: ['error'] })
       mockGetForm.mockReturnValue(computed(() => formData))
 
@@ -310,7 +304,6 @@ describe('useCwaFormInput', () => {
       expect(displayErrors.value).toBe(true)
 
       const validatePromise = validate()
-      // validating.value set synchronously before the internal await
       expect(displayErrors.value).toBe(false)
 
       resolveValidate()
@@ -431,7 +424,6 @@ describe('useCwaFormInput', () => {
     })
 
     test('current field value overrides stale getFieldValues entry', async () => {
-      // getFieldValues may have a slightly stale value; current value wins
       mockGetFieldValues.mockReturnValue({ 'contact_form[name]': 'stale' })
       const formData = makeFormData({ value: 'fresh' })
       mockGetForm.mockReturnValue(computed(() => formData))

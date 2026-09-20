@@ -19,9 +19,6 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vu
   default: { name: 'ComponentFocus', render: () => null },
 }))
 
-// Provide a real container element so createApp().mount() works in createFocusComponent.
-// `vi.mock('#imports')` is silently ignored (#265), so mocking `#app/nuxt` is what
-// actually intercepts here: the real `#imports` re-exports `useNuxtApp` from it.
 const mockVueAppContainer = vi.hoisted(() => ({ value: null as null | HTMLElement }))
 vi.mock('#app/nuxt', () => ({
   useNuxtApp: () => ({ vueApp: { _container: mockVueAppContainer.value } }),
@@ -366,8 +363,6 @@ describe('Resource Manager', () => {
 
     test('contextStack returns empty array when lastContextTarget is set', () => {
       const { manager } = createResourceManager()
-      // contextStack returns [] when lastContextTarget is truthy
-      // initially lastContextTarget is null (falsy), so contextStack = contextResourceStack (empty)
       expect(manager.contextStack.value).toEqual([])
     })
 
@@ -560,7 +555,6 @@ describe('Resource Manager', () => {
 
     test('returns false when isDataPage and location is not PAGE, PAGE_DATA, or LAYOUT', () => {
       const manager = createManagerForGroupDisabled({ isDataPage: true })
-      // COMPONENT_POSITION is not in the disabled-location types
       expect(manager.isComponentGroupDisabled('/_/component_groups/1', '/_/component_positions/1')).toBe(false)
     })
   })
@@ -603,8 +597,6 @@ describe('Resource Manager', () => {
     })
 
     test('removes component and component group when next group is disabled and item is not page data resource', () => {
-      // stack: component (0), group (1), page (2)
-      // group's location = page → disabled (isDataPage + PAGE location)
       const manager = createManagerForFilter({ isDataPage: true })
       const stack = [
         makeItem('/component/1'),
@@ -614,13 +606,11 @@ describe('Resource Manager', () => {
       ;(manager as any).currentResourceStack.value = stack
       ;(manager as any).filterDisabledStackItems(false)
       const remaining = (manager as any).currentResourceStack.value
-      // only the page item survives (not a COMPONENT or COMPONENT_GROUP)
       expect(remaining).toHaveLength(1)
       expect(remaining[0].iri).toBe('/_/pages/page1')
     })
 
     test('preserves component when it is a page data resource even if group is disabled', () => {
-      // same stack as above but component/1 is a page data resource
       const manager = createManagerForFilter({
         isDataPage: true,
         isPageDataResourceFn: iri => iri === '/component/1',
@@ -633,7 +623,6 @@ describe('Resource Manager', () => {
       ;(manager as any).currentResourceStack.value = stack
       ;(manager as any).filterDisabledStackItems(false)
       const remaining = (manager as any).currentResourceStack.value
-      // component/1 is preserved (isPageDataResource=true), group is removed, page is preserved
       expect(remaining).toHaveLength(2)
       expect(remaining[0].iri).toBe('/component/1')
       expect(remaining[1].iri).toBe('/_/pages/page1')
@@ -733,7 +722,7 @@ describe('Resource Manager', () => {
     test('when layout context differs and confirmed, updates _isEditingLayout and sets showManager true', async () => {
       const manager = createEditingManager()
       ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
-      ;(manager as any).isLayoutStack.value = true // differs from _isEditingLayout (false)
+      ;(manager as any).isLayoutStack.value = true
       vi.mocked(createConfirmDialog).mockReturnValue({ reveal: vi.fn().mockResolvedValue({ isCanceled: false }) } as any)
       await manager.selectStackIndex(0, false)
       expect((manager as any)._isEditingLayout.value).toBe(true)
@@ -743,10 +732,10 @@ describe('Resource Manager', () => {
     test('when layout context differs and cancelled, restores isLayoutStack and does not proceed', async () => {
       const manager = createEditingManager()
       ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
-      ;(manager as any).isLayoutStack.value = true // differs from _isEditingLayout (false)
+      ;(manager as any).isLayoutStack.value = true
       vi.mocked(createConfirmDialog).mockReturnValue({ reveal: vi.fn().mockResolvedValue({ isCanceled: true }) } as any)
       await manager.selectStackIndex(0, false)
-      expect((manager as any).isLayoutStack.value).toBe(false) // reset to _isEditingLayout
+      expect((manager as any).isLayoutStack.value).toBe(false)
       expect(manager.showManager.value).toBe(false)
     })
 
@@ -850,7 +839,6 @@ describe('Resource Manager', () => {
       const { manager } = createResourceManager()
       const removeSpy = vi.spyOn(manager as any, 'removeFocusComponent')
 
-      // The 4th watch() call (line 75) is: watch(showManager, newValue => !newValue && removeFocusComponent())
       const watchCalls = vi.mocked(watch).mock.calls
       const showManagerWatchCall = watchCalls.find(call => call[0] === manager.showManager)
       expect(showManagerWatchCall).toBeDefined()
@@ -918,7 +906,6 @@ describe('Resource Manager', () => {
       const result = await (manager as any).confirmStackChange({ title: 't', content: 'c' }, false)
 
       expect(result).toBe(true)
-      // current stack first swapped to previous, then restored to cached new stack on confirm
       expect((manager as any).currentResourceStack.value).toBe(newStack)
     })
   })
@@ -934,7 +921,6 @@ describe('Resource Manager', () => {
         }),
       }
       const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
-      // existing item whose childIris.value is undefined → findIndex callback returns false (line 375)
       const existing = { iri: '/_/component_groups/grp1', domElements: ref([]), childIris: { value: undefined } as any }
       ;(manager as any).currentResourceStack.value = [existing]
       const child = { iri: '/component/child1', domElements: ref([]), childIris: ref([]) }
@@ -942,7 +928,6 @@ describe('Resource Manager', () => {
       ;(manager as any).insertResourceStackItem(child, false)
 
       const stack = (manager as any).currentResourceStack.value
-      // no match found → appended at end
       expect(stack[stack.length - 1]).toBe(child)
     })
   })
@@ -996,7 +981,7 @@ describe('Resource Manager', () => {
 
     test('returns early without mounting when there is no current iri / stack item', () => {
       const manager = createManagerForFocus()
-      manager.showManager.value = false // currentStackItem → undefined
+      manager.showManager.value = false
       const removeSpy = vi.spyOn(manager as any, 'removeFocusComponent')
 
       ;(manager as any).createFocusComponent()
@@ -1020,7 +1005,6 @@ describe('Resource Manager', () => {
       expect(wrapper.className).toContain('cwa:focus-wrapper')
       expect(mockVueAppContainer.value!.contains(wrapper)).toBe(true)
 
-      // cleanup
       ;(manager as any).removeFocusComponent()
     })
   })
@@ -1064,7 +1048,6 @@ describe('Resource Manager', () => {
     test('scrolls to the first element when it is outside the viewport', () => {
       const manager = createManagerForScroll()
       const el = document.createElement('div')
-      // top < yOffset (100) → outside viewport
       el.getBoundingClientRect = () => ({ top: 10, left: 10, bottom: 50, right: 100 }) as DOMRect
       ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([el]), childIris: ref([]) }]
       const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
@@ -1074,7 +1057,6 @@ describe('Resource Manager', () => {
       expect(scrollToSpy).toHaveBeenCalledOnce()
       const arg = scrollToSpy.mock.calls[0][0] as ScrollToOptions
       expect(arg.behavior).toBe('smooth')
-      // y = top (10) + scrollY (0) - yOffset (100) = -90
       expect(arg.top).toBe(10 + window.scrollY - 100)
     })
 
@@ -1094,7 +1076,6 @@ describe('Resource Manager', () => {
     test('does not scroll a large component whose bottom is already in view (#253)', () => {
       const manager = createManagerForScroll()
       const el = document.createElement('div')
-      // tall element scrolled so its top is far above the fold but its bottom is in the viewport
       el.getBoundingClientRect = () => ({ top: -2000, left: 0, bottom: 400, right: 100 }) as DOMRect
       ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([el]), childIris: ref([]) }]
       const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
@@ -1136,8 +1117,6 @@ describe('Resource Manager', () => {
       document.body.appendChild(spacer)
 
       const el = document.createElement('div')
-      // top sits in the band the spacer covers: below (innerHeight - 400) but above innerHeight.
-      // With the spacer it is entirely below the visible area (outside); without it, it is in view.
       el.getBoundingClientRect = () => ({ top: window.innerHeight - 300, left: 10, bottom: window.innerHeight - 250, right: 50 }) as DOMRect
 
       expect((manager as any).isElementOutsideViewport(el)).toBe(true)
@@ -1148,7 +1127,6 @@ describe('Resource Manager', () => {
     test('returns false for a large element straddling the viewport (top above the fold, bottom below) — #253', () => {
       const manager = createBareManager()
       const el = document.createElement('div')
-      // e.g. a tall HTML Content area scrolled so its bottom is in view; its top is far above.
       el.getBoundingClientRect = () => ({ top: -2000, left: 0, bottom: window.innerHeight + 500, right: 50 }) as DOMRect
       expect((manager as any).isElementOutsideViewport(el)).toBe(false)
     })

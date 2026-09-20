@@ -29,9 +29,6 @@ export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
     const shortName = resourceClass.split('\\').pop() as string
     const propertyLabels = $cwa.pageDataConfig?.[shortName]?.properties ?? {}
 
-    // Both branches need component metadata (#249): the allow list matches by endpoint, and an
-    // unrestricted group must still exclude explicitAllowOnly (opt-in-only) component types —
-    // mirroring the add dialog and the server ComponentPositionValidator.
     const componentMeta = await $cwa.getComponentMetadata(false, false) ?? {}
     const prefix = ResourceTypeFromIri.getPathPrefix() ?? ''
     const normalizedAllowed = allowedComponents
@@ -41,8 +38,6 @@ export const useDynamicPositionSelectOptions = ($cwa: Cwa) => {
     return member.properties
       .filter(({ componentShortName }: { componentShortName: string }) => {
         const meta = componentMeta[componentShortName]
-        // Component type not in metadata: it cannot be matched against an allow list, so only
-        // offer it when the group is unrestricted (preserves prior behaviour).
         if (!meta) {
           return !normalizedAllowed
         }

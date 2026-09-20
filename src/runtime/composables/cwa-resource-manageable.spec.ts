@@ -145,11 +145,10 @@ describe('CWA resource manageable composable', () => {
 
       useCwaResourceManageable(mockIri)
 
-      // capture the 'manageableComponentMounted' listener registered on eventBus.on
       const listenerCall = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'manageableComponentMounted')
       const listener = listenerCall?.[1]
 
-      listener(mockIri.value) // matching iri
+      listener(mockIri.value)
 
       expect(initNewIriSpy).toHaveBeenCalledOnce()
       expect(mockCwa.admin.resourceStackManager.refreshFocusForIri).toHaveBeenCalledWith(mockIri.value, mockElements)
@@ -170,7 +169,7 @@ describe('CWA resource manageable composable', () => {
       const listenerCall = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'manageableComponentMounted')
       const listener = listenerCall?.[1]
 
-      listener('/different-iri') // non-matching
+      listener('/different-iri')
 
       expect(initNewIriSpy).not.toHaveBeenCalled()
     })
@@ -194,7 +193,6 @@ describe('CWA resource manageable composable', () => {
 
       useCwaResourceManageable(mockIri)
 
-      // invoke the watcher callback with isAdmin going false
       watchCallback!(false, true)
 
       expect(clearSpy).toHaveBeenCalled()
@@ -210,7 +208,6 @@ describe('CWA resource manageable composable', () => {
         return vi.fn()
       })
 
-      // isAdmin starts false so onMounted does NOT call initAdmin
       mockCwa.auth.isAdmin.value = false
 
       const initSpy = vi.fn()

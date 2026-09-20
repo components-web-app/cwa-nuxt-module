@@ -772,9 +772,6 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
 })
 
 describe('FetchStatusManager -> depth tracking (delegates to the fetcher store)', () => {
-  // The depth lookups themselves live in the fetcher store so they survive the SSR->client payload
-  // (see `storage/stores/fetcher/actions.spec.ts` for their behaviour, and
-  // `nested-page-hydration.spec.ts` for why). The manager's remaining job is to delegate.
   let fetchStatusManager: FetchStatusManager
 
   const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })

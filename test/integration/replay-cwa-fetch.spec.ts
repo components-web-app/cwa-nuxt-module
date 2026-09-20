@@ -58,12 +58,10 @@ describe('#246 ReplayCwaFetch', () => {
       })
 
       await flush()
-      // nothing resolves until released
       expect(aDone).toBe(false)
       expect(bDone).toBe(false)
       expect(replay.pending()).toEqual(['/_api/_/routes//page', '/_api/_/pages/p'])
 
-      // release only the second — the first stays pending
       expect(replay.release('/_api/_/pages/p')).toBe(1)
       await b
       expect(bDone).toBe(true)

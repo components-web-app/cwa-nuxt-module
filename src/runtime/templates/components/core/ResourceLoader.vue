@@ -71,7 +71,6 @@ const warningPlaceholder = computed((): string | undefined => {
     return `Resource '${props.iri}' has not been requested`
   }
   if (hasError.value && !hasSilentError.value) {
-    // SSR resources with no data are re-fetched on mount — suppress the transient error flash
     if (resource.value?.apiState.ssr && resource.value?.data === undefined) {
       return undefined
     }
@@ -136,9 +135,6 @@ const resolvedComponent = computed(() => {
   return resourceUiComponent.value
 })
 
-// A 4xx during SSR may just mean the server had no auth — retry client-side, where we may. Note
-// `hasSilentError.value`: without it this was always truthy and the silent-error condition never
-// applied, so ANY dataless SSR resource re-fetched. See #260.
 const ssrNoDataWithSilentError = computed(() => {
   return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError.value
 })
@@ -169,9 +165,6 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
     && $cwa.auth.user
 })
 
-// A prerendered/ISR/SWR page serves HTML generated ahead of time, so resource data hydrated from the
-// payload can be arbitrarily stale — re-fetch it so the render reflects live data. Only applies to
-// resources fetched during SSR; anything already fetched client-side is live. See #262.
 const isStaticRender = computed(() => {
   const apiState = resource.value?.apiState
   if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.ssr) {

@@ -15,7 +15,6 @@ export type CwaResourcePlugin<T extends object = object> = (ctx: CwaResourcePlug
 
 type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (x: infer I) => void ? I : never
 
-// Unioning with Record<never, never> ensures PluginResults always resolves to an object type (never → {}) so it is safe to spread
 type PluginResults<P extends CwaResourcePlugin<any>[]> = UnionToIntersection<
   { [K in keyof P]: P[K] extends CwaResourcePlugin<infer R> ? R : never }[number] | Record<never, never>
 >
@@ -28,10 +27,6 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
   const iri = toRef(props, 'iri')
   const { getResource, $cwa, exposeMeta, getCurrentStyleName, uiClassNames } = useCwaResource(iri, ops)
   const resource = getResource()
-  // The canonical component IRI to use as a component-group location: the live/published equivalent
-  // when this is a draft, falling back to this component's own IRI when it has never been published
-  // (an unpublished draft is still a valid group location). `findPublishedComponentIri` returns
-  // undefined in that case by design (other callers rely on it), so we default to `iri` here.
   const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value ?? iri.value)
   const ctx: CwaResourcePluginContext = { iri, resource, $cwa }
   const pluginResults = (plugins ?? []).map(plugin => plugin(ctx))
@@ -45,9 +40,6 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
     publishedIri: typeof publishedIri
   }
 
-  // Merge plugin results. The `files` key (from `withFile`) is accumulated across plugins — keyed
-  // by `fileProp` — rather than shallow-overwritten, so a component can expose multiple file fields
-  // under one `files` map. All other keys merge as a normal shallow assign.
   const merged: Record<string, unknown> = { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, publishedIri } satisfies BaseReturn
   const files: Record<string, unknown> = {}
   for (const pluginResult of pluginResults) {

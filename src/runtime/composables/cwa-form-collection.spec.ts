@@ -114,7 +114,6 @@ describe('useCwaFormCollection', () => {
       const formData = reactive({
         'contact_form[tags]': {
           vars: { full_name: 'contact_form[tags]', errors: [] as string[] },
-          // no prototype property
         },
       })
       mockGetForm.mockReturnValue(computed(() => formData))

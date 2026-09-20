@@ -9,10 +9,6 @@ import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
 
-// CWA UI-kit Select — the first component of the admin UI kit (#236). A cwa:-styled wrapper over
-// Headless UI's Listbox (isolated, unstyled, well-tested) mirroring Nuxt UI's USelect, with a
-// `multiple` mode. Styled exclusively with cwa: utilities so it never leaks into or inherits from a
-// consuming app's design system.
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<SelectInputProps>()
 const { value, compareOptions, displayLabel, selectedOptions, trigger, container } = useCwaSelectInput(computed(() => props), emit)

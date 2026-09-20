@@ -125,9 +125,6 @@ const layoutComponentOptions = computed(() => {
   return options
 })
 
-// The stored uiComponent when the app no longer registers a component by that name (renamed or
-// deleted). Kept separate from `layoutComponentOptions` because that computed is read eagerly to
-// build `defaultResource` below, before `localResourceData` is initialised.
 const unresolvableUiComponent = computed<string | undefined>(() => {
   const storedUiComponent = localResourceData.value?.uiComponent
   if (!storedUiComponent || layoutComponentNames.value.includes(storedUiComponent)) {
@@ -136,8 +133,6 @@ const unresolvableUiComponent = computed<string | undefined>(() => {
   return storedUiComponent
 })
 
-// Surface the real stored state: an unresolvable value still gets an option so the select is not
-// blank, clearly marked. Purely presentational - the resource is never modified.
 const layoutUiOptions = computed<SelectOption[]>(() => {
   if (!unresolvableUiComponent.value) {
     return layoutComponentOptions.value

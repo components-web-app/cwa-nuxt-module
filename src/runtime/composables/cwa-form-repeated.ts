@@ -14,15 +14,11 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
   let firstHasBlurred = false
   let secondHasBlurred = false
 
-  // Tracks which side most recently triggered cross-validation, so pair-mismatch
-  // errors (Symfony puts them on [first]) can be redirected to [second] when the
-  // user was typing in the second field.
   const lastTriggeredBy = ref<'first' | 'second' | null>(null)
 
   const first = useCwaFormInput(iri, firstFullName, { blurTrigger: bothBlurred })
   const second = useCwaFormInput(iri, secondFullName, { blurTrigger: bothBlurred })
 
-  // Parent node (the RepeatedType itself) holds pair-level valid/errors.
   const parentVars = computed(() => {
     if (!iri.value) return undefined
     return $cwa.forms.getForm(iri.value).value?.[fullName]?.vars
@@ -33,7 +29,6 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
     return parentVars.value?.valid ?? null
   })
 
-  // Only show valid when BOTH fields have values — a single filled field is not a matched pair.
   const firstValid = computed<boolean | null>(() => {
     if (!first.value.value || !second.value.value) return null
     return parentValid.value
@@ -44,8 +39,6 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
     return parentValid.value
   })
 
-  // Symfony places pair-mismatch errors on [first]. When second triggered the last
-  // cross-validation, redirect first's errors onto second and suppress them on first.
   const firstErrors = computed<string[]>(() => {
     if (lastTriggeredBy.value === 'second') return []
     return first.errors.value
@@ -60,8 +53,6 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
     return base
   })
 
-  // Only cross-validate when the sibling actually has a value — sending a fake
-  // sentinel causes spurious valid/invalid flashing before the user types anything.
   const firstOnInput = debounce(() => {
     lastTriggeredBy.value = 'first'
     const extra = second.value.value ? { [secondFullName]: second.value.value } : undefined

@@ -13,20 +13,13 @@ const CwaUiFormButtonStub = {
 }
 
 interface SetupOpts {
-  // resource at the current iri (the component position resource)
   resourceData?: Record<string, any> | null
-  // currentIri value
   iri?: string | null
-  // $cwa.resources.pageData computed value
   pageData?: any
-  // $cwa.resourcesConfig map
   resourcesConfig?: Record<string, any>
-  // getComponentMetadata implementation
   getComponentMetadata?: (...args: any[]) => any
-  // resourcesManager mock methods
   initAddResource?: ReturnType<typeof vi.fn>
   setAddResourceEventResource?: ReturnType<typeof vi.fn>
-  // event bus emit
   emit?: ReturnType<typeof vi.fn>
 }
 
@@ -118,8 +111,6 @@ describe('DataPage', () => {
       const { wrapper } = setup({
         resourceData: { data: { component: '/component/foo/static', _metadata: { staticComponent: '/component/foo/static' }, pageDataProperty: null } },
       })
-      // component === staticComponent => hasDynamicComponent false.
-      // No pageDataProperty => dynamicComponentName undefined => no button at all.
       expect(findButton(wrapper).exists()).toBe(false)
     })
 
@@ -273,9 +264,6 @@ describe('DataPage', () => {
 
     test('throws and re-enables when getComponentMetadata returns nothing', async () => {
       const getComponentMetadata = vi.fn().mockResolvedValue(undefined)
-      // The async click handler rejects ("Could not retrieve component metadata").
-      // Swallow it via the app error handler so it doesn't surface as an
-      // unhandled rejection while still exercising the finally block.
       const errorHandler = vi.fn()
       const { wrapper, initAddResource } = setup({
         resourceData: baseResource('heroImage'),
@@ -287,9 +275,7 @@ describe('DataPage', () => {
       await btn.trigger('click')
       await flushPromises()
       expect(errorHandler).toHaveBeenCalled()
-      // initAddResource never reached because getApiMetadata throws
       expect(initAddResource).not.toHaveBeenCalled()
-      // finally block still re-enables the button
       expect(findButton(wrapper).props('disabled')).toBe(false)
     })
 

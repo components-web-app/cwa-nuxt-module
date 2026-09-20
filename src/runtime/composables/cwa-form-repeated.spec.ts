@@ -38,7 +38,6 @@ describe('useCwaFormRepeated', () => {
   let mockSecond: ReturnType<typeof makeInputMock>
   let capturedBlurTrigger: Ref<boolean> | undefined
 
-  // Plain object — set before each test; read lazily inside computed via getter
   let mockParentVars: { submitted: boolean, valid: boolean | null }
 
   function setupMock() {
@@ -104,10 +103,8 @@ describe('useCwaFormRepeated', () => {
 
     test('first.errors and first.valid are derived computeds, not the raw input refs', () => {
       const { first } = useCwaFormRepeated(iri, 'password_form[password]')
-      // They are new computed refs, not the same object
       expect(first.errors).not.toBe(mockFirst.errors)
       expect(first.valid).not.toBe(mockFirst.valid)
-      // But initial values reflect the underlying inputs
       expect(first.errors.value).toEqual([])
       expect(first.valid.value).toBeNull()
     })
@@ -254,7 +251,6 @@ describe('useCwaFormRepeated', () => {
     })
 
     test('is null when both values present but parent not yet submitted', () => {
-      // default mockParentVars: submitted: false
       const { first } = useCwaFormRepeated(iri, 'password_form[password]')
       expect(first.valid.value).toBeNull()
     })

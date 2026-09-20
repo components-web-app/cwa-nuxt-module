@@ -5,9 +5,6 @@ import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 
-// Ready-to-spread bindings for `CwaUiFormFile` (`v-bind="upload.bind"`). Covers the input's
-// `v-model`, `fileExists`, `disabled` and its `change`/`delete` events — `label`/`accept` are left
-// to the caller so each field keeps its own UI. Typed against the component's contract.
 export interface CwaResourceUploadBind {
   'modelValue': string | number | undefined | null
   'onUpdate:modelValue': (value: string | number | undefined | null) => void

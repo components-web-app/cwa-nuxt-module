@@ -127,10 +127,8 @@ describe('useResetPassword', () => {
       mockParams.token = 'tok'
       mockAuth.resetPassword.mockResolvedValue(makeFetchError(422, { '@id': '/forms/1' }))
       const { resetPassword } = useResetPassword()
-      // first call sets submittedFormIri
       await resetPassword()
       expect(mockResourcesManager.storeResource).toHaveBeenCalledTimes(1)
-      // second call should remove the previous resource
       mockAuth.resetPassword.mockResolvedValue({})
       await resetPassword()
       expect(mockResourcesManager.removeResource).toHaveBeenCalledWith({ resource: '/forms/1' })

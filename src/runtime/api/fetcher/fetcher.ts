@@ -187,10 +187,6 @@ export default class Fetcher {
       this.fetchStatusManager.abortFetch(startFetchResult.token, 'redirect')
     }
     else if (resource && shallowFetch !== true) {
-      // Wait for the manifest batch to complete before traversing associated resources.
-      // This ensures the store's depth tracking is populated so createRequestHeaders
-      // sends the correct depth-aware path for every follow-up request. fetchAssociatedResources
-      // still runs as a safety pass for anything the manifest did not include.
       if (manifestPromise) {
         await manifestPromise
       }

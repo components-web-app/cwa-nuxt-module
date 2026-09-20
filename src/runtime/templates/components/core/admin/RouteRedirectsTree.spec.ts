@@ -21,7 +21,6 @@ function setup(opts: { isDataPage?: boolean, pageIri?: string, pageDataIri?: str
     resourcesManager: { deleteResource },
   }))
 
-  // route.path in the nuxt test env is '/', so a redirect on '/' is "the route we are viewing"
   const wrapper = mount(RouteRedirectsTree, {
     props: { redirects: [{ '@id': '/_/routes//', 'path': '/' }] as never },
     shallow: false,
@@ -41,9 +40,6 @@ describe('RouteRedirectsTree', () => {
     await flushPromises()
     expect(deleteResource).toHaveBeenCalled()
 
-    // the IRI is a param of the `_cwa-resource-page` route, never a path — navigating to the bare
-    // IRI string matches the catch-all instead, where `cwaPage0` is unset, so the primary fetch
-    // requests `/_/routes/<whole IRI>` and 404s
     const requestCompleteFn = deleteResource.mock.calls[0][0].requestCompleteFn
     requestCompleteFn()
     expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/p' } })

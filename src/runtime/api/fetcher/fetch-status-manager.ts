@@ -54,7 +54,6 @@ export default class FetchStatusManager {
   private readonly _fetcherStore: CwaFetcherStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
 
-  // Max routes retained in the instant-revisit cache (#257). Overridable via the `cwa` nuxt config.
   private readonly routeCacheLimit: number
 
   constructor(
@@ -68,7 +67,6 @@ export default class FetchStatusManager {
     this.apiDocumentation = apiDocumentation
     this._fetcherStore = fetcherStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
-    // 0 (or negative) disables eviction — unbounded cache
     this.routeCacheLimit = routeCacheLimit
   }
 
@@ -101,15 +99,12 @@ export default class FetchStatusManager {
   }
 
   public startFetch(event: _StartFetchEvent): StartFetchResponse {
-    // capture the page currently being loaded before it is superseded by this new primary fetch
     const outgoingFetchingToken = event.isPrimary ? this.fetcherStore.primaryFetch.fetchingToken : undefined
     if (event.isPrimary) {
       this.fetcherStore.resetIriDepths()
     }
     const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
-      // If the fetch we just superseded had already rendered its page, keep it on screen while this
-      // new one loads (rather than reverting to the last fully-resolved success). See #256.
       if (
         startFetchStatus.continue
         && outgoingFetchingToken
@@ -119,17 +114,11 @@ export default class FetchStatusManager {
         this.fetcherStore.setDisplayedToken(outgoingFetchingToken)
       }
 
-      // #257 instant revisit: if we already hold this route's structure AND all its resources are
-      // still in the store, prime the new fetch from cache so it renders IMMEDIATELY (existing
-      // early-switch fires on the first render). The fetch still runs (continue:true) to revalidate
-      // and patch any changed data in place — non-blanking thanks to #256.
       const cached = startFetchStatus.continue ? this.getCachedRoute(event.path) : undefined
       if (cached && this.fetcherStore.fetches[startFetchStatus.token]?.manifest) {
         this.setManifestIrisByDepth({ token: startFetchStatus.token, resourceIris: cached.resourceTree })
         this.fetcherStore.finishManifestFetch({ token: startFetchStatus.token, type: FinishFetchManifestType.SUCCESS })
         this.resourcesStore.resetCurrentResources(cached.resourceIris)
-        // this cached page is what's on screen NOW — mark it displayed so background revalidation
-        // (which flips its resources to IN_PROGRESS) doesn't fall the hold back to the previous page.
         this.fetcherStore.setDisplayedToken(startFetchStatus.token)
       }
       else {
@@ -139,8 +128,6 @@ export default class FetchStatusManager {
     return startFetchStatus
   }
 
-  // A route revisit is instantly renderable when we retained its manifest structure AND every
-  // resource it needs is still in the store. Touches recency for the LRU. See #257.
   private getCachedRoute(path: string): RouteCacheEntry | undefined {
     const cached = this.fetcherStore.routeCache.get(path)
     if (!cached) {
@@ -154,10 +141,6 @@ export default class FetchStatusManager {
     return cached
   }
 
-  // Whether a fetch was fully rendered — EVERY depth's page resource has data in the store. A
-  // partially-loaded nested view (e.g. the shared parent at depth 0 loaded but the child at depth 1
-  // still loading) must NOT be held as the displayed page, or clicking away leaves the user stuck on
-  // a parent + spinning child instead of falling back to the last fully-loaded page. See #256.
   private fetchHasDisplayablePage(token: string): boolean {
     const irisByDepth = this.fetcherStore.fetches[token]?.manifest?.irisByDepth
     if (!irisByDepth?.length) {
@@ -193,10 +176,6 @@ export default class FetchStatusManager {
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
     const fetchStatus = this.fetcherStore.fetches[event.token]
 
-    // Aborted or stale-token fetches: do not update the resource state.
-    // The resource already has either a previous SUCCESS state (valid cached data) or an
-    // IN_PROGRESS state (the current fetch token will resolve it). Overwriting with ERROR
-    // here has no HTTP status code and causes spurious "Unknown error" flashes in ResourceLoader.
     if (fetchStatus?.abort || !isCurrent) {
       return
     }
@@ -265,17 +244,11 @@ export default class FetchStatusManager {
   public async finishFetch(event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
     this.fetcherStore.finishFetch(event)
-    // the route was just cached by finishFetch — keep the cache within its route-count limit
     this.enforceRouteCacheLimit()
   }
 
-  // Route-count LRU for the instant-revisit cache (#257). When over the limit, evict the
-  // least-recently-accessed routes and drop the `byId` resources they exclusively owned —
-  // reference-counted so shared layouts/groups/parents survive, and never evicting the route(s)
-  // backing the current fetch tokens or any resource on the current page / in an in-flight fetch.
   private enforceRouteCacheLimit(): void {
     const routeCache = this.fetcherStore.routeCache
-    // limit <= 0 disables eviction (unbounded)
     if (this.routeCacheLimit <= 0 || routeCache.size <= this.routeCacheLimit) {
       return
     }
@@ -296,7 +269,6 @@ export default class FetchStatusManager {
     }
   }
 
-  // Route paths backing the fetching / success / displayed tokens — must never be evicted.
   private activeRoutePaths(): Set<string> {
     const paths = new Set<string>()
     const { fetchingToken, successToken, displayedToken } = this.fetcherStore.primaryFetch
@@ -318,7 +290,6 @@ export default class FetchStatusManager {
     return false
   }
 
-  // A resource on the current page or being loaded by any live fetch must not be evicted.
   private isResourceProtectedFromEviction(iri: string): boolean {
     if (this.resourcesStore.current.currentIds.includes(iri)) {
       return true
@@ -376,7 +347,6 @@ export default class FetchStatusManager {
   }
 
   public setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void {
-    // the store derives the depth lookups from the manifest as it stores it
     this.fetcherStore.setManifestIrisByDepth(event)
   }
 
@@ -406,9 +376,6 @@ export default class FetchStatusManager {
 
   // todo: test
   public clearPrimaryFetch() {
-    // Reset the whole primary-fetch state. Previously only successToken was cleared, leaving a stale
-    // fetchingToken/displayedToken pointing at an abandoned fetch (e.g. navigating to a cwa-disabled
-    // page while a CWA fetch was in flight), which could keep the CWA view stuck. See #256.
     this.fetcherStore.primaryFetch.successToken = undefined
     this.fetcherStore.primaryFetch.fetchingToken = undefined
     this.fetcherStore.primaryFetch.displayedToken = undefined

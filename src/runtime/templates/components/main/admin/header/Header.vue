@@ -209,9 +209,6 @@ function closeModal() {
   showEditModal.value = false
 }
 
-// Deleting the page we are on navigates to the relevant admin listing from within the modal — it has
-// to happen before the resource is removed from the store, and it knows whether the page is a data
-// page. This is only a fallback for when that has not already taken us off the page.
 function goToAdminPagesView() {
   if (pageIsAdmin.value) {
     return

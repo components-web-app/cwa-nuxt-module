@@ -17,8 +17,6 @@ function createWrapper({ isAdmin = false, positionData = { 'component': mockComp
   vi.spyOn(cwaResourceManageableComposable, 'useCwaResourceManageable').mockImplementation(() => ({}))
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    // `isAdmin` MUST be a real `computed` here — mocking it as a plain boolean would pass while
-    // hiding the production bug this guards (a nested ref access in the template). See #260.
     auth: {
       isAdmin: computed(() => isAdmin),
     },
@@ -52,13 +50,6 @@ describe('ComponentPosition', () => {
     expect(componentPrefix).toEqual('CwaComponent')
   })
 
-  /**
-   * The placeholder is admin-only chrome. `$cwa.auth.isAdmin` is a getter returning a `computed`,
-   * and `$cwa.auth.isAdmin` in a template is a NESTED access — Vue only auto-unwraps top-level setup
-   * bindings, so it yielded the ComputedRef object (always truthy) and every visitor saw it. See
-   * #260. It shows no name for a non-admin because `pageDataProperty` is serialised
-   * `ComponentPosition:read:role_admin` only.
-   */
   describe('placeholder when the position has no component', () => {
     const noComponent = { '@id': '/position-iri' }
 

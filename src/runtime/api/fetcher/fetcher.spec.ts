@@ -387,7 +387,6 @@ describe('Fetcher -> fetchResource', () => {
       manifestPath: '/_/resource_manifest//leaf',
     })
 
-    // Resolve manifest after a tick so we can verify ordering
     await Promise.resolve()
     const manifestResolvedAt = ++tick
     resolveManifest()
@@ -574,7 +573,6 @@ describe('Fetcher -> fetchManifest', () => {
   })
 
   test('fetchBatch receives every IRI flattened across depth trees and their nested children', async () => {
-    // Each depth is a nested tree; fetchBatch must receive every IRI, depth-first.
     const resourceTree = [
       { iri: '/routes/parent', children: [
         { iri: '/pages/parent-template', children: [
@@ -785,10 +783,6 @@ describe('Fetcher -> createRequestHeaders', () => {
     expect(fetcher.createRequestHeaders).toReturnWith({ path: '/primary-fetch-path', preload: undefined })
   })
 
-  // #266 — an API deployed at a bare host stores a path prefix of '/' (`new URL(apiUrl).pathname`).
-  // `${prefix}/_/routes/` then built '//_/routes/', which matches nothing, so the route prefix was
-  // never stripped and the `path` header carried the raw route IRI — silently reintroducing #261
-  // for every path-less deployment. A root pathname must normalise to "no prefix".
   test('an API url with no path prefix still resolves the /_/routes/ prefix for the path header', async () => {
     ResourceTypeFromIri.setPathPrefix('/')
     FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)

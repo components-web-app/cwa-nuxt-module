@@ -31,7 +31,6 @@ describe('RoutesTabForwardTo', () => {
   test('Save is enabled when a different route IRI is selected', async () => {
     const wrapper = mountForwardTo()
     await wrapper.findComponent(SearchResource).vm.$emit('update:modelValue', '/_api/_/routes//topic-1/chapter-one')
-    // shallow stubs render :disabled="false" as disabled="false" (not undefined), so check it's not "true"
     expect(wrapper.find('[data-save-forward]').attributes('disabled')).not.toBe('true')
   })
 

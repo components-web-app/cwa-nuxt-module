@@ -4,8 +4,6 @@ import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import Ui from './Ui.vue'
 
-// Model refs the mocked useCwaResourceModel hands back, so the test can inspect what the styles
-// select writes to `uiClassNames`.
 const uiComponentModel = ref<string | null>(null)
 const uiClassNamesModel = ref<string[] | null>(null)
 
@@ -38,7 +36,6 @@ vi.mock('#cwa/templates/components/core/useDataResolver', () => ({
   useDataResolver: () => ({ startDataResolver: vi.fn() }),
 }))
 
-// Stub the kit Select so we can read its props and drive its v-model.
 const CwaUiSelectStub = {
   name: 'CwaUiSelect',
   props: {

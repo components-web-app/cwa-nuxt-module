@@ -59,8 +59,6 @@ describe('cwa-auth middleware', () => {
     })
   })
 
-  // Without this the cookie alone decides, and the cookie can outlive the session — a signed-out
-  // visitor with a stale cookie would be waved through to a page that then fails to load anything.
   test('resolves the session before deciding', async () => {
     const { init } = mockCwa({ signedIn: true })
     await cwaAuthMiddleware(createRoute(), createRoute())

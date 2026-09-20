@@ -90,9 +90,6 @@ useCwaResourceManageable(iri)
 type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: string[] | null }
 const props = withDefaults(defineProps<PropsType>(), { allowedComponents: null })
 
-// `location` is usually a resource IRI which is undefined until its resource resolves - e.g.
-// `$cwa.resources.layoutIri.value` in a layout. Until we have one there is nothing to render and
-// nothing to warn about. A location which IS provided but does not resolve still shows the warning.
 const hasLocation = computed(() => props.location !== undefined)
 
 const emit = defineEmits<{
@@ -122,7 +119,6 @@ const signedInAndResourceExists = computed(() => {
 })
 
 const showLoader = computed(() => {
-  // without a location we do not know what we are waiting for - render nothing at all
   if (!hasLocation.value) {
     return false
   }
@@ -168,8 +164,6 @@ onMounted(() => {
   if (isNewPosition.value) {
     return
   }
-  // the location may not be resolved when we mount - the synchronizer needs a real location to
-  // create or attach a component group, so start it as soon as one is available
   watch(() => props.location, (location) => {
     if (syncWatcherStarted || location === undefined) {
       return

@@ -490,9 +490,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
-    // Remove specific resources from the store (used by the route-cache LRU when evicting a route
-    // whose resources are no longer referenced by any retained route or the current page). Unlike
-    // `deleteResource`, this is a plain cache eviction — no position/publishable cascade. See #257.
     evictResources(iris: string[]): void {
       if (!iris.length) {
         return
@@ -500,7 +497,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       const evictSet = new Set(iris)
       for (const iri of iris) {
         delete resourcesState.current.byId[iri]
-        // if the evicted resource is a component, drop its component→positions mapping
         if (resourcesState.current.positionsByComponent[iri]) {
           delete resourcesState.current.positionsByComponent[iri]
         }
@@ -509,7 +505,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
         mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
       )
-      // remove any evicted position IRIs from the remaining component→positions mappings
       for (const componentIri of Object.keys(resourcesState.current.positionsByComponent)) {
         const positions = resourcesState.current.positionsByComponent[componentIri]
         if (positions) {
@@ -587,8 +582,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
           const currentSetCookieHeader = useResponseHeader('Set-Cookie')
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
-            // cookie v2: serialize() became stringifySetCookie(), taking the whole cookie object.
-            // set-cookie-parser's parsed shape is already { name, value, ...attributes }.
             return stringifySetCookie(cookie as SetCookie)
           })
           if (import.meta.server && (error.statusCode === 401 || error.statusCode === 403)) {

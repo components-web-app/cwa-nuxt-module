@@ -49,7 +49,6 @@ function handleDeletedEvent(resource: CwaResource) {
       </CwaUiFormButton>
     </ModalInfo>
 
-    <!-- Forward visitors to (outbound redirect) -->
     <div class="cwa:dark-blur cwa:p-4 cwa:flex cwa:flex-col cwa:gap-y-2.5 cwa:border cwa:rounded-xl cwa:border-stone-600">
       <h2 class="cwa:text-stone-400 cwa:text-2xl">
         Forward visitors to
@@ -92,7 +91,6 @@ function handleDeletedEvent(resource: CwaResource) {
       </div>
     </div>
 
-    <!-- Incoming redirects (routes that redirect to this page) -->
     <div class="cwa:dark-blur cwa:p-4 cwa:flex cwa:flex-col cwa:gap-y-2.5 cwa:border cwa:rounded-xl cwa:border-stone-600">
       <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
         <h2 class="cwa:text-stone-400 cwa:text-2xl">

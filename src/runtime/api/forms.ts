@@ -71,10 +71,6 @@ function createFormViewObject(apiFormView: ApiFormView): KeyedFormView {
     structuredFormView.prototype = apiFormView.prototype
   }
 
-  // Process children first so the parent entry always wins on collision.
-  // Expanded ChoiceType (radio group, single value) renders individual option
-  // nodes with the same full_name as the parent — the parent has the correct
-  // label/choices and must not be overwritten by those child nodes.
   let data: KeyedFormView = {}
   if (apiFormView.children) {
     for (const child of apiFormView.children) {
@@ -82,9 +78,6 @@ function createFormViewObject(apiFormView: ApiFormView): KeyedFormView {
     }
   }
 
-  // Symfony appends [] to full_name for non-expanded multiple-value fields
-  // (e.g. multi-select). Normalise to the bare key so composable callers
-  // can use the field name without the trailing [].
   const fullName = apiFormView.vars.multiple && apiFormView.vars.full_name?.endsWith('[]')
     ? apiFormView.vars.full_name.slice(0, -2)
     : apiFormView.vars.full_name
@@ -136,8 +129,6 @@ export default class Forms {
     const normalizedId = id.endsWith('/submit') ? id.slice(0, -'/submit'.length) : id
     const normalized: CwaResource = normalizedId !== id ? { ...resource, '@id': normalizedId } : resource
 
-    // The 422/200 response from /submit may clear action/method in the root formView vars.
-    // Preserve them from the existing stored resource so subsequent submissions still go to the right URL.
     const existingData = this.resourcesStore.current.byId[normalizedId]?.data
     const existingVars = existingData?.formView?.vars
     if (existingVars?.action || existingVars?.method) {
@@ -227,7 +218,6 @@ export default class Forms {
         return
       }
       const apiData = createFormViewObject(resource.data.formView)
-      // Local entries (from prototype cloning) act as fallback; API data wins on collision.
       return { ...(this._localEntries[iri] ?? {}), ...apiData }
     })
   }

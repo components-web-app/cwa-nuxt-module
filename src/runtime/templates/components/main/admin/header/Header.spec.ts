@@ -6,18 +6,15 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import Header from './Header.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-// --- Nuxt auto-imports -------------------------------------------------------
 const errorRef = ref<any>(null)
 const replaceMock = vi.fn()
 
-// route.meta.cwa.admin drives `pageIsAdmin`. Keep it reactive so computeds re-run.
 const mockRouteMeta = reactive<{ cwa?: { admin?: boolean } }>({ cwa: { admin: false } })
 
 mockNuxtImport('useError', () => () => errorRef)
 mockNuxtImport('useRoute', () => () => ({ meta: mockRouteMeta }))
 mockNuxtImport('useRouter', () => () => ({ replace: replaceMock }))
 
-// --- helpers -----------------------------------------------------------------
 function buildResources(overrides: Record<string, any> = {}) {
   return reactive({
     page: { value: { data: { reference: 'My Reference' } } },
@@ -66,7 +63,6 @@ function mountHeader() {
   return mount(Header, {
     global: {
       stubs: {
-        // Heavy / irrelevant children — stub to keep the test focused on Header logic
         PathSelector: { name: 'PathSelector', template: '<div class="path-selector-stub" />' },
         RequestErrors: { name: 'RequestErrors', template: '<div class="request-errors-stub" />' },
         Menu: { name: 'Menu', template: '<div class="menu-stub" />' },
@@ -84,7 +80,6 @@ function mountHeader() {
           emits: ['close', 'reload'],
           template: '<div class="page-admin-modal-stub" />',
         },
-        // UI primitives
         CwaUiFormButton: {
           name: 'CwaUiFormButton',
           props: ['color', 'loading'],
@@ -121,14 +116,10 @@ describe('Header', () => {
       const headerEl = wrapper.find('[ref="header"]').exists()
         ? wrapper.find('[ref="header"]')
         : null
-      // header & spacer template refs both exist
       const refs = wrapper.vm.$refs as Record<string, HTMLElement>
       expect(refs.header).toBeTruthy()
       expect(refs.spacer).toBeTruthy()
-      // onMounted copies header.clientHeight onto spacer.style.height
       Object.defineProperty(refs.header, 'clientHeight', { value: 72, configurable: true })
-      // re-run not needed — assert the spacer got a height string written
-      // (clientHeight in happy-dom defaults to 0, so the value is "0px")
       expect(refs.spacer.style.height).toMatch(/px$/)
       void headerEl
     })
@@ -208,9 +199,7 @@ describe('Header', () => {
     test('clicking the edit-page label opens the page admin modal', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      // overlay hidden initially
       expect(wrapper.find('.overlay-stub').attributes('data-show')).toBe('false')
-      // the clickable span lives inside the dark edit-page button
       const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
       expect(span).toBeTruthy()
       await span!.trigger('click')
@@ -221,7 +210,6 @@ describe('Header', () => {
     test('the edit-page button is hidden while editing', () => {
       mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()
-      // PathSelector is shown instead when showManager true; here showManager false
       expect(wrapper.text()).not.toContain('My Reference')
     })
   })
@@ -302,7 +290,6 @@ describe('Header', () => {
 
   describe('highlightClass', () => {
     function classOf(wrapper: ReturnType<typeof mountHeader>) {
-      // header is the second top-level div (after spacer)
       const refs = wrapper.vm.$refs as Record<string, HTMLElement>
       return refs.header.className
     }
@@ -398,8 +385,6 @@ describe('Header', () => {
       const wrapper = mountHeader()
       const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
       await span!.trigger('click')
-      // deleting the page we are on navigates to the relevant admin listing from the modal itself,
-      // before the resource is removed from the store - this fallback must not override it
       mockRouteMeta.cwa = { admin: true }
       await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('reload')
       expect(replaceMock).not.toHaveBeenCalled()
@@ -427,6 +412,5 @@ describe('Header', () => {
     })
   })
 
-  // referenced to keep imports tidy if computed/ref are unused elsewhere
   void computed
 })

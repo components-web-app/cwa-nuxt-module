@@ -254,12 +254,6 @@ export default class ResourceStackManager {
   }
 
   private _addToStack(event: AddToStackEvent | AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
-    // A click that is the tail of a text-selection drag (e.g. highlighting text inside an inline
-    // editor and releasing over a parent, or within the component being edited) must NOT rebuild
-    // the selection stack — that would either steal the selection to an ancestor (#254) or, because
-    // the window/root click then resets an empty stack, deselect the component entirely. Bail out so
-    // the current selection is preserved untouched. Genuine clicks collapse the selection on
-    // mousedown, so this only trips on a drag-release. Context (right-click) is left alone.
     if (!isContext && this.hasActiveTextSelection()) {
       return
     }
@@ -484,10 +478,6 @@ export default class ResourceStackManager {
     if (managerSpacer) {
       visibleBottom -= managerSpacer.offsetHeight
     }
-    // "Outside" only when the element does NOT overlap the visible region
-    // [yOffset, visibleBottom] × [0, innerWidth] — i.e. it is entirely above/below/left/right.
-    // A large element that straddles the viewport overlaps it and is left in place, so selecting it
-    // no longer scrolls to its top when part of it (e.g. its bottom) is already in view (#253).
     const outsideVertically = bottom <= this.yOffset || top >= visibleBottom
     const outsideHorizontally = right <= 0 || left >= innerWidth
     return outsideVertically || outsideHorizontally

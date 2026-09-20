@@ -6,9 +6,6 @@ function replaceNameInTree(node: Record<string, any>, index: string): Record<str
   if (typeof node?.vars?.full_name === 'string') {
     node.vars.full_name = node.vars.full_name.replace(/__name__/g, index)
   }
-  // Symfony uses "__name__label__" as a sentinel label on collection prototypes.
-  // It has no meaning once the entry is given an index — clear it so the consuming
-  // template's own fallback label takes effect.
   if (typeof node?.vars?.label === 'string' && node.vars.label.includes('__name__')) {
     delete node.vars.label
   }

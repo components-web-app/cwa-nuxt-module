@@ -15,11 +15,6 @@ export const useCwaResourceEndpoint = (iri: Ref<string | undefined>, postfix?: s
     return (forcePublishedVersion.value !== undefined || !$cwa.admin.isEditing) && getPublishedResourceState(resource.value) === true
   })
 
-  // Derived, never assigned. This used to be a ref written by a watcher on `applyPostfix`, so it
-  // only changed when `applyPostfix` did: toggling the Publish tab from live back to draft leaves
-  // `applyPostfix` true (the resource is still publishable), so the query stayed `?published=true`
-  // and the next write was sent to the version the user was not looking at. Deriving it also makes
-  // it synchronous, so a request fired in the same tick as the toggle uses the new value.
   const query = computed(() => {
     if (!applyPostfix.value) {
       return ''

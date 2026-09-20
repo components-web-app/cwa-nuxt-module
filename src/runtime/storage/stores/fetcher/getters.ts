@@ -37,10 +37,6 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
 
       return fetchStatus
     }),
-    // The page to keep rendering while a new one loads. Prefers `displayedToken` (the page actually
-    // on screen — possibly a superseded, partially-loaded one we deliberately hold) and only falls
-    // back to the resolved success when nothing has been displayed yet. Reading the success fallback
-    // keeps the previous behaviour (isFetchResolving-gated) for first loads. See #256.
     resolvedDisplayFetchStatus: computed(() => {
       const { displayedToken, successToken } = fetcherState.primaryFetch
       if (displayedToken) {

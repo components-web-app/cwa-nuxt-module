@@ -232,13 +232,12 @@ describe('useCwaResourceModel', () => {
 
     test('sets isLongWait after longWaitThreshold when busy', async () => {
       mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
-      mockUpdateResource.mockImplementation(() => new Promise(() => {})) // never resolves
+      mockUpdateResource.mockImplementation(() => new Promise(() => {}))
       const { model, states } = useCwaResourceModel(iri, 'title', { longWaitThreshold: 100 })
       model.value = 'New'
       await nextTick()
-      vi.runAllTimers() // fires debounce + longWait timer
+      vi.runAllTimers()
       await nextTick()
-      // after running all timers, longWait should be set
       expect(states.isLongWait.value).toBe(true)
     })
   })

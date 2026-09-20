@@ -71,7 +71,7 @@ describe('usePopper', () => {
   test('does nothing when popper element is not an HTMLElement', () => {
     const [reference, popper] = usePopper({})
     reference.value = document.createElement('div')
-    popper.value = {} as any // not an HTMLElement
+    popper.value = {} as any
     watchEffectCb?.(() => {})
     expect(mockCreatePopper).not.toHaveBeenCalled()
   })

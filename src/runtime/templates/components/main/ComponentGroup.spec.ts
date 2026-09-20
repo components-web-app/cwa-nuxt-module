@@ -36,8 +36,6 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    // spied so call arguments can be asserted, but still the real implementation - the component
-    // relies on a watcher to start the synchronizer once `location` resolves
     watch: vi.fn(mod.watch),
   }
 })
@@ -66,7 +64,6 @@ function createWrapper(ops: {
     signedIn = false,
     isEditing = true,
   } = ops
-  // `location` must be able to be explicitly undefined, so a default parameter cannot be used
   const location = 'location' in ops ? ops.location : mockLocation
   // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
@@ -109,8 +106,6 @@ function createWrapper(ops: {
 describe('ComponentGroup', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    // `mockImplementationOnce` queues survive `vi.clearAllMocks()` - an unconsumed one would leak
-    // into the next test and silently change what it renders
     mockCwaResources.getResource.mockReset().mockImplementation(() => vue.computed(() => undefined))
     mockCwaResources.getComponentGroupByReference.mockReset()
   })

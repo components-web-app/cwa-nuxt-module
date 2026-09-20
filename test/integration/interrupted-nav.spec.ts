@@ -41,7 +41,7 @@ describe('#246 interrupted navigation (reverted #256 baseline)', () => {
     await flush()
     expect(h.replay.pending().length).toBeGreaterThan(0)
 
-    startNav(h, '/topic-1/chapter-two') // interrupt in flight
+    startNav(h, '/topic-1/chapter-two')
     await flush()
     await settle(h)
 
@@ -53,10 +53,10 @@ describe('#246 interrupted navigation (reverted #256 baseline)', () => {
     const h = buildHarness(cassette as never, { manual: true })
     startNav(h, '/topic-1/chapter-one')
     await flush()
-    h.replay.release(isRoute) // parent route resolves; child still loading
+    h.replay.release(isRoute)
     await flush()
 
-    startNav(h, '/') // click home before chapter-one finished
+    startNav(h, '/')
     await flush()
     await settle(h)
 
@@ -69,12 +69,12 @@ describe('#246 interrupted navigation (reverted #256 baseline)', () => {
     const target = await fetchWithRedirect(h, '/topic-1')
     expect(target).toBe('/topic-1/chapter-one')
 
-    startNav(h, target) // load the nested redirect target...
+    startNav(h, target)
     await flush()
     h.replay.release(isRoute)
     await flush()
 
-    startNav(h, '/form') // ...but click the static form page before it finished
+    startNav(h, '/form')
     await flush()
     await settle(h)
 

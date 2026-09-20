@@ -60,9 +60,6 @@ describe('useCwaFileField', () => {
     expect(passed.mediaObjects.value).toEqual({})
   })
 
-  // #267: the template ref used to be auto-registered from the `fileProp`, so two calls sharing a
-  // `fileProp` collided on the same key — a warning in dev but `TypeError: Cannot redefine
-  // property` in a production build. Registration is now the caller's job.
   test('never registers a template ref implicitly', () => {
     useCwaFileField({ iri: '/resources/1' }, { fileProp: 'thumbnail' })
     expect(vi.mocked(useTemplateRef)).not.toHaveBeenCalled()

@@ -108,8 +108,6 @@ function setup(
   })
 }
 
-// Advanced setup that returns access to the mocked item-page handlers, refs and the
-// useCwa mock so tests can assert on wrapper functions (saveResource, goToTemplate, etc).
 function setupAdvanced(opts: {
   localDataOverrides?: Record<string, any>
   itemPageOverrides?: Record<string, any>
@@ -318,7 +316,6 @@ describe('PageDataAdminModal', () => {
       const options = typeSelect?.props('options') as Array<{ label: string, value: string | null }>
       expect(options).toContainEqual({ label: 'Select type…', value: null })
       expect(options).toContainEqual({ label: 'EventData', value: 'event_data' })
-      // SkippedData has no key, so excluded
       expect(options.find(o => o.label === 'SkippedData')).toBeUndefined()
     })
 
@@ -339,7 +336,6 @@ describe('PageDataAdminModal', () => {
       const options = dataSelect?.props('options') as Array<{ label: string, value: string | null }>
       expect(options).toContainEqual({ label: 'Select…', value: null })
       expect(options).toContainEqual({ label: 'Event One', value: '/_/event_data/x' })
-      // empty title falls back to @id
       expect(options).toContainEqual({ label: '/_/event_data/y', value: '/_/event_data/y' })
     })
 
@@ -365,7 +361,6 @@ describe('PageDataAdminModal', () => {
       })
       await nextTick()
       const typeSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Parent Data Type')
-      // changing from a non-null value (set by init watcher) to a new value triggers clear
       await typeSelect?.vm.$emit('update:modelValue', 'other_data')
       await nextTick()
       expect(localResourceData.value.parentPageData).toBeNull()
@@ -379,7 +374,6 @@ describe('PageDataAdminModal', () => {
         getResource: (iri: string) => iri === '/_/event_data/x' ? ref({ data: { '@type': 'App\\Entity\\EventData' } }) : ref(null),
       })
       await nextTick()
-      // because selectedParentDataType was restored, the Parent Data select should be visible
       const labels = wrapper.findAllComponents({ name: 'ModalSelect' }).map(s => s.props('label'))
       expect(labels).toContain('Parent Data')
     })
@@ -391,10 +385,8 @@ describe('PageDataAdminModal', () => {
         localDataOverrides: { parentPage: '/_/pages/uuid-2', parentPageData: '/_/event_data/x' },
       })
       await nextTick()
-      // parentType watcher will set parentType to 'page' (parentPage truthy). Set to none.
       await wrapper.findComponent({ name: 'ModalRadioTabs' }).vm.$emit('update:modelValue', null)
       await nextTick()
-      // trigger Save & Close button (saveResource(true))
       const buttons = wrapper.findAllComponents({ name: 'CwaUiFormButton' })
       await buttons[0].vm.$emit('click')
       expect(localResourceData.value.parentPage).toBeNull()
@@ -407,9 +399,7 @@ describe('PageDataAdminModal', () => {
         localDataOverrides: { parentPage: '/_/pages/uuid-2', parentPageData: null },
       })
       await nextTick()
-      // parentType is 'page' from init watcher
       const buttons = wrapper.findAllComponents({ name: 'CwaUiFormButton' })
-      // second button = Save (saveResource(false))
       await buttons[1].vm.$emit('click')
       expect(localResourceData.value.parentPage).toBe('/_/pages/uuid-2')
       expect(localResourceData.value.parentPageData).toBeNull()
@@ -449,11 +439,9 @@ describe('PageDataAdminModal', () => {
   describe('delete', () => {
     test('handleDeleteClick calls deleteResource and navigates to the data list on success', async () => {
       const { wrapper, handlers } = setupAdvanced()
-      // Delete button is in the info tab — find the last CwaUiFormButton
       const buttons = wrapper.findAllComponents({ name: 'CwaUiFormButton' })
       await buttons[buttons.length - 1].vm.$emit('click')
       expect(handlers.deleteResource).toHaveBeenCalled()
-      // invoke the success callback passed as 2nd arg
       const successCb = handlers.deleteResource.mock.calls[0][1]
       await successCb()
       expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-data' })
@@ -476,7 +464,6 @@ describe('PageDataAdminModal', () => {
     test('does nothing when no page is set', async () => {
       const { wrapper, toggleEdit } = setupAdvanced({ localDataOverrides: { page: null } })
       await nextTick()
-      // The "Go to dynamic template" button only renders when page is set, so simulate via no button
       const goButtons = wrapper.findAll('button').filter(b => b.text() === 'Go to dynamic template')
       expect(goButtons.length).toBe(0)
       expect(mockNavigateTo).not.toHaveBeenCalled()
@@ -531,7 +518,6 @@ describe('PageDataAdminModal', () => {
 
       expect(inputLabels).toContain('Subtitle')
       expect(selectLabels).not.toContain('Subtitle')
-      // an explicit 'select' and an entry with no type both keep rendering as a select
       expect(selectLabels).toEqual(expect.arrayContaining(['Category', 'Status']))
       expect(inputLabels).not.toContain('Category')
       expect(inputLabels).not.toContain('Status')
@@ -610,7 +596,6 @@ describe('PageDataAdminModal', () => {
       const { handlers, localResourceData } = setupAdvanced()
       await nextTick()
       handlers.saveResource.mockClear()
-      // isTemplate was undefined; set to true (oldIsTemplate undefined -> no save)
       localResourceData.value.isTemplate = true
       await nextTick()
       expect(handlers.saveResource).not.toHaveBeenCalled()

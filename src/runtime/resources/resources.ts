@@ -78,22 +78,15 @@ export class Resources {
       const fetchingStatus = this.fetcherStore.fetches[fetchingToken]
       if (fetchingStatus) {
         const irisByDepth = fetchingStatus.manifest?.irisByDepth
-        // Determine the depth-0 page IRI — from irisByDepth[0] if available, else from the
-        // fetch path. Deeper depths are allowed to load progressively after the switch.
         const pageIri = irisByDepth?.[0]
           ? this.getPageIriFromDepthGroup(irisByDepth[0])
           : this.getPageIriByFetchStatus(fetchingStatus)
         if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
           const pageResource = this.getResource(pageIri).value
           if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-            // Also require the layout resource to have data so the early-switch doesn't
-            // briefly fall back to the unstyled DefaultLayout while the layout entity loads.
             const layoutIri = this.getLayoutIriByFetchStatus(fetchingStatus)
             const layoutReady = !layoutIri || !!(this.getResource(layoutIri).value?.data)
             if (layoutReady) {
-              // Prevent flash of wrong page data: if depth-0 has a PageData IRI, require it to
-              // have data in the store before early-switching. Stops pages sharing a template
-              // from briefly showing the previous page's data during navigation.
               if (irisByDepth?.[0]) {
                 const pageDataIri = this.getPageDataIriFromDepthGroup(irisByDepth[0])
                 if (pageDataIri && !this.getResource(pageDataIri).value?.data) {
@@ -106,9 +99,6 @@ export class Resources {
         }
       }
     }
-    // While a new page loads, hold the page that is actually on screen (`displayedToken`) rather than
-    // the last fully-resolved success — so rapid navigation never reverts to a page from several
-    // clicks ago. See #256.
     return this.fetcherStore.resolvedDisplayFetchStatus
   }
 
@@ -213,7 +203,6 @@ export class Resources {
   }
 
   private getLayoutIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
-    // Use depth-0 page for layout; the leaf route may not be in the store yet during sibling nav.
     const irisByDepth = fetchStatus?.manifest?.irisByDepth
     const pageIri = irisByDepth?.[0]
       ? this.getPageIriFromDepthGroup(irisByDepth[0])

@@ -1,16 +1,3 @@
-/**
- * #246 — Replay layer for deterministic integration tests.
- *
- * A drop-in stand-in for `CwaFetch` that serves responses from a recorded cassette (see
- * `test/cassettes/record.mjs`) instead of hitting the network. Only `fetch.raw(url)` is used by the
- * pipeline, so that's what we implement faithfully — including throwing an ofetch-shaped error for
- * non-2xx entries.
- *
- * The key feature is CONTROLLABLE TIMING: in `manual` mode a request does not resolve until the test
- * releases it, so navigations can be interleaved deterministically to reproduce timing races (the
- * "switch before load / stuck page" class of bug the unit harness structurally can't catch).
- */
-
 export interface CassetteEntry {
   method: string
   path: string
@@ -130,12 +117,6 @@ export class ReplayCwaFetch {
     return releasing.length
   }
 
-  /**
-   * Release only the MOST RECENTLY queued request matching, leaving any earlier matches in flight.
-   * Repeat clicks on one route queue several requests on an identical path, which `release` cannot
-   * tell apart — this is the lever that lets the NEWER click win while an older one is still
-   * pending, so the older can then be resolved LATE (after it has been superseded).
-   */
   public releaseLatest(match: string | ((path: string) => boolean)): boolean {
     const predicate = typeof match === 'function' ? match : (path: string) => path === match
     const index = this.queue.map(q => predicate(q.path)).lastIndexOf(true)

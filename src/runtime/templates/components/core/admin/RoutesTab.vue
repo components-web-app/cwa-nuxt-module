@@ -128,14 +128,10 @@ const parentRoutePrefix = computed(() => {
   if (!routeIri) {
     return null
   }
-  // Strip everything up to and including /_/routes/ to handle both relative IRIs
-  // (/_/routes//topic-1) and API-prefixed IRIs (/_api/_/routes//topic-1)
   return routeIri.replace(/^.*\/_\/routes\//, '')
 })
 const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
 
-// The API may return `redirect` as an embedded JSON-LD object rather than an IRI string.
-// Normalise to a string IRI so downstream consumers always receive a string.
 const redirectIri = computed<string | undefined>(() => {
   const r = resource.value?.redirect
   if (!r) return undefined
@@ -269,10 +265,6 @@ async function handleDeleteRoute() {
   const deletingPath = resource.value?.path
   const requestCompleteFn = (_?: CwaResource) => {
     if (deletingPath === route.path) {
-      // if we are viewing the page via the route, reload the page via the direct IRI now the route no longer exists.
-      // it MUST go through getInternalResourceLink - the IRI is a route param of the `_cwa-resource-page` route, not
-      // a path. Navigating to the bare IRI string matches the catch-all instead, where `cwaPage0` is never set, so
-      // the fetcher requests `/_/routes/<the whole IRI>` and the primary fetch 404s.
       const iri = $cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value
       iri && navigateTo(getInternalResourceLink(iri))
     }
@@ -341,7 +333,6 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   },
   endpoint,
   iri: routeIriFromPage,
-  // exclude these fields — managed by their own dedicated flows
   excludeFields: ['redirectedFrom', 'redirect'],
 })
 

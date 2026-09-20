@@ -176,8 +176,6 @@ describe('Resource Utilities getResourceTypeFromIri function', () => {
 })
 
 describe('Resource Utilities getResourceTypeFromIri path prefix handling', () => {
-  // `ResourceTypeFromIri` is a module-level singleton shared by every spec in the run — always
-  // restore it, or the prefix leaks into unrelated files.
   afterEach(() => {
     ResourceTypeFromIri.setPathPrefix(undefined)
   })
@@ -206,9 +204,6 @@ describe('Resource Utilities getResourceTypeFromIri path prefix handling', () =>
     })
   })
 
-  // #266 — the regression. `new URL('https://api.example.com').pathname` is '/', NOT ''. Storing
-  // that single slash as a prefix made `iri.replace('/', '')` eat the IRI's LEADING slash, so
-  // every IRI failed `startsWith('/_/routes/')` and the whole module lost resource typing.
   describe('API deployed at a bare host (`https://api.example.com` → pathname `/`)', () => {
     test.each(typeIriSuffixes)('%s is still resolved when the API URL has no path prefix', (type, iri) => {
       ResourceTypeFromIri.setPathPrefix('/')
@@ -231,9 +226,6 @@ describe('Resource Utilities getResourceTypeFromIri path prefix handling', () =>
     })
   })
 
-  // A trailing slash on the configured apiUrl (`https://localhost/_api/`) yields the pathname
-  // `/_api/`. Stripping that leaves `_/routes/…` with no leading slash — the same failure as the
-  // bare-host case. A trailing slash carries no meaning in a path prefix.
   describe('API URL configured with a trailing slash (`https://localhost/_api/` → pathname `/_api/`)', () => {
     test.each(typeIriSuffixes)('%s is still resolved', (type, iri) => {
       ResourceTypeFromIri.setPathPrefix('/_api/')
@@ -257,17 +249,9 @@ describe('Resource Utilities getResourceTypeFromIri path prefix handling', () =>
     expect(ResourceTypeFromIri.getPathPrefix()).toBe('/_api')
   })
 
-  // The prefix must be stripped from the START only. `iri.replace(prefix, '')` removes the first
-  // occurrence ANYWHERE, so an IRI that merely *contains* the prefix was rewritten from the wrong
-  // position. The IRIs below are synthetic: mid-IRI removal cannot change a `startsWith` match
-  // (removing from the middle leaves the start intact), so the only observable divergence is the
-  // collection-IRI equality branch — where a first-occurrence strip fabricates a false match.
   describe('the prefix is stripped from the start only, not the first occurrence anywhere', () => {
     test('an IRI merely containing the prefix is not rewritten into a false collection-IRI match', () => {
       ResourceTypeFromIri.setPathPrefix('/_api')
-      // '/compon/_apient'.replace('/_api', '') === '/component' — a first-occurrence strip would
-      // report this as the COMPONENT collection IRI. It does not start with '/_api', so the prefix
-      // must be left alone and the IRI left untyped.
       expect(getResourceTypeFromIri('/compon/_apient')).toBeUndefined()
     })
 

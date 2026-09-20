@@ -17,8 +17,6 @@ import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/
 
 export type StyleOptions = {
   multiple?: boolean
-  // each style is a class string (e.g. 'border border-gray-200'); a string[] is also accepted and
-  // normalised by joining. Stored in the resource's `uiClassNames` as one entry per selected style.
   classes: { [name: string]: string | string[] }
 }
 
@@ -109,8 +107,6 @@ export default class ManageableResource {
       return
     }
 
-    // Already scheduled a re-init this tick: emit the cascade immediately (so grandparents still
-    // propagate in the same synchronous pass) but skip redundant addClickEventListeners work.
     if (this.pendingChildMountedReInit) {
       return
     }
@@ -129,10 +125,6 @@ export default class ManageableResource {
 
     if (isChild) {
       this.pendingChildMountedReInit = true
-      // Emit the cascade synchronously so grandparents propagate in the same pass, but defer the
-      // actual DOM listener refresh to nextTick. This ensures children register their own click
-      // listeners (via the post-flush watcher) before parents register theirs, which fixes the
-      // click-event ordering bug that caused the resource stack to compound across clicks.
       this.$cwa.admin.eventBus.emit('componentMounted', currentIri)
       void nextTick(() => {
         this.pendingChildMountedReInit = false
@@ -257,19 +249,6 @@ export default class ManageableResource {
     if (!this.currentResource || !this.currentIri?.value) {
       throw new Error('Cannot get a currentStackItem when currentResource or currentIri is not defined')
     }
-    // domElements is passed as the live this.domElements ref (not a snapshot) so that
-    // ComponentFocus can react to DOM changes while the resource is selected — for example
-    // when the user switches a UI variant and new elements mount in place of the old ones.
-    //
-    // CONSUMER NOTE — do NOT use :static="someStackCheck" on Headless UI containers
-    // (menus, disclosures, etc.) to keep them open while their children are being selected.
-    // resourceStack returns [] while a click is being processed, causing isEditing to flicker
-    // false for one flush cycle, which makes the container unmount and clears domElements
-    // before ComponentFocus can read them.
-    //
-    // The correct approach: let Headless UI control open/close naturally. When the container
-    // is open and the user clicks a child component, ManageableResource captures the click
-    // before any close() handler fires. No static prop is needed.
     return {
       iri: this.currentIri.value,
       domElements: this.domElements,

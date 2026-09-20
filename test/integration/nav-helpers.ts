@@ -13,15 +13,10 @@ export const HOME_PAGE = '/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206' //
 export const isRoute = (p: string) => p.includes('/_/routes/')
 export const isManifest = (p: string) => p.includes('/_/resource_manifest/')
 
-// Start a navigation the way the route middleware does — fire-and-forget (NOT awaited). A superseded
-// nav legitimately never resolves, so we must not await it; swallow any rejection.
 export function startNav(h: Harness, path: string) {
   h.fetcher.fetchRoute(h.route(path)).catch(() => {})
 }
 
-// Drive pending requests to completion in a REALISTIC order: routes first (so a redirect can abort /
-// a page can early-switch before its batch), then manifests (which enqueue the resource batch), then
-// the resources. Drains thoroughly between phases so continuations propagate.
 export async function settle(h: Harness) {
   for (let i = 0; i < 60 && h.replay.pending().length; i++) {
     const pending = h.replay.pending()

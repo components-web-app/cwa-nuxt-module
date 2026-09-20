@@ -102,12 +102,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
 
   nuxtApp.$cwa.fetchRoute(to)
     .then(async (resource: CwaResource | undefined) => {
-      // Suppress a redirect from a navigation that has already been replaced (rapid repeat clicks on
-      // a redirect route). A superseded fetch usually resolves `undefined` — its token is no longer
-      // current, so `finishFetchResource` bails — but not always: once the winning click has saved
-      // the route resource, a late superseded response short-circuits on the cached SUCCESS and
-      // resolves WITH `redirectPath`. Unguarded, that stale click fires a second `navigateTo` and
-      // yanks the user back to the target from wherever they navigated next. See #245.
       if (startedMiddlewareToken !== middlewareToken && resource?.redirectPath) {
         return
       }

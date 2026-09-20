@@ -7,6 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Principle of least exposure
 Only add store getters, composable properties, or fetched resource types when there is a concrete consumer for them. Do not speculatively expose data "in case it's needed". Each addition should be justified against a real requirement and covered by a test.
 
+### No narrative code comments
+Do not add comments that explain what the code does or why a change was made — not in source, not in specs, not in Vue templates. The behaviour and the reason for it are carried by the test name and its setup, which is why a test must cover both the change and the use case that motivated it. Design rationale belongs here in CLAUDE.md or in the issue, never in the code.
+
+Keep only what a tool reads or what is not prose: directives (`@vitest-environment`, `eslint-disable*`, `@ts-expect-error`, `@internal`, `@deprecated`), licence headers, and `todo`/`FIXME` notes. Mirrors api-components-bundle#226, which applies the same principle there.
+
 ### TDD process
 All feature work follows this cycle:
 1. Explain what we're about to do and why, with a proposed Vitest test

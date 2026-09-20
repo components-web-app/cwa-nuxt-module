@@ -28,8 +28,6 @@ describe('useCwaResourceEndpoint', () => {
     resources: {
       getResource: vi.fn(() => mockResource),
     },
-    // shallowReactive so `isEditing` is tracked (it is `reactive()` store state in the app) while
-    // `forcePublishedVersion` stays a raw ref rather than being unwrapped by a deep reactive()
     admin: shallowReactive({
       resourceStackManager: { forcePublishedVersion },
       isEditing: false,
@@ -99,10 +97,6 @@ describe('useCwaResourceEndpoint', () => {
   })
 
   describe('the query keeps following its inputs after setup', () => {
-    // Regression: `query` was written by a watcher on `applyPostfix`, so it only changed when
-    // `applyPostfix` did. Toggling the Publish tab from live back to draft leaves `applyPostfix`
-    // true (the resource is still publishable), so the query stayed `?published=true` and the next
-    // write was sent to the version the user was not looking at.
     test('follows forcePublishedVersion flipping from live back to draft', () => {
       const iri = ref<string | undefined>('/my/resource')
       mockResource.value = { data: { '@id': '/my/resource', '@type': 'Component' } }
@@ -144,7 +138,6 @@ describe('useCwaResourceEndpoint', () => {
       const { query } = useCwaResourceEndpoint(iri)
       expect(query.value).toBe('?published=true')
 
-      // the stack switched to the draft version of the same component
       vi.mocked(resourceUtils.getPublishedResourceState).mockReturnValue(false)
       mockResource.value = { data: { '@id': '/my/resource', '@type': 'Component' } }
       expect(query.value).toBe('')

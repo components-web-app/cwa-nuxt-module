@@ -109,8 +109,6 @@ describe('useCwaComponent', () => {
     })
 
     test('falls back to the component own iri when there is no published version (unpublished draft)', () => {
-      // findPublishedComponentIri returns undefined for a never-published draft by design; a draft is
-      // still a valid component-group location, so publishedIri must default to the component own iri.
       ;(mockCwa.resources as any).findPublishedComponentIri = vi.fn(() => ({ value: undefined }))
       const result = useCwaComponent({ iri: '/component/unpublished-draft' })
       expect((result as any).publishedIri.value).toBe('/component/unpublished-draft')

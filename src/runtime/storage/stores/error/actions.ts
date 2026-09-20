@@ -12,7 +12,6 @@ export interface CwaErrorActionsInterface {
 }
 
 function getErrorType(type: string | undefined): ErrorType {
-  // problem+json gives a URL (e.g. 'https://symfony.com/errors/ConstraintViolationList') — extract last path segment
   const typeKey = type?.includes('/') ? (type.split('/').pop() ?? type) : type
   switch (typeKey) {
     case 'Error':

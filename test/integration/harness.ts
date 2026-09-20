@@ -1,10 +1,3 @@
-/**
- * #246 — Boot harness: assembles the REAL fetch pipeline (Fetcher + FetchStatusManager + Pinia
- * stores + Resources) wired to a ReplayCwaFetch, so integration tests drive `fetchRoute` against
- * recorded responses and assert the resulting store/render state — deterministically, with no live
- * API. Mercure / ApiDocumentation are no-op stubs (nav doesn't depend on them); `#imports`
- * (`useError`/`clearError`) must be mocked by the importing spec.
- */
 import { createPinia, setActivePinia } from 'pinia'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'

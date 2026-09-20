@@ -5,16 +5,11 @@ import { mount, flushPromises } from '@vue/test-utils'
 import LayoutPageOverlay from './LayoutPageOverlay.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-// Window size refs are shared so tests can drive them.
 const windowSize = vi.hoisted(() => ({ width: { value: 1000 }, height: { value: 800 } }))
 vi.mock('@vueuse/core', () => ({
   useWindowSize: () => windowSize,
 }))
 
-// Capture the canvas 2d contexts so we can assert drawing calls. Every canvas
-// created (the template ref canvas plus the hatch helper canvas) gets a fresh
-// mock context; `mainCtx` is the one drawCanvas() actually paints onto, which we
-// identify because `reset()`/`fill()` are only called on that context.
 let allCtxs: any[]
 function makeCtx() {
   const ctx = {
@@ -36,8 +31,6 @@ function mainCtx() {
   return allCtxs.find(c => c.reset.mock.calls.length > 0)
 }
 
-// happy-dom's canvas has no getContext; patch the prototype so the template
-// ref canvas (created by Vue's renderer) and the hatch canvas both return mocks.
 beforeEach(() => {
   allCtxs = []
   // @ts-expect-error happy-dom HTMLCanvasElement lacks getContext
@@ -92,7 +85,6 @@ function mountComponent(opts: {
     props: { page, layout },
     global: {
       stubs: {
-        // Render ClientOnly's default slot so the template content mounts.
         ClientOnly: { template: '<div><slot /></div>' },
       },
     },
@@ -135,15 +127,11 @@ describe('LayoutPageOverlay', () => {
       })
       const overlays = wrapper.findAll('.cwa\\:backdrop-blur-\\[1\\.5px\\]')
       const styles = overlays.map(o => o.attributes('style'))
-      // top strip: full layout width, height = page top (50px)
       expect(styles[0]).toContain('width: 1000px')
       expect(styles[0]).toContain('height: 50px')
-      // left strip: width = page left (100px), height = page height (400px)
       expect(styles[1]).toContain('width: 100px')
       expect(styles[1]).toContain('height: 400px')
-      // right strip: left = page left + width = 700px
       expect(styles[2]).toContain('left: 700px')
-      // bottom strip: top = page top + height = 450px
       expect(styles[3]).toContain('top: 450px')
     })
   })
@@ -157,7 +145,6 @@ describe('LayoutPageOverlay', () => {
       })
       const overlay = wrapper.find('.cwa\\:backdrop-blur-\\[1\\.5px\\]')
       const style = overlay.attributes('style')
-      // page coords are relative: top = 60-10 = 50, left = 120-20 = 100
       expect(style).toContain('top: 50px')
       expect(style).toContain('left: 100px')
       expect(style).toContain('width: 600px')
@@ -185,7 +172,6 @@ describe('LayoutPageOverlay', () => {
       await redraw()
       await nextTick()
       await flushPromises()
-      // after redraw, overlays are repopulated (page-focus mode -> 4)
       expect(wrapper.findAll('.cwa\\:backdrop-blur-\\[1\\.5px\\]')).toHaveLength(4)
     })
   })
@@ -205,7 +191,6 @@ describe('LayoutPageOverlay', () => {
       expect(ctx).toBeTruthy()
       expect(ctx.reset).toHaveBeenCalled()
       expect(ctx.fill).toHaveBeenCalled()
-      // page-focus path starts at the origin
       expect(ctx.moveTo).toHaveBeenCalledWith(0, 0)
     })
 
@@ -218,7 +203,6 @@ describe('LayoutPageOverlay', () => {
       await triggerRedraw()
       const ctx = mainCtx()
       expect(ctx).toBeTruthy()
-      // layout-focus path begins at the page's top-left (relative coords)
       expect(ctx.moveTo).toHaveBeenCalledWith(100, 50)
     })
 
@@ -227,7 +211,6 @@ describe('LayoutPageOverlay', () => {
       await triggerRedraw()
       const ctx = mainCtx()
       expect(ctx).toBeTruthy()
-      // hatch canvas produced a pattern that is used as the fill style
       expect(ctx.createPattern).toHaveBeenCalledWith(expect.anything(), 'repeat')
       expect(ctx.fillStyle).toBe('pattern')
     })

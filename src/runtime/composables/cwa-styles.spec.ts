@@ -64,6 +64,6 @@ describe('deriveSelectedStyles', () => {
   test('round-trips with mergeSelectedStyles (single and multiple)', () => {
     expect(deriveSelectedStyles(mergeSelectedStyles(['Rounded'], classes), classes)).toEqual(['Rounded'])
     const merged = mergeSelectedStyles(['Shadow', 'Bordered'], classes)
-    expect(deriveSelectedStyles(merged, classes)).toEqual(['Bordered', 'Shadow']) // declaration order
+    expect(deriveSelectedStyles(merged, classes)).toEqual(['Bordered', 'Shadow'])
   })
 })

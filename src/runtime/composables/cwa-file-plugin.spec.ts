@@ -41,7 +41,6 @@ describe('withFile', () => {
   test('exposes the field under a `files` map keyed by fileProp (default "file")', () => {
     const { files } = withFile()(makeCtx())
     expect(Object.keys(files)).toEqual(['file'])
-    // reactive entry — nested refs are unwrapped for template friendliness
     expect(files.file!.contentUrl).toBe('/mock.jpg')
   })
 
@@ -73,8 +72,6 @@ describe('withFile', () => {
     )
   })
 
-  // #267: see the matching test in cwa-file-field.spec.ts — the implicit registration keyed on
-  // `fileProp` is what made a second call with the same key throw in a production build.
   test('never registers a template ref implicitly', () => {
     withFile({ fileProp: 'heroImage' })(makeCtx())
     expect(vi.mocked(useTemplateRef)).not.toHaveBeenCalled()

@@ -7,9 +7,6 @@ import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useDataResolver } from './useDataResolver'
 
-// Use a *real* Vue app so its _context has the internal caches
-// (propsCache/optionsCache/emitsCache WeakMaps etc.) that Vue's renderer relies
-// on when we assign vnode.appContext and call render().
 const realApp = createApp({ render: () => null })
 const realVueApp: any = realApp
 const mockGlobalComponents: Record<string, any> = realVueApp._context.components
@@ -20,16 +17,6 @@ const mockNuxtAppObj: any = {
 
 mockNuxtImport('useNuxtApp', () => () => mockNuxtAppObj)
 
-// A synchronous metadata component. useDataResolver spreads `cProps` onto the
-// rendered component (so individual prop keys are passed, not a `cProps` object)
-// and binds `ref: metadata` to capture the exposed value.
-//
-// NOTE ON TIMING: for a component that is NOT an AsyncComponentWrapper, the SUT
-// marks it resolved synchronously and calls completeLoad() immediately after
-// render(). At that instant Vue has not yet bound the template ref, so the
-// captured metadata is `null`. This is the real behaviour of the SUT for the
-// synchronous path; the async path (below) captures the exposed value because
-// completeLoad runs later via the watcher.
 const SyncMetaComponent = defineComponent({
   name: 'SyncMetaComponent',
   props: { iri: { type: String, default: undefined } },
@@ -39,9 +26,6 @@ const SyncMetaComponent = defineComponent({
   },
 })
 
-// Simulate Vue's AsyncComponentWrapper: name === 'AsyncComponentWrapper'
-// and __asyncResolved toggling from falsy to truthy. The SUT spreads cProps
-// onto this component, so it receives `iri` directly (not a cProps object).
 function makeAsyncWrapper(resolvedFlag: { value: boolean }) {
   const wrapper = defineComponent({
     name: 'AsyncComponentWrapper',
@@ -58,10 +42,6 @@ function makeAsyncWrapper(resolvedFlag: { value: boolean }) {
   return wrapper
 }
 
-/**
- * Helper to drive the composable inside a real component setup() so that the
- * onMounted / onBeforeUnmount lifecycle hooks actually run.
- */
 function mountResolver(
   allMeta: Ref<any[]>,
   ops: {
@@ -104,7 +84,6 @@ describe('useDataResolver', () => {
 
     expect(typeof api.startDataResolver).toBe('function')
     expect(typeof api.stopDataResolver).toBe('function')
-    // initial reset + watcher immediate run (no components -> empty array)
     expect(allMeta.value).toEqual([])
     wrapper.unmount()
   })
@@ -118,8 +97,6 @@ describe('useDataResolver', () => {
 
     await nextTick()
 
-    // One entry. Sync-resolved components complete immediately (before the
-    // template ref binds) so the captured metadata is null.
     expect(allMeta.value).toHaveLength(1)
     expect(allMeta.value[0]).toBeNull()
     wrapper.unmount()
@@ -142,7 +119,6 @@ describe('useDataResolver', () => {
     await nextTick()
 
     expect(allMeta.value).toHaveLength(2)
-    // both sync-resolved -> null in their respective slots
     expect(allMeta.value[0]).toBeNull()
     expect(allMeta.value[1]).toBeNull()
     wrapper.unmount()
@@ -157,7 +133,6 @@ describe('useDataResolver', () => {
     const { wrapper } = mountResolver(allMeta, { components, props })
     await nextTick()
 
-    // String name was looked up in globalComponents and rendered successfully.
     expect(allMeta.value).toHaveLength(1)
     expect(allMeta.value[0]).toBeNull()
     wrapper.unmount()
@@ -173,7 +148,6 @@ describe('useDataResolver', () => {
     await nextTick()
 
     expect(validator).toHaveBeenCalledWith({ iri: undefined })
-    // array sized to component count but never populated (early return)
     expect(allMeta.value).toHaveLength(1)
     expect(allMeta.value[0]).toBeUndefined()
     wrapper.unmount()
@@ -189,7 +163,6 @@ describe('useDataResolver', () => {
     await nextTick()
 
     expect(validator).toHaveBeenCalled()
-    // validator passed -> the component was rendered and its slot completed.
     expect(allMeta.value).toHaveLength(1)
     expect(allMeta.value[0]).toBeNull()
     wrapper.unmount()
@@ -224,8 +197,6 @@ describe('useDataResolver', () => {
     const components = ref<any[] | undefined>([SyncMetaComponent])
     const props = ref({ iri: '/first' })
 
-    // The SUT watches [components, props]; a props change must trigger a fresh
-    // handleInputChange which rebuilds allMeta rather than leaving it stale.
     const { wrapper } = mountResolver(allMeta, { components, props })
     await nextTick()
     expect(allMeta.value).toHaveLength(1)
@@ -244,8 +215,6 @@ describe('useDataResolver', () => {
     const components = ref<any[] | undefined>(['DoesNotExist'])
     const props = ref({ iri: '/x' })
 
-    // The error is thrown during render of rootDefinition inside handleInputChange,
-    // which is triggered by the immediate watch in startDataResolver (onMounted).
     expect(() => mountResolver(allMeta, { components, props })).toThrow('Cannot load metadata for component')
   })
 
@@ -258,8 +227,6 @@ describe('useDataResolver', () => {
     await nextTick()
     expect(allMeta.value).toHaveLength(1)
 
-    // Calling start again should early-return (stopPrimaryWatch already set) and
-    // not reset allMeta to [].
     api.startDataResolver!()
     expect(allMeta.value).toHaveLength(1)
     wrapper.unmount()
@@ -276,7 +243,6 @@ describe('useDataResolver', () => {
 
     api.stopDataResolver!()
 
-    // Change components after stopping — handleInputChange should not run.
     components.value = [SyncMetaComponent, SyncMetaComponent]
     await nextTick()
     expect(allMeta.value).toHaveLength(1)
@@ -294,7 +260,6 @@ describe('useDataResolver', () => {
 
     wrapper.unmount()
 
-    // After unmount the watch is stopped; mutating refs should be a no-op.
     components.value = [SyncMetaComponent, SyncMetaComponent]
     await nextTick()
     expect(allMeta.value).toHaveLength(1)
@@ -323,9 +288,6 @@ describe('useDataResolver', () => {
       const { wrapper } = mountResolver(allMeta, { components, props })
       await nextTick()
 
-      // Already resolved -> completeLoad runs synchronously before the ref binds,
-      // so the slot is filled (length 1) but metadata is null. Crucially, no
-      // polling interval/watcher is set up for this branch.
       expect(allMeta.value).toHaveLength(1)
       expect(allMeta.value[0]).toBeNull()
       wrapper.unmount()
@@ -342,14 +304,11 @@ describe('useDataResolver', () => {
       const { wrapper } = mountResolver(allMeta, { components, props })
       await nextTick()
 
-      // Not resolved yet — slot remains empty.
       expect(allMeta.value).toHaveLength(1)
       expect(allMeta.value[0]).toBeUndefined()
 
-      // Resolve and advance the polling interval (10ms).
       flag.value = true
       vi.advanceTimersByTime(10)
-      // allow watcher (resolved -> true) to flush
       vi.useRealTimers()
       await nextTick()
 
@@ -358,9 +317,6 @@ describe('useDataResolver', () => {
     })
 
     test('stops previously-registered resolved watchers when inputs change again', async () => {
-      // First render registers a deferred watcher (unresolved async wrapper).
-      // Changing components re-runs handleInputChange, which must stop the
-      // previously-registered watchers before rebuilding.
       const allMeta = ref<any[]>([])
       const flag = { value: false }
       const asyncComp = makeAsyncWrapper(flag)
@@ -369,20 +325,14 @@ describe('useDataResolver', () => {
 
       const { wrapper } = mountResolver(allMeta, { components, props })
       await nextTick()
-      // Deferred — slot still empty (watcher registered).
       expect(allMeta.value[0]).toBeUndefined()
 
-      // Change components -> handleInputChange re-runs and unwatches the prior
-      // deferred watcher before processing the new list.
       components.value = [SyncMetaComponent]
       await nextTick()
 
       expect(allMeta.value).toHaveLength(1)
-      // The slot reflects the new sync component, not the old async wrapper.
       expect(allMeta.value[0]).toEqual({ received: { iri: '/pending' } })
 
-      // Now resolving the original async wrapper must NOT overwrite the rebuilt
-      // allMeta, because its watcher was stopped during the re-run.
       flag.value = true
       await new Promise(r => setTimeout(r, 20))
       await nextTick()

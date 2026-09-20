@@ -4,7 +4,6 @@ import { nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import DynamicPage from './DynamicPage.vue'
 
-// vi.hoisted runs before imports, so we cannot use ref/reactive from vue inside it.
 const mockCurrentIriObj = vi.hoisted(() => ({ value: '/_/component_positions/pos-1' as string | undefined }))
 const mockResourceStore = vi.hoisted(() => ({ value: {} as Record<string, any> }))
 
@@ -47,7 +46,6 @@ const PROPERTY_OPTIONS = [
   { label: 'Ticket Link', value: 'ticketLink' },
 ]
 
-// Minimal ModalSelect stub that surfaces the props we assert against and re-emits.
 const ModalSelectStub = {
   name: 'ModalSelect',
   props: ['modelValue', 'label', 'options'],
@@ -225,7 +223,6 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      // make it dirty/incomplete by clearing the property locally via Field change
       const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
       await fieldSelect!.vm.$emit('update:modelValue', null)
       await flushPromises()
@@ -270,7 +267,6 @@ describe('DynamicPage', () => {
         endpoint: '/_/component_positions/pos-1',
         data: { pageDataProperty: null, pageDataClass: null },
       })
-      // local state reset -> type cleared so Field select gone
       await nextTick()
       const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
       expect(fieldSelect).toBeFalsy()
@@ -318,7 +314,6 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      // No type select stored data; makeStatic/save guarded. Trigger addFallbackComponent.
       const addBtn = wrapper.findAllComponents(FormButtonStub).find(b => b.text().trim() === 'Add Fallback Component')
       if (addBtn) {
         await addBtn.trigger('click')

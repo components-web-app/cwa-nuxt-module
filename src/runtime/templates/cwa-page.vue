@@ -28,9 +28,6 @@ watch([width, height], () => {
   $cwa.admin.emitRedraw()
 })
 
-// deliberately untyped: two @unhead/vue majors resolve in this tree (nuxt 4.5 uses v3, the SEO
-// modules pull v2), so importing UseHeadOptions here picks whichever hoists and clashes with the
-// options type nuxt's own useHead expects. The inferred shape is checked against it either way.
 const minimalPriority = {
   // give nuxt.config values higher priority
   tagPriority: 101,

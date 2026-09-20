@@ -7,7 +7,6 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
-    // let watches run synchronously with immediate: false (default)
   }
 })
 
@@ -61,7 +60,6 @@ describe('useCwaSelect', () => {
   test('when selectModel equals model, upstream model is not changed', async () => {
     const model = ref('a')
     const { model: selectModel } = useCwaSelect(model, [])
-    // already equal, changing selectModel to same value should not trigger update
     selectModel.value = 'a'
     await nextTick()
     expect(model.value).toBe('a')

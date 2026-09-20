@@ -392,7 +392,6 @@ describe('Resources', () => {
           : { data: undefined, apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } },
       }))
 
-      // depth-0 is ready; deeper depths load progressively — switch immediately
       expect(resources.displayFetchStatus).toEqual(resourceStatus)
     })
 
@@ -424,7 +423,7 @@ describe('Resources', () => {
       vi.spyOn(resources, 'getResource').mockImplementation((iri: string) => ({
         value: iri === depth0PageIri
           ? { data: { layout: layoutIri, some: 'data' }, apiState: { status: CwaResourceApiStatuses.SUCCESS } }
-          : { data: undefined, apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } }, // layout not loaded
+          : { data: undefined, apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } },
       }))
 
       expect(resources.displayFetchStatus).toEqual(mockStatus)
@@ -1409,7 +1408,6 @@ describe('Resources', () => {
         getResource: vi.fn(() => undefined),
       }
       const { resources } = createResources(undefined, mockStore)
-      // Override pageData getter on instance to control what it returns
       const pageDataResult = computed(() => (pageDataValues !== null
         ? { apiState: { status: 1 as any, headers: {}, fetchedAt: 0 }, data: pageDataValues }
         : undefined))
@@ -1434,7 +1432,6 @@ describe('Resources', () => {
       const componentIri = '/component/comp-1'
       const otherIri = '/component/other'
       const resources = createResourcesWithPageData({ someField: otherIri }, [componentIri])
-      // With otherIri in pageData but we search for componentIri — no match
       expect(resources.isPageDataResource(componentIri).value).toBe(false)
     })
 

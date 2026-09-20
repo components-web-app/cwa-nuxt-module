@@ -4,8 +4,6 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import Select from './Select.vue'
 
-// Stub Headless UI — its listbox behaviour is its own (tested upstream); here we assert OUR wiring:
-// options rendering, trigger label, the `multiple` passthrough, and v-model propagation.
 vi.mock('@headlessui/vue', () => ({
   Listbox: {
     name: 'Listbox',
@@ -18,7 +16,6 @@ vi.mock('@headlessui/vue', () => ({
   ListboxOption: {
     name: 'ListboxOption',
     props: ['value', 'disabled', 'as'],
-    // real Headless UI with `as="template"` renders the slot directly, no wrapper element
     template: '<slot :active="false" :selected="false" />',
   },
 }))

@@ -5,9 +5,6 @@ import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 
-// --- Hoisted mocks -----------------------------------------------------------
-// useDataResolver is heavy (creates Vue apps via internals) — stub it out and
-// capture the args so we can drive `allTabsMeta` manually.
 const resolverState = vi.hoisted(() => ({
   allMeta: null as any,
   ops: null as any,
@@ -24,7 +21,6 @@ vi.mock('#cwa/composables/transitions', () => ({
   useTransitions: () => ({ slideUp: {} }),
 }))
 
-// --- Shared mutable $cwa mock ------------------------------------------------
 const cwaState = vi.hoisted(() => ({ cwa: null as any }))
 
 const { useCwa } = vi.hoisted(() => ({
@@ -33,7 +29,6 @@ const { useCwa } = vi.hoisted(() => ({
 
 mockNuxtImport('useCwa', () => useCwa)
 
-// --- Helpers -----------------------------------------------------------------
 function makeStackManager(overrides: Record<string, any> = {}) {
   return {
     currentStackItem: ref<any>(null),
@@ -69,7 +64,6 @@ function makeCwa(opts: {
 }
 
 async function mountManager() {
-  // Import after mocks are registered.
   const { default: ResourceManager } = await import('./ResourceManager.vue')
   return mount(ResourceManager, {
     global: {
@@ -119,8 +113,6 @@ describe('ResourceManager', () => {
     })
 
     test('renders the spacer whenever showManager is true (currentStackItem ref is always truthy)', async () => {
-      // showSpacer checks `!!currentStackItem` against the Ref itself (not .value),
-      // so it is effectively driven by showManager alone.
       const stackManager = makeStackManager({
         showManager: ref(true),
         currentStackItem: ref(null),
@@ -141,7 +133,6 @@ describe('ResourceManager', () => {
       cwaState.cwa = makeCwa({ stackManager })
       const wrapper = await mountManager()
 
-      // useDataResolver received the allTabsMeta ref — populate it.
       resolverState.allMeta.value = [{ component: 'Tab1' }]
       await nextTick()
 
@@ -187,9 +178,7 @@ describe('ResourceManager', () => {
       resolverState.allMeta.value = [{ component: 'a' }, { component: 'b' }]
       await nextTick()
 
-      // index 0 selected initially → tabA
       expect((wrapper.vm as any).selectedTab.name).toBe('TabA')
-      // ManagerTabs emits the new index via its click event → selectTab(1) → tabB
       await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
       await nextTick()
       expect((wrapper.vm as any).selectedTab.name).toBe('TabB')
@@ -203,12 +192,10 @@ describe('ResourceManager', () => {
       const wrapper = await mountManager()
 
       const el = document.createElement('div')
-      // The onMounted mousedown listener stores e.target as mousedownTarget.
       const mousedownEvt = new MouseEvent('mousedown')
       Object.defineProperty(mousedownEvt, 'target', { value: el })
       window.dispatchEvent(mousedownEvt)
 
-      // clickHandler with a matching target should proceed.
       const evt = { target: el } as unknown as MouseEvent
       ;(wrapper.vm as any).clickHandler(evt, 'page')
 
@@ -280,7 +267,6 @@ describe('ResourceManager', () => {
       await nextTick()
       expect(preventDefault).toHaveBeenCalled()
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: evt.target }, true, 'page')
-      // context menu model is now open
       expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).props('modelValue')).toBe(true)
     })
 
@@ -290,12 +276,10 @@ describe('ResourceManager', () => {
       const wrapper = await mountManager()
 
       const evt = { clientX: 20, clientY: 30, preventDefault: vi.fn(), target: document.createElement('div') } as unknown as MouseEvent
-      // first open
       ;(wrapper.vm as any).contextMenuHandler(evt, 'page')
       await nextTick()
       expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).props('modelValue')).toBe(true)
 
-      // second call at same position closes
       const evt2 = { clientX: 22, clientY: 31, preventDefault: vi.fn(), target: document.createElement('div') } as unknown as MouseEvent
       ;(wrapper.vm as any).contextMenuHandler(evt2, 'page')
       await nextTick()
@@ -327,14 +311,11 @@ describe('ResourceManager', () => {
       cwaState.cwa = cwa
       await mountManager()
 
-      // populate then change item
       resolverState.allMeta.value = [{ component: 'x' }]
       stackManager.currentStackItem.value = { iri: '/component/2', managerTabs: [{ name: 'Y', render: () => null }] }
       await nextTick()
 
-      // allTabsMeta reset to []
       expect(resolverState.allMeta.value).toEqual([])
-      // currentManagerTabs (passed to resolver ops.components) updated to new tabs
       expect(resolverState.ops.components.value).toEqual([{ name: 'Y', render: expect.any(Function) }])
     })
 
@@ -352,7 +333,6 @@ describe('ResourceManager', () => {
       stackManager.currentStackItem.value = { iri: '/component/1-draft', managerTabs: [{ name: 'Y', render: () => null }] }
       await nextTick()
 
-      // unchanged because equivalent
       expect(resolverState.allMeta.value).toEqual([{ component: 'x' }])
     })
   })

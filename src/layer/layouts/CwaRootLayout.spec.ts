@@ -21,10 +21,8 @@ vi.mock('vue-router', async (importOriginal) => {
 
 type SetupOpts = {
   concatTitle?: boolean
-  // the resolved layout resource's uiComponent, i.e. what the admin picked
   uiComponent?: string
   layoutIri?: string
-  // component names registered in the app - an unresolvable uiComponent is one absent from here
   registeredComponents?: string[]
 }
 
@@ -34,14 +32,9 @@ function setup(opts: SetupOpts = {}) {
     headOptions.push(options)
   })
 
-  // mirrors the real store: `getConfig` is a computed over reactive state that returns a FRESH
-  // object each recompute (mergeConfig -> Object.assign({}, ...)), unwrapped to a plain object by
-  // Pinia's reactive() wrapper on the setup store
   const state = reactive({ concatTitle: opts.concatTitle ?? false, siteName: 'Site' })
   const merged = computed(() => ({ ...state }))
 
-  // a partial mock of the whole Cwa surface: cast once at the boundary rather than per property,
-  // which is also what keeps the playground's vue-tsc (it typechecks the layer) happy
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     auth: { isAdmin: computed(() => false) },
     admin: reactive({ isEditing: false }),
@@ -60,8 +53,6 @@ function setup(opts: SetupOpts = {}) {
     shallow: true,
     slots: { default: '<div class="page-content" />' },
     global: {
-      // the layout component is resolved out of `instance.appContext.components`, so registering
-      // (or not registering) a name here is what makes it resolvable or not
       components: Object.fromEntries((opts.registeredComponents ?? []).map(name => [name, { name, template: '<div><slot /></div>' }])),
       stubs: {
         ClientOnly: { template: '<div><slot /></div>' },
@@ -90,9 +81,6 @@ describe('CwaRootLayout titleTemplate', () => {
     expect(titleTemplate()).toBe('%s %separator %siteName')
   })
 
-  // the site config getter returns a NEW object on every recompute, so resolving it once at setup
-  // leaves the callback reading a snapshot - changing the setting in the admin then has no effect
-  // until a full page reload, and useHead never re-runs because nothing tracked the computed
   test('reacts to the site config changing after mount', async () => {
     const { state, titleTemplate } = setup({ concatTitle: false })
     expect(titleTemplate()).toBe('%s')
@@ -105,10 +93,6 @@ describe('CwaRootLayout titleTemplate', () => {
   })
 })
 
-// A layout whose `uiComponent` no longer resolves - the app renamed or deleted the component -
-// previously rendered a blank page with no warning at all. The fault must be loud, but a layout is
-// site-wide, so replacing everything with the alert would take the public site down over one bad
-// value: fall back to the default layout so content still renders, AND shout. See #277.
 describe('CwaRootLayout unresolvable uiComponent', () => {
   const UNRESOLVABLE = 'CwaLayoutDeletedByApp'
   const LAYOUT_IRI = '/_/layouts/abc-123'
@@ -121,10 +105,6 @@ describe('CwaRootLayout unresolvable uiComponent', () => {
     expect(alert.text()).toContain(LAYOUT_IRI)
   })
 
-  // Vue renders an unresolvable name as an UNKNOWN HTML ELEMENT (`<cwalayoutdeletedbyapp>`) rather
-  // than nothing - the page content is technically still in the DOM, but inside an unstyled inline
-  // element with every bit of layout chrome gone, which is what reads as a blank page. Falling back
-  // means we must never emit that element.
   test('falls back to the default layout instead of emitting an unknown element', () => {
     const { wrapper } = setup({ uiComponent: UNRESOLVABLE, layoutIri: LAYOUT_IRI, registeredComponents: ['CwaLayoutPrimary'] })
     // the OPENING TAG specifically - the name legitimately appears in the warning text

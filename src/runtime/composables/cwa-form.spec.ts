@@ -169,7 +169,6 @@ describe('useCwaForm', () => {
     test('returns empty array when all field errors belong to registered fields', () => {
       const formStore = makeFormStore()
       mockGetForm.mockReturnValue(computed(() => formStore))
-      // name is registered, email is registered
       mockGetFieldValues.mockReturnValue({ 'contact_form[name]': 'Alice', 'contact_form[email]': '' })
       const { unregisteredFieldErrors } = useCwaForm(iri)
       formStore['contact_form[name]'].vars.errors = ['Name error']
@@ -179,7 +178,6 @@ describe('useCwaForm', () => {
     test('returns errors for fields in formView that are not registered', () => {
       const formStore = makeFormStore()
       mockGetForm.mockReturnValue(computed(() => formStore))
-      // Only name is registered; email is NOT registered
       mockGetFieldValues.mockReturnValue({ 'contact_form[name]': 'Alice' })
       formStore['contact_form[email]'].vars.errors = ['Email is required']
       const { unregisteredFieldErrors } = useCwaForm(iri)

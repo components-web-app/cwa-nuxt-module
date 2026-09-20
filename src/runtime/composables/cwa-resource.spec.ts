@@ -162,7 +162,6 @@ describe('CWA resources composable', () => {
 
       useCwaResource(ref('mock-iri'))
 
-      // simulate style change: new classes not yet on element
       resourceRef.value = { data: { uiClassNames: ['font-bold'] } }
       await nextTick()
 
@@ -171,7 +170,6 @@ describe('CWA resources composable', () => {
     })
 
     test('on change: only adds classes not already on element', async () => {
-      // persisting class stays, new one is added, dropped one is removed
       const appliedClasses = new Set<string>()
       mockClassList.add.mockImplementation((cls: string) => appliedClasses.add(cls))
       mockClassList.remove.mockImplementation((cls: string) => appliedClasses.delete(cls))
@@ -183,23 +181,19 @@ describe('CWA resources composable', () => {
 
       useCwaResource(ref('mock-iri'))
 
-      // Reset call history (not implementation) so we only assert on the change-phase calls
       mockClassList.add.mockClear()
       mockClassList.remove.mockClear()
 
-      // 'font-bold' persists, 'text-xl' dropped, 'p-4' added
       resourceRef.value = { data: { uiClassNames: ['font-bold', 'p-4'] } }
       await nextTick()
 
       expect(mockClassList.remove).toHaveBeenCalledWith('text-xl')
       expect(mockClassList.remove).not.toHaveBeenCalledWith('font-bold')
       expect(mockClassList.add).toHaveBeenCalledWith('p-4')
-      // font-bold already on element — not re-added during the change
       expect(mockClassList.add).not.toHaveBeenCalledWith('font-bold')
     })
 
     test('on change: stays passive when all new classes already present (user binding updated)', async () => {
-      // Simulate user has :class binding — all classes already present after Vue re-render
       mockClassList.contains.mockReturnValue(true)
       vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { $el: mockEl } } as any)
       const resourceRef = ref({ data: { uiClassNames: ['text-xl'] } })
@@ -207,13 +201,10 @@ describe('CWA resources composable', () => {
 
       useCwaResource(ref('mock-iri'))
 
-      // Style changes, Vue re-renders (:class updates element before our post-flush watcher fires)
       resourceRef.value = { data: { uiClassNames: ['font-bold'] } }
       await nextTick()
 
-      // Neither remove nor add — passive mode the whole time
       expect(mockClassList.remove).not.toHaveBeenCalled()
-      // add was not called after the change (contains always returns true)
       expect(mockClassList.add).not.toHaveBeenCalled()
     })
 
@@ -248,8 +239,6 @@ describe('CWA resources composable', () => {
     test('returns style name when a uiClassNames entry matches a style class string (array declaration normalised)', () => {
       const mockIri = ref('mock-iri')
       const { getCurrentStyleName } = useCwaResource(mockIri, {
-        // array-declared styles are normalised to a joined class string; each selected style is one
-        // uiClassNames entry
         styles: { classes: { small: ['text-sm', 'p-2'], large: ['text-lg', 'p-4'] } },
       })
       const result = getCurrentStyleName({ uiClassNames: ['text-lg p-4'] } as any)

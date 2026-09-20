@@ -226,7 +226,6 @@ describe('API Documentation getComponentMetadata functionality', () => {
         supportedClass: [
           { title: 'Restricted', supportedProperty: [{ title: 'title' }], explicitAllowOnly: true },
           { title: 'Open', supportedProperty: [{ title: 'title' }] },
-          // any non-true value (e.g. accidental falsy) must resolve to false
           { title: 'FalsyFlag', supportedProperty: [{ title: 'title' }], explicitAllowOnly: false },
         ],
       },

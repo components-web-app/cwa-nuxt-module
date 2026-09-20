@@ -4,14 +4,6 @@ import { mount } from '@vue/test-utils'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 import { useCwaAutoClass } from './cwa-auto-class'
 
-// These mount real elements rather than mocking classList, because the defect this file guards
-// against - stale classes surviving a style change - is only observable in the resulting DOM.
-// The two modes are the two ways a CWA resource actually renders:
-//   ACTIVE  - nothing binds :class from a parent (a layout via CwaRootLayout / useCwaLayout), so
-//             this composable owns the classes on the element.
-//   PASSIVE - a parent binds :class (ResourceLoader binds a component's uiClassNames), so Vue owns
-//             them and the composable must stay out of the way without stealing anything.
-
 const tick = async () => {
   await nextTick()
   await nextTick()
@@ -88,7 +80,6 @@ describe('useCwaAutoClass', () => {
       expect(className()).toBe('py-4 text-teal rounded')
       classes.value = ['shadow']
       await tick()
-      // py-4 came from the template, so it is not ours to remove
       expect(className()).toBe('py-4 text-teal shadow')
     })
 
@@ -154,7 +145,6 @@ describe('useCwaAutoClass', () => {
         useCwaAutoClass(computed(() => classes.value))
         return {}
       },
-      // a fragment root - $el is the anchor node, so there is nothing to apply classes to
       template: '<!--start--><div class="py-4">content</div><!--end-->',
     })
     const wrapper = mount(Comp, { attachTo: document.body })

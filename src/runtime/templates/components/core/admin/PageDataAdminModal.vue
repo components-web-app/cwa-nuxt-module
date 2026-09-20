@@ -377,14 +377,11 @@ watchEffect(async () => {
   }
 })
 
-// Only clear the instance when the user explicitly changes type (oldKey non-null = user action, not init).
 watch(selectedParentDataType, (key, oldKey) => {
   if (oldKey && localResourceData.value) localResourceData.value.parentPageData = null
   if (key) loadDataInstances(key)
 })
 
-// Set parentType from loaded data. On first load (!oldData), also restore selectedParentDataType
-// so the data instance dropdown repopulates without waiting for onMounted.
 watch(localResourceData, (data, oldData) => {
   if (data?.parentPage) parentType.value = 'page'
   else if (data?.parentPageData) parentType.value = 'data'

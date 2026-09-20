@@ -549,7 +549,6 @@ describe('Resources manager', () => {
     test('sets addResourceEvent with closest position from group positions when targetIri is a component group and addAfter is true', async () => {
       const { resourcesManager, resourcesStoreActions } = createResourcesManager({ includeAdmin: true })
       resourcesStoreActions.getResource = undefined as any
-      // Inject current.byId directly on the store used by the class
       const store = (resourcesManager as any)._resourcesStore
       store.current = {
         byId: {
@@ -755,7 +754,6 @@ describe('Resources manager', () => {
         },
       })
       await resourcesManager.addResourceAction()
-      // p2 (sortValue=4) must be shifted before p1 (sortValue=3) to avoid intermediate collisions
       expect(updateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ endpoint: '/_/component_positions/p2', data: { sortValue: 5 }, refreshEndpoints: [] }))
       expect(updateSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ endpoint: '/_/component_positions/p1', data: { sortValue: 4 }, refreshEndpoints: [] }))
     })
@@ -779,8 +777,8 @@ describe('Resources manager', () => {
         },
       })
       await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(3) // last sortValue + 1
-      expect(updateSpy).not.toHaveBeenCalled() // no shift needed
+      expect(newResourceData.sortValue).toBe(3)
+      expect(updateSpy).not.toHaveBeenCalled()
     })
 
     test('sets publishedAt when publish=true', async () => {
@@ -964,9 +962,7 @@ describe('Resources manager', () => {
   describe('reqCount watcher (line 79)', () => {
     test('resets reqCount to 0 when it reaches 10000', async () => {
       const { resourcesManager } = createResourcesManager()
-      // reqCount is a private ref; mutate it directly and let the watcher fire
       ;(resourcesManager as any).reqCount.value = 10000
-      // allow the Vue watcher to run
       await new Promise(resolve => setTimeout(resolve, 0))
       expect((resourcesManager as any).reqCount.value).toBe(0)
     })
@@ -991,7 +987,6 @@ describe('Resources manager', () => {
   describe('getWaitForRequestPromise (additional branches)', () => {
     test('treats an in-flight DELETE (no data) for the same endpoint as a conflict (line 105)', async () => {
       const { resourcesManager } = createResourcesManager()
-      // Inject a delete-style request (no `data` on the event) directly into requestsInProgress
       const requests = (resourcesManager as any).requestsInProgress
       requests.delete = {
         1: {
@@ -1006,10 +1001,8 @@ describe('Resources manager', () => {
         .then(() => { resolved = true })
 
       await Promise.resolve()
-      // DELETE in-flight for the same endpoint -> hasRequestConflict returns true (line 105) -> pending
       expect(resolved).toBe(false)
 
-      // remove the conflicting request to trigger the watcher and resolve the wait promise
       delete requests.delete
       await wait
       expect(resolved).toBe(true)
@@ -1024,7 +1017,6 @@ describe('Resources manager', () => {
         .mockReturnValueOnce(new Promise(r => (resolveSecond = r)))
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
 
-      // two concurrent conflicting requests for the same endpoint/property
       const p1 = resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'a' } })
       const p2 = resourcesManager.createResource({ endpoint: '/endpoint', data: { field: 'b' } })
       await Promise.resolve()
@@ -1037,13 +1029,11 @@ describe('Resources manager', () => {
       await Promise.resolve()
       expect(resolved).toBe(false)
 
-      // resolve only the first request - watcher fires but conflict still exists (line 119 `return`)
       resolveFirst({ '@id': '/endpoint/1' })
       await p1
       await Promise.resolve()
       expect(resolved).toBe(false)
 
-      // resolve the second - conflict clears and the wait promise resolves
       resolveSecond({ '@id': '/endpoint/2' })
       await p2
       await wait
@@ -1066,7 +1056,6 @@ describe('Resources manager', () => {
       await resourcesManager.updateResource({ endpoint: '/things/1', data: { tags: ['added'] } })
       expect(cwaFetch.fetch).not.toHaveBeenCalled()
       const saved = saveSpy.mock.calls[0]![0] as any
-      // mergeWith customizer returns b.concat(a) => incoming first, existing appended
       expect(saved.resource.tags).toEqual(['added', 'existing'])
     })
   })
@@ -1170,11 +1159,6 @@ describe('Resources manager', () => {
     })
 
     test('sortValue defaults to 0 when target position cannot be resolved (line 518)', async () => {
-      // positionsWithoutNew has an entry but addAfter picks an index that is undefined
-      // - simulate by making positionsWithoutNew non-empty but the target lookup falsy.
-      // We achieve "targetPosition undefined" by having a single empty-string entry that
-      // does not end with NEW but is falsy when indexed - instead use addAfter=false with
-      // a positions array whose first element is an empty string.
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
@@ -1202,7 +1186,7 @@ describe('Resources manager', () => {
         addEventOverrides: {
           targetIri: '/_/component_positions/p1',
           addAfter: true,
-          closest: {}, // no position
+          closest: {},
         },
       })
       await resourcesManager.addResourceAction()
@@ -1219,7 +1203,6 @@ describe('Resources manager', () => {
           addAfter: true,
           closest: { position: '/_/component_positions/missing' },
         },
-        // extraGetResource returns undefined for the missing position
       })
       await resourcesManager.addResourceAction()
       expect(newResourceData.sortValue).toBe(0)
@@ -1241,7 +1224,6 @@ describe('Resources manager', () => {
         },
       })
       await resourcesManager.addResourceAction()
-      // addAfter => existingSortValue + 1
       expect(newResourceData.sortValue).toBe(8)
     })
   })
@@ -1283,7 +1265,7 @@ describe('Resources manager', () => {
       const { resourcesManager } = createResourcesManager({ includeAdmin: true })
       setupAddingStoreWithPosition(resourcesManager, {
         positionIri: '/_/component_positions/new-pos',
-        positionData: undefined, // not found in store
+        positionData: undefined,
         addEventOverrides: {
           targetIri: '/_/component_positions/p1',
           addAfter: true,
@@ -1319,7 +1301,6 @@ describe('Resources manager', () => {
       expect(positionPostData['@type']).toBeUndefined()
       expect(positionPostData.component).toBeUndefined()
       expect(positionPostData.extra).toBe('keep-me')
-      // closest position p1 not in store -> existingSortValue undefined -> newSortValue 0
       expect(positionPostData.sortValue).toBe(0)
     })
   })
@@ -1354,7 +1335,6 @@ describe('Resources manager', () => {
         closest: { group: '/_/component_groups/g1' },
       } as any
       const result = (resourcesManager as any).getRefreshPositions('/_/component_positions/p2')
-      // from p2 onward, with NEW filtered out
       expect(result).toEqual([
         '/_/component_positions/p2',
         '/_/component_positions/p3',
@@ -1363,9 +1343,7 @@ describe('Resources manager', () => {
 
     test('groupResource getter returns undefined when no addResourceEvent group (line 658)', () => {
       const { resourcesManager } = createResourcesManager({ includeAdmin: true })
-      // no addResourceEvent set
       expect((resourcesManager as any).groupResource).toBeUndefined()
-      // addResourceEvent set but without closest.group
       resourcesManager.addResourceEvent.value = { targetIri: '/x', addAfter: null, closest: {} } as any
       expect((resourcesManager as any).groupResource).toBeUndefined()
     })
