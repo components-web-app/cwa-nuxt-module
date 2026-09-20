@@ -5,7 +5,7 @@ import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus, NestedJsonStructure } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
 import { flattenManifestNode } from './manifest-utils'
-import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
 export interface StartFetchEvent {
@@ -86,9 +86,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     return fetchStatus
   }
 
-  // Delete a fetch from the chain unless it is still referenced by one of the primary tokens.
-  // Protects `displayedToken` (the page currently on screen) from being cleaned up while a
-  // superseded fetch is being held on screen. See #256.
   function cleanupFetch(token?: string) {
     if (!token) {
       return
@@ -109,12 +106,9 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     }
   }
 
-  // Retain a successfully-fetched route's manifest structure (IRIs only) so a later revisit can lay
-  // out + locate the page instantly, without waiting for a fresh manifest round-trip. See #257.
   function cacheRoute(fetchStatus: FetchStatus) {
     const manifest = fetchStatus.manifest
     if (!manifest?.resourceTree || !manifest.irisByDepth) {
-      // no manifest (e.g. a direct single-resource fetch) — nothing structural to retain
       return
     }
     fetcherState.routeCache.set(fetchStatus.path, {
@@ -137,7 +131,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     setDisplayedToken(token: string) {
       const previous = fetcherState.primaryFetch.displayedToken
       fetcherState.primaryFetch.displayedToken = token
-      // the previously-displayed fetch is no longer on screen — clean it up if nothing else needs it
       if (previous && previous !== token) {
         cleanupFetch(previous)
       }
@@ -147,28 +140,29 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (!fetchStatus.manifest) {
         throw new Error(`Cannot set manifest IRIs by depth for '${event.token}'. The manifest was never started.`)
       }
-      // Retain the raw tree for future placeholder rendering; derive the flat per-depth IRI lists
-      // that existing consumers (pageIriAtDepth, early-switch, fetch batch) read.
       fetchStatus.manifest.resourceTree = event.resourceIris
       const irisByDepth = event.resourceIris.map(flattenManifestNode)
       fetchStatus.manifest.irisByDepth = irisByDepth
 
-      // Derive the depth lookups that drive the depth-aware `path` request header. Kept here, in the
-      // store, so they survive the SSR→client payload alongside the manifest they come from.
       const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       const routePathPrefix = `${prefix}/_/routes/`
       clearIriDepths()
       for (let depth = 0; depth < irisByDepth.length; depth++) {
+        let pageDataIri: string | undefined
         for (const iri of irisByDepth[depth]!) {
           fetcherState.iriDepths[iri] = depth
           if (fetcherState.depthPaths[depth] === undefined && iri.startsWith(routePathPrefix)) {
             fetcherState.depthPaths[depth] = iri.substring(routePathPrefix.length)
           }
+          if (pageDataIri === undefined && getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE_DATA) {
+            pageDataIri = iri
+          }
+        }
+        if (fetcherState.depthPaths[depth] === undefined && pageDataIri !== undefined) {
+          fetcherState.depthPaths[depth] = pageDataIri
         }
       }
     },
-    // Nested resources discovered while traversing a fetched resource inherit their parent's depth —
-    // they are not in the manifest, so they have no depth of their own to derive. See `fetcher.ts`.
     registerIriDepth(event: RegisterIriDepthEvent) {
       fetcherState.iriDepths[event.iri] = event.depth
     },
@@ -225,9 +219,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         if (lastSuccessState?.path === event.path && event.isCurrentSuccessResourcesResolved) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
-          // We are returning to the already-resolved success page, so it is what is on screen now.
-          // Re-point the displayed token to it — otherwise a `displayedToken` left pointing at a
-          // different page (e.g. by a prior instant-revisit prime, #257) wedges the view there. See #256/#257.
           fetcherState.primaryFetch.displayedToken = fetcherState.primaryFetch.successToken
 
           for (const [existingToken, existingValue] of Object.entries(fetcherState.fetches)) {
@@ -283,13 +274,6 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         return
       }
 
-      // A primary fetch aborted as a redirect (see fetcher `doRedirect`) resolved to a page-less
-      // route. Promoting it to the displayed success state would blank the current page until the
-      // redirect target loads. Keep the previous success page on screen: clear the fetching token
-      // and drop this redirect fetch, leaving the previous success token and its resources
-      // untouched. The redirect target fetch (request "C") becomes the new primary fetch and takes
-      // over when it resolves — or, if it fails (404/401/500), it is NOT aborted so it falls
-      // through to normal promotion and surfaces the error page via showError.
       if (fetchStatus.abortReason === 'redirect' && event.token === fetcherState.primaryFetch.fetchingToken) {
         fetcherState.primaryFetch.fetchingToken = undefined
         cleanupFetch(event.token)
@@ -304,13 +288,10 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (event.token === initialFetchingToken) {
         fetcherState.primaryFetch.fetchingToken = undefined
         fetcherState.primaryFetch.successToken = event.token
-        // a fully-resolved page is now what is on screen — advance the displayed reference to it
         fetcherState.primaryFetch.displayedToken = event.token
-        // retain this route's manifest structure so a later revisit can render instantly (#257)
         cacheRoute(fetchStatus)
       }
 
-      // the previously-displayed (superseded) page is no longer needed once a new page is displayed
       if (initialDisplayedToken && fetcherState.primaryFetch.displayedToken !== initialDisplayedToken) {
         cleanupFetch(initialDisplayedToken)
       }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 import { consola as logger } from 'consola'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
+import { ResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { CwaFetcherActionsInterface } from './actions'
 import actions, { FinishFetchManifestType } from './actions'
 import type { CwaFetcherStateInterface, FetchStatus } from './state'
@@ -348,7 +349,6 @@ describe('Fetcher store action -> finishFetch', () => {
     })
 
     test('A held displayed fetch is NOT deleted when it is also the finishing success token being retained', () => {
-      // displayed = the currently shown page; a non-primary chain finishing must not remove it
       fetcherState.primaryFetch.displayedToken = 'existing-token'
       fetcherActions.finishFetch({ token: 'existing-token' })
       expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
@@ -357,9 +357,7 @@ describe('Fetcher store action -> finishFetch', () => {
 
   describe('redirect retention (flash fix)', () => {
     test('A primary fetch aborted as a redirect does not become the success token and the previous success page is retained', () => {
-      // page A is currently displayed
       fetcherState.primaryFetch.successToken = 'existing-token'
-      // the redirect fetch is the current fetching token and was aborted as a redirect
       fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
       existingPrimaryFetchState.abort = true
       existingPrimaryFetchState.abortReason = 'redirect'
@@ -368,10 +366,8 @@ describe('Fetcher store action -> finishFetch', () => {
         token: 'existing-primary-token',
       })
 
-      // previous success page A is kept on screen, untouched
       expect(fetcherState.primaryFetch.successToken).toBe('existing-token')
       expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
-      // the redirect fetch is cleared out and never displayed
       expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
       expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
     })
@@ -379,7 +375,6 @@ describe('Fetcher store action -> finishFetch', () => {
     test('A primary fetch aborted WITHOUT a redirect reason (e.g. superseded/stale) still promotes normally — only redirects are retained', () => {
       fetcherState.primaryFetch.successToken = 'existing-token'
       fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
-      // aborted but not a redirect — the generic abort flag must NOT trigger retention
       existingPrimaryFetchState.abort = true
 
       fetcherActions.finishFetch({
@@ -388,7 +383,6 @@ describe('Fetcher store action -> finishFetch', () => {
 
       expect(fetcherState.primaryFetch.successToken).toBe('existing-primary-token')
       expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
-      // previous success A is deleted as part of normal promotion
       expect(fetcherState.fetches['existing-token']).toBeUndefined()
     })
 
@@ -654,8 +648,6 @@ describe('Fetcher store action -> finishManifestFetch', () => {
   })
 
   test('setManifestIrisByDepth retains the raw tree and stores the flattened depth groups on the manifest', () => {
-    // Each depth is a nested tree; flattening a depth (node iri + descendants, depth-first) yields
-    // the flat per-depth IRI list existing consumers read.
     const resourceIris = [
       { iri: '/parent-route', children: [{ iri: '/parent-page', children: [] }] },
       { iri: '/child-route', children: [{ iri: '/child-page', children: [] }] },
@@ -696,24 +688,11 @@ describe('Fetcher store action -> finishManifestFetch', () => {
   })
 })
 
-/**
- * Depth tracking drives the depth-aware `path` request header: a depth-0 resource must be requested
- * with the depth-0 route path so the API resolves a dynamic position's `pageDataProperty` against
- * the correct page data.
- *
- * These behaviours previously lived on `FetchStatusManager` as in-memory Maps. They were moved here
- * because in-memory state does not survive the SSR→client payload — the client builds a fresh
- * manager, runs no manifest fetch, and every client-side re-fetch after a server-side load then sent
- * the current (child) route path, so the parent data page's components silently vanished.
- * See `api/fetcher/nested-page-hydration.spec.ts` for the end-to-end reproduction.
- */
 describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / registerIriDepth / resetIriDepths)', () => {
   let fetcherActions: CwaFetcherActionsInterface
   let fetcherState: CwaFetcherStateInterface
   let currentGetters: CwaFetcherGettersInterface
 
-  // Build a depth tree node from a flat IRI list (first = root, rest = direct children); it flattens
-  // back to the same flat list the depth-tracking logic receives.
   const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })
 
   function setManifest(resourceIris: ReturnType<typeof depthNode>[]) {
@@ -734,6 +713,7 @@ describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / regis
   })
 
   afterEach(() => {
+    ResourceTypeFromIri.setPathPrefix(undefined)
     vi.clearAllMocks()
   })
 
@@ -772,6 +752,46 @@ describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / regis
     expect(fetcherState.iriDepths['/_/pages/old-page']).toBeUndefined()
     expect(fetcherState.iriDepths['/_/pages/new-page']).toBe(0)
     expect(fetcherState.depthPaths[0]).toBe('/new')
+  })
+
+  test('a routeless parent depth uses the page data IRI of that depth as its path', () => {
+    setManifest([
+      depthNode(['/page_data/conference-1', '/_/pages/parent-template', '/_/component_groups/cg', '/_/component_positions/parent-cp']),
+      depthNode(['/_/routes//programme', '/_/pages/child-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/page_data/conference-1')
+    expect(fetcherState.depthPaths[1]).toBe('/programme')
+  })
+
+  test('a route IRI is preferred over a page data IRI listed before it in the same depth', () => {
+    setManifest([
+      depthNode(['/page_data/conference-1', '/_/routes//conference', '/_/pages/parent-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/conference')
+  })
+
+  test('the first page data IRI in the depth is used when a routeless depth has more than one', () => {
+    setManifest([
+      depthNode(['/_/pages/parent-template', '/page_data/first', '/page_data/second']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/page_data/first')
+  })
+
+  test('the page data IRI fallback keeps the api path prefix while a route path is stripped of it', () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    setManifest([
+      depthNode(['/_api/page_data/conference-1', '/_api/_/pages/parent-template']),
+      depthNode(['/_api/_/routes//programme', '/_api/_/pages/child-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/_api/page_data/conference-1')
+    expect(fetcherState.depthPaths[1]).toBe('/programme')
+  })
+
+  test('a depth with neither a route nor a page data IRI has no path', () => {
+    setManifest([
+      depthNode(['/_/pages/parent-template', '/_/component_groups/cg']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
   })
 
   test('registerIriDepth adds an IRI the manifest did not contain', () => {
