@@ -87,5 +87,6 @@ useHead({
 defineOgImage('CwaDefault', {
   title: pageTitle,
   description: metaDescription,
+  siteName: computed(() => $cwa.siteConfig.config.siteName),
 })
 </script>
