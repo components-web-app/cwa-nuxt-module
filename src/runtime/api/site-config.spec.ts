@@ -220,6 +220,33 @@ describe('SiteConfig', () => {
     })
   })
 
+  describe('warmPageCache', () => {
+    test('POSTs to the warm route as a stream and resolves with its summary', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig()
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode('{"type":"start","total":1}\n{"type":"page","path":"/","status":200,"completed":1,"total":1}\n{"type":"done","total":1,"warmed":1,"failed":[]}\n'))
+          controller.close()
+        },
+      })
+      const mockGlobalFetch = vi.fn().mockResolvedValue(stream)
+      vi.stubGlobal('$fetch', mockGlobalFetch)
+      const onProgress = vi.fn()
+
+      try {
+        await expect(siteConfig.warmPageCache(onProgress)).resolves.toEqual({ total: 1, warmed: 1, failed: [] })
+      }
+      finally {
+        vi.unstubAllGlobals()
+      }
+
+      expect(mockGlobalFetch).toHaveBeenCalledWith('/_cwa/page-cache/warm', { method: 'POST', responseType: 'stream' })
+      expect(onProgress).toHaveBeenLastCalledWith({ completed: 1, total: 1 })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+  })
+
   describe('purgePageCache', () => {
     test('POSTs to the rendered HTML purge operation', async () => {
       const { siteConfig, mockFetch, mockGetRequestOptions } = buildSiteConfig()

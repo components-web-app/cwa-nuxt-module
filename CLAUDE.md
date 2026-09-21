@@ -386,6 +386,23 @@ This exists because a resource can shape every page without the front end ever h
 
 The key is only emitted on a page the module actually caches; a declined or unstorable render carries no key at all. Purging it drops every cached page at once and the traffic lands on SSR together, which is why the bundle's class list that triggers it should stay short, and why this is driven by a write on an already-secured resource rather than by a purge endpoint anyone could call.
 
+### Warming the page cache ([#315](https://github.com/components-web-app/cwa-nuxt-module/issues/315))
+
+Site settings has a **Warm page cache** button beside purge, calling `POST /_cwa/page-cache/warm` (`server/cwa-page-cache-warm.post.ts`, registered only when `pageCache.enabled`).
+
+- **Anonymous and server-side, by necessity.** Requests from the admin's browser would carry the auth cookie, and the edge bypasses the cache for signed-in requests, so they would store nothing.
+- **Pages come from the same list as the sitemap.** `fetchCwaPagePaths()` (`server/cwa-page-paths.ts`) is shared by the sitemap handler and the warm route. It is fetched anonymously, so ancestor-gated routes are already excluded (#234). It deliberately ignores `sitemapEnabled`.
+- **Each page is requested at the `apiUrl` origin** (the in-cluster Caddy the SSR API calls already reach) **with `Host` set to the admin's public host**, so the response is stored under the same key visitors hit, and the request never leaves the cluster. Page requests carry no cookie or authorization, forward the admin's `accept` / `accept-encoding`, and don't follow redirects; only a 200 counts as warmed.
+- **Admin gate:** the incoming cookie is forwarded to the API's `/me`, which verifies the JWT, and `ROLE_ADMIN` or `ROLE_SUPER_ADMIN` is required. `server-middleware.ts` only decodes the JWT without verifying it, which is too weak to guard a route that fans one request out into many renders.
+- **Single-flight per pod** (a concurrent request gets 409). Limits live in private `runtimeConfig.cwa.pageCacheWarm` (`concurrency` 3 with a hard ceiling of 10, `timeout` 30s per page, `origin`), so each environment can override them with `NUXT_CWA_PAGE_CACHE_WARM_*`.
+- **Progress streams as NDJSON** on the same POST (`start`, one `page` line per page, then `done`), with `application/x-ndjson` and `X-Accel-Buffering: no`. A client disconnect aborts the warm. **Streaming is proven in tests but not yet on a deployment:** whether Caddy and the ingress flush each line promptly still needs checking. The fallback if they don't is a synchronous JSON summary with a page cap (not built).
+- **Local dev:** the playground's `apiUrl` is `https://localhost`, so a local warm fails its certificate check against the self-signed certificate unless `origin` is set to a plain `http://` URL.
+- **Deploys don't use it.** The template's CI warm step (components-web-app#80) stays separate: it has no admin credential, and it also measures time to first byte through the ingress.
+
+**Trap: Node's global `fetch` (undici) silently replaces a `Host` header you set**, so the warm would have stored every page under the wrong key. A real-server test caught it (`expected '127.0.0.1:56720' to be 'www.example.com'`). Anything that needs a specific `Host` must use `node:http` / `node:https`.
+
+**Trap: in streaming tests, page timeouts must outlast the test's own timeout.** A test that held one response open with a 1s page timeout failed to catch fully buffered output, because the held request timed out and flushed everything.
+
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
 
 ---

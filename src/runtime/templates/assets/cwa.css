@@ -693,6 +693,9 @@
 .cwa\:justify-start {
   justify-content: flex-start;
 }
+.cwa\:gap-4 {
+  gap: calc(var(--cwa-spacing) * 4);
+}
 .cwa\:gap-x-1 {
   column-gap: var(--cwa-spacing);
 }
