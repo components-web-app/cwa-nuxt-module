@@ -4,12 +4,7 @@
       <Transition
         appear
         mode="out-in"
-        enter-from-class="cwa:transform cwa:opacity-0"
-        enter-active-class="cwa:duration-200 cwa:ease-out"
-        enter-to-class="cwa:opacity-100"
-        leave-from-class="cwa:opacity-100"
-        leave-active-class="cwa:duration-200 cwa:ease-in"
-        leave-to-class="cwa:transform cwa:opacity-0"
+        v-bind="overlay"
       >
         <Spinner
           v-if="loading"
@@ -64,6 +59,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { useTransitions } from '#cwa/composables/transitions'
 import { useRoute } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
 import ListContainer from './ListContainer.vue'
@@ -73,6 +69,7 @@ import { useCwa, useQueryBoundModel } from '#imports'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const $cwa = useCwa()
+const { overlay } = useTransitions()
 const route = useRoute()
 const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
 const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })

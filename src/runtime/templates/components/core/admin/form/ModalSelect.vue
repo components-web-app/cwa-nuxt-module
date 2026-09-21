@@ -10,9 +10,11 @@ import {
 import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
+import { useTransitions } from '#cwa/composables/transitions'
 
 const emit = defineEmits(['update:modelValue'])
-const props = defineProps<SelectInputProps & { label: string }>()
+const props = defineProps<SelectInputProps & { label: string, containerClass?: string }>()
+const { dropdown } = useTransitions()
 const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(computed(() => props), emit)
 </script>
 
@@ -25,7 +27,7 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
     <div class="cwa:relative cwa:w-full">
       <div
         class="cwa:rounded-lg cwa:py-1.5 cwa:relative cwa:border"
-        :class="[open ? 'cwa:bg-dark cwa:border-stone-600' : 'cwa:bg-dark/90 cwa:border-stone-700']"
+        :class="[open ? 'cwa:bg-dark cwa:border-stone-600' : 'cwa:bg-dark/90 cwa:border-stone-700', containerClass]"
       >
         <ListboxLabel class="cwa:px-4 cwa:text-stone-400 cwa:absolute">
           {{ label }}
@@ -52,14 +54,7 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
       </div>
       <ClientOnly>
         <Teleport to="body">
-          <Transition
-            enter-active-class="cwa:transition-opacity cwa:duration-100 cwa:ease-out"
-            enter-from-class="cwa:opacity-0"
-            enter-to-class="cwa:opacity-100"
-            leave-active-class="cwa:transition-opacity cwa:duration-100 cwa:ease-in"
-            leave-from-class="cwa:opacity-100"
-            leave-to-class="cwa:opacity-0"
-          >
+          <Transition v-bind="dropdown">
             <ListboxOptions
               v-show="open"
               ref="container"

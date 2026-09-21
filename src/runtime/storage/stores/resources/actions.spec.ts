@@ -164,6 +164,113 @@ describe('Resources -> deleteResource', () => {
     expect(resourcesState.current.currentIds).toStrictEqual(['/_/component_positions/dynamic'])
     expect(resourcesState.current.byId['/_/component_positions/dynamic'].data.component).toBeUndefined()
   })
+
+  test('Deleting a PAGE_DATA resource silently completes (noop branch)', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const iri = '/page_data/1'
+    resourcesState.current.byId[iri] = { apiState: { status: undefined } }
+    resourcesState.current.allIds.push(iri)
+
+    resourcesActions.deleteResource({ resource: iri })
+    expect(resourcesState.current.byId[iri]).toBeUndefined()
+  })
+
+  test('Deleting a COMPONENT_POSITION with noCascade skips group update', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const groupIri = '/_/component_groups/group-1'
+    const positionIri = '/_/component_positions/pos-1'
+    resourcesState.current.byId[groupIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': groupIri,
+        '@type': 'ComponentGroup',
+        '_metadata': { persisted: true },
+        'componentPositions': [positionIri],
+      },
+    }
+    resourcesState.current.byId[positionIri] = { apiState: { status: undefined } }
+    resourcesState.current.allIds.push(groupIri, positionIri)
+
+    resourcesActions.deleteResource({ resource: positionIri, noCascade: true })
+
+    expect(resourcesState.current.byId[positionIri]).toBeUndefined()
+    expect(resourcesState.current.byId[groupIri].data?.componentPositions).toEqual([positionIri])
+  })
+
+  test('Deleting a COMPONENT with noCascade skips position cleanup', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const componentIri = '/component/comp-1'
+    const positionIri = '/_/component_positions/pos-1'
+    resourcesState.current.byId[componentIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': componentIri,
+        '@type': 'Component',
+        '_metadata': { persisted: true },
+        'componentPositions': [positionIri],
+      },
+    }
+    resourcesState.current.byId[positionIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': positionIri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: true },
+        'component': componentIri,
+      },
+    }
+    resourcesState.current.allIds.push(componentIri, positionIri)
+
+    resourcesActions.deleteResource({ resource: componentIri, noCascade: true })
+
+    expect(resourcesState.current.byId[componentIri]).toBeUndefined()
+    expect(resourcesState.current.byId[positionIri]).toBeDefined()
+  })
+
+  test('Deleting a COMPONENT with alternative versions updates positions to other version', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const draftIri = '/component/draft-1'
+    const publishedIri = '/component/published-1'
+    const positionIri = '/_/component_positions/pos-1'
+
+    resourcesState.current.publishableMapping = [{ publishedIri, draftIri }]
+    resourcesState.current.byId[draftIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': draftIri,
+        '@type': 'Component',
+        '_metadata': { persisted: true, publishable: { published: false, publishedAt: '2024-01-01' } },
+        'componentPositions': [positionIri],
+      },
+    }
+    resourcesState.current.byId[positionIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': positionIri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: true },
+        'component': draftIri,
+      },
+    }
+    resourcesState.current.allIds.push(draftIri, positionIri)
+
+    resourcesActions.deleteResource({ resource: draftIri })
+
+    expect(resourcesState.current.byId[positionIri]?.data?.component).toBe(publishedIri)
+    expect(resourcesState.current.byId[draftIri]).toBeUndefined()
+  })
 })
 
 describe('Resources -> mergeNewResources', () => {
@@ -544,6 +651,78 @@ describe('resources action setResourceFetchError', () => {
     expect(createError).toHaveBeenCalledWith(createErrorObj)
     expect(app.showError).toHaveBeenCalledWith(createErrorObj)
   })
+
+  test('forwards the upstream Set-Cookie headers onto our own response', async () => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    const responseHeader: { value: string[] | undefined } = { value: undefined }
+    vi.spyOn(app, 'useResponseHeader').mockReturnValueOnce(responseHeader as never)
+
+    const error = createCwaResourceError({
+      statusMessage: 'unauthorized',
+      statusCode: 401,
+      response: {
+        headers: {
+          getSetCookie: () => ['cwa_auth=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict'],
+        },
+      },
+    })
+
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
+
+    expect(app.useResponseHeader).toHaveBeenCalledWith('Set-Cookie')
+    expect(responseHeader.value).toEqual(['cwa_auth=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict'])
+  })
+})
+
+describe('resources action -> setResourceFetchStatus dynamic position', () => {
+  test('clears data when dynamic position path changes', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const iri = '/_/component_positions/dynamic-pos'
+    resourcesState.current.byId[iri] = {
+      apiState: {
+        status: CwaResourceApiStatuses.SUCCESS,
+        headers: { path: '/page-a' },
+        fetchedAt: 1000,
+      },
+      data: {
+        '@id': iri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: true, isDynamicPosition: true },
+      },
+    }
+    resourcesState.current.allIds.push(iri)
+
+    resourcesActions.setResourceFetchStatus({ iri, isComplete: false, path: '/page-b' })
+    expect(resourcesState.current.byId[iri].data).toBeUndefined()
+  })
+
+  test('retains data when dynamic position headers path matches', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const iri = '/_/component_positions/dynamic-pos'
+    const originalData = {
+      '@id': iri,
+      '@type': 'ComponentPosition',
+      '_metadata': { persisted: true, isDynamicPosition: true },
+    }
+    resourcesState.current.byId[iri] = {
+      apiState: {
+        status: CwaResourceApiStatuses.SUCCESS,
+        headers: { path: '/page-a' },
+        fetchedAt: 1000,
+      },
+      data: originalData,
+    }
+    resourcesState.current.allIds.push(iri)
+
+    resourcesActions.setResourceFetchStatus({ iri, isComplete: false, path: '/page-a', headers: { path: '/page-a' } })
+    expect(resourcesState.current.byId[iri].data).toBeDefined()
+  })
 })
 
 describe('resources action -> saveResource', () => {
@@ -588,7 +767,26 @@ describe('resources action -> saveResource', () => {
     })
     expect(resourcesState.current.byId.id.data).toStrictEqual(resource)
     expect(resourcesState.current.allIds).toStrictEqual(['id'])
-    expect(resourcesState.current.currentIds).toStrictEqual(['id'])
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('saveResource does not add a newly created resource to currentIds (#198: prevents OutdatedContentNotice on admin CRUD)', () => {
+    resourcesState.current.currentIds = []
+    const resource = { '@id': '/_/pages/new-uuid', '@type': 'Page', '_metadata': { persisted: true } }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.byId['/_/pages/new-uuid'].data).toStrictEqual(resource)
+    expect(resourcesState.current.allIds).toContain('/_/pages/new-uuid')
+    expect(resourcesState.current.currentIds).toStrictEqual([])
+  })
+
+  test('saveResource keeps resource in currentIds when it was already present (PATCH on currently-displayed resource)', () => {
+    resourcesState.current.byId['already-current'] = { apiState: { status: undefined } }
+    resourcesState.current.allIds.push('already-current')
+    resourcesState.current.currentIds = ['already-current']
+    const resource = { '@id': 'already-current', '@type': 'type', '_metadata': { persisted: true }, 'title': 'updated' }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.byId['already-current'].data).toStrictEqual(resource)
+    expect(resourcesState.current.currentIds).toStrictEqual(['already-current'])
   })
 
   test('A new resource will not be saved if it is the same as an existing resource', () => {
@@ -629,5 +827,407 @@ describe('resources action -> saveResource', () => {
       byId: {},
       allIds: [],
     })
+  })
+
+  test('saveResource does not map when resource has no publishable metadata', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const resource = {
+      '@id': '/component/comp-1',
+      '@type': 'Component',
+      '_metadata': { persisted: true },
+    }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.publishableMapping).toEqual([])
+  })
+
+  test('saveResource does not map when published component has no draftResource', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const resource = {
+      '@id': '/component/published-1',
+      '@type': 'Component',
+      '_metadata': { persisted: true, publishable: { published: true, publishedAt: '2024-01-01' } },
+    }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.publishableMapping).toEqual([])
+  })
+
+  test('saveResource does not map when draft component has no publishedResource', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const resource = {
+      '@id': '/component/draft-1',
+      '@type': 'Component',
+      '_metadata': { persisted: true, publishable: { published: false, publishedAt: '2024-01-01' } },
+    }
+    resourcesActions.saveResource({ resource })
+    expect(resourcesState.current.publishableMapping).toEqual([])
+  })
+
+  test('saveResource maps a published component to its draft', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const publishedIri = '/component/published-1'
+    const draftIri = '/component/draft-1'
+    const resource = {
+      '@id': publishedIri,
+      '@type': 'Component',
+      '_metadata': { persisted: true, publishable: { published: true, publishedAt: '2024-01-01' } },
+      'draftResource': draftIri,
+    }
+    resourcesActions.saveResource({ resource })
+
+    expect(resourcesState.current.publishableMapping).toEqual([{ publishedIri, draftIri }])
+  })
+
+  test('saveResource maps a draft component to its published version', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const publishedIri = '/component/published-1'
+    const draftIri = '/component/draft-1'
+    const resource = {
+      '@id': draftIri,
+      '@type': 'Component',
+      '_metadata': { persisted: true, publishable: { published: false, publishedAt: '2024-01-01' } },
+      'publishedResource': publishedIri,
+    }
+    resourcesActions.saveResource({ resource })
+
+    expect(resourcesState.current.publishableMapping).toEqual([{ publishedIri, draftIri }])
+  })
+
+  test('saveResource maps a position to its component', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const positionIri = '/_/component_positions/pos-1'
+    const componentIri = '/component/comp-1'
+    const resource = {
+      '@id': positionIri,
+      '@type': 'ComponentPosition',
+      '_metadata': { persisted: true },
+      'component': componentIri,
+    }
+    resourcesActions.saveResource({ resource })
+
+    expect(resourcesState.current.positionsByComponent[componentIri]).toContain(positionIri)
+  })
+})
+
+describe('resources action -> clearResources', () => {
+  test('clears all current and new resource state', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    resourcesState.current.byId = {
+      '/some/resource': { apiState: { status: undefined }, data: { '@id': '/some/resource', '@type': 'Component', '_metadata': { persisted: true } } },
+    }
+    resourcesState.current.allIds = ['/some/resource']
+    resourcesState.current.currentIds = ['/some/resource']
+    resourcesState.current.publishableMapping = [{ publishedIri: '/component/a', draftIri: '/component/b' }]
+    resourcesState.current.positionsByComponent = { '/component/a': ['/_/component_positions/1'] }
+    resourcesState.new.byId = { '/some/new': { resource: { '@id': '/some/new', '@type': 'Component', '_metadata': { persisted: false } } } }
+    resourcesState.new.allIds = ['/some/new']
+
+    resourcesActions.clearResources()
+
+    expect(resourcesState.current.byId).toEqual({})
+    expect(resourcesState.current.allIds).toEqual([])
+    expect(resourcesState.current.currentIds).toEqual([])
+    expect(resourcesState.current.publishableMapping).toEqual([])
+    expect(resourcesState.current.positionsByComponent).toEqual({})
+    expect(resourcesState.new.byId).toEqual({})
+    expect(resourcesState.new.allIds).toEqual([])
+  })
+})
+
+describe('resources action -> evictResources (#257 route-cache LRU)', () => {
+  function buildState() {
+    const resourcesState = state()
+    resourcesState.current.byId = {
+      '/component/keep': { apiState: { status: undefined }, data: { '@id': '/component/keep', '@type': 'Component', '_metadata': { persisted: true } } },
+      '/component/gone': { apiState: { status: undefined }, data: { '@id': '/component/gone', '@type': 'Component', '_metadata': { persisted: true } } },
+      '/_/component_positions/1': { apiState: { status: undefined }, data: { '@id': '/_/component_positions/1', '@type': 'ComponentPosition', '_metadata': { persisted: true } } },
+    }
+    resourcesState.current.allIds = ['/component/keep', '/component/gone', '/_/component_positions/1']
+    resourcesState.current.publishableMapping = [{ publishedIri: '/component/gone', draftIri: '/component/gone-draft' }, { publishedIri: '/component/keep', draftIri: '/component/keep-draft' }]
+    resourcesState.current.positionsByComponent = { '/component/gone': ['/_/component_positions/1'], '/component/keep': ['/_/component_positions/1'] }
+    return resourcesState
+  }
+
+  test('does nothing for an empty list', () => {
+    const resourcesState = buildState()
+    const before = { ...resourcesState.current.byId }
+    actions(resourcesState, getters(resourcesState)).evictResources([])
+    expect(resourcesState.current.byId).toEqual(before)
+  })
+
+  test('removes the resources from byId and allIds, leaving others intact', () => {
+    const resourcesState = buildState()
+    actions(resourcesState, getters(resourcesState)).evictResources(['/component/gone'])
+    expect(resourcesState.current.byId['/component/gone']).toBeUndefined()
+    expect(resourcesState.current.byId['/component/keep']).toBeDefined()
+    expect(resourcesState.current.allIds).toEqual(['/component/keep', '/_/component_positions/1'])
+  })
+
+  test('cleans mapping entries: publishableMapping rows and component→positions references', () => {
+    const resourcesState = buildState()
+    actions(resourcesState, getters(resourcesState)).evictResources(['/component/gone', '/_/component_positions/1'])
+    expect(resourcesState.current.publishableMapping).toEqual([{ publishedIri: '/component/keep', draftIri: '/component/keep-draft' }])
+    expect(resourcesState.current.positionsByComponent['/component/gone']).toBeUndefined()
+    expect(resourcesState.current.positionsByComponent['/component/keep']).toEqual([])
+  })
+})
+
+describe('resources action -> resetNewResource', () => {
+  test('does nothing when adding.value is undefined', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    resourcesState.adding.value = undefined
+    resourcesActions.resetNewResource()
+    expect(resourcesState.adding.value).toBeUndefined()
+  })
+
+  test('handles clearPositionFromGroup when position resource has no data', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const resourceIri = '__new__'
+    resourcesState.current.byId[resourceIri] = { apiState: { status: undefined } }
+    resourcesState.current.allIds.push(resourceIri)
+    resourcesState.adding.value = { resource: resourceIri }
+
+    resourcesActions.resetNewResource()
+    expect(resourcesState.adding.value).toBeUndefined()
+  })
+
+  test('handles clearPositionFromGroup when position resource has no componentGroup', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const resourceIri = '__new__'
+    resourcesState.current.byId[resourceIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': resourceIri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: false },
+        // no componentGroup
+      },
+    }
+    resourcesState.current.allIds.push(resourceIri)
+    resourcesState.adding.value = { resource: resourceIri }
+
+    resourcesActions.resetNewResource()
+    expect(resourcesState.adding.value).toBeUndefined()
+  })
+
+  test('handles clearPositionFromGroup when componentGroup has no data', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const groupIri = '/_/component_groups/group-1'
+    const resourceIri = '__new__'
+    resourcesState.current.byId[groupIri] = { apiState: { status: undefined } } // no data
+    resourcesState.current.byId[resourceIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': resourceIri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: false },
+        'componentGroup': groupIri,
+      },
+    }
+    resourcesState.current.allIds.push(groupIri, resourceIri)
+    resourcesState.adding.value = { resource: resourceIri }
+
+    resourcesActions.resetNewResource()
+    expect(resourcesState.adding.value).toBeUndefined()
+  })
+
+  test('deletes the resource and clears adding when adding.value.resource is set (no position)', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const groupIri = '/_/component_groups/group-1'
+    const resourceIri = '__new__'
+    resourcesState.current.byId[groupIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': groupIri,
+        '@type': 'ComponentGroup',
+        '_metadata': { persisted: true },
+        'componentPositions': [resourceIri],
+      },
+    }
+    resourcesState.current.allIds.push(groupIri)
+
+    resourcesState.current.byId[resourceIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': resourceIri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: false },
+        'componentGroup': groupIri,
+      },
+    }
+    resourcesState.current.allIds.push(resourceIri)
+    resourcesState.adding.value = { resource: resourceIri }
+
+    resourcesActions.resetNewResource()
+
+    expect(resourcesState.adding.value).toBeUndefined()
+    expect(resourcesState.current.byId[resourceIri]).toBeUndefined()
+  })
+
+  test('deletes both position and resource when adding.value.position is set', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const groupIri = '/_/component_groups/group-1'
+    const positionIri = '/_/component_positions/__new__'
+    const resourceIri = '__new__'
+
+    resourcesState.current.byId[groupIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': groupIri,
+        '@type': 'ComponentGroup',
+        '_metadata': { persisted: true },
+        'componentPositions': [positionIri],
+      },
+    }
+    resourcesState.current.allIds.push(groupIri)
+
+    resourcesState.current.byId[positionIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': positionIri,
+        '@type': 'ComponentPosition',
+        '_metadata': { persisted: false },
+        'componentGroup': groupIri,
+      },
+    }
+    resourcesState.current.allIds.push(positionIri)
+
+    resourcesState.current.byId[resourceIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': resourceIri,
+        '@type': 'Component',
+        '_metadata': { persisted: false },
+      },
+    }
+    resourcesState.current.allIds.push(resourceIri)
+    resourcesState.adding.value = { resource: resourceIri, position: positionIri }
+
+    resourcesActions.resetNewResource()
+
+    expect(resourcesState.adding.value).toBeUndefined()
+    expect(resourcesState.current.byId[positionIri]).toBeUndefined()
+    expect(resourcesState.current.byId[resourceIri]).toBeUndefined()
+  })
+})
+
+describe('resources action -> initNewResource', () => {
+  test('creates a new component resource and sets adding state (addAfter null, no pageDataProperty)', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const addResourceEvent = {
+      addAfter: null,
+      targetIri: '/_/component_groups/group-1',
+      closest: { group: '/_/component_groups/group-1', position: '/_/component_positions/pos-1' },
+    }
+
+    resourcesActions.initNewResource(addResourceEvent, 'Component', '/components', false, false)
+
+    expect(resourcesState.adding.value?.resource).toBe('__new__')
+    expect(resourcesState.adding.value?.position).toBeUndefined()
+  })
+
+  test('creates position resource when addAfter is set', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const addResourceEvent = {
+      addAfter: true,
+      targetIri: '/_/component_positions/pos-1',
+      closest: { group: '/_/component_groups/group-1', position: '/_/component_positions/pos-1' },
+    }
+
+    resourcesActions.initNewResource(addResourceEvent, 'Component', '/components', false, false)
+
+    expect(resourcesState.adding.value?.resource).toBe('__new__')
+    expect(resourcesState.adding.value?.position).toBe('/_/component_positions/__new__')
+  })
+
+  test('adds new resource to existing group componentPositions when closestGroup has data', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const groupIri = '/_/component_groups/group-1'
+    const existingPositionIri = '/_/component_positions/existing-1'
+    resourcesState.current.byId[groupIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': groupIri,
+        '@type': 'ComponentGroup',
+        '_metadata': { persisted: true },
+        'componentPositions': [existingPositionIri],
+      },
+    }
+    resourcesState.current.allIds.push(groupIri)
+
+    const addResourceEvent = {
+      addAfter: true,
+      targetIri: existingPositionIri,
+      closest: { group: groupIri, position: existingPositionIri },
+    }
+    resourcesActions.initNewResource(addResourceEvent, 'Component', '/components', false, false)
+
+    const groupData = resourcesState.current.byId[groupIri].data
+    expect(groupData?.componentPositions).toContain('/_/component_positions/__new__')
+  })
+
+  test('creates a ComponentPosition resource (type ComponentPosition)', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const addResourceEvent = {
+      addAfter: null,
+      targetIri: '/_/component_groups/group-1',
+      closest: { group: '/_/component_groups/group-1' },
+    }
+
+    resourcesActions.initNewResource(addResourceEvent, 'ComponentPosition', '/component_positions', false, false)
+
+    const newResource = resourcesState.current.byId['__new__']
+    expect(newResource?.data?.['@type']).toBe('ComponentPosition')
+    expect(newResource?.data?.componentGroup).toBe('/_/component_groups/group-1')
   })
 })

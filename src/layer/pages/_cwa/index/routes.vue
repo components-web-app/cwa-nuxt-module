@@ -20,6 +20,7 @@
       />
     </template>
   </ListContent>
+  <ResourceModalOverlay @reload="triggerReload" />
 </template>
 
 <script lang="ts" setup>
@@ -30,40 +31,25 @@ import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
 import { definePageMeta, useCwa, useHead } from '#imports'
 import RouteListRow from '#cwa/templates/components/core/admin/RouteListRow.vue'
+import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
 
 const $cwa = useCwa()
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 const { computedItemLink, triggerReload } = useListPage(listContent, true)
 
 async function deleteRoute(routeIri: string) {
-  await $cwa.resourcesManager.deleteResource({
-    endpoint: routeIri,
-  })
+  await $cwa.resourcesManager.deleteResource({ endpoint: routeIri })
   triggerReload()
 }
 
 const orderOptions = [
-  {
-    label: 'New - Old',
-    value: { createdAt: 'desc' },
-  },
-  {
-    label: 'Old - New',
-    value: { createdAt: 'asc' },
-  },
-  {
-    label: 'A - Z',
-    value: { path: 'asc' },
-  },
-  {
-    label: 'Z - A',
-    value: { path: 'desc' },
-  },
+  { label: 'New - Old', value: { createdAt: 'desc' } },
+  { label: 'Old - New', value: { createdAt: 'asc' } },
+  { label: 'A - Z', value: { path: 'asc' } },
+  { label: 'Z - A', value: { path: 'desc' } },
 ]
 
-useHead({
-  title: 'Routes',
-})
+useHead({ title: 'Routes' })
 
 definePageMeta({
   name: '_cwa-routes',

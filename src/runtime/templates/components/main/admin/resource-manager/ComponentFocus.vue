@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
@@ -159,6 +159,10 @@ onMounted(() => {
   $cwa.admin.eventBus.on('reorder', assignReorderId)
   watch([totalWidthAndHeight, position], $cwa.admin.emitRedraw)
   watch(canvas, newCanvas => newCanvas && redraw())
+  watch(() => resource.value?.data, async () => {
+    await nextTick()
+    redraw()
+  })
 })
 
 onBeforeUnmount(() => {
@@ -180,7 +184,7 @@ defineExpose({
     <div
       :class="[borderColor]"
       :style="cssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline"
+      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
     />
   </client-only>
 </template>

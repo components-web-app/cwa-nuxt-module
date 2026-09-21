@@ -110,7 +110,7 @@ describe('CWA module', () => {
 
       expect(moduleDependencies).toEqual({
         '@pinia/nuxt': {
-          version: '^0.11.3',
+          version: '^1.0.2',
           optional: false,
         },
         '@nuxtjs/robots': {
@@ -131,6 +131,9 @@ describe('CWA module', () => {
         'nuxt-link-checker': {
           version: '^5.0',
         },
+        'nuxt-og-image': {
+          version: '^6.0',
+        },
         'nuxt-schema-org': {
           version: '^6.0',
         },
@@ -145,6 +148,11 @@ describe('CWA module', () => {
   })
 
   describe('setup', () => {
+    test('does not call the deprecated installModule — deps are declared via moduleDependencies (#248)', async () => {
+      await prepareMockNuxt()
+      expect(nuxtKit.installModule).not.toHaveBeenCalled()
+    })
+
     test('should add aliases with result of resolved paths', async () => {
       const mockNuxt = await prepareMockNuxt()
       const mockResolver = nuxtKit.createResolver.mock.results[0].value.resolve
@@ -211,6 +219,60 @@ describe('CWA module', () => {
 
       expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith({
         handler: './runtime/server/server-middleware',
+      })
+    })
+
+    /**
+     * `staticRender` tells `ResourceLoader` to re-fetch payload-hydrated resources on mount. It has
+     * to be resolved at build time: an ISR/SWR-cached response is indistinguishable from a fresh SSR
+     * one at runtime, and when served from cache the server never ran. See #262.
+     */
+    describe('staticRender detection from routeRules', () => {
+      async function getStaticRender(nuxtOptions: any, moduleOptions: any = {}) {
+        await prepareMockNuxt({ mock: true, ...moduleOptions }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            runtimeConfig: { public: { cwa: {} } },
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+            sitemap: {},
+            ...nuxtOptions,
+          },
+        })
+        const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
+        const contents = await getContents({ app: { components: [] } })
+        return JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0]).staticRender
+      }
+
+      test('is false when the app has no routeRules', async () => {
+        expect(await getStaticRender({})).toBe(false)
+      })
+
+      test('is false when routeRules contain no static rules', async () => {
+        expect(await getStaticRender({ routeRules: { '/**': { ssr: true }, '/api/**': { cors: true } } })).toBe(false)
+      })
+
+      test.each([
+        ['isr', { '/**': { isr: true } }],
+        ['swr', { '/**': { swr: 60 } }],
+        ['prerender', { '/': { prerender: true } }],
+      ])('is true when any route rule is %s', async (_name, routeRules) => {
+        expect(await getStaticRender({ routeRules })).toBe(true)
+      })
+
+      test('detects rules declared under nitro.routeRules', async () => {
+        expect(await getStaticRender({ nitro: { routeRules: { '/**': { isr: true } } } })).toBe(true)
+      })
+
+      test('an explicit staticRender option overrides detection', async () => {
+        expect(await getStaticRender({ routeRules: { '/**': { isr: true } } }, { staticRender: false })).toBe(false)
+        expect(await getStaticRender({}, { staticRender: true })).toBe(true)
       })
     })
 
@@ -281,7 +343,8 @@ export const options:CwaModuleOptions = {
         "CwaComponentHtmlContentUiAltUi"
       ]
     }
-  }
+  },
+  "staticRender": false
 }
 export const currentModulePackageInfo:{ version: string, name: string } = {
   "version": "1.0.0",
@@ -417,22 +480,22 @@ declare module 'vue-router' {
     })
 
     test('should extend pages with 3 levels by default', async () => {
-      let cb = null
-      const mockPages = []
+      const callbacks: ((pages: any[]) => void)[] = []
+      const mockPages: any[] = []
       const mockResolver = vi.fn(path => path)
       vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
         resolve: mockResolver,
         resolvePath: vi.fn(),
       })
       vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
-        cb = callback
+        callbacks.push(callback)
       })
 
       await prepareMockNuxt()
 
-      expect(nuxtKit.extendPages).toHaveBeenCalledWith(cb)
+      expect(callbacks).toHaveLength(2)
 
-      cb(mockPages)
+      callbacks[0](mockPages)
 
       expect(mockPages).toEqual([
         {
@@ -475,6 +538,28 @@ declare module 'vue-router' {
           ],
         },
       ])
+    })
+
+    test('second extendPages pass sets cwa-root-layout as default for pages without explicit layout', async () => {
+      const callbacks: ((pages: any[]) => void)[] = []
+      vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
+        callbacks.push(callback)
+      })
+
+      await prepareMockNuxt()
+
+      const noLayout: any = { name: 'app-page', path: '/app', meta: { cwa: { disabled: true } } }
+      const explicitLayout: any = { name: 'styled-page', path: '/styled', meta: { layout: 'alternate-layout' } }
+      const disabledLayout: any = { name: 'no-layout', path: '/no-layout', meta: { layout: false } }
+      const withChildren: any = { name: 'parent', path: '/parent', children: [{ name: 'child', path: 'child' }] }
+
+      const pages = [noLayout, explicitLayout, disabledLayout, withChildren]
+      callbacks[1](pages)
+
+      expect(noLayout.meta.layout).toBe('cwa-root-layout')
+      expect(explicitLayout.meta.layout).toBe('alternate-layout')
+      expect(disabledLayout.meta.layout).toBe(false)
+      expect(withChildren.children[0].meta.layout).toBe('cwa-root-layout')
     })
   })
 })

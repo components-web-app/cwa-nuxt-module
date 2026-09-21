@@ -73,7 +73,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
         continue
       }
       currentResource._metadata.sortDisplayNumber = index + 1
-      $cwa.resourcesManager.saveResource({
+      $cwa.resourcesManager.storeResource({
         resource: currentResource,
       })
     }
@@ -155,7 +155,7 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
         return
       }
       const sortValue = posRes.sortValue + moveBy
-      $cwa.resourcesManager.saveResource({
+      $cwa.resourcesManager.storeResource({
         resource: {
           ...posRes,
           sortValue,

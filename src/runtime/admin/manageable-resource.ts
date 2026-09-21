@@ -1,9 +1,11 @@
-import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { watchOnce } from '@vueuse/core'
 import { consola } from 'consola'
 import {
   computed,
   markRaw,
+  nextTick,
   ref,
   watch,
 
@@ -15,7 +17,7 @@ import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/
 
 export type StyleOptions = {
   multiple?: boolean
-  classes: { [name: string]: string[] }
+  classes: { [name: string]: string | string[] }
 }
 
 export type ManageableResourceOps = Ref<{
@@ -29,6 +31,7 @@ export default class ManageableResource {
   private unwatchCurrentIri: undefined | WatchStopHandle
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
+  private pendingChildMountedReInit: boolean = false
 
   constructor(
     private readonly component: ComponentPublicInstance,
@@ -69,6 +72,10 @@ export default class ManageableResource {
     this._initNewIri(this.currentIri?.value)
   }
 
+  public get elements(): Ref<HTMLElement[]> {
+    return this.domElements
+  }
+
   public clear(soft: boolean = false) {
     if (!this.isIriInit) {
       return
@@ -100,6 +107,10 @@ export default class ManageableResource {
       return
     }
 
+    if (this.pendingChildMountedReInit) {
+      return
+    }
+
     const childIris = this.childIris.value
     const iris: string[] = []
     if (iri.endsWith('_placeholder')) {
@@ -110,24 +121,19 @@ export default class ManageableResource {
       iris.push(...this.$cwa.resources.findAllPublishableIris(iri))
     }
 
-    const iriIsChild = () => {
-      // for each possible publishable IRI of the resource just mounted
-      for (const iri of iris) {
-        // is it part of the calculated children of this resource
-        if (childIris.includes(iri)) {
-          return true
-        }
-      }
-      return false
-    }
+    const isChild = iris.some(i => childIris.includes(i))
 
-    // the child will have to have a click handler added for this (parent) resource
-    const isNewlyMountedIriAChild = iriIsChild()
-
-    if (isNewlyMountedIriAChild) {
-      this.removeClickEventListeners()
-      this.addClickEventListeners()
+    if (isChild) {
+      this.pendingChildMountedReInit = true
       this.$cwa.admin.eventBus.emit('componentMounted', currentIri)
+      void nextTick(() => {
+        this.pendingChildMountedReInit = false
+        if (!this.currentIri?.value || !this.isIriInit) {
+          return
+        }
+        this.removeClickEventListeners()
+        this.addClickEventListeners()
+      })
     }
   }
 
@@ -249,7 +255,7 @@ export default class ManageableResource {
       clickTarget,
       displayName: this.displayName,
       managerTabs: markRaw(this.tabResolver.resolve({
-        resourceType: getResourceTypeFromIri(this.currentIri.value),
+        resourceType: getResourceTypeFromIri(this.currentIri.value) ?? (this.currentIri.value === NEW_RESOURCE_IRI ? CwaResourceTypes.COMPONENT : undefined),
         resourceConfig: this.resourceConfig,
         resource: this.currentResource,
       })),

@@ -21,9 +21,58 @@
         </NuxtLink>
       </div>
     </template>
+    <template
+      v-if="depthChain.length > 1"
+      #subheader
+    >
+      <div class="cwa:flex cwa:gap-x-1 cwa:justify-center cwa:flex-wrap">
+        <button
+          v-for="option in depthChain"
+          :key="String(option.value)"
+          type="button"
+          class="cwa:py-1 cwa:px-3 cwa:text-sm cwa:rounded cwa:transition cwa:cursor-pointer"
+          :class="displayIri === option.value
+            ? 'cwa:text-stone-100 cwa:bg-stone-700/80'
+            : 'cwa:text-stone-400 cwa:hover:text-stone-300'"
+          @click="displayIri = option.value as string"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </template>
     <ResourceModalTabs :tabs="tabs">
       <template #details>
         <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-2 cwa:pb-2 cwa:border-b cwa:border-stone-500">
+            <span class="cwa:text-xs cwa:text-stone-400 cwa:uppercase cwa:tracking-wide cwa:px-1">Parent page</span>
+            <ModalRadioTabs
+              v-model="parentType"
+              :options="parentTypeOptions"
+            />
+            <div v-if="parentType === 'page'">
+              <ModalSelect
+                v-model="localResourceData.parentPage"
+                label="Parent Page"
+                :options="parentPageOptions"
+              />
+            </div>
+            <template v-if="parentType === 'data'">
+              <div>
+                <ModalSelect
+                  v-model="selectedParentDataType"
+                  label="Parent Data Type"
+                  :options="dataTypeOptions"
+                />
+              </div>
+              <div v-if="selectedParentDataType">
+                <ModalSelect
+                  v-model="localResourceData.parentPageData"
+                  label="Parent Data"
+                  :options="dataInstanceOptions"
+                />
+              </div>
+            </template>
+          </div>
           <div>
             <ModalInput
               v-model="localResourceData.title"
@@ -128,17 +177,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
+import { useParentPageDataLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader'
 import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import { useCwa } from '#imports'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
@@ -150,6 +202,82 @@ const emit = defineEmits<{
 const props = defineProps<{ iri?: string, hideViewLink?: boolean }>()
 
 const $cwa = useCwa()
+const { parentPages, loadParentPageOptions } = useParentPageLoader()
+const { dataTypes, dataInstances, loadDataTypes, loadDataInstances, fqcnToEntrypointKey } = useParentPageDataLoader()
+
+const displayIri = ref(props.iri)
+
+function getResourceData(iri: string) {
+  return $cwa.resources.getResource(iri).value
+}
+
+const parentTypeOptions = [
+  { label: 'None', value: null },
+  { label: 'Page', value: 'page' },
+  { label: 'Data', value: 'data' },
+]
+
+const selectedParentDataType = ref<string | null>(null)
+
+const parentType = ref<string | null>(null)
+
+const depthChain = computed(() => {
+  const chain: SelectOption[] = []
+  let iri: string | null | undefined = props.iri
+  while (iri) {
+    const res = getResourceData(iri)
+    chain.unshift({
+      label: res?.data?.reference || res?.data?.title || iri,
+      value: iri,
+    })
+    iri = res?.data?.parentPage || res?.data?.parentPageData || null
+  }
+  return chain
+})
+
+function isDescendantOfCurrentPage(candidateIri: string): boolean {
+  const allPages = parentPages.value ?? []
+  const byId = Object.fromEntries(allPages.map(p => [p['@id'], p]))
+  const visited = new Set<string>()
+  let current: string | null | undefined = byId[candidateIri]?.parentPage
+  while (current) {
+    if (visited.has(current)) break
+    visited.add(current)
+    if (current === props.iri) return true
+    current = byId[current]?.parentPage
+  }
+  return false
+}
+
+const parentPageOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'None', value: null }]
+  for (const page of parentPages.value ?? []) {
+    if (page['@id'] !== props.iri && !isDescendantOfCurrentPage(page['@id'])) {
+      options.push({ label: page.reference, value: page['@id'] })
+    }
+  }
+  return options
+})
+
+const dataTypeOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'Select type…', value: null }]
+  for (const type of dataTypes.value ?? []) {
+    const key = fqcnToEntrypointKey(type.resourceClass)
+    if (key) {
+      options.push({ label: type.resourceClass.split('\\').pop() ?? key, value: key })
+    }
+  }
+  return options
+})
+
+const dataInstanceOptions = computed<SelectOption[]>(() => {
+  const options: SelectOption[] = [{ label: 'Select…', value: null }]
+  for (const instance of dataInstances.value ?? []) {
+    options.push({ label: instance.title || instance['@id'], value: instance['@id'] })
+  }
+  return options
+})
+
 const pageComponentNames = computed(() => {
   return componentNames.filter(n => n.startsWith('CwaPage'))
 })
@@ -208,7 +336,7 @@ const layoutOptions = computed(() => {
   return options
 })
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource, saveTitle, loadResource, getInternalResourceLink } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, saveTitle: _saveTitle, loadResource, getInternalResourceLink } = useItemPage({
   createEndpoint: '/_/pages',
   emit,
   resourceType: 'Page',
@@ -216,9 +344,23 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
     isTemplate: false,
     uiComponent: pageComponentOptions.value[0]?.value,
   },
-  endpoint: toRef(props, 'iri'),
+  endpoint: displayIri,
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#data' : '#routes')),
+  excludeFields: ['componentGroups'],
 })
+
+function saveResource(close = false) {
+  if (localResourceData.value) {
+    if (parentType.value !== 'page') localResourceData.value.parentPage = null
+    if (parentType.value !== 'data') localResourceData.value.parentPageData = null
+  }
+  return _saveResource(close)
+}
+
+function saveTitle() {
+  if (isAdding.value) return
+  return saveResource()
+}
 
 const tabs = computed<ResourceModalTab[]>(() => {
   const t: ResourceModalTab[] = [
@@ -271,7 +413,27 @@ watch(() => localResourceData.value?.isTemplate, (isTemplate: undefined | boolea
   !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
 })
 
-onMounted(() => {
-  loadLayoutOptions()
+watch(selectedParentDataType, (key, oldKey) => {
+  if (oldKey && localResourceData.value) localResourceData.value.parentPageData = null
+  if (key) loadDataInstances(key)
+})
+
+watch(localResourceData, (data, oldData) => {
+  if (data?.parentPage) parentType.value = 'page'
+  else if (data?.parentPageData) parentType.value = 'data'
+  else parentType.value = null
+
+  if (data && !oldData && data.parentPageData) {
+    const pdResource = $cwa.resources.getResource(data.parentPageData).value
+    const pdType = pdResource?.data?.['@type']
+    if (pdType) {
+      const key = fqcnToEntrypointKey(pdType)
+      if (key) selectedParentDataType.value = key
+    }
+  }
+}, { immediate: true })
+
+onMounted(async () => {
+  await Promise.all([loadLayoutOptions(), loadParentPageOptions(), loadDataTypes()])
 })
 </script>

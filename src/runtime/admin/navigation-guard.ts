@@ -44,11 +44,12 @@ export default class NavigationGuard {
   }
 
   public get adminNavigationGuardFn() {
-    return (toRoute: RouteLocationNormalized) => {
+    return (toRoute: RouteLocationNormalized, fromRoute: RouteLocationNormalized) => {
       try {
         const cwaForceQuery = toRoute.query?.cwa_force
+        const isQueryOnlyChange = fromRoute && toRoute.path === fromRoute.path && toRoute.hash === fromRoute.hash
 
-        if (!this.allowNavigation(toRoute)) {
+        if (!this.allowNavigation(toRoute) && !isQueryOnlyChange) {
           return false
         }
 

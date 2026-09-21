@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
@@ -28,6 +28,10 @@ export class Resources {
 
   public get currentIds() {
     return this.resourcesStore.current.currentIds
+  }
+
+  public get allIds() {
+    return this.resourcesStore.current.allIds
   }
 
   public isIriPublishableEquivalent(oldIri: string, newIri: string) {
@@ -77,16 +81,29 @@ export class Resources {
     if (fetchingToken) {
       const fetchingStatus = this.fetcherStore.fetches[fetchingToken]
       if (fetchingStatus) {
-        const pageIri = this.getPageIriByFetchStatus(fetchingStatus)
+        const irisByDepth = fetchingStatus.manifest?.irisByDepth
+        const pageIri = irisByDepth?.[0]
+          ? this.getPageIriFromDepthGroup(irisByDepth[0])
+          : this.getPageIriByFetchStatus(fetchingStatus)
         if (pageIri && this.resourcesStore.current.currentIds.includes(pageIri)) {
           const pageResource = this.getResource(pageIri).value
           if (pageResource?.data && pageResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-            return fetchingStatus
+            const layoutIri = this.getLayoutIriByFetchStatus(fetchingStatus)
+            const layoutReady = !layoutIri || !!(this.getResource(layoutIri).value?.data)
+            if (layoutReady) {
+              if (irisByDepth?.[0]) {
+                const pageDataIri = this.getPageDataIriFromDepthGroup(irisByDepth[0])
+                if (pageDataIri && !this.getResource(pageDataIri).value?.data) {
+                  return this.fetcherStore.resolvedDisplayFetchStatus
+                }
+              }
+              return fetchingStatus
+            }
           }
         }
       }
     }
-    return this.fetcherStore.resolvedSuccessFetchStatus
+    return this.fetcherStore.resolvedDisplayFetchStatus
   }
 
   private get pageLoadResources() {
@@ -190,12 +207,71 @@ export class Resources {
   }
 
   private getLayoutIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
-    const pageIri = this.getPageIriByFetchStatus(fetchStatus)
+    const irisByDepth = fetchStatus?.manifest?.irisByDepth
+    const pageIri = irisByDepth?.[0]
+      ? this.getPageIriFromDepthGroup(irisByDepth[0])
+      : this.getPageIriByFetchStatus(fetchStatus)
     if (!pageIri) {
       return
     }
     const pageResource = this.getResource(pageIri).value
     return pageResource?.data?.layout
+  }
+
+  private getPageIriFromDepthGroup(group: string[]): string | undefined {
+    return group.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
+  }
+
+  private getPageDataIriFromDepthGroup(group: string[]): string | undefined {
+    return group.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE_DATA)
+  }
+
+  public pageIriAtDepth(depth?: number): ComputedRef<string | undefined> {
+    const d = depth ?? inject<number>('cwa-page-own-depth', 0)
+    return computed(() => {
+      const fetchStatus = this.displayFetchStatus
+      const irisByDepth = fetchStatus?.manifest?.irisByDepth
+      if (irisByDepth?.[d]) {
+        return this.getPageIriFromDepthGroup(irisByDepth[d])
+      }
+      if (d === 0) {
+        return this.getPageIriByFetchStatus(fetchStatus)
+      }
+      return undefined
+    })
+  }
+
+  public pageDataIriAtDepth(depth?: number): ComputedRef<string | undefined> {
+    const d = depth ?? inject<number>('cwa-page-own-depth', 0)
+    return computed(() => {
+      const irisByDepth = this.displayFetchStatus?.manifest?.irisByDepth
+      if (irisByDepth?.[d]) {
+        return this.getPageDataIriFromDepthGroup(irisByDepth[d])
+      }
+      return undefined
+    })
+  }
+
+  public pageAtDepth(depth?: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    const iriRef = this.pageIriAtDepth(depth)
+    return computed(() => {
+      const iri = iriRef.value
+      return iri ? this.getResource(iri).value : undefined
+    })
+  }
+
+  public pageDataAtDepth(depth?: number): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    const iriRef = this.pageDataIriAtDepth(depth)
+    return computed(() => {
+      const iri = iriRef.value
+      return iri ? this.getResource(iri).value : undefined
+    })
+  }
+
+  public get depthCount(): ComputedRef<number> {
+    return computed(() => {
+      return this.displayFetchStatus?.manifest?.irisByDepth?.length ?? 1
+    })
   }
 
   private getPageIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
@@ -255,22 +331,28 @@ export class Resources {
     })
   }
 
-  public get pageData() {
-    if (!this.pageDataIri.value) {
-      return
-    }
-    return this.getResource(this.pageDataIri.value)
+  public get pageData(): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const pageDataIri = this.pageDataIri.value
+      if (!pageDataIri) {
+        return
+      }
+      return this.getResource(pageDataIri).value
+    })
   }
 
   public get pageIri(): ComputedRef<string | undefined> {
     return computed(() => this.getPageIriByFetchStatus(this.displayFetchStatus))
   }
 
-  public get page() {
-    if (!this.pageIri.value) {
-      return
-    }
-    return this.getResource(this.pageIri.value)
+  public get page(): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const pageIri = this.pageIri.value
+      if (!pageIri) {
+        return
+      }
+      return this.getResource(pageIri).value
+    })
   }
 
   public get displayPageIri() {
@@ -282,11 +364,14 @@ export class Resources {
     })
   }
 
-  public get displayPage() {
-    if (!this.displayPageIri.value) {
-      return
-    }
-    return this.getResource(this.displayPageIri.value)
+  public get displayPage(): ComputedRef<CwaCurrentResourceInterface | undefined> {
+    return computed(() => {
+      const displayPageIri = this.displayPageIri.value
+      if (!displayPageIri) {
+        return
+      }
+      return this.getResource(displayPageIri).value
+    })
   }
 
   public get layoutIri(): ComputedRef<string | undefined> {

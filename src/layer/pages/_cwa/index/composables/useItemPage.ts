@@ -92,7 +92,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return saveResource()
   }
 
-  async function saveResource(close = false) {
+  async function saveResource(close = false, extraData?: Record<string, any>) {
     if (!localResourceData.value) {
       return
     }
@@ -119,6 +119,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     const doRequest = async () => {
       const data: { [key: string]: any } = {
         ...localResourceData.value,
+        ...extraData,
       }
       if (excludeFields) {
         for (const field of excludeFields) {

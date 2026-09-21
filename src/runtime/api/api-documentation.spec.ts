@@ -6,6 +6,7 @@ import { consola as logger } from 'consola'
 import { createTestingPinia } from '@pinia/testing'
 import { flushPromises } from '@vue/test-utils'
 import { ApiDocumentationStore } from '../storage/stores/api-documentation/api-documentation-store'
+import { ResourceTypeFromIri } from '../resources/resource-utils'
 import ApiDocumentation from './api-documentation'
 import CwaFetch from './fetcher/cwa-fetch'
 
@@ -155,5 +156,145 @@ describe('API Documentation getApiDocumentation functionality', () => {
     expect(logger.debug).toHaveBeenCalledWith('Waiting for previous request to complete for API Documentation')
     await flushPromises()
     expect(piniaStore.$patch).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('API Documentation getComponentMetadata functionality', () => {
+  beforeEach(() => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+  })
+
+  function makeDocs(overrides?: { entrypoint?: any, docs?: any }) {
+    return {
+      entrypoint: overrides?.entrypoint ?? {
+        myComponent: '/component/my_component',
+        another: '/component/another',
+        notComponent: '/_/routes/r1',
+      },
+      docs: overrides?.docs ?? {
+        supportedClass: [
+          { title: 'MyComponent', supportedProperty: [{ title: 'publishedAt' }, { title: 'title' }] },
+          { title: 'Another', supportedProperty: [{ title: 'name' }] },
+        ],
+      },
+      pageDataMetadata: null,
+    }
+  }
+
+  test('returns undefined when getApiDocumentation returns undefined', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(undefined)
+    const result = await apiDoc.getComponentMetadata()
+    expect(result).toBeUndefined()
+  })
+
+  test('returns undefined when docs is missing', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue({ entrypoint: {}, docs: undefined, pageDataMetadata: null })
+    const result = await apiDoc.getComponentMetadata()
+    expect(result).toBeUndefined()
+  })
+
+  test('returns undefined when entrypoint is missing', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue({ docs: { supportedClass: [] }, entrypoint: undefined, pageDataMetadata: null })
+    const result = await apiDoc.getComponentMetadata()
+    expect(result).toBeUndefined()
+  })
+
+  test('returns metadata for COMPONENT types only by default', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs())
+    const result = await apiDoc.getComponentMetadata()
+    expect(result).toEqual({
+      MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true, explicitAllowOnly: false },
+      Another: { resourceName: 'Another', endpoint: '/component/another', isPublishable: false, explicitAllowOnly: false },
+    })
+  })
+
+  test('reads the class-level explicitAllowOnly flag (true when present, false when absent or falsy)', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs({
+      entrypoint: {
+        restricted: '/component/restricted',
+        open: '/component/open',
+        falsyFlag: '/component/falsy_flag',
+      },
+      docs: {
+        supportedClass: [
+          { title: 'Restricted', supportedProperty: [{ title: 'title' }], explicitAllowOnly: true },
+          { title: 'Open', supportedProperty: [{ title: 'title' }] },
+          { title: 'FalsyFlag', supportedProperty: [{ title: 'title' }], explicitAllowOnly: false },
+        ],
+      },
+    }))
+    const result = await apiDoc.getComponentMetadata()
+    expect(result?.Restricted?.explicitAllowOnly).toBe(true)
+    expect(result?.Open?.explicitAllowOnly).toBe(false)
+    expect(result?.FalsyFlag?.explicitAllowOnly).toBe(false)
+  })
+
+  test('includes COMPONENT_POSITION types when includePosition is true', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs({
+      entrypoint: {
+        myPosition: '/_/component_positions/1',
+        myComponent: '/component/my_component',
+      },
+      docs: {
+        supportedClass: [
+          { title: 'MyPosition', supportedProperty: [{ title: 'sortValue' }] },
+          { title: 'MyComponent', supportedProperty: [{ title: 'publishedAt' }] },
+        ],
+      },
+    }))
+    const result = await apiDoc.getComponentMetadata(false, true)
+    expect(result).toEqual({
+      MyPosition: { resourceName: 'MyPosition', endpoint: '/_/component_positions/1', isPublishable: false, explicitAllowOnly: false },
+      MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true, explicitAllowOnly: false },
+    })
+  })
+
+  test('returns empty object when no matching types in entrypoint', async () => {
+    const apiDoc = createApiDocumentation()
+    vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs({
+      entrypoint: { myRoute: '/_/routes/1', myPage: '/_/pages/1' },
+      docs: { supportedClass: [] },
+    }))
+    const result = await apiDoc.getComponentMetadata()
+    expect(result).toEqual({})
+  })
+
+  test('passes refresh flag through to getApiDocumentation', async () => {
+    const apiDoc = createApiDocumentation()
+    const spy = vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(undefined)
+    await apiDoc.getComponentMetadata(true)
+    expect(spy).toHaveBeenCalledWith(true)
+  })
+
+  test('strips API path prefix from endpoint so it matches allowedComponents format', async () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    try {
+      const apiDoc = createApiDocumentation()
+      vi.spyOn(apiDoc, 'getApiDocumentation').mockResolvedValue(makeDocs({
+        entrypoint: {
+          myComponent: '/_api/component/my_component',
+        },
+        docs: {
+          supportedClass: [
+            { title: 'MyComponent', supportedProperty: [{ title: 'publishedAt' }] },
+          ],
+        },
+      }))
+      const result = await apiDoc.getComponentMetadata()
+      expect(result).toEqual({
+        MyComponent: { resourceName: 'MyComponent', endpoint: '/component/my_component', isPublishable: true, explicitAllowOnly: false },
+      })
+    }
+    finally {
+      ResourceTypeFromIri.setPathPrefix(undefined)
+    }
   })
 })

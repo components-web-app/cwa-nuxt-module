@@ -7,6 +7,7 @@ describe('Mercure State context', () => {
     const initialState = state()
     expect(initialState).toStrictEqual({
       hub: ref(null),
+      connected: ref(undefined),
     })
   })
 })

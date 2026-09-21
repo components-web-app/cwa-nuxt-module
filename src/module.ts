@@ -56,7 +56,7 @@ function createDefaultCwaPages(
   function createTree(currentDepth: number) {
     const page = getPage(currentDepth)
     if (currentDepth < maxDepth) {
-      const child = createTree(++currentDepth)
+      const child = createTree(currentDepth + 1)
       page.children = [child]
     }
     return page
@@ -70,7 +70,7 @@ export const NAME = '@cwa/nuxt' as const
 export default defineNuxtModule<CwaModuleOptions>({
   moduleDependencies: {
     '@pinia/nuxt': {
-      version: '^0.11.3',
+      version: '^1.0.2',
       optional: false,
     },
     '@nuxtjs/robots': {
@@ -99,6 +99,9 @@ export default defineNuxtModule<CwaModuleOptions>({
     },
     'nuxt-site-config': {
       version: '^4.0.8',
+    },
+    'nuxt-og-image': {
+      version: '^6.0',
     },
   },
   meta: {
@@ -154,6 +157,19 @@ export default defineNuxtModule<CwaModuleOptions>({
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 4, options.layoutName)
     })
+
+    const defaultLayoutName = options.layoutName || 'cwa-root-layout'
+    extendPages((pages: NuxtPage[]) => {
+      function applyDefaultLayout(page: NuxtPage) {
+        if (page.meta?.layout === undefined) {
+          page.meta = page.meta || {}
+          page.meta.layout = defaultLayoutName
+        }
+        page.children?.forEach(applyDefaultLayout)
+      }
+      pages.forEach(applyDefaultLayout)
+    })
+
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 
     logger.info(`Registering user components for CWA...`)
@@ -211,7 +227,12 @@ export default defineNuxtModule<CwaModuleOptions>({
           return b.concat(a)
         }
       })
-      return { ...options, resources }
+      return { ...options, resources, staticRender: options.staticRender ?? hasStaticRouteRules() }
+    }
+
+    function hasStaticRouteRules(): boolean {
+      const routeRules = { ...nuxt.options.routeRules, ...nuxt.options.nitro?.routeRules }
+      return Object.values(routeRules).some(rule => !!(rule?.isr || rule?.swr || rule?.prerender))
     }
 
     nuxt.hook('modules:done', () => {
@@ -227,6 +248,19 @@ export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.co
 export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
         },
+      })
+
+      addTypeTemplate({
+        filename: 'types/cwa-og-image.d.ts',
+        write: true,
+        getContents: () => /* ts */`import type CwaDefaultSatori from '${resolve('./layer/components/og-image/CwaDefault.satori.vue')}'
+declare module '#og-image/components' {
+  interface OgImageComponents {
+    CwaDefault: typeof CwaDefaultSatori
+    'CwaDefault.satori': typeof CwaDefaultSatori
+    CwaDefaultSatori: typeof CwaDefaultSatori
+  }
+}`,
       })
 
       addTypeTemplate({
@@ -252,6 +286,17 @@ declare module 'vue-router' {
       addPlugin({
         src: resolve('./runtime/plugin'),
       })
+
+      if (options.pageCache?.enabled) {
+        if (options.staticRender ?? hasStaticRouteRules()) {
+          logger.warn(`${NAME}: pageCache is enabled alongside isr/swr/prerender route rules. Nitro's own cache is not purged by the API, so edits will not appear until the route rule window lapses.`)
+        }
+        addPlugin({
+          src: resolve('./runtime/plugin-page-cache.server'),
+          mode: 'server',
+        })
+        addServerPlugin(resolve('./runtime/server/page-cache-plugin'))
+      }
 
       addServerTemplate({
         filename: '#cwa/server-options.ts',

@@ -11,6 +11,8 @@ vi.mock('../admin/manageable-resource', () => {
       return {
         init: vi.fn(),
         clear: vi.fn(),
+        initNewIri: vi.fn(),
+        elements: ref([]),
       }
     }),
   }
@@ -22,21 +24,33 @@ vi.mock('vue', async () => {
     ...mod,
     onMounted: vi.fn(fn => fn()),
     onBeforeUnmount: vi.fn(fn => fn()),
+    watch: vi.fn((source, cb, opts) => {
+      if (opts?.immediate) cb(typeof source === 'function' ? source() : source.value, undefined)
+      return vi.fn()
+    }),
   }
 })
 
 describe('CWA resource manageable composable', () => {
   const mockIri = ref('mock-iri')
   const mockCwa = {
+    auth: {
+      isAdmin: ref(true),
+    },
     admin: {
       eventBus: {
         emit: vi.fn(),
         on: vi.fn(),
+        off: vi.fn(),
+      },
+      resourceStackManager: {
+        refreshFocusForIri: vi.fn(),
       },
     },
   }
 
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.spyOn(cwaComposable, 'useCwa').mockReturnValue(mockCwa)
   })
 
@@ -116,6 +130,97 @@ describe('CWA resource manageable composable', () => {
     const result = useCwaResourceManageable(mockIri)
 
     expect(result.manager).toEqual(mockReference)
+  })
+
+  describe('onManageableComponentMounted listener', () => {
+    test('calls initNewIri, refreshFocusForIri, and emits componentMounted when iri matches', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      const initNewIriSpy = vi.fn()
+      const mockElements = ref([])
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy, elements: mockElements }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      const listenerCall = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'manageableComponentMounted')
+      const listener = listenerCall?.[1]
+
+      listener(mockIri.value)
+
+      expect(initNewIriSpy).toHaveBeenCalledOnce()
+      expect(mockCwa.admin.resourceStackManager.refreshFocusForIri).toHaveBeenCalledWith(mockIri.value, mockElements)
+      expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
+    })
+
+    test('does nothing when iri does not match', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      const initNewIriSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: initNewIriSpy, elements: ref([]) }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      const listenerCall = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'manageableComponentMounted')
+      const listener = listenerCall?.[1]
+
+      listener('/different-iri')
+
+      expect(initNewIriSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('isAdmin watcher callback', () => {
+    test('calls clearAdmin when admin transitions from true to false', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      let watchCallback: ((val: boolean, prev: boolean) => void) | undefined
+      vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+        watchCallback = cb
+        return vi.fn()
+      })
+
+      const clearSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: clearSpy, initNewIri: vi.fn() }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      watchCallback!(false, true)
+
+      expect(clearSpy).toHaveBeenCalled()
+    })
+
+    test('calls initAdmin when admin transitions from false to true', () => {
+      const mockProxy = { mock: 'proxy' }
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+
+      let watchCallback: ((val: boolean, prev: boolean) => void) | undefined
+      vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+        watchCallback = cb
+        return vi.fn()
+      })
+
+      mockCwa.auth.isAdmin.value = false
+
+      const initSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: initSpy, clear: vi.fn(), initNewIri: vi.fn() }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      watchCallback!(true, false)
+
+      expect(initSpy).toHaveBeenCalledWith(mockIri)
+    })
   })
 
   test.todo('Watch options')

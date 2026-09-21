@@ -3,7 +3,7 @@ import type { FetchResponse } from 'ofetch'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri, ResourceTypeFromIri,
-  resourceTypeToNestedResourceProperties,
+  resourceTypeToAssociatedResourceProperties,
 } from '../../resources/resource-utils'
 import type {
   CwaResource,
@@ -11,6 +11,8 @@ import type {
 import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
+import type { NestedJsonStructure } from '../../storage/stores/fetcher/state'
+import { flattenManifestNode } from '../../storage/stores/fetcher/manifest-utils'
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
@@ -93,10 +95,14 @@ export default class Fetcher {
 
       const resourceType = iri ? getResourceTypeFromIri(iri) : undefined
 
+      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       if (!resourceType || ![CwaResourceTypes.PAGE, CwaResourceTypes.PAGE_DATA].includes(resourceType)) {
-        const prefix = ResourceTypeFromIri.getPathPrefix() || ''
         iri = `${prefix}/_/routes/${route.path}`
-        manifestPath = `${prefix}/_/routes_manifest/${route.path}`
+        manifestPath = `${prefix}/_/resource_manifest/${route.path}`
+      }
+      else {
+        const id = iri.split('/').pop()
+        manifestPath = `${prefix}/_/resource_manifest/${id}`
       }
     }
 
@@ -120,8 +126,9 @@ export default class Fetcher {
       return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
+    let manifestPromise: Promise<void> | undefined
     if (manifestPath) {
-      this.fetchManifest({ token: startFetchResult.token, manifestPath }).then(() => {})
+      manifestPromise = this.fetchManifest({ token: startFetchResult.token, manifestPath })
     }
 
     const fetchEvent = {
@@ -177,10 +184,13 @@ export default class Fetcher {
       && resource?.redirectPath
 
     if (doRedirect) {
-      this.fetchStatusManager.abortFetch(startFetchResult.token)
+      this.fetchStatusManager.abortFetch(startFetchResult.token, 'redirect')
     }
     else if (resource && shallowFetch !== true) {
-      await this.fetchNestedResources({ resource, token: startFetchResult.token, noSave: !!noSave, onlyIfNoExist: shallowFetch === 'noexist' })
+      if (manifestPromise) {
+        await manifestPromise
+      }
+      await this.fetchAssociatedResources({ resource, token: startFetchResult.token, noSave: !!noSave, onlyIfNoExist: shallowFetch === 'noexist' })
     }
 
     if (!token) {
@@ -192,21 +202,23 @@ export default class Fetcher {
   }
 
   private async fetchManifest(event: FetchManifestEvent): Promise<void> {
-    let resources: string[] = []
     try {
       const result = this.fetch({
         path: event.manifestPath,
       })
       const response = await result.response
-      resources = response._data?.resource_iris || []
-      if (resources.length && this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
-        // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
-        await this.fetchBatch({ paths: resources, token: event.token })
+      const resourceTree: NestedJsonStructure[] = response._data?.resource_iris || []
+      if (this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
+        this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, resourceIris: resourceTree })
+        const flatPaths = resourceTree.flatMap(flattenManifestNode)
+        if (flatPaths.length) {
+          // need to await otherwise we were getting resource responses from the API in different orders on fast page changes and then the original old request could finish after the new one and result in an error message, not saved as token is no longer current
+          await this.fetchBatch({ paths: flatPaths, token: event.token })
+        }
       }
       this.fetchStatusManager.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
         token: event.token,
-        resources,
       })
     }
     catch (error: any) {
@@ -218,21 +230,24 @@ export default class Fetcher {
     }
   }
 
-  private fetchNestedResources({ resource, token, noSave, onlyIfNoExist }: FetchNestedResourcesEvent): undefined | Promise<(CwaResource | undefined)[]> {
+  private fetchAssociatedResources({ resource, token, noSave, onlyIfNoExist }: FetchNestedResourcesEvent): undefined | Promise<(CwaResource | undefined)[]> {
     const iri = resource['@id']
     const type = getResourceTypeFromIri(iri)
     if (!type) {
       return
     }
     let nestedIris = []
-    const nestedPropertiesToFetch = resourceTypeToNestedResourceProperties[type]
-    for (const prop of nestedPropertiesToFetch) {
+    const associatedPropertiesToFetch = resourceTypeToAssociatedResourceProperties[type]
+    for (const prop of associatedPropertiesToFetch) {
       let propIris = resource[prop]
       if (!propIris) {
         continue
       }
       if (Array.isArray(propIris)) {
-        nestedIris.push(...propIris)
+        for (const value of propIris) {
+          const iri = typeof value === 'string' ? value : value?.['@id']
+          if (iri) nestedIris.push(iri)
+        }
       }
       else {
         // todo test - otherwise client-side auth will get the draft instead
@@ -247,6 +262,13 @@ export default class Fetcher {
       nestedIris = nestedIris.filter(iri => !this.resourcesStore.current.currentIds.includes(iri))
       if (!nestedIris.length) {
         return
+      }
+    }
+
+    const parentDepth = this.fetchStatusManager.getDepthForIri(iri)
+    if (parentDepth !== undefined) {
+      for (const nestedIri of nestedIris) {
+        this.fetchStatusManager.registerIriDepth(nestedIri, parentDepth)
       }
     }
 
@@ -319,15 +341,25 @@ export default class Fetcher {
     }
     const requestHeaders: Record<string, string> = {}
     if (this.fetchStatusManager.primaryFetchPath) {
-      // todo: test we replace the /_/routes prefix
       const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       const routePathPrefix = `${prefix}/_/routes/`
-      const primaryFetchPath = this.fetchStatusManager.primaryFetchPath
-      if (primaryFetchPath.indexOf(routePathPrefix) === 0) {
-        requestHeaders.path = primaryFetchPath.substring(routePathPrefix.length)
+
+      const iri = event.path.split('?')[0] ?? event.path
+      const depth = this.fetchStatusManager.getDepthForIri(iri)
+      const depthPath = depth !== undefined ? this.fetchStatusManager.getPathForDepth(depth) : undefined
+
+      if (depthPath !== undefined) {
+        requestHeaders.path = depthPath
       }
       else {
-        requestHeaders.path = primaryFetchPath
+        // todo: test we replace the /_/routes prefix
+        const primaryFetchPath = this.fetchStatusManager.primaryFetchPath
+        if (primaryFetchPath.indexOf(routePathPrefix) === 0) {
+          requestHeaders.path = primaryFetchPath.substring(routePathPrefix.length)
+        }
+        else {
+          requestHeaders.path = primaryFetchPath
+        }
       }
     }
     if (preload) {

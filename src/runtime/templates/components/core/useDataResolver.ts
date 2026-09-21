@@ -3,6 +3,7 @@ import {
   defineComponent,
   h, onBeforeUnmount, onMounted,
   ref,
+  toRaw,
   watch,
   render,
 } from 'vue'
@@ -28,7 +29,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
       const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent> | undefined
         = typeof props.component === 'string'
           ? globalComponents[props.component]
-          : props.component
+          : toRaw(props.component)
 
       if (possibleAsyncDefinition === undefined) {
         throw new Error('Cannot load metadata for component')

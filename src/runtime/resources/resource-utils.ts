@@ -40,7 +40,7 @@ type TypeToPathPrefixMap = {
   [T in CwaResourceTypes]: string;
 }
 
-type TypeToNestedPropertiesMap = {
+type TypeToAssociatedPropertiesMap = {
   [T in CwaResourceTypes]: Array<string>;
 }
 
@@ -58,7 +58,7 @@ export class ResourceTypeFromIriCls extends Function {
   private pathPrefix: string | undefined
 
   setPathPrefix(prefix?: string) {
-    this.pathPrefix = prefix
+    this.pathPrefix = prefix?.replace(/\/+$/, '') || undefined
   }
 
   getPathPrefix() {
@@ -66,7 +66,7 @@ export class ResourceTypeFromIriCls extends Function {
   }
 
   _call(iri: string): CwaResourceTypes | undefined {
-    const iriToCompare = this.pathPrefix ? iri.replace(this.pathPrefix, '') : iri
+    const iriToCompare = this.pathPrefix && iri.startsWith(this.pathPrefix) ? iri.slice(this.pathPrefix.length) : iri
     for (const type of Object.values(CwaResourceTypes)) {
       const prefix: string = resourceTypeToIriPrefix[type]
       if (iriToCompare.startsWith(prefix) || iriToCompare === prefix.slice(0, -1)) {
@@ -80,7 +80,7 @@ export const ResourceTypeFromIri = new ResourceTypeFromIriCls()
 export const getResourceTypeFromIri = ResourceTypeFromIri._call.bind(ResourceTypeFromIri)
 
 export function getPublishedResourceState(resource: Pick<CwaCurrentResourceInterface, 'data'>): undefined | boolean {
-  const publishableMeta = resource.data?._metadata.publishable
+  const publishableMeta = resource.data?._metadata?.publishable
   return publishableMeta?.published
 }
 
@@ -111,6 +111,7 @@ export function isCwaResourceSame(resource1: CwaResource, resource2: CwaResource
     delete newObj.publishedResource
     delete newObj.draftResource
     delete newObj.modifiedAt
+    delete newObj['@context']
     // remove metadata, can include things specific to the resource such as published timestamps
     delete newObj._metadata
     if (getResourceTypeFromIri(newObj['@id']) === CwaResourceTypes.COMPONENT) {
@@ -125,10 +126,12 @@ export function isCwaResourceSame(resource1: CwaResource, resource2: CwaResource
   return clearAndStringify(resource1) === clearAndStringify(resource2)
 }
 
-export const resourceTypeToNestedResourceProperties: TypeToNestedPropertiesMap = {
+export const parentResourceProperties: string[] = ['parentPage', 'parentPageData']
+
+export const resourceTypeToAssociatedResourceProperties: TypeToAssociatedPropertiesMap = {
   [CwaResourceTypes.ROUTE]: ['pageData', 'page'],
-  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups'],
-  [CwaResourceTypes.PAGE_DATA]: ['page'],
+  [CwaResourceTypes.PAGE]: ['layout', 'componentGroups', 'parentPage', 'parentPageData'],
+  [CwaResourceTypes.PAGE_DATA]: ['page', 'parentPage', 'parentPageData'],
   [CwaResourceTypes.LAYOUT]: ['componentGroups'],
   [CwaResourceTypes.COMPONENT_GROUP]: ['componentPositions'],
   [CwaResourceTypes.COMPONENT_POSITION]: ['component'],

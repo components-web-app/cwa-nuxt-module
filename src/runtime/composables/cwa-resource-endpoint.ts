@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { getPublishedResourceState } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
 
@@ -7,34 +7,22 @@ export const useCwaResourceEndpoint = (iri: Ref<string | undefined>, postfix?: s
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
   const forcePublishedVersion = $cwa.admin.resourceStackManager.forcePublishedVersion
-  const applyPostfix = ref(false)
-  const query = ref('')
 
-  const unwatchEffect = watchEffect(() => {
+  const applyPostfix = computed(() => {
     if (!resource.value) {
-      applyPostfix.value = false
-      return
+      return false
     }
-    const publishableState = getPublishedResourceState(resource.value)
-    applyPostfix.value = (forcePublishedVersion.value !== undefined || !$cwa.admin.isEditing) && publishableState === true
+    return (forcePublishedVersion.value !== undefined || !$cwa.admin.isEditing) && getPublishedResourceState(resource.value) === true
   })
 
-  const unwatchApplyPostfix = watch(applyPostfix, (newApplyPostfix) => {
-    if (!newApplyPostfix) {
-      query.value = ''
-      return
+  const query = computed(() => {
+    if (!applyPostfix.value) {
+      return ''
     }
-    query.value = (forcePublishedVersion.value || !$cwa.admin.isEditing) ? '?published=true' : '?published=false'
-  }, {
-    immediate: true,
+    return (forcePublishedVersion.value || !$cwa.admin.isEditing) ? '?published=true' : '?published=false'
   })
 
   const endpoint = computed(() => `${iri.value}${postfix || ''}${query.value}`)
-
-  onBeforeUnmount(() => {
-    unwatchEffect()
-    unwatchApplyPostfix()
-  })
 
   return {
     endpoint,

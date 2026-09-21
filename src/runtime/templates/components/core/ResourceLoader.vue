@@ -70,6 +70,16 @@ const warningPlaceholder = computed((): string | undefined => {
   if (!resource.value) {
     return `Resource '${props.iri}' has not been requested`
   }
+  if (hasError.value && !hasSilentError.value) {
+    if (resource.value?.apiState.ssr && resource.value?.data === undefined) {
+      return undefined
+    }
+    const state = resource.value?.apiState as CwaResourceApiStateError
+    const statusCode = state.error?.statusCode
+    const statusMessage = state.error?.statusMessage
+    const detail = statusCode ? `${statusCode}${statusMessage ? ` ${statusMessage}` : ''}` : 'Unknown error'
+    return `Error loading resource '${props.iri}': ${detail}`
+  }
   if (resourceUiComponent.value && !resolvedComponent.value) {
     return `The component '${resourceUiComponent.value}' for resource '${props.iri}' cannot be resolved`
   }
@@ -126,7 +136,7 @@ const resolvedComponent = computed(() => {
 })
 
 const ssrNoDataWithSilentError = computed(() => {
-  return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError
+  return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError.value
 })
 
 const ssrPositionHasPartialData = computed(() => {
@@ -155,16 +165,12 @@ const refetchPublishedSsrResourceToResolveDraft = computed(() => {
     && $cwa.auth.user
 })
 
-// With ISR when the page is loaded it could be cached, this should trigger on front-end still and can send a request to update/check the component from the API again
-const isOutdated = computed(() => {
+const isStaticRender = computed(() => {
   const apiState = resource.value?.apiState
-  // if we have fetched successfully already and have a timestamp for when that was, or it was loaded client-side already
-  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.fetchedAt || !apiState.ssr) {
-    return
+  if (!apiState || apiState.status !== CwaResourceApiStatuses.SUCCESS || !apiState.ssr) {
+    return false
   }
-  const nowTime = (new Date()).getTime()
-  const timeDifference = nowTime - apiState.fetchedAt
-  return timeDifference > 5000
+  return $cwa.isStaticRender
 })
 
 async function clientFetchResource() {
@@ -193,10 +199,8 @@ const methods = {
 }
 
 onMounted(() => {
-  isOutdated.value && clientFetchResource()
+  isStaticRender.value && clientFetchResource()
 
-  // if has a silent error, we are client-side and last attempt was not while logged in
-  // todo: NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING if resource is publishable, published and request was a server-side request, refresh with a client-side request
   watch([hasSilentError, resource], methods.fetchResource, {
     immediate: true,
   })
@@ -205,6 +209,4 @@ onMounted(() => {
 defineExpose({
   resourceComponent,
 })
-
-// TODO - NOT SURE IF NEEDS DOING STILL... FIND THE BUG REPRODUCTION BEFORE IMPLEMENTING - server-side no auth will load published and no publishable meta link to draft, client-side auth will load draft if available with published meta link, or published with no draft
 </script>

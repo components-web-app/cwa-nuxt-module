@@ -54,7 +54,7 @@ interface RequestOptions {
 export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
   private readonly fetchStatusManager: FetchStatusManager
-  private requestsInProgress = reactive<{ [id: string]: { event: ApiResourceEvent, args: [string, { event: ApiResourceEvent, args: [string, RequestOptions] }] } }>({})
+  private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
   private _requestCount?: ComputedRef<number>
@@ -96,15 +96,14 @@ export class ResourcesManager {
 
   public getWaitForRequestPromise(endpoint: string, property: string, source?: string) {
     const hasRequestConflict = () => {
-      if (!this.requestsInProgress.value) {
-        return false
-      }
-      for (const req of Object.values(this.requestsInProgress)) {
-        if (req.event.endpoint === endpoint) {
-          if ('data' in req.event) {
-            return req.event.data?.[property] && (!source || req.event.source !== source)
+      for (const sourceReqs of Object.values(this.requestsInProgress)) {
+        for (const req of Object.values(sourceReqs)) {
+          if (req.event.endpoint === endpoint) {
+            if ('data' in req.event) {
+              return req.event.data?.[property] && (!source || req.event.source !== source)
+            }
+            return true
           }
-          return true
         }
       }
       return false
@@ -191,13 +190,13 @@ export class ResourcesManager {
 
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
     // it'll update anything visually until client-side refresh
-    if (currentResource?._metadata.persisted === false) {
+    if (currentResource?._metadata?.persisted === false) {
       const newResource = mergeWith(currentResource, event.data, (a, b) => {
         if (isArray(a)) {
           return b.concat(a)
         }
       })
-      this.saveResource({
+      this.storeResource({
         resource: newResource,
       })
       return
@@ -299,7 +298,7 @@ export class ResourcesManager {
         await event.requestCompleteFn(resource as CwaResource | undefined)
       }
       if ('data' in event) {
-        this.saveResource({
+        this.storeResource({
           resource,
         })
       }
@@ -342,8 +341,8 @@ export class ResourcesManager {
     this.errorStore.removeById(id)
   }
 
-  // @internal - just used in reset-password.ts - should be private and refactored for that use case
-  public saveResource(event: SaveResourceEvent | SaveNewResourceEvent) {
+  // @internal
+  public storeResource(event: SaveResourceEvent | SaveNewResourceEvent) {
     return this.resourcesStore.saveResource(event)
   }
 
@@ -484,6 +483,12 @@ export class ResourcesManager {
 
     const refreshEndpoints: string[] = []
 
+    const shiftGroupIri = getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP
+      ? addEvent.targetIri
+      : addEvent.closest.group
+
+    let capturedSortValue: number | undefined
+
     if (addEvent.addAfter !== null) {
       (() => {
         addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
@@ -527,9 +532,12 @@ export class ResourcesManager {
           return existingSortValue !== undefined ? (addEvent.addAfter ? existingSortValue + 1 : existingSortValue) : 0
         }
 
+        const newSortValue = getPositionSortValue()
+        capturedSortValue = newSortValue
+
         const positionIri = this.resourcesStore.adding.position
         if (!positionIri) {
-          resource.sortValue = getPositionSortValue()
+          resource.sortValue = newSortValue
           refreshEndpoints.push(...this.getRefreshPositions(this.resourcesStore.adding.resource))
           return
         }
@@ -544,7 +552,7 @@ export class ResourcesManager {
           '@id': undefined,
           '@type': undefined,
           'component': undefined,
-          'sortValue': getPositionSortValue(),
+          'sortValue': newSortValue,
         }
 
         resource.componentPositions = [
@@ -553,6 +561,31 @@ export class ResourcesManager {
 
         refreshEndpoints.push(...this.getRefreshPositions(positionIri))
       })()
+
+      if (shiftGroupIri && capturedSortValue !== undefined) {
+        const groupData = this.resourcesStore.getResource(shiftGroupIri)?.data
+        if (groupData?.componentPositions) {
+          const threshold = capturedSortValue
+          const positionsToShift = (groupData.componentPositions as string[])
+            .filter(iri => !iri.endsWith(NEW_RESOURCE_IRI))
+            .reduce<Array<{ id: string, sortValue: number }>>((acc, iri) => {
+              const pos = this.resourcesStore.getResource(iri)?.data
+              if (pos && pos['@id'] && typeof pos.sortValue === 'number' && pos.sortValue >= threshold) {
+                acc.push({ id: pos['@id'], sortValue: pos.sortValue })
+              }
+              return acc
+            }, [])
+            .sort((a, b) => b.sortValue - a.sortValue)
+
+          for (const pos of positionsToShift) {
+            await this.updateResource({
+              endpoint: pos.id,
+              data: { sortValue: pos.sortValue + 1 },
+              refreshEndpoints: [],
+            })
+          }
+        }
+      }
     }
     else if (!addEvent.pageDataProperty) {
       // adding the resource to a position resource, adding a fallback component on a dynamic page/template

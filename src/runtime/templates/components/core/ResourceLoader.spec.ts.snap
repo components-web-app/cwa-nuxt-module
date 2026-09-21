@@ -1,5 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`ResourceLoader > snapshots > should NOT show error warning for silent (4xx) resource errors 1`] = `<!--v-if-->`;
+
 exports[`ResourceLoader > snapshots > should match snapshot IF UI component is not resolved 1`] = `
 <cwauialertwarning-stub>
   <p>
@@ -36,4 +38,12 @@ exports[`ResourceLoader > snapshots > should match snapshot IF resource is loadi
     show="true"
   />
 </div>
+`;
+
+exports[`ResourceLoader > snapshots > should show error warning for non-silent (5xx) resource errors 1`] = `
+<cwauialertwarning-stub>
+  <p>
+    Error loading resource 'testIri': 500 Internal Server Error
+  </p>
+</cwauialertwarning-stub>
 `;

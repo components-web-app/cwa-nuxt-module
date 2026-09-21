@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 import { consola as logger } from 'consola'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
+import { ResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { CwaFetcherActionsInterface } from './actions'
 import actions, { FinishFetchManifestType } from './actions'
 import type { CwaFetcherStateInterface, FetchStatus } from './state'
@@ -54,6 +55,16 @@ describe('Fetcher store action -> abortFetch', () => {
       token: 'existing-token',
     })
     expect(fetcherState.fetches['existing-token'].abort).toBe(true)
+    expect(fetcherState.fetches['existing-token'].abortReason).toBeUndefined()
+  })
+
+  test('A fetch token can be marked as aborted with a reason', () => {
+    fetcherActions.abortFetch({
+      token: 'existing-token',
+      reason: 'redirect',
+    })
+    expect(fetcherState.fetches['existing-token'].abort).toBe(true)
+    expect(fetcherState.fetches['existing-token'].abortReason).toBe('redirect')
   })
 })
 
@@ -320,6 +331,141 @@ describe('Fetcher store action -> finishFetch', () => {
     expect(fetcherState.primaryFetch.successToken).toBe('existing-primary-token')
     expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
   })
+
+  describe('displayed token (last-displayed retention #256)', () => {
+    test('On promotion the displayed token advances to the new success token', () => {
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      fetcherActions.finishFetch({ token: 'existing-primary-token' })
+      expect(fetcherState.primaryFetch.displayedToken).toBe('existing-primary-token')
+    })
+
+    test('On promotion a previously-displayed superseded fetch is cleaned up', () => {
+      fetcherState.fetches['held-token'] = reactive({ path: '/held', resources: ['/held'], isPrimary: true, timestamp: 0 })
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      fetcherState.primaryFetch.displayedToken = 'held-token'
+      fetcherActions.finishFetch({ token: 'existing-primary-token' })
+      expect(fetcherState.primaryFetch.displayedToken).toBe('existing-primary-token')
+      expect(fetcherState.fetches['held-token']).toBeUndefined()
+    })
+
+    test('A held displayed fetch is NOT deleted when it is also the finishing success token being retained', () => {
+      fetcherState.primaryFetch.displayedToken = 'existing-token'
+      fetcherActions.finishFetch({ token: 'existing-token' })
+      expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
+    })
+  })
+
+  describe('redirect retention (flash fix)', () => {
+    test('A primary fetch aborted as a redirect does not become the success token and the previous success page is retained', () => {
+      fetcherState.primaryFetch.successToken = 'existing-token'
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      existingPrimaryFetchState.abort = true
+      existingPrimaryFetchState.abortReason = 'redirect'
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBe('existing-token')
+      expect(fetcherState.fetches['existing-token']).toStrictEqual(existingFetchState)
+      expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+      expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
+    })
+
+    test('A primary fetch aborted WITHOUT a redirect reason (e.g. superseded/stale) still promotes normally — only redirects are retained', () => {
+      fetcherState.primaryFetch.successToken = 'existing-token'
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      existingPrimaryFetchState.abort = true
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBe('existing-primary-token')
+      expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+      expect(fetcherState.fetches['existing-token']).toBeUndefined()
+    })
+
+    test('A redirect-aborted fetch that is no longer the fetching token (superseded) is simply deleted, leaving the success token untouched', () => {
+      fetcherState.primaryFetch.successToken = 'existing-token'
+      fetcherState.primaryFetch.fetchingToken = 'a-newer-token'
+      existingPrimaryFetchState.abort = true
+      existingPrimaryFetchState.abortReason = 'redirect'
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBe('existing-token')
+      expect(fetcherState.primaryFetch.fetchingToken).toBe('a-newer-token')
+      expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
+    })
+
+    test('A redirect on first load (no previous success token) leaves nothing displayed rather than a page-less redirect', () => {
+      fetcherState.primaryFetch.successToken = undefined
+      fetcherState.primaryFetch.fetchingToken = 'existing-primary-token'
+      existingPrimaryFetchState.abort = true
+      existingPrimaryFetchState.abortReason = 'redirect'
+
+      fetcherActions.finishFetch({
+        token: 'existing-primary-token',
+      })
+
+      expect(fetcherState.primaryFetch.successToken).toBeUndefined()
+      expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+      expect(fetcherState.fetches['existing-primary-token']).toBeUndefined()
+    })
+  })
+})
+
+describe('Fetcher store action -> setDisplayedToken', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+
+  beforeEach(() => {
+    fetcherState = state()
+    fetcherState.fetches['old-displayed'] = reactive({ path: '/old', resources: ['/old'], isPrimary: true, timestamp: 0 })
+    fetcherState.fetches['new-displayed'] = reactive({ path: '/new', resources: ['/new'], isPrimary: true, timestamp: 0 })
+    fetcherActions = actions(fetcherState, getters(fetcherState))
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('Sets the displayed token', () => {
+    fetcherActions.setDisplayedToken('new-displayed')
+    expect(fetcherState.primaryFetch.displayedToken).toBe('new-displayed')
+  })
+
+  test('Cleans up the previously displayed fetch when it is replaced', () => {
+    fetcherState.primaryFetch.displayedToken = 'old-displayed'
+    fetcherActions.setDisplayedToken('new-displayed')
+    expect(fetcherState.primaryFetch.displayedToken).toBe('new-displayed')
+    expect(fetcherState.fetches['old-displayed']).toBeUndefined()
+  })
+
+  test('Does NOT clean up the previously displayed fetch if it is still the success token', () => {
+    fetcherState.primaryFetch.displayedToken = 'old-displayed'
+    fetcherState.primaryFetch.successToken = 'old-displayed'
+    fetcherActions.setDisplayedToken('new-displayed')
+    expect(fetcherState.fetches['old-displayed']).toBeDefined()
+  })
+})
+
+describe('Fetcher store action -> clearFetches', () => {
+  test('Resets the displayed token along with fetching and success tokens', () => {
+    const fetcherState = state()
+    fetcherState.primaryFetch.fetchingToken = 'f'
+    fetcherState.primaryFetch.successToken = 's'
+    fetcherState.primaryFetch.displayedToken = 'd'
+    fetcherState.fetches['f'] = reactive({ path: '/f', resources: [], isPrimary: true, timestamp: 0 })
+    const fetcherActions = actions(fetcherState, getters(fetcherState))
+    fetcherActions.clearFetches()
+    expect(fetcherState.primaryFetch.displayedToken).toBeUndefined()
+    expect(fetcherState.primaryFetch.fetchingToken).toBeUndefined()
+    expect(fetcherState.primaryFetch.successToken).toBeUndefined()
+  })
 })
 
 describe('Fetcher store action -> addFetchResource', () => {
@@ -476,11 +622,10 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'non-existent',
-      resources: ['/any'],
     })
     expect(logger.trace).toHaveBeenCalledTimes(1)
     expect(logger.trace).toHaveBeenCalledWith('The fetch chain token \'non-existent\' does not exist')
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toBeUndefined()
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBeUndefined()
   })
 
   test('If a manifest has not been defined for the fetch chain an error is thrown', () => {
@@ -488,7 +633,6 @@ describe('Fetcher store action -> finishManifestFetch', () => {
       fetcherActions.finishManifestFetch({
         type: FinishFetchManifestType.SUCCESS,
         token: 'existing-token-no-manifest',
-        resources: ['/any'],
       })
     }).toThrowError('Cannot set manifest status for \'existing-token-no-manifest\'. The manifest was never started.')
   })
@@ -497,10 +641,39 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     fetcherActions.finishManifestFetch({
       type: FinishFetchManifestType.SUCCESS,
       token: 'existing-token-with-manifest',
-      resources: ['/any'],
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
-    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resources).toStrictEqual(['/any'])
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBe(true)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth retains the raw tree and stores the flattened depth groups on the manifest', () => {
+    const resourceIris = [
+      { iri: '/parent-route', children: [{ iri: '/parent-page', children: [] }] },
+      { iri: '/child-route', children: [{ iri: '/child-page', children: [] }] },
+    ]
+    fetcherActions.setManifestIrisByDepth({
+      token: 'existing-token-with-manifest',
+      resourceIris,
+    })
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.resourceTree).toStrictEqual(resourceIris)
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.irisByDepth).toStrictEqual([
+      ['/parent-route', '/parent-page'],
+      ['/child-route', '/child-page'],
+    ])
+    expect(fetcherState.fetches['existing-token-with-manifest'].manifest.fetchComplete).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth throws if token does not exist', () => {
+    expect(() => {
+      fetcherActions.setManifestIrisByDepth({ token: 'non-existent', resourceIris: [] })
+    }).toThrowError('The fetch chain token \'non-existent\' does not exist')
+  })
+
+  test('setManifestIrisByDepth throws if manifest was never started', () => {
+    expect(() => {
+      fetcherActions.setManifestIrisByDepth({ token: 'existing-token-no-manifest', resourceIris: [] })
+    }).toThrowError('Cannot set manifest IRIs by depth for \'existing-token-no-manifest\'. The manifest was never started.')
   })
 
   test('Can set the error state on a manifest', () => {
@@ -512,5 +685,133 @@ describe('Fetcher store action -> finishManifestFetch', () => {
     })
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.path).toBe('/some-manifest-path')
     expect(fetcherState.fetches['existing-token-with-manifest'].manifest.error).toStrictEqual(newError.asObject)
+  })
+})
+
+describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / registerIriDepth / resetIriDepths)', () => {
+  let fetcherActions: CwaFetcherActionsInterface
+  let fetcherState: CwaFetcherStateInterface
+  let currentGetters: CwaFetcherGettersInterface
+
+  const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })
+
+  function setManifest(resourceIris: ReturnType<typeof depthNode>[]) {
+    fetcherActions.setManifestIrisByDepth({ token: 'existing-token', resourceIris })
+  }
+
+  beforeEach(() => {
+    fetcherState = state()
+    fetcherState.fetches['existing-token'] = reactive({
+      path: '/existing-path',
+      resources: [],
+      isPrimary: true,
+      timestamp: 0,
+      manifest: { path: '/some-manifest-path' },
+    })
+    currentGetters = getters(fetcherState)
+    fetcherActions = actions(fetcherState, currentGetters)
+  })
+
+  afterEach(() => {
+    ResourceTypeFromIri.setPathPrefix(undefined)
+    vi.clearAllMocks()
+  })
+
+  test('depth tracking is empty before any manifest is set', () => {
+    expect(fetcherState.iriDepths['/_/routes//topic-1']).toBeUndefined()
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth maps every IRI in each depth group to its depth index', () => {
+    setManifest([
+      depthNode(['/_/routes//topic-1', '/_/pages/parent-template', '/_/component_positions/parent-cp']),
+      depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template', '/_/component_positions/child-cp']),
+    ])
+    expect(fetcherState.iriDepths['/_/routes//topic-1']).toBe(0)
+    expect(fetcherState.iriDepths['/_/pages/parent-template']).toBe(0)
+    expect(fetcherState.iriDepths['/_/component_positions/parent-cp']).toBe(0)
+    expect(fetcherState.iriDepths['/_/routes//topic-1/chapter-one']).toBe(1)
+    expect(fetcherState.iriDepths['/_/pages/child-template']).toBe(1)
+    expect(fetcherState.iriDepths['/_/component_positions/child-cp']).toBe(1)
+    expect(fetcherState.iriDepths['/unknown']).toBeUndefined()
+  })
+
+  test('the path for each depth is derived from the ROUTE IRI in that depth group', () => {
+    setManifest([
+      depthNode(['/_/pages/parent-template', '/_/routes//topic-1']),
+      depthNode(['/_/routes//topic-1/chapter-one', '/_/pages/child-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/topic-1')
+    expect(fetcherState.depthPaths[1]).toBe('/topic-1/chapter-one')
+    expect(fetcherState.depthPaths[2]).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth replaces previous depth tracking data', () => {
+    setManifest([depthNode(['/_/routes//old', '/_/pages/old-page'])])
+    setManifest([depthNode(['/_/routes//new', '/_/pages/new-page'])])
+    expect(fetcherState.iriDepths['/_/pages/old-page']).toBeUndefined()
+    expect(fetcherState.iriDepths['/_/pages/new-page']).toBe(0)
+    expect(fetcherState.depthPaths[0]).toBe('/new')
+  })
+
+  test('a routeless parent depth uses the page data IRI of that depth as its path', () => {
+    setManifest([
+      depthNode(['/page_data/conference-1', '/_/pages/parent-template', '/_/component_groups/cg', '/_/component_positions/parent-cp']),
+      depthNode(['/_/routes//programme', '/_/pages/child-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/page_data/conference-1')
+    expect(fetcherState.depthPaths[1]).toBe('/programme')
+  })
+
+  test('a route IRI is preferred over a page data IRI listed before it in the same depth', () => {
+    setManifest([
+      depthNode(['/page_data/conference-1', '/_/routes//conference', '/_/pages/parent-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/conference')
+  })
+
+  test('the first page data IRI in the depth is used when a routeless depth has more than one', () => {
+    setManifest([
+      depthNode(['/_/pages/parent-template', '/page_data/first', '/page_data/second']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/page_data/first')
+  })
+
+  test('the page data IRI fallback keeps the api path prefix while a route path is stripped of it', () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    setManifest([
+      depthNode(['/_api/page_data/conference-1', '/_api/_/pages/parent-template']),
+      depthNode(['/_api/_/routes//programme', '/_api/_/pages/child-template']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBe('/_api/page_data/conference-1')
+    expect(fetcherState.depthPaths[1]).toBe('/programme')
+  })
+
+  test('a depth with neither a route nor a page data IRI has no path', () => {
+    setManifest([
+      depthNode(['/_/pages/parent-template', '/_/component_groups/cg']),
+    ])
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
+  })
+
+  test('registerIriDepth adds an IRI the manifest did not contain', () => {
+    fetcherActions.registerIriDepth({ iri: '/component/some-uuid', depth: 0 })
+    expect(fetcherState.iriDepths['/component/some-uuid']).toBe(0)
+  })
+
+  test('resetIriDepths clears all depth tracking', () => {
+    setManifest([depthNode(['/_/routes//topic-1', '/_/pages/parent'])])
+    fetcherActions.registerIriDepth({ iri: '/component/some-uuid', depth: 0 })
+    fetcherActions.resetIriDepths()
+    expect(fetcherState.iriDepths['/_/pages/parent']).toBeUndefined()
+    expect(fetcherState.iriDepths['/component/some-uuid']).toBeUndefined()
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
+  })
+
+  test('clearFetches clears depth tracking', () => {
+    setManifest([depthNode(['/_/routes//topic-1', '/_/pages/parent'])])
+    fetcherActions.clearFetches()
+    expect(fetcherState.iriDepths['/_/pages/parent']).toBeUndefined()
+    expect(fetcherState.depthPaths[0]).toBeUndefined()
   })
 })

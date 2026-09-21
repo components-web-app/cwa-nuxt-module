@@ -9,9 +9,10 @@ export default defineNuxtPlugin({
   name: 'cwa-plugin',
   enforce: 'post',
   dependsOn: ['pinia'],
-  setup() {
+  setup(nuxtApp) {
     const router = useRouter()
     const cwa = new Cwa(router, options, currentModulePackageInfo)
+    cwa.prerendered.value = !!nuxtApp.payload.prerenderedAt
     addRouteMiddleware('cwa-route-middleware', CwaRouteMiddleware, { global: true })
     return {
       provide: {

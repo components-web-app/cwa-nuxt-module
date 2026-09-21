@@ -3,7 +3,7 @@ import { beforeEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { consola as logger } from 'consola'
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -184,6 +184,111 @@ describe('Mercure -> init', () => {
     expect(mercure.handleMercureMessage).toHaveBeenCalledTimes(1)
     expect(mercure.handleMercureMessage).toHaveBeenCalledWith(messageEvent)
     expect(response).toBe('handleMercureMessageMock')
+  })
+})
+
+describe('Mercure -> connection loss and recovery (#286)', () => {
+  let mercure: Mercure
+
+  function setupConnected(currentIds: string[] = ['/_/routes//page']) {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': { hub: 'http://hub-url' },
+      },
+    })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+
+    mercure = createMercure()
+    vi.spyOn(mercure, 'hubUrl', 'get').mockReturnValue('http://hub-url')
+    vi.spyOn(mercure, 'closeMercure').mockImplementation(() => {})
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isServer: false, isClient: true }))
+
+    const resourcesStore = resourcesStoreDef.useStore()
+    resourcesStore.current = reactive({ currentIds, byId: {}, allIds: [] })
+    resourcesStore.saveResource = vi.fn()
+
+    const fetcher = new Fetcher()
+    fetcher.fetchResource = vi.fn((event: any) => Promise.resolve({ '@id': event.path, 'updated': true }))
+    mercure.setFetcher(fetcher)
+    mercure.setRequestCount(computed(() => 0))
+
+    mercure.init()
+    return { eventSource: EventSource.mock.results[0].value, resourcesStore, fetcher }
+  }
+
+  test('an onerror handler is attached and records the connection as lost', () => {
+    const { eventSource } = setupConnected()
+    expect(eventSource.onerror).toBeTypeOf('function')
+
+    eventSource.onerror(new Event('error'))
+    expect(mercureStoreDef.useStore().connected).toBe(false)
+  })
+
+  test('an onopen handler is attached and records the connection as up', () => {
+    const { eventSource } = setupConnected()
+    expect(eventSource.onopen).toBeTypeOf('function')
+
+    eventSource.onopen(new Event('open'))
+    expect(mercureStoreDef.useStore().connected).toBe(true)
+  })
+
+  test('reconnecting after a drop revalidates the current resources, staging them as new', async () => {
+    const { eventSource, resourcesStore, fetcher } = setupConnected(['/_/routes//page', '/_/pages/uuid'])
+
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).toHaveBeenCalledTimes(2)
+    expect(resourcesStore.saveResource).toHaveBeenCalledTimes(2)
+    for (const call of resourcesStore.saveResource.mock.calls) {
+      expect(call[0].isNew).toBe(true)
+    }
+  })
+
+  test('the FIRST connection does not revalidate - nothing has been missed yet', async () => {
+    const { eventSource, resourcesStore, fetcher } = setupConnected()
+
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).not.toHaveBeenCalled()
+    expect(resourcesStore.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('coming back online revalidates when the connection was lost', async () => {
+    const { eventSource, fetcher } = setupConnected()
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).toHaveBeenCalled()
+  })
+
+  test('coming back online while still connected does not refetch anything', async () => {
+    const { eventSource, fetcher } = setupConnected()
+    eventSource.onopen(new Event('open'))
+
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).not.toHaveBeenCalled()
+  })
+
+  test('revalidation with no current resources does nothing', async () => {
+    const { eventSource, fetcher } = setupConnected([])
+
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).not.toHaveBeenCalled()
   })
 })
 
@@ -379,6 +484,12 @@ describe('Mercure -> isMessageForCurrentResource', () => {
       },
     })
     expect(result).toBe(true)
+  })
+
+  test('returns false without throwing when data is null or has no @id', () => {
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: null as any })).toBe(false)
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: undefined as any })).toBe(false)
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: {} as any })).toBe(false)
   })
 
   test.each([

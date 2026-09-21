@@ -5,7 +5,7 @@ import { useCwa } from '#cwa/composables/cwa'
 export interface CwaResourceManagerTabOptions {
   name: string
   order?: number
-  disabled?: boolean
+  disabled?: boolean | Ref<boolean>
 }
 
 export interface CwaResourceManagerTabMeta extends Pick<CwaResourceManagerTabOptions, 'name' | 'order'> {

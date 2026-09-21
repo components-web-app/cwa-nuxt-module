@@ -8,7 +8,7 @@ import { FetcherStore } from '../../storage/stores/fetcher/fetcher-store'
 import Mercure from '../mercure'
 import ApiDocumentation from '../api-documentation'
 import { ResourcesStore } from '../../storage/stores/resources/resources-store'
-import { CwaResourceTypes } from '../../resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import Fetcher from './fetcher'
@@ -88,13 +88,13 @@ describe('Fetcher -> fetchRoute', () => {
 
   test.each([
     {
-      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/routes_manifest//some-route',
+      path: '/some-route', apiPath: '/_/routes//some-route', manifestPath: '/_/resource_manifest//some-route',
     },
     {
-      path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: undefined,
+      path: '/page_data/abcdefg', apiPath: '/page_data/abcdefg', manifestPath: '/_/resource_manifest/abcdefg',
     },
     {
-      path: '/_/pages/abcdefg', apiPath: '/_/pages/abcdefg', manifestPath: undefined,
+      path: '/_/pages/abcdefg', apiPath: '/_/pages/abcdefg', manifestPath: '/_/resource_manifest/abcdefg',
     },
   ])('If fetchRoute is called with the path $1', async ({ path, apiPath, manifestPath }) => {
     const result = await fetcher.fetchRoute({
@@ -257,7 +257,7 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finishFetchResource after fetch (with preload) is called if startFetch returns continue as true', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
@@ -287,8 +287,8 @@ describe('Fetcher -> fetchResource', () => {
     })
     expect(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetch.mock.invocationCallOrder[0])
 
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false, onlyIfNoExist: false })
-    expect(fetcher.fetchNestedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
+    expect(fetcher.fetchAssociatedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'any', noSave: false, onlyIfNoExist: false })
+    expect(fetcher.fetchAssociatedResources.mock.invocationCallOrder[0]).toBeGreaterThan(FetchStatusManager.mock.instances[0].finishFetchResource.mock.invocationCallOrder[0])
     expect(result).toStrictEqual({ some: 'resource' })
   })
 
@@ -303,7 +303,7 @@ describe('Fetcher -> fetchResource', () => {
   })
 
   test('finish fetch is called if no previous token is provided', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
 
     let finishResolved = false
@@ -324,14 +324,14 @@ describe('Fetcher -> fetchResource', () => {
     expect(FetchStatusManager.mock.instances[0].finishFetch).toHaveBeenCalledWith({
       token: 'new-token',
     })
-    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchNestedResources.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].finishFetch.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.fetchAssociatedResources.mock.invocationCallOrder[0])
 
     expect(result).toStrictEqual({ some: 'resource' })
     expect(finishResolved).toBe(true)
   })
 
   test('fetch status manager finishFetchResource is called with noSave', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
@@ -352,11 +352,11 @@ describe('Fetcher -> fetchResource', () => {
         '@id': '/some-resource',
       },
     })
-    expect(fetcher.fetchNestedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true, onlyIfNoExist: false })
+    expect(fetcher.fetchAssociatedResources).toBeCalledWith({ resource: { some: 'resource' }, token: 'token', noSave: true, onlyIfNoExist: false })
   })
 
   test('if shallowFetch is passed, nested resources should not be fetched', async () => {
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
     const fetchResourceEvent = {
       path: '/new-path',
@@ -364,21 +364,52 @@ describe('Fetcher -> fetchResource', () => {
       token: 'token',
     }
     await fetcher.fetchResource(fetchResourceEvent)
-    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+    expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
+  })
+
+  test('if manifestPath is passed, fetchAssociatedResources is called only after the manifest promise resolves', async () => {
+    let resolveManifest!: () => void
+    const manifestPromise = new Promise<void>(resolve => (resolveManifest = resolve))
+    vi.spyOn(fetcher, 'fetchManifest').mockReturnValue(manifestPromise)
+
+    let associatedCalledAt = 0
+    let tick = 0
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {
+      associatedCalledAt = ++tick
+      return Promise.resolve([])
+    })
+
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))
+
+    const fetchPromise = fetcher.fetchResource({
+      path: '/_/routes//leaf',
+      token: 'token',
+      manifestPath: '/_/resource_manifest//leaf',
+    })
+
+    await Promise.resolve()
+    const manifestResolvedAt = ++tick
+    resolveManifest()
+
+    await fetchPromise
+
+    expect(fetcher.fetchManifest).toHaveBeenCalled()
+    expect(fetcher.fetchAssociatedResources).toHaveBeenCalled()
+    expect(associatedCalledAt).toBeGreaterThan(manifestResolvedAt)
   })
 
   test('if the primary response is a redirect, nested fetches should not occur and the fetch should be aborted', async () => {
     vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_/routes//path')
-    vi.spyOn(fetcher, 'fetchNestedResources').mockImplementation(() => {})
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ '@id': '/_/routes//path', 'redirectPath': '/my-redirect' }))
     const fetchResourceEvent = {
       path: '/_/routes//path',
       token: 'token',
     }
     await fetcher.fetchResource(fetchResourceEvent)
-    expect(fetcher.fetchNestedResources).not.toHaveBeenCalled()
+    expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledTimes(1)
-    expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token')
+    expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token', 'redirect')
   })
 })
 
@@ -447,7 +478,7 @@ describe('Fetcher -> fetchManifest', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: ['/resolve-resource'],
+              resource_iris: [{ iri: '/resolve-resource', children: [] }],
             },
           })
         }, 1)
@@ -467,9 +498,42 @@ describe('Fetcher -> fetchManifest', () => {
     expect(fetcher.fetchBatch).not.toHaveBeenCalled()
     await delay(2)
     expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({ resourceIris: [{ iri: '/resolve-resource', children: [] }], token: 'any' })
     expect(fetcher.fetchBatch).toHaveBeenCalledTimes(1)
     expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/resolve-resource'], token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mock.invocationCallOrder[0]).lessThan(FetchStatusManager.mock.instances[0].setManifestIrisByDepth.mock.invocationCallOrder[0])
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth.mock.invocationCallOrder[0]).lessThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch.mock.invocationCallOrder[0]).greaterThan(fetcher.fetchBatch.mock.invocationCallOrder[0])
+  })
+
+  test('if token is no longer current when manifest response arrives, setManifestIrisByDepth and fetchBatch are not called', async () => {
+    FetchStatusManager.mock.instances[0].isCurrentFetchingToken.mockImplementation(() => false)
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      const response = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ _data: { resource_iris: [{ iri: '/resolve-resource', children: [] }] } })
+        }, 1)
+      })
+      return { response }
+    })
+
+    await fetcher.fetchResource({
+      path: '/new-path',
+      token: 'any',
+      manifestPath: '/my-manifest',
+    })
+    await delay(2)
+
+    expect(FetchStatusManager.mock.instances[0].isCurrentFetchingToken).toHaveBeenCalledWith('any')
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).not.toHaveBeenCalled()
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
+      token: 'any',
+      type: FinishFetchManifestType.SUCCESS,
+    })
   })
 
   test('We finish the manifest status when completed', async () => {
@@ -481,7 +545,7 @@ describe('Fetcher -> fetchManifest', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: ['/manifest-resource-iri'],
+              resource_iris: [{ iri: '/manifest-resource-iri', children: [] }],
             },
           })
         }, 1)
@@ -498,8 +562,49 @@ describe('Fetcher -> fetchManifest', () => {
     }
     await fetcher.fetchResource(fetchResourceEvent)
     await delay(2)
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({
+      resourceIris: [{ iri: '/manifest-resource-iri', children: [] }],
+      token: 'any',
+    })
     expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
-      resources: ['/manifest-resource-iri'],
+      token: 'any',
+      type: FinishFetchManifestType.SUCCESS,
+    })
+  })
+
+  test('fetchBatch receives every IRI flattened across depth trees and their nested children', async () => {
+    const resourceTree = [
+      { iri: '/routes/parent', children: [
+        { iri: '/pages/parent-template', children: [
+          { iri: '/component_groups/cg', children: [{ iri: '/component/hero', children: [] }] },
+        ] },
+      ] },
+      { iri: '/routes/child', children: [{ iri: '/pages/child-template', children: [] }] },
+    ]
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path !== '/my-manifest') {
+        return Promise.resolve()
+      }
+      const response = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ _data: { resource_iris: resourceTree } })
+        }, 1)
+      })
+      return { response }
+    })
+
+    await fetcher.fetchResource({ path: '/new-path', token: 'any', manifestPath: '/my-manifest' })
+    await delay(2)
+
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      paths: ['/routes/parent', '/pages/parent-template', '/component_groups/cg', '/component/hero', '/routes/child', '/pages/child-template'],
+      token: 'any',
+    })
+    expect(FetchStatusManager.mock.instances[0].setManifestIrisByDepth).toHaveBeenCalledWith({
+      resourceIris: resourceTree,
+      token: 'any',
+    })
+    expect(FetchStatusManager.mock.instances[0].finishManifestFetch).toHaveBeenCalledWith({
       token: 'any',
       type: FinishFetchManifestType.SUCCESS,
     })
@@ -634,6 +739,8 @@ describe('Fetcher -> createRequestHeaders', () => {
   })
 
   afterEach(() => {
+    // module-level singleton — must not leak the prefix into other tests or spec files
+    ResourceTypeFromIri.setPathPrefix(undefined)
     vi.clearAllMocks()
   })
 
@@ -655,9 +762,45 @@ describe('Fetcher -> createRequestHeaders', () => {
       await fetcher.fetchResource(fetchResourceEvent)
       expect(fetcher.createRequestHeaders).toReturnWith(headers)
     })
+
+  test('uses depth-aware path when IRI has a known depth and that depth has a path', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockImplementation((iri: string) => iri === '/some-path' ? 0 : undefined)
+    FetchStatusManager.mock.instances[0].getPathForDepth.mockImplementation((depth: number) => depth === 0 ? '/parent-route-path' : undefined)
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/parent-route-path', preload: undefined })
+  })
+
+  test('falls back to primaryFetchPath when getDepthForIri returns undefined', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/primary-fetch-path', preload: undefined })
+  })
+
+  test('falls back to primaryFetchPath when getPathForDepth returns undefined for a known depth', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(0)
+    FetchStatusManager.mock.instances[0].getPathForDepth.mockReturnValue(undefined)
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/primary-fetch-path', preload: undefined })
+  })
+
+  test('an API url with no path prefix still resolves the /_/routes/ prefix for the path header', async () => {
+    ResourceTypeFromIri.setPathPrefix('/')
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_/routes//conference')
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/conference', preload: undefined })
+  })
+
+  test('an API url with a path prefix resolves the prefixed /_/routes/ prefix for the path header', async () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    vi.spyOn(FetchStatusManager.mock.instances[0], 'primaryFetchPath', 'get').mockReturnValue('/_api/_/routes//conference')
+    await fetcher.fetchResource({ path: '/some-path' })
+    expect(fetcher.createRequestHeaders).toReturnWith({ path: '/conference', preload: undefined })
+  })
 })
 
-describe('Fetcher -> fetchNestedResources', () => {
+describe('Fetcher -> fetchAssociatedResources', () => {
   let fetcher: Fetcher
 
   beforeEach(() => {
@@ -759,6 +902,103 @@ describe('Fetcher -> fetchNestedResources', () => {
       token: 'any',
     })
   })
+
+  test('extracts @id from embedded objects in array properties instead of pushing the raw object', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/layouts/layout-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'componentGroups': [
+        { '@id': '/_/component_groups/cg-1', 'location': 'top', 'componentPositions': [] },
+        { '@id': '/_/component_groups/cg-2', 'location': 'bottom', 'componentPositions': [] },
+      ] as any,
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/component_groups/cg-1', '/_/component_groups/cg-2'],
+      token: 'any',
+    })
+  })
+
+  test('fetches parentPage IRI when present on a PAGE resource', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/child-page',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'parentPage': '/_/pages/parent-page',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/pages/parent-page'],
+      token: 'any',
+    })
+  })
+
+  test('fetches parentPageData IRI when present on a PAGE_DATA resource', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/page_data/child',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'page': '/_/pages/child-page',
+      'parentPageData': '/page_data/parent',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/pages/child-page', '/page_data/parent'],
+      token: 'any',
+    })
+  })
+
+  test('registers depth of parent resource on each discovered nested IRI when parent depth is known', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockImplementation((iri: string) => iri === '/_/pages/page-id' ? 0 : undefined)
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'layout': '/_/layouts/layout-resource',
+      'componentGroups': ['/_/component_groups/cg-1'],
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/_/pages/page-id', token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].registerIriDepth).toHaveBeenCalledWith('/_/layouts/layout-resource', 0)
+    expect(FetchStatusManager.mock.instances[0].registerIriDepth).toHaveBeenCalledWith('/_/component_groups/cg-1', 0)
+  })
+
+  test('does not call registerIriDepth when parent resource has no known depth', async () => {
+    FetchStatusManager.mock.instances[0].getDepthForIri.mockReturnValue(undefined)
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'layout': '/_/layouts/layout-resource',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/_/pages/page-id', token: 'any' })
+    expect(FetchStatusManager.mock.instances[0].registerIriDepth).not.toHaveBeenCalled()
+  })
+
+  test('does not fetch parentPage when field is absent on a PAGE resource', async () => {
+    const mockResource: CwaResource = {
+      '@id': '/_/pages/page-id',
+      '@type': 'Resource',
+      '_metadata': { persisted: true },
+      'layout': '/_/layouts/layout-resource',
+    }
+    FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => mockResource)
+    await fetcher.fetchResource({ path: '/new-path', token: 'any' })
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({
+      noSave: false,
+      paths: ['/_/layouts/layout-resource'],
+      token: 'any',
+    })
+  })
 })
 
 describe('Fetcher -> fetchBatch', () => {
@@ -791,7 +1031,10 @@ describe('Fetcher -> fetchBatch', () => {
         setTimeout(() => {
           resolve({
             _data: {
-              resource_iris: ['/resolve-resource', '/resolve-another-resource'],
+              resource_iris: [
+                { iri: '/resolve-resource', children: [] },
+                { iri: '/resolve-another-resource', children: [] },
+              ],
             },
           })
         }, 1)

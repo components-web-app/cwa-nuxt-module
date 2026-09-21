@@ -1,0 +1,3000 @@
+{
+  "name": "topic-1-nested",
+  "recordedAt": "",
+  "entries": [
+    {
+      "method": "GET",
+      "path": "/_api/_/routes//topic-1",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Route",
+        "@id": "/_api/_/routes//topic-1",
+        "@type": "Route",
+        "path": "/topic-1",
+        "name": "topic-1",
+        "redirect": "/_api/_/routes//topic-1/chapter-one",
+        "redirectedFrom": [],
+        "page": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+        "pageData": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "associatedResources": {
+          "redirect": "/topic-1/chapter-one",
+          "page": "topic-1-chapter-1",
+          "pageData": "Topic 1",
+          "pageDataType": "App\\Entity\\NestedPageData"
+        },
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/f0a1c248b7b32efd6d1f",
+          "persisted": true
+        },
+        "redirectPath": "/topic-1/chapter-one"
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/resource_manifest//topic-1",
+      "status": 200,
+      "body": {
+        "resource_iris": [
+          {
+            "iri": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+            "children": [
+              {
+                "iri": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "iri": "/_api/_/routes//topic-1",
+                "children": []
+              }
+            ]
+          },
+          {
+            "iri": "/_api/_/routes//topic-1",
+            "children": [
+              {
+                "iri": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/842175a8-4fa2-44cb-8253-8cc4ae72332b",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/cc547e9e-8320-4a7d-b665-2ddd3a7faa2f",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/fe10e044-234c-4759-b82d-6d298bb89617",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "iri": "/_api/_/routes//topic-1/chapter-one",
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "iri": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+                "children": [
+                  {
+                    "iri": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+                        "children": [
+                          {
+                            "iri": "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f",
+                            "children": [
+                              {
+                                "iri": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "iri": "/topic-1/chapter-one",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/NestedPageData",
+        "@id": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+        "@type": "NestedPageData",
+        "introContent": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+        "page": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+        "route": "/_api/_/routes//topic-1",
+        "title": "Topic 1",
+        "metaDescription": "Nested topic 1 demonstrating static child pages",
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-06-21T00:21:04+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/39ab386886b4a74f25a8",
+          "pageDataMetadata": {
+            "@context": "/_api/contexts/PageDataMetadata",
+            "@id": "/_api/_/page_data_metadatas/App%5CEntity%5CNestedPageData",
+            "@type": "PageDataMetadata",
+            "resourceClass": "App\\Entity\\NestedPageData",
+            "properties": [
+              {
+                "@type": "PageDataPropertyMetadata",
+                "@id": "/_api/.well-known/genid/e7ed320321af312a11f9",
+                "property": "introContent",
+                "componentShortName": "HtmlContent"
+              }
+            ]
+          },
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Page",
+        "@id": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+        "@type": "Page",
+        "layout": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+        "reference": "nested-topic-template",
+        "isTemplate": true,
+        "componentGroups": [
+          "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec"
+        ],
+        "uiComponent": "NestedTopicTemplate",
+        "title": "Unnamed Page",
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-07-08T22:48:49+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/b9d4bc325a9e65c21680",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Layout",
+        "@id": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+        "@type": "Layout",
+        "reference": "main",
+        "pages": [
+          {
+            "@id": "/_api/_/pages/4abed7fa-56ed-410d-9c22-dfe7e98bf6d7",
+            "@type": "Page",
+            "uiComponent": "PrimaryPageTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/90104c0f8f0b9a945c48",
+              "persisted": true
+            }
+          },
+          {
+            "@id": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+            "@type": "Page",
+            "uiComponent": "NestedTopicTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/94691174eca43ca0a7a9",
+              "persisted": true
+            }
+          },
+          {
+            "@id": "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+            "@type": "Page",
+            "uiComponent": "PrimaryPageTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/b8fd793849d46159d6a7",
+              "persisted": true
+            }
+          },
+          {
+            "@id": "/_api/_/pages/02e2944f-ffd4-4839-8041-58a1c3cecbd0",
+            "@type": "Page",
+            "uiComponent": "PrimaryPageTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/544367754adc7a3d6eb4",
+              "persisted": true
+            }
+          },
+          {
+            "@id": "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+            "@type": "Page",
+            "uiComponent": "PrimaryPageTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/e3b795fc21a69d711185",
+              "persisted": true
+            }
+          },
+          {
+            "@id": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+            "@type": "Page",
+            "uiComponent": "NestedSubPageTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/92722850ec91d64552ef",
+              "persisted": true
+            }
+          },
+          {
+            "@id": "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+            "@type": "Page",
+            "uiComponent": "NestedSubPageTemplate",
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/a6385fb7728b2caa9f98",
+              "persisted": true
+            }
+          }
+        ],
+        "componentGroups": [
+          "/_api/_/component_groups/7cccb80e-8386-435b-bb23-aa019e1dff89",
+          "/_api/_/component_groups/49552a4f-7d20-40b4-995a-a43a194b0eb8"
+        ],
+        "createdAt": "2026-07-08T15:57:54+00:00",
+        "modifiedAt": "2026-07-08T16:10:35+00:00",
+        "uiComponent": "CwaLayoutPrimary",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/53378931c26b4c9b7cea",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentGroup",
+        "@id": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+        "@type": "ComponentGroup",
+        "reference": "primary_/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+        "location": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+        "layouts": [],
+        "pages": [
+          "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad"
+        ],
+        "components": [],
+        "componentPositions": [
+          "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f"
+        ],
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-07-08T22:48:49+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/97dcc407c868a68fbfd1",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+        "sortValue": 10,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/37bd90bc0ccbf991657a",
+          "isDynamicPosition": true,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/HtmlContent",
+        "@id": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+        "@type": "HtmlContent",
+        "html": "<p>Introduction to Topic 1.</p><p>Chapters: <a href=\"/topic-1/chapter-one\">Chapter One</a> | <a href=\"/topic-1/chapter-two\">Chapter Two</a></p><p>Navigate to a child URL to see nested rendering.</p>",
+        "publishedAt": "2026-06-21T00:21:04+00:00",
+        "componentGroups": [],
+        "componentPositions": [],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/a44c9492afdda42814f7",
+          "persisted": true,
+          "publishable": {
+            "@context": {
+              "@vocab": "https://localhost/_api/docs.jsonld#",
+              "hydra": "http://www.w3.org/ns/hydra/core#",
+              "published": "ResourcePublishableMetadata/published",
+              "publishedAt": "ResourcePublishableMetadata/publishedAt",
+              "locationCount": "ResourcePublishableMetadata/locationCount"
+            },
+            "@type": "ResourcePublishableMetadata",
+            "@id": "/_api/.well-known/genid/c75f73e6440958e48058",
+            "published": true,
+            "publishedAt": "2026-06-21T00:21:04.000+00:00",
+            "locationCount": 1
+          }
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Page",
+        "@id": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+        "@type": "Page",
+        "layout": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+        "reference": "topic-1-chapter-1",
+        "isTemplate": false,
+        "componentGroups": [
+          "/_api/_/component_groups/842175a8-4fa2-44cb-8253-8cc4ae72332b"
+        ],
+        "uiComponent": "NestedSubPageTemplate",
+        "route": "/_api/_/routes//topic-1/chapter-one",
+        "parentPageData": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+        "title": "Chapter One",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-07-08T22:48:49+00:00",
+        "parentPageRoute": "/_api/_/routes//topic-1",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/b617772c3aee71a8a3bf",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_groups/842175a8-4fa2-44cb-8253-8cc4ae72332b",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentGroup",
+        "@id": "/_api/_/component_groups/842175a8-4fa2-44cb-8253-8cc4ae72332b",
+        "@type": "ComponentGroup",
+        "reference": "primary_/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+        "location": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+        "layouts": [],
+        "pages": [
+          "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7"
+        ],
+        "components": [],
+        "componentPositions": [
+          "/_api/_/component_positions/cc547e9e-8320-4a7d-b665-2ddd3a7faa2f"
+        ],
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-07-08T22:48:49+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/4288c5a1df5fa5fce0ea",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/cc547e9e-8320-4a7d-b665-2ddd3a7faa2f",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/cc547e9e-8320-4a7d-b665-2ddd3a7faa2f",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/842175a8-4fa2-44cb-8253-8cc4ae72332b",
+        "component": "/_api/component/html_contents/fe10e044-234c-4759-b82d-6d298bb89617",
+        "sortValue": 10,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/13cbfe46a7a3bc825778",
+          "staticComponent": "/_api/component/html_contents/fe10e044-234c-4759-b82d-6d298bb89617",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/html_contents/fe10e044-234c-4759-b82d-6d298bb89617",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/HtmlContent",
+        "@id": "/_api/component/html_contents/fe10e044-234c-4759-b82d-6d298bb89617",
+        "@type": "HtmlContent",
+        "html": "<p><strong>Chapter One</strong> — a static child <code>Page</code> of Topic 1's <code>NestedPageData</code>. The topic template renders at depth 0; this page renders at depth 1 via <code>&lt;CwaPage /&gt;</code>.</p>",
+        "publishedAt": "2026-06-21T00:21:05+00:00",
+        "componentGroups": [],
+        "componentPositions": [
+          "/_api/_/component_positions/cc547e9e-8320-4a7d-b665-2ddd3a7faa2f"
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/080197b4bef322448e8a",
+          "persisted": true,
+          "publishable": {
+            "@context": {
+              "@vocab": "https://localhost/_api/docs.jsonld#",
+              "hydra": "http://www.w3.org/ns/hydra/core#",
+              "published": "ResourcePublishableMetadata/published",
+              "publishedAt": "ResourcePublishableMetadata/publishedAt",
+              "locationCount": "ResourcePublishableMetadata/locationCount"
+            },
+            "@type": "ResourcePublishableMetadata",
+            "@id": "/_api/.well-known/genid/4246e938203aa114295d",
+            "published": true,
+            "publishedAt": "2026-06-21T00:21:05.000+00:00",
+            "locationCount": 1
+          }
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/routes//topic-1/chapter-one",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Route",
+        "@id": "/_api/_/routes//topic-1/chapter-one",
+        "@type": "Route",
+        "path": "/topic-1/chapter-one",
+        "name": "chapter-one",
+        "redirectedFrom": [
+          {
+            "@type": "Route",
+            "@id": "/_api/_/routes//topic-1",
+            "path": "/topic-1",
+            "name": "topic-1",
+            "redirect": "/_api/_/routes//topic-1/chapter-one",
+            "redirectedFrom": [],
+            "pageData": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+            "createdAt": "2026-06-21T00:21:05+00:00",
+            "modifiedAt": "2026-06-21T00:21:05+00:00",
+            "associatedResources": {
+              "redirect": "/topic-1/chapter-one",
+              "page": null,
+              "pageData": "Topic 1",
+              "pageDataType": "App\\Entity\\NestedPageData"
+            },
+            "_metadata": {
+              "@type": "ResourceMetadata",
+              "@id": "/_api/.well-known/genid/489d8b03e00db165a007",
+              "persisted": true
+            }
+          }
+        ],
+        "page": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "associatedResources": {
+          "redirect": null,
+          "page": "topic-1-chapter-1",
+          "pageData": null,
+          "pageDataType": null
+        },
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/e9ef2cd49cfcaf703f40",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/topic-1/chapter-one",
+      "status": 200,
+      "body": null,
+      "headers": {
+        "link": "</docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", </.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/resource_manifest//topic-1/chapter-one",
+      "status": 200,
+      "body": {
+        "resource_iris": [
+          {
+            "iri": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+            "children": [
+              {
+                "iri": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "iri": "/_api/_/routes//topic-1",
+                "children": []
+              }
+            ]
+          },
+          {
+            "iri": "/_api/_/routes//topic-1/chapter-one",
+            "children": [
+              {
+                "iri": "/_api/_/pages/ac96cf91-d4d5-4b27-af39-9e0d073e60f7",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/842175a8-4fa2-44cb-8253-8cc4ae72332b",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/cc547e9e-8320-4a7d-b665-2ddd3a7faa2f",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/fe10e044-234c-4759-b82d-6d298bb89617",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/routes//topic-1/chapter-two",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Route",
+        "@id": "/_api/_/routes//topic-1/chapter-two",
+        "@type": "Route",
+        "path": "/topic-1/chapter-two",
+        "name": "chapter-two",
+        "redirectedFrom": [],
+        "page": "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "associatedResources": {
+          "redirect": null,
+          "page": "topic-1-chapter-2",
+          "pageData": null,
+          "pageDataType": null
+        },
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/1f4bd23c9cc070e6f5b9",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/resource_manifest//topic-1/chapter-two",
+      "status": 200,
+      "body": {
+        "resource_iris": [
+          {
+            "iri": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+            "children": [
+              {
+                "iri": "/_api/_/pages/a80262b4-4f1f-4358-ad64-b282dc1897ad",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/21f073f0-0402-41e7-94fc-b411498653ec",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/8c9bff6d-7c84-4f1f-b736-f17e0acdb47f",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/b1606fb7-823a-4b8e-b296-f7f78f84d903",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "iri": "/_api/_/routes//topic-1",
+                "children": []
+              }
+            ]
+          },
+          {
+            "iri": "/_api/_/routes//topic-1/chapter-two",
+            "children": [
+              {
+                "iri": "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/9ada415b-dd74-465e-92f3-738583cd8efd",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/a3c2b067-fa9f-4a5a-97ea-b888a330b61b",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/6454f1bd-d5d7-4a13-8c2c-fbe492fd3bf6",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Page",
+        "@id": "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+        "@type": "Page",
+        "layout": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+        "reference": "topic-1-chapter-2",
+        "isTemplate": false,
+        "componentGroups": [
+          "/_api/_/component_groups/9ada415b-dd74-465e-92f3-738583cd8efd"
+        ],
+        "uiComponent": "NestedSubPageTemplate",
+        "route": "/_api/_/routes//topic-1/chapter-two",
+        "parentPageData": "/_api/page_data/nested_page_datas/44a4846b-38a8-44f4-bec5-630cd82cee76",
+        "title": "Chapter Two",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-07-08T23:36:15+00:00",
+        "parentPageRoute": "/_api/_/routes//topic-1",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/d005f2f5362e70a0245d",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_groups/9ada415b-dd74-465e-92f3-738583cd8efd",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentGroup",
+        "@id": "/_api/_/component_groups/9ada415b-dd74-465e-92f3-738583cd8efd",
+        "@type": "ComponentGroup",
+        "reference": "primary_/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+        "location": "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd",
+        "layouts": [],
+        "pages": [
+          "/_api/_/pages/27dc9bc0-49a3-4395-a414-4cc9585236cd"
+        ],
+        "components": [],
+        "componentPositions": [
+          "/_api/_/component_positions/a3c2b067-fa9f-4a5a-97ea-b888a330b61b"
+        ],
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-07-08T23:36:15+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/b169ba6ff9aea2361630",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/a3c2b067-fa9f-4a5a-97ea-b888a330b61b",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/a3c2b067-fa9f-4a5a-97ea-b888a330b61b",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/9ada415b-dd74-465e-92f3-738583cd8efd",
+        "component": "/_api/component/html_contents/6454f1bd-d5d7-4a13-8c2c-fbe492fd3bf6",
+        "sortValue": 10,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/8a7e25f5d8c13b3affd1",
+          "staticComponent": "/_api/component/html_contents/6454f1bd-d5d7-4a13-8c2c-fbe492fd3bf6",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/html_contents/6454f1bd-d5d7-4a13-8c2c-fbe492fd3bf6",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/HtmlContent",
+        "@id": "/_api/component/html_contents/6454f1bd-d5d7-4a13-8c2c-fbe492fd3bf6",
+        "@type": "HtmlContent",
+        "html": "<p><strong>Chapter Two</strong> — a static child <code>Page</code> of Topic 1's <code>NestedPageData</code>. The topic template renders at depth 0; this page renders at depth 1 via <code>&lt;CwaPage /&gt;</code>.</p>",
+        "publishedAt": "2026-06-21T00:21:05+00:00",
+        "componentGroups": [],
+        "componentPositions": [
+          "/_api/_/component_positions/a3c2b067-fa9f-4a5a-97ea-b888a330b61b"
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/344455136811dcf477fe",
+          "persisted": true,
+          "publishable": {
+            "@context": {
+              "@vocab": "https://localhost/_api/docs.jsonld#",
+              "hydra": "http://www.w3.org/ns/hydra/core#",
+              "published": "ResourcePublishableMetadata/published",
+              "publishedAt": "ResourcePublishableMetadata/publishedAt",
+              "locationCount": "ResourcePublishableMetadata/locationCount"
+            },
+            "@type": "ResourcePublishableMetadata",
+            "@id": "/_api/.well-known/genid/9531de40b7b09b7e50af",
+            "published": true,
+            "publishedAt": "2026-06-21T00:21:05.000+00:00",
+            "locationCount": 1
+          }
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/routes//",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Route",
+        "@id": "/_api/_/routes//",
+        "@type": "Route",
+        "path": "/",
+        "name": "home-page",
+        "redirectedFrom": [],
+        "page": "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "associatedResources": {
+          "redirect": null,
+          "page": "home",
+          "pageData": null,
+          "pageDataType": null
+        },
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/5c15c3e23e63e40de953",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/resource_manifest//",
+      "status": 200,
+      "body": {
+        "resource_iris": [
+          {
+            "iri": "/_api/_/routes//",
+            "children": [
+              {
+                "iri": "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/b79748d0-14df-4d02-8f95-df427583b296",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/f9b9f1f6-df05-4667-a971-94c7be42a368",
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "iri": "/_api/_/component_positions/3b1c09db-ed51-438b-8974-1c9ece2b6ce4",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/e7a42038-1a43-4ede-9f56-8f6c1c97d456",
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "iri": "/_api/_/component_positions/df47ca3b-ae20-4309-b73f-cd52d65ea22a",
+                        "children": [
+                          {
+                            "iri": "/_api/component/images/3520e0ba-e646-47e4-aa6b-68a706fa1122",
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "iri": "/_api/_/component_positions/d64f01ec-d70e-4f30-87a9-e54b907d9873",
+                        "children": [
+                          {
+                            "iri": "/_api/component/html_contents/2de9db6f-1268-4698-85bb-e00e56cb5f7f",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Page",
+        "@id": "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+        "@type": "Page",
+        "layout": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+        "reference": "home",
+        "isTemplate": false,
+        "componentGroups": [
+          "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490"
+        ],
+        "uiComponent": "PrimaryPageTemplate",
+        "route": "/_api/_/routes//",
+        "title": "Welcome to CWA",
+        "metaDescription": "A demo CWA website",
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-07-08T23:36:27+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/39963f4bf45482fd2bb7",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentGroup",
+        "@id": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+        "@type": "ComponentGroup",
+        "reference": "primary_/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+        "location": "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206",
+        "layouts": [],
+        "pages": [
+          "/_api/_/pages/3d594703-c764-4624-8c12-9695d02ef206"
+        ],
+        "components": [],
+        "componentPositions": [
+          "/_api/_/component_positions/b79748d0-14df-4d02-8f95-df427583b296",
+          "/_api/_/component_positions/3b1c09db-ed51-438b-8974-1c9ece2b6ce4",
+          "/_api/_/component_positions/df47ca3b-ae20-4309-b73f-cd52d65ea22a",
+          "/_api/_/component_positions/d64f01ec-d70e-4f30-87a9-e54b907d9873"
+        ],
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-07-08T23:36:27+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/fb9071853bda16e21afe",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/b79748d0-14df-4d02-8f95-df427583b296",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/b79748d0-14df-4d02-8f95-df427583b296",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+        "component": "/_api/component/html_contents/f9b9f1f6-df05-4667-a971-94c7be42a368",
+        "sortValue": 10,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/9865d0a19c21d05bda97",
+          "staticComponent": "/_api/component/html_contents/f9b9f1f6-df05-4667-a971-94c7be42a368",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/html_contents/f9b9f1f6-df05-4667-a971-94c7be42a368",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/HtmlContent",
+        "@id": "/_api/component/html_contents/f9b9f1f6-df05-4667-a971-94c7be42a368",
+        "@type": "HtmlContent",
+        "html": "<h2>Tailored for Growth</h2>\n\n<p>Security, performance, and usability drive the foundation of the <a href=\"https://cwa.rocks\">link me up Scotty</a> platform, ensuring peace of mind for clients and their users. Performance optimization is built-in, including server-side rendering and responsive design out of the <a href=\"https://cwa.rocks\">here is a link</a> box.</p>\n\n<h2>Effortless Content Management</h2>\n\n<p>From <a href=\"https://cwa.rocks\">linky mc <a href=\"https://cwa.rocks\">link me up Scotty</a> link face</a> rapid deployment to ongoing iteration, our system enables teams to manage content, customer interactions, and analytics — all from one place.</p>",
+        "publishedAt": "2026-06-21T00:21:04+00:00",
+        "componentGroups": [],
+        "componentPositions": [
+          "/_api/_/component_positions/b79748d0-14df-4d02-8f95-df427583b296"
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/86c358216692a66c488c",
+          "persisted": true,
+          "publishable": {
+            "@context": {
+              "@vocab": "https://localhost/_api/docs.jsonld#",
+              "hydra": "http://www.w3.org/ns/hydra/core#",
+              "published": "ResourcePublishableMetadata/published",
+              "publishedAt": "ResourcePublishableMetadata/publishedAt",
+              "locationCount": "ResourcePublishableMetadata/locationCount"
+            },
+            "@type": "ResourcePublishableMetadata",
+            "@id": "/_api/.well-known/genid/76e32067411b1c8b8924",
+            "published": true,
+            "publishedAt": "2026-06-21T00:21:04.000+00:00",
+            "locationCount": 1
+          }
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/3b1c09db-ed51-438b-8974-1c9ece2b6ce4",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/3b1c09db-ed51-438b-8974-1c9ece2b6ce4",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+        "component": "/_api/component/html_contents/e7a42038-1a43-4ede-9f56-8f6c1c97d456",
+        "sortValue": 20,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/0badf6f2093f1769c832",
+          "staticComponent": "/_api/component/html_contents/e7a42038-1a43-4ede-9f56-8f6c1c97d456",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/html_contents/e7a42038-1a43-4ede-9f56-8f6c1c97d456",
+      "status": 404,
+      "body": {
+        "@context": "/_api/contexts/Error",
+        "@id": "/_api/errors/404",
+        "@type": "Error",
+        "title": "An error occurred",
+        "detail": "Not Found",
+        "status": 404,
+        "type": "/errors/404",
+        "description": "Not Found",
+        "trace": [
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Validator/State/ParameterValidatorProvider.php",
+            "line": 102,
+            "function": "provide",
+            "class": "ApiPlatform\\State\\Provider\\ReadProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Security/State/AccessCheckerProvider.php",
+            "line": 68,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Validator\\State\\ParameterValidatorProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Bundle/SwaggerUi/SwaggerUiProvider.php",
+            "line": 50,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Security\\State\\AccessCheckerProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Security/State/AccessCheckerProvider.php",
+            "line": 68,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Bundle\\SwaggerUi\\SwaggerUiProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/State/Provider/SecurityParameterProvider.php",
+            "line": 50,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Security\\State\\AccessCheckerProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/EventListener/ReadListener.php",
+            "line": 92,
+            "function": "provide",
+            "class": "ApiPlatform\\State\\Provider\\SecurityParameterProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/Debug/WrappedListener.php",
+            "line": 115,
+            "function": "onKernelRequest",
+            "class": "ApiPlatform\\Symfony\\EventListener\\ReadListener",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/EventDispatcher.php",
+            "line": 206,
+            "function": "__invoke",
+            "class": "Symfony\\Component\\EventDispatcher\\Debug\\WrappedListener",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/EventDispatcher.php",
+            "line": 56,
+            "function": "callListeners",
+            "class": "Symfony\\Component\\EventDispatcher\\EventDispatcher",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/Debug/TraceableEventDispatcher.php",
+            "line": 129,
+            "function": "dispatch",
+            "class": "Symfony\\Component\\EventDispatcher\\EventDispatcher",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/http-kernel/HttpKernel.php",
+            "line": 162,
+            "function": "dispatch",
+            "class": "Symfony\\Component\\EventDispatcher\\Debug\\TraceableEventDispatcher",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/http-kernel/HttpKernel.php",
+            "line": 79,
+            "function": "handleRaw",
+            "class": "Symfony\\Component\\HttpKernel\\HttpKernel",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/http-kernel/Kernel.php",
+            "line": 143,
+            "function": "handle",
+            "class": "Symfony\\Component\\HttpKernel\\HttpKernel",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/runtime/Runner/Symfony/HttpKernelRunner.php",
+            "line": 34,
+            "function": "handle",
+            "class": "Symfony\\Component\\HttpKernel\\Kernel",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/autoload_runtime.php",
+            "line": 32,
+            "function": "run",
+            "class": "Symfony\\Component\\Runtime\\Runner\\Symfony\\HttpKernelRunner",
+            "type": "->"
+          },
+          {
+            "file": "/app/public/index.php",
+            "line": 5,
+            "function": "require_once"
+          }
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/d7d7e2407596579350e0",
+          "persisted": false
+        }
+      },
+      "headers": {
+        "link": "<http://www.w3.org/ns/hydra/error>; rel=\"http://www.w3.org/ns/json-ld#error\",<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/df47ca3b-ae20-4309-b73f-cd52d65ea22a",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/df47ca3b-ae20-4309-b73f-cd52d65ea22a",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+        "component": "/_api/component/images/3520e0ba-e646-47e4-aa6b-68a706fa1122",
+        "sortValue": 30,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/998843c6ac14997b5884",
+          "staticComponent": "/_api/component/images/3520e0ba-e646-47e4-aa6b-68a706fa1122",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/images/3520e0ba-e646-47e4-aa6b-68a706fa1122",
+      "status": 404,
+      "body": {
+        "@context": "/_api/contexts/Error",
+        "@id": "/_api/errors/404",
+        "@type": "Error",
+        "title": "An error occurred",
+        "detail": "Not Found",
+        "status": 404,
+        "type": "/errors/404",
+        "description": "Not Found",
+        "trace": [
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Validator/State/ParameterValidatorProvider.php",
+            "line": 102,
+            "function": "provide",
+            "class": "ApiPlatform\\State\\Provider\\ReadProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Security/State/AccessCheckerProvider.php",
+            "line": 68,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Validator\\State\\ParameterValidatorProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Bundle/SwaggerUi/SwaggerUiProvider.php",
+            "line": 50,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Security\\State\\AccessCheckerProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/Security/State/AccessCheckerProvider.php",
+            "line": 68,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Bundle\\SwaggerUi\\SwaggerUiProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/State/Provider/SecurityParameterProvider.php",
+            "line": 50,
+            "function": "provide",
+            "class": "ApiPlatform\\Symfony\\Security\\State\\AccessCheckerProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/api-platform/core/src/Symfony/EventListener/ReadListener.php",
+            "line": 92,
+            "function": "provide",
+            "class": "ApiPlatform\\State\\Provider\\SecurityParameterProvider",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/Debug/WrappedListener.php",
+            "line": 115,
+            "function": "onKernelRequest",
+            "class": "ApiPlatform\\Symfony\\EventListener\\ReadListener",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/EventDispatcher.php",
+            "line": 206,
+            "function": "__invoke",
+            "class": "Symfony\\Component\\EventDispatcher\\Debug\\WrappedListener",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/EventDispatcher.php",
+            "line": 56,
+            "function": "callListeners",
+            "class": "Symfony\\Component\\EventDispatcher\\EventDispatcher",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/event-dispatcher/Debug/TraceableEventDispatcher.php",
+            "line": 129,
+            "function": "dispatch",
+            "class": "Symfony\\Component\\EventDispatcher\\EventDispatcher",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/http-kernel/HttpKernel.php",
+            "line": 162,
+            "function": "dispatch",
+            "class": "Symfony\\Component\\EventDispatcher\\Debug\\TraceableEventDispatcher",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/http-kernel/HttpKernel.php",
+            "line": 79,
+            "function": "handleRaw",
+            "class": "Symfony\\Component\\HttpKernel\\HttpKernel",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/http-kernel/Kernel.php",
+            "line": 143,
+            "function": "handle",
+            "class": "Symfony\\Component\\HttpKernel\\HttpKernel",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/symfony/runtime/Runner/Symfony/HttpKernelRunner.php",
+            "line": 34,
+            "function": "handle",
+            "class": "Symfony\\Component\\HttpKernel\\Kernel",
+            "type": "->"
+          },
+          {
+            "file": "/app/vendor/autoload_runtime.php",
+            "line": 32,
+            "function": "run",
+            "class": "Symfony\\Component\\Runtime\\Runner\\Symfony\\HttpKernelRunner",
+            "type": "->"
+          },
+          {
+            "file": "/app/public/index.php",
+            "line": 5,
+            "function": "require_once"
+          }
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/ea5a9f5667a4fc68714b",
+          "persisted": false
+        }
+      },
+      "headers": {
+        "link": "<http://www.w3.org/ns/hydra/error>; rel=\"http://www.w3.org/ns/json-ld#error\",<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/d64f01ec-d70e-4f30-87a9-e54b907d9873",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/d64f01ec-d70e-4f30-87a9-e54b907d9873",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/00bea083-1dcc-4c85-afa0-cd4700677490",
+        "component": "/_api/component/html_contents/2de9db6f-1268-4698-85bb-e00e56cb5f7f",
+        "sortValue": 40,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/263bf30304f452a6e0c5",
+          "staticComponent": "/_api/component/html_contents/2de9db6f-1268-4698-85bb-e00e56cb5f7f",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/html_contents/2de9db6f-1268-4698-85bb-e00e56cb5f7f",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/HtmlContent",
+        "@id": "/_api/component/html_contents/2de9db6f-1268-4698-85bb-e00e56cb5f7f",
+        "@type": "HtmlContent",
+        "html": "<p>From rapid deployment to ongoing iteration, our system enables teams to manage content, customer interactions, and analytics — all from one place. The admin interface is designed to be user-friendly <a href=\"https://cwa.rocks\">here is a link</a> and accessible, so teams can get started with minimal training. Our Custom Web Application (CWA) empowers businesses to take control of their online presence with scalable, intuitive tools.</p>",
+        "publishedAt": "2026-06-21T00:21:04+00:00",
+        "componentGroups": [],
+        "componentPositions": [
+          "/_api/_/component_positions/d64f01ec-d70e-4f30-87a9-e54b907d9873"
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/050454fd799865f26ad1",
+          "persisted": true,
+          "publishable": {
+            "@context": {
+              "@vocab": "https://localhost/_api/docs.jsonld#",
+              "hydra": "http://www.w3.org/ns/hydra/core#",
+              "published": "ResourcePublishableMetadata/published",
+              "publishedAt": "ResourcePublishableMetadata/publishedAt",
+              "locationCount": "ResourcePublishableMetadata/locationCount"
+            },
+            "@type": "ResourcePublishableMetadata",
+            "@id": "/_api/.well-known/genid/4ba2fb0a59ee1ecc5e20",
+            "published": true,
+            "publishedAt": "2026-06-21T00:21:04.000+00:00",
+            "locationCount": 1
+          }
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/routes//form",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Route",
+        "@id": "/_api/_/routes//form",
+        "@type": "Route",
+        "path": "/form",
+        "name": "form-page",
+        "redirectedFrom": [],
+        "page": "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "associatedResources": {
+          "redirect": null,
+          "page": "form",
+          "pageData": null,
+          "pageDataType": null
+        },
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/62cea3377f0a34c9a281",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/resource_manifest//form",
+      "status": 200,
+      "body": {
+        "resource_iris": [
+          {
+            "iri": "/_api/_/routes//form",
+            "children": [
+              {
+                "iri": "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+                "children": [
+                  {
+                    "iri": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+                    "children": []
+                  },
+                  {
+                    "iri": "/_api/_/component_groups/65098d02-0160-4c42-898b-625a4e1e5975",
+                    "children": [
+                      {
+                        "iri": "/_api/_/component_positions/1749a835-0bf2-47fa-96b1-a7ff7cdd32cb",
+                        "children": [
+                          {
+                            "iri": "/_api/component/forms/d1391da8-9ad1-4d76-a367-fccee2d281e6",
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Page",
+        "@id": "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+        "@type": "Page",
+        "layout": "/_api/_/layouts/c7e086b5-af9d-471c-a561-f06d4ecbaeaa",
+        "reference": "form",
+        "isTemplate": false,
+        "componentGroups": [
+          "/_api/_/component_groups/65098d02-0160-4c42-898b-625a4e1e5975"
+        ],
+        "uiComponent": "PrimaryPageTemplate",
+        "route": "/_api/_/routes//form",
+        "title": "Form Demo",
+        "metaDescription": "A demo form showing all Symfony form field types with CWA form composables",
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-06-21T00:21:04+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/4f96d4d8b40a05cb2b64",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_groups/65098d02-0160-4c42-898b-625a4e1e5975",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentGroup",
+        "@id": "/_api/_/component_groups/65098d02-0160-4c42-898b-625a4e1e5975",
+        "@type": "ComponentGroup",
+        "reference": "primary_/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+        "location": "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b",
+        "layouts": [],
+        "pages": [
+          "/_api/_/pages/88688683-ee11-49df-8d65-da537fd38b2b"
+        ],
+        "components": [],
+        "componentPositions": [
+          "/_api/_/component_positions/1749a835-0bf2-47fa-96b1-a7ff7cdd32cb"
+        ],
+        "createdAt": "2026-06-21T00:21:04+00:00",
+        "modifiedAt": "2026-06-21T00:21:04+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/6d37a9ac19373832defb",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/_/component_positions/1749a835-0bf2-47fa-96b1-a7ff7cdd32cb",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/ComponentPosition",
+        "@id": "/_api/_/component_positions/1749a835-0bf2-47fa-96b1-a7ff7cdd32cb",
+        "@type": "ComponentPosition",
+        "componentGroup": "/_api/_/component_groups/65098d02-0160-4c42-898b-625a4e1e5975",
+        "component": "/_api/component/forms/d1391da8-9ad1-4d76-a367-fccee2d281e6",
+        "sortValue": 10,
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/b06b3423a280237d4980",
+          "staticComponent": "/_api/component/forms/d1391da8-9ad1-4d76-a367-fccee2d281e6",
+          "isDynamicPosition": false,
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\", <https://localhost/.well-known/mercure>; rel=\"mercure\""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/_api/component/forms/d1391da8-9ad1-4d76-a367-fccee2d281e6",
+      "status": 200,
+      "body": {
+        "@context": "/_api/contexts/Form",
+        "@id": "/_api/component/forms/d1391da8-9ad1-4d76-a367-fccee2d281e6",
+        "@type": "Form",
+        "formType": "App\\Form\\ExampleFormType",
+        "formView": {
+          "@type": "FormView",
+          "@id": "/_api/.well-known/genid/24684aba10784239517e",
+          "vars": {
+            "errors": [],
+            "action": "https://localhost/_api/component/forms/d1391da8-9ad1-4d76-a367-fccee2d281e6/submit",
+            "attr": {
+              "novalidate": "novalidate"
+            },
+            "block_prefixes": [
+              "form",
+              "example_form",
+              "_example_form"
+            ],
+            "disabled": false,
+            "full_name": "example_form",
+            "id": "example_form",
+            "label_attr": [],
+            "name": "example_form",
+            "realtime_validate_disabled": false,
+            "api_disabled": false,
+            "required": true,
+            "submitted": false,
+            "unique_block_prefix": "_example_form",
+            "valid": true
+          },
+          "children": [
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/57312e5f5600c3c85cbd",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "attr": {
+                  "placeholder": ""
+                },
+                "block_prefixes": [
+                  "form",
+                  "text",
+                  "_example_form_text"
+                ],
+                "disabled": false,
+                "full_name": "example_form[text]",
+                "id": "example_form_text",
+                "label": "Plain text input (no validation)",
+                "label_attr": [],
+                "name": "text",
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_text",
+                "valid": true,
+                "value": ""
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/1c365df49776e0865700",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "attr": [],
+                "block_prefixes": [
+                  "form",
+                  "repeated",
+                  "_example_form_plainPassword"
+                ],
+                "disabled": false,
+                "full_name": "example_form[plainPassword]",
+                "id": "example_form_plainPassword",
+                "label_attr": [],
+                "name": "plainPassword",
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_plainPassword",
+                "valid": true,
+                "value": {
+                  "first": null,
+                  "second": null
+                }
+              },
+              "children": [
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/d413f60bef375c1cdc5c",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "autocomplete": "new-password"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "text",
+                      "password",
+                      "_example_form_plainPassword_first"
+                    ],
+                    "disabled": false,
+                    "full_name": "example_form[plainPassword][first]",
+                    "id": "example_form_plainPassword_first",
+                    "label": "Create Password",
+                    "label_attr": [],
+                    "name": "first",
+                    "required": true,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_plainPassword_first",
+                    "valid": true,
+                    "value": ""
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                },
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/5dcc2d9389b17cfb3a23",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "autocomplete": "new-password"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "text",
+                      "password",
+                      "_example_form_plainPassword_second"
+                    ],
+                    "disabled": false,
+                    "full_name": "example_form[plainPassword][second]",
+                    "id": "example_form_plainPassword_second",
+                    "label": "Repeat Password",
+                    "label_attr": [],
+                    "name": "second",
+                    "required": true,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_plainPassword_second",
+                    "valid": true,
+                    "value": ""
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                }
+              ],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/07fba6b107d359515bcd",
+              "vars": {
+                "choices": [
+                  {
+                    "data": "",
+                    "value": "",
+                    "label": "Please select",
+                    "attr": {
+                      "disabled": ""
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "enquiry",
+                    "value": "enquiry",
+                    "label": "General enquiry",
+                    "attr": [],
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "other",
+                    "value": "other",
+                    "label": "Anything else",
+                    "attr": [],
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "-",
+                    "value": "-",
+                    "label": "Invalid option",
+                    "attr": [],
+                    "labelTranslationParameters": []
+                  }
+                ],
+                "preferred_choices": [],
+                "errors": [],
+                "is_selected": [],
+                "action": "",
+                "attr": {
+                  "placeholder": "Subject"
+                },
+                "block_prefixes": [
+                  "form",
+                  "choice",
+                  "_example_form_subject"
+                ],
+                "disabled": false,
+                "expanded": false,
+                "full_name": "example_form[subject]",
+                "id": "example_form_subject",
+                "label": "Regarding",
+                "label_attr": [],
+                "multiple": false,
+                "name": "subject",
+                "placeholder_in_choices": true,
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_subject",
+                "valid": true,
+                "value": ""
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/f827faeb35084d3ea536",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "attr": {
+                  "placeholder": "Your email address"
+                },
+                "block_prefixes": [
+                  "form",
+                  "text",
+                  "email",
+                  "_example_form_email"
+                ],
+                "disabled": false,
+                "full_name": "example_form[email]",
+                "id": "example_form_email",
+                "label": "Your Email",
+                "label_attr": [],
+                "name": "email",
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_email",
+                "valid": true,
+                "value": ""
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/225352919e5df45fdfdf",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "attr": {
+                  "placeholder": "Your message here"
+                },
+                "block_prefixes": [
+                  "form",
+                  "text",
+                  "textarea",
+                  "_example_form_message"
+                ],
+                "disabled": false,
+                "full_name": "example_form[message]",
+                "id": "example_form_message",
+                "label": "Message",
+                "label_attr": [],
+                "name": "message",
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_message",
+                "valid": true,
+                "value": ""
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/f7e5090da5092332c616",
+              "vars": {
+                "choices": [
+                  {
+                    "data": "yes",
+                    "value": "yes",
+                    "label": "Yes",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "no",
+                    "value": "no",
+                    "label": "No",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  }
+                ],
+                "preferred_choices": [],
+                "errors": [],
+                "is_selected": [],
+                "action": "",
+                "attr": [],
+                "block_prefixes": [
+                  "form",
+                  "choice",
+                  "_example_form_developer"
+                ],
+                "disabled": false,
+                "expanded": true,
+                "full_name": "example_form[developer]",
+                "id": "example_form_developer",
+                "label": "Are you a developer?",
+                "label_attr": [],
+                "multiple": false,
+                "name": "developer",
+                "placeholder_in_choices": false,
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_developer",
+                "valid": true,
+                "value": ""
+              },
+              "children": [
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/0dd77dac26d3abff8b63",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "checkbox",
+                      "radio",
+                      "_example_form_developer_entry"
+                    ],
+                    "checked": false,
+                    "disabled": false,
+                    "full_name": "example_form[developer]",
+                    "id": "example_form_developer_0",
+                    "label": "Yes",
+                    "label_attr": [],
+                    "name": "0",
+                    "required": true,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_developer_entry",
+                    "valid": true,
+                    "value": "yes"
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                },
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/a71f3b2398fb03f69e10",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "checkbox",
+                      "radio",
+                      "_example_form_developer_entry"
+                    ],
+                    "checked": false,
+                    "disabled": false,
+                    "full_name": "example_form[developer]",
+                    "id": "example_form_developer_1",
+                    "label": "No",
+                    "label_attr": [],
+                    "name": "1",
+                    "required": true,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_developer_entry",
+                    "valid": true,
+                    "value": "no"
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                }
+              ],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/9b72d9be152e2431cfc8",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "attr": {
+                  "class": "custom"
+                },
+                "block_prefixes": [
+                  "form",
+                  "checkbox",
+                  "_example_form_randomCheckbox"
+                ],
+                "checked": false,
+                "disabled": false,
+                "full_name": "example_form[randomCheckbox]",
+                "id": "example_form_randomCheckbox",
+                "label": "To check or not to check? <b>That</b> is a question",
+                "label_attr": [],
+                "name": "randomCheckbox",
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_randomCheckbox",
+                "valid": true,
+                "value": "1"
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/007e690d62706ecca868",
+              "vars": {
+                "choices": [
+                  {
+                    "data": "pizza",
+                    "value": "pizza",
+                    "label": "Pizza",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "chips",
+                    "value": "chips",
+                    "label": "Chips",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "veggie",
+                    "value": "veggie",
+                    "label": "Vegetables",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  }
+                ],
+                "preferred_choices": [],
+                "errors": [],
+                "is_selected": [],
+                "action": "",
+                "attr": [],
+                "block_prefixes": [
+                  "form",
+                  "choice",
+                  "_example_form_interests"
+                ],
+                "disabled": false,
+                "expanded": true,
+                "full_name": "example_form[interests]",
+                "id": "example_form_interests",
+                "label": "Select at least one food",
+                "label_attr": [],
+                "multiple": true,
+                "name": "interests",
+                "placeholder_in_choices": false,
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_interests",
+                "valid": true,
+                "value": []
+              },
+              "children": [
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/19ae789f19a271c47956",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "checkbox",
+                      "_example_form_interests_entry"
+                    ],
+                    "checked": false,
+                    "disabled": false,
+                    "full_name": "example_form[interests][]",
+                    "id": "example_form_interests_0",
+                    "label": "Pizza",
+                    "label_attr": [],
+                    "name": "0",
+                    "required": false,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_interests_entry",
+                    "valid": true,
+                    "value": "pizza"
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                },
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/46d43c65b655272cbb9f",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "checkbox",
+                      "_example_form_interests_entry"
+                    ],
+                    "checked": false,
+                    "disabled": false,
+                    "full_name": "example_form[interests][]",
+                    "id": "example_form_interests_1",
+                    "label": "Chips",
+                    "label_attr": [],
+                    "name": "1",
+                    "required": false,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_interests_entry",
+                    "valid": true,
+                    "value": "chips"
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                },
+                {
+                  "@type": "FormView",
+                  "@id": "/_api/.well-known/genid/35cc9fcb34f63c96f8c5",
+                  "vars": {
+                    "errors": [],
+                    "action": "",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "block_prefixes": [
+                      "form",
+                      "checkbox",
+                      "_example_form_interests_entry"
+                    ],
+                    "checked": false,
+                    "disabled": false,
+                    "full_name": "example_form[interests][]",
+                    "id": "example_form_interests_2",
+                    "label": "Vegetables",
+                    "label_attr": [],
+                    "name": "2",
+                    "required": false,
+                    "submitted": false,
+                    "unique_block_prefix": "_example_form_interests_entry",
+                    "valid": true,
+                    "value": "veggie"
+                  },
+                  "children": [],
+                  "rendered": false,
+                  "methodRendered": false
+                }
+              ],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/984995ac642cc6a354dd",
+              "vars": {
+                "choices": [
+                  {
+                    "data": "API Platform",
+                    "value": "API Platform",
+                    "label": "API Platform",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "Nuxt",
+                    "value": "Nuxt",
+                    "label": "Nuxt",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "Bulma",
+                    "value": "Bulma",
+                    "label": "Bulma",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "Symfony",
+                    "value": "Symfony",
+                    "label": "Symfony",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  },
+                  {
+                    "data": "VueJS",
+                    "value": "VueJS",
+                    "label": "VueJS",
+                    "attr": {
+                      "class": "custom"
+                    },
+                    "labelTranslationParameters": []
+                  }
+                ],
+                "preferred_choices": [],
+                "errors": [],
+                "is_selected": [],
+                "action": "",
+                "attr": [],
+                "block_prefixes": [
+                  "form",
+                  "choice",
+                  "_example_form_other_interests"
+                ],
+                "disabled": false,
+                "expanded": false,
+                "full_name": "example_form[other_interests][]",
+                "id": "example_form_other_interests",
+                "label": "Select at least one",
+                "label_attr": [],
+                "multiple": true,
+                "name": "other_interests",
+                "placeholder_in_choices": false,
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_other_interests",
+                "valid": true,
+                "value": []
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/269b6035f8065b007f29",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "allow_add": true,
+                "allow_delete": true,
+                "attr": [],
+                "block_prefixes": [
+                  "form",
+                  "collection",
+                  "_example_form_children"
+                ],
+                "disabled": false,
+                "full_name": "example_form[children]",
+                "id": "example_form_children",
+                "label": "Children names",
+                "label_attr": [],
+                "name": "children",
+                "required": true,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_children",
+                "valid": true
+              },
+              "children": [],
+              "prototype": {
+                "@type": "FormView",
+                "@id": "/_api/.well-known/genid/7383f194ab1290b76b9f",
+                "vars": {
+                  "errors": [],
+                  "action": "",
+                  "attr": [],
+                  "block_prefixes": [
+                    "form",
+                    "collection_entry",
+                    "child",
+                    "_example_form_children_entry"
+                  ],
+                  "disabled": false,
+                  "full_name": "example_form[children][__name__]",
+                  "id": "example_form_children___name__",
+                  "label": "__name__label__",
+                  "label_attr": [],
+                  "name": "__name__",
+                  "realtime_validate_disabled": false,
+                  "api_disabled": false,
+                  "required": true,
+                  "submitted": false,
+                  "unique_block_prefix": "_example_form_children_entry",
+                  "valid": true
+                },
+                "children": [
+                  {
+                    "@type": "FormView",
+                    "@id": "/_api/.well-known/genid/063b0211d3908fc2b7dd",
+                    "vars": {
+                      "errors": [],
+                      "action": "",
+                      "attr": [],
+                      "block_prefixes": [
+                        "form",
+                        "text",
+                        "_example_form_children_entry_name"
+                      ],
+                      "disabled": false,
+                      "full_name": "example_form[children][__name__][name]",
+                      "id": "example_form_children___name___name",
+                      "label": "Child object text label",
+                      "label_attr": [],
+                      "name": "name",
+                      "required": true,
+                      "submitted": false,
+                      "unique_block_prefix": "_example_form_children_entry_name",
+                      "valid": true,
+                      "value": ""
+                    },
+                    "children": [],
+                    "rendered": false,
+                    "methodRendered": false
+                  }
+                ],
+                "rendered": false,
+                "methodRendered": false
+              },
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/f55360a98560d0188694",
+              "vars": {
+                "errors": [],
+                "action": "",
+                "allow_add": true,
+                "allow_delete": true,
+                "attr": [],
+                "block_prefixes": [
+                  "form",
+                  "collection",
+                  "_example_form_text_children"
+                ],
+                "disabled": false,
+                "full_name": "example_form[text_children]",
+                "id": "example_form_text_children",
+                "label": "Text Children",
+                "label_attr": [],
+                "name": "text_children",
+                "required": false,
+                "submitted": false,
+                "unique_block_prefix": "_example_form_text_children",
+                "valid": true
+              },
+              "children": [],
+              "prototype": {
+                "@type": "FormView",
+                "@id": "/_api/.well-known/genid/8b099b13961b94733c70",
+                "vars": {
+                  "errors": [],
+                  "action": "",
+                  "attr": [],
+                  "block_prefixes": [
+                    "form",
+                    "collection_entry",
+                    "text",
+                    "_example_form_text_children_entry"
+                  ],
+                  "disabled": false,
+                  "full_name": "example_form[text_children][__name__]",
+                  "id": "example_form_text_children___name__",
+                  "label": "__name__label__",
+                  "label_attr": [],
+                  "name": "__name__",
+                  "required": false,
+                  "submitted": false,
+                  "unique_block_prefix": "_example_form_text_children_entry",
+                  "valid": true,
+                  "value": ""
+                },
+                "children": [],
+                "rendered": false,
+                "methodRendered": false
+              },
+              "rendered": false,
+              "methodRendered": false
+            },
+            {
+              "@type": "FormView",
+              "@id": "/_api/.well-known/genid/0908c3ed0669921046b7",
+              "vars": {
+                "attr": {
+                  "class": "button is-dark"
+                },
+                "block_prefixes": [
+                  "button",
+                  "submit",
+                  "_example_form_submit"
+                ],
+                "disabled": false,
+                "full_name": "example_form[submit]",
+                "id": "example_form_submit",
+                "label": "Submit Form",
+                "name": "submit",
+                "unique_block_prefix": "_example_form_submit"
+              },
+              "children": [],
+              "rendered": false,
+              "methodRendered": false
+            }
+          ],
+          "rendered": false,
+          "methodRendered": false
+        },
+        "createdAt": "2026-06-21T00:21:05+00:00",
+        "modifiedAt": "2026-06-21T00:21:05+00:00",
+        "uiComponent": "ExampleForm",
+        "componentGroups": [],
+        "componentPositions": [
+          "/_api/_/component_positions/1749a835-0bf2-47fa-96b1-a7ff7cdd32cb"
+        ],
+        "_metadata": {
+          "@context": {
+            "@vocab": "https://localhost/_api/docs.jsonld#",
+            "hydra": "http://www.w3.org/ns/hydra/core#",
+            "pageDataMetadata": "ResourceMetadata/pageDataMetadata",
+            "staticComponent": "ResourceMetadata/staticComponent",
+            "pageDataPath": "ResourceMetadata/pageDataPath",
+            "isDynamicPosition": "ResourceMetadata/isDynamicPosition",
+            "collection": "ResourceMetadata/collection",
+            "persisted": "ResourceMetadata/persisted",
+            "publishable": "ResourceMetadata/publishable",
+            "violations": "ResourceMetadata/violations",
+            "mediaObjects": "ResourceMetadata/mediaObjects",
+            "mercureSubscribeTopics": "ResourceMetadata/mercureSubscribeTopics",
+            "resourceMetadata": "ResourceMetadata/resourceMetadata"
+          },
+          "@type": "ResourceMetadata",
+          "@id": "/_api/.well-known/genid/811486d908af062d1f2b",
+          "persisted": true
+        }
+      },
+      "headers": {
+        "link": "<https://localhost/_api/docs.jsonld>; rel=\"http://www.w3.org/ns/hydra/core#apiDocumentation\""
+      }
+    }
+  ]
+}

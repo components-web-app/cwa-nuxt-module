@@ -8,13 +8,19 @@
       leave-active-class="duration-300 ease-in"
       leave-to-class="transform opacity-0"
     >
+      <!--
+        v-show, NOT v-if: `loaded` is only ever set by this element's own @load, so gating the
+        element on `loaded` meant it was never created, never loaded, and never displayed. It only
+        appeared at all because of the `naturalHeight !== 0` polarity bug (#267) firing handleLoad
+        on mount regardless. v-show keeps it in the DOM so it can actually load and fade in.
+      -->
       <NuxtImg
-        v-if="loaded"
-        ref="image"
+        v-show="loaded"
+        ref="file"
         :src="contentUrl"
         :width="displayMedia?.width"
         :height="displayMedia?.height"
-        class="object-contain object-top-left saturate-0"
+        class="object-contain object-left-top"
         @load="handleLoad"
       />
     </Transition>
@@ -27,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
-import { useCwa, useCwaImageResource } from '#imports'
+import { useTemplateRef } from 'vue'
+import { useCwa, useCwaFileField } from '#imports'
 
 const props = defineProps<{
   iri: string
@@ -40,5 +46,8 @@ await $cwa.fetchResource({
   path: props.iri,
 })
 
-const { contentUrl, displayMedia, handleLoad, loaded } = useCwaImageResource(toRef(props, 'iri'), { imagineFilterName: 'thumbnail' })
+// Registered explicitly (#267): a cached image can finish loading before @load is attached, and
+// this is the only thing that catches that. Must match `ref="file"` in the template above.
+const imageRef = useTemplateRef<unknown>('file')
+const { contentUrl, displayMedia, handleLoad, loaded } = useCwaFileField(props, { imagineFilterName: 'thumbnail', imageRef })
 </script>

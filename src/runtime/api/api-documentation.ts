@@ -6,12 +6,13 @@ import type {
   CwaApiDocumentationDataInterface,
 } from '../storage/stores/api-documentation/state'
 import type CwaFetch from './fetcher/cwa-fetch'
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 export interface ApiDocumentationComponentMetadata {
   resourceName: string
   endpoint: string
   isPublishable: boolean
+  explicitAllowOnly: boolean
 }
 
 export interface ApiDocumentationComponentMetadataCollection {
@@ -86,6 +87,14 @@ export default class ApiDocumentation {
       {} as { [key: string]: string[] },
     )
 
+    const explicitAllowOnlyByClass = docs['supportedClass'].reduce(
+      (obj, supportedClass) => {
+        obj[supportedClass['title']] = supportedClass['explicitAllowOnly'] === true
+        return obj
+      },
+      {} as { [key: string]: boolean },
+    )
+
     const metadata: ApiDocumentationComponentMetadataCollection = {}
     const typeCheckArray = [CwaResourceTypes.COMPONENT]
     if (includePosition) {
@@ -101,10 +110,23 @@ export default class ApiDocumentation {
         //   continue
         // }
         const isPublishable = properties?.[resourceName]?.includes('publishedAt') || false
+        const explicitAllowOnly = explicitAllowOnlyByClass?.[resourceName] || false
+        const prefix = ResourceTypeFromIri.getPathPrefix()
+        let normalizedEndpoint = endpoint
+        try {
+          normalizedEndpoint = new URL(endpoint).pathname
+        }
+        catch {
+          // already a relative path
+        }
+        if (prefix && prefix !== '/' && normalizedEndpoint.startsWith(prefix)) {
+          normalizedEndpoint = normalizedEndpoint.slice(prefix.length)
+        }
         metadata[resourceName] = {
           resourceName,
-          endpoint,
+          endpoint: normalizedEndpoint,
           isPublishable,
+          explicitAllowOnly,
         }
       }
     }

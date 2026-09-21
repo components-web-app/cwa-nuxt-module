@@ -59,6 +59,16 @@
         </div>
         <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-10" />
       </div>
+      <div
+        v-if="$slots.subheader"
+        class="cwa:border-b cwa:border-stone-800 cwa:bg-stone-900/40"
+      >
+        <div class="cwa:px-4 cwa:py-3 cwa:flex cwa:justify-center">
+          <div class="cwa:w-full cwa:max-w-xl cwa:flex cwa:flex-col cwa:gap-y-2">
+            <slot name="subheader" />
+          </div>
+        </div>
+      </div>
       <div class="cwa:grow cwa:px-4 cwa:pt-4 cwa:pb-10 cwa:flex cwa:justify-center cwa:min-h-0">
         <div class="cwa:w-full cwa:max-w-xl cwa:overflow-auto">
           <slot />
@@ -112,5 +122,6 @@ defineSlots<{
   default(): any
   icons(): any
   title(): any
+  subheader(): any
 }>()
 </script>

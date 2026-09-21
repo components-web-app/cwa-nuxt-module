@@ -453,8 +453,44 @@ describe('ResourcesStore Getters -> isFetchStatusResourcesResolved', () => {
   })
 })
 
-describe.todo('ResourcesStore Getters -> getChildIris', () => {
-  // todo: copied over from manageable-resource spec from when it was in there, needs modifying and fixing
+describe('ResourcesStore Getters -> getChildIris', () => {
+  let resourcesState: CwaResourcesStateInterface
+
+  beforeEach(() => {
+    resourcesState = createState()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function addResource(iri: string, data: Record<string, any>) {
+    resourcesState.current.byId[iri] = {
+      apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      data,
+    } as any
+  }
+
+  test('parentPage IRI on a PAGE resource is not included in child IRIs', () => {
+    addResource('/_/pages/child-page', {
+      '@id': '/_/pages/child-page',
+      'parentPage': '/_/pages/parent-page',
+    })
+    const getterFns = getters(resourcesState)
+    const result = getterFns.getChildIris.value('/_/pages/child-page', undefined)
+    expect(result).not.toContain('/_/pages/parent-page')
+  })
+
+  test('parentPageData IRI on a PAGE_DATA resource is not included in child IRIs', () => {
+    addResource('/page_data/child', {
+      '@id': '/page_data/child',
+      'parentPageData': '/page_data/parent',
+    })
+    const getterFns = getters(resourcesState)
+    const result = getterFns.getChildIris.value('/page_data/child', undefined)
+    expect(result).not.toContain('/page_data/parent')
+  })
+
   test.todo('A flat array of children is returned recursively', () => {
     const { instance, $cwa } = createManageableResource()
     const getResource = vi.fn((iri: string) => {

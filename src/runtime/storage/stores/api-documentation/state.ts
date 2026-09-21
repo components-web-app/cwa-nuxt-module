@@ -27,6 +27,7 @@ export interface CwaApiDocumentationDataInterface {
       '@type': string
       'title': string
       'description': string
+      'explicitAllowOnly'?: boolean
       'supportedOperation': Array<{
         '@type': Array<string> | string
         'method': string

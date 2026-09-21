@@ -1,6 +1,9 @@
 import { $fetch } from 'ofetch'
 import type { $Fetch } from 'ofetch'
 import type { RequestHeaders } from 'h3'
+import { useProcess } from '../../composables/process'
+import type { ApiCacheDirectives } from '../http-cache'
+import { mergeCacheDirectives, readResponseCacheDirectives } from '../http-cache'
 import { useRequestHeaders } from '#imports'
 
 interface RequestOptions {
@@ -12,7 +15,13 @@ interface RequestOptions {
 export default class CwaFetch {
   public readonly fetch: $Fetch
 
+  private readonly cacheState: ApiCacheDirectives = { storable: true, sharedMaxAge: undefined }
+
   constructor(baseURL: string) {
+    const { isServer } = useProcess()
+    const requestCookie = isServer ? useRequestHeaders(['cookie']).cookie : undefined
+    const cacheState = this.cacheState
+
     this.fetch = $fetch.create({
       baseURL,
       retryDelay: 200,
@@ -37,12 +46,21 @@ export default class CwaFetch {
           checkRequestForPrefix(ctx.request.url)
         }
 
-        if (import.meta.server) {
-          const { cookie } = useRequestHeaders(['cookie'])
-          cookie && ctx.options.headers.append('cookie', cookie)
+        requestCookie && ctx.options.headers.append('cookie', requestCookie)
+      },
+      onResponse(ctx) {
+        if (!isServer) {
+          return
         }
+        const merged = mergeCacheDirectives(cacheState, readResponseCacheDirectives(ctx.response.headers))
+        cacheState.storable = merged.storable
+        cacheState.sharedMaxAge = merged.sharedMaxAge
       },
     })
+  }
+
+  public get httpCacheState(): ApiCacheDirectives {
+    return { ...this.cacheState }
   }
 
   public getRequestOptions(method: 'POST' | 'PATCH' | 'DELETE'): RequestOptions {

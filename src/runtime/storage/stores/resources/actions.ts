@@ -18,9 +18,9 @@ import type {
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
-import { showError, useResponseHeader } from 'nuxt/app'
+import { navigateTo, showError, useRequestURL, useResponseHeader } from 'nuxt/app'
 import { parse as parseCookie } from 'set-cookie-parser'
-import { type SerializeOptions, serialize as libCookieSerialize } from 'cookie'
+import { type SetCookie, stringifySetCookie } from 'cookie'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -60,6 +60,7 @@ export interface CwaResourcesActionsInterface {
   initNewResource (addResourceEvent: AddResourceEvent, resourceType: string, endpoint: string, isPublishable: boolean, instantAdd: boolean, defaultData?: { [key: string]: any }): void
   resetCurrentResources (currentIds?: string[]): void
   clearResources (): void
+  evictResources (iris: string[]): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
   saveResource(event: SaveResourceEvent | SaveNewResourceEvent): void
@@ -265,7 +266,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const data = initResource({
       resourcesState,
       iri,
-      isCurrent: true,
+      isCurrent: resourcesState.current.currentIds.includes(iri),
     })
 
     data.data = event.resource
@@ -489,6 +490,28 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
+    evictResources(iris: string[]): void {
+      if (!iris.length) {
+        return
+      }
+      const evictSet = new Set(iris)
+      for (const iri of iris) {
+        delete resourcesState.current.byId[iri]
+        if (resourcesState.current.positionsByComponent[iri]) {
+          delete resourcesState.current.positionsByComponent[iri]
+        }
+      }
+      resourcesState.current.allIds = resourcesState.current.allIds.filter(id => !evictSet.has(id))
+      resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
+        mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
+      )
+      for (const componentIri of Object.keys(resourcesState.current.positionsByComponent)) {
+        const positions = resourcesState.current.positionsByComponent[componentIri]
+        if (positions) {
+          resourcesState.current.positionsByComponent[componentIri] = positions.filter(positionIri => !evictSet.has(positionIri))
+        }
+      }
+    },
     setResourceFetchStatus(event: SetResourceStatusEvent): void {
       const data = initResource({
         resourcesState,
@@ -541,7 +564,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       data.apiState = newApiState
     },
-    setResourceFetchError({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): void {
+    async setResourceFetchError({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): Promise<void> {
       const data = initResource({
         resourcesState,
         iri,
@@ -555,15 +578,17 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
 
       if (showErrorPage && error) {
-        // forward the set-cookie headers as if a user is unauthorized, the API will send cookies to log them out for the next load
-        // todo: could this be the cause of users getting randomly logged in? server-plugin will remove all set cookie headers from the nitro site again for now
         if (error?.setCookieHeaders && error.setCookieHeaders.length) {
           const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
           const currentSetCookieHeader = useResponseHeader('Set-Cookie')
           currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
-            return libCookieSerialize(cookie.name, cookie.value, cookie as SerializeOptions)
+            return stringifySetCookie(cookie as SetCookie)
           })
-          consola.warn('-- SET COOKIE CALLED FROM ACTIONS -- ', parsedSetCookiesHeaders, currentSetCookieHeader.value, JSON.stringify(error?.asObject))
+          if (import.meta.server && (error.statusCode === 401 || error.statusCode === 403)) {
+            const url = useRequestURL()
+            await navigateTo(url.pathname + url.search, { redirectCode: 302 })
+            return
+          }
         }
 
         const h3Error = createError<typeof error>({

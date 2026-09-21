@@ -5,6 +5,7 @@ import { FetcherGetterUtils } from './getter-utils'
 
 export interface CwaFetcherGettersInterface {
   resolvedSuccessFetchStatus: ComputedRef<FetchStatus | undefined>
+  resolvedDisplayFetchStatus: ComputedRef<FetchStatus | undefined>
   primaryFetchPath: ComputedRef<string | undefined>
   fetchesResolved: ComputedRef<boolean>
   isFetchResolving: ComputedRef<(token: string) => { fetchStatus: FetchStatus | undefined, resolving: boolean }>
@@ -35,6 +36,23 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
       }
 
       return fetchStatus
+    }),
+    resolvedDisplayFetchStatus: computed(() => {
+      const { displayedToken, successToken } = fetcherState.primaryFetch
+      if (displayedToken) {
+        const displayedStatus = utils.getFetchStatusByToken(displayedToken)
+        if (displayedStatus) {
+          return displayedStatus
+        }
+      }
+      if (!successToken) {
+        return
+      }
+      const successStatus = utils.getFetchStatusByToken(successToken)
+      if (!successStatus || utils.isFetchResolving(successToken)) {
+        return
+      }
+      return successStatus
     }),
     fetchesResolved: computed(() => {
       for (const token of Object.keys(fetcherState.fetches)) {

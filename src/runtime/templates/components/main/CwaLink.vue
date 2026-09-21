@@ -9,7 +9,7 @@ defineSlots<{
 }>()
 
 // todo: find out why href and rel are not compatible with the defineNuxtLink definition
-const props = defineProps<Omit<NuxtLinkProps, 'href' | 'rel'>>()
+const props = defineProps<Omit<NuxtLinkProps, 'href' | 'rel' | 'noPrefetch'>>()
 
 const $cwa = useCwa()
 const CwaLinkComponent = defineNuxtLink({
@@ -30,16 +30,20 @@ function isHashLinkWithoutHashMode(link: NuxtLinkProps['to']) {
 }
 
 function handleClick(e: MouseEvent) {
+  if ($cwa.navigationDisabled) {
+    e.preventDefault()
+    return
+  }
   if (!cwaLink.isExternal.value && !isHashLinkWithoutHashMode(cwaLink.to.value)) {
     return
   }
-  if ($cwa.navigationDisabled) e.preventDefault()
 }
 </script>
 
 <template>
   <CwaLinkComponent
     v-bind="props"
+    :prefetch="props.prefetch ?? false"
     :target="target"
     @click="handleClick"
   >

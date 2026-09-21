@@ -17,34 +17,40 @@
     />
     <!--cwa-end-->
   </template>
-  <div
-    v-else-if="isNewPosition"
-    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative"
-  >
-    <LazyHotSpot
-      screen-reader-action="Add component position"
-      :iri="iri"
-      disabled
-    />
-    <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
-      Add the component to populate this component group
-    </span>
-  </div>
-  <div v-else-if="!locationResource && !$cwa.resources.isLoading.value">
-    <CwaUiAlertWarning>
-      The location provided `{{ location }}` is not a current resource
-    </CwaUiAlertWarning>
-  </div>
-  <div
-    v-else-if="signedInAndResourceExists"
-    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative"
-  >
-    <LazyHotSpot
-      screen-reader-action="Add component position"
-      :iri="iri"
-      :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, location)"
-    />
-  </div>
+  <template v-else-if="isNewPosition">
+    <!--cwa-start-->
+    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative">
+      <LazyHotSpot
+        screen-reader-action="Add component position"
+        :iri="iri"
+        disabled
+      />
+      <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
+        Add the component to populate this component group
+      </span>
+    </div>
+    <!--cwa-end-->
+  </template>
+  <template v-else-if="hasLocation && !locationResource && !$cwa.resources.isLoading.value">
+    <!--cwa-start-->
+    <div>
+      <CwaUiAlertWarning>
+        The location provided `{{ location }}` is not a current resource
+      </CwaUiAlertWarning>
+    </div>
+    <!--cwa-end-->
+  </template>
+  <template v-else-if="signedInAndResourceExists">
+    <!--cwa-start-->
+    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative">
+      <LazyHotSpot
+        screen-reader-action="Add component position"
+        :iri="iri"
+        :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, location)"
+      />
+    </div>
+    <!--cwa-end-->
+  </template>
 </template>
 
 <script setup lang="ts">
@@ -54,11 +60,16 @@ import {
   onMounted,
   onBeforeUnmount,
   defineAsyncComponent,
+  watch,
 } from 'vue'
 import { ComponentGroupUtilSynchronizer } from '#cwa/templates/components/main/ComponentGroup.Util.Synchronizer'
 import {
   useComponentGroupPositions,
 } from '#cwa/templates/components/main/ComponentGroup.Util.Positions'
+import {
+  useComponentGroupEvents,
+} from '#cwa/templates/components/main/ComponentGroup.Util.Events'
+import type { CwaComponentGroupPair } from '#cwa/templates/components/main/ComponentGroup.Util.Events'
 import ComponentPosition from '#cwa/templates/components/core/ComponentPosition.vue'
 import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -76,10 +87,20 @@ const $cwa = useCwa()
 
 useCwaResourceManageable(iri)
 
-type PropsType = { reference: string, locationReference?: string, location: string, allowedComponents?: string[] | null }
+type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: string[] | null }
 const props = withDefaults(defineProps<PropsType>(), { allowedComponents: null })
 
+const hasLocation = computed(() => props.location !== undefined)
+
+const emit = defineEmits<{
+  componentsLoaded: [pairs: CwaComponentGroupPair[]]
+  componentsUpdated: [pairs: CwaComponentGroupPair[]]
+}>()
+
 const locationResource = computed(() => {
+  if (props.location === undefined) {
+    return
+  }
   return $cwa.resources.getResource(props.location).value
 })
 
@@ -98,6 +119,9 @@ const signedInAndResourceExists = computed(() => {
 })
 
 const showLoader = computed(() => {
+  if (!hasLocation.value) {
+    return false
+  }
   // is the whole resource chain loading is not loading, do not show the group as loading
   if (!$cwa.resources.isLoading.value) {
     return false
@@ -107,12 +131,17 @@ const showLoader = computed(() => {
     return true
   }
   // if we do not have data yet (nothing cached either) and the api fetch status is in progress
-  return !resource.value?.data && resource.value?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS
+  return !resource.value?.data && resource.value?.apiState?.status === CwaResourceApiStatuses.IN_PROGRESS
 })
 
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
 const { groupIsReordering, componentPositions } = useComponentGroupPositions(iri, $cwa)
+
+useComponentGroupEvents(componentPositions, $cwa, {
+  onLoaded: pairs => emit('componentsLoaded', pairs),
+  onUpdated: pairs => emit('componentsUpdated', pairs),
+})
 
 const nestedClasses = computed(() => {
   if (!groupIsReordering.value) {
@@ -129,16 +158,24 @@ function getResourceKey(positionIri: string) {
   return `ResourceLoaderGroupPosition_${iri.value}_${positionIri}`
 }
 
+let syncWatcherStarted = false
+
 onMounted(() => {
   if (isNewPosition.value) {
     return
   }
-  componentGroupSynchronizer.createSyncWatcher({
-    resource,
-    location: props.location,
-    fullReference,
-    allowedComponents: props.allowedComponents,
-  })
+  watch(() => props.location, (location) => {
+    if (syncWatcherStarted || location === undefined) {
+      return
+    }
+    syncWatcherStarted = true
+    componentGroupSynchronizer.createSyncWatcher({
+      resource,
+      location,
+      fullReference,
+      allowedComponents: props.allowedComponents,
+    })
+  }, { immediate: true })
 })
 
 onBeforeUnmount(() => {

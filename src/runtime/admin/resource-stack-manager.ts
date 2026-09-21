@@ -237,6 +237,11 @@ export default class ResourceStackManager {
     return isContext ? this.lastContextTarget : this.currentClickTarget
   }
 
+  private hasActiveTextSelection() {
+    const selection = typeof window !== 'undefined' ? window.getSelection() : null
+    return !!selection && !selection.isCollapsed && selection.toString().trim().length > 0
+  }
+
   public completeStack(event: AddToStackWindowEvent, isContext?: boolean, type?: undefined | 'page' | 'layout') {
     if (type) {
       this.isLayoutStack.value = type === 'layout'
@@ -249,6 +254,10 @@ export default class ResourceStackManager {
   }
 
   private _addToStack(event: AddToStackEvent | AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
+    if (!isContext && this.hasActiveTextSelection()) {
+      return
+    }
+
     const currentTarget = this.getCurrentTarget(!!isContext)
 
     const { clickTarget, ...resourceStackItem } = event
@@ -256,12 +265,6 @@ export default class ResourceStackManager {
 
     // we are starting a new stack - last click before was a window or has been reset
     if (!currentTarget.value) {
-      // If the first item being added to stack is the same IRI as the first item populated into the current stack, cancel, do not repopulate the same stack
-      if (!isContext && isResourceClick && this.isResourceInStack(resourceStackItem.iri, false)) {
-        currentTarget.value = clickTarget
-        return
-      }
-
       this.resetStack(isContext)
       // clear the context menu on click
       if (!isContext) {
@@ -393,6 +396,16 @@ export default class ResourceStackManager {
     this.focusProxy.redraw()
   }
 
+  public refreshFocusForIri(iri: string, domElements: Ref<HTMLElement[]>) {
+    for (const item of this.currentResourceStack.value) {
+      if (item.iri === iri) {
+        item.domElements = domElements
+        break
+      }
+    }
+    this.createFocusComponent()
+  }
+
   private createFocusComponent() {
     this.removeFocusComponent()
     const stackItem = this.currentStackItem.value
@@ -406,7 +419,7 @@ export default class ResourceStackManager {
     })
 
     this.focusWrapper = document.createElement('div')
-    this.focusWrapper.className = 'cwa:absolute cwa:z-10 cwa:top-0 cwa:left-0 cwa:focus-wrapper'
+    this.focusWrapper.className = 'cwa:absolute cwa:z-manager-focus cwa:top-0 cwa:left-0 cwa:focus-wrapper'
 
     useNuxtApp().vueApp._container?.appendChild(this.focusWrapper)
 
@@ -460,12 +473,14 @@ export default class ResourceStackManager {
   private isElementOutsideViewport(el: HTMLElement) {
     const { top, left, bottom, right } = el.getBoundingClientRect()
     const { innerHeight, innerWidth } = window
-    let visibleHeight = innerHeight
+    let visibleBottom = innerHeight
     const managerSpacer = document.getElementById('cwa-manager-spacer')
     if (managerSpacer) {
-      visibleHeight -= managerSpacer.offsetHeight
+      visibleBottom -= managerSpacer.offsetHeight
     }
-    return top < this.yOffset || left < 0 || bottom > visibleHeight || right > innerWidth
+    const outsideVertically = bottom <= this.yOffset || top >= visibleBottom
+    const outsideHorizontally = right <= 0 || left >= innerWidth
+    return outsideVertically || outsideHorizontally
   }
 
   private listenEditModeChange(isEditing: boolean) {

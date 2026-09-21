@@ -1,0 +1,321 @@
+<template>
+  <form
+    class="space-y-5 max-w-xl mx-auto py-8"
+    @submit.prevent="form.submit()"
+  >
+    <h2 class="text-2xl font-bold">
+      Example Form
+    </h2>
+
+    <!-- Form-level success / error feedback -->
+    <UAlert
+      v-if="form.success.value"
+      color="success"
+      icon="i-lucide-circle-check"
+      title="Submitted!"
+      description="Your form was submitted successfully."
+    />
+    <template v-else-if="form.formErrors.value.length || form.unregisteredFieldErrors.value.length">
+      <UAlert
+        v-if="form.formErrors.value.length"
+        color="error"
+        icon="i-lucide-circle-x"
+        :description="form.formErrors.value[0]"
+      />
+      <!-- Errors from fields the API returned but this template did not bind a useCwaFormInput for -->
+      <UAlert
+        v-if="form.unregisteredFieldErrors.value.length"
+        color="error"
+        icon="i-lucide-triangle-alert"
+        title="Additional errors"
+        :description="form.unregisteredFieldErrors.value.join(' · ')"
+      />
+    </template>
+
+    <!-- text (TextType) -->
+    <UFormField
+      :label="text.vars.value?.label || 'Text'"
+      :error="text.displayErrors.value ? text.errors.value[0] : undefined"
+      :required="text.vars.value?.required"
+    >
+      <UInput
+        v-model="text.value.value"
+        class="w-full"
+        :trailing-icon="trailingIcon(text)"
+        :ui="{ trailingIcon: trailingIconClass(text) }"
+        @blur="text.onBlur"
+        @input="text.onInput"
+      />
+    </UFormField>
+
+    <!-- plainPassword (RepeatedType → useCwaFormRepeated) -->
+    <UFormField
+      :label="password.first.vars.value?.label || 'Create Password'"
+      :error="password.first.displayErrors.value ? password.first.errors.value[0] : undefined"
+      required
+    >
+      <UInput
+        v-model="password.first.value.value"
+        type="password"
+        class="w-full"
+        autocomplete="new-password"
+        :trailing-icon="trailingIcon(password.first)"
+        :ui="{ trailingIcon: trailingIconClass(password.first) }"
+        @blur="password.first.onBlur"
+        @input="password.first.onInput"
+      />
+    </UFormField>
+    <UFormField
+      :label="password.second.vars.value?.label || 'Repeat Password'"
+      :error="password.second.displayErrors.value ? password.second.errors.value[0] : undefined"
+      required
+    >
+      <UInput
+        v-model="password.second.value.value"
+        type="password"
+        class="w-full"
+        autocomplete="new-password"
+        :trailing-icon="trailingIcon(password.second)"
+        :ui="{ trailingIcon: trailingIconClass(password.second) }"
+        @blur="password.second.onBlur"
+        @input="password.second.onInput"
+      />
+    </UFormField>
+
+    <!-- subject (ChoiceType — collapsed select) -->
+    <UFormField
+      :label="subject.vars.value?.label || 'Regarding'"
+      :error="subject.displayErrors.value ? subject.errors.value[0] : undefined"
+      :required="subject.vars.value?.required"
+    >
+      <USelect
+        v-model="subject.value.value"
+        :items="(subject.vars.value?.choices || []).filter((c: any) => c.value !== '')"
+        :placeholder="subject.vars.value?.placeholder"
+        value-key="value"
+        label-key="label"
+        class="w-full"
+        @update:model-value="subject.onInput()"
+        @blur="subject.onBlur"
+      />
+    </UFormField>
+
+    <!-- email (EmailType) -->
+    <UFormField
+      :label="email.vars.value?.label || 'Email'"
+      :error="email.displayErrors.value ? email.errors.value[0] : undefined"
+      :required="email.vars.value?.required"
+    >
+      <UInput
+        v-model="email.value.value"
+        type="email"
+        class="w-full"
+        :trailing-icon="trailingIcon(email)"
+        :ui="{ trailingIcon: trailingIconClass(email) }"
+        @blur="email.onBlur"
+        @input="email.onInput"
+      />
+    </UFormField>
+
+    <!-- message (TextareaType) -->
+    <UFormField
+      :label="message.vars.value?.label || 'Message'"
+      :error="message.displayErrors.value ? message.errors.value[0] : undefined"
+      :required="message.vars.value?.required"
+    >
+      <UTextarea
+        v-model="message.value.value"
+        class="w-full"
+        :trailing-icon="trailingIcon(message)"
+        :ui="{ trailingIcon: trailingIconClass(message) }"
+        @blur="message.onBlur"
+        @input="message.onInput"
+      />
+    </UFormField>
+
+    <!-- developer (ChoiceType — expanded, single = radio group) -->
+    <UFormField
+      :label="developer.vars.value?.label || 'Are you a developer?'"
+      :error="developer.displayErrors.value ? developer.errors.value[0] : undefined"
+      :required="developer.vars.value?.required"
+    >
+      <URadioGroup
+        v-model="developer.value.value"
+        :items="developer.vars.value?.choices || []"
+        value-key="value"
+        label-key="label"
+        @change="developer.onInput()"
+      />
+    </UFormField>
+
+    <!-- randomCheckbox (CheckboxType) -->
+    <!-- Symfony CheckboxType: vars.value is always '1'; vars.checked is the boolean state. -->
+    <!-- label may contain HTML (e.g. <b>bold</b>) so we use a slot with v-html instead of :label -->
+    <UFormField :error="checkbox.displayErrors.value ? checkbox.errors.value[0] : undefined">
+      <UCheckbox v-model="isChecked">
+        <template #label>
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <span v-html="checkbox.vars.value?.label || 'Check this box'" />
+        </template>
+      </UCheckbox>
+    </UFormField>
+
+    <!-- interests (ChoiceType — expanded, multiple = checkbox group) -->
+    <UFormField
+      :label="interests.vars.value?.label || 'Interests'"
+      :error="interests.displayErrors.value ? interests.errors.value[0] : undefined"
+      :required="interests.vars.value?.required"
+    >
+      <UCheckboxGroup
+        v-model="interests.value.value"
+        :items="interests.vars.value?.choices || []"
+        value-key="value"
+        label-key="label"
+        @change="interests.onInput()"
+      />
+    </UFormField>
+
+    <!-- other_interests (ChoiceType — collapsed, multiple = SelectMenu) -->
+    <UFormField
+      :label="otherInterests.vars.value?.label || 'Other Interests'"
+      :error="otherInterests.displayErrors.value ? otherInterests.errors.value[0] : undefined"
+      :required="otherInterests.vars.value?.required"
+    >
+      <USelectMenu
+        v-model="otherInterests.value.value"
+        :items="(otherInterests.vars.value?.choices || []).filter((c: any) => c.value !== '')"
+        :placeholder="otherInterests.vars.value?.placeholder"
+        :multiple="true"
+        value-key="value"
+        label-key="label"
+        class="w-full"
+        @update:model-value="otherInterests.onInput()"
+      />
+    </UFormField>
+
+    <!-- children (CollectionType — compound ChildType with 'name' sub-field) -->
+    <!-- Each <FormChildEntry> mounts its own useCwaFormInput for the sub-field, -->
+    <!-- registering the value into form state automatically.                    -->
+    <div class="space-y-3">
+      <p class="text-sm font-medium">
+        {{ children.vars.value?.label || 'Children' }}
+      </p>
+      <FormChildEntry
+        v-for="entry in children.entries.value"
+        :key="entry"
+        :iri="props.iri"
+        :entry-full-name="entry"
+        @remove="children.removeEntry(entry)"
+      />
+      <p
+        v-if="children.vars.value?.errors?.[0]"
+        class="text-sm text-red-500"
+      >
+        {{ children.vars.value.errors[0] }}
+      </p>
+      <UButton
+        v-if="children.vars.value?.allow_add"
+        variant="soft"
+        @click.prevent="children.addEntry()"
+      >
+        Add Child
+      </UButton>
+    </div>
+
+    <!-- text_children (CollectionType — simple TextType entries) -->
+    <div class="space-y-3">
+      <p class="text-sm font-medium">
+        {{ textChildren.vars.value?.label || 'Text Children' }}
+      </p>
+      <FormTextEntry
+        v-for="entry in textChildren.entries.value"
+        :key="entry"
+        :iri="props.iri"
+        :entry-full-name="entry"
+        @remove="textChildren.removeEntry(entry)"
+      />
+      <UButton
+        v-if="textChildren.vars.value?.allow_add"
+        variant="soft"
+        @click.prevent="textChildren.addEntry()"
+      >
+        Add Entry
+      </UButton>
+    </div>
+
+    <UButton
+      type="submit"
+      :loading="form.submitting.value"
+      :disabled="form.success.value"
+    >
+      Submit Form
+    </UButton>
+  </form>
+</template>
+
+<script setup lang="ts">
+import { computed, toRef } from 'vue'
+import type { IriProp } from '#cwa/composables/cwa-resource'
+import { useCwaResource, useCwaForm, useCwaFormInput, useCwaFormRepeated, useCwaFormCollection } from '#imports'
+import FormChildEntry from './FormChildEntry.vue'
+import FormTextEntry from './FormTextEntry.vue'
+
+// Returns a trailing icon name for text-like inputs: spinner while validating, tick when valid.
+function trailingIcon(field: { validating: { value: boolean }, valid: { value: boolean | null } }) {
+  if (field.validating.value) return 'i-lucide-loader-circle'
+  if (field.valid.value === true) return 'i-lucide-circle-check'
+  return undefined
+}
+
+function trailingIconClass(field: { validating: { value: boolean }, valid: { value: boolean | null } }) {
+  if (field.validating.value) return 'animate-spin text-gray-400'
+  if (field.valid.value === true) return 'text-green-500'
+  return undefined
+}
+
+const props = defineProps<IriProp>()
+const iriRef = toRef(props, 'iri')
+
+const { exposeMeta } = useCwaResource(iriRef)
+defineExpose(exposeMeta)
+
+// Form-level lifecycle (submit, success, formErrors)
+const form = useCwaForm(iriRef)
+
+// Text / email / textarea
+const text = useCwaFormInput(iriRef, 'example_form[text]')
+const email = useCwaFormInput(iriRef, 'example_form[email]')
+const message = useCwaFormInput(iriRef, 'example_form[message]')
+
+// Password pair (RepeatedType)
+const password = useCwaFormRepeated(iriRef, 'example_form[plainPassword]')
+
+// Choice: collapsed select (ChoiceType, expanded: false, multiple: false)
+const subject = useCwaFormInput(iriRef, 'example_form[subject]')
+
+// Choice: radio group (ChoiceType, expanded: true, multiple: false)
+const developer = useCwaFormInput(iriRef, 'example_form[developer]')
+
+// Single checkbox (CheckboxType)
+// Symfony: vars.value is always '1'; track the boolean state via vars.checked.
+const checkbox = useCwaFormInput(iriRef, 'example_form[randomCheckbox]')
+const isChecked = computed({
+  get: () => !!checkbox.value.value,
+  set: (v: boolean) => {
+    checkbox.value.value = v ? '1' : null
+    checkbox.onInput()
+  },
+})
+
+// Choice: checkbox group (ChoiceType, expanded: true, multiple: true) → value is string[]
+const interests = useCwaFormInput(iriRef, 'example_form[interests]')
+
+// Choice: multi-select (ChoiceType, expanded: false, multiple: true) → value is string[]
+const otherInterests = useCwaFormInput(iriRef, 'example_form[other_interests]')
+
+// CollectionType: compound entries (ChildType has one 'name' sub-field)
+const children = useCwaFormCollection(iriRef, 'example_form[children]')
+
+// CollectionType: simple text entries
+const textChildren = useCwaFormCollection(iriRef, 'example_form[text_children]')
+</script>

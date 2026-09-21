@@ -2,8 +2,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { reactive } from 'vue'
 import { consola as logger } from 'consola'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
-import type { CwaFetcherStateInterface, FetchStatus } from './state'
+import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus, NestedJsonStructure } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
+import { flattenManifestNode } from './manifest-utils'
+import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
 export interface StartFetchEvent {
@@ -39,7 +41,11 @@ export enum FinishFetchManifestType {
 export interface ManifestSuccessFetchEvent {
   type: FinishFetchManifestType.SUCCESS
   token: string
-  resources: string[]
+}
+
+export interface SetManifestIrisByDepthEvent {
+  token: string
+  resourceIris: NestedJsonStructure[]
 }
 
 export interface ManifestErrorFetchEvent {
@@ -50,10 +56,20 @@ export interface ManifestErrorFetchEvent {
 
 interface AbortFetchEvent {
   token: string
+  reason?: FetchAbortReason
+}
+
+export interface RegisterIriDepthEvent {
+  iri: string
+  depth: number
 }
 
 export interface CwaFetcherActionsInterface {
   abortFetch(event: AbortFetchEvent): void
+  setDisplayedToken(token: string): void
+  setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void
+  registerIriDepth(event: RegisterIriDepthEvent): void
+  resetIriDepths(): void
   finishManifestFetch (event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void
   startFetch(event: StartFetchEvent): StartFetchResponse
   finishFetch (event: FinishFetchEvent): void
@@ -70,10 +86,88 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     return fetchStatus
   }
 
+  function cleanupFetch(token?: string) {
+    if (!token) {
+      return
+    }
+    const { fetchingToken, successToken, displayedToken } = fetcherState.primaryFetch
+    if (token === fetchingToken || token === successToken || token === displayedToken) {
+      return
+    }
+    delete fetcherState.fetches[token]
+  }
+
+  function clearIriDepths() {
+    for (const key of Object.keys(fetcherState.iriDepths)) {
+      delete fetcherState.iriDepths[key]
+    }
+    for (const key of Object.keys(fetcherState.depthPaths)) {
+      delete fetcherState.depthPaths[Number(key)]
+    }
+  }
+
+  function cacheRoute(fetchStatus: FetchStatus) {
+    const manifest = fetchStatus.manifest
+    if (!manifest?.resourceTree || !manifest.irisByDepth) {
+      return
+    }
+    fetcherState.routeCache.set(fetchStatus.path, {
+      resourceTree: manifest.resourceTree,
+      irisByDepth: manifest.irisByDepth,
+      resourceIris: [...new Set(manifest.irisByDepth.flat())],
+      cachedAt: (new Date()).getTime(),
+      lastAccessed: (new Date()).getTime(),
+    })
+  }
+
   return {
     abortFetch(event: AbortFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
+      if (event.reason) {
+        fetchStatus.abortReason = event.reason
+      }
+    },
+    setDisplayedToken(token: string) {
+      const previous = fetcherState.primaryFetch.displayedToken
+      fetcherState.primaryFetch.displayedToken = token
+      if (previous && previous !== token) {
+        cleanupFetch(previous)
+      }
+    },
+    setManifestIrisByDepth(event: SetManifestIrisByDepthEvent) {
+      const fetchStatus = getFetchStatusFromToken(event.token)
+      if (!fetchStatus.manifest) {
+        throw new Error(`Cannot set manifest IRIs by depth for '${event.token}'. The manifest was never started.`)
+      }
+      fetchStatus.manifest.resourceTree = event.resourceIris
+      const irisByDepth = event.resourceIris.map(flattenManifestNode)
+      fetchStatus.manifest.irisByDepth = irisByDepth
+
+      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+      const routePathPrefix = `${prefix}/_/routes/`
+      clearIriDepths()
+      for (let depth = 0; depth < irisByDepth.length; depth++) {
+        let pageDataIri: string | undefined
+        for (const iri of irisByDepth[depth]!) {
+          fetcherState.iriDepths[iri] = depth
+          if (fetcherState.depthPaths[depth] === undefined && iri.startsWith(routePathPrefix)) {
+            fetcherState.depthPaths[depth] = iri.substring(routePathPrefix.length)
+          }
+          if (pageDataIri === undefined && getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE_DATA) {
+            pageDataIri = iri
+          }
+        }
+        if (fetcherState.depthPaths[depth] === undefined && pageDataIri !== undefined) {
+          fetcherState.depthPaths[depth] = pageDataIri
+        }
+      }
+    },
+    registerIriDepth(event: RegisterIriDepthEvent) {
+      fetcherState.iriDepths[event.iri] = event.depth
+    },
+    resetIriDepths() {
+      clearIriDepths()
     },
     finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent) {
       let fetchStatus
@@ -88,7 +182,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         throw new Error(`Cannot set manifest status for '${event.token}'. The manifest was never started.`)
       }
       if (event.type === FinishFetchManifestType.SUCCESS) {
-        fetchStatus.manifest.resources = event.resources
+        fetchStatus.manifest.fetchComplete = true
       }
       if (event.type === FinishFetchManifestType.ERROR) {
         fetchStatus.manifest.error = event.error.asObject
@@ -125,6 +219,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         if (lastSuccessState?.path === event.path && event.isCurrentSuccessResourcesResolved) {
           // we may have been in progress with a new primary fetch, but we do not need that anymore
           fetcherState.primaryFetch.fetchingToken = undefined
+          fetcherState.primaryFetch.displayedToken = fetcherState.primaryFetch.successToken
 
           for (const [existingToken, existingValue] of Object.entries(fetcherState.fetches)) {
             if (existingToken !== fetcherState.primaryFetch.successToken) {
@@ -175,17 +270,30 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         !fetchStatus.isPrimary
       ) {
         // chain not needed anymore, will not be referenced anywhere
-        delete fetcherState.fetches[event.token]
+        cleanupFetch(event.token)
+        return
+      }
+
+      if (fetchStatus.abortReason === 'redirect' && event.token === fetcherState.primaryFetch.fetchingToken) {
+        fetcherState.primaryFetch.fetchingToken = undefined
+        cleanupFetch(event.token)
         return
       }
 
       const initialFetchingToken = fetcherState.primaryFetch.fetchingToken
       const initialSuccessToken = fetcherState.primaryFetch.successToken
+      const initialDisplayedToken = fetcherState.primaryFetch.displayedToken
 
       // update the token references
       if (event.token === initialFetchingToken) {
         fetcherState.primaryFetch.fetchingToken = undefined
         fetcherState.primaryFetch.successToken = event.token
+        fetcherState.primaryFetch.displayedToken = event.token
+        cacheRoute(fetchStatus)
+      }
+
+      if (initialDisplayedToken && fetcherState.primaryFetch.displayedToken !== initialDisplayedToken) {
+        cleanupFetch(initialDisplayedToken)
       }
 
       // we should delete an old success token if a new one is being set
@@ -193,11 +301,11 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       if (
         initialSuccessToken && fetcherState.primaryFetch.successToken !== initialSuccessToken
       ) {
-        delete fetcherState.fetches[initialSuccessToken]
+        cleanupFetch(initialSuccessToken)
       }
 
       if (event.token !== fetcherState.primaryFetch.successToken) {
-        delete fetcherState.fetches[event.token]
+        cleanupFetch(event.token)
       }
     },
     addFetchResource(event: AddFetchResourceEvent) {
@@ -214,9 +322,11 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     clearFetches() {
       fetcherState.primaryFetch.fetchingToken = undefined
       fetcherState.primaryFetch.successToken = undefined
+      fetcherState.primaryFetch.displayedToken = undefined
       for (const token of Object.keys(fetcherState.fetches)) {
         delete fetcherState.fetches[token]
       }
+      clearIriDepths()
     },
   }
 }

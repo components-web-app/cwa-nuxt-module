@@ -31,6 +31,6 @@ export class FetcherGetterUtils {
       return false
     }
 
-    return !!(fetchStatus.manifest && fetchStatus.manifest.resources === undefined && fetchStatus.manifest.error === undefined)
+    return !!(fetchStatus.manifest && !fetchStatus.manifest.fetchComplete && fetchStatus.manifest.error === undefined)
   }
 }

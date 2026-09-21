@@ -13,8 +13,11 @@
             <ModalSelect
               v-model="localResourceData.uiComponent"
               label="Layout UI"
-              :options="layoutComponentOptions"
+              :options="layoutUiOptions"
             />
+            <CwaUiAlertWarning v-if="unresolvableUiComponent">
+              <p>The component '{{ unresolvableUiComponent }}' for resource '{{ localResourceData['@id'] }}' cannot be resolved</p>
+            </CwaUiAlertWarning>
           </div>
           <div v-if="layoutStyleOptions.length">
             <ModalSelect
@@ -120,6 +123,27 @@ const layoutComponentOptions = computed(() => {
     })
   }
   return options
+})
+
+const unresolvableUiComponent = computed<string | undefined>(() => {
+  const storedUiComponent = localResourceData.value?.uiComponent
+  if (!storedUiComponent || layoutComponentNames.value.includes(storedUiComponent)) {
+    return undefined
+  }
+  return storedUiComponent
+})
+
+const layoutUiOptions = computed<SelectOption[]>(() => {
+  if (!unresolvableUiComponent.value) {
+    return layoutComponentOptions.value
+  }
+  return [
+    ...layoutComponentOptions.value,
+    {
+      label: `${cleanUiName(unresolvableUiComponent.value)} (component not found)`,
+      value: unresolvableUiComponent.value,
+    },
+  ]
 })
 
 const layoutStyleOptions = computed(() => {

@@ -1,11 +1,20 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ComputedRef } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 
-export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'Image') => {
+export interface CwaResourceUploadBind {
+  'modelValue': string | number | undefined | null
+  'onUpdate:modelValue': (value: string | number | undefined | null) => void
+  'fileExists': boolean
+  'disabled': boolean
+  'onChange': (newFile: File | undefined) => Promise<void>
+  'onDelete': () => Promise<void>
+}
+
+export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'File') => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
@@ -16,8 +25,12 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
   const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
 
   const filenameInputModel = ref(getFilename())
-  const fileExists = ref(true)
+  const fileExists = computed(() => !!fileData.value)
   const updating = ref(false)
+
+  watch(fileData, () => {
+    filenameInputModel.value = getFilename()
+  })
 
   const { endpoint: updateEndpoint } = useCwaResourceEndpoint(iri, '/upload')
   const { endpoint: deleteEndpoint } = useCwaResourceEndpoint(iri)
@@ -37,7 +50,6 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
         accept: '*/*',
       },
     })
-    filenameInputModel.value = getFilename()
     updating.value = false
   }
 
@@ -67,10 +79,19 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
         [filename]: null,
       },
     })
-    fileExists.value = false
-    filenameInputModel.value = ''
     updating.value = false
   }
+
+  const bind = computed<CwaResourceUploadBind>(() => ({
+    'modelValue': filenameInputModel.value,
+    'onUpdate:modelValue': (value) => {
+      filenameInputModel.value = (value ?? '') as string
+    },
+    'fileExists': fileExists.value,
+    'disabled': updating.value,
+    'onChange': handleInputChangeFile,
+    'onDelete': handleInputDeleteFile,
+  }))
 
   return {
     filenameInputModel,
@@ -78,5 +99,6 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     fileExists,
     handleInputChangeFile,
     handleInputDeleteFile,
+    bind,
   }
 }

@@ -28,7 +28,16 @@ export default class SiteConfig {
     this._store = this.storeDefinition.useStore()
   }
 
-  public async loadConfig() {
+  public async loadConfig(eventContext?: Record<string, any>) {
+    const preloadedConfig = eventContext?.cwaSiteConfig as SiteConfigParams | undefined
+    if (preloadedConfig) {
+      this.store.$patch({
+        isLoading: false,
+        config: preloadedConfig,
+        serverConfig: (eventContext?.cwaSiteConfigServerValues ?? preloadedConfig) as Partial<SiteConfigParams>,
+      })
+      return preloadedConfig
+    }
     this.store.$patch({
       isLoading: true,
     })

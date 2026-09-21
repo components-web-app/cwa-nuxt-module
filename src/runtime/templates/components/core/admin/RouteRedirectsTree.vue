@@ -39,9 +39,11 @@
 <script lang="ts" setup>
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa, navigateTo, useRoute } from '#imports'
+import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 
 const $cwa = useCwa()
 const route = useRoute()
+const { getInternalResourceLink } = useCwaResourceRoute()
 const emit = defineEmits<{
   deleted: [resource: CwaResource]
 }>()
@@ -56,7 +58,9 @@ function onDelete(resource: CwaResource) {
 async function deleteRoute(resource: CwaResource) {
   const requestCompleteFn = (_?: CwaResource) => {
     if (resource?.path === route.path) {
-      navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
+      // via getInternalResourceLink - the IRI is a route param, not a path. See RoutesTab.handleDeleteRoute.
+      const iri = $cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value
+      iri && navigateTo(getInternalResourceLink(iri))
     }
   }
 

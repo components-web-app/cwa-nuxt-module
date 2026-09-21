@@ -83,13 +83,13 @@ describe('FetcherStore getters -> isFetchResolving', () => {
   })
 
   test.each([
-    { manifest: false, manifestResources: undefined, manifestError: undefined, result: false },
-    { manifest: true, manifestResources: undefined, manifestError: undefined, result: true },
-    { manifest: true, manifestResources: ['/some-resource'], manifestError: undefined, result: false },
-    { manifest: true, manifestResources: undefined, manifestError: { message: 'error' }, result: false },
+    { manifest: false, fetchComplete: false, manifestError: undefined, result: false },
+    { manifest: true, fetchComplete: false, manifestError: undefined, result: true },
+    { manifest: true, fetchComplete: true, manifestError: undefined, result: false },
+    { manifest: true, fetchComplete: false, manifestError: { message: 'error' }, result: false },
   ])(
-    'If manifest is \'$manifest\', manifest resources are \'$manifestResources\' and manifest error is \'$manifestError\' then the result should be \'$result\'',
-    ({ manifest, manifestResources, manifestError, result }: { manifest: boolean, manifestResources: undefined | string[], manifestError: any | undefined, result: boolean },
+    'If manifest is \'$manifest\', fetchComplete is \'$fetchComplete\' and manifest error is \'$manifestError\' then the result should be \'$result\'',
+    ({ manifest, fetchComplete, manifestError, result }: { manifest: boolean, fetchComplete: boolean, manifestError: any | undefined, result: boolean },
     ) => {
       const currentFetch: FetchStatus = {
         path: 'any',
@@ -99,7 +99,7 @@ describe('FetcherStore getters -> isFetchResolving', () => {
       if (manifest) {
         currentFetch.manifest = {
           path: 'any',
-          resources: manifestResources,
+          fetchComplete: fetchComplete ? true : undefined,
           error: manifestError,
         }
       }

@@ -1,12 +1,5 @@
 <template>
-  <Transition
-    enter-from-class="cwa:transform cwa:opacity-0"
-    enter-active-class="cwa:duration-300 cwa:ease-out"
-    enter-to-class="cwa:opacity-100"
-    leave-from-class="cwa:opacity-100"
-    leave-active-class="cwa:duration-300 cwa:ease-in"
-    leave-to-class="cwa:transform cwa:opacity-0"
-  >
+  <Transition v-bind="spinner">
     <div
       v-if="props.show"
       role="status"
@@ -34,7 +27,10 @@
 </template>
 
 <script setup lang="ts">
+import { useTransitions } from '#cwa/composables/transitions'
+
 const props = defineProps<{ show: boolean, size?: `cwa:size-${number}` }>()
+const { spinner } = useTransitions()
 defineOptions({
   inheritAttrs: false,
 })

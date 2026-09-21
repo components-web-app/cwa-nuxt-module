@@ -26,6 +26,6 @@ export default defineVitestConfig({
       return path + extension
     },
     setupFiles: ['./setup.ts'],
-    include: ['src/**/*.spec.ts'],
+    include: ['src/**/*.spec.ts', 'test/**/*.spec.ts'],
   },
 })

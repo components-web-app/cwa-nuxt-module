@@ -1,0 +1,252 @@
+// @vitest-environment happy-dom
+
+import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { ref, nextTick } from 'vue'
+
+import { useHtmlContent } from '#cwa/composables/component/html-content'
+
+const mounted = vi.hoisted(() => ({ cb: undefined as undefined | (() => void) }))
+const beforeUnmount = vi.hoisted(() => ({ cb: undefined as undefined | (() => void) }))
+const createdApps = vi.hoisted(() => ({ list: [] as any[] }))
+const lastRender = vi.hoisted(() => ({ props: undefined as any }))
+const mockRouter = vi.hoisted(() => ({ value: { name: 'mock-router' } }))
+
+vi.mock('vue', async () => {
+  const mod = await vi.importActual<typeof import('vue')>('vue')
+  return {
+    ...mod,
+    onMounted: vi.fn((fn: () => void) => {
+      mounted.cb = fn
+    }),
+    onBeforeUnmount: vi.fn((fn: () => void) => {
+      beforeUnmount.cb = fn
+    }),
+    createApp: vi.fn((options: any) => {
+      if (typeof options.render === 'function') {
+        try {
+          options.render()
+        }
+        catch {
+          // render may reference h() result internals; ignore
+        }
+      }
+      const app = {
+        _options: options,
+        use: vi.fn(() => app),
+        mount: vi.fn(),
+        unmount: vi.fn(),
+      }
+      createdApps.list.push(app)
+      return app
+    }),
+    h: vi.fn((comp: any, props: any) => {
+      if (props && 'to' in props) {
+        lastRender.props = props
+      }
+      return { comp, props }
+    }),
+  }
+})
+
+vi.mock('vue-router', async () => {
+  const mod = await vi.importActual<typeof import('vue-router')>('vue-router')
+  return { ...mod, useRouter: () => mockRouter.value }
+})
+
+describe('useHtmlContent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mounted.cb = undefined
+    beforeUnmount.cb = undefined
+    createdApps.list = []
+    lastRender.props = undefined
+  })
+
+  function setupContainer(innerHtml: string) {
+    const el = document.createElement('div')
+    el.innerHTML = innerHtml
+    return ref<HTMLElement | null>(el)
+  }
+
+  test('registers onMounted and onBeforeUnmount lifecycle hooks', () => {
+    const container = ref<HTMLElement | null>(null)
+    useHtmlContent(container)
+    expect(mounted.cb).toBeTypeOf('function')
+    expect(beforeUnmount.cb).toBeTypeOf('function')
+  })
+
+  test('does nothing when container has no element (no getElementsByTagName)', () => {
+    const container = ref<HTMLElement | null>(null)
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(0)
+  })
+
+  test('replaces an anchor with a mounted CwaLink app', () => {
+    const container = setupContainer('<a href="/internal-page">Click me</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+
+    expect(createdApps.list).toHaveLength(1)
+    expect(createdApps.list[0].use).toHaveBeenCalledWith(mockRouter.value)
+    expect(createdApps.list[0].mount).toHaveBeenCalledTimes(1)
+    expect(container.value?.getElementsByTagName('a')).toHaveLength(0)
+    expect(container.value?.getElementsByTagName('span').length).toBeGreaterThan(0)
+  })
+
+  test('skips anchors without an href', () => {
+    const container = setupContainer('<a>no href</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(0)
+    expect(container.value?.getElementsByTagName('a')).toHaveLength(1)
+  })
+
+  test('strips origin for same-host absolute URLs', () => {
+    const host = window.location.hostname
+    const container = setupContainer(`<a href="https://${host}:9999/path?x=1#frag">link</a>`)
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(lastRender.props.to).toBe('/path?x=1#frag')
+  })
+
+  test('keeps full URL for external hosts', () => {
+    const container = setupContainer('<a href="https://external.example.com/foo">link</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(lastRender.props.to).toBe('https://external.example.com/foo')
+  })
+
+  test('keeps absolute root-relative paths as-is', () => {
+    const container = setupContainer('<a href="/already/relative">link</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(lastRender.props.to).toBe('/already/relative')
+  })
+
+  test('prefixes bare words (e.g. lipsum "0") with // to treat as external', () => {
+    const container = setupContainer('<a href="0">bad link</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(lastRender.props.to).toBe('//0')
+  })
+
+  test('copies non-href/target attributes onto link props and ignores empty ones', () => {
+    const container = setupContainer('<a href="/p" class="my-class" data-foo="bar" target="_blank" title="">x</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    const props = lastRender.props
+    expect(props.class).toBe('my-class')
+    expect(props['data-foo']).toBe('bar')
+    expect(props.target).toBeUndefined()
+    expect(props.title).toBeUndefined()
+    expect(props.prefetch).toBe(false)
+  })
+
+  test('processes multiple anchors in the container', () => {
+    const container = setupContainer('<a href="/one">1</a><p><a href="/two">2</a></p>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(2)
+    expect(container.value?.getElementsByTagName('a')).toHaveLength(0)
+  })
+
+  test('re-runs replacement when container ref changes', async () => {
+    const container = ref<HTMLElement | null>(null)
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(0)
+
+    const el = document.createElement('div')
+    el.innerHTML = '<a href="/changed">link</a>'
+    container.value = el
+    await nextTick()
+    expect(createdApps.list).toHaveLength(1)
+  })
+
+  test('onBeforeUnmount stops the watcher', async () => {
+    const container = ref<HTMLElement | null>(null)
+    useHtmlContent(container)
+    mounted.cb?.()
+    beforeUnmount.cb?.()
+
+    const el = document.createElement('div')
+    el.innerHTML = '<a href="/after-unmount">link</a>'
+    container.value = el
+    await nextTick()
+    expect(createdApps.list).toHaveLength(0)
+  })
+
+  test('re-converts anchors when the html source changes', async () => {
+    const container = setupContainer('<a href="/one">1</a>')
+    const html = ref<string | undefined>('<a href="/one">1</a>')
+    useHtmlContent(container, html)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(1)
+    expect(lastRender.props.to).toBe('/one')
+
+    container.value!.innerHTML = '<a href="/two">2</a>'
+    html.value = '<a href="/two">2</a>'
+    await nextTick()
+
+    expect(createdApps.list).toHaveLength(2)
+    expect(lastRender.props.to).toBe('/two')
+  })
+
+  test('unmounts previously mounted apps before re-converting', async () => {
+    const container = setupContainer('<a href="/one">1</a>')
+    const html = ref<string | undefined>('<a href="/one">1</a>')
+    useHtmlContent(container, html)
+    mounted.cb?.()
+    const firstApp = createdApps.list[0]
+    expect(firstApp.unmount).not.toHaveBeenCalled()
+
+    container.value!.innerHTML = '<a href="/two">2</a>'
+    html.value = '<a href="/two">2</a>'
+    await nextTick()
+
+    expect(firstApp.unmount).toHaveBeenCalledTimes(1)
+    expect(createdApps.list[1].unmount).not.toHaveBeenCalled()
+  })
+
+  test('unmounts all mounted apps on component unmount', () => {
+    const container = setupContainer('<a href="/one">1</a><a href="/two">2</a>')
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(2)
+
+    beforeUnmount.cb?.()
+
+    expect(createdApps.list[0].unmount).toHaveBeenCalledTimes(1)
+    expect(createdApps.list[1].unmount).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not unmount an app that was never mounted', () => {
+    const container = setupContainer('<span />')
+    const orphan = document.createElement('a')
+    orphan.setAttribute('href', '/p')
+    vi.spyOn(container.value!, 'getElementsByTagName').mockReturnValue([orphan] as any)
+
+    useHtmlContent(container)
+    mounted.cb?.()
+    beforeUnmount.cb?.()
+
+    expect(createdApps.list).toHaveLength(1)
+    expect(createdApps.list[0].mount).not.toHaveBeenCalled()
+    expect(createdApps.list[0].unmount).not.toHaveBeenCalled()
+  })
+
+  test('does not mount when anchor has no parent node', () => {
+    const container = setupContainer('<a href="/p">x</a>')
+    const anchor = container.value!.getElementsByTagName('a')[0]
+    container.value!.removeChild(anchor)
+    const orphan = document.createElement('a')
+    orphan.setAttribute('href', '/p')
+    vi.spyOn(container.value!, 'getElementsByTagName').mockReturnValue([orphan] as any)
+
+    useHtmlContent(container)
+    mounted.cb?.()
+    expect(createdApps.list).toHaveLength(1)
+    expect(createdApps.list[0].mount).not.toHaveBeenCalled()
+  })
+})

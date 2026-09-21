@@ -10,6 +10,7 @@ import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 import { useCwaSelect } from '#cwa/composables/cwa-select'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
@@ -26,7 +27,6 @@ const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
 })
 
 const uiSelect = useCwaSelect(uiComponentModel.model)
-const classNamesSelect = useCwaSelect(uiClassNamesModel.model)
 
 const componentMeta = ref<(CwaResourceMeta | null)[]>([])
 
@@ -47,21 +47,30 @@ const uiOptions = computed(() => {
   return options
 })
 
-const classOptions = computed(() => {
-  const options: SelectOption[] = [{
-    label: 'Default',
-    value: null,
-  }]
-  const currentClasses = current.value?.styles?.value?.classes
-  if (currentClasses) {
-    for (const [styleName, styles] of Object.entries(currentClasses)) {
-      options.push({
-        label: styleName,
-        value: styles,
-      })
-    }
-  }
-  return options
+const styleClasses = computed<Record<string, string | string[]>>(() => current.value?.styles?.value?.classes || {})
+const isMultipleStyles = computed(() => !!current.value?.styles?.value?.multiple)
+const showStyleSelect = computed(() => Object.keys(styleClasses.value).length > 0)
+
+const styleNameOptions = computed<SelectOption[]>(() =>
+  Object.keys(styleClasses.value).map(name => ({ label: name, value: name })),
+)
+const singleStyleOptions = computed<SelectOption[]>(() => [
+  { label: 'Default', value: null },
+  ...styleNameOptions.value,
+])
+
+const selectedStyleNames = computed<string[]>({
+  get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value),
+  set: (names) => {
+    const merged = mergeSelectedStyles(names, styleClasses.value)
+    uiClassNamesModel.model.value = merged.length ? merged : null
+  },
+})
+const selectedStyleName = computed<string | null>({
+  get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value)[0] ?? null,
+  set: (name) => {
+    uiClassNamesModel.model.value = name ? mergeSelectedStyles([name], styleClasses.value) : null
+  },
 })
 
 const disabled = exposeMeta.disabled
@@ -98,13 +107,11 @@ onMounted(() => {
   watch(uiSelect.model, () => {
     watchOnce(savedUiComponent, () => {
       uiClassNamesModel.model.value = null
-      classNamesSelect.model.value = null
     })
   })
 
   watchEffect(() => {
     uiSelect.options.value = uiOptions.value
-    classNamesSelect.options.value = classOptions.value
   })
 })
 
@@ -118,18 +125,26 @@ defineExpose(exposeMeta)
         v-if="uiSelect.options.value.length > 1"
         label="UI:"
       >
-        <CwaUiFormSelect
+        <CwaUiSelect
           v-model="uiSelect.model.value"
           :options="uiSelect.options.value"
         />
       </CwaUiFormLabelWrapper>
       <CwaUiFormLabelWrapper
-        v-if="classNamesSelect.options.value.length > 1"
+        v-if="showStyleSelect"
         label="Style:"
       >
-        <CwaUiFormSelect
-          v-model="classNamesSelect.model.value"
-          :options="classNamesSelect.options.value"
+        <CwaUiSelect
+          v-if="isMultipleStyles"
+          v-model="selectedStyleNames"
+          :options="styleNameOptions"
+          multiple
+          placeholder="Default"
+        />
+        <CwaUiSelect
+          v-else
+          v-model="selectedStyleName"
+          :options="singleStyleOptions"
         />
       </CwaUiFormLabelWrapper>
     </div>

@@ -3,6 +3,13 @@
     <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1 cwa:min-w-0">
       <span class="cwa:text-xl cwa:truncate">{{ data.path }}</span>
       <span
+        data-route-publication
+        class="cwa:inline-flex cwa:self-start cwa:text-sm cwa:font-bold cwa:py-1 cwa:px-3 cwa:border cwa:rounded"
+        :class="publicationClass"
+      >
+        {{ publicationLabel }}<template v-if="publicationState === 'scheduled'"> — {{ goesLiveAt }}</template>
+      </span>
+      <span
         v-if="relatedResource"
         class="cwa:text-stone-400"
       >
@@ -62,9 +69,7 @@ import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
-
-const { fqcnToEntrypointKey } = useDataList()
+import { formatRouteLiveAt, getRouteLiveState, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
 
 const props = defineProps<{
   data: CwaResource
@@ -81,6 +86,20 @@ defineEmits<{
   delete: [string]
 }>()
 
+const routePublication = computed(() => routePublicationFromResource(props.data))
+const publicationState = computed(() => getRouteLiveState(routePublication.value))
+const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
+const goesLiveAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))
+const publicationClass = computed(() => {
+  if (publicationState.value === 'live') {
+    return 'cwa:text-stone-300 cwa:border-stone-600'
+  }
+  if (publicationState.value === 'scheduled') {
+    return 'cwa:text-amber-400 cwa:border-amber-400'
+  }
+  return 'cwa:text-white cwa:bg-magenta/60 cwa:border-magenta'
+})
+
 const linkTo = computed(() => {
   if (!relatedResource.value) {
     return
@@ -89,12 +108,12 @@ const linkTo = computed(() => {
     if (!props.data.pageData) {
       return '#'
     }
-    return props.linkFn(props.data.pageData, '_cwa-data-type-iri', '#routes', { type: fqcnToEntrypointKey(props.associatedResources?.pageDataType || '') || '' })
+    return props.linkFn(props.data.pageData, '_cwa-routes', '#routes')
   }
   if (!props.data.page) {
     return '#'
   }
-  return props.linkFn(props.data.page, '_cwa-pages', '#routes')
+  return props.linkFn(props.data.page, '_cwa-routes', '#routes')
 })
 
 const resourceType = computed<undefined | 'Route' | 'Page' | 'PageData'>(() => {

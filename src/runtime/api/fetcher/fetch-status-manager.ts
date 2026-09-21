@@ -9,16 +9,18 @@ import type {
   AddFetchResourceEvent,
   FinishFetchEvent, ManifestErrorFetchEvent,
   ManifestSuccessFetchEvent,
+  SetManifestIrisByDepthEvent,
   StartFetchEvent, StartFetchResponse,
 } from '../../storage/stores/fetcher/actions'
+import { FinishFetchManifestType } from '../../storage/stores/fetcher/actions'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../../storage/stores/resources/resources-store'
 import type { CwaResourceError } from '../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../errors/cwa-resource-error'
-import { isCwaResource } from '../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri, isCwaResource } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
-import type { FetchStatus } from '#cwa/storage/stores/fetcher/state'
+import type { FetchAbortReason, FetchStatus, RouteCacheEntry } from '#cwa/storage/stores/fetcher/state'
 import { clearError, useError } from '#imports'
 
 export interface FinishFetchResourceEvent {
@@ -52,16 +54,20 @@ export default class FetchStatusManager {
   private readonly _fetcherStore: CwaFetcherStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
 
+  private readonly routeCacheLimit: number
+
   constructor(
     fetcherStoreDefinition: FetcherStore,
     mercure: Mercure,
     apiDocumentation: ApiDocumentation,
     resourcesStoreDefinition: ResourcesStore,
+    routeCacheLimit = 50,
   ) {
     this.mercure = mercure
     this.apiDocumentation = apiDocumentation
     this._fetcherStore = fetcherStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
+    this.routeCacheLimit = routeCacheLimit
   }
 
   public async getFetchedCurrentResource(iri: string, timeout?: number): Promise<CwaResource | undefined> {
@@ -93,11 +99,57 @@ export default class FetchStatusManager {
   }
 
   public startFetch(event: _StartFetchEvent): StartFetchResponse {
+    const outgoingFetchingToken = event.isPrimary ? this.fetcherStore.primaryFetch.fetchingToken : undefined
+    if (event.isPrimary) {
+      this.fetcherStore.resetIriDepths()
+    }
     const startFetchStatus = this.fetcherStore.startFetch({ ...event, isCurrentSuccessResourcesResolved: this.isCurrentSuccessResourcesResolved })
     if (event.isPrimary) {
-      this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
+      if (
+        startFetchStatus.continue
+        && outgoingFetchingToken
+        && outgoingFetchingToken !== startFetchStatus.token
+        && this.fetchHasDisplayablePage(outgoingFetchingToken)
+      ) {
+        this.fetcherStore.setDisplayedToken(outgoingFetchingToken)
+      }
+
+      const cached = startFetchStatus.continue ? this.getCachedRoute(event.path) : undefined
+      if (cached && this.fetcherStore.fetches[startFetchStatus.token]?.manifest) {
+        this.setManifestIrisByDepth({ token: startFetchStatus.token, resourceIris: cached.resourceTree })
+        this.fetcherStore.finishManifestFetch({ token: startFetchStatus.token, type: FinishFetchManifestType.SUCCESS })
+        this.resourcesStore.resetCurrentResources(cached.resourceIris)
+        this.fetcherStore.setDisplayedToken(startFetchStatus.token)
+      }
+      else {
+        this.resourcesStore.resetCurrentResources(startFetchStatus.resources)
+      }
     }
     return startFetchStatus
+  }
+
+  private getCachedRoute(path: string): RouteCacheEntry | undefined {
+    const cached = this.fetcherStore.routeCache.get(path)
+    if (!cached) {
+      return undefined
+    }
+    const allResourcesPresent = cached.resourceIris.every(iri => !!this.resourcesStore.current.byId?.[iri]?.data)
+    if (!allResourcesPresent) {
+      return undefined
+    }
+    cached.lastAccessed = (new Date()).getTime()
+    return cached
+  }
+
+  private fetchHasDisplayablePage(token: string): boolean {
+    const irisByDepth = this.fetcherStore.fetches[token]?.manifest?.irisByDepth
+    if (!irisByDepth?.length) {
+      return false
+    }
+    return irisByDepth.every((depthGroup) => {
+      const pageIri = depthGroup.find(iri => getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE)
+      return !!(pageIri && this.resourcesStore.current.byId?.[pageIri]?.data)
+    })
   }
 
   public startFetchResource(event: AddFetchResourceEvent): boolean {
@@ -124,22 +176,7 @@ export default class FetchStatusManager {
     const isCurrent = this.fetcherStore.isCurrentFetchingToken(event.token)
     const fetchStatus = this.fetcherStore.fetches[event.token]
 
-    // we do not want to wait for timeouts for duplicate fetch requests from resources. We can set an error. It will not be saved to current resources
-    if (fetchStatus?.abort) {
-      this.resourcesStore.setResourceFetchError({
-        iri: event.resource,
-        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' has been aborted.`)),
-        isCurrent,
-      })
-      return
-    }
-
-    if (!isCurrent) {
-      this.resourcesStore.setResourceFetchError({
-        iri: event.resource,
-        error: createCwaResourceError(new Error(`Not Saved. Fetching token '${event.token}' is no longer current.`)),
-        isCurrent,
-      })
+    if (fetchStatus?.abort || !isCurrent) {
       return
     }
 
@@ -207,6 +244,62 @@ export default class FetchStatusManager {
   public async finishFetch(event: FinishFetchEvent): Promise<void> {
     await this.waitForFetchChainToComplete(event.token)
     this.fetcherStore.finishFetch(event)
+    this.enforceRouteCacheLimit()
+  }
+
+  private enforceRouteCacheLimit(): void {
+    const routeCache = this.fetcherStore.routeCache
+    if (this.routeCacheLimit <= 0 || routeCache.size <= this.routeCacheLimit) {
+      return
+    }
+    const protectedPaths = this.activeRoutePaths()
+    const evictionQueue = [...routeCache.entries()]
+      .filter(([path]) => !protectedPaths.has(path))
+      .sort((a, b) => a[1].lastAccessed - b[1].lastAccessed)
+
+    while (routeCache.size > this.routeCacheLimit && evictionQueue.length) {
+      const next = evictionQueue.shift()
+      if (!next) {
+        break
+      }
+      const [path, entry] = next
+      routeCache.delete(path)
+      const droppable = entry.resourceIris.filter(iri => !this.isResourceReferencedByCache(iri) && !this.isResourceProtectedFromEviction(iri))
+      this.resourcesStore.evictResources(droppable)
+    }
+  }
+
+  private activeRoutePaths(): Set<string> {
+    const paths = new Set<string>()
+    const { fetchingToken, successToken, displayedToken } = this.fetcherStore.primaryFetch
+    for (const token of [fetchingToken, successToken, displayedToken]) {
+      const path = token ? this.fetcherStore.fetches[token]?.path : undefined
+      if (path) {
+        paths.add(path)
+      }
+    }
+    return paths
+  }
+
+  private isResourceReferencedByCache(iri: string): boolean {
+    for (const entry of this.fetcherStore.routeCache.values()) {
+      if (entry.resourceIris.includes(iri)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private isResourceProtectedFromEviction(iri: string): boolean {
+    if (this.resourcesStore.current.currentIds.includes(iri)) {
+      return true
+    }
+    for (const fetchStatus of Object.values(this.fetcherStore.fetches)) {
+      if (fetchStatus.resources.includes(iri)) {
+        return true
+      }
+    }
+    return false
   }
 
   private finishFetchShowError(fetchStatus: FetchStatus | undefined, eventResource: string) {
@@ -253,6 +346,22 @@ export default class FetchStatusManager {
     stopWatch()
   }
 
+  public setManifestIrisByDepth(event: SetManifestIrisByDepthEvent): void {
+    this.fetcherStore.setManifestIrisByDepth(event)
+  }
+
+  public getDepthForIri(iri: string): number | undefined {
+    return this.fetcherStore.iriDepths[iri]
+  }
+
+  public getPathForDepth(depth: number): string | undefined {
+    return this.fetcherStore.depthPaths[depth]
+  }
+
+  public registerIriDepth(iri: string, depth: number): void {
+    this.fetcherStore.registerIriDepth({ iri, depth })
+  }
+
   public finishManifestFetch(event: ManifestSuccessFetchEvent | ManifestErrorFetchEvent): void {
     this.fetcherStore.finishManifestFetch(event)
   }
@@ -261,13 +370,15 @@ export default class FetchStatusManager {
     return this.fetcherStore.isCurrentFetchingToken(token)
   }
 
-  public abortFetch(token: string) {
-    return this.fetcherStore.abortFetch({ token })
+  public abortFetch(token: string, reason?: FetchAbortReason) {
+    return this.fetcherStore.abortFetch({ token, reason })
   }
 
   // todo: test
   public clearPrimaryFetch() {
     this.fetcherStore.primaryFetch.successToken = undefined
+    this.fetcherStore.primaryFetch.fetchingToken = undefined
+    this.fetcherStore.primaryFetch.displayedToken = undefined
   }
 
   public get primaryFetchPath(): string | undefined {

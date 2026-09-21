@@ -1,10 +1,16 @@
-// @vitest-environment happy-dom
+// @vitest-environment nuxt
 
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { $fetch } from 'ofetch'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+import * as processComposables from '#cwa/composables/process'
 import CwaFetch from './cwa-fetch'
 
 vi.mock('ofetch')
+
+// `vi.mock('#imports')` does not intercept here — use mockNuxtImport (see CLAUDE.md)
+const mockUseRequestHeaders = vi.hoisted(() => vi.fn(() => ({}) as Record<string, string | undefined>))
+mockNuxtImport('useRequestHeaders', () => mockUseRequestHeaders)
 
 describe('Create a fetch instances with defaults', () => {
   test('Correct defaults are set on fetch', () => {
@@ -22,5 +28,191 @@ describe('Create a fetch instances with defaults', () => {
         credentials: 'include',
       }))
     expect(cwaFetch.fetch).toBe('mockedFetchCreateInstance')
+  })
+})
+
+describe('CwaFetch -> getRequestOptions', () => {
+  // @ts-expect-error mocked
+  vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+
+  test.each([
+    { method: 'POST' as const, expectedContentType: 'application/ld+json' },
+    { method: 'DELETE' as const, expectedContentType: 'application/ld+json' },
+    { method: 'PATCH' as const, expectedContentType: 'application/merge-patch+json' },
+  ])('$method returns correct headers', ({ method, expectedContentType }) => {
+    const cwaFetch = new CwaFetch('https://my-api')
+    const opts = cwaFetch.getRequestOptions(method)
+    expect(opts.method).toBe(method)
+    expect(opts.headers['accept']).toBe('application/ld+json,application/json')
+    expect(opts.headers['content-type']).toBe(expectedContentType)
+  })
+})
+
+describe('CwaFetch -> server-side cookie forwarding', () => {
+  const createRequestCtx = () => ({
+    request: '/_/routes//',
+    options: { headers: new Headers() },
+  })
+
+  function captureOnRequest() {
+    // @ts-expect-error mocked
+    const createSpy = vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    void new CwaFetch('https://my-api')
+    return createSpy.mock.calls[0][0].onRequest
+  }
+
+  function contextIsLost() {
+    mockUseRequestHeaders.mockImplementation(() => {
+      throw new Error('[nuxt] instance unavailable')
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('captures the request cookie at construction and still forwards it once the Nuxt context is gone', () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    mockUseRequestHeaders.mockReturnValue({ cookie: 'api_component=jwt; cwa_auth=1' })
+
+    const onRequest = captureOnRequest()
+
+    expect(mockUseRequestHeaders).toHaveBeenCalledWith(['cookie'])
+    expect(mockUseRequestHeaders).toHaveBeenCalledTimes(1)
+
+    contextIsLost()
+
+    const ctx = createRequestCtx()
+    expect(() => onRequest(ctx)).not.toThrow()
+    expect(ctx.options.headers.get('cookie')).toBe('api_component=jwt; cwa_auth=1')
+    expect(mockUseRequestHeaders).toHaveBeenCalledTimes(1)
+  })
+
+  test('forwards the captured cookie on every request from the same instance, including ofetch retries', () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    mockUseRequestHeaders.mockReturnValue({ cookie: 'api_component=jwt' })
+
+    const onRequest = captureOnRequest()
+    contextIsLost()
+
+    for (const _attempt of [1, 2]) {
+      const ctx = createRequestCtx()
+      onRequest(ctx)
+      expect(ctx.options.headers.get('cookie')).toBe('api_component=jwt')
+    }
+  })
+
+  test('does not read or forward request headers on the client', () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
+
+    const onRequest = captureOnRequest()
+    expect(mockUseRequestHeaders).not.toHaveBeenCalled()
+
+    const ctx = createRequestCtx()
+    onRequest(ctx)
+    expect(ctx.options.headers.get('cookie')).toBeNull()
+  })
+
+  test('appends no cookie header when the incoming request has none', () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    mockUseRequestHeaders.mockReturnValue({})
+
+    const onRequest = captureOnRequest()
+    const ctx = createRequestCtx()
+    onRequest(ctx)
+    expect(ctx.options.headers.get('cookie')).toBeNull()
+  })
+})
+
+describe('CwaFetch -> API cache state', () => {
+  const createResponseCtx = (cacheControl: string) => ({
+    response: { headers: new Headers({ 'cache-control': cacheControl }) },
+  })
+
+  function captureOnResponse(instance: CwaFetch) {
+    // @ts-expect-error mocked
+    const createSpy = vi.spyOn($fetch, 'create')
+    void instance
+    return createSpy.mock.calls[createSpy.mock.calls.length - 1][0].onResponse
+  }
+
+  function serverInstance() {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    // @ts-expect-error mocked
+    vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    return new CwaFetch('https://my-api')
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseRequestHeaders.mockReturnValue({})
+  })
+
+  test('onResponse is registered on the fetch instance', () => {
+    const cwaFetch = serverInstance()
+    expect(typeof captureOnResponse(cwaFetch)).toBe('function')
+  })
+
+  test('each response is folded into the instance state', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+
+    onResponse(createResponseCtx('public, s-maxage=3600'))
+    onResponse(createResponseCtx('public, s-maxage=120'))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: 120 })
+  })
+
+  test('a no-store response marks the instance unstorable', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+
+    onResponse(createResponseCtx('public, s-maxage=3600'))
+    onResponse(createResponseCtx('private, no-store, max-age=0'))
+
+    expect(cwaFetch.httpCacheState.storable).toBe(false)
+  })
+
+  test('onResponse does not touch Nuxt context', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+    mockUseRequestHeaders.mockClear()
+
+    expect(() => onResponse(createResponseCtx('public, s-maxage=60'))).not.toThrow()
+
+    expect(mockUseRequestHeaders).not.toHaveBeenCalled()
+    expect(cwaFetch.httpCacheState.sharedMaxAge).toBe(60)
+  })
+
+  test('onResponse is synchronous', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+
+    expect(onResponse(createResponseCtx('public, s-maxage=60'))).toBeUndefined()
+  })
+
+  test('the client instance records nothing', () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
+    // @ts-expect-error mocked
+    vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    const cwaFetch = new CwaFetch('https://my-api')
+    const onResponse = captureOnResponse(cwaFetch)
+
+    onResponse(createResponseCtx('private, no-store'))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: undefined })
+  })
+
+  test('two instances never share state', () => {
+    const first = serverInstance()
+    const onFirstResponse = captureOnResponse(first)
+    const second = serverInstance()
+    const onSecondResponse = captureOnResponse(second)
+
+    onFirstResponse(createResponseCtx('private, no-store'))
+    onSecondResponse(createResponseCtx('public, s-maxage=600'))
+
+    expect(first.httpCacheState).toEqual({ storable: false, sharedMaxAge: undefined })
+    expect(second.httpCacheState).toEqual({ storable: true, sharedMaxAge: 600 })
   })
 })

@@ -18,6 +18,7 @@ interface MercureMessageInterface {
 export default class Mercure {
   private eventSource?: EventSource
   private lastEventId?: string
+  private onlineListenerAttached = false
   private mercureMessageQueue: MercureMessageInterface[] = []
   private fetcher?: Fetcher
   private requestCount?: ComputedRef<number>
@@ -84,6 +85,67 @@ export default class Mercure {
     logger.info(`Initializing Mercure '${this.hubUrl}'`)
     this.eventSource = new EventSource(this.hubUrl, { withCredentials: true })
     this.eventSource.onmessage = (event: MessageEvent) => this.handleMercureMessage(event)
+    this.eventSource.onerror = () => this.handleConnectionLost()
+    this.eventSource.onopen = () => this.handleConnectionOpen()
+    this.listenForOnline()
+  }
+
+  private listenForOnline() {
+    if (this.onlineListenerAttached || typeof window === 'undefined') {
+      return
+    }
+    this.onlineListenerAttached = true
+    window.addEventListener('online', () => {
+      if (this.mercureStore.connected === false) {
+        this.revalidateCurrentResources()
+      }
+    })
+  }
+
+  private handleConnectionLost() {
+    if (this.mercureStore.connected === false) {
+      return
+    }
+    this.mercureStore.connected = false
+    logger.warn('Mercure connection lost. Resources will be revalidated when it returns.')
+  }
+
+  private handleConnectionOpen() {
+    const isReconnect = this.mercureStore.connected === false
+    this.mercureStore.connected = true
+    if (!isReconnect) {
+      return
+    }
+    logger.info('Mercure reconnected. Revalidating current resources.')
+    this.revalidateCurrentResources()
+  }
+
+  private revalidateCurrentResources() {
+    const run = async () => {
+      const currentIds = [...this.resourcesStore.current.currentIds]
+      if (!currentIds.length || !this.fetcher) {
+        return
+      }
+      const path = this._fetcherStore.primaryFetchPath
+      const resources = await this.fetch(currentIds)
+      for (const resource of resources) {
+        this.resourcesStore.saveResource({
+          resource,
+          path,
+          isNew: true,
+        })
+      }
+    }
+
+    if (!this.requestsInProgress.value) {
+      return run()
+    }
+    const unwatch = watch(this.requestsInProgress, (inProgress) => {
+      if (!inProgress) {
+        run()
+        unwatch()
+      }
+    })
   }
 
   public closeMercure() {
@@ -131,7 +193,7 @@ export default class Mercure {
   private isMessageForCurrentResource(mercureMessage: MercureMessageInterface): boolean {
     const currentResources = this.resourcesStore.current.currentIds
     const mercureMessageResource = mercureMessage.data
-    if (!('@id' in mercureMessageResource)) {
+    if (!mercureMessageResource || !('@id' in mercureMessageResource)) {
       return false
     }
     if (!currentResources.includes(mercureMessageResource['@id'])) {

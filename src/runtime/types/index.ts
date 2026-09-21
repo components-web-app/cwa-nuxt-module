@@ -46,6 +46,13 @@ export interface CwaModuleOptions {
   siteConfig: Partial<SiteConfigParams>
   resources: CwaResourcesMeta
   pagesDepth?: number
+  routeCacheLimit?: number
+  staticRender?: boolean
+  pageCache?: {
+    enabled?: boolean
+    sharedMaxAge?: number
+    staleWhileRevalidate?: number
+  }
   layouts?: {
     [type: string]: CwaUiMeta
   }
@@ -54,6 +61,7 @@ export interface CwaModuleOptions {
   }
   pageData?: {
     [resourceClass: string]: Pick<CwaUiMeta, 'name'> & {
+      properties?: { [propertyName: string]: string }
       metaFields?: {
         field: string
         type: 'input' | 'select'

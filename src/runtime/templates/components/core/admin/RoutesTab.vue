@@ -1,12 +1,30 @@
 <template>
   <div>
     <div v-if="currentScreen === 'view'">
-      <RoutesTabView
-        :resource="resource"
-        :is-loading="isLoadingRoute"
-        @deleted="handleRedirectDeleted"
-        @change-page="handleChangePage"
-      />
+      <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
+        <RoutesTabView
+          :resource="resource"
+          :is-loading="isLoadingRoute"
+          :parent-has-no-route="parentHasNoRoute"
+          :forward-to-path="forwardToPath"
+          @deleted="handleRedirectDeleted"
+          @change-page="handleChangePage"
+          @remove-forward="handleRemoveForwardTo"
+        />
+        <div v-if="childRoutes.length">
+          <span class="cwa:text-xs cwa:text-stone-400 cwa:uppercase cwa:tracking-wide">Child routes</span>
+          <div class="cwa:mt-1 cwa:flex cwa:flex-col cwa:divide-y cwa:divide-stone-700">
+            <div
+              v-for="child in flatChildRoutes"
+              :key="child.route"
+              class="cwa:py-1.5 cwa:text-sm cwa:text-stone-300"
+              :style="{ paddingLeft: child.depth > 0 ? `${child.depth}rem` : undefined }"
+            >
+              {{ child.path }}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div
       v-else-if="!resource"
@@ -35,9 +53,12 @@
           <RoutesTabManage
             v-else
             v-model="localResourceData.path"
+            v-model:live-at="localResourceData.liveAt"
             :current-path="resource.path"
             :disable-buttons="disableButtons"
             :page-resource="pageResource"
+            :parent-route-prefix="parentRoutePrefix"
+            :route-publication="routePublication"
             @save="handleSaveRoute"
             @generate="handleGenerateRoute"
             @delete="handleDeleteRoute"
@@ -51,22 +72,37 @@
             @create="handleCreateRedirect"
           />
         </div>
+
+        <div v-if="currentScreen === 'forward-to'">
+          <RoutesTabForwardTo
+            :disable-buttons="disableButtons"
+            :current-route-iri="resource['@id']"
+            :initial-iri="redirectIri"
+            @create="handleSetForwardTo"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import { routePublicationFromResource } from '#cwa/resources/route-publication'
 import { useCwa, navigateTo, useRoute } from '#imports'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
+import RoutesTabForwardTo from '#cwa/templates/components/core/admin/RoutesTabForwardTo.vue'
+import type { RouteHierarchyNodeData } from '#cwa/templates/components/core/admin/RouteHierarchyNode.vue'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
-export type RouteScreens = 'view' | 'manage-route' | 'create-redirect'
+export type RouteScreens = 'view' | 'manage-route' | 'create-redirect' | 'forward-to'
 
 const props = defineProps<{
   pageResource: CwaResource
@@ -79,6 +115,36 @@ const emit = defineEmits<{
 
 const $cwa = useCwa()
 const route = useRoute()
+const { getInternalResourceLink } = useCwaResourceRoute()
+
+const parentIri = computed(() => props.pageResource.parentPage || props.pageResource.parentPageData)
+const parentResource = computed(() => parentIri.value ? $cwa.resources.getResource(parentIri.value).value : null)
+
+watchEffect(() => {
+  const iri = parentIri.value
+  if (iri && !parentResource.value?.data) {
+    $cwa.fetchResource({ path: iri, shallowFetch: true })
+  }
+})
+const parentRoutePrefix = computed(() => {
+  const routeIri = parentResource.value?.data?.route
+  if (!routeIri) {
+    return null
+  }
+  return routeIri.replace(/^.*\/_\/routes\//, '')
+})
+const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
+
+const redirectIri = computed<string | undefined>(() => {
+  const r = resource.value?.redirect
+  if (!r) return undefined
+  return typeof r === 'object' ? (r as any)['@id'] : (r as string)
+})
+
+const forwardToPath = computed(() => {
+  if (!redirectIri.value) return undefined
+  return redirectIri.value.replace(/^.*\/_\/routes\//, '')
+})
 
 const routeIriFromPage = computed(() => (props.pageResource.route))
 const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.value}/redirects` : 'add')
@@ -86,7 +152,35 @@ const endpoint = computed(() => routeIriFromPage.value ? `${routeIriFromPage.val
 const disableButtons = computed(() => submitting.value || isUpdating.value)
 
 const submitting = ref(false)
-const currentScreen = ref<'view' | 'manage-route' | 'create-redirect'>('view')
+const currentScreen = ref<RouteScreens>('view')
+const childRoutes = ref<RouteHierarchyNodeData[]>([])
+
+function flattenRouteNodes(nodes: RouteHierarchyNodeData[], depth = 0): Array<RouteHierarchyNodeData & { depth: number }> {
+  const result: Array<RouteHierarchyNodeData & { depth: number }> = []
+  for (const node of nodes) {
+    result.push({ ...node, depth })
+    result.push(...flattenRouteNodes(node.children, depth + 1))
+  }
+  return result
+}
+
+const flatChildRoutes = computed(() => flattenRouteNodes(childRoutes.value))
+
+async function loadChildRoutes() {
+  const iri = routeIriFromPage.value
+  if (!iri) {
+    childRoutes.value = []
+    return
+  }
+  try {
+    const { response } = $cwa.fetch({ path: `${iri}/children` })
+    const { _data: data } = await response
+    childRoutes.value = data?.children ?? []
+  }
+  catch {
+    childRoutes.value = []
+  }
+}
 
 function handleChangePage(screen: RouteScreens) {
   if (screen === 'manage-route') {
@@ -112,8 +206,19 @@ async function handleCreateRedirect(path: string) {
   }
 }
 
+async function askCascadeChildPaths(): Promise<boolean> {
+  // @ts-expect-error
+  const dialog = createConfirmDialog(ConfirmDialog)
+  const { isCanceled } = await dialog.reveal({
+    title: 'Update child routes?',
+    content: '<p>The route path has changed. If this page has child routes that share the old prefix, would you like to update them too? Routes using a different prefix will be unchanged.</p>',
+  })
+  return !isCanceled
+}
+
 async function handleGenerateRoute() {
   submitting.value = true
+  const oldPath = resource.value?.path as string | undefined
   const newResource = await $cwa.resourcesManager.createResource({
     endpoint: '/_/routes/generate',
     data: {
@@ -125,20 +230,37 @@ async function handleGenerateRoute() {
   if (newResource) {
     emit('reload')
     handleChangePage('view')
+    const newPath = newResource.path as string | undefined
+    if (oldPath && newPath && newPath !== oldPath) {
+      if (await askCascadeChildPaths()) {
+        await $cwa.resourcesManager.updateResource({
+          endpoint: newResource['@id'],
+          data: { path: newPath, cascadeChildPaths: true, oldPath },
+        })
+      }
+    }
   }
 }
 
 async function handleSaveRoute() {
-  const resource = await saveResource(false)
-  if (resource) {
+  const pathChanged = localResourceData.value?.path !== resource.value?.path
+  let cascadeData: Record<string, any> | undefined
+
+  if (pathChanged && await askCascadeChildPaths()) {
+    cascadeData = { cascadeChildPaths: true }
+  }
+
+  const savedResource = await saveResource(false, cascadeData)
+  if (savedResource) {
     isLoadingRoute.value = true
     // reload the parent, because the route IRI/ID will have changed so we need to reference the updated route
     emit('reload')
     handleChangePage('view')
 
-    if (routeIriFromPage.value === resource['@id']) {
+    if (routeIriFromPage.value === savedResource['@id']) {
       await loadResource()
     }
+    await loadChildRoutes()
   }
 }
 
@@ -146,8 +268,8 @@ async function handleDeleteRoute() {
   const deletingPath = resource.value?.path
   const requestCompleteFn = (_?: CwaResource) => {
     if (deletingPath === route.path) {
-      // if we are viewing the page via the route, reload the page via the direct IRI now the route no longer exists
-      navigateTo($cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value)
+      const iri = $cwa.resources.isDataPage.value ? $cwa.resources.pageDataIri.value : $cwa.resources.pageIri.value
+      iri && navigateTo(getInternalResourceLink(iri))
     }
   }
 
@@ -158,6 +280,27 @@ async function handleDeleteRoute() {
 
 async function handleRedirectDeleted() {
   isLoadingRoute.value = true
+  await loadResource()
+}
+
+async function handleSetForwardTo(targetIri: string) {
+  submitting.value = true
+  await $cwa.resourcesManager.updateResource({
+    endpoint: resource.value?.['@id'],
+    data: { redirect: targetIri },
+  })
+  submitting.value = false
+  handleChangePage('view')
+  await loadResource()
+}
+
+async function handleRemoveForwardTo() {
+  submitting.value = true
+  await $cwa.resourcesManager.updateResource({
+    endpoint: resource.value?.['@id'],
+    data: { redirect: null },
+  })
+  submitting.value = false
   await loadResource()
 }
 
@@ -193,9 +336,19 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   },
   endpoint,
   iri: routeIriFromPage,
-  // exclude this field when updating the resource or creating
-  excludeFields: ['redirectedFrom'],
+  excludeFields: ['redirectedFrom', 'redirect'],
 })
+
+const routePublication = computed(() => routePublicationFromResource(resource.value))
+
+watch(resource, (res) => {
+  if (res?.['@id']) {
+    loadChildRoutes()
+  }
+  else {
+    childRoutes.value = []
+  }
+}, { immediate: true })
 
 // if the route resource is reloaded without the redirects postfix, we need to fix this.
 watch(apiState, (newState) => {

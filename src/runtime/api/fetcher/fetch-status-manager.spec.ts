@@ -74,6 +74,9 @@ function createFetchStatusManager(): FetchStatusManager {
   const fetcherUseStoreResult = {
     isCurrentFetchingToken: vi.fn(() => true),
     fetches: {},
+    primaryFetch: {},
+    setDisplayedToken: vi.fn(),
+    routeCache: new Map(),
   }
   const resourcesUseStoreResult = {
     saveResource: vi.fn(),
@@ -220,6 +223,10 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
     }
     fetchStatusManager._fetcherStore = {
       startFetch: vi.fn(() => (startFetchResponse)),
+      primaryFetch: {},
+      setDisplayedToken: vi.fn(),
+      routeCache: new Map(),
+      resetIriDepths: vi.fn(),
     }
     const startFetchEvent: StartFetchEvent = {
       path: '/fetch-path',
@@ -229,6 +236,28 @@ describe('FetchStatusManager -> startFetch (Start a new fetch chain)', () => {
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.resetCurrentResources).toBeCalledWith(startFetchResponse.resources)
     expect(Mercure.mock.instances[0].init).not.toHaveBeenCalled()
     expect(response).toStrictEqual(startFetchResponse)
+  })
+})
+
+describe('FetchStatusManager -> clearPrimaryFetch', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('resets the fetching, success and displayed tokens', () => {
+    fetchStatusManager._fetcherStore = {
+      primaryFetch: { fetchingToken: 'f', successToken: 's', displayedToken: 'd' },
+    }
+    fetchStatusManager.clearPrimaryFetch()
+    expect(fetchStatusManager._fetcherStore.primaryFetch.fetchingToken).toBeUndefined()
+    expect(fetchStatusManager._fetcherStore.primaryFetch.successToken).toBeUndefined()
+    expect(fetchStatusManager._fetcherStore.primaryFetch.displayedToken).toBeUndefined()
   })
 })
 
@@ -351,7 +380,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     expect(response).toBeUndefined()
   })
 
-  test('If fetching token is aborted, update the resources store with an error message once. Do not call setResourceFetchStatus', () => {
+  test('If fetching token is aborted, return undefined without touching the resource store', () => {
     const useStoreImplementation = {
       isCurrentFetchingToken: vi.fn(() => false),
       fetches: {
@@ -373,17 +402,12 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     })
 
     expect(useStoreImplementation.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
-
-    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
-      iri: '/some-resource',
-      isCurrent: false,
-      error: createCwaResourceError(new Error('Not Saved. Fetching token \'my-token\' has been aborted.')),
-    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
     expect(response).toBeUndefined()
   })
 
-  test('If fetching token is not aborted, but not current update the resources store with an error message once. Do not call setResourceFetchStatus', () => {
+  test('If fetching token is not aborted but not current, return undefined without touching the resource store', () => {
     const useStoreImplementation = {
       isCurrentFetchingToken: vi.fn(() => false),
       fetches: {
@@ -403,12 +427,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
     })
 
     expect(useStoreImplementation.isCurrentFetchingToken).toHaveBeenCalledWith('my-token')
-
-    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith({
-      iri: '/some-resource',
-      isCurrent: false,
-      error: createCwaResourceError(new Error('Not Saved. Fetching token \'my-token\' is no longer current.')),
-    })
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).not.toHaveBeenCalled()
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
     expect(response).toBeUndefined()
   })
@@ -611,6 +630,7 @@ describe('FetchStatusManager -> finishFetch (finish a fetch chain)', () => {
     const finishFetch = vi.fn(() => Promise.resolve('anything'))
     fetchStatusManager._fetcherStore = {
       finishFetch,
+      routeCache: new Map(),
     }
     vi.spyOn(fetchStatusManager, 'computedFetchChainComplete').mockImplementation(() => {
       return computed(() => true)
@@ -718,8 +738,17 @@ describe('FetchStatusManager -> abortFetch', () => {
       abortFetch,
     }
     const result = fetchStatusManager.abortFetch('my-token')
-    expect(abortFetch).toHaveBeenCalledWith({ token: 'my-token' })
+    expect(abortFetch).toHaveBeenCalledWith({ token: 'my-token', reason: undefined })
     expect(result).toBe('anything')
+  })
+
+  test('An abort reason is forwarded to the store action', () => {
+    const abortFetch = vi.fn(() => 'anything')
+    fetchStatusManager._fetcherStore = {
+      abortFetch,
+    }
+    fetchStatusManager.abortFetch('my-token', 'redirect')
+    expect(abortFetch).toHaveBeenCalledWith({ token: 'my-token', reason: 'redirect' })
   })
 })
 
@@ -739,6 +768,62 @@ describe('FetchStatusManager -> primaryFetchPath', () => {
       primaryFetchPath: 'anything',
     }
     expect(fetchStatusManager.primaryFetchPath).toBe('anything')
+  })
+})
+
+describe('FetchStatusManager -> depth tracking (delegates to the fetcher store)', () => {
+  let fetchStatusManager: FetchStatusManager
+
+  const depthNode = (iris: string[]) => ({ iri: iris[0], children: iris.slice(1).map(iri => ({ iri, children: [] })) })
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+    fetchStatusManager._fetcherStore = {
+      iriDepths: { '/_/pages/parent': 0 },
+      depthPaths: { 0: '/topic-1' },
+      setManifestIrisByDepth: vi.fn(),
+      registerIriDepth: vi.fn(),
+      resetIriDepths: vi.fn(),
+      startFetch: vi.fn(() => ({ continue: true, token: 'token', resources: [] })),
+      primaryFetch: {},
+      setDisplayedToken: vi.fn(),
+      routeCache: new Map(),
+    }
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('getDepthForIri reads the depth from the store', () => {
+    expect(fetchStatusManager.getDepthForIri('/_/pages/parent')).toBe(0)
+    expect(fetchStatusManager.getDepthForIri('/unknown')).toBeUndefined()
+  })
+
+  test('getPathForDepth reads the path from the store', () => {
+    expect(fetchStatusManager.getPathForDepth(0)).toBe('/topic-1')
+    expect(fetchStatusManager.getPathForDepth(2)).toBeUndefined()
+  })
+
+  test('setManifestIrisByDepth passes the event to the store, which derives the depths', () => {
+    const event = { token: 'token', resourceIris: [depthNode(['/_/routes//topic-1', '/_/pages/parent'])] }
+    fetchStatusManager.setManifestIrisByDepth(event)
+    expect(fetchStatusManager._fetcherStore.setManifestIrisByDepth).toHaveBeenCalledWith(event)
+  })
+
+  test('registerIriDepth passes the IRI and depth to the store', () => {
+    fetchStatusManager.registerIriDepth('/component/some-uuid', 0)
+    expect(fetchStatusManager._fetcherStore.registerIriDepth).toHaveBeenCalledWith({ iri: '/component/some-uuid', depth: 0 })
+  })
+
+  test('startFetch with isPrimary clears depth tracking', () => {
+    fetchStatusManager.startFetch({ path: '/new', isPrimary: true })
+    expect(fetchStatusManager._fetcherStore.resetIriDepths).toHaveBeenCalled()
+  })
+
+  test('startFetch without isPrimary preserves depth tracking', () => {
+    fetchStatusManager.startFetch({ path: '/new', isPrimary: false })
+    expect(fetchStatusManager._fetcherStore.resetIriDepths).not.toHaveBeenCalled()
   })
 })
 

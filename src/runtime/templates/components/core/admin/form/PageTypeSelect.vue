@@ -9,6 +9,7 @@ import {
 import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps, SelectOption } from '#cwa/composables/cwa-select-input'
+import { useTransitions } from '#cwa/composables/transitions'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<Omit<SelectInputProps, 'options'>>()
@@ -24,6 +25,7 @@ const options: SelectOption[] = [
 ]
 const selectInputProps = computed(() => ({ ...props, options }))
 const { value, compareOptions, selectedOption, trigger, container } = useCwaSelectInput(selectInputProps, emit)
+const { dropdown } = useTransitions()
 </script>
 
 <template>
@@ -63,14 +65,7 @@ const { value, compareOptions, selectedOption, trigger, container } = useCwaSele
       </div>
       <ClientOnly>
         <Teleport to="body">
-          <Transition
-            enter-active-class="cwa:transition-opacity cwa:duration-100 cwa:ease-out"
-            enter-from-class="cwa:opacity-0"
-            enter-to-class="cwa:opacity-100"
-            leave-active-class="cwa:transition-opacity cwa:duration-100 cwa:ease-in"
-            leave-from-class="cwa:opacity-100"
-            leave-to-class="cwa:opacity-0"
-          >
+          <Transition v-bind="dropdown">
             <ListboxOptions
               v-show="open"
               ref="container"

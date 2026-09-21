@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { useCookie, useRuntimeConfig } from '#imports'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { CwaModuleOptions, CwaResourcesMeta } from '#cwa/types'
@@ -31,6 +32,8 @@ export default class Cwa {
   private readonly cwaFetch: CwaFetch
 
   public readonly siteConfig: SiteConfig
+
+  public readonly prerendered = ref<boolean>(false)
 
   // public resources repository and utility getters
   public readonly resources: Resources
@@ -69,7 +72,7 @@ export default class Cwa {
     this.siteConfig = new SiteConfig(this.cwaFetch, this.storage.stores.siteConfig, this.options.siteConfig)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
-    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources)
+    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit)
 
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources)
 
@@ -87,10 +90,14 @@ export default class Cwa {
       this.storage.stores.fetcher,
       useCookie('cwa_auth', { sameSite: 'strict' }),
     )
-    this.forms = new Forms(this.storage.stores.resources)
+    this.forms = new Forms(this.storage.stores.resources, this.cwaFetch)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)
     this.adminNavGuard = new NavigationGuard($router, this.storage.stores.admin)
+  }
+
+  public get apiHttpCacheState() {
+    return this.cwaFetch.httpCacheState
   }
 
   public get adminNavigationGuardFn() {
@@ -131,6 +138,10 @@ export default class Cwa {
   public async initClientSide() {
     await this.auth.init()
     this.mercure.init()
+  }
+
+  public get isStaticRender(): boolean {
+    return this.prerendered.value || !!this.options.staticRender
   }
 
   public get resourcesConfig(): CwaResourcesMeta {

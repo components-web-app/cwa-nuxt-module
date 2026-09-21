@@ -1,6 +1,5 @@
 <template>
-  <div :class="['relative', 'grow', 'flex', 'flex-col', ...($cwa.resources.layout?.value?.data?.uiClassNames || [])]">
-    <VitePwaManifest />
+  <div class="relative grow flex flex-col">
     <CwaUiProgressBar
       :show="showPageLoadBar"
       :percent="percent"
@@ -13,9 +12,9 @@
     <header class="relative bg-stone-900 border-b border-b-stone-700">
       <div class="mx-auto flex max-w-7xl items-center p-6 md:justify-start lg:px-8">
         <nav class="space-x-5 flex w-full items-center">
-          <div class="space-x-5 md:space-x-5 flex items-center grow w-auto z-200">
+          <div class="space-x-5 md:space-x-5 flex items-center grow w-auto">
             <div>
-              <NuxtLink to="/playground/public">
+              <NuxtLink to="/">
                 <LazySvgoLogo
                   :font-controlled="false"
                   class="text-white h-6 md:h-6"
@@ -24,7 +23,6 @@
             </div>
             <div class="grow w-auto flex gap-x-3 md:gap-x-5 justify-end items-center">
               <CwaComponentGroup
-                v-if="$cwa.resources.layoutIri.value"
                 reference="top"
                 :location="$cwa.resources.layoutIri.value"
                 :allowed-components="['/component/navigation_links']"
@@ -74,10 +72,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
-import { useCwa } from '#imports'
+import { useCwa, useCwaLayout } from '#imports'
 import { useHead } from '#app'
 
 const $cwa = useCwa()
+useCwaLayout()
 
 const percent = computed(() => $cwa.resources.pageLoadProgress.value.percent || 3)
 const showPageLoadBar = computed(() => percent.value < 100)

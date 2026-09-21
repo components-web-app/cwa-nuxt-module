@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
@@ -71,10 +71,15 @@ export class ComponentGroupUtilSynchronizer {
     })
 
     if (resourceByRef) {
+      // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
+      // then we could lose data of a component group being added. Safer to update the component group as it's less
+      // common for there to be another simultaneous update call
+      const locationResourceType = getResourceTypeFromIri(locationResource.value.data['@id']) as keyof typeof resourceTypeProperty
+      const locationProperty = resourceTypeProperty[locationResourceType]
       await this.resourcesManager.updateResource({
-        endpoint: locationResource.value.data['@id'],
+        endpoint: resourceByRef['@id'],
         data: {
-          componentGroups: [...(locationResource.value.data.componentGroups || []), resourceByRef['@id']],
+          [locationProperty]: [...(resourceByRef[locationProperty] || []), locationResource.value.data['@id']],
         },
       })
       return
@@ -95,7 +100,7 @@ export class ComponentGroupUtilSynchronizer {
           currentResource,
         ],
       ) => {
-        await this.$cwa.addUniquePromise('component_group_sync', ops.fullReference.value, async () => {
+        await this.$cwa.addUniquePromise('component_group_sync', `${ops.fullReference.value}-${ops.location}`, async () => {
           await this.createComponentGroupWatchHandler(ops, [currentSignedIn, currentResource])
         })
       },
@@ -123,7 +128,7 @@ export class ComponentGroupUtilSynchronizer {
     } = {
       reference: fullReference.value,
       location: iri,
-      allowedComponents,
+      allowedComponents: this.normalizeAllowedComponents(allowedComponents),
     }
     if (locationProperty) {
       postData[locationProperty] = [iri]
@@ -134,15 +139,25 @@ export class ComponentGroupUtilSynchronizer {
     })
   }
 
+  private normalizeAllowedComponents(allowedComponents: string[] | null): string[] | null {
+    if (!allowedComponents) return allowedComponents
+    const prefix = ResourceTypeFromIri.getPathPrefix()
+    if (!prefix) return allowedComponents
+    return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
+  }
+
   private async updateAllowedComponents(allowedComponents: string[] | null, resource: any) {
-    if (isEqual(allowedComponents, resource?.data?.allowedComponents ?? null)) {
+    const stored = resource?.data?.allowedComponents
+    if (stored === undefined) return
+    const normalized = this.normalizeAllowedComponents(allowedComponents)
+    if (isEqual(normalized, stored ?? null)) {
       return
     }
 
     await this.resourcesManager.updateResource({
       endpoint: resource?.data['@id'],
       data: {
-        allowedComponents,
+        allowedComponents: normalized,
       },
     })
   }
