@@ -22,6 +22,7 @@ import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import type { CwaCurrentResourceInterface } from '../../storage/stores/resources/state'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import FetchStatusManager from './fetch-status-manager'
+import * as app from 'nuxt/app'
 
 vi.mock('../../storage/stores/fetcher/fetcher-store', () => {
   return {
@@ -70,6 +71,19 @@ vi.mock('pinia', async (importOriginal) => {
 
 vi.mock('consola')
 
+const nuxtAppContext = { active: false }
+const capturedNuxtApp = {
+  runWithContext: vi.fn((fn: () => unknown) => {
+    nuxtAppContext.active = true
+    try {
+      return fn()
+    }
+    finally {
+      nuxtAppContext.active = false
+    }
+  }),
+}
+
 function createFetchStatusManager(): FetchStatusManager {
   const fetcherUseStoreResult = {
     isCurrentFetchingToken: vi.fn(() => true),
@@ -104,7 +118,7 @@ function createFetchStatusManager(): FetchStatusManager {
   })
   const mercure = new Mercure()
   const apiDocumentation = new ApiDocumentation()
-  return new FetchStatusManager(fetcherStore, mercure, apiDocumentation, resourcesStore)
+  return new FetchStatusManager(fetcherStore, mercure, apiDocumentation, resourcesStore, undefined, capturedNuxtApp as never)
 }
 
 const mockCwaResource = {
@@ -458,6 +472,7 @@ describe('FetchStatusManager -> finishFetchResource', () => {
         message: 'something',
       },
       showErrorPage: true,
+      nuxtApp: capturedNuxtApp,
     })
     expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchStatus).not.toHaveBeenCalled()
 
@@ -537,9 +552,55 @@ describe('FetchStatusManager -> finishFetchResource', () => {
       error: createCwaResourceError(new Error('Not Saved. The response was not a valid CWA Resource. (/another-resource)')),
       isCurrent: true,
       showErrorPage: true,
+      nuxtApp: capturedNuxtApp,
     })
 
     expect(response).toBeUndefined()
+  })
+
+  test('passes the Nuxt app captured at construction to setResourceFetchError', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockImplementationOnce(() => true)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: false,
+      token: 'a-token',
+      error: createCwaResourceError({ statusCode: 404 }),
+    })
+
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith(expect.objectContaining({
+      nuxtApp: capturedNuxtApp,
+    }))
+  })
+
+  test('checks and clears the Nuxt error inside the captured app on a primary success', () => {
+    capturedNuxtApp.runWithContext.mockClear()
+    const ranInContext: Record<string, boolean> = {}
+    vi.spyOn(app, 'useError').mockImplementationOnce(() => {
+      ranInContext.useError = nuxtAppContext.active
+      return { value: { error: true } } as never
+    })
+    vi.spyOn(app, 'clearError').mockImplementationOnce(() => {
+      ranInContext.clearError = nuxtAppContext.active
+      return Promise.resolve()
+    })
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(true)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: {
+        _data: mockCwaResource,
+        headers: new Headers(),
+      },
+      headers: {},
+    })
+
+    expect(capturedNuxtApp.runWithContext).toHaveBeenCalledTimes(1)
+    expect(app.useError).toHaveBeenCalledTimes(1)
+    expect(app.clearError).toHaveBeenCalledTimes(1)
+    expect(ranInContext).toStrictEqual({ useError: true, clearError: true })
   })
 
   test('If a link header is provided, we call the mercure and api documentation initialise functions', () => {

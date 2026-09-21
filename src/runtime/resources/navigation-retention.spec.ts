@@ -26,7 +26,7 @@ beforeEach(() => {
   fetcherStoreDef = new FetcherStore('cwa')
   resourcesStore = resourcesStoreDef.useStore()
   fetcherStore = fetcherStoreDef.useStore()
-  manager = new FetchStatusManager(fetcherStoreDef, {} as never, {} as never, resourcesStoreDef)
+  manager = new FetchStatusManager(fetcherStoreDef, {} as never, {} as never, resourcesStoreDef, undefined, { runWithContext: (fn: () => unknown) => fn() } as never)
   resources = new Resources(resourcesStoreDef, fetcherStoreDef)
 })
 

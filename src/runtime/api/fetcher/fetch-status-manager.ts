@@ -21,7 +21,8 @@ import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 import type { FetchAbortReason, FetchStatus, RouteCacheEntry } from '#cwa/storage/stores/fetcher/state'
-import { clearError, useError } from '#imports'
+import { clearError, useError } from 'nuxt/app'
+import type { NuxtApp } from 'nuxt/app'
 
 export interface FinishFetchResourceEvent {
   resource: string
@@ -55,19 +56,22 @@ export default class FetchStatusManager {
   private readonly _resourcesStore: CwaResourcesStoreInterface
 
   private readonly routeCacheLimit: number
+  private readonly nuxtApp: NuxtApp
 
   constructor(
     fetcherStoreDefinition: FetcherStore,
     mercure: Mercure,
     apiDocumentation: ApiDocumentation,
     resourcesStoreDefinition: ResourcesStore,
-    routeCacheLimit = 50,
+    routeCacheLimit: number | undefined,
+    nuxtApp: NuxtApp,
   ) {
     this.mercure = mercure
     this.apiDocumentation = apiDocumentation
     this._fetcherStore = fetcherStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
-    this.routeCacheLimit = routeCacheLimit
+    this.routeCacheLimit = routeCacheLimit ?? 50
+    this.nuxtApp = nuxtApp
   }
 
   public async getFetchedCurrentResource(iri: string, timeout?: number): Promise<CwaResource | undefined> {
@@ -188,6 +192,7 @@ export default class FetchStatusManager {
         error,
         isCurrent,
         showErrorPage,
+        nuxtApp: this.nuxtApp,
       })
     }
 
@@ -206,8 +211,10 @@ export default class FetchStatusManager {
     }
 
     if (this.finishFetchShowError(fetchStatus, event.resource)) {
-      const currentError = useError()
-      if (currentError.value?.error) clearError()
+      this.nuxtApp.runWithContext(() => {
+        const currentError = useError()
+        if (currentError.value?.error) clearError()
+      })
     }
 
     const linkHeader = event.fetchResponse.headers.get('link')

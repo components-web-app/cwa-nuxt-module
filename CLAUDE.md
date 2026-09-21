@@ -704,6 +704,30 @@ Fixed 2026-07-16. `CwaFetch`'s ofetch `onRequest` interceptor called `useRequest
 
 ---
 
+## Bug: under concurrent SSR, one request's error status landed on another's response ✅ Fixed ([#313](https://github.com/components-web-app/cwa-nuxt-module/issues/313), [#314](https://github.com/components-web-app/cwa-nuxt-module/issues/314))
+
+Under concurrent server renders, a 404 for one request could be set on a **different** request's response: a real page went out with a 404 status and its correct content, and the non-existent page got a 200. The page cache could then store the wrong status. Reproduced with a built playground under load: 16–20 of 20 concurrent rounds wrong, always correct when run sequentially.
+
+**The mechanism — worse than #263.** Our route middleware is `unctx`-transformed, so after `await fetchRoute` its `__restore()` sets unctx's **module-level** `currentInstance` to its own app and **never clears it**. Any later implicit-context composable in **untransformed** code — store actions, `FetchStatusManager`, `Auth` — then resolves **whichever request resumed last**. #263 was this mechanism with nothing leaked, so it threw `NUXT_E1001`; here a concurrent request has leaked its app, so it silently resolves the wrong one.
+
+**Two sites, and they must be fixed together.**
+- `setResourceFetchError` (`storage/stores/resources/actions.ts`) called `showError`, `useResponseHeader('Set-Cookie')`, `useRequestURL()` and `navigateTo(…, 302)`.
+- The primary-fetch **success** path in `FetchStatusManager` called `useError()` / `clearError()`, so one request's success could clear another's error page.
+- Fixing only the first resets the context, and the second's `useError()` then throws, turning real pages into **500s**.
+
+**The fix, same pattern as #263:** `Cwa`'s constructor captures `useNuxtApp()` while the context is live (one `Cwa` per request) and passes it to `FetchStatusManager`, which hands it to the action through `SetResourceFetchErrorEvent.nuxtApp`. Both sites run inside `nuxtApp.runWithContext(...)`. The app lives **only** on per-request instances — never in store state (it is serialised into the payload) and never at module scope. The same fix closes the unconfirmed variant where one visitor's response received another's `Set-Cookie` or 302. **#314** applies it to `Auth.clearSession`, which read `_processingMiddleware`, `useRoute()` and `useRouter()` after an `await`: `Auth` captures its own app in its constructor, and `runWithContext` returns a Promise on the server, so the existing try/catch stays **inside** the callback and results are written to locals.
+
+**`runWithContext` is fine in a store action.** #263 rejected it only inside an ofetch **interceptor**, where it forces the interceptor async; an action is already async and the callback runs synchronously.
+
+**Testing — three traps:**
+- **vitest takes Nuxt's client branch**, where `runWithContext` calls `set()` and throws `Context conflict` whenever another app is current. Regression tests need a stand-in with **server semantics**: `(fn) => getContext(id).callAsync(app, fn)`, with the other request leaking its context via `executeAsync` + `__restore` (`test/integration/ssr-request-isolation.spec.ts`).
+- `finishFetchShowError` is called **twice** in `finishFetchResource`, so a `mockImplementationOnce` on it is consumed before the success-path check. Use `mockReturnValue`.
+- Unconsumed `mockImplementationOnce` queues on `showError` leak across describes in `actions.spec.ts`; `vi.restoreAllMocks()` in `beforeEach` clears them.
+
+**The only test that exercises the real renderer is `pnpm run test:e2e`**, kept out of `pnpm run test` because it builds the playground. It serves a stub API (`test/e2e/stub-api.mjs`), fires a real page, a 404 and a non-CWA page concurrently for 20 rounds, and asserts each response carries its own status; a sequential control run proves the setup. Pre-fix it failed 8/20; fixed it passes 0/20. Run it after any change to the SSR fetch or error path.
+
+---
+
 ## Bug: dynamic position loses its `component` after an SSR load of a nested page ✅ Fixed ([#261](https://github.com/components-web-app/cwa-nuxt-module/issues/261))
 
 **Reported from:** SRNTE (a nested static page whose parent is a data page using the dynamic page template). Fixed 2026-07-16.

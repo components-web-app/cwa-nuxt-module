@@ -10,6 +10,7 @@ import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
 import * as app from 'nuxt/app'
 import { createError } from 'h3'
+import * as processComposables from '../../../composables/process'
 
 vi.mock('../../../resources/resource-utils', async (importOriginal) => {
   const actual = await importOriginal<typeof ResourceUtils>()
@@ -18,6 +19,8 @@ vi.mock('../../../resources/resource-utils', async (importOriginal) => {
     isCwaResourceSame: vi.fn(() => false),
   }
 })
+
+const passThroughNuxtApp = { runWithContext: (fn: () => unknown) => fn() } as never
 
 vi.mock('h3', () => {
   return {
@@ -637,7 +640,7 @@ describe('resources action setResourceFetchError', () => {
   test('is isPrimary is true and there is an error then showError should be called', () => {
     vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
     const error = createCwaResourceError({ statusMessage: 'teapot', statusCode: 418 })
-    resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
+    resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error, nuxtApp: passThroughNuxtApp })
 
     const createErrorObj = {
       name: 'cwa-resource-error',
@@ -667,10 +670,104 @@ describe('resources action setResourceFetchError', () => {
       },
     })
 
-    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error })
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error, nuxtApp: passThroughNuxtApp })
 
     expect(app.useResponseHeader).toHaveBeenCalledWith('Set-Cookie')
     expect(responseHeader.value).toEqual(['cwa_auth=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict'])
+  })
+})
+
+describe('resources action setResourceFetchError runs its Nuxt composables inside the captured app', () => {
+  let resourcesActions: CwaResourcesActionsInterface
+  const nuxtAppContext = { active: false }
+  const ranInContext: Record<string, boolean> = {}
+  const nuxtApp = {
+    runWithContext: vi.fn((fn: () => unknown) => {
+      nuxtAppContext.active = true
+      try {
+        return fn()
+      }
+      finally {
+        nuxtAppContext.active = false
+      }
+    }),
+  }
+
+  const cookieError = (statusCode: number) => createCwaResourceError({
+    statusMessage: 'status',
+    statusCode,
+    response: {
+      headers: {
+        getSetCookie: () => ['cwa_auth=; Path=/; Max-Age=0'],
+      },
+    },
+  })
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    nuxtApp.runWithContext.mockClear()
+    const resourcesState = state()
+    resourcesActions = actions(resourcesState, getters(resourcesState))
+    for (const key of Object.keys(ranInContext)) {
+      delete ranInContext[key]
+    }
+    vi.spyOn(app, 'showError').mockImplementation((() => {
+      ranInContext.showError = nuxtAppContext.active
+    }) as never)
+    vi.spyOn(app, 'useResponseHeader').mockImplementation((() => {
+      ranInContext.useResponseHeader = nuxtAppContext.active
+      return { value: undefined }
+    }) as never)
+    vi.spyOn(app, 'useRequestURL').mockImplementation((() => {
+      ranInContext.useRequestURL = nuxtAppContext.active
+      return new URL('https://example.com/page?q=1')
+    }) as never)
+    vi.spyOn(app, 'navigateTo').mockImplementation((() => {
+      ranInContext.navigateTo = nuxtAppContext.active
+      return Promise.resolve()
+    }) as never)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test('showError runs inside the captured app', async () => {
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error: createCwaResourceError({ statusCode: 404 }), nuxtApp: nuxtApp as never })
+
+    expect(nuxtApp.runWithContext).toHaveBeenCalledTimes(1)
+    expect(app.showError).toHaveBeenCalledTimes(1)
+    expect(ranInContext.showError).toBe(true)
+  })
+
+  test('useResponseHeader forwards Set-Cookie inside the captured app', async () => {
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error: cookieError(418), nuxtApp: nuxtApp as never })
+
+    expect(nuxtApp.runWithContext).toHaveBeenCalledTimes(1)
+    expect(app.useResponseHeader).toHaveBeenCalledWith('Set-Cookie')
+    expect(ranInContext.useResponseHeader).toBe(true)
+    expect(ranInContext.showError).toBe(true)
+  })
+
+  test('useRequestURL reads the request inside the captured app for a server-side 401', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error: cookieError(401), nuxtApp: nuxtApp as never })
+
+    expect(nuxtApp.runWithContext).toHaveBeenCalledTimes(1)
+    expect(app.useRequestURL).toHaveBeenCalledTimes(1)
+    expect(ranInContext.useRequestURL).toBe(true)
+  })
+
+  test('navigateTo issues the 302 inside the captured app for a server-side 403', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+
+    await resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error: cookieError(403), nuxtApp: nuxtApp as never })
+
+    expect(nuxtApp.runWithContext).toHaveBeenCalledTimes(1)
+    expect(app.navigateTo).toHaveBeenCalledWith('/page?q=1', { redirectCode: 302 })
+    expect(ranInContext.navigateTo).toBe(true)
+    expect(app.showError).not.toHaveBeenCalled()
   })
 })
 

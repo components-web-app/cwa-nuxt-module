@@ -22,7 +22,9 @@ export function buildHarness(cassette: Cassette, opts: { manual?: boolean } = {}
   const apiDocumentation = { setDocsPathFromLinkHeader() {} }
   const router = { currentRoute: { value: { query: {} } } }
 
-  const manager = new FetchStatusManager(fetcherStoreDef, mercure as never, apiDocumentation as never, resourcesStoreDef)
+  const nuxtApp = { runWithContext: (fn: () => unknown) => fn() }
+
+  const manager = new FetchStatusManager(fetcherStoreDef, mercure as never, apiDocumentation as never, resourcesStoreDef, undefined, nuxtApp as never)
   const fetcher = new Fetcher(replay as never, manager, router as never, resourcesStoreDef)
   const resources = new Resources(resourcesStoreDef, fetcherStoreDef)
 
