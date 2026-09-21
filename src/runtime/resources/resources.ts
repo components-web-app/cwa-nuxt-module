@@ -244,9 +244,13 @@ export class Resources {
   public pageDataIriAtDepth(depth?: number): ComputedRef<string | undefined> {
     const d = depth ?? inject<number>('cwa-page-own-depth', 0)
     return computed(() => {
-      const irisByDepth = this.displayFetchStatus?.manifest?.irisByDepth
+      const fetchStatus = this.displayFetchStatus
+      const irisByDepth = fetchStatus?.manifest?.irisByDepth
       if (irisByDepth?.[d]) {
         return this.getPageDataIriFromDepthGroup(irisByDepth[d])
+      }
+      if (d === 0 && !irisByDepth) {
+        return this.getPageDataIriByFetchStatus(fetchStatus)
       }
       return undefined
     })
@@ -313,22 +317,23 @@ export class Resources {
     }
   }
 
+  private getPageDataIriByFetchStatus(fetchStatus?: FetchStatus) {
+    const type = this.getFetchStatusType(fetchStatus)
+    if (!type) {
+      return
+    }
+    if (!fetchStatus?.path) {
+      return
+    }
+    if (type === CwaResourceTypes.PAGE_DATA) {
+      return fetchStatus.path
+    }
+    const successResource = this.getResource(fetchStatus.path).value
+    return type === CwaResourceTypes.ROUTE ? successResource?.data?.pageData : undefined
+  }
+
   public get pageDataIri() {
-    return computed(() => {
-      const fetchStatus = this.displayFetchStatus
-      const type = this.getFetchStatusType(fetchStatus)
-      if (!type) {
-        return
-      }
-      if (!fetchStatus?.path) {
-        return
-      }
-      if (type === CwaResourceTypes.PAGE_DATA) {
-        return fetchStatus.path
-      }
-      const successResource = this.getResource(fetchStatus.path).value
-      return type === CwaResourceTypes.ROUTE ? successResource?.data?.pageData : undefined
-    })
+    return computed(() => this.getPageDataIriByFetchStatus(this.displayFetchStatus))
   }
 
   public get pageData(): ComputedRef<CwaCurrentResourceInterface | undefined> {

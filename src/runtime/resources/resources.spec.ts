@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest'
-import { computed, isRef, ref } from 'vue'
+import { computed, isRef, reactive, ref } from 'vue'
 import { Resources } from './resources'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import * as utils from '#cwa/resources/resource-utils'
@@ -615,6 +615,79 @@ describe('Resources', () => {
   })
 
   describe('pageDataIriAtDepth', () => {
+    function createResourcesWithStoredResources(byId: Record<string, any>) {
+      const current = reactive({ currentIds: Object.keys(byId), byId })
+      return createResources(undefined, {
+        current,
+        getResource: vi.fn((id: string) => current.byId[id]),
+      })
+    }
+
+    test('returns the route\'s loaded page data IRI at depth 0 when the manifest request failed', () => {
+      const { resources } = createResourcesWithStoredResources({
+        '/_/routes//conference': { data: { '@id': '/_/routes//conference', 'pageData': '/page_data/event-uuid' } },
+        '/page_data/event-uuid': { data: { '@id': '/page_data/event-uuid', 'page': '/_/pages/template-uuid' } },
+      })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/routes//conference', isPrimary: true } as any)
+      expect(resources.pageDataIriAtDepth(0).value).toEqual('/page_data/event-uuid')
+    })
+
+    test('returns the fetch path at depth 0 without a manifest when the primary fetch is a page data IRI', () => {
+      const { resources } = createResourcesWithStoredResources({
+        '/page_data/event-uuid': { data: { '@id': '/page_data/event-uuid', 'page': '/_/pages/template-uuid' } },
+      })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/page_data/event-uuid', isPrimary: true } as any)
+      expect(resources.pageDataIriAtDepth(0).value).toEqual('/page_data/event-uuid')
+    })
+
+    test('returns undefined at depth 0 without a manifest when the primary fetch is a plain page', () => {
+      const { resources } = createResourcesWithStoredResources({
+        '/_/pages/page-uuid': { data: { '@id': '/_/pages/page-uuid', 'layout': '/_/layouts/layout-uuid' } },
+      })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/pages/page-uuid', isPrimary: true } as any)
+      expect(resources.pageDataIriAtDepth(0).value).toBeUndefined()
+    })
+
+    test('returns undefined at depth 1 without a manifest even when the route has page data', () => {
+      const { resources } = createResourcesWithStoredResources({
+        '/_/routes//conference': { data: { '@id': '/_/routes//conference', 'pageData': '/page_data/event-uuid' } },
+        '/page_data/event-uuid': { data: { '@id': '/page_data/event-uuid', 'page': '/_/pages/template-uuid' } },
+      })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/routes//conference', isPrimary: true } as any)
+      expect(resources.pageDataIriAtDepth(1).value).toBeUndefined()
+    })
+
+    test('reads from irisByDepth rather than the fetched route when a manifest is present', () => {
+      const { resources } = createResourcesWithStoredResources({
+        '/_/routes//conference': { data: { '@id': '/_/routes//conference', 'pageData': '/page_data/route-uuid' } },
+        '/page_data/route-uuid': { data: { '@id': '/page_data/route-uuid', 'page': '/_/pages/template-uuid' } },
+      })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({
+        path: '/_/routes//conference',
+        isPrimary: true,
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/page_data/manifest-uuid', '/_/pages/template-uuid'],
+            ['/_/routes//conference/programme', '/_/pages/child-uuid'],
+          ],
+        },
+      } as any)
+      expect(resources.pageDataIriAtDepth(0).value).toEqual('/page_data/manifest-uuid')
+      expect(resources.pageDataIriAtDepth(1).value).toBeUndefined()
+    })
+
+    test('updates the depth 0 fallback when the route\'s page data loads after the first read', () => {
+      const { resources } = createResourcesWithStoredResources({
+        '/_/routes//conference': { data: { '@id': '/_/routes//conference' } },
+      })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/routes//conference', isPrimary: true } as any)
+      const pageDataIri = resources.pageDataIriAtDepth(0)
+      expect(pageDataIri.value).toBeUndefined()
+      const store = (resources as any).resourcesStore
+      store.current.byId['/_/routes//conference'].data.pageData = '/page_data/event-uuid'
+      expect(pageDataIri.value).toEqual('/page_data/event-uuid')
+    })
+
     test('returns the PAGE_DATA IRI from irisByDepth at the specified depth', () => {
       const fetchStatus = {
         manifest: {
