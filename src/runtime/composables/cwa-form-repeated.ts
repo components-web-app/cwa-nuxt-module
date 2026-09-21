@@ -24,6 +24,13 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
     return $cwa.forms.getForm(iri.value).value?.[fullName]?.vars
   })
 
+  const realtimeValidateDisabled = computed(() => {
+    if (!iri.value) return false
+    const rootName = fullName.split('[')[0]
+    if (!rootName) return false
+    return $cwa.forms.getForm(iri.value).value?.[rootName]?.vars?.realtime_validate_disabled === true
+  })
+
   const parentValid = computed<boolean | null>(() => {
     if (!parentVars.value?.submitted) return null
     return parentVars.value?.valid ?? null
@@ -54,12 +61,14 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
   })
 
   const firstOnInput = debounce(() => {
+    if (realtimeValidateDisabled.value) return
     lastTriggeredBy.value = 'first'
     const extra = second.value.value ? { [secondFullName]: second.value.value } : undefined
     first.validate(extra)
   }, 300)
 
   const secondOnInput = debounce(() => {
+    if (realtimeValidateDisabled.value) return
     lastTriggeredBy.value = 'second'
     const extra = first.value.value ? { [firstFullName]: first.value.value } : undefined
     second.validate(extra)
@@ -68,6 +77,7 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
   const firstOnBlur = () => {
     firstHasBlurred = true
     if (secondHasBlurred) bothBlurred.value = true
+    if (realtimeValidateDisabled.value) return
     lastTriggeredBy.value = 'first'
     const extra = second.value.value ? { [secondFullName]: second.value.value } : undefined
     first.validate(extra)
@@ -76,6 +86,7 @@ export const useCwaFormRepeated = (iri: Ref<string | undefined>, fullName: strin
   const secondOnBlur = () => {
     secondHasBlurred = true
     if (firstHasBlurred) bothBlurred.value = true
+    if (realtimeValidateDisabled.value) return
     lastTriggeredBy.value = 'second'
     const extra = first.value.value ? { [firstFullName]: first.value.value } : undefined
     second.validate(extra)

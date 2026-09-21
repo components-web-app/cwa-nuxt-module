@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { useCwaFormRepeated } from '#cwa/composables/cwa-form-repeated'
@@ -39,6 +39,7 @@ describe('useCwaFormRepeated', () => {
   let capturedBlurTrigger: Ref<boolean> | undefined
 
   let mockParentVars: { submitted: boolean, valid: boolean | null }
+  let mockRootVars: { realtime_validate_disabled?: boolean }
 
   function setupMock() {
     capturedBlurTrigger = undefined
@@ -55,12 +56,20 @@ describe('useCwaFormRepeated', () => {
     mockFirst = makeInputMock('firstValue')
     mockSecond = makeInputMock('secondValue')
     mockParentVars = { submitted: false, valid: null }
+    mockRootVars = {}
     mockGetForm.mockReturnValue({
       get value() {
-        return { 'password_form[password]': { vars: mockParentVars } }
+        return {
+          'password_form': { vars: mockRootVars },
+          'password_form[password]': { vars: mockParentVars },
+        }
       },
     })
     setupMock()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('shape', () => {
@@ -331,6 +340,88 @@ describe('useCwaFormRepeated', () => {
       const { second } = useCwaFormRepeated(iri, 'password_form[password]')
       second.onBlur()
       expect(second.errors.value.filter(e => e === 'passwords do not match')).toHaveLength(1)
+    })
+  })
+
+  describe('realtime_validate_disabled', () => {
+    test('password update pair: typing in first does not validate when realtime_validate_disabled is true', () => {
+      vi.useFakeTimers()
+      mockRootVars.realtime_validate_disabled = true
+      const { first } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.onInput()
+      vi.advanceTimersByTime(300)
+      expect(mockFirst.validate).not.toHaveBeenCalled()
+      expect(mockSecond.validate).not.toHaveBeenCalled()
+    })
+
+    test('password update pair: typing in second does not validate when realtime_validate_disabled is true', () => {
+      vi.useFakeTimers()
+      mockRootVars.realtime_validate_disabled = true
+      const { second } = useCwaFormRepeated(iri, 'password_form[password]')
+      second.onInput()
+      vi.advanceTimersByTime(300)
+      expect(mockFirst.validate).not.toHaveBeenCalled()
+      expect(mockSecond.validate).not.toHaveBeenCalled()
+    })
+
+    test('reads the flag when the debounce fires, so a late-arriving form is respected', () => {
+      vi.useFakeTimers()
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.onInput()
+      second.onInput()
+      mockRootVars.realtime_validate_disabled = true
+      vi.advanceTimersByTime(300)
+      expect(mockFirst.validate).not.toHaveBeenCalled()
+      expect(mockSecond.validate).not.toHaveBeenCalled()
+    })
+
+    test('typing validates both fields when realtime_validate_disabled is false', () => {
+      vi.useFakeTimers()
+      mockRootVars.realtime_validate_disabled = false
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.onInput()
+      vi.advanceTimersByTime(300)
+      second.onInput()
+      vi.advanceTimersByTime(300)
+      expect(mockFirst.validate).toHaveBeenCalledWith({ 'password_form[password][second]': 'secondValue' })
+      expect(mockSecond.validate).toHaveBeenCalledWith({ 'password_form[password][first]': 'firstValue' })
+    })
+
+    test('typing validates both fields when the flag is absent', () => {
+      vi.useFakeTimers()
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.onInput()
+      vi.advanceTimersByTime(300)
+      second.onInput()
+      vi.advanceTimersByTime(300)
+      expect(mockFirst.validate).toHaveBeenCalledTimes(1)
+      expect(mockSecond.validate).toHaveBeenCalledTimes(1)
+    })
+
+    test('blur does not validate either field when realtime_validate_disabled is true', () => {
+      mockRootVars.realtime_validate_disabled = true
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.onBlur()
+      second.onBlur()
+      expect(mockFirst.validate).not.toHaveBeenCalled()
+      expect(mockSecond.validate).not.toHaveBeenCalled()
+    })
+
+    test('blur still marks both fields blurred when realtime_validate_disabled is true', () => {
+      mockRootVars.realtime_validate_disabled = true
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.onBlur()
+      second.onBlur()
+      expect(capturedBlurTrigger!.value).toBe(true)
+    })
+
+    test('an explicit validate call still fires when realtime_validate_disabled is true', () => {
+      mockRootVars.realtime_validate_disabled = true
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.validate()
+      second.validate()
+      expect(mockFirst.validate).toHaveBeenCalledTimes(1)
+      expect(mockSecond.validate).toHaveBeenCalledTimes(1)
     })
   })
 })
