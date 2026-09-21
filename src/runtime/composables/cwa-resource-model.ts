@@ -28,6 +28,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     return property.split('.')[0]?.split('[')[0] || ''
   })
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
+  const isNestedProperty = computed(() => Array.isArray(property) ? property.length > 1 : rootProperty.value !== property)
 
   const localValueWithIri = ref<{ [iri: string]: T | null | undefined }>({})
   const localValue = computed({
@@ -79,12 +80,12 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     // consider: it doesn't matter if THIS field is updated and there is a pending request, we can continue and override that change
     // consider: it doesn't matter if another request is in progress for a DIFFERENT property, it'll update the store value and this request will not interfere
     // consider: it is all about the external sync status of a nested object property that we should need to wait for
-    const isNewValueObject = isObject(newLocalValue)
+    const mergeFromRoot = isNestedProperty.value || isObject(newLocalValue)
 
     // todo: resolve the correct iri for the endpoint we are checking with the applied querystring -
     //  should be the same unless we will be creating a new draft in a request perhaps??
     //  ...but then would that matter, because the endpoint would be the same until then... to think about...
-    isNewValueObject && await $cwa.resourcesManager.getWaitForRequestPromise(endpoint.value, rootProperty.value, source)
+    mergeFromRoot && await $cwa.resourcesManager.getWaitForRequestPromise(endpoint.value, rootProperty.value, source)
 
     // if we are already submitting this value, just skip - we shouldn't really get here
     // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
@@ -107,7 +108,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     isSubmitting.value = true
     let submittingValue
     // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
-    if (isNewValueObject) {
+    if (mergeFromRoot) {
       const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, newLocalValue)
       submittingValue = newObject[rootProperty.value]
     }

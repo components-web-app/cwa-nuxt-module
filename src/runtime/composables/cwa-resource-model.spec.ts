@@ -171,7 +171,41 @@ describe('useCwaResourceModel', () => {
       model.value = 99 as any
       await flushDebounceAndAsync()
       expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({ meta: expect.anything() }),
+        data: { meta: { a: 99 } },
+      }))
+    })
+
+    test('#298: a primitive assigned to a nested dot path PATCHes the whole root object, keeping its other fields', async () => {
+      const existingAddress = { line1: '1 High Street', city: 'Leeds', postcode: 'LS1 1AA' }
+      mockGetResource.mockReturnValue(ref({ data: { address: existingAddress } }))
+      const { model } = useCwaResourceModel(iri, 'address.city')
+      model.value = 'London' as any
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(1)
+      expect(mockUpdateResource.mock.calls[0]![0].data).toEqual({
+        address: { line1: '1 High Street', city: 'London', postcode: 'LS1 1AA' },
+      })
+      expect(existingAddress.city).toBe('Leeds')
+    })
+
+    test('an object assigned to a nested dot path is merged into the root object', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { meta: { existing: 'val' } } }))
+      const { model } = useCwaResourceModel(iri, 'meta.extra')
+      model.value = { key: 'value' } as any
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({
+        data: { meta: { existing: 'val', extra: { key: 'value' } } },
+      }))
+    })
+
+    test('a top-level property submits the new value alone without waiting on other requests', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store', address: { city: 'Leeds' } } }))
+      const { model } = useCwaResourceModel(iri, 'title')
+      model.value = 'NewValue'
+      await flushDebounceAndAsync()
+      expect(mockGetWaitForRequestPromise).not.toHaveBeenCalled()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({
+        data: { title: 'NewValue' },
       }))
     })
 
