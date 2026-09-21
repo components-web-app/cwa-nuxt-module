@@ -1039,6 +1039,16 @@ The original `route-middleware.ts:64` todo — "redirects do not work if clickin
 
 ---
 
+## The page query is only forwarded to Collection fetches ([#318](https://github.com/components-web-app/cwa-nuxt-module/issues/318))
+
+`Fetcher.fetch()` used to copy the **whole page query** onto every API request, so any `?utm_source=`, `?fbclid=` or cache-buster made every route, manifest, layout, page, group, position and component fetch for that render a distinct shared-cache key, and a valueless `?k` was sent as `k=null` with values unencoded.
+
+Now the page query is added only to **Collection component** fetches (`{prefix}/component/collections/…`) — the only API response it changes (`CollectionApiEventListener` reads the main request's query to filter and paginate). Every other query the module sends is set on the path itself (`?published=true|false` from `useCwaResourceEndpoint`, `ResourcesManager`, and the fetcher's `publishedResource` fetch), and a path's own query is kept as it is. On a Collection, a path parameter wins over a page parameter of the same name; values are serialised with `URLSearchParams`, so a valueless parameter becomes `k=` and values are encoded. `noQuery` still skips it.
+
+If the API ever reads the page query for another resource type, add that type to `consumesPageQuery` in `fetcher.ts`.
+
+---
+
 ## `CwaComponentGroup` resolves `location` to the published IRI ([#317](https://github.com/components-web-app/cwa-nuxt-module/issues/317))
 
 A nested group's `location` may be the component's draft `iri` or its `publishedIri`; both now resolve to the same group. `ComponentGroup.vue` derives `resolvedLocation = findPublishedComponentIri(location) ?? location` and uses it for the group reference, the location lookup, the not-a-current-resource alert, the disabled check and the synchroniser. Before, passing the draft `iri` looked up a different group and the synchroniser could create a stray empty group against the draft.
