@@ -53,20 +53,21 @@ function mockCwaFull(overrides: Record<string, any> = {}) {
   return { cwa, fetchResource, fetch, navigateTo }
 }
 
-function setupItemPage({ path = '/conference/programme', currentPath = '/conference/programme' }: { path?: string, currentPath?: string } = {}) {
+function setupItemPage({ path = '/conference/programme', currentPath = '/conference/programme', liveAt, effectiveLiveAt }: { path?: string, currentPath?: string, liveAt?: string | null, effectiveLiveAt?: string | null } = {}) {
   const saveResource = vi.fn().mockResolvedValue({ '@id': `/_/routes/${currentPath}`, 'path': currentPath })
+  const localResourceData = ref<Record<string, any>>({ path, liveAt })
   mockUseItemPage.mockReturnValue({
     isLoading: ref(false),
     isUpdating: ref(false),
-    localResourceData: ref({ path }),
-    resource: ref({ '@id': `/_/routes/${currentPath}`, 'path': currentPath, 'route': null }),
+    localResourceData,
+    resource: ref({ '@id': `/_/routes/${currentPath}`, 'path': currentPath, 'route': null, liveAt, effectiveLiveAt }),
     loadResource: vi.fn(),
     deleteResource: vi.fn(),
     saveResource,
     resetResource: vi.fn(),
     apiState: ref({ status: 'SUCCESS', path: `/_/routes/${currentPath}/redirects` }),
   })
-  return { saveResource }
+  return { saveResource, localResourceData }
 }
 
 function mountTab(pageResourceOverrides: Record<string, any> = {}) {
@@ -156,6 +157,55 @@ describe('RoutesTab', () => {
       mockCwa()
       const wrapper = mountTab({ parentPage: null, parentPageData: null })
       expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
+    })
+  })
+
+  describe('publication state', () => {
+    test('shows the editor the go-live date the route currently has', async () => {
+      setupItemPage({ liveAt: '2999-01-01T00:00:00+00:00' })
+      mockCwa()
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      expect(wrapper.findComponent(RoutesTabManage).props('liveAt')).toBe('2999-01-01T00:00:00+00:00')
+    })
+
+    test('scheduling a route carries the go-live date into the resource that gets saved', async () => {
+      const { localResourceData, saveResource } = setupItemPage({ liveAt: null })
+      mockCwa()
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('update:liveAt', '2999-01-01T00:00:00.000Z')
+      expect(localResourceData.value.liveAt).toBe('2999-01-01T00:00:00.000Z')
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+      await flushPromises()
+      expect(saveResource).toHaveBeenCalled()
+    })
+
+    test('hands the manage control the date the page actually becomes reachable', async () => {
+      setupItemPage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T00:00:00+00:00' })
+      mockCwa()
+      const wrapper = mountTab()
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      expect(wrapper.findComponent(RoutesTabManage).props('effectiveLiveAt')).toBe('2999-01-01T00:00:00+00:00')
+    })
+
+    test('tells a child route that its parents also gate it', () => {
+      setupItemPage()
+      mockCwa((iri) => {
+        if (iri === '/_/pages/conference-uuid') {
+          return ref({ data: { route: '/_/routes//conference' } })
+        }
+        return ref(null)
+      })
+      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
+      expect(wrapper.findComponent(RoutesTabView).props('hasParentPage')).toBe(true)
+    })
+
+    test('does not mention parents for a top level route', () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountTab({ parentPage: null, parentPageData: null })
+      expect(wrapper.findComponent(RoutesTabView).props('hasParentPage')).toBe(false)
     })
   })
 

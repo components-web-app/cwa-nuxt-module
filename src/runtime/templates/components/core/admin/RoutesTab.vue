@@ -6,6 +6,7 @@
           :resource="resource"
           :is-loading="isLoadingRoute"
           :parent-has-no-route="parentHasNoRoute"
+          :has-parent-page="hasParentPage"
           :forward-to-path="forwardToPath"
           @deleted="handleRedirectDeleted"
           @change-page="handleChangePage"
@@ -53,10 +54,13 @@
           <RoutesTabManage
             v-else
             v-model="localResourceData.path"
+            v-model:live-at="localResourceData.liveAt"
             :current-path="resource.path"
             :disable-buttons="disableButtons"
             :page-resource="pageResource"
             :parent-route-prefix="parentRoutePrefix"
+            :has-parent-page="hasParentPage"
+            :effective-live-at="resource.effectiveLiveAt"
             @save="handleSaveRoute"
             @generate="handleGenerateRoute"
             @delete="handleDeleteRoute"
@@ -131,6 +135,7 @@ const parentRoutePrefix = computed(() => {
   return routeIri.replace(/^.*\/_\/routes\//, '')
 })
 const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
+const hasParentPage = computed(() => !!parentIri.value)
 
 const redirectIri = computed<string | undefined>(() => {
   const r = resource.value?.redirect

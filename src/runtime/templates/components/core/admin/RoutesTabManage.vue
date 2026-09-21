@@ -5,15 +5,20 @@ import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-publication'
+import { formatRouteLiveAt, fromRouteLiveAtInput, getRouteOwnLiveState, hasRouteEffectiveLiveAt, isRouteGatedByAncestor, routeLiveAtTimezoneLabel, routeReachableAt, toRouteLiveAtInput } from '#cwa/resources/route-publication'
 
-const { pageResource, parentRoutePrefix, currentPath, disableButtons } = defineProps<{
+const { pageResource, parentRoutePrefix, currentPath, disableButtons, hasParentPage, effectiveLiveAt } = defineProps<{
   disableButtons: boolean
   pageResource: CwaResource
   currentPath: string
   parentRoutePrefix?: string | null
+  hasParentPage?: boolean
+  effectiveLiveAt?: string | null
 }>()
 
 const pathModel = defineModel<string>({ required: true })
+const liveAtModel = defineModel<string | null | undefined>('liveAt')
 
 defineEmits<{
   save: []
@@ -82,6 +87,51 @@ const fullRecommendedPath = computed(() => {
 const isApplyDisabled = computed(() => disableButtons || fullRecommendedPath.value === currentPath)
 
 const pageResourceRouteIri = computed(() => pageResource.route)
+
+const publicationOptions = [
+  { label: 'Live', value: 'live' },
+  { label: 'Scheduled', value: 'scheduled' },
+  { label: 'Not live', value: 'draft' },
+]
+
+const localPublicationState = ref<RouteLiveState>(getRouteOwnLiveState({ liveAt: liveAtModel.value }))
+const localLiveAt = ref(toRouteLiveAtInput(liveAtModel.value))
+const liveAtTimezone = routeLiveAtTimezoneLabel()
+
+const routePublication = computed<CwaRouteLiveAt>(() => {
+  const publication: CwaRouteLiveAt = { liveAt: liveAtModel.value }
+  if (effectiveLiveAt !== undefined) {
+    publication.effectiveLiveAt = effectiveLiveAt
+  }
+  return publication
+})
+const gatedByAncestor = computed(() => isRouteGatedByAncestor(routePublication.value))
+const reachableAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))
+const effectiveDateUnknown = computed(() => !hasRouteEffectiveLiveAt(routePublication.value))
+
+function handlePublicationStateChange(state: RouteLiveState) {
+  localPublicationState.value = state
+  if (state === 'live') {
+    liveAtModel.value = (new Date()).toISOString()
+    return
+  }
+  if (state === 'draft') {
+    liveAtModel.value = null
+    return
+  }
+  const scheduled = fromRouteLiveAtInput(localLiveAt.value)
+  const isFuture = !!scheduled && new Date(scheduled).getTime() > Date.now()
+  if (!isFuture) {
+    localLiveAt.value = ''
+  }
+  liveAtModel.value = isFuture ? scheduled : null
+}
+
+function handleLiveAtChange(value: string | number | null | undefined) {
+  const localValue = value === null || value === undefined ? '' : String(value)
+  localLiveAt.value = localValue
+  liveAtModel.value = fromRouteLiveAtInput(localValue)
+}
 </script>
 
 <template>
@@ -131,6 +181,47 @@ const pageResourceRouteIri = computed(() => pageResource.route)
           </CwaUiFormButton>
         </div>
       </div>
+    </div>
+    <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+      <ModalSelect
+        data-publication-state
+        :model-value="localPublicationState"
+        label="Visibility"
+        :options="publicationOptions"
+        @update:model-value="handlePublicationStateChange"
+      />
+      <div
+        v-if="localPublicationState === 'scheduled'"
+        class="cwa:flex cwa:flex-col cwa:gap-y-2"
+      >
+        <ModalInput
+          data-live-at
+          :model-value="localLiveAt"
+          label="Goes live"
+          type="datetime-local"
+          @update:model-value="handleLiveAtChange"
+        />
+        <p
+          data-live-at-timezone
+          class="cwa:text-xs cwa:text-stone-300"
+        >
+          Times are in {{ liveAtTimezone }}.
+        </p>
+      </div>
+      <p
+        v-if="gatedByAncestor"
+        data-effective-live-at
+        class="cwa:text-xs cwa:text-stone-300"
+      >
+        A parent route holds this page back — it is not reachable until {{ reachableAt }}.
+      </p>
+      <p
+        v-else-if="hasParentPage && effectiveDateUnknown"
+        data-parent-live-note
+        class="cwa:text-xs cwa:text-stone-300"
+      >
+        Parent routes must also be live for this page to be reachable.
+      </p>
     </div>
     <div
       v-if="recommendedSuffix"

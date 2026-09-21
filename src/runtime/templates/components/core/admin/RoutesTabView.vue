@@ -1,17 +1,44 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
+import type { CwaRouteLiveAt } from '#cwa/resources/route-publication'
+import { formatRouteLiveAt, getRouteLiveState, hasRouteEffectiveLiveAt, isRouteGatedByAncestor, routeLiveStateLabel, routeReachableAt } from '#cwa/resources/route-publication'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import RouteRedirectsTree from '#cwa/templates/components/core/admin/RouteRedirectsTree.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { TempCwaResource } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
 import type { RouteScreens } from '#cwa/templates/components/core/admin/RoutesTab.vue'
 
-defineProps<{
+const props = defineProps<{
   resource: CwaResource | TempCwaResource | undefined
   isLoading: boolean
   parentHasNoRoute?: boolean
   forwardToPath?: string
+  hasParentPage?: boolean
 }>()
+
+const routePublication = computed<CwaRouteLiveAt>(() => {
+  const resource = props.resource
+  const publication: CwaRouteLiveAt = { liveAt: resource?.liveAt }
+  if (resource && 'effectiveLiveAt' in resource) {
+    publication.effectiveLiveAt = resource.effectiveLiveAt
+  }
+  return publication
+})
+const publicationState = computed(() => getRouteLiveState(routePublication.value))
+const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
+const goesLiveAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))
+const gatedByAncestor = computed(() => isRouteGatedByAncestor(routePublication.value))
+const effectiveDateUnknown = computed(() => !hasRouteEffectiveLiveAt(routePublication.value))
+const publicationClass = computed(() => {
+  if (publicationState.value === 'live') {
+    return 'cwa:text-stone-300 cwa:border-stone-600'
+  }
+  if (publicationState.value === 'scheduled') {
+    return 'cwa:text-amber-400 cwa:border-amber-400'
+  }
+  return 'cwa:text-white cwa:bg-magenta/60 cwa:border-magenta'
+})
 
 const emit = defineEmits<{
   changePage: [page: RouteScreens]
@@ -48,6 +75,33 @@ function handleDeletedEvent(resource: CwaResource) {
         {{ resource?.path ? 'Edit' : 'Create New Route' }}
       </CwaUiFormButton>
     </ModalInfo>
+
+    <div
+      v-if="!isLoading && resource?.path"
+      class="cwa:flex cwa:flex-col cwa:gap-y-1"
+    >
+      <span
+        data-route-publication
+        class="cwa:inline-flex cwa:self-start cwa:text-sm cwa:font-bold cwa:py-1 cwa:px-3 cwa:border cwa:rounded"
+        :class="publicationClass"
+      >
+        {{ publicationLabel }}<template v-if="publicationState === 'scheduled'"> — {{ goesLiveAt }}</template>
+      </span>
+      <p
+        v-if="gatedByAncestor"
+        data-parent-gated
+        class="cwa:text-xs cwa:text-stone-400"
+      >
+        A parent route sets this date — this page cannot be reached before then.
+      </p>
+      <p
+        v-else-if="hasParentPage && effectiveDateUnknown"
+        data-parent-live-note
+        class="cwa:text-xs cwa:text-stone-400"
+      >
+        Parent routes must also be live for this page to be reachable.
+      </p>
+    </div>
 
     <div class="cwa:dark-blur cwa:p-4 cwa:flex cwa:flex-col cwa:gap-y-2.5 cwa:border cwa:rounded-xl cwa:border-stone-600">
       <h2 class="cwa:text-stone-400 cwa:text-2xl">

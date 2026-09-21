@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import * as app from 'nuxt/app'
+import { createCwaResourceError } from '#cwa/errors/cwa-resource-error'
 import { Resources } from './resources'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
@@ -364,6 +366,31 @@ describe('#256 navigation retention', () => {
       resolveResource(resource)
     }
     fetcherStore.finishFetch({ token })
+    expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
+  })
+})
+
+describe('#287 a route that is not live yet', () => {
+  test('a public hit on a gated route shows the CWA error page rather than holding a blank', () => {
+    const a = buildPage('a')
+    fullyLoad(a)
+
+    const gatedRouteIri = '/_/routes//launch'
+    const showError = vi.spyOn(app, 'showError').mockImplementation(() => {})
+
+    const token = startPrimary(gatedRouteIri, `${gatedRouteIri}/manifest`)
+    beginResource(token, gatedRouteIri)
+    manager.finishFetchResource({
+      token,
+      resource: gatedRouteIri,
+      path: gatedRouteIri,
+      success: false,
+      error: createCwaResourceError({ statusCode: 404, statusMessage: 'Not Found' }),
+    })
+
+    expect(showError).toHaveBeenCalledOnce()
+    expect(showError.mock.calls[0][0]).toMatchObject({ statusCode: 404 })
+    expect(displayFetchStatus()).toBeDefined()
     expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
   })
 })

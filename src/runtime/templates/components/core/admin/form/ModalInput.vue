@@ -41,7 +41,7 @@ const [model, modifiers] = defineModel<string | null | undefined | number>({
     return value
   },
 })
-const { type } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'url', placeholder?: string, autocomplete?: string }>()
+const { type } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'url' | 'datetime-local', placeholder?: string, autocomplete?: string }>()
 
 const { textarea, input } = useTextareaAutosize({
   // @ts-expect-error MaybeRef expected instead of ModelRef but they should behave the same

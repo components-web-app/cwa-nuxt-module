@@ -319,6 +319,31 @@ const { resource } = useCwaResource(pageDataIri)
 
 ---
 
+## Route go-live: `liveAt` and `effectiveLiveAt` ([#287](https://github.com/components-web-app/cwa-nuxt-module/issues/287))
+
+A Route carries two dates, and conflating them is the mistake to avoid.
+
+- **`liveAt`** is the route's **own** go-live date, and the only writable one. Nullable; a new Route is constructed with `liveAt = now`, so routes are live by default.
+- **`effectiveLiveAt`** is the **latest** go-live across the route and every **routed** ancestor, and null if any of them is null. Admin-readable, never writable. Unrouted ancestors are skipped rather than treated as null — deliberate, so a routed child under an unrouted template page stays live (the nested-pages design needs a parent editable before it has a URL).
+
+Both are `ROLE_ADMIN`-only (`ApiProperty(security:)`, not `Groups`) and both are in `Route:redirect:read`, which matters because `RoutesTab.vue` loads its route from `/_/routes/{id}/redirects` and a watcher forces the resource back to that postfix. Before api-components-bundle#231 exposed them there, the admin could write the date but never read it.
+
+**Badges report `effectiveLiveAt`; the control edits `liveAt`.** A live child under a scheduled parent must read "Scheduled — *the parent's date*", never "Live". `RoutesTabManage` shows the effective date read-only alongside the editable own date, and passes it from the **store resource** rather than `localResourceData` so the unwritable field never joins the PATCH payload.
+
+Three rules with tests pinning them:
+
+- **`isRouteGatedByAncestor` is `effective > own`, not `effective !== own`.** `effectiveLiveAt` is server-derived and goes stale the moment an editor types a later date; `!==` would keep claiming a parent gate that no longer applies.
+- **Instants are compared parsed, never as strings.** The API's `…+00:00` and our `…Z` are the same moment spelled differently.
+- **An absent `effectiveLiveAt` falls back** to the route's own state plus a generic parent hedge, never a blank. The API omits nulls, so absence cannot be told apart from an older API — which leaves the "held back by a draft ancestor" case the one state the admin cannot name precisely.
+
+`liveAt` and `effectiveLiveAt` are named **only** in `src/runtime/resources/route-publication.ts`; renaming either is a one-file change.
+
+**Timezone:** a `datetime-local` value is read as the editor's browser-local wall clock and committed as an absolute UTC instant, because the API compares against an absolute time and a naive string would be resolved by PHP's default timezone invisibly. The control states the zone it is committing to.
+
+**The sitemap deliberately has no publication filter.** `server/useFetcher.ts` builds a bare `$fetch` with no cookie forwarding (not `CwaFetch`, which captures the request cookie), so the sitemap fetch is anonymous, and `RouteExtension::applyToCollection` already applies `PublicationDate::andWhereActive(…, 'effectiveLiveAt')` for non-admins. A module-side filter would be inert. **If that fetch is ever made authenticated — an admin preview sitemap, say — non-live routes start appearing and the filter becomes necessary.**
+
+---
+
 ## Dependencies
 
 Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:

@@ -756,6 +756,9 @@
 :where(.cwa\:divide-stone-700 > :not(:last-child)) {
   border-color: var(--cwa-color-stone-700);
 }
+.cwa\:self-start {
+  align-self: flex-start;
+}
 .cwa\:self-stretch {
   align-self: stretch;
 }
@@ -842,6 +845,9 @@
 .cwa\:border-solid {
   --tw-border-style: solid;
   border-style: solid;
+}
+.cwa\:border-amber-400 {
+  border-color: var(--cwa-color-amber-400);
 }
 .cwa\:border-blue-600 {
   border-color: var(--cwa-color-blue-600);
