@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
-import type { CwaRouteLiveAt } from '#cwa/resources/route-publication'
-import { formatRouteLiveAt, getRouteLiveState, hasRouteEffectiveLiveAt, isRouteGatedByAncestor, routeLiveStateLabel, routeReachableAt } from '#cwa/resources/route-publication'
+import { formatRouteLiveAt, getRouteLiveState, isRouteGatedByAncestor, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import RouteRedirectsTree from '#cwa/templates/components/core/admin/RouteRedirectsTree.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -14,22 +13,13 @@ const props = defineProps<{
   isLoading: boolean
   parentHasNoRoute?: boolean
   forwardToPath?: string
-  hasParentPage?: boolean
 }>()
 
-const routePublication = computed<CwaRouteLiveAt>(() => {
-  const resource = props.resource
-  const publication: CwaRouteLiveAt = { liveAt: resource?.liveAt }
-  if (resource && 'effectiveLiveAt' in resource) {
-    publication.effectiveLiveAt = resource.effectiveLiveAt
-  }
-  return publication
-})
+const routePublication = computed(() => routePublicationFromResource(props.resource))
 const publicationState = computed(() => getRouteLiveState(routePublication.value))
 const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
 const goesLiveAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))
 const gatedByAncestor = computed(() => isRouteGatedByAncestor(routePublication.value))
-const effectiveDateUnknown = computed(() => !hasRouteEffectiveLiveAt(routePublication.value))
 const publicationClass = computed(() => {
   if (publicationState.value === 'live') {
     return 'cwa:text-stone-300 cwa:border-stone-600'
@@ -92,14 +82,12 @@ function handleDeletedEvent(resource: CwaResource) {
         data-parent-gated
         class="cwa:text-xs cwa:text-stone-400"
       >
-        A parent route sets this date — this page cannot be reached before then.
-      </p>
-      <p
-        v-else-if="hasParentPage && effectiveDateUnknown"
-        data-parent-live-note
-        class="cwa:text-xs cwa:text-stone-400"
-      >
-        Parent routes must also be live for this page to be reachable.
+        <template v-if="goesLiveAt">
+          A parent route sets this date — this page cannot be reached before then.
+        </template>
+        <template v-else>
+          A parent route has no go-live date — this page cannot be reached until that is set.
+        </template>
       </p>
     </div>
 

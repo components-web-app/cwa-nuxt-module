@@ -29,25 +29,27 @@ describe('RouteListRow', () => {
 
     test('shows when a scheduled route goes live', () => {
       const liveAt = '2999-01-01T09:00:00Z'
-      const text = mountRow({ liveAt }).find('[data-route-publication]').text()
+      const text = mountRow({ liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } }).find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
       expect(text).toContain(formatRouteLiveAt(liveAt))
     })
 
     test('shows a route with a past go-live date as live', () => {
-      expect(mountRow({ liveAt: '2020-01-01T00:00:00+00:00' }).find('[data-route-publication]').text()).toContain('Live')
+      const liveAt = '2020-01-01T00:00:00+00:00'
+      expect(mountRow({ liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } }).find('[data-route-publication]').text()).toContain('Live')
     })
 
     test('lists a live child route whose parent goes live next week as not yet reachable', () => {
       const effectiveLiveAt = '2999-01-01T09:00:00Z'
-      const text = mountRow({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt }).find('[data-route-publication]').text()
+      const text = mountRow({ liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true, effectiveLiveAt } }).find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
       expect(text).toContain(formatRouteLiveAt(effectiveLiveAt))
       expect(text).not.toContain('Live')
     })
 
-    test('falls back to the route own date when an older API exposes no effective date', () => {
-      expect(mountRow({ liveAt: '2020-01-01T00:00:00+00:00' }).find('[data-route-publication]').text()).toContain('Live')
+    test('reports a route the API resolved no effective date for as not live', () => {
+      const text = mountRow({ liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true } }).find('[data-route-publication]').text()
+      expect(text).toContain('Not live')
     })
   })
 })

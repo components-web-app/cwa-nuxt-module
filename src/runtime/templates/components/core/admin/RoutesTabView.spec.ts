@@ -70,14 +70,15 @@ describe('RoutesTabView', () => {
 
     test('shows when a scheduled route goes live', () => {
       const liveAt = '2999-01-01T09:00:00Z'
-      const wrapper = mountView({ resource: { path: '/topic-1', redirectedFrom: [], liveAt } })
+      const wrapper = mountView({ resource: { path: '/topic-1', redirectedFrom: [], liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } } })
       const text = wrapper.find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
       expect(text).toContain(formatRouteLiveAt(liveAt))
     })
 
     test('shows a route with a past go-live date as live', () => {
-      const wrapper = mountView({ resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00' } })
+      const liveAt = '2020-01-01T00:00:00+00:00'
+      const wrapper = mountView({ resource: { path: '/topic-1', redirectedFrom: [], liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } } })
       expect(wrapper.find('[data-route-publication]').text()).toContain('Live')
     })
 
@@ -91,20 +92,11 @@ describe('RoutesTabView', () => {
       expect(wrapper.find('[data-route-publication]').exists()).toBe(false)
     })
 
-    test('warns that a live child route still depends on its parents being live', () => {
+    test('reports a route the API resolved no effective date for as not live', () => {
       const wrapper = mountView({
-        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00' },
-        hasParentPage: true,
+        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true } },
       })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(true)
-    })
-
-    test('does not mention parents for a route with no parent page', () => {
-      const wrapper = mountView({
-        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00' },
-        hasParentPage: false,
-      })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(false)
+      expect(wrapper.find('[data-route-publication]').text()).toContain('Not live')
     })
   })
 
@@ -113,45 +105,37 @@ describe('RoutesTabView', () => {
       path: '/conference/programme',
       redirectedFrom: [],
       liveAt: '2020-01-01T00:00:00+00:00',
-      effectiveLiveAt: '2999-01-01T09:00:00Z',
+      _metadata: { persisted: true, effectiveLiveAt: '2999-01-01T09:00:00Z' },
     }
 
     test('a live child route whose parent goes live next week reads as not yet reachable', () => {
-      const text = mountView({ resource: gatedChild, hasParentPage: true }).find('[data-route-publication]').text()
+      const text = mountView({ resource: gatedChild }).find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
-      expect(text).toContain(formatRouteLiveAt(gatedChild.effectiveLiveAt))
+      expect(text).toContain(formatRouteLiveAt(gatedChild._metadata.effectiveLiveAt))
       expect(text).not.toContain('Live')
     })
 
     test('explains that it is a parent route setting that date', () => {
-      const wrapper = mountView({ resource: gatedChild, hasParentPage: true })
+      const wrapper = mountView({ resource: gatedChild })
       expect(wrapper.find('[data-parent-gated]').exists()).toBe(true)
     })
 
-    test('says nothing about parents when the effective date matches the route own date', () => {
+    test('names a draft ancestor as the reason rather than leaving it unexplained', () => {
       const wrapper = mountView({
-        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2020-01-01T00:00:00+00:00' },
-        hasParentPage: true,
+        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true } },
+      })
+      const note = wrapper.find('[data-parent-gated]')
+      expect(note.exists()).toBe(true)
+      expect(note.text()).toContain('no go-live date')
+    })
+
+    test('says nothing about parents when the effective date matches the route own date', () => {
+      const liveAt = '2020-01-01T00:00:00+00:00'
+      const wrapper = mountView({
+        resource: { path: '/topic-1', redirectedFrom: [], liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } },
       })
       expect(wrapper.find('[data-route-publication]').text()).toContain('Live')
       expect(wrapper.find('[data-parent-gated]').exists()).toBe(false)
-    })
-
-    test('drops the unconditional parent hedge once the API tells us the effective date', () => {
-      const wrapper = mountView({
-        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2020-01-01T00:00:00+00:00' },
-        hasParentPage: true,
-      })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(false)
-    })
-
-    test('keeps the parent hedge when an older API exposes no effective date', () => {
-      const wrapper = mountView({
-        resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00' },
-        hasParentPage: true,
-      })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(true)
-      expect(wrapper.find('[data-route-publication]').text()).toContain('Live')
     })
   })
 })

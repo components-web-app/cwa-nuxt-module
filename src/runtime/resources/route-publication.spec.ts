@@ -5,10 +5,10 @@ import {
   fromRouteLiveAtInput,
   getRouteLiveState,
   getRouteOwnLiveState,
-  hasRouteEffectiveLiveAt,
   isRouteGatedByAncestor,
   routeLiveAtTimezoneLabel,
   routeLiveStateLabel,
+  routePublicationFromResource,
   routeReachableAt,
   toRouteLiveAtInput,
 } from './route-publication'
@@ -74,18 +74,57 @@ describe('when the page actually becomes reachable', () => {
     expect(isRouteGatedByAncestor({ liveAt: '2999-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T00:00:00.000Z' })).toBe(false)
   })
 
-  test('falls back to the route own date when the API does not expose the effective one', () => {
-    expect(hasRouteEffectiveLiveAt({ liveAt: past })).toBe(false)
-    expect(getRouteLiveState({ liveAt: past }, now)).toBe('live')
-    expect(getRouteLiveState({ liveAt: future }, now)).toBe('scheduled')
-    expect(routeReachableAt({ liveAt: future })).toBe(future)
-    expect(isRouteGatedByAncestor({ liveAt: past })).toBe(false)
+  test('a missing effective date is a route nobody can reach, never a route assumed live', () => {
+    expect(getRouteLiveState({ liveAt: past }, now)).toBe('draft')
+    expect(getRouteLiveState({ liveAt: future }, now)).toBe('draft')
+    expect(routeReachableAt({ liveAt: past })).toBeUndefined()
+    expect(isRouteGatedByAncestor({ liveAt: past })).toBe(true)
+  })
+})
+
+describe('reading the effective go-live date off a route resource', () => {
+  test('reads the effective date from resource metadata, where the API resolves it per request', () => {
+    const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: future } })
+    expect(routeReachableAt(publication)).toBe(future)
+    expect(getRouteLiveState(publication, now)).toBe('scheduled')
+    expect(isRouteGatedByAncestor(publication)).toBe(true)
   })
 
-  test('an explicit effective date counts as the API exposing it', () => {
-    expect(hasRouteEffectiveLiveAt({ effectiveLiveAt: null })).toBe(true)
-    expect(hasRouteEffectiveLiveAt({ effectiveLiveAt: past })).toBe(true)
-    expect(hasRouteEffectiveLiveAt(undefined)).toBe(false)
+  test('a route no ancestor gates carries its own date as its effective date', () => {
+    const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: past } })
+    expect(getRouteLiveState(publication, now)).toBe('live')
+    expect(isRouteGatedByAncestor(publication)).toBe(false)
+  })
+
+  test('ignores a top level effective date, which the API no longer sends', () => {
+    const publication = routePublicationFromResource({ liveAt: past, effectiveLiveAt: future })
+    expect(routeReachableAt(publication)).toBeUndefined()
+    expect(getRouteLiveState(publication, now)).toBe('draft')
+  })
+
+  test('a null effective date in metadata is a draft ancestor', () => {
+    const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: null } })
+    expect(getRouteLiveState(publication, now)).toBe('draft')
+    expect(isRouteGatedByAncestor(publication)).toBe(true)
+  })
+
+  test('metadata without the key means the same, because the API omits a null it resolved', () => {
+    const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true } })
+    expect(getRouteLiveState(publication, now)).toBe('draft')
+    expect(isRouteGatedByAncestor(publication)).toBe(true)
+  })
+
+  test('a route with no metadata at all is not live', () => {
+    expect(getRouteLiveState(routePublicationFromResource({ liveAt: future }), now)).toBe('draft')
+    expect(getRouteLiveState(routePublicationFromResource({ liveAt: past, _metadata: null }), now)).toBe('draft')
+  })
+
+  test('an absent resource is a draft rather than a throw', () => {
+    expect(getRouteLiveState(routePublicationFromResource(undefined), now)).toBe('draft')
+  })
+
+  test('keeps the route own date so the editor still edits the date it owns', () => {
+    expect(routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: future } }).liveAt).toBe(past)
   })
 })
 
@@ -121,8 +160,8 @@ describe('datetime-local conversion', () => {
 
 describe('display', () => {
   test('labels each state the same way wherever a route is listed', () => {
-    expect(routeLiveStateLabel({ liveAt: past }, now)).toBe('Live')
-    expect(routeLiveStateLabel({ liveAt: future }, now)).toBe('Scheduled')
+    expect(routeLiveStateLabel({ liveAt: past, effectiveLiveAt: past }, now)).toBe('Live')
+    expect(routeLiveStateLabel({ liveAt: future, effectiveLiveAt: future }, now)).toBe('Scheduled')
     expect(routeLiveStateLabel({ liveAt: null }, now)).toBe('Not live')
     expect(routeLiveStateLabel({}, now)).toBe('Not live')
   })

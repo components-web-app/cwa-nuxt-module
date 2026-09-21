@@ -7,6 +7,11 @@ export interface CwaRouteLiveAt {
   effectiveLiveAt?: string | null
 }
 
+export interface CwaRouteLiveAtResource {
+  liveAt?: string | null
+  _metadata?: { effectiveLiveAt?: string | null, [key: string]: unknown } | null
+}
+
 const DATETIME_LOCAL_FORMAT = 'YYYY-MM-DDTHH:mm'
 const DISPLAY_FORMAT = 'D MMM YYYY, HH:mm'
 
@@ -27,8 +32,11 @@ function stateFromDate(value: string | null | undefined, now: Date): RouteLiveSt
   return time <= now.getTime() ? 'live' : 'scheduled'
 }
 
-export function hasRouteEffectiveLiveAt(resource?: CwaRouteLiveAt | null): boolean {
-  return !!resource && 'effectiveLiveAt' in resource
+export function routePublicationFromResource(resource?: CwaRouteLiveAtResource | null): CwaRouteLiveAt {
+  return {
+    liveAt: resource?.liveAt,
+    effectiveLiveAt: resource?._metadata?.effectiveLiveAt,
+  }
 }
 
 export function getRouteOwnLiveState(resource?: CwaRouteLiveAt | null, now: Date = new Date()): RouteLiveState {
@@ -36,7 +44,7 @@ export function getRouteOwnLiveState(resource?: CwaRouteLiveAt | null, now: Date
 }
 
 export function routeReachableAt(resource?: CwaRouteLiveAt | null): string | null | undefined {
-  return hasRouteEffectiveLiveAt(resource) ? resource?.effectiveLiveAt : resource?.liveAt
+  return resource?.effectiveLiveAt
 }
 
 export function getRouteLiveState(resource?: CwaRouteLiveAt | null, now: Date = new Date()): RouteLiveState {
@@ -44,7 +52,7 @@ export function getRouteLiveState(resource?: CwaRouteLiveAt | null, now: Date = 
 }
 
 export function isRouteGatedByAncestor(resource?: CwaRouteLiveAt | null): boolean {
-  if (!hasRouteEffectiveLiveAt(resource) || !resource?.liveAt) {
+  if (!resource?.liveAt) {
     return false
   }
   if (!resource.effectiveLiveAt) {

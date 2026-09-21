@@ -60,7 +60,7 @@ function setupItemPage({ path = '/conference/programme', currentPath = '/confere
     isLoading: ref(false),
     isUpdating: ref(false),
     localResourceData,
-    resource: ref({ '@id': `/_/routes/${currentPath}`, 'path': currentPath, 'route': null, liveAt, effectiveLiveAt }),
+    resource: ref({ '@id': `/_/routes/${currentPath}`, 'path': currentPath, 'route': null, liveAt, '_metadata': { persisted: true, effectiveLiveAt } }),
     loadResource: vi.fn(),
     deleteResource: vi.fn(),
     saveResource,
@@ -186,26 +186,10 @@ describe('RoutesTab', () => {
       mockCwa()
       const wrapper = mountTab()
       await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('effectiveLiveAt')).toBe('2999-01-01T00:00:00+00:00')
-    })
-
-    test('tells a child route that its parents also gate it', () => {
-      setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/pages/conference-uuid') {
-          return ref({ data: { route: '/_/routes//conference' } })
-        }
-        return ref(null)
+      expect(wrapper.findComponent(RoutesTabManage).props('routePublication')).toEqual({
+        liveAt: '2020-01-01T00:00:00+00:00',
+        effectiveLiveAt: '2999-01-01T00:00:00+00:00',
       })
-      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      expect(wrapper.findComponent(RoutesTabView).props('hasParentPage')).toBe(true)
-    })
-
-    test('does not mention parents for a top level route', () => {
-      setupItemPage()
-      mockCwa()
-      const wrapper = mountTab({ parentPage: null, parentPageData: null })
-      expect(wrapper.findComponent(RoutesTabView).props('hasParentPage')).toBe(false)
     })
   })
 

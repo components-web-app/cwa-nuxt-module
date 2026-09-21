@@ -6,7 +6,6 @@
           :resource="resource"
           :is-loading="isLoadingRoute"
           :parent-has-no-route="parentHasNoRoute"
-          :has-parent-page="hasParentPage"
           :forward-to-path="forwardToPath"
           @deleted="handleRedirectDeleted"
           @change-page="handleChangePage"
@@ -59,8 +58,7 @@
             :disable-buttons="disableButtons"
             :page-resource="pageResource"
             :parent-route-prefix="parentRoutePrefix"
-            :has-parent-page="hasParentPage"
-            :effective-live-at="resource.effectiveLiveAt"
+            :route-publication="routePublication"
             @save="handleSaveRoute"
             @generate="handleGenerateRoute"
             @delete="handleDeleteRoute"
@@ -93,6 +91,7 @@ import { computed, ref, watch, watchEffect } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import { routePublicationFromResource } from '#cwa/resources/route-publication'
 import { useCwa, navigateTo, useRoute } from '#imports'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/templates/components/core/admin/RoutesTabAddRedirect.vue'
@@ -135,7 +134,6 @@ const parentRoutePrefix = computed(() => {
   return routeIri.replace(/^.*\/_\/routes\//, '')
 })
 const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
-const hasParentPage = computed(() => !!parentIri.value)
 
 const redirectIri = computed<string | undefined>(() => {
   const r = resource.value?.redirect
@@ -340,6 +338,8 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   iri: routeIriFromPage,
   excludeFields: ['redirectedFrom', 'redirect'],
 })
+
+const routePublication = computed(() => routePublicationFromResource(resource.value))
 
 watch(resource, (res) => {
   if (res?.['@id']) {

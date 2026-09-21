@@ -13,7 +13,6 @@ function mountManage(options: {
   title?: string
   liveAt?: string | null
   effectiveLiveAt?: string | null
-  hasParentPage?: boolean
 } = {}) {
   return mount(RoutesTabManage, {
     props: {
@@ -23,8 +22,7 @@ function mountManage(options: {
       parentRoutePrefix: options.parentRoutePrefix !== undefined ? options.parentRoutePrefix : '/conference',
       modelValue: options.modelValue ?? '/conference/programme',
       liveAt: options.liveAt,
-      effectiveLiveAt: options.effectiveLiveAt,
-      hasParentPage: options.hasParentPage,
+      routePublication: { liveAt: options.liveAt, effectiveLiveAt: options.effectiveLiveAt },
     } as any,
     shallow: true,
   })
@@ -227,43 +225,30 @@ describe('RoutesTabManage', () => {
       const wrapper = mountManage({ liveAt: '2999-01-01T00:00:00+00:00' })
       expect(wrapper.find('[data-live-at-timezone]').text()).toContain(Intl.DateTimeFormat().resolvedOptions().timeZone)
     })
-
-    test('warns that a child route cannot go live before its parents', () => {
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', hasParentPage: true })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(true)
-    })
-
-    test('does not mention parents for a route with no parent page', () => {
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', hasParentPage: false })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(false)
-    })
   })
 
   describe('a parent route holding the page back', () => {
     test('tells the editor when the page actually becomes reachable, while still editing the route own date', () => {
       const effectiveLiveAt = '2999-01-01T09:00:00Z'
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt, hasParentPage: true })
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt })
       expect(getStateSelect(wrapper).props('modelValue')).toBe('live')
       expect(wrapper.find('[data-effective-live-at]').text()).toContain(formatRouteLiveAt(effectiveLiveAt))
     })
 
     test('says nothing about parents when the effective date matches the route own date', () => {
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2020-01-01T00:00:00+00:00', hasParentPage: true })
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2020-01-01T00:00:00+00:00' })
       expect(wrapper.find('[data-effective-live-at]').exists()).toBe(false)
     })
 
-    test('drops the unconditional parent hedge once the API tells us the effective date', () => {
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2020-01-01T00:00:00+00:00', hasParentPage: true })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(false)
-    })
-
-    test('keeps the parent hedge when an older API exposes no effective date', () => {
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', hasParentPage: true })
-      expect(wrapper.find('[data-parent-live-note]').exists()).toBe(true)
+    test('warns the editor when a draft ancestor makes the page unreachable at any date', () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      const note = wrapper.find('[data-effective-live-at]')
+      expect(note.exists()).toBe(true)
+      expect(note.text()).toContain('no go-live date')
     })
 
     test('stops claiming a parent gate once the editor schedules beyond it', async () => {
-      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T09:00:00Z', hasParentPage: true })
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T09:00:00Z' })
       await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
       await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '3999-01-01T09:00')
       expect(wrapper.find('[data-effective-live-at]').exists()).toBe(false)

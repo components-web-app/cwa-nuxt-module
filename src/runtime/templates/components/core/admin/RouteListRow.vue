@@ -69,8 +69,7 @@ import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import type { CwaRouteLiveAt } from '#cwa/resources/route-publication'
-import { formatRouteLiveAt, getRouteLiveState, routeLiveStateLabel, routeReachableAt } from '#cwa/resources/route-publication'
+import { formatRouteLiveAt, getRouteLiveState, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
 
 const props = defineProps<{
   data: CwaResource
@@ -87,13 +86,7 @@ defineEmits<{
   delete: [string]
 }>()
 
-const routePublication = computed<CwaRouteLiveAt>(() => {
-  const publication: CwaRouteLiveAt = { liveAt: props.data.liveAt }
-  if ('effectiveLiveAt' in props.data) {
-    publication.effectiveLiveAt = props.data.effectiveLiveAt
-  }
-  return publication
-})
+const routePublication = computed(() => routePublicationFromResource(props.data))
 const publicationState = computed(() => getRouteLiveState(routePublication.value))
 const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
 const goesLiveAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))

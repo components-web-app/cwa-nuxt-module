@@ -324,19 +324,25 @@ const { resource } = useCwaResource(pageDataIri)
 A Route carries two dates, and conflating them is the mistake to avoid.
 
 - **`liveAt`** is the route's **own** go-live date, and the only writable one. Nullable; a new Route is constructed with `liveAt = now`, so routes are live by default.
-- **`effectiveLiveAt`** is the **latest** go-live across the route and every **routed** ancestor, and null if any of them is null. Admin-readable, never writable. Unrouted ancestors are skipped rather than treated as null — deliberate, so a routed child under an unrouted template page stays live (the nested-pages design needs a parent editable before it has a URL).
+- **`effectiveLiveAt`** is the **latest** go-live across the route and every **routed** ancestor, and null if any of them is null. Admin-readable, never writable, and it lives in **`_metadata.effectiveLiveAt`** — it is derived per request by traversal, not a stored column (api-components-bundle#233 removed the column and the listener that maintained it). Unrouted ancestors are skipped rather than treated as null — deliberate, so a routed child under an unrouted template page stays live (the nested-pages design needs a parent editable before it has a URL).
 
 Both are `ROLE_ADMIN`-only (`ApiProperty(security:)`, not `Groups`) and both are in `Route:redirect:read`, which matters because `RoutesTab.vue` loads its route from `/_/routes/{id}/redirects` and a watcher forces the resource back to that postfix. Before api-components-bundle#231 exposed them there, the admin could write the date but never read it.
 
-**Badges report `effectiveLiveAt`; the control edits `liveAt`.** A live child under a scheduled parent must read "Scheduled — *the parent's date*", never "Live". `RoutesTabManage` shows the effective date read-only alongside the editable own date, and passes it from the **store resource** rather than `localResourceData` so the unwritable field never joins the PATCH payload.
+**Badges report `effectiveLiveAt`; the control edits `liveAt`.** A live child under a scheduled parent must read "Scheduled — *the parent's date*", never "Live". `RoutesTabManage` shows the effective date read-only alongside the editable own date, built from the **store resource** rather than `localResourceData` — which `_metadata` living outside any PATCH body now makes structural rather than a discipline.
 
 Three rules with tests pinning them:
 
 - **`isRouteGatedByAncestor` is `effective > own`, not `effective !== own`.** `effectiveLiveAt` is server-derived and goes stale the moment an editor types a later date; `!==` would keep claiming a parent gate that no longer applies.
 - **Instants are compared parsed, never as strings.** The API's `…+00:00` and our `…Z` are the same moment spelled differently.
-- **An absent `effectiveLiveAt` falls back** to the route's own state plus a generic parent hedge, never a blank. The API omits nulls, so absence cannot be told apart from an older API — which leaves the "held back by a draft ancestor" case the one state the admin cannot name precisely.
+- **An absent `effectiveLiveAt` means not live.** There is no "unknown" state and no parent hedge. These badges render only in admin components, `RouteNormalizer` sets the value for anyone who may read unpublished resources, and API Platform omits it when the chain resolves to null — so absent is null is blocked. Anyone not permitted gets a **404**, not a route with fields missing.
 
-`liveAt` and `effectiveLiveAt` are named **only** in `src/runtime/resources/route-publication.ts`; renaming either is a one-file change.
+  The decisive argument for deleting the fallback, rather than merely tidying it: it only ever changed the outcome when `liveAt` was **present** and `effectiveLiveAt` **absent**, and both are admin-gated, so that combination cannot occur. An anonymously-fetched route reaching `RouteListRow` through `getItemFromStore` has no `liveAt` either, and already read "Not live".
+
+  **Caveat:** `liveAt`'s visibility is hard-coded `ROLE_ADMIN` while the metadata's follows `publishable.permission`. Identical in every current config; an app setting `publishable.permission` stricter would get an admin who reads one and not the other, and would see "Not live" on a live route. Not defended against.
+
+**`effectiveLiveAt` is named only in `src/runtime/resources/route-publication.ts`** — verified by grep, and worth keeping that way: when it was read directly in three `.vue` files as well, moving it to `_metadata` broke the badges silently, with no error and no failing test. `liveAt` is also the writable `v-model` in `RoutesTab.vue`, which is deliberate — routing the PATCH payload through a helper would obscure it.
+
+**Editing a parent's `liveAt` does not refresh a child's badge.** `isCwaResourceSame` strips `_metadata` before comparing, so a Mercure-staged save whose only change is the effective date is discarded as unchanged, and #233 removed the listener that cascaded writes to descendants. The child updates on its next fetch. Same class as `publishable.publishedAt`, and arguably right now the value is derived — but it is a change from the column-backed behaviour.
 
 **Timezone:** a `datetime-local` value is read as the editor's browser-local wall clock and committed as an absolute UTC instant, because the API compares against an absolute time and a naive string would be resolved by PHP's default timezone invisibly. The control states the zone it is committing to.
 
