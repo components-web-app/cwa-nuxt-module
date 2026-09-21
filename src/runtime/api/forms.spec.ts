@@ -217,6 +217,90 @@ describe('Forms', () => {
       expect(result).toEqual({ success: false })
       expect(resourcesStore.saveResource).not.toHaveBeenCalled()
     })
+
+    describe('success response normalisation (#312)', () => {
+      const formIri = '/_/forms/contact'
+      const action = '/_/forms/contact/submit'
+
+      function storedForm(vars: Record<string, any>) {
+        return {
+          '@id': formIri,
+          '@type': 'Form',
+          'formView': { vars: { full_name: 'contact_form', ...vars }, children: [] },
+        }
+      }
+
+      function createFormsWithWritableStore(fetchFn: ReturnType<typeof vi.fn>) {
+        const created = createForms({ fetchFn })
+        created.resourcesStore.saveResource.mockImplementation(({ resource }: { resource: any }) => {
+          (formsByIdStoreState.current.byId as any)[resource['@id']] = { data: resource }
+        })
+        return created
+      }
+
+      test('a successful submit whose response has an empty formView action keeps the stored action and method, so a second submit reaches the right URL', async () => {
+        formsByIdStoreState.current.byId = {
+          [formIri]: { data: storedForm({ action, method: 'POST' }) },
+        }
+        const fetchFn = vi.fn().mockResolvedValue({
+          ...storedForm({ action: '', method: '' }),
+          '@id': action,
+        })
+        const { forms, resourcesStore } = createFormsWithWritableStore(fetchFn)
+
+        const first = await forms.submitForm(action, {}, 'POST')
+        expect(first).toEqual({ success: true })
+
+        const saved = resourcesStore.saveResource.mock.calls[0][0].resource
+        expect(saved.formView.vars.action).toBe(action)
+        expect(saved.formView.vars.method).toBe('POST')
+
+        const rootVars = forms.getForm(formIri).value?.contact_form?.vars
+        expect(rootVars?.action).toBe(action)
+        expect(rootVars?.method).toBe('POST')
+
+        await forms.submitForm(rootVars!.action!, {}, rootVars!.method as 'POST')
+        expect(fetchFn).toHaveBeenCalledTimes(2)
+        expect(fetchFn.mock.calls[1][0]).toBe(action)
+        expect(fetchFn.mock.calls[1][1]).toEqual(expect.objectContaining({ method: 'POST' }))
+      })
+
+      test('a successful submit whose response @id ends in /submit updates the form resource, not a separate entry', async () => {
+        formsByIdStoreState.current.byId = {
+          [formIri]: { data: storedForm({ action, method: 'POST', valid: null }) },
+        }
+        const fetchFn = vi.fn().mockResolvedValue({
+          ...storedForm({ action, method: 'POST', valid: true }),
+          '@id': action,
+        })
+        const { forms, resourcesStore } = createFormsWithWritableStore(fetchFn)
+
+        await forms.submitForm(action, {}, 'POST')
+
+        expect(resourcesStore.saveResource).toHaveBeenCalledTimes(1)
+        expect(resourcesStore.saveResource.mock.calls[0][0].resource['@id']).toBe(formIri)
+        expect(Object.keys(formsByIdStoreState.current.byId)).toEqual([formIri])
+        expect((formsByIdStoreState.current.byId as any)[formIri].data.formView.vars.valid).toBe(true)
+      })
+
+      test('the error path still normalises the response @id and carries the stored action over', async () => {
+        formsByIdStoreState.current.byId = {
+          [formIri]: { data: storedForm({ action, method: 'POST' }) },
+        }
+        const fetchFn = vi.fn().mockRejectedValue({
+          data: { ...storedForm({ action: '', errors: ['Fix this'] }), '@id': action },
+        })
+        const { forms, resourcesStore } = createFormsWithWritableStore(fetchFn)
+
+        const result = await forms.submitForm(action, {}, 'POST')
+
+        expect(result).toEqual({ success: false, formErrors: ['Fix this'] })
+        const saved = resourcesStore.saveResource.mock.calls[0][0].resource
+        expect(saved['@id']).toBe(formIri)
+        expect(saved.formView.vars.action).toBe(action)
+        expect(saved.formView.vars.method).toBe('POST')
+      })
+    })
   })
 
   describe('get form', () => {
