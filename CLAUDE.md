@@ -1039,6 +1039,12 @@ The original `route-middleware.ts:64` todo — "redirects do not work if clickin
 
 ---
 
+## A component still being added takes changes as merge-patch ([#319](https://github.com/components-web-app/cwa-nuxt-module/issues/319))
+
+While a component is being added (`_metadata.persisted === false`), `ResourcesManager.updateResource` applies a change to the local copy instead of PATCHing. Its `mergeWith` customiser used to **join arrays** (`b.concat(a)`), so selecting a second style stored the first twice, deselecting never removed anything, and choosing Default (`null`) threw. It now mirrors the API's merge-patch: an array or `null` replaces the stored value, and objects merge field by field. Every caller already sends the complete array, so nothing relied on joining.
+
+---
+
 ## The page query is only forwarded to Collection fetches ([#318](https://github.com/components-web-app/cwa-nuxt-module/issues/318))
 
 `Fetcher.fetch()` used to copy the **whole page query** onto every API request, so any `?utm_source=`, `?fbclid=` or cache-buster made every route, manifest, layout, page, group, position and component fetch for that render a distinct shared-cache key, and a valueless `?k` was sent as `k=null` with values unencoded.
