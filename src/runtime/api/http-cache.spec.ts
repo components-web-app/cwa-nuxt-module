@@ -236,14 +236,22 @@ describe('buildPageCacheHeaders', () => {
 })
 
 describe('resolvePageCacheOptions', () => {
-  test('page caching is opt in and defaults to five minutes with no stale window', () => {
-    expect(resolvePageCacheOptions()).toEqual({ enabled: false, sharedMaxAge: 300, staleWhileRevalidate: 0 })
+  test('page caching is on by default, for five minutes with no stale window', () => {
+    expect(resolvePageCacheOptions()).toEqual({ enabled: true, sharedMaxAge: 300, staleWhileRevalidate: 0 })
+  })
+
+  test('an app can still turn page caching off', () => {
+    expect(resolvePageCacheOptions({ enabled: false })).toEqual({
+      enabled: false,
+      sharedMaxAge: 300,
+      staleWhileRevalidate: 0,
+    })
   })
 
   test('defaults are applied to a partial option object', () => {
-    expect(resolvePageCacheOptions({ enabled: true })).toEqual({
+    expect(resolvePageCacheOptions({ sharedMaxAge: 60 })).toEqual({
       enabled: true,
-      sharedMaxAge: 300,
+      sharedMaxAge: 60,
       staleWhileRevalidate: 0,
     })
   })
