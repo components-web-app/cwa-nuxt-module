@@ -2,6 +2,8 @@ import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 export const SURROGATE_KEY_SEPARATOR = ', '
 
+export const RENDERED_HTML_SURROGATE_KEY = 'cwa-html'
+
 export interface ApiCacheDirectives {
   storable: boolean
   sharedMaxAge?: number
@@ -120,7 +122,7 @@ export function buildPageCacheHeaders({ ids, api, options }: BuildPageCacheHeade
   }
 
   return {
-    surrogateKey: iris.join(SURROGATE_KEY_SEPARATOR),
+    surrogateKey: [RENDERED_HTML_SURROGATE_KEY, ...iris].join(SURROGATE_KEY_SEPARATOR),
     cacheControl: cacheControl.join(', '),
   }
 }

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import {
+  RENDERED_HTML_SURROGATE_KEY,
+  SURROGATE_KEY_SEPARATOR,
   buildPageCacheHeaders,
   mergeCacheDirectives,
   readResponseCacheDirectives,
@@ -124,7 +126,23 @@ describe('buildPageCacheHeaders', () => {
       options,
     })
 
-    expect(decision.surrogateKey).toBe('/_api/_/routes//, /_api/component/titles/abc')
+    expect(decision.surrogateKey).toBe('cwa-html, /_api/_/routes//, /_api/component/titles/abc')
+  })
+
+  test('tags every cached page with the front end key, so a site-wide change can purge them all', () => {
+    const decision = buildPageCacheHeaders({
+      ids: ['/_api/component/titles/abc'],
+      api: storable,
+      options,
+    })
+
+    expect(decision.surrogateKey?.split(SURROGATE_KEY_SEPARATOR)).toContain(RENDERED_HTML_SURROGATE_KEY)
+    expect(RENDERED_HTML_SURROGATE_KEY).toBe('cwa-html')
+  })
+
+  test('never tags a page the module declined to cache', () => {
+    expect(buildPageCacheHeaders({ ids: ['/'], api: storable, options }).surrogateKey).toBeUndefined()
+    expect(buildPageCacheHeaders({ ids: ['/_api/component/titles/abc'], api: { storable: false }, options }).surrogateKey).toBeUndefined()
   })
 
   test('filters out ids that are not API resource IRIs', () => {
@@ -134,7 +152,7 @@ describe('buildPageCacheHeaders', () => {
       options,
     })
 
-    expect(decision.surrogateKey).toBe('/_api/_/routes//, /_api/component/titles/abc')
+    expect(decision.surrogateKey).toBe('cwa-html, /_api/_/routes//, /_api/component/titles/abc')
     expect(decision.surrogateKey).not.toContain('__new__')
   })
 
@@ -147,7 +165,7 @@ describe('buildPageCacheHeaders', () => {
       options,
     })
 
-    expect(decision.surrogateKey).toBe('/_/routes//, /component/titles/abc')
+    expect(decision.surrogateKey).toBe('cwa-html, /_/routes//, /component/titles/abc')
   })
 
   test('declines when no API IRIs were rendered', () => {

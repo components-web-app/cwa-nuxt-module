@@ -365,6 +365,14 @@ Opt-in via `cwa: { pageCache: { enabled: true, sharedMaxAge: 300, staleWhileReva
 
 ISR/SWR route rules fight this: Nitro's cache is not in Souin's purge graph, so `module.ts` warns at build time when `pageCache.enabled` meets the same `staticRender` detection added for #262.
 
+### The `cwa-html` surrogate key — a cross-repo contract
+
+Every cacheable HTML response carries the constant key **`cwa-html`** alongside the resource IRIs, so the bundle can purge *all* rendered pages when a site-wide resource changes. The name is an interface contract shared with api-components-bundle#232 and must match on both sides — like `explicitAllowOnly` and `SouinPurger::SEPARATOR`'s `', '`, a mismatch fails silently by matching nothing. It is exported as `RENDERED_HTML_SURROGATE_KEY`; any token not starting with `/` is safe from colliding with a resource IRI.
+
+This exists because a resource can shape every page without the front end ever holding it as a resource. **Site config is that case**: `siteName`, `concatTitle`, `maintenanceModeEnabled` and the robots settings come through `server/useFetcher.ts`'s own `$fetch`, never enter the resources store, and so appear in neither the accumulator nor `allIds`. Tagging pages with the site-config member IRIs was considered and rejected — it only works for resources the front end fetches *and can enumerate*, so every future site-wide resource would need the same bespoke plumbing.
+
+The key is only emitted on a page the module actually caches; a declined or unstorable render carries no key at all. Purging it drops every cached page at once and the traffic lands on SSR together, which is why the bundle's class list that triggers it should stay short, and why this is driven by a write on an already-secured resource rather than by a purge endpoint anyone could call.
+
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
 
 ---

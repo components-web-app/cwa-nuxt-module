@@ -65,7 +65,7 @@ describe('cwa page cache plugin', () => {
     rendered()
 
     expect(mockEvent.value!.context.cwaPageCache).toEqual({
-      surrogateKey: '/_api/_/routes//, /_api/component/titles/abc',
+      surrogateKey: 'cwa-html, /_api/_/routes//, /_api/component/titles/abc',
       cacheControl: 'public, max-age=0, s-maxage=300',
     })
   })
