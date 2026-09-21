@@ -1039,6 +1039,34 @@ The original `route-middleware.ts:64` todo — "redirects do not work if clickin
 
 ---
 
+## `CwaComponentGroup` resolves `location` to the published IRI ([#317](https://github.com/components-web-app/cwa-nuxt-module/issues/317))
+
+A nested group's `location` may be the component's draft `iri` or its `publishedIri`; both now resolve to the same group. `ComponentGroup.vue` derives `resolvedLocation = findPublishedComponentIri(location) ?? location` and uses it for the group reference, the location lookup, the not-a-current-resource alert, the disabled check and the synchroniser. Before, passing the draft `iri` looked up a different group and the synchroniser could create a stray empty group against the draft.
+
+`findPublishedComponentIri` treats a non-publishable resource as published and returns it unchanged, and returns `undefined` for a never-published draft, so pages, layouts and never-published drafts keep their own IRI. `hasLocation` (#276) and `isNewPosition` still read the raw prop. The getter itself had no tests; `getters.spec.ts` now pins its behaviour.
+
+---
+
+## Reordering positions in a group ([#316](https://github.com/components-web-app/cwa-nuxt-module/issues/316))
+
+Positions could land in the wrong order after reordering. From consistent data a single move was always correct; it went wrong when the local copy had drifted: duplicate `sortValue`s, a failed PATCH that was still mirrored locally, another editor's pending updates, and two moves inside one debounce window (only the last was sent).
+
+`ComponentGroup.Util.Positions.ts` now:
+
+- **One serialised queue per group** — one 1s debounce, each flush chained behind the previous one. Display numbers are cleared after every flush (including one that sends nothing) unless another reorder arrived during it.
+- **Base order** is the local `sortValue` order at flush time, **target order** the display order; the positions moved are those outside the longest increasing subsequence, preferring the ones the editor moved. A single move is still **1 PATCH**, so Mercure volume is unchanged.
+- **The local mirror is an exact port of the API's by-value shift** (`ComponentPositionSortValueHelper::calculateSortValue`, move branch). Do not go back to ±1 by index — it diverges as soon as values have gaps.
+- **Duplicates are repaired** when detected: target values are computed in `sortValue` order and only positions whose value must change are PATCHed, highest first.
+- **A failed PATCH is never mirrored**; the remaining moves and the queued debounce are dropped and display numbers cleared.
+- **Pending (Mercure-staged) updates contribute only `sortValue`**, read via `Resources.getPendingResource(iri)`; everything else is re-staged. When another editor has reordered the group, the order this editor sees wins.
+- An empty or non-numeric Order-field `location` is ignored.
+
+**Trap:** storing a resource without `isNew` clears its pending update, so pending updates must be read *before* display numbers are stored on the reorder event.
+
+Tests: the "group reorder queue against the server" describe in `ComponentGroup.Util.Positions.spec.ts` runs the real stores against a ported server-move helper.
+
+---
+
 ## `allowedComponents` format contract
 
 The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.

@@ -9,6 +9,7 @@ import {
   CwaResourceTypes,
   getResourceTypeFromIri,
 } from './resource-utils'
+import type { CwaResource } from './resource-utils'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 
 interface PageLoadStatus {
@@ -478,5 +479,9 @@ export class Resources {
 
   public get hasNewResources() {
     return this.resourcesStore.hasNewResources
+  }
+
+  public getPendingResource(iri: string): { resource: CwaResource, path?: string } | undefined {
+    return this.resourcesStore.new.byId[iri]
   }
 }
