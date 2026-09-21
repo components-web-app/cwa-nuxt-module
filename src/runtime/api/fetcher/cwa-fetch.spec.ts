@@ -123,3 +123,96 @@ describe('CwaFetch -> server-side cookie forwarding', () => {
     expect(ctx.options.headers.get('cookie')).toBeNull()
   })
 })
+
+describe('CwaFetch -> API cache state', () => {
+  const createResponseCtx = (cacheControl: string) => ({
+    response: { headers: new Headers({ 'cache-control': cacheControl }) },
+  })
+
+  function captureOnResponse(instance: CwaFetch) {
+    // @ts-expect-error mocked
+    const createSpy = vi.spyOn($fetch, 'create')
+    void instance
+    return createSpy.mock.calls[createSpy.mock.calls.length - 1][0].onResponse
+  }
+
+  function serverInstance() {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    // @ts-expect-error mocked
+    vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    return new CwaFetch('https://my-api')
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseRequestHeaders.mockReturnValue({})
+  })
+
+  test('onResponse is registered on the fetch instance', () => {
+    const cwaFetch = serverInstance()
+    expect(typeof captureOnResponse(cwaFetch)).toBe('function')
+  })
+
+  test('each response is folded into the instance state', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+
+    onResponse(createResponseCtx('public, s-maxage=3600'))
+    onResponse(createResponseCtx('public, s-maxage=120'))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: 120 })
+  })
+
+  test('a no-store response marks the instance unstorable', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+
+    onResponse(createResponseCtx('public, s-maxage=3600'))
+    onResponse(createResponseCtx('private, no-store, max-age=0'))
+
+    expect(cwaFetch.httpCacheState.storable).toBe(false)
+  })
+
+  test('onResponse does not touch Nuxt context', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+    mockUseRequestHeaders.mockClear()
+
+    expect(() => onResponse(createResponseCtx('public, s-maxage=60'))).not.toThrow()
+
+    expect(mockUseRequestHeaders).not.toHaveBeenCalled()
+    expect(cwaFetch.httpCacheState.sharedMaxAge).toBe(60)
+  })
+
+  test('onResponse is synchronous', () => {
+    const cwaFetch = serverInstance()
+    const onResponse = captureOnResponse(cwaFetch)
+
+    expect(onResponse(createResponseCtx('public, s-maxage=60'))).toBeUndefined()
+  })
+
+  test('the client instance records nothing', () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
+    // @ts-expect-error mocked
+    vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    const cwaFetch = new CwaFetch('https://my-api')
+    const onResponse = captureOnResponse(cwaFetch)
+
+    onResponse(createResponseCtx('private, no-store'))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: undefined })
+  })
+
+  test('two instances never share state', () => {
+    const first = serverInstance()
+    const onFirstResponse = captureOnResponse(first)
+    const second = serverInstance()
+    const onSecondResponse = captureOnResponse(second)
+
+    onFirstResponse(createResponseCtx('private, no-store'))
+    onSecondResponse(createResponseCtx('public, s-maxage=600'))
+
+    expect(first.httpCacheState).toEqual({ storable: false, sharedMaxAge: undefined })
+    expect(second.httpCacheState).toEqual({ storable: true, sharedMaxAge: 600 })
+  })
+})

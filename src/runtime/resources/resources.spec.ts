@@ -58,6 +58,19 @@ describe('Resources', () => {
 
       expect(resources.currentIds).toEqual(mockIds)
     })
+
+    test('allIds returns every id the store holds for the request', () => {
+      const mockResourcesStore = {
+        current: {
+          byId: {},
+          currentIds: ['1'],
+          allIds: ['1', '2', '3'],
+        },
+      }
+      const { resources } = createResources(undefined, mockResourcesStore)
+
+      expect(resources.allIds).toEqual(['1', '2', '3'])
+    })
   })
 
   describe('getResource', () => {

@@ -382,6 +382,16 @@ describe('Cwa delegation methods and getters', () => {
     expect($cwa.config).toBe(SiteConfig.mock.results[0].value.config)
   })
 
+  test('apiHttpCacheState delegates to the fetch instance', () => {
+    const $cwa = createCwa({ storeName })
+    const state = { storable: false, sharedMaxAge: undefined }
+    Object.defineProperty(CwaFetch.mock.results[0].value, 'httpCacheState', {
+      get: () => state,
+      configurable: true,
+    })
+    expect($cwa.apiHttpCacheState).toBe(state)
+  })
+
   test('apiUrlBase returns the resolved apiUrl', () => {
     const $cwa = createCwa({ storeName, apiUrl: 'https://example.com' })
     expect($cwa.apiUrlBase).toBe('https://example.com')

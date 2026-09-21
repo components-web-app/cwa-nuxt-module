@@ -30,6 +30,10 @@ export class Resources {
     return this.resourcesStore.current.currentIds
   }
 
+  public get allIds() {
+    return this.resourcesStore.current.allIds
+  }
+
   public isIriPublishableEquivalent(oldIri: string, newIri: string) {
     return this.resourcesStore.isIriPublishableEquivalent(oldIri, newIri)
   }

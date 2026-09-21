@@ -48,6 +48,11 @@ export interface CwaModuleOptions {
   pagesDepth?: number
   routeCacheLimit?: number
   staticRender?: boolean
+  pageCache?: {
+    enabled?: boolean
+    sharedMaxAge?: number
+    staleWhileRevalidate?: number
+  }
   layouts?: {
     [type: string]: CwaUiMeta
   }

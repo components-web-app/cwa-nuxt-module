@@ -96,6 +96,10 @@ export default class Cwa {
     this.adminNavGuard = new NavigationGuard($router, this.storage.stores.admin)
   }
 
+  public get apiHttpCacheState() {
+    return this.cwaFetch.httpCacheState
+  }
+
   public get adminNavigationGuardFn() {
     return this.adminNavGuard.adminNavigationGuardFn
   }

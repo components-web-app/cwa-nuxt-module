@@ -344,6 +344,31 @@ Three rules with tests pinning them:
 
 ---
 
+## Page HTML caching ([#289](https://github.com/components-web-app/cwa-nuxt-module/issues/289))
+
+Opt-in via `cwa: { pageCache: { enabled: true, sharedMaxAge: 300, staleWhileRevalidate: 0 } }`, **off by default**. Tags the rendered HTML with the API resource IRIs it was built from (`Surrogate-Key`, joined with `', '` to match `ApiPlatform\HttpCache\SouinPurger::SEPARATOR`) so the API's existing purge invalidates pages, and derives the page's `s-maxage` from the API responses that fed the render.
+
+**Decide-then-emit, not set-then-strip.** `plugin-page-cache.server.ts` marks `event.context.cwaPageCache = {}` in `setup()` and fills it at `app:rendered`, setting no headers; `server/page-cache-plugin.ts` is the single emission point at `beforeResponse`, where the status is final. Three consequences: there is never a window in which a wrong header exists; a CWA route resolving to a redirect *before* anything renders is still caught, because the context was marked during setup; and the non-200 guard is scoped to CWA renders instead of forcing `no-store` onto every unrelated 404.
+
+**Cacheability is the API's decision, read off its responses** — never a cookie test. `CacheHeadersEventListener::markNeverStored()` sets `private, no-store` for an authenticated request to a personalisable resource and for an unpublished-route response, so **any** response carrying `no-store`/`private` makes the whole page unstorable. `auth.signedIn` is a second gate behind it, because `personalised_resource_classes` is app-configurable and an app that trims it would otherwise start publishing admin renders.
+
+**Both TTL signals are required; neither is redundant.** `capAtNextPublicationChange()` caps `s-maxage` at the next go-live but only for `Route`/`RoutableInterface`, so a **component's** scheduled publish reaches us only via `Expires` (`PublishableEventListener`, set before the `isGranted` return so anonymous responses carry it). Routes never get `Expires`. `Expires` is converted to a duration using **that response's own `Date` header**, never `Date.now()` — comparing a server-issued absolute time against the local clock is exactly the [#262](https://github.com/components-web-app/cwa-nuxt-module/issues/262) bug.
+
+`max-age=0` is hard-coded, not an option: a browser cache cannot be purged, and stale HTML referencing a previous build's `/_nuxt` hashes 404s and leaves a blank page. IRI filtering uses `getResourceTypeFromIri`, not `startsWith('/_api/')`, which is wrong for a bare-host API (#266) and would admit the bare `/` that `allIds` holds for the primary fetch path — registering every page under one shared surrogate key.
+
+### Four things that bite, in order of how much
+
+1. **The TTL ceiling is the consuming app's API config.** A page can never be cached longer than the shortest `s-maxage` the API returned. The bundle ships **no** `http_cache` defaults, so the value is entirely the app's `api_platform.defaults.cache_headers.shared_max_age`. **An app on `shared_max_age: 60` gets 60-second pages and `pageCache.sharedMaxAge` is inert.** Raising it is an API config change, and it is safe to raise — the API's own entries are purge-invalidated exactly as the HTML now is, and clock-driven transitions are capped, so the two mechanisms cover each other.
+2. **Edge bypass for authenticated requests is a deployment prerequisite.** The module deliberately emits no `Vary: Cookie` (cookie cardinality collapses the hit rate). The shared cache must bypass requests carrying the auth cookie. This is not a content leak — two independent gates guarantee a cached entry is anonymous — but a signed-in admin served a cached page sees no draft content and no admin chrome until a hard reload.
+3. **Go-live bounding is global.** `findNextEffectiveLiveAt` is `MIN(effectiveLiveAt)` across the **whole routes table**, so any pending go-live anywhere shortens every page's TTL. Over-conservative, therefore safe.
+4. **Site config cannot invalidate cached pages.** `siteName`, `concatTitle`, `maintenanceModeEnabled` and the robots settings all change the HTML, but come from `/_/site_config_parameters` through `server/useFetcher.ts`'s **own** `$fetch` — not `CwaFetch` — and never enter the resources store. They appear in neither the accumulator nor `allIds`, so a site-config change purges nothing and self-heals only on TTL.
+
+ISR/SWR route rules fight this: Nitro's cache is not in Souin's purge graph, so `module.ts` warns at build time when `pageCache.enabled` meets the same `staticRender` detection added for #262.
+
+**Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
+
+---
+
 ## Dependencies
 
 Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:
