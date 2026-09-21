@@ -219,4 +219,22 @@ describe('SiteConfig', () => {
       expect(siteConfig.savedSiteConfig).toEqual({ siteName: 'My Site' })
     })
   })
+
+  describe('purgePageCache', () => {
+    test('POSTs to the rendered HTML purge operation', async () => {
+      const { siteConfig, mockFetch, mockGetRequestOptions } = buildSiteConfig()
+      await siteConfig.purgePageCache()
+      expect(mockGetRequestOptions).toHaveBeenCalledWith('POST')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch).toHaveBeenCalledWith('/_/rendered_html/purge', { method: 'POST', headers: {} })
+      expect(mockFetch.mock.calls[0]![1]).not.toHaveProperty('body')
+    })
+
+    test('rejects with the fetch error', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig()
+      const error = Object.assign(new Error('Forbidden'), { statusCode: 403 })
+      mockFetch.mockRejectedValueOnce(error)
+      await expect(siteConfig.purgePageCache()).rejects.toBe(error)
+    })
+  })
 })
