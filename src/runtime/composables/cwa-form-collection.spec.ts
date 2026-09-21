@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useCwaFormCollection } from '#cwa/composables/cwa-form-collection'
 
 const mockGetForm = vi.hoisted(() => vi.fn())
@@ -27,6 +27,22 @@ function makeCollectionFormData(prototypeVarsOverrides: Record<string, any> = {}
         children: [],
       },
     },
+  })
+}
+
+function makeEditFormData() {
+  return reactive<Record<string, any>>({
+    'contact_form[tags][0]': { vars: { full_name: 'contact_form[tags][0]', value: 'first' } },
+    'contact_form[tags][0][name]': { vars: { full_name: 'contact_form[tags][0][name]', value: 'first' } },
+    'contact_form[tags][1]': { vars: { full_name: 'contact_form[tags][1]', value: 'second' } },
+    'contact_form[tags]': {
+      vars: { full_name: 'contact_form[tags]', errors: [] as string[] },
+      prototype: {
+        vars: { full_name: 'contact_form[tags][__name__]', label: 'Tag', value: '' },
+        children: [],
+      },
+    },
+    'contact_form[tagsExtra][5]': { vars: { full_name: 'contact_form[tagsExtra][5]', value: 'other' } },
   })
 }
 
@@ -259,6 +275,58 @@ describe('useCwaFormCollection', () => {
       addEntry()
       removeEntry('contact_form[tags][99]')
       expect(entries.value).toHaveLength(1)
+    })
+  })
+  describe('existing entries in the form view', () => {
+    test('an edit form whose form view already has two collection items lists both', () => {
+      const formData = makeEditFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { entries } = useCwaFormCollection(iri, 'contact_form[tags]')
+      expect(entries.value).toEqual(['contact_form[tags][0]', 'contact_form[tags][1]'])
+    })
+
+    test('a newly added entry gets an index that does not collide with existing ones', () => {
+      const formData = makeEditFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { entries, addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      addEntry()
+      expect(entries.value).toEqual(['contact_form[tags][0]', 'contact_form[tags][1]', 'contact_form[tags][2]'])
+    })
+
+    test('an existing entry can be removed', () => {
+      const formData = makeEditFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { entries, removeEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      removeEntry('contact_form[tags][0]')
+      expect(entries.value).toEqual(['contact_form[tags][1]'])
+    })
+
+    test('existing entries are not registered as local entries', () => {
+      const formData = makeEditFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { removeEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      removeEntry('contact_form[tags][0]')
+      expect(mockRegisterLocalEntry).not.toHaveBeenCalled()
+      expect(mockUnregisterLocalEntries).not.toHaveBeenCalled()
+    })
+
+    test('an empty collection starts empty and adds from index 0', () => {
+      const formData = makeCollectionFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { entries, addEntry } = useCwaFormCollection(iri, 'contact_form[tags]')
+      expect(entries.value).toEqual([])
+      addEntry()
+      expect(entries.value).toEqual(['contact_form[tags][0]'])
+    })
+
+    test('lists existing items once the form loads after setup', async () => {
+      const formData = ref<Record<string, any> | undefined>(undefined)
+      mockGetForm.mockReturnValue(computed(() => formData.value))
+      const { entries } = useCwaFormCollection(iri, 'contact_form[tags]')
+      expect(entries.value).toEqual([])
+      formData.value = makeEditFormData()
+      await nextTick()
+      expect(entries.value).toEqual(['contact_form[tags][0]', 'contact_form[tags][1]'])
     })
   })
 })
