@@ -19,6 +19,7 @@ function getErrorType(type: string | undefined): ErrorType {
     case 'TypeError':
       return ErrorType.NETWORK
     case 'ConstraintViolationList':
+    case 'ConstraintViolation':
       return ErrorType.VALIDATION
     default:
       return ErrorType.UNKNOWN

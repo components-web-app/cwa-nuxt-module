@@ -1,5 +1,5 @@
-import { computed, isRef, onMounted, ref, watch } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, isRef, onMounted, ref, toValue, watch } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
@@ -16,7 +16,7 @@ type UseItemOps = {
   createEndpoint: string | Ref<string>
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void)
   resourceType: string
-  defaultResource: Omit<TempCwaResource, '@type'>
+  defaultResource: MaybeRefOrGetter<Omit<TempCwaResource, '@type'>>
   validate?: (data: any) => boolean | string
   endpoint?: Ref<string | undefined>
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
@@ -56,7 +56,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     if (isAdding.value) {
       localResourceData.value = {
         '@type': resourceType,
-        ...defaultResource,
+        ...toValue(defaultResource),
       }
       return localResourceData.value
     }

@@ -287,7 +287,7 @@ declare module 'vue-router' {
         src: resolve('./runtime/plugin'),
       })
 
-      if (options.pageCache?.enabled) {
+      if (options.pageCache?.enabled ?? true) {
         if (options.staticRender ?? hasStaticRouteRules()) {
           logger.warn(`${NAME}: pageCache is enabled alongside isr/swr/prerender route rules. Nitro's own cache is not purged by the API, so edits will not appear until the route rule window lapses.`)
         }
