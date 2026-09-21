@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
 import type { Ref } from 'vue'
-import { ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useCwaFormRepeated } from '#cwa/composables/cwa-form-repeated'
 
 const mockUseCwaFormInput = vi.hoisted(() => vi.fn())
 const mockGetForm = vi.hoisted(() => vi.fn())
+const mockValidateField = vi.hoisted(() => vi.fn())
 
 vi.mock('#cwa/composables/cwa-form-input', () => ({
   useCwaFormInput: mockUseCwaFormInput,
@@ -15,6 +16,11 @@ vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
     forms: {
       getForm: mockGetForm,
+      validateField: mockValidateField,
+      isSubmitAttempted: () => false,
+      setFieldValue: () => {},
+      clearFieldValue: () => {},
+      getFieldValues: () => ({}),
     },
   }),
 }))
@@ -70,6 +76,7 @@ describe('useCwaFormRepeated', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    mockValidateField.mockReset()
   })
 
   describe('shape', () => {
@@ -422,6 +429,49 @@ describe('useCwaFormRepeated', () => {
       second.validate()
       expect(mockFirst.validate).toHaveBeenCalledTimes(1)
       expect(mockSecond.validate).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('#310 with the real useCwaFormInput', () => {
+    test('#310: a mismatch after an earlier full-form response marked the first half valid shows no error until both halves are blurred', async () => {
+      const actual = await vi.importActual<typeof import('#cwa/composables/cwa-form-input')>('#cwa/composables/cwa-form-input')
+      mockUseCwaFormInput.mockImplementation(actual.useCwaFormInput)
+      const formData = reactive({
+        'password_form': { vars: {} as Record<string, any> },
+        'password_form[password]': { vars: { submitted: true, valid: true } as Record<string, any> },
+        'password_form[password][first]': { vars: { value: '', submitted: true, valid: true, errors: [] as string[] } as Record<string, any> },
+        'password_form[password][second]': { vars: { value: '', submitted: true, valid: null, errors: [] as string[] } as Record<string, any> },
+      })
+      mockGetForm.mockReturnValue(computed(() => formData))
+
+      let resolveValidate!: () => void
+      mockValidateField.mockReturnValueOnce(new Promise<void>((r) => {
+        resolveValidate = r
+      }))
+      mockValidateField.mockResolvedValue(undefined)
+
+      vi.useFakeTimers()
+      const { first, second } = useCwaFormRepeated(iri, 'password_form[password]')
+      first.value.value = 'secret1'
+      first.onInput()
+      vi.advanceTimersByTime(300)
+      expect(mockValidateField).toHaveBeenCalledTimes(1)
+      await nextTick()
+
+      formData['password_form[password][first]'].vars.valid = false
+      formData['password_form[password][first]'].vars.errors = ['The password fields must match.']
+      resolveValidate()
+      await Promise.resolve()
+      await nextTick()
+
+      expect(first.errors.value).toEqual(['The password fields must match.'])
+      expect(first.displayErrors.value).toBe(false)
+
+      first.onBlur()
+      second.onBlur()
+      await Promise.resolve()
+      await nextTick()
+      expect(first.displayErrors.value).toBe(true)
     })
   })
 })

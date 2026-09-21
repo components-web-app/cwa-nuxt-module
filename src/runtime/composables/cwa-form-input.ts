@@ -66,13 +66,20 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
   const displayErrors = computed(
     () =>
       !validating.value && (
-        (opts?.blurTrigger !== undefined ? opts.blurTrigger.value : hasBlurred.value)
-        || (hasPreviouslyBeenValid.value && valid.value === false)
+        (opts?.blurTrigger !== undefined
+          ? opts.blurTrigger.value
+          : (hasBlurred.value || (hasPreviouslyBeenValid.value && valid.value === false)))
         || $cwa.forms.isSubmitAttempted(iri.value ?? '')
       ),
   )
 
+  const debouncedValidate = debounce(() => {
+    if (realtimeValidateDisabled.value) return
+    return result.validate()
+  }, 300)
+
   const onBlur = () => {
+    debouncedValidate.flush()
     hasBlurred.value = true
   }
 
@@ -98,10 +105,7 @@ export const useCwaFormInput = (iri: Ref<string | undefined>, fullName: string, 
     onInput: null as unknown as () => void,
   }
 
-  result.onInput = debounce(() => {
-    if (realtimeValidateDisabled.value) return
-    return result.validate()
-  }, 300)
+  result.onInput = debouncedValidate
 
   return result
 }

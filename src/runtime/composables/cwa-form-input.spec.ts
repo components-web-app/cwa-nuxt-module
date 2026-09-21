@@ -60,6 +60,7 @@ describe('useCwaFormInput', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    mockValidateField.mockReset()
   })
 
   describe('vars', () => {
@@ -310,6 +311,38 @@ describe('useCwaFormInput', () => {
       await validatePromise
       expect(displayErrors.value).toBe(true)
     })
+    test('#310 guard: a field without blurTrigger still shows errors immediately when it goes from valid to invalid', async () => {
+      mockValidateField.mockResolvedValue(undefined)
+      const formData = makeFormData({ valid: true, submitted: true, errors: [] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { displayErrors, validate } = useCwaFormInput(iri, 'contact_form[name]')
+      await validate()
+      await nextTick()
+
+      formData['contact_form[name]'].vars.valid = false
+      formData['contact_form[name]'].vars.errors = ['Bad']
+      await nextTick()
+      expect(displayErrors.value).toBe(true)
+    })
+
+    test('#310: a field with blurTrigger does not show errors when it goes from valid to invalid until the trigger is true', async () => {
+      mockValidateField.mockResolvedValue(undefined)
+      const formData = makeFormData({ valid: true, submitted: true, errors: [] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const blurTrigger = ref(false)
+      const { displayErrors, validate } = useCwaFormInput(iri, 'contact_form[name]', { blurTrigger })
+      await validate()
+      await nextTick()
+
+      formData['contact_form[name]'].vars.valid = false
+      formData['contact_form[name]'].vars.errors = ['Bad']
+      await nextTick()
+      expect(displayErrors.value).toBe(false)
+
+      blurTrigger.value = true
+      await nextTick()
+      expect(displayErrors.value).toBe(true)
+    })
   })
 
   describe('blurTrigger option', () => {
@@ -322,6 +355,69 @@ describe('useCwaFormInput', () => {
       expect(displayErrors.value).toBe(false)
       blurTrigger.value = true
       await nextTick()
+      expect(displayErrors.value).toBe(true)
+    })
+  })
+
+  describe('onBlur with a pending debounced validation', () => {
+    test('#311: blurring while a debounced validation is pending starts it immediately and hides the previous response errors until the new one arrives', async () => {
+      vi.useFakeTimers()
+      let resolveValidate!: () => void
+      mockValidateField.mockReturnValueOnce(new Promise<void>((r) => {
+        resolveValidate = r
+      }))
+      const formData = makeFormData({ value: '', submitted: true, valid: false, errors: ['Required'] })
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { value, onInput, onBlur, displayErrors, errors } = useCwaFormInput(iri, 'contact_form[name]')
+
+      value.value = 'Bob'
+      onInput()
+      vi.advanceTimersByTime(50)
+      onBlur()
+
+      expect(mockValidateField).toHaveBeenCalledTimes(1)
+      expect(mockValidateField).toHaveBeenCalledWith('/_/form_components/123/submit', { 'contact_form[name]': 'Bob' })
+      expect(displayErrors.value).toBe(false)
+
+      formData['contact_form[name]'].vars.valid = true
+      formData['contact_form[name]'].vars.errors = []
+      resolveValidate()
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(displayErrors.value).toBe(true)
+      expect(errors.value).toEqual([])
+
+      vi.advanceTimersByTime(300)
+      expect(mockValidateField).toHaveBeenCalledTimes(1)
+    })
+
+    test('#311 guard: blurring with nothing pending does not start a validation', () => {
+      vi.useFakeTimers()
+      const formData = makeFormData()
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { onBlur, displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
+
+      onBlur()
+      vi.advanceTimersByTime(300)
+
+      expect(mockValidateField).not.toHaveBeenCalled()
+      expect(displayErrors.value).toBe(true)
+    })
+
+    test('#311 guard: with realtime_validate_disabled, blur while input is pending still does not validate', () => {
+      vi.useFakeTimers()
+      const formData = makeFormData()
+      formData['contact_form'].vars.realtime_validate_disabled = true
+      mockGetForm.mockReturnValue(computed(() => formData))
+      const { onInput, onBlur, displayErrors } = useCwaFormInput(iri, 'contact_form[name]')
+
+      onInput()
+      vi.advanceTimersByTime(50)
+      onBlur()
+      vi.advanceTimersByTime(300)
+
+      expect(mockValidateField).not.toHaveBeenCalled()
       expect(displayErrors.value).toBe(true)
     })
   })
