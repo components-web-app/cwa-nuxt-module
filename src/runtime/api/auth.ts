@@ -1,4 +1,5 @@
-import type { CookieRef } from 'nuxt/app'
+import type { CookieRef, NuxtApp } from 'nuxt/app'
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ofetch'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
@@ -51,6 +52,7 @@ export default class Auth {
   private readonly _authStore: CwaAuthStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _fetcherStore: CwaFetcherStoreInterface
+  private readonly nuxtApp: NuxtApp
 
   public constructor(
     private readonly cwaFetch: CwaFetch,
@@ -67,6 +69,7 @@ export default class Auth {
     this._authStore = authStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
     this._fetcherStore = fetcherStoreDefinition.useStore()
+    this.nuxtApp = useNuxtApp()
   }
 
   public async signIn(credentials: Credentials) {
@@ -328,15 +331,18 @@ export default class Auth {
 
     // Hacky fix... we don't want to use useRoute in the clearSession when processing middleware
     const isProcessingMiddleware = () => {
-      try {
-        if (useNuxtApp()._processingMiddleware) {
-          return true
+      let processing = false
+      this.nuxtApp.runWithContext(() => {
+        try {
+          if (useNuxtApp()._processingMiddleware) {
+            processing = true
+          }
         }
-      }
-      catch {
-        return true
-      }
-      return false
+        catch {
+          processing = true
+        }
+      })
+      return processing
     }
     if (isProcessingMiddleware()) {
       return
@@ -344,10 +350,15 @@ export default class Auth {
     this.mercure.init(true)
     this.resourcesStore.clearResources()
     this.fetcherStore.clearFetches()
-    const route = useRoute()
+    let route!: RouteLocationNormalizedLoaded
+    this.nuxtApp.runWithContext(() => {
+      route = useRoute()
+    })
     if (route.meta.cwa?.admin) {
-      const router = useRouter()
-      router.replace('/')
+      this.nuxtApp.runWithContext(() => {
+        const router = useRouter()
+        router.replace('/')
+      })
       return
     }
     await this.fetcher.fetchRoute(route)
