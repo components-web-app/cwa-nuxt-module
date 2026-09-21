@@ -51,20 +51,20 @@ function handleDeletedEvent(resource: CwaResource) {
         v-if="isLoading"
         :show="true"
       />
-      <p
-        v-else-if="parentHasNoRoute"
-        class="cwa:text-sm cwa:text-stone-400"
-      >
-        Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first.
-      </p>
       <CwaUiFormButton
-        v-else
+        v-else-if="resource?.path || !parentHasNoRoute"
         :color="resource?.path ? 'dark' : 'blue'"
         @click="$emit('changePage', 'manage-route')"
       >
         {{ resource?.path ? 'Edit' : 'Create New Route' }}
       </CwaUiFormButton>
     </ModalInfo>
+    <p
+      v-if="!isLoading && parentHasNoRoute"
+      class="cwa:text-sm cwa:text-stone-400"
+    >
+      Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first.
+    </p>
 
     <div
       v-if="!isLoading && resource?.path"

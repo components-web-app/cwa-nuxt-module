@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import RoutesTab from './RoutesTab.vue'
@@ -508,7 +508,7 @@ describe('RoutesTab', () => {
       mountTab({ '@type': 'Page', '@id': '/_/pages/p1' })
       await flushPromises()
       const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      expect(lastArgs.defaultResource).toEqual({ path: '', page: '/_/pages/p1' })
+      expect(toValue(lastArgs.defaultResource)).toEqual({ path: '', page: '/_/pages/p1' })
     })
 
     test('defaultResource sets pageData for a non-Page resource', async () => {
@@ -517,7 +517,7 @@ describe('RoutesTab', () => {
       mountTab({ '@type': 'PageData', '@id': '/_/page_data/d1' })
       await flushPromises()
       const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      expect(lastArgs.defaultResource).toEqual({ path: '', pageData: '/_/page_data/d1' })
+      expect(toValue(lastArgs.defaultResource)).toEqual({ path: '', pageData: '/_/page_data/d1' })
     })
   })
 
@@ -756,6 +756,28 @@ describe('RoutesTab', () => {
       apiState.value = { status: CwaResourceApiStatuses.SUCCESS, path: '/_/routes//conference/programme/redirects' }
       await flushPromises()
       expect(loadResource).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('switching page', () => {
+    test('switching page while the route form is open returns to the routes view', async () => {
+      setupItemPage()
+      mockCwaFull()
+      const wrapper = mountTab({ '@id': '/_/page_data/conference-uuid', '@type': 'ConferenceData', 'route': undefined })
+      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      expect(wrapper.findComponent(RoutesTabManage).exists()).toBe(true)
+      await wrapper.setProps({
+        pageResource: {
+          '@id': '/_/pages/overview-uuid',
+          '@type': 'Page',
+          'route': '/_/routes//2027-overview',
+          'parentPage': null,
+          'parentPageData': '/_/page_data/conference-uuid',
+        } as any,
+      })
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabManage).exists()).toBe(false)
+      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
     })
   })
 

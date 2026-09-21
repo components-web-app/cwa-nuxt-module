@@ -2,6 +2,7 @@
 import { describe, test, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RoutesTabView from './RoutesTabView.vue'
+import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import { formatRouteLiveAt } from '#cwa/resources/route-publication'
 
 function mountView(overrides: Record<string, any> = {}) {
@@ -15,7 +16,35 @@ function mountView(overrides: Record<string, any> = {}) {
   })
 }
 
+function mountViewDeep(overrides: Record<string, any> = {}) {
+  return mount(RoutesTabView, {
+    props: {
+      resource: { path: '/topic-1', redirectedFrom: [] },
+      isLoading: false,
+      ...overrides,
+    },
+    global: { stubs: { RouteRedirectsTree: true, Spinner: true } },
+  })
+}
+
 describe('RoutesTabView', () => {
+  describe('parent with no route', () => {
+    test('a routed page whose parent has no route keeps its Edit button and the notice sits on its own line', () => {
+      const wrapper = mountViewDeep({ resource: { path: '/2027/2027-overview', redirectedFrom: [] }, parentHasNoRoute: true })
+      const routeRow = wrapper.findAllComponents(ModalInfo).find(info => info.props('label') === 'Route')!
+      expect(routeRow.text()).toContain('/2027/2027-overview')
+      expect(routeRow.text()).toContain('Edit')
+      expect(routeRow.text()).not.toContain('Parent page has no public URL')
+      expect(wrapper.text()).toContain('Parent page has no public URL')
+    })
+
+    test('a page with no route under an unrouted parent shows the notice instead of Create New Route', () => {
+      const wrapper = mountViewDeep({ resource: { redirectedFrom: [] }, parentHasNoRoute: true })
+      expect(wrapper.text()).toContain('Parent page has no public URL')
+      expect(wrapper.text()).not.toContain('Create New Route')
+    })
+  })
+
   describe('section headings', () => {
     test('renders "Forward visitors to" section heading', () => {
       expect(mountView().text()).toContain('Forward visitors to')

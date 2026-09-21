@@ -92,6 +92,31 @@ describe('Errors -> error', () => {
     expect(err.violations).toEqual([{ property: 'name', message: 'This value should not be blank.' }])
   })
 
+  test('API Platform 4 validation error (@type ConstraintViolation) is classified as validation', () => {
+    errorsActions.error({ endpoint: '/_/routes', data: {} }, createFetchError({
+      options: { method: 'POST' },
+      response: {
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        _data: {
+          '@context': '/_api/contexts/ConstraintViolation',
+          '@id': '/_api/validation_errors/23bd9dbf-6b9b-41cd-a99e-4844bcf3077f',
+          '@type': 'ConstraintViolation',
+          'status': 422,
+          'type': '/validation_errors/23bd9dbf-6b9b-41cd-a99e-4844bcf3077f',
+          'title': 'An error occurred',
+          'detail': 'path: This path is already in use.',
+          'description': 'path: This path is already in use.',
+          'violations': [{ propertyPath: 'path', message: 'This path is already in use.' }],
+        },
+      },
+    }))
+    const err = errorsState.byId[errorsState.allIds[0]]
+    expect(err.type).toEqual(ErrorType.VALIDATION)
+    expect(err.statusCode).toEqual(422)
+    expect(err.violations).toEqual([{ property: 'path', message: 'This path is already in use.' }])
+  })
+
   test('problem+json — detail field preferred over description', () => {
     errorsActions.error({ endpoint: '/bar', data: {} }, createFetchError({
       options: { method: 'PATCH' },

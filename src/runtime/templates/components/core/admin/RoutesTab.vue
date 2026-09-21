@@ -308,6 +308,13 @@ watch(routeIriFromPage, async () => {
   await loadResource()
 })
 
+watch(() => props.pageResource['@id'], () => {
+  currentScreen.value = 'view'
+  if (!routeIriFromPage.value) {
+    loadResource()
+  }
+})
+
 const defaultResource = computed(() => {
   const obj: {
     path: string
@@ -329,7 +336,7 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   createEndpoint: '/_/routes',
   emit,
   resourceType: 'Route',
-  defaultResource: defaultResource.value,
+  defaultResource,
   validate(data) {
     data.name = data.path
     return true
