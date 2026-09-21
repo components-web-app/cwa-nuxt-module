@@ -346,7 +346,11 @@ Three rules with tests pinning them:
 
 **Timezone:** a `datetime-local` value is read as the editor's browser-local wall clock and committed as an absolute UTC instant, because the API compares against an absolute time and a naive string would be resolved by PHP's default timezone invisibly. The control states the zone it is committing to.
 
-**The sitemap deliberately has no publication filter.** `server/useFetcher.ts` builds a bare `$fetch` with no cookie forwarding (not `CwaFetch`, which captures the request cookie), so the sitemap fetch is anonymous, and `RouteExtension::applyToCollection` already applies `PublicationDate::andWhereActive(…, 'effectiveLiveAt')` for non-admins. A module-side filter would be inert. **If that fetch is ever made authenticated — an admin preview sitemap, say — non-live routes start appearing and the filter becomes necessary.**
+**The sitemap deliberately has no publication filter, and could not have one.** `server/useFetcher.ts` builds a bare `$fetch` with no cookie forwarding (not `CwaFetch`, which captures the request cookie), so the sitemap fetch is anonymous — and both `liveAt` and `_metadata.effectiveLiveAt` are admin-only, so an anonymous build has **no signal to filter on at all**. Path-prefix inference is unsound (route concatenation is recommended, not required, and the gating ancestor comes from `parentPage`, not the URL), and probing each route is N round trips during SSR.
+
+So the gate is entirely server-side, and for non-admins `RouteExtension::applyToCollection` now applies **both** halves: `PublicationDate::andWhereActive(…, 'liveAt')` for the route's own date, and `RouteAncestorGateResolver::andWhereNotGated()` for ancestor-gated routes (api-components-bundle#234, a recursive CTE excluding a gated id set — `PublishableExtension`'s shape, so pagination and `totalItems` stay correct). `RoutableExtension` does the same for pages.
+
+Between #233 and #234 only the own-date half existed, and a child under a scheduled parent was published to search engines as a soft-404. **That is the failure mode to remember: `GET /_/routes` does not fetch what it lists, it publishes it**, so a listing inconsistency there is not cosmetic. **If that fetch is ever made authenticated — an admin preview sitemap, say — every gate above disappears at once and a module-side filter becomes necessary.**
 
 ---
 
