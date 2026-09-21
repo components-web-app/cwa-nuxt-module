@@ -222,6 +222,18 @@ Tests use **vitest** with `happy-dom` environment and `vitest-environment-nuxt`.
 
 **There is no `nested` boolean.** Having a parent IS the signal. Both fields are in `Route:manifest:read`.
 
+### API contract: reachability decides public access (bundle #225)
+
+The bundle now grants public read access on one rule: **a resource is readable if and only if a Route that reaches it exists and is live now.** A Route reaches its own page *and every ancestor of that page* through `parentPage`/`parentPageData`.
+
+What changes for the module — **no module code change is required**, this is recorded so the behaviour is not mistaken for a regression:
+
+- **A routed child makes its whole unrouted ancestor chain public.** Fetching the parent depth's `PageData`, template `Page`, component groups and components from a child page's manifest used to 401 for anonymous visitors whenever the parent had no Route of its own, so the parent layer rendered blank while the child rendered. Those fetches now succeed. The manifest itself never changed — it always listed those IRIs.
+- **A page nothing routes to is fully private, including its components.** Components placed in an unrouted page used to be publicly readable; they are now admin-only. Components not placed in any page are unchanged.
+- **Denials are 401** for an anonymous request (the entry point converts them), not 403. A route gated by its go-live date is still 404, per #224.
+
+**The `path` header contract is now pinned (relevant to cwa-nuxt-module#288).** `PageDataProvider` resolves the `path` request header as a **route path or a page data IRI**, so a depth whose page has no Route can still resolve its `pageDataProperty` positions by sending that page data's IRI. `Vary: path` is emitted on dynamic `ComponentPosition` responses whichever form the header takes. Two header values resolving to the same page data simply produce two cache entries. Bundle-side Behat scenarios now assert the resolved component IRI, so this cannot silently regress.
+
 ### Manifest format
 
 `GET /_/resource_manifest/{id}` returns `{ "resource_iris": NestedJsonStructure[] }` — outer array indexed by rendering depth (root first); each depth is a recursive tree node `{ iri, children }` preserving component containment:
