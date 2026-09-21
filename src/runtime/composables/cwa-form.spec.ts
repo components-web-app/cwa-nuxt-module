@@ -227,5 +227,35 @@ describe('useCwaForm', () => {
       const { success } = useCwaForm(iri)
       expect(success.value).toBe(false)
     })
+
+    test('a successful submit followed by a failed one leaves success false', async () => {
+      const formStore = makeFormStore()
+      mockGetForm.mockReturnValue(computed(() => formStore))
+      const { submit, success } = useCwaForm(iri)
+      mockSubmitForm.mockResolvedValueOnce({ success: true })
+      await submit()
+      expect(success.value).toBe(true)
+      mockSubmitForm.mockResolvedValueOnce({ success: false })
+      await submit()
+      expect(success.value).toBe(false)
+    })
+
+    test('is false while a submit is in flight', async () => {
+      const formStore = makeFormStore()
+      mockGetForm.mockReturnValue(computed(() => formStore))
+      const { submit, success } = useCwaForm(iri)
+      mockSubmitForm.mockResolvedValueOnce({ success: true })
+      await submit()
+      expect(success.value).toBe(true)
+      let resolveSubmit: (value: { success: boolean }) => void = () => {}
+      mockSubmitForm.mockImplementationOnce(() => new Promise((resolve) => {
+        resolveSubmit = resolve
+      }))
+      const promise = submit()
+      expect(success.value).toBe(false)
+      resolveSubmit({ success: true })
+      await promise
+      expect(success.value).toBe(true)
+    })
   })
 })

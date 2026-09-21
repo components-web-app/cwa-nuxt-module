@@ -34,13 +34,13 @@ describe('RoutesTabView', () => {
       const routeRow = wrapper.findAllComponents(ModalInfo).find(info => info.props('label') === 'Route')!
       expect(routeRow.text()).toContain('/2027/2027-overview')
       expect(routeRow.text()).toContain('Edit')
-      expect(routeRow.text()).not.toContain('Parent page has no public URL')
-      expect(wrapper.text()).toContain('Parent page has no public URL')
+      expect(routeRow.text()).not.toContain('Parent page has no route yet')
+      expect(wrapper.text()).toContain('Parent page has no route yet')
     })
 
     test('a page with no route under an unrouted parent shows the notice instead of Create New Route', () => {
       const wrapper = mountViewDeep({ resource: { redirectedFrom: [] }, parentHasNoRoute: true })
-      expect(wrapper.text()).toContain('Parent page has no public URL')
+      expect(wrapper.text()).toContain('Parent page has no route yet')
       expect(wrapper.text()).not.toContain('Create New Route')
     })
   })

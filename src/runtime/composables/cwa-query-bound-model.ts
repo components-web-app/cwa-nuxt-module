@@ -1,6 +1,6 @@
 import { useRouter, useRoute } from 'vue-router'
 import type { LocationQueryValue } from 'vue-router'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 import debounce from 'lodash-es/debounce'
 
 type ModelOps = {
@@ -75,8 +75,17 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
 
   const model = ref(matchedQueryParamValue.value !== null ? matchedQueryParamValue.value : ops?.defaultValue)
 
+  let skipNextQueryWrite = false
+
   watch(matchedQueryParamValue, (newValue) => {
     // if the query param value(s) changes, update the model
+    if (newValue === null && ops?.defaultValue !== undefined) {
+      if (toRaw(model.value) !== toRaw(ops.defaultValue)) {
+        skipNextQueryWrite = true
+        model.value = ops.defaultValue
+      }
+      return
+    }
     model.value = newValue
   })
 
@@ -84,6 +93,11 @@ export const useQueryBoundModel = (queryParam: string | string[], ops?: ModelOps
     // update the query params on model change
     if (debounced) {
       debounced.cancel()
+    }
+
+    if (skipNextQueryWrite) {
+      skipNextQueryWrite = false
+      return
     }
 
     if (!route) {

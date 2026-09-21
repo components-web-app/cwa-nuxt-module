@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 
@@ -20,10 +20,12 @@ function replaceNameInTree(node: Record<string, any>, index: string): Record<str
 export const useCwaFormCollection = (iri: Ref<string | undefined>, collectionFullName: string) => {
   const $cwa = useCwa()
 
-  const formEntry = computed(() => {
+  const form = computed(() => {
     if (!iri.value) return undefined
-    return $cwa.forms.getForm(iri.value).value?.[collectionFullName]
+    return $cwa.forms.getForm(iri.value).value
   })
+
+  const formEntry = computed(() => form.value?.[collectionFullName])
 
   const vars = computed(() => formEntry.value?.vars)
 
@@ -32,6 +34,21 @@ export const useCwaFormCollection = (iri: Ref<string | undefined>, collectionFul
   let _nextIndex = 0
 
   const entries = computed(() => [..._entries])
+
+  const existingEntryPattern = new RegExp(`^${collectionFullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\[([^[\\]]+)\\]$`)
+
+  let _seeded = false
+  watch(() => _seeded ? undefined : form.value, (loadedForm) => {
+    if (!loadedForm?.[collectionFullName]) return
+    _seeded = true
+    for (const key of Object.keys(loadedForm)) {
+      const match = key.match(existingEntryPattern)
+      if (!match || _entries.includes(key)) continue
+      _entries.push(key)
+      const index = Number(match[1])
+      if (Number.isInteger(index) && index >= _nextIndex) _nextIndex = index + 1
+    }
+  }, { immediate: true })
 
   const addEntry = () => {
     const prototype = formEntry.value?.prototype
@@ -47,7 +64,7 @@ export const useCwaFormCollection = (iri: Ref<string | undefined>, collectionFul
     const idx = _entries.indexOf(fullName)
     if (idx !== -1) {
       _entries.splice(idx, 1)
-      if (iri.value) {
+      if (iri.value && _entryKeys.has(fullName)) {
         $cwa.forms.unregisterLocalEntries(iri.value, _entryKeys.get(fullName) ?? [])
       }
       _entryKeys.delete(fullName)

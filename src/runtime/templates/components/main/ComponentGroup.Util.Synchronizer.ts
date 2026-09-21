@@ -24,7 +24,7 @@ interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
   fullReference: ComputedRef<string>
-  allowedComponents: string[] | null
+  allowedComponents: string[] | null | undefined
 }
 
 export class ComponentGroupUtilSynchronizer {
@@ -114,14 +114,14 @@ export class ComponentGroupUtilSynchronizer {
     this.watchStopHandle?.()
   }
 
-  private async createComponentGroup(iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null) {
+  private async createComponentGroup(iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined) {
     const locationResourceType = getResourceTypeFromIri(iri) as keyof typeof resourceTypeProperty
     const locationProperty = resourceTypeProperty[locationResourceType]
 
     const postData: {
       reference?: string
       location: string
-      allowedComponents: string[] | null
+      allowedComponents?: string[] | null
       pages?: string[]
       layouts?: string[]
       components?: string[]
@@ -139,14 +139,15 @@ export class ComponentGroupUtilSynchronizer {
     })
   }
 
-  private normalizeAllowedComponents(allowedComponents: string[] | null): string[] | null {
+  private normalizeAllowedComponents(allowedComponents: string[] | null | undefined): string[] | null | undefined {
     if (!allowedComponents) return allowedComponents
     const prefix = ResourceTypeFromIri.getPathPrefix()
     if (!prefix) return allowedComponents
     return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
   }
 
-  private async updateAllowedComponents(allowedComponents: string[] | null, resource: any) {
+  private async updateAllowedComponents(allowedComponents: string[] | null | undefined, resource: any) {
+    if (allowedComponents === undefined) return
     const stored = resource?.data?.allowedComponents
     if (stored === undefined) return
     const normalized = this.normalizeAllowedComponents(allowedComponents)

@@ -366,16 +366,15 @@ Between #233 and #234 only the own-date half existed, and a child under a schedu
 
 **Cacheability is the API's decision, read off its responses** — never a cookie test. `CacheHeadersEventListener::markNeverStored()` sets `private, no-store` for an authenticated request to a personalisable resource and for an unpublished-route response, so **any** response carrying `no-store`/`private` makes the whole page unstorable. `auth.signedIn` is a second gate behind it, because `personalised_resource_classes` is app-configurable and an app that trims it would otherwise start publishing admin renders.
 
-**Both TTL signals are required; neither is redundant.** `capAtNextPublicationChange()` caps `s-maxage` at the next go-live but only for `Route`/`RoutableInterface`, so a **component's** scheduled publish reaches us only via `Expires` (`PublishableEventListener`, set before the `isGranted` return so anonymous responses carry it). Routes never get `Expires`. `Expires` is converted to a duration using **that response's own `Date` header**, never `Date.now()` — comparing a server-issued absolute time against the local clock is exactly the [#262](https://github.com/components-web-app/cwa-nuxt-module/issues/262) bug.
+**The API folds both scheduled transitions into `s-maxage` itself** (api-components-bundle#240). `CacheHeadersEventListener::findNextTransition()` caps an anonymous response at the earliest of its own `Expires` — a publishable draft's scheduled date, set by `PublishableEventListener` before the `isGranted` return — and, for classes in `http_cache.scheduled_expiry_resource_classes` (default `Route`, `RoutableInterface`, `ResourceManifest`), the next route `liveAt`. So the lowest `s-maxage` across a render already carries every clock-driven change. The module still reads `Expires` separately; that is now redundant but harmless, and it is converted using **that response's own `Date` header**, never `Date.now()` — comparing a server-issued absolute time against the local clock is exactly the [#262](https://github.com/components-web-app/cwa-nuxt-module/issues/262) bug.
 
 `max-age=0` is hard-coded, not an option: a browser cache cannot be purged, and stale HTML referencing a previous build's `/_nuxt` hashes 404s and leaves a blank page. IRI filtering uses `getResourceTypeFromIri`, not `startsWith('/_api/')`, which is wrong for a bare-host API (#266) and would admit the bare `/` that `allIds` holds for the primary fetch path — registering every page under one shared surrogate key.
 
-### Four things that bite, in order of how much
+### Three things that bite, in order of how much
 
 1. **The TTL ceiling is the consuming app's API config.** A page can never be cached longer than the shortest `s-maxage` the API returned. The bundle ships **no** `http_cache` defaults, so the value is entirely the app's `api_platform.defaults.cache_headers.shared_max_age`. **An app on `shared_max_age: 60` gets 60-second pages and `pageCache.sharedMaxAge` is inert.** Raising it is an API config change, and it is safe to raise — the API's own entries are purge-invalidated exactly as the HTML now is, and clock-driven transitions are capped, so the two mechanisms cover each other.
 2. **Edge bypass for authenticated requests is a deployment prerequisite.** The module deliberately emits no `Vary: Cookie` (cookie cardinality collapses the hit rate). The shared cache must bypass requests carrying the auth cookie. This is not a content leak — two independent gates guarantee a cached entry is anonymous — but a signed-in admin served a cached page sees no draft content and no admin chrome until a hard reload.
-3. **Go-live bounding is global.** `findNextEffectiveLiveAt` is `MIN(effectiveLiveAt)` across the **whole routes table**, so any pending go-live anywhere shortens every page's TTL. Over-conservative, therefore safe.
-4. **Site config cannot invalidate cached pages.** `siteName`, `concatTitle`, `maintenanceModeEnabled` and the robots settings all change the HTML, but come from `/_/site_config_parameters` through `server/useFetcher.ts`'s **own** `$fetch` — not `CwaFetch` — and never enter the resources store. They appear in neither the accumulator nor `allIds`, so a site-config change purges nothing and self-heals only on TTL.
+3. **Go-live bounding is global.** `findNextLiveAt` is `MIN(liveAt)` over future dates across the **whole routes table**, so any pending go-live anywhere shortens every page's TTL. Over-conservative, therefore safe: a route's effective date is always the latest in its chain, so every real transition is some route's own `liveAt`, and the minimum can expire a response early but never late.
 
 ISR/SWR route rules fight this: Nitro's cache is not in Souin's purge graph, so `module.ts` warns at build time when `pageCache.enabled` meets the same `staticRender` detection added for #262.
 
@@ -388,6 +387,33 @@ This exists because a resource can shape every page without the front end ever h
 The key is only emitted on a page the module actually caches; a declined or unstorable render carries no key at all. Purging it drops every cached page at once and the traffic lands on SSR together, which is why the bundle's class list that triggers it should stay short, and why this is driven by a write on an already-secured resource rather than by a purge endpoint anyone could call.
 
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
+
+---
+
+## Admin updates are a merge-patch: only changed fields are sent
+
+`useItemPage.saveResource` sends an update as `application/merge-patch+json` containing **only the fields where `localResourceData` differs from the stored resource** (deep comparison, lodash `isEqual`), plus any `extraData`. Creating still sends the full body. If nothing changed, no request is made and the stored resource is returned.
+
+It used to send the whole resource, which broke on any value the API adds for display only. The case that surfaced it: `RouteNormalizer` gives a redirect route the **final** route's `page` when its own is empty, so a nested conference's parent route came back with its own `pageData` **and** its child's `page`. Saving anything on it then sent both, and the API rejected the pair with *"Please specify either page or pageData, not both."*, which blocked scheduling every parent that redirects to a child.
+
+**The trap this creates:** `localResourceData` is a **shallow** copy (`syncLocalResourceWithStore` spreads the stored resource). An array or object edited **in place** — `roles.push(x)` — also mutates the stored copy, so the comparison sees no change and the edit is **silently not sent**. Always replace nested values (`roles = [...roles, x]`), never mutate them. Every current admin page already does; keep it that way.
+
+---
+
+## Clearing browser caches when a session ends ([#293](https://github.com/components-web-app/cwa-nuxt-module/issues/293))
+
+When a session ends, the module deletes the app's API data caches so data cached while signed in cannot be read afterwards on a shared device — the residual risk left by #258.
+
+- **Build-time detection only.** `module.ts` registers `runtime/plugin-session-caches.client` when `hasNuxtModule('@vite-pwa/nuxt')` is true, `nuxt.options.pwa.disable` is not set, and the cache list is non-empty. `@vite-pwa/nuxt` is never imported or depended on (#258). Only that module is supported; custom service workers are out of scope.
+- **Which caches:** `cwa.auth.clearCachesOnSessionEnd`, default **`['cwa-api']`** (the template's runtime cache). Only named caches are deleted — **never the Workbox precache**, which would take the app shell and offline support with it. An empty list turns the feature off.
+- **Three triggers, all firing through `Auth.clearSession()` or `onSessionEnd`:**
+  1. **Sign-out.**
+  2. **A 401 in the browser** — `CwaFetch.onUnauthorised`, called synchronously from the client branch of `onResponse`. It clears caches only while the auth cookie is `'1'`, and **never signs the user out**. The server branch of `onResponse` is unchanged.
+  3. **A session found expired during the server render.** The server's `clearSession()` sets `authStore.data.sessionEnded = true` when the request *was* signed in; it reaches the browser in the Pinia payload (the #261 mechanism), and the browser clears once on startup and resets it. The server never touches `caches`. Without this, the most likely shared-device case — opening a page after the session has already expired — would clear nothing, because the browser never sees a signed-in session end.
+- **Never blocks sign-out.** Clearing is fire-and-forget; a delete that throws, rejects or never settles cannot fail or delay it.
+- **`wasSignedIn` is read before the cookie is cleared**, and notification happens **before** `clearSession()`'s early return while middleware is processing — otherwise it is skipped exactly when an expiry is detected in middleware.
+
+**Limit:** a browser closed after a session, whose login has lapsed by the next visit, looks anonymous and triggers nothing. The cache's own `maxAgeSeconds` remains the only bound there.
 
 ---
 
@@ -560,7 +586,7 @@ Two phases: (1) reduce the bare `<Spinner>` flicker/layout-shift in `ResourceLoa
 
 **Why NetworkFirst (not SWR) is the spine:** the SW cache is only ever **read offline** — online the network always wins, so an anonymous visitor can never be served a cached draft even in the window before the marker is seen. Layer discipline (settled with Daniel):
 - **API sets long `s-maxage`** for the *shared* cache (Souin — remotely purgeable), and **`max-age: 0`** for the private/browser tier. A long `max-age` would put an un-purgeable copy in the **browser HTTP cache**, which a Workbox `fetch()` passes through by default — so NetworkFirst would be served that stale private copy *without ever reaching Souin*, defeating both the purge and the network-first. (`s-maxage`-only + `max-age: 0`; belt-and-braces, the SW fetch can use `{ cache: 'no-cache' }`.)
-- **Residual offline leak window** — a cache outliving a **logout or cookie expiry** on one device (next user, offline, sees drafts). NetworkFirst can't reach this; **purge the SW caches on sign-out and on any 401** (page-side `postMessage` — reliable, unlike a SW-held auth flag which fails open on SW restart). Short `maxAgeSeconds` bounds it further.
+- **Residual offline leak window** — a cache outliving a **logout or cookie expiry** on one device (next user, offline, sees drafts). NetworkFirst can't reach this; **purge the SW caches on sign-out and on any 401** — now built as [#293](https://github.com/components-web-app/cwa-nuxt-module/issues/293), see `## Clearing browser caches when a session ends`. It deletes from the page with `caches.delete`, not via `postMessage` to the service worker: the page can reach Cache Storage directly, and state held in the service worker fails open on restart. Short `maxAgeSeconds` bounds what is left.
 
 **IndexedDB persistence of #257's `routeCache`** (already `markRaw`, route-keyed, bounded, serialisable) remains a valid **complementary** page-side data tier — the page can read auth state, so it persists only when appropriate. Not either/or with the SW; the SW gives app-shell + public-API offline, IndexedDB gives auth-aware data persistence. (cross-ref #259)
 
@@ -977,6 +1003,8 @@ The original `route-middleware.ts:64` todo — "redirects do not work if clickin
 The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.
 
 **Do not pass PHP FQCNs to the prop.**
+
+**Omitting the prop means "leave it as it is", not "clear it"** ([#303](https://github.com/components-web-app/cwa-nuxt-module/issues/303)). The prop has no default, so a template without `:allowed-components` passes `undefined` and the synchroniser makes no PATCH. That keeps a list set by fixtures or the REST API. Pass `:allowed-components="null"` to clear it on purpose. Previously the prop defaulted to `null`, so the first admin page load silently wiped any list set elsewhere.
 
 | Layer | Input format | Conversion |
 |---|---|---|

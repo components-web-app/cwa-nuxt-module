@@ -63,7 +63,7 @@ function handleDeletedEvent(resource: CwaResource) {
       v-if="!isLoading && parentHasNoRoute"
       class="cwa:text-sm cwa:text-stone-400"
     >
-      Parent page has no public URL — resources are not publicly accessible. Set a route on the parent first.
+      Parent page has no route yet — set a route on the parent first.
     </p>
 
     <div

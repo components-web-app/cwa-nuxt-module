@@ -216,3 +216,62 @@ describe('CwaFetch -> API cache state', () => {
     expect(second.httpCacheState).toEqual({ storable: true, sharedMaxAge: 600 })
   })
 })
+
+describe('CwaFetch -> unauthorised responses', () => {
+  const createResponseCtx = (status: number) => ({
+    response: { status, headers: new Headers({ 'cache-control': 'private, no-store' }) },
+  })
+
+  function createInstance(isServer: boolean) {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: !isServer, isServer })
+    // @ts-expect-error mocked
+    const createSpy = vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    const cwaFetch = new CwaFetch('https://my-api')
+    const onResponse = createSpy.mock.calls[createSpy.mock.calls.length - 1][0].onResponse
+    return { cwaFetch, onResponse }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseRequestHeaders.mockReturnValue({})
+  })
+
+  test('a 401 in the browser calls the registered handler synchronously', () => {
+    const { cwaFetch, onResponse } = createInstance(false)
+    const handler = vi.fn()
+    cwaFetch.onUnauthorised(handler)
+
+    expect(onResponse(createResponseCtx(401))).toBeUndefined()
+
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  test('a successful response in the browser does not call the handler', () => {
+    const { cwaFetch, onResponse } = createInstance(false)
+    const handler = vi.fn()
+    cwaFetch.onUnauthorised(handler)
+
+    onResponse(createResponseCtx(200))
+
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  test('a 401 in the browser with no handler registered is ignored', () => {
+    const { cwaFetch, onResponse } = createInstance(false)
+
+    onResponse(createResponseCtx(401))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: undefined })
+  })
+
+  test('a 401 on the server does not call the handler and is still recorded', () => {
+    const { cwaFetch, onResponse } = createInstance(true)
+    const handler = vi.fn()
+    cwaFetch.onUnauthorised(handler)
+
+    onResponse(createResponseCtx(401))
+
+    expect(handler).not.toHaveBeenCalled()
+    expect(cwaFetch.httpCacheState.storable).toBe(false)
+  })
+})

@@ -124,7 +124,7 @@ const type = await askChoice(`\nComponent type:`, [
 ])
 
 log('')
-const timestamped = await askYesNo(`Add --timestamped behaviour (createdAt / updatedAt)?`)
+const timestamped = await askYesNo(`Add --timestamped behaviour (createdAt / modifiedAt)?`)
 const publishable = await askYesNo(`Add --publishable behaviour (draft / published lifecycle)?`)
 const uploadable = await askYesNo(
   `Add --uploadable behaviour (file upload)?`,

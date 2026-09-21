@@ -154,6 +154,14 @@ export default class SiteConfig {
     return returnData
   }
 
+  public async purgePageCache(): Promise<void> {
+    const { method, headers } = this.cwaFetch.getRequestOptions('POST')
+    await this.cwaFetch.fetch('/_/rendered_html/purge', {
+      method,
+      headers: headers as Record<string, string>,
+    })
+  }
+
   public get totalRequests() {
     return computed(() => this._apiState.requests.value.length)
   }

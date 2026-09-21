@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { nextTick, ref } from 'vue'
+import { nextTick, reactive, ref, toValue } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -29,7 +29,9 @@ mockNuxtImport('useHead', () => (config: any) => {
 })
 mockNuxtImport('useError', () => () => ref(null))
 mockNuxtImport('useRoute', () => () => ({ path: '/', meta: {} }))
+const defineOgImageSpy = vi.hoisted(() => vi.fn())
 mockNuxtImport('defineOgImage', () => (...args: any[]) => {
+  defineOgImageSpy(...args)
   capturedOgImageArgs = args
 })
 
@@ -53,8 +55,30 @@ function mockCwaWithDepths(
   mount(CwaPage, { shallow: true })
 }
 
+function mockCwaWithSiteName(config: { siteName: string }) {
+  const siteConfigState = reactive<{ config: Record<string, unknown> }>({
+    config: { fallbackTitle: false, ...config },
+  })
+  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+    resources: {
+      depthCount: { value: 1 },
+      pageDataAtDepth: () => ({ value: undefined }),
+      pageAtDepth: () => ({ value: undefined }),
+    },
+    siteConfig: {
+      get config() {
+        return siteConfigState.config
+      },
+    },
+    admin: { emitRedraw },
+  }))
+  mount(CwaPage, { shallow: true })
+  return siteConfigState
+}
+
 describe('CWA page', () => {
   beforeEach(() => {
+    defineOgImageSpy.mockClear()
     emitRedraw.mockClear()
     mockElementSize.width.value = 0
     mockElementSize.height.value = 0
@@ -158,6 +182,19 @@ describe('CWA page', () => {
     test('passes leaf-first concatenated title for nested page', () => {
       mockCwaWithDepths([{ dataTitle: 'Conference' }, { dataTitle: 'Programme' }])
       expect(capturedOgImageArgs[1].title.value).toBe('Programme | Conference')
+    })
+
+    test('passes the configured site name so the default image does not fall back to cwa.rocks', () => {
+      mockCwaWithSiteName({ siteName: 'My Site' })
+      expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
+      expect(toValue(capturedOgImageArgs[1].siteName)).toBe('My Site')
+    })
+
+    test('follows a site name change after mount', () => {
+      const siteConfigState = mockCwaWithSiteName({ siteName: 'My Site' })
+      siteConfigState.config = { fallbackTitle: false, siteName: 'Renamed Site' }
+      expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
+      expect(toValue(capturedOgImageArgs[1].siteName)).toBe('Renamed Site')
     })
 
     test('passes undefined title when no depths have a title', () => {

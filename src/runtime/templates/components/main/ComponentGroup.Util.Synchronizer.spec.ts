@@ -70,7 +70,7 @@ function createGroupSynchronizer() {
   }
 }
 
-function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents: null | string[] }) {
+function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[] }) {
   const mockResource = computed(() => {
     return (ops?.resource !== undefined ? ops.resource : { data: {} })
   })
@@ -81,7 +81,7 @@ function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, op
     resource: mockResource,
     location: mockLocation,
     fullReference: mockReference,
-    allowedComponents: ops?.allowedComponents !== undefined ? ops.allowedComponents : ['a', 'b', 'c'],
+    allowedComponents: ops && 'allowedComponents' in ops ? ops.allowedComponents : ['a', 'b', 'c'],
   }
   groupSynchronizer.createSyncWatcher(syncWatcherOps)
   return syncWatcherOps
@@ -238,6 +238,58 @@ describe('Group synchronizer', () => {
     await nextTick()
 
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+  })
+
+  describe('an omitted allowedComponents prop', () => {
+    test('leaves a fixture-set list untouched: no PATCH and the stored list survives', async () => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+      try {
+        const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+        const resource = {
+          data: {
+            '@id': '/test',
+            'allowedComponents': ['/_api/component/navigation_links'],
+          },
+          apiState: { status: CwaResourceApiStatuses.SUCCESS },
+        }
+        createSyncWatcher(groupSynchronizer, {
+          resource,
+          allowedComponents: undefined,
+        })
+
+        auth.signedIn.value = true
+        await nextTick()
+
+        expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+        expect(resource.data.allowedComponents).toEqual(['/_api/component/navigation_links'])
+      }
+      finally {
+        ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+      }
+    })
+
+    test('an explicit null still clears a stored list', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: {
+          data: {
+            '@id': '/test',
+            'allowedComponents': ['/component/navigation_links'],
+          },
+          apiState: { status: CwaResourceApiStatuses.SUCCESS },
+        },
+        allowedComponents: null,
+      })
+
+      auth.signedIn.value = true
+      await nextTick()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: null },
+      })
+    })
   })
 
   describe('allowedComponents path prefix normalisation', () => {

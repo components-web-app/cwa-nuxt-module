@@ -180,6 +180,40 @@
           </div>
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600">
+        <template v-if="pageCacheEnabled">
+          <div>
+            <h2 class="cwa:text-xl cwa:mb-4">
+              Page cache
+            </h2>
+            <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+              <p class="cwa:text-sm cwa:text-stone-400">
+                Visitors are served a cached copy of each page. Purging drops every cached page at once, and each one is rebuilt the next time it is visited. No content is lost. You do not need to do this after ordinary edits, because those refresh the cache automatically.
+              </p>
+              <div>
+                <CwaUiFormButton
+                  :disabled="purgingPageCache"
+                  type="button"
+                  @click="purgePageCache"
+                >
+                  {{ purgingPageCache ? 'Purging…' : 'Purge page cache' }}
+                </CwaUiFormButton>
+              </div>
+              <p
+                v-if="purgePageCacheResult?.success"
+                class="cwa:text-sm cwa:font-bold"
+              >
+                The page cache has been purged. Pages will be rebuilt as they are next visited.
+              </p>
+              <p
+                v-else-if="purgePageCacheResult"
+                class="cwa:text-sm cwa:text-danger cwa:font-bold"
+              >
+                {{ purgePageCacheResult.message }}
+              </p>
+            </div>
+          </div>
+          <hr class="cwa:my-8 cwa:text-stone-600">
+        </template>
         <div>
           <h2 class="cwa:text-bas cwa:mb-4">
             CWA Version Info
@@ -243,6 +277,10 @@ import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import type { SiteConfigParams } from '#cwa/types'
 import CwaCode from '#cwa/templates/components/core/admin/CwaCode.vue'
+import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import { resolvePageCacheOptions } from '#cwa/api/http-cache'
+import { options } from '#build/cwa-options'
 
 const $cwa = useCwa()
 
@@ -373,6 +411,41 @@ const hasClientSideErrors = computed(() => {
 const showSubmitErrorState = computed(() => {
   return $cwa.siteConfig.apiState.hasError.value || (showErrors.value && hasClientSideErrors.value)
 })
+
+const pageCacheEnabled = resolvePageCacheOptions(options.pageCache).enabled
+const purgingPageCache = ref(false)
+const purgePageCacheResult = ref<{ success: true } | { success: false, message: string }>()
+
+function purgePageCacheFailureMessage(error: unknown) {
+  const statusCode = (error as { statusCode?: number } | undefined)?.statusCode
+  if (statusCode === 401 || statusCode === 403) {
+    return 'The page cache could not be purged: your account does not have permission to do this.'
+  }
+  return `The page cache could not be purged (${statusCode || 'network error'}). Please try again.`
+}
+
+async function purgePageCache() {
+  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const { isCanceled } = await dialog.reveal({
+    title: 'Purge the page cache?',
+    content: '<p>Every cached page will be dropped at once and rebuilt on its next visit, so the site may be slower for a short while. No content will be lost.</p>',
+  })
+  if (isCanceled) {
+    return
+  }
+  purgePageCacheResult.value = undefined
+  purgingPageCache.value = true
+  try {
+    await $cwa.siteConfig.purgePageCache()
+    purgePageCacheResult.value = { success: true }
+  }
+  catch (error) {
+    purgePageCacheResult.value = { success: false, message: purgePageCacheFailureMessage(error) }
+  }
+  finally {
+    purgingPageCache.value = false
+  }
+}
 
 async function processChanges() {
   if (!allSettings.value) return

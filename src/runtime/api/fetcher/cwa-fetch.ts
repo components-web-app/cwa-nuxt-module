@@ -17,10 +17,13 @@ export default class CwaFetch {
 
   private readonly cacheState: ApiCacheDirectives = { storable: true, sharedMaxAge: undefined }
 
+  private readonly unauthorised: { handler?: () => void } = {}
+
   constructor(baseURL: string) {
     const { isServer } = useProcess()
     const requestCookie = isServer ? useRequestHeaders(['cookie']).cookie : undefined
     const cacheState = this.cacheState
+    const unauthorised = this.unauthorised
 
     this.fetch = $fetch.create({
       baseURL,
@@ -50,6 +53,9 @@ export default class CwaFetch {
       },
       onResponse(ctx) {
         if (!isServer) {
+          if (ctx.response.status === 401) {
+            unauthorised.handler?.()
+          }
           return
         }
         const merged = mergeCacheDirectives(cacheState, readResponseCacheDirectives(ctx.response.headers))
@@ -57,6 +63,10 @@ export default class CwaFetch {
         cacheState.sharedMaxAge = merged.sharedMaxAge
       },
     })
+  }
+
+  public onUnauthorised(handler: () => void) {
+    this.unauthorised.handler = handler
   }
 
   public get httpCacheState(): ApiCacheDirectives {

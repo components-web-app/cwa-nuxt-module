@@ -18,6 +18,7 @@ export interface CwaUser extends CwaResource {
 export interface CwaAuthStateInterface {
   data: {
     user?: CwaUser
+    sessionEnded: boolean
   }
 }
 
@@ -25,6 +26,7 @@ export default function (): CwaAuthStateInterface {
   return {
     data: reactive({
       user: undefined,
+      sessionEnded: false,
     }),
   }
 }

@@ -2,6 +2,7 @@ import { computed, isRef, onMounted, ref, toValue, watch } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
+import isEqual from 'lodash-es/isEqual'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
@@ -92,6 +93,18 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return saveResource()
   }
 
+  function changedFields() {
+    const local: { [key: string]: any } = localResourceData.value || {}
+    const stored: { [key: string]: any } = resource.value || {}
+    const changed: { [key: string]: any } = {}
+    for (const [key, value] of Object.entries(local)) {
+      if (!isEqual(value, stored[key])) {
+        changed[key] = value
+      }
+    }
+    return changed
+  }
+
   async function saveResource(close = false, extraData?: Record<string, any>) {
     if (!localResourceData.value) {
       return
@@ -118,7 +131,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     }
     const doRequest = async () => {
       const data: { [key: string]: any } = {
-        ...localResourceData.value,
+        ...(isAdding.value ? localResourceData.value : changedFields()),
         ...extraData,
       }
       if (excludeFields) {
@@ -144,6 +157,13 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         return newResource
       }
 
+      if (!Object.keys(data).length) {
+        if (close) {
+          emit('close')
+        }
+        return resource.value as CwaResource | undefined
+      }
+
       const updatedResource = await $cwa.resourcesManager.updateResource({
         endpoint: iri?.value || endpoint.value,
         data,
@@ -155,9 +175,9 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     }
 
     isUpdating.value = true
-    const resource = await doRequest()
+    const savedResource = await doRequest()
     isUpdating.value = false
-    return resource
+    return savedResource
   }
 
   function syncLocalResourceWithStore(newResource?: TempCwaResource | undefined) {
