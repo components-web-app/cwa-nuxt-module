@@ -39,6 +39,7 @@ export const useCwaForm = (iri: Ref<string | undefined>) => {
     const method = rootFormVars.value.method?.toUpperCase() === 'PATCH' ? 'PATCH' : 'POST'
     const body = $cwa.forms.getFieldValues(iri.value)
 
+    success.value = false
     submitting.value = true
     const result = await $cwa.forms.submitForm(action, body, method)
     submitting.value = false
