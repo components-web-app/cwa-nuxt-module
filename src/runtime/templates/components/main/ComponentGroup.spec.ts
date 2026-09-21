@@ -2,7 +2,7 @@
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import * as vue from 'vue'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
@@ -43,7 +43,10 @@ vi.mock('vue', async () => {
 const mockReference = 'mockReference'
 const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
+const mockPublishedIris: Record<string, string | undefined> = reactive({})
+const mockIsComponentGroupDisabled = vi.fn(() => false)
 const mockCwaResources = {
+  findPublishedComponentIri: vi.fn((iri: string) => computed(() => (iri in mockPublishedIris ? mockPublishedIris[iri] : iri))),
   getResource: vi.fn().mockImplementation(() => vue.computed(() => { return undefined })),
   getComponentGroupByReference: vi.fn().mockName('getComponentGroupByReference'),
   newResource: vi.fn().mockImplementation(() => computed(() => undefined)),
@@ -80,6 +83,9 @@ function createWrapper(ops: {
       },
       admin: {
         isEditing,
+        resourceStackManager: {
+          isComponentGroupDisabled: mockIsComponentGroupDisabled,
+        },
         resourceManager: {
           addResourceEvent: ref(),
         },
@@ -108,6 +114,16 @@ describe('ComponentGroup', () => {
     vi.clearAllMocks()
     mockCwaResources.getResource.mockReset().mockImplementation(() => vue.computed(() => undefined))
     mockCwaResources.getComponentGroupByReference.mockReset()
+    for (const key of Object.keys(mockPublishedIris)) {
+      delete mockPublishedIris[key]
+    }
+    vi.mocked(useComponentGroupPositions).mockReset().mockImplementation(() => ({
+      componentPositions: computed(() => undefined),
+      groupIsReordering: computed(() => false),
+    }) as any)
+    vi.mocked(ComponentGroupUtilSynchronizer).mockReset().mockImplementation(function () {
+      return { createSyncWatcher: vi.fn() } as any
+    })
   })
 
   describe('computed properties', () => {
@@ -432,6 +448,131 @@ describe('ComponentGroup', () => {
       const wrapper = createWrapper()
 
       expect(wrapper.html()).toContain('The location provided `mockLocation` is not a current resource')
+    })
+  })
+
+  describe('location resolves to the published iri', () => {
+    const publishedIri = '/component/heroes/published'
+    const draftIri = '/component/heroes/draft'
+    const groupIri = '/_/component_groups/group'
+    const positions = ['/_/component_positions/one', '/_/component_positions/two']
+
+    function mockSynchronizer() {
+      const createSyncWatcher = vi.fn()
+      ComponentGroupUtilSynchronizer.mockImplementationOnce(function () {
+        return { createSyncWatcher, stopSyncWatcher: vi.fn() }
+      })
+      return createSyncWatcher
+    }
+
+    function mockLocationResources(resolvableIris: string[]) {
+      mockCwaResources.getResource.mockImplementation((iri: string) => computed(() => (resolvableIris.includes(iri) ? { data: { '@id': iri } } : undefined)))
+    }
+
+    function mockGroupAt(groupReference: string) {
+      mockCwaResources.getComponentGroupByReference.mockImplementation((reference: string) => (reference === groupReference ? { data: { '@id': groupIri } } : undefined))
+      vi.mocked(useComponentGroupPositions).mockImplementation(iri => ({
+        componentPositions: computed(() => (iri.value === groupIri ? positions : undefined)),
+        groupIsReordering: computed(() => false),
+      }) as any)
+    }
+
+    test('motivating case: finds nested group children when a component with a draft passes its draft iri', () => {
+      mockPublishedIris[draftIri] = publishedIri
+      mockLocationResources([publishedIri, draftIri])
+      mockGroupAt(`${mockReference}_${publishedIri}`)
+
+      const wrapper = createWrapper({ location: draftIri })
+
+      expect(mockCwaResources.getComponentGroupByReference).toHaveBeenCalledWith(`${mockReference}_${publishedIri}`)
+      expect(wrapper.findAllComponents({ name: 'ResourceLoader' }).map(loader => loader.props().iri)).toEqual(positions)
+    })
+
+    test('keeps the same group when a draft is created mid-session', async () => {
+      const createSyncWatcher = mockSynchronizer()
+      mockLocationResources([publishedIri, draftIri])
+      mockGroupAt(`${mockReference}_${publishedIri}`)
+
+      const wrapper = createWrapper({ location: publishedIri })
+      expect(wrapper.findAllComponents({ name: 'ResourceLoader' })).toHaveLength(positions.length)
+
+      mockPublishedIris[draftIri] = publishedIri
+      await wrapper.setProps({ location: draftIri })
+
+      expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${publishedIri}`)
+      expect(wrapper.findAllComponents({ name: 'ResourceLoader' }).map(loader => loader.props().iri)).toEqual(positions)
+      expect(createSyncWatcher).toHaveBeenCalledTimes(1)
+    })
+
+    test('starts the synchronizer with the published iri when given a draft', () => {
+      const createSyncWatcher = mockSynchronizer()
+      mockPublishedIris[draftIri] = publishedIri
+
+      createWrapper({ location: draftIri })
+
+      expect(createSyncWatcher).toHaveBeenCalledTimes(1)
+      expect(createSyncWatcher.mock.calls[0][0].location).toEqual(publishedIri)
+      expect(createSyncWatcher.mock.calls[0][0].fullReference.value).toEqual(`${mockReference}_${publishedIri}`)
+    })
+
+    test('looks up the location resource by its published iri', () => {
+      mockPublishedIris[draftIri] = publishedIri
+      mockLocationResources([publishedIri])
+
+      const wrapper = createWrapper({ location: draftIri })
+
+      expect(wrapper.html()).not.toContain('is not a current resource')
+    })
+
+    test('shows the resolved iri in the alert when the published version is not in the store', () => {
+      mockPublishedIris[draftIri] = publishedIri
+      mockLocationResources([draftIri])
+
+      const wrapper = createWrapper({ location: draftIri })
+
+      expect(wrapper.html()).toContain(`The location provided \`${publishedIri}\` is not a current resource`)
+    })
+
+    test('passes the published iri to isComponentGroupDisabled', () => {
+      mockPublishedIris[draftIri] = publishedIri
+      mockLocationResources([publishedIri, draftIri])
+      mockCwaResources.getComponentGroupByReference.mockImplementation(() => ({ data: { '@id': groupIri } }))
+
+      createWrapper({ location: draftIri, signedIn: true })
+
+      expect(mockIsComponentGroupDisabled).toHaveBeenCalledWith(groupIri, publishedIri)
+    })
+
+    test('guard: a published iri resolves to itself', () => {
+      const createSyncWatcher = mockSynchronizer()
+
+      const wrapper = createWrapper({ location: publishedIri })
+
+      expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${publishedIri}`)
+      expect(mockCwaResources.getResource).toHaveBeenCalledWith(publishedIri)
+      expect(createSyncWatcher.mock.calls[0][0].location).toEqual(publishedIri)
+    })
+
+    test.each(['/_/pages/page', '/_/layouts/layout'])('guard: a %s location is unchanged', (location) => {
+      const createSyncWatcher = mockSynchronizer()
+
+      const wrapper = createWrapper({ location })
+
+      expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${location}`)
+      expect(mockCwaResources.getResource).toHaveBeenCalledWith(location)
+      expect(createSyncWatcher.mock.calls[0][0].location).toEqual(location)
+      expect(wrapper.html()).toContain(`The location provided \`${location}\` is not a current resource`)
+    })
+
+    test('guard: a never-published draft falls back to its own iri', () => {
+      const createSyncWatcher = mockSynchronizer()
+      mockPublishedIris[draftIri] = undefined
+
+      const wrapper = createWrapper({ location: draftIri })
+
+      expect(wrapper.vm.fullReference).toEqual(`${mockReference}_${draftIri}`)
+      expect(mockCwaResources.getResource).toHaveBeenCalledWith(draftIri)
+      expect(createSyncWatcher.mock.calls[0][0].location).toEqual(draftIri)
     })
   })
 
