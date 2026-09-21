@@ -88,7 +88,7 @@ const $cwa = useCwa()
 useCwaResourceManageable(iri)
 
 type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: string[] | null }
-const props = withDefaults(defineProps<PropsType>(), { allowedComponents: null })
+const props = defineProps<PropsType>()
 
 const hasLocation = computed(() => props.location !== undefined)
 

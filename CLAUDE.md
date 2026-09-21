@@ -1004,6 +1004,8 @@ The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component coll
 
 **Do not pass PHP FQCNs to the prop.**
 
+**Omitting the prop means "leave it as it is", not "clear it"** ([#303](https://github.com/components-web-app/cwa-nuxt-module/issues/303)). The prop has no default, so a template without `:allowed-components` passes `undefined` and the synchroniser makes no PATCH. That keeps a list set by fixtures or the REST API. Pass `:allowed-components="null"` to clear it on purpose. Previously the prop defaulted to `null`, so the first admin page load silently wiped any list set elsewhere.
+
 | Layer | Input format | Conversion |
 |---|---|---|
 | `<CwaComponentGroup :allowed-components>` prop | Prefix-free IRI (e.g. `/component/navigation_links`) | Synchroniser adds prefix before PATCH/POST |

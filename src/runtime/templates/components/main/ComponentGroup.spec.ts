@@ -53,18 +53,18 @@ function createWrapper(ops: {
   isLoading?: boolean
   reference?: string
   location?: string
-  allowedComponents?: string[]
+  allowedComponents?: string[] | null
   signedIn?: boolean
   isEditing?: boolean
 } = {}) {
   const {
     isLoading = false,
     reference = mockReference,
-    allowedComponents = [],
     signedIn = false,
     isEditing = true,
   } = ops
   const location = 'location' in ops ? ops.location : mockLocation
+  const allowedComponents = 'allowedComponents' in ops ? ops.allowedComponents : []
   // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
@@ -350,6 +350,40 @@ describe('ComponentGroup', () => {
       wrapper.unmount()
 
       expect(unwatchSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('allowedComponents passed to the synchronizer', () => {
+    afterEach(() => {
+      vi.mocked(ComponentGroupUtilSynchronizer).mockReset().mockImplementation(function () {
+        return { createSyncWatcher: vi.fn() } as any
+      })
+    })
+
+    function mockSynchronizer() {
+      const createSyncWatcher = vi.fn()
+      ComponentGroupUtilSynchronizer.mockImplementationOnce(function () {
+        return { createSyncWatcher, stopSyncWatcher: vi.fn() }
+      })
+      return createSyncWatcher
+    }
+
+    test('passes undefined WHEN the prop is omitted, so a fixture-set list is left alone', () => {
+      const createSyncWatcher = mockSynchronizer()
+
+      createWrapper({ allowedComponents: undefined })
+
+      expect(createSyncWatcher).toHaveBeenCalledTimes(1)
+      expect(createSyncWatcher.mock.calls[0][0]).toHaveProperty('allowedComponents', undefined)
+    })
+
+    test('passes null WHEN the prop is explicitly null', () => {
+      const createSyncWatcher = mockSynchronizer()
+
+      createWrapper({ allowedComponents: null })
+
+      expect(createSyncWatcher).toHaveBeenCalledTimes(1)
+      expect(createSyncWatcher.mock.calls[0][0].allowedComponents).toBeNull()
     })
   })
 
