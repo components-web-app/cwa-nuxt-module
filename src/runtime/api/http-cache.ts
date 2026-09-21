@@ -130,7 +130,7 @@ export function buildPageCacheHeaders({ ids, api, options }: BuildPageCacheHeade
 export function resolvePageCacheOptions(options?: Partial<PageCacheOptions>): PageCacheOptions {
   return {
     enabled: options?.enabled ?? true,
-    sharedMaxAge: options?.sharedMaxAge ?? 300,
+    sharedMaxAge: options?.sharedMaxAge ?? 3600,
     staleWhileRevalidate: options?.staleWhileRevalidate ?? 0,
   }
 }
