@@ -8,6 +8,7 @@ describe('Auth State context', () => {
     expect(initialState).toStrictEqual({
       data: reactive({
         user: undefined,
+        sessionEnded: false,
       }),
     })
   })

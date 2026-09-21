@@ -18,6 +18,7 @@ import {
   useLogger,
   extendRouteRules,
   addServerPlugin,
+  hasNuxtModule,
 } from '@nuxt/kit'
 import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
@@ -230,6 +231,16 @@ export default defineNuxtModule<CwaModuleOptions>({
       return { ...options, resources, staticRender: options.staticRender ?? hasStaticRouteRules() }
     }
 
+    function resolveSessionEndCaches(): string[] {
+      if (!hasNuxtModule('@vite-pwa/nuxt', nuxt)) {
+        return []
+      }
+      if ((nuxt.options as { pwa?: { disable?: boolean } }).pwa?.disable) {
+        return []
+      }
+      return options.auth?.clearCachesOnSessionEnd ?? ['cwa-api']
+    }
+
     function hasStaticRouteRules(): boolean {
       const routeRules = { ...nuxt.options.routeRules, ...nuxt.options.nitro?.routeRules }
       return Object.values(routeRules).some(rule => !!(rule?.isr || rule?.swr || rule?.prerender))
@@ -239,6 +250,18 @@ export default defineNuxtModule<CwaModuleOptions>({
       logger.info(`Configuring template to propagate module options and adding plugin for ${NAME} module...`)
       // clear options no longer needed and add plugin
       delete options.pagesDepth
+
+      const sessionEndCaches = resolveSessionEndCaches()
+      if (sessionEndCaches.length) {
+        options.auth = { ...options.auth, clearCachesOnSessionEnd: sessionEndCaches }
+        addPlugin({
+          src: resolve('./runtime/plugin-session-caches.client'),
+          mode: 'client',
+        })
+      }
+      else {
+        delete options.auth
+      }
 
       addTemplate({
         filename: 'cwa-options.ts',

@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
 import { CwaUserRoles } from '../storage/stores/auth/state'
+import * as processComposables from '../composables/process'
 import Auth, { CwaAuthStatus } from './auth'
 import { useRoute } from '#app'
 import { ref } from '#imports'
@@ -858,4 +859,166 @@ describe('Auth', () => {
   describe.todo('authStore getter', () => {})
   describe.todo('resourcesStore getter', () => {})
   describe.todo('fetcherStore getter', () => {})
+})
+
+describe('Auth session end handler', () => {
+  function createAuthWithHandler(handler: () => unknown = vi.fn()) {
+    const created = createAuth()
+    const onUnauthorised = vi.fn()
+    Object.assign(created.cwaFetch, { onUnauthorised })
+    created.auth.onSessionEnd(handler)
+    return { ...created, handler, onUnauthorised }
+  }
+
+  test('signing out while signed in calls the handler', async () => {
+    const { auth, cwaFetch, cookie, handler } = createAuthWithHandler()
+    cookie.value = '1'
+    cwaFetch.fetch = vi.fn().mockResolvedValue({ success: true })
+
+    await auth.signOut()
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(cookie.value).toBe('0')
+  })
+
+  test('a /me 401 while the cookie is 1 calls the handler', async () => {
+    const { auth, cwaFetch, cookie, handler } = createAuthWithHandler()
+    cookie.value = '1'
+    cwaFetch.fetch.raw = vi.fn().mockRejectedValue(new FetchError('401'))
+
+    await auth.refreshUser()
+
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  test('an anonymous /me 401 does not call the handler', async () => {
+    const { auth, cwaFetch, cookie, handler } = createAuthWithHandler()
+    cookie.value = '0'
+    cwaFetch.fetch.raw = vi.fn().mockRejectedValue(new FetchError('401'))
+
+    await auth.refreshUser()
+
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  test('the handler is called while middleware is processing, before the early return', async () => {
+    const { auth, cookie, handler, mercure } = createAuthWithHandler()
+    cookie.value = '1'
+    nuxtMockState.enabled = true
+    nuxtMockState.nuxtApp = { _processingMiddleware: true }
+
+    await auth.clearSession()
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(mercure.init).not.toHaveBeenCalled()
+  })
+
+  test('a handler that throws never fails sign-out', async () => {
+    const { auth, cwaFetch, cookie } = createAuthWithHandler(() => {
+      throw new Error('boom')
+    })
+    cookie.value = '1'
+    const mockResult = { success: true }
+    cwaFetch.fetch = vi.fn().mockResolvedValue(mockResult)
+
+    await expect(auth.signOut()).resolves.toEqual(mockResult)
+    expect(cookie.value).toBe('0')
+  })
+
+  test('a handler that rejects or never settles does not block sign-out', async () => {
+    const rejecting = createAuthWithHandler(() => Promise.reject(new Error('boom')))
+    rejecting.cookie.value = '1'
+    rejecting.cwaFetch.fetch = vi.fn().mockResolvedValue({ success: true })
+    await expect(rejecting.auth.signOut()).resolves.toEqual({ success: true })
+
+    const pending = createAuthWithHandler(() => new Promise(() => undefined))
+    pending.cookie.value = '1'
+    pending.cwaFetch.fetch = vi.fn().mockResolvedValue({ success: true })
+    await expect(pending.auth.signOut()).resolves.toEqual({ success: true })
+    expect(pending.cookie.value).toBe('0')
+  })
+
+  test('a browser 401 calls the handler only while signed in, without signing out', async () => {
+    const { auth, cookie, handler, onUnauthorised } = createAuthWithHandler()
+    const clearSessionSpy = vi.spyOn(auth, 'clearSession')
+    expect(onUnauthorised).toHaveBeenCalledTimes(1)
+    const unauthorised = onUnauthorised.mock.calls[0][0]
+
+    cookie.value = '0'
+    unauthorised()
+    expect(handler).not.toHaveBeenCalled()
+
+    cookie.value = '1'
+    unauthorised()
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(clearSessionSpy).not.toHaveBeenCalled()
+    expect(cookie.value).toBe('1')
+  })
+
+  test('a signed-in session ending during the server render records sessionEnded', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    const { auth, cwaFetch, cookie, authStore } = createAuth()
+    cookie.value = '1'
+    nuxtMockState.enabled = true
+    nuxtMockState.nuxtApp = { _processingMiddleware: true }
+    cwaFetch.fetch.raw = vi.fn().mockRejectedValue(new FetchError('401'))
+
+    await auth.refreshUser()
+
+    expect(authStore.useStore().data.sessionEnded).toBe(true)
+  })
+
+  test('an anonymous server render does not record sessionEnded', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    const { auth, cwaFetch, cookie, authStore } = createAuth()
+    cookie.value = '0'
+    nuxtMockState.enabled = true
+    nuxtMockState.nuxtApp = { _processingMiddleware: true }
+    cwaFetch.fetch.raw = vi.fn().mockRejectedValue(new FetchError('401'))
+
+    await auth.refreshUser()
+
+    expect(authStore.useStore().data.sessionEnded).not.toBe(true)
+  })
+
+  test('a session ending in the browser does not record sessionEnded', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
+    const { auth, cookie, authStore, handler } = createAuthWithHandler()
+    cookie.value = '1'
+    nuxtMockState.enabled = true
+    nuxtMockState.nuxtApp = { _processingMiddleware: true }
+
+    await auth.clearSession()
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(authStore.useStore().data.sessionEnded).not.toBe(true)
+  })
+
+  test('registering a handler after the server recorded sessionEnded calls it once and resets the flag', () => {
+    const created = createAuth()
+    Object.assign(created.cwaFetch, { onUnauthorised: vi.fn() })
+    const data = created.authStore.useStore().data as { sessionEnded?: boolean }
+    data.sessionEnded = true
+    const handler = vi.fn()
+
+    created.auth.onSessionEnd(handler)
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(data.sessionEnded).toBe(false)
+
+    created.auth.onSessionEnd(handler)
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  test('registering a handler without a server-recorded session end calls nothing', () => {
+    const created = createAuth()
+    Object.assign(created.cwaFetch, { onUnauthorised: vi.fn() })
+    const data = created.authStore.useStore().data as { sessionEnded?: boolean }
+    data.sessionEnded = false
+    const handler = vi.fn()
+
+    created.auth.onSessionEnd(handler)
+
+    expect(handler).not.toHaveBeenCalled()
+  })
 })

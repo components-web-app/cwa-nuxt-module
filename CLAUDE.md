@@ -400,6 +400,23 @@ It used to send the whole resource, which broke on any value the API adds for di
 
 ---
 
+## Clearing browser caches when a session ends ([#293](https://github.com/components-web-app/cwa-nuxt-module/issues/293))
+
+When a session ends, the module deletes the app's API data caches so data cached while signed in cannot be read afterwards on a shared device — the residual risk left by #258.
+
+- **Build-time detection only.** `module.ts` registers `runtime/plugin-session-caches.client` when `hasNuxtModule('@vite-pwa/nuxt')` is true, `nuxt.options.pwa.disable` is not set, and the cache list is non-empty. `@vite-pwa/nuxt` is never imported or depended on (#258). Only that module is supported; custom service workers are out of scope.
+- **Which caches:** `cwa.auth.clearCachesOnSessionEnd`, default **`['cwa-api']`** (the template's runtime cache). Only named caches are deleted — **never the Workbox precache**, which would take the app shell and offline support with it. An empty list turns the feature off.
+- **Three triggers, all firing through `Auth.clearSession()` or `onSessionEnd`:**
+  1. **Sign-out.**
+  2. **A 401 in the browser** — `CwaFetch.onUnauthorised`, called synchronously from the client branch of `onResponse`. It clears caches only while the auth cookie is `'1'`, and **never signs the user out**. The server branch of `onResponse` is unchanged.
+  3. **A session found expired during the server render.** The server's `clearSession()` sets `authStore.data.sessionEnded = true` when the request *was* signed in; it reaches the browser in the Pinia payload (the #261 mechanism), and the browser clears once on startup and resets it. The server never touches `caches`. Without this, the most likely shared-device case — opening a page after the session has already expired — would clear nothing, because the browser never sees a signed-in session end.
+- **Never blocks sign-out.** Clearing is fire-and-forget; a delete that throws, rejects or never settles cannot fail or delay it.
+- **`wasSignedIn` is read before the cookie is cleared**, and notification happens **before** `clearSession()`'s early return while middleware is processing — otherwise it is skipped exactly when an expiry is detected in middleware.
+
+**Limit:** a browser closed after a session, whose login has lapsed by the next visit, looks anonymous and triggers nothing. The cache's own `maxAgeSeconds` remains the only bound there.
+
+---
+
 ## Dependencies
 
 Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:
@@ -569,7 +586,7 @@ Two phases: (1) reduce the bare `<Spinner>` flicker/layout-shift in `ResourceLoa
 
 **Why NetworkFirst (not SWR) is the spine:** the SW cache is only ever **read offline** — online the network always wins, so an anonymous visitor can never be served a cached draft even in the window before the marker is seen. Layer discipline (settled with Daniel):
 - **API sets long `s-maxage`** for the *shared* cache (Souin — remotely purgeable), and **`max-age: 0`** for the private/browser tier. A long `max-age` would put an un-purgeable copy in the **browser HTTP cache**, which a Workbox `fetch()` passes through by default — so NetworkFirst would be served that stale private copy *without ever reaching Souin*, defeating both the purge and the network-first. (`s-maxage`-only + `max-age: 0`; belt-and-braces, the SW fetch can use `{ cache: 'no-cache' }`.)
-- **Residual offline leak window** — a cache outliving a **logout or cookie expiry** on one device (next user, offline, sees drafts). NetworkFirst can't reach this; **purge the SW caches on sign-out and on any 401** (page-side `postMessage` — reliable, unlike a SW-held auth flag which fails open on SW restart). Short `maxAgeSeconds` bounds it further.
+- **Residual offline leak window** — a cache outliving a **logout or cookie expiry** on one device (next user, offline, sees drafts). NetworkFirst can't reach this; **purge the SW caches on sign-out and on any 401** — now built as [#293](https://github.com/components-web-app/cwa-nuxt-module/issues/293), see `## Clearing browser caches when a session ends`. It deletes from the page with `caches.delete`, not via `postMessage` to the service worker: the page can reach Cache Storage directly, and state held in the service worker fails open on restart. Short `maxAgeSeconds` bounds what is left.
 
 **IndexedDB persistence of #257's `routeCache`** (already `markRaw`, route-keyed, bounded, serialisable) remains a valid **complementary** page-side data tier — the page can read auth state, so it persists only when appropriate. Not either/or with the SW; the SW gives app-shell + public-API offline, IndexedDB gives auth-aware data persistence. (cross-ref #259)
 

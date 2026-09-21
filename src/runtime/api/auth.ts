@@ -7,6 +7,7 @@ import { CwaUserRoles } from '../storage/stores/auth/state'
 import type { CwaUser } from '../storage/stores/auth/state'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import { useProcess } from '../composables/process'
 import type CwaFetch from './fetcher/cwa-fetch'
 import type Mercure from './mercure'
 import type Fetcher from './fetcher/fetcher'
@@ -46,6 +47,7 @@ interface ResetPasswordEvent extends BaseTokenUserEvent {
 export default class Auth {
   private loading: Ref<boolean>
   private hasCheckedMeEndpointForInit = false
+  private sessionEndHandler?: () => unknown
   private readonly _authStore: CwaAuthStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _fetcherStore: CwaFetcherStoreInterface
@@ -264,6 +266,27 @@ export default class Auth {
     return computed(() => this.hasRole(CwaUserRoles.ADMIN))
   }
 
+  public onSessionEnd(handler: () => unknown) {
+    this.sessionEndHandler = handler
+    this.cwaFetch.onUnauthorised(() => {
+      if (`${this.authCookie.value}` === '1') {
+        this.notifySessionEnded()
+      }
+    })
+    if (this.authStore.data.sessionEnded) {
+      this.authStore.data.sessionEnded = false
+      this.notifySessionEnded()
+    }
+  }
+
+  private notifySessionEnded() {
+    const handler = this.sessionEndHandler
+    if (!handler) {
+      return
+    }
+    new Promise(resolve => resolve(handler())).catch(() => undefined)
+  }
+
   private async loginRequest(credentials: Credentials) {
     this.loading.value = true
     try {
@@ -292,8 +315,15 @@ export default class Auth {
   }
 
   private async clearSession() {
+    const sessionEnded = `${this.authCookie.value}` === '1'
     this.authStore.data.user = undefined
     this.authCookie.value = '0'
+    if (sessionEnded) {
+      if (useProcess().isServer) {
+        this.authStore.data.sessionEnded = true
+      }
+      this.notifySessionEnded()
+    }
     this.admin.toggleEdit(false)
 
     // Hacky fix... we don't want to use useRoute in the clearSession when processing middleware

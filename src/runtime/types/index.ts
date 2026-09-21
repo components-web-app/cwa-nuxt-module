@@ -48,6 +48,9 @@ export interface CwaModuleOptions {
   pagesDepth?: number
   routeCacheLimit?: number
   staticRender?: boolean
+  auth?: {
+    clearCachesOnSessionEnd?: string[]
+  }
   pageCache?: {
     enabled?: boolean
     sharedMaxAge?: number

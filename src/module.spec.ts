@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 
 import { join } from 'path'
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 
@@ -273,6 +273,76 @@ describe('CWA module', () => {
       test('an explicit staticRender option overrides detection', async () => {
         expect(await getStaticRender({ routeRules: { '/**': { isr: true } } }, { staticRender: false })).toBe(false)
         expect(await getStaticRender({}, { staticRender: true })).toBe(true)
+      })
+    })
+
+    describe('session end cache clearing', () => {
+      const pluginSrc = join('./runtime/plugin-session-caches.client')
+
+      async function prepare(nuxtOptions: any, moduleOptions: any = {}, pwaInstalled = true) {
+        ;(nuxtKit.hasNuxtModule as Mock).mockReturnValue(pwaInstalled)
+        ;(nuxtKit.addPlugin as Mock).mockClear()
+        const mockNuxt = await prepareMockNuxt({ ...moduleOptions }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            runtimeConfig: { public: { cwa: {} } },
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+            sitemap: {},
+            ...nuxtOptions,
+          },
+        })
+        const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
+        const contents = await getContents({ app: { components: [] } })
+        const generated = JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0])
+        const registered = (nuxtKit.addPlugin as Mock).mock.calls.some(([plugin]) => plugin.src === pluginSrc)
+        return { mockNuxt, generated, registered }
+      }
+
+      afterEach(() => {
+        ;(nuxtKit.hasNuxtModule as Mock).mockReturnValue(false)
+      })
+
+      test('registers the client plugin with the default cwa-api cache when @vite-pwa/nuxt is installed and enabled', async () => {
+        const { mockNuxt, generated } = await prepare({ pwa: {} })
+
+        expect(nuxtKit.hasNuxtModule).toHaveBeenCalledWith('@vite-pwa/nuxt', mockNuxt)
+        expect(nuxtKit.addPlugin as Mock).toHaveBeenCalledWith({ src: pluginSrc, mode: 'client' })
+        expect(generated.auth).toEqual({ clearCachesOnSessionEnd: ['cwa-api'] })
+      })
+
+      test('passes a configured cache list through to the runtime', async () => {
+        const { generated, registered } = await prepare({ pwa: {} }, { auth: { clearCachesOnSessionEnd: ['api-a', 'api-b'] } })
+
+        expect(registered).toBe(true)
+        expect(generated.auth).toEqual({ clearCachesOnSessionEnd: ['api-a', 'api-b'] })
+      })
+
+      test('registers nothing when @vite-pwa/nuxt is not installed', async () => {
+        const { generated, registered } = await prepare({}, { auth: { clearCachesOnSessionEnd: ['cwa-api'] } }, false)
+
+        expect(registered).toBe(false)
+        expect(generated.auth).toBeUndefined()
+      })
+
+      test('registers nothing when the @vite-pwa/nuxt service worker is disabled', async () => {
+        const { generated, registered } = await prepare({ pwa: { disable: true } }, { auth: { clearCachesOnSessionEnd: ['cwa-api'] } })
+
+        expect(registered).toBe(false)
+        expect(generated.auth).toBeUndefined()
+      })
+
+      test('registers nothing when the configured list is empty', async () => {
+        const { generated, registered } = await prepare({ pwa: {} }, { auth: { clearCachesOnSessionEnd: [] } })
+
+        expect(registered).toBe(false)
+        expect(generated.auth).toBeUndefined()
       })
     })
 
