@@ -41,12 +41,14 @@ const conference = {
   'parentPageData': null,
 }
 
-function mockCwa() {
+function mockCwa(extra: Record<string, any> = {}) {
   const store = reactive<Record<string, any>>({
     [childPageIri]: { data: childPage, apiState: { status: 'SUCCESS' } },
     [conferenceIri]: { data: conference, apiState: { status: 'SUCCESS' } },
+    ...extra,
   })
   const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//2027', 'path': '/2027' })
+  const updateResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//2027', 'path': '/2027' })
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
@@ -55,11 +57,11 @@ function mockCwa() {
       pageDataIri: computed(() => undefined),
       pageIri: computed(() => undefined),
     },
-    resourcesManager: { createResource, updateResource: vi.fn(), deleteResource: vi.fn(), addError: vi.fn() },
+    resourcesManager: { createResource, updateResource, deleteResource: vi.fn(), addError: vi.fn() },
     fetchResource: vi.fn(),
     fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })),
   }))
-  return { createResource }
+  return { createResource, updateResource }
 }
 
 describe('RoutesTab route binding', () => {
@@ -108,5 +110,62 @@ describe('RoutesTab route binding', () => {
     await wrapper.setProps({ pageResource: { ...conference, route: '/_/routes//2027' } as any })
     await flushPromises()
     expect(wrapper.findComponent(RoutesTabView).props('isLoading')).toBe(false)
+  })
+
+  test('saving the go-live date on a parent route that redirects to a child does not send the child\'s borrowed page', async () => {
+    const parentRouteIri = '/_/routes//2027'
+    const { updateResource } = mockCwa({
+      [parentRouteIri]: {
+        data: {
+          '@id': parentRouteIri,
+          '@type': 'Route',
+          'name': '/2027',
+          'path': '/2027',
+          'pageData': conferenceIri,
+          'page': childPageIri,
+          'redirect': '/_/routes//2027/overview',
+        },
+        apiState: { status: 'SUCCESS', path: `${parentRouteIri}/redirects` },
+      },
+    })
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: { ...conference, route: parentRouteIri } as any },
+      shallow: true,
+    })
+    await flushPromises()
+
+    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('update:liveAt', '2027-03-01T09:00:00+00:00')
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+    await flushPromises()
+
+    expect(updateResource).toHaveBeenCalledOnce()
+    expect(updateResource.mock.calls[0]![0]).toEqual({
+      endpoint: parentRouteIri,
+      data: { liveAt: '2027-03-01T09:00:00+00:00' },
+    })
+  })
+
+  test('creating a route for a page still sends the full body including the page', async () => {
+    const page = { '@id': '/_/pages/standalone-uuid', '@type': 'Page', 'reference': 'standalone', 'parentPage': null, 'parentPageData': null }
+    const { createResource } = mockCwa({ [page['@id']]: { data: page, apiState: { status: 'SUCCESS' } } })
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: page as any },
+      shallow: true,
+    })
+    await flushPromises()
+
+    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('update:modelValue', '/standalone')
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+    await flushPromises()
+
+    expect(createResource).toHaveBeenCalledOnce()
+    expect(createResource.mock.calls[0]![0].data).toEqual({
+      '@type': 'Route',
+      'path': '/standalone',
+      'name': '/standalone',
+      'page': page['@id'],
+    })
   })
 })

@@ -390,6 +390,16 @@ The key is only emitted on a page the module actually caches; a declined or unst
 
 ---
 
+## Admin updates are a merge-patch: only changed fields are sent
+
+`useItemPage.saveResource` sends an update as `application/merge-patch+json` containing **only the fields where `localResourceData` differs from the stored resource** (deep comparison, lodash `isEqual`), plus any `extraData`. Creating still sends the full body. If nothing changed, no request is made and the stored resource is returned.
+
+It used to send the whole resource, which broke on any value the API adds for display only. The case that surfaced it: `RouteNormalizer` gives a redirect route the **final** route's `page` when its own is empty, so a nested conference's parent route came back with its own `pageData` **and** its child's `page`. Saving anything on it then sent both, and the API rejected the pair with *"Please specify either page or pageData, not both."*, which blocked scheduling every parent that redirects to a child.
+
+**The trap this creates:** `localResourceData` is a **shallow** copy (`syncLocalResourceWithStore` spreads the stored resource). An array or object edited **in place** — `roles.push(x)` — also mutates the stored copy, so the comparison sees no change and the edit is **silently not sent**. Always replace nested values (`roles = [...roles, x]`), never mutate them. Every current admin page already does; keep it that way.
+
+---
+
 ## Dependencies
 
 Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:
