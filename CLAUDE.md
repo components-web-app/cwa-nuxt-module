@@ -1083,6 +1083,17 @@ Tests: the "group reorder queue against the server" describe in `ComponentGroup.
 
 ---
 
+## A failed API docs fetch no longer leaves the Add component dialog spinning ([#322](https://github.com/components-web-app/cwa-nuxt-module/issues/322))
+
+Found through components-web-app#83. There, SSR stored an `http://` `docsPath`, so the browser blocked the docs fetch as mixed content. Any failed docs fetch had the same effect: the dialog stayed on its spinner until a full page reload.
+
+- `ApiDocumentation.fetchAllApiDocumentation` clears `apiDocPromise` in `.finally()`. It used to be cleared only on success, so every later call, including `refresh = true`, rethrew the first failure.
+- `AddComponentDialog` sets its loading state on every open. A failure now shows "Could not load the available components" and logs the cause. Reopening the dialog is the retry.
+
+Deliberately out of scope: a timeout on the wait for `docsPath`, resolving `docsPath` against `apiUrlBrowser`, and requesting `''` instead of `'/'` for the entrypoint (the API answers `'/'` with a trailing-slash 301).
+
+---
+
 ## `allowedComponents` format contract
 
 The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.
