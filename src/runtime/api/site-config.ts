@@ -10,6 +10,8 @@ import type CwaFetch from '#cwa/api/fetcher/cwa-fetch'
 import { useCwaSiteConfig } from '#cwa/composables/useCwaSiteConfig'
 import type { SiteConfigParams } from '#cwa/types'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { readWarmStream } from '#cwa/api/page-cache-warm'
+import type { PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 
 export default class SiteConfig {
   private utils: ReturnType<typeof useCwaSiteConfig>
@@ -160,6 +162,14 @@ export default class SiteConfig {
       method,
       headers: headers as Record<string, string>,
     })
+  }
+
+  public async warmPageCache(onProgress: (progress: PageCacheWarmProgress) => void): Promise<PageCacheWarmSummary> {
+    const stream = await $fetch<ReadableStream<Uint8Array>>('/_cwa/page-cache/warm', {
+      method: 'POST',
+      responseType: 'stream',
+    })
+    return readWarmStream(stream, onProgress)
   }
 
   public get totalRequests() {

@@ -446,6 +446,47 @@ describe('Resources manager', () => {
       expect(saveSpy).toHaveBeenCalled()
     })
 
+    describe('a component still being added takes each change as the API would', () => {
+      function updateUnpersisted(existing: Record<string, any>, data: Record<string, any>) {
+        const { resourcesManager, resourcesStoreActions } = createResourcesManager()
+        resourcesStoreActions.getResource.mockReturnValue({
+          data: {
+            '@id': '__new__',
+            '@type': 'HtmlContent',
+            ...existing,
+            '_metadata': { persisted: false, adding: { endpoint: '/component/html_contents' } },
+          },
+        })
+        const saveSpy = vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+        return resourcesManager.updateResource({ endpoint: '__new__', data }).then(() => saveSpy.mock.calls[0]?.[0]?.resource)
+      }
+
+      test('selecting a second style gives both styles once', async () => {
+        const stored = await updateUnpersisted({ uiClassNames: ['block-text'] }, { uiClassNames: ['block-text', 'text-center'] })
+        expect(stored.uiClassNames).toEqual(['block-text', 'text-center'])
+      })
+
+      test('deselecting a style removes it', async () => {
+        const stored = await updateUnpersisted({ uiClassNames: ['block-text', 'text-center'] }, { uiClassNames: ['text-center'] })
+        expect(stored.uiClassNames).toEqual(['text-center'])
+      })
+
+      test('choosing the default style clears the styles', async () => {
+        const stored = await updateUnpersisted({ uiClassNames: ['block-text'] }, { uiClassNames: null })
+        expect(stored.uiClassNames).toBeNull()
+      })
+
+      test('a nested object change still keeps the fields it does not mention', async () => {
+        const stored = await updateUnpersisted({ settings: { a: 1, b: 2 } }, { settings: { b: 3 } })
+        expect(stored.settings).toEqual({ a: 1, b: 3 })
+      })
+
+      test('the adding metadata is kept', async () => {
+        const stored = await updateUnpersisted({}, { uiClassNames: ['block-text'] })
+        expect(stored._metadata).toEqual({ persisted: false, adding: { endpoint: '/component/html_contents' } })
+      })
+    })
+
     test('calls admin.emptyStack when publishing overwrites an existing live resource', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
       resourcesStoreActions.getResource.mockImplementation((iri: string) => {
@@ -1042,7 +1083,7 @@ describe('Resources manager', () => {
   })
 
   describe('updateResource non-persisted array merge (line 196)', () => {
-    test('concatenates array fields when merging an unpersisted resource update', async () => {
+    test('replaces array fields when merging an unpersisted resource update', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager()
       resourcesStoreActions.getResource.mockReturnValue({
         data: {
@@ -1056,7 +1097,7 @@ describe('Resources manager', () => {
       await resourcesManager.updateResource({ endpoint: '/things/1', data: { tags: ['added'] } })
       expect(cwaFetch.fetch).not.toHaveBeenCalled()
       const saved = saveSpy.mock.calls[0]![0] as any
-      expect(saved.resource.tags).toEqual(['added', 'existing'])
+      expect(saved.resource.tags).toEqual(['added'])
     })
   })
 

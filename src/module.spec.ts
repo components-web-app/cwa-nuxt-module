@@ -459,6 +459,60 @@ declare module 'vue-router' {
       expect(nuxtKit.addImportsDir as Mock).toHaveBeenCalledWith(mockResolver('./runtime/composables'))
     })
 
+    describe('page cache warm route', () => {
+      const warmHandler = {
+        route: '/_cwa/page-cache/warm',
+        method: 'post',
+        handler: expect.stringMatching(/runtime\/server\/cwa-page-cache-warm\.post$/),
+      }
+
+      async function prepare(moduleOptions: any = {}, runtimeConfig: any = { public: { cwa: {} } }) {
+        ;(nuxtKit.addServerHandler as Mock).mockClear()
+        return prepareMockNuxt({ ...moduleOptions }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            runtimeConfig,
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+            sitemap: {},
+          },
+        })
+      }
+
+      test('registers the warm route when the page cache is enabled', async () => {
+        await prepare()
+
+        expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith(warmHandler)
+      })
+
+      test('does not register the warm route when the page cache is disabled', async () => {
+        await prepare({ pageCache: { enabled: false } })
+
+        expect(nuxtKit.addServerHandler as Mock).not.toHaveBeenCalledWith(warmHandler)
+      })
+
+      test('adds private runtime config defaults so each setting can be overridden per environment', async () => {
+        const mockNuxt = await prepare()
+
+        expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
+          pageCacheWarm: { concurrency: 3, timeout: 30000, origin: '' },
+        })
+        expect(mockNuxt.options.runtimeConfig.public.cwa).not.toHaveProperty('pageCacheWarm')
+      })
+
+      test('keeps warm settings the app has configured', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { pageCacheWarm: { concurrency: 5, origin: 'http://caddy' } } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa.pageCacheWarm).toEqual({ concurrency: 5, timeout: 30000, origin: 'http://caddy' })
+      })
+    })
+
     describe('hooks', () => {
       test('should install plugin', async () => {
         const mockResolver = vi.fn(path => path)

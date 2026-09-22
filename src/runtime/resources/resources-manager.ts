@@ -191,9 +191,9 @@ export class ResourcesManager {
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
     // it'll update anything visually until client-side refresh
     if (currentResource?._metadata?.persisted === false) {
-      const newResource = mergeWith(currentResource, event.data, (a, b) => {
-        if (isArray(a)) {
-          return b.concat(a)
+      const newResource = mergeWith(currentResource, event.data, (_a, b) => {
+        if (isArray(b) || b === null) {
+          return b
         }
       })
       this.storeResource({

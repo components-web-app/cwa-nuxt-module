@@ -293,7 +293,7 @@ export default class Fetcher {
   }
 
   public fetch(event: FetchEvent): CwaFetchResponseRaw {
-    const url = event.noQuery ? event.path : this.appendQueryToPath(event.path)
+    const url = event.noQuery || !this.consumesPageQuery(event.path) ? event.path : this.appendQueryToPath(event.path)
     const headers = this.createRequestHeaders(event)
     const response = this.cwaFetch.fetch.raw<any>(url, {
       headers,
@@ -304,31 +304,31 @@ export default class Fetcher {
     }
   }
 
+  private consumesPageQuery(path: string): boolean {
+    const prefix = ResourceTypeFromIri.getPathPrefix() || ''
+    return path.startsWith(`${prefix}/component/collections/`)
+  }
+
   private appendQueryToPath(path: string): string {
     const queryObj = this.router.currentRoute.value?.query
-    if (!queryObj) {
-      return path
-    }
-    const queryKeys = Object.keys(queryObj)
-    if (!queryKeys.length) {
+    if (!queryObj || !Object.keys(queryObj).length) {
       return path
     }
 
-    const queryString = queryKeys
-      .reduce((accumulator, key) => {
-        if (key.endsWith('[]') && Array.isArray(queryObj[key])) {
-          for (const arrValue of queryObj[key]) {
-            accumulator.push(key + '=' + arrValue)
-          }
-        }
-        else {
-          accumulator.push(key + '=' + queryObj[key])
-        }
-        return accumulator
-      }, [] as string[])
-      .join('&')
-    const delimiter = path.includes('?') ? '&' : '?'
-    return `${path}${delimiter}${queryString}`
+    const queryStart = path.indexOf('?')
+    const pathname = queryStart === -1 ? path : path.slice(0, queryStart)
+    const params = new URLSearchParams(queryStart === -1 ? '' : path.slice(queryStart + 1))
+    const ownKeys = new Set(params.keys())
+    for (const [key, value] of Object.entries(queryObj)) {
+      if (ownKeys.has(key)) {
+        continue
+      }
+      for (const item of Array.isArray(value) ? value : [value]) {
+        params.append(key, item ?? '')
+      }
+    }
+    const queryString = params.toString()
+    return queryString ? `${pathname}?${queryString}` : pathname
   }
 
   private createRequestHeaders(event: FetchEvent): Record<string, string> {

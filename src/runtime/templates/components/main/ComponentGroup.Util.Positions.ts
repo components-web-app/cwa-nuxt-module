@@ -1,7 +1,9 @@
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
+import type { ComputedRef } from 'vue'
 import debounce from 'lodash-es/debounce'
 import { CwaResourceTypes } from '#cwa/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type Cwa from '#cwa/cwa'
 import type { ReorderEvent } from '#cwa/admin/admin'
 
@@ -16,10 +18,46 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
   }
 }
 
-export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>, $cwa: Cwa) => {
-  type UpdateRequest = { debounced?: any, apiRequest?: any }
-  const updateRequests: Ref<{ [iri: string]: UpdateRequest }> = ref({})
+const unmovedSubsequence = (baseIndexes: number[], preferMove: boolean[]): Set<number> => {
+  const weight = (index: number) => baseIndexes.length + 1 + (preferMove[index] ? 0 : 1)
+  const scores: number[] = []
+  const previous: number[] = []
+  let best = -1
+  for (let i = 0; i < baseIndexes.length; i++) {
+    scores[i] = weight(i)
+    previous[i] = -1
+    for (let j = 0; j < i; j++) {
+      if (baseIndexes[j]! < baseIndexes[i]! && scores[j]! + weight(i) > scores[i]!) {
+        scores[i] = scores[j]! + weight(i)
+        previous[i] = j
+      }
+    }
+    if (best === -1 || scores[i]! > scores[best]!) {
+      best = i
+    }
+  }
+  const kept = new Set<number>()
+  for (let i = best; i !== -1; i = previous[i]!) {
+    kept.add(i)
+  }
+  return kept
+}
 
+const resolveNewIndex = (location: ReorderEvent['location'], currentIndex: number): number | undefined => {
+  if (location === 'next') {
+    return currentIndex + 1
+  }
+  if (location === 'previous') {
+    return Math.max(currentIndex - 1, 0)
+  }
+  const numericLocation = Number(location)
+  if (String(location).trim() === '' || !Number.isFinite(numericLocation)) {
+    return
+  }
+  return Math.max(numericLocation - 1, 0)
+}
+
+export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>, $cwa: Cwa) => {
   const groupIsReordering = computed(() => {
     if (!iri.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
       return false
@@ -32,7 +70,174 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
     return iri.value ? $cwa.resources.getOrderedPositionsForGroup(iri.value) : undefined
   })
 
-  let oldPositions: string[] | undefined
+  let reorderGeneration = 0
+  let movedIris = new Set<string>()
+  let syncQueue: Promise<void> = Promise.resolve()
+
+  const getPosition = (positionIri: string): CwaResource | undefined => $cwa.resources.getResource(positionIri).value?.data
+
+  const sortValueOf = (positionIri: string): number => getPosition(positionIri)?.sortValue as number
+
+  const persistedPositions = (): string[] => (componentPositions.value || []).filter((positionIri) => {
+    return !positionIri.endsWith(NEW_RESOURCE_IRI) && typeof getPosition(positionIri)?.sortValue === 'number'
+  })
+
+  const sortValueOrder = (positionIris: string[]): string[] => [...positionIris].sort((a, b) => sortValueOf(a) - sortValueOf(b))
+
+  function storeSortValue(positionIri: string, sortValue: number) {
+    const position = getPosition(positionIri)
+    if (!position) {
+      return
+    }
+    $cwa.resourcesManager.storeResource({
+      resource: { ...position, sortValue },
+    })
+  }
+
+  function clearDisplayNumbers() {
+    for (const positionIri of componentPositions.value || []) {
+      const position = getPosition(positionIri)
+      if (positionIri.endsWith(NEW_RESOURCE_IRI) || !position || position._metadata.sortDisplayNumber === undefined) {
+        continue
+      }
+      $cwa.resourcesManager.storeResource({
+        resource: {
+          ...position,
+          _metadata: {
+            ...position._metadata,
+            sortDisplayNumber: undefined,
+          },
+        },
+      })
+    }
+  }
+
+  type PendingPosition = { positionIri: string, resource: CwaResource, path?: string }
+
+  function collectPendingPositions(positionIris: string[]): PendingPosition[] {
+    const pendingPositions: PendingPosition[] = []
+    for (const positionIri of positionIris) {
+      const pending = $cwa.resources.getPendingResource(positionIri)
+      if (pending?.resource) {
+        pendingPositions.push({ positionIri, resource: pending.resource, path: pending.path })
+      }
+    }
+    return pendingPositions
+  }
+
+  function applyPendingSortValues(pendingPositions: PendingPosition[]) {
+    for (const { positionIri, resource, path } of pendingPositions) {
+      if (typeof resource.sortValue === 'number' && resource.sortValue !== sortValueOf(positionIri)) {
+        storeSortValue(positionIri, resource.sortValue)
+      }
+      $cwa.resourcesManager.storeResource({
+        resource,
+        isNew: true,
+        path,
+      })
+    }
+  }
+
+  function mirrorServerMove(movedIri: string, originalSortValue: number, moveTo: number) {
+    if (moveTo === originalSortValue) {
+      return
+    }
+    for (const positionIri of persistedPositions()) {
+      if (positionIri === movedIri) {
+        continue
+      }
+      const sortValue = sortValueOf(positionIri)
+      if (moveTo > originalSortValue && sortValue > originalSortValue && sortValue <= moveTo) {
+        storeSortValue(positionIri, sortValue - 1)
+      }
+      else if (moveTo < originalSortValue && sortValue < originalSortValue && sortValue >= moveTo) {
+        storeSortValue(positionIri, sortValue + 1)
+      }
+    }
+  }
+
+  async function sendMove(positionIri: string, moveTo: number): Promise<boolean> {
+    const originalSortValue = sortValueOf(positionIri)
+    const response = await $cwa.resourcesManager.updateResource({
+      endpoint: positionIri,
+      data: {
+        sortValue: moveTo,
+      },
+    })
+    if (!response) {
+      return false
+    }
+    storeSortValue(positionIri, moveTo)
+    mirrorServerMove(positionIri, originalSortValue, moveTo)
+    return true
+  }
+
+  async function repairDuplicateSortValues(positionIris: string[]): Promise<boolean> {
+    const repairs: Array<[string, number]> = []
+    let previousSortValue: number | undefined
+    for (const positionIri of sortValueOrder(positionIris)) {
+      const sortValue = sortValueOf(positionIri)
+      const repairedSortValue = previousSortValue === undefined || sortValue > previousSortValue ? sortValue : previousSortValue + 1
+      if (repairedSortValue !== sortValue) {
+        repairs.push([positionIri, repairedSortValue])
+      }
+      previousSortValue = repairedSortValue
+    }
+    for (const [positionIri, repairedSortValue] of repairs.reverse()) {
+      if (!await sendMove(positionIri, repairedSortValue)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  async function sendMoves(desiredOrder: string[], moved: Set<string>): Promise<boolean> {
+    let workingOrder = sortValueOrder(desiredOrder)
+    const kept = unmovedSubsequence(
+      desiredOrder.map(positionIri => workingOrder.indexOf(positionIri)),
+      desiredOrder.map(positionIri => moved.has(positionIri)),
+    )
+    for (const [index, positionIri] of desiredOrder.entries()) {
+      if (kept.has(index)) {
+        continue
+      }
+      const withoutPosition = workingOrder.filter(workingIri => workingIri !== positionIri)
+      const targetIndex = index === 0 ? 0 : withoutPosition.indexOf(desiredOrder[index - 1]!) + 1
+      const displacedIri = workingOrder[targetIndex]
+      if (!displacedIri || displacedIri === positionIri) {
+        continue
+      }
+      if (!await sendMove(positionIri, sortValueOf(displacedIri))) {
+        return false
+      }
+      withoutPosition.splice(targetIndex, 0, positionIri)
+      workingOrder = withoutPosition
+    }
+    return true
+  }
+
+  async function syncGroupOrder() {
+    const startGeneration = reorderGeneration
+    const moved = movedIris
+    movedIris = new Set()
+    const desiredOrder = persistedPositions()
+    applyPendingSortValues(collectPendingPositions(desiredOrder))
+    const synced = await repairDuplicateSortValues(desiredOrder) && await sendMoves(desiredOrder, moved)
+    if (!synced) {
+      scheduleSync.cancel()
+      movedIris = new Set()
+      clearDisplayNumbers()
+      return
+    }
+    if (startGeneration === reorderGeneration) {
+      clearDisplayNumbers()
+    }
+  }
+
+  const scheduleSync = debounce(() => {
+    syncQueue = syncQueue.then(syncGroupOrder).catch(clearDisplayNumbers)
+  }, 1000)
+
   function handleReorderEvent(event: ReorderEvent) {
     if (!groupIsReordering.value || !componentPositions.value) {
       return
@@ -43,28 +248,12 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
       return
     }
 
-    if (!oldPositions) {
-      oldPositions = [...componentPositions.value]
+    const newIndex = resolveNewIndex(event.location, currentIndex)
+    if (newIndex === undefined) {
+      return
     }
 
-    let newIndex: number
-    switch (event.location) {
-      case 'next':
-        newIndex = currentIndex + 1
-        break
-
-      case 'previous':
-        newIndex = currentIndex - 1
-        break
-
-      default:
-        newIndex = event.location - 1
-        break
-    }
-    if (newIndex < 0) {
-      newIndex = 0
-    }
-
+    const pendingPositions = collectPendingPositions(persistedPositions())
     const positionCopy = [...componentPositions.value]
     moveElement(positionCopy, currentIndex, newIndex)
     for (const [index, iri] of positionCopy.entries()) {
@@ -78,123 +267,13 @@ export const useComponentGroupPositions = (iri: ComputedRef<string | undefined>,
       })
     }
 
+    applyPendingSortValues(pendingPositions)
+
     $cwa.admin.emitRedraw()
 
-    function doSomething(updateRequest: UpdateRequest): UpdateRequest {
-      if (updateRequest.debounced) {
-        updateRequest.debounced.cancel()
-      }
-      updateRequest.debounced = debounce(async () => {
-        if (!oldPositions) {
-          return
-        }
-        const savedPositions = oldPositions
-        oldPositions = undefined
-        if (updateRequest.apiRequest) {
-          await updateRequest.apiRequest
-        }
-
-        componentPositions.value && sendUpdatePositionRequest(event.positionIri, componentPositions.value, savedPositions)
-      }, 1000)
-      updateRequest.debounced()
-      return updateRequest
-    }
-
-    updateRequests.value[event.positionIri] = doSomething(updateRequests.value[event.positionIri] || {})
-  }
-
-  function sendUpdatePositionRequest(iri: string, newPositions: string[], oldPositions: string[]) {
-    if (!updateRequests.value[iri]) {
-      return
-    }
-    // wait for previous request to finish before calculating and submitting new request
-    // a request queue system is preferable
-
-    // component position order has changed in the UI, we want to start synchronising this with the API
-    // multiple changes can happen in quick succession, so we want to debounce any update
-    // the process for the API is we just need to update the sortValue of the position that has moved
-    // we should set the new sort value to the sort value of the position that was in that place before
-    // other positions order will be automatically recalculated and saved many API requests
-    const oldIndex = oldPositions.indexOf(iri)
-    const newIndex = newPositions.indexOf(iri)
-    if (oldIndex === newIndex) {
-      return
-    }
-    const positionToOverwrite = oldPositions[newIndex]
-    if (!positionToOverwrite) {
-      return
-    }
-    const positionToOverwriteSortValue = $cwa.resources.getResource(positionToOverwrite).value?.data?.sortValue
-    if (positionToOverwriteSortValue === undefined) {
-      return
-    }
-
-    updateRequests.value[iri].apiRequest = new Promise<void>((resolve) => {
-      if (!updateRequests.value[iri]) return
-      updateRequests.value[iri].apiRequest = $cwa.resourcesManager.updateResource({
-        endpoint: iri,
-        data: {
-          sortValue: positionToOverwriteSortValue,
-        },
-      })
-      updateRequests.value[iri].apiRequest.then(() => {
-        updateRelatedLocalSortValues(iri, newIndex, oldIndex, oldPositions)
-        resolve()
-      })
-    })
-  }
-
-  function updateRelatedLocalSortValues(iri: string, newIndex: number, oldIndex: number, oldPositions: string[]) {
-    // we need to emulate what the position values would do on the server to update the other sortValues in data
-    // without performing lots of requests to fetch all the new values
-    // we will also reset all the metadata display sort numbers
-
-    const updatePosSortValue = (positionIri: string, moveBy: number) => {
-      const posRes = $cwa.resources.getResource(positionIri).value?.data
-      if (posRes === undefined || posRes.sortValue === undefined) {
-        return
-      }
-      const sortValue = posRes.sortValue + moveBy
-      $cwa.resourcesManager.storeResource({
-        resource: {
-          ...posRes,
-          sortValue,
-          _metadata: {
-            ...posRes._metadata,
-            sortDisplayNumber: undefined,
-          },
-        },
-      })
-    }
-
-    if (newIndex > oldIndex) {
-      for (const [index, positionIri] of oldPositions.entries()) {
-        if (positionIri === iri) {
-          continue
-        }
-        if (index > oldIndex && index <= newIndex) {
-          updatePosSortValue(positionIri, -1)
-        }
-        else {
-          // to clear the sortDisplayNumber even if the sortValue is not updated, so we order again based on sortValue
-          updatePosSortValue(positionIri, 0)
-        }
-      }
-    }
-    else {
-      for (const [index, positionIri] of oldPositions.entries()) {
-        if (positionIri === iri) {
-          continue
-        }
-        if (index < oldIndex && index >= newIndex) {
-          updatePosSortValue(positionIri, 1)
-        }
-        else {
-          // to clear the sortDisplayNumber even if the sortValue is not updated, so we order again based on sortValue
-          updatePosSortValue(positionIri, 0)
-        }
-      }
-    }
+    reorderGeneration++
+    movedIris.add(event.positionIri)
+    scheduleSync()
   }
 
   onMounted(() => {

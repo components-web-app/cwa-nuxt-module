@@ -596,3 +596,71 @@ describe('ResourcesStore Getters -> resourceLoadStatus', () => {
     })
   })
 })
+
+describe('ResourcesStore Getters -> findPublishedComponentIri', () => {
+  const publishedIri = '/component/heroes/published'
+  const draftIri = '/component/heroes/draft'
+  const neverPublishedDraftIri = '/component/heroes/never-published'
+  const pageIri = '/_/pages/page'
+  const layoutIri = '/_/layouts/layout'
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  function createResource(iri: string, published?: boolean) {
+    return {
+      data: {
+        '@id': iri,
+        ...(published === undefined ? {} : { _metadata: { publishable: { published } } }),
+      },
+      apiState: { status: CwaResourceApiStatuses.SUCCESS },
+    }
+  }
+
+  beforeEach(() => {
+    state = createState()
+    state.current.publishableMapping = [{ publishedIri, draftIri }]
+    state.current.byId[publishedIri] = createResource(publishedIri, true)
+    state.current.byId[draftIri] = createResource(draftIri, false)
+    state.current.byId[neverPublishedDraftIri] = createResource(neverPublishedDraftIri, false)
+    state.current.byId[pageIri] = createResource(pageIri)
+    state.current.byId[layoutIri] = createResource(layoutIri)
+    getterFns = getters(state)
+  })
+
+  test('returns a page iri unchanged', () => {
+    expect(getterFns.findPublishedComponentIri.value(pageIri)).toBe(pageIri)
+  })
+
+  test('returns a layout iri unchanged', () => {
+    expect(getterFns.findPublishedComponentIri.value(layoutIri)).toBe(layoutIri)
+  })
+
+  test('returns a published component iri unchanged', () => {
+    expect(getterFns.findPublishedComponentIri.value(publishedIri)).toBe(publishedIri)
+  })
+
+  test('returns the published iri for a draft that has a published version', () => {
+    expect(getterFns.findPublishedComponentIri.value(draftIri)).toBe(publishedIri)
+  })
+
+  test('returns undefined for a draft that has never been published', () => {
+    expect(getterFns.findPublishedComponentIri.value(neverPublishedDraftIri)).toBeUndefined()
+  })
+
+  test('returns the published iri for a draft that is mapped before its published version is in the store', () => {
+    delete state.current.byId[publishedIri]
+    expect(getterFns.findPublishedComponentIri.value(draftIri)).toBe(publishedIri)
+  })
+
+  test('returns undefined for an iri that is not in the store', () => {
+    expect(getterFns.findPublishedComponentIri.value('/component/heroes/missing')).toBeUndefined()
+  })
+
+  test('follows a publishable mapping added after the getter is created', () => {
+    const newDraftIri = '/component/heroes/new-draft'
+    state.current.byId[newDraftIri] = createResource(newDraftIri, false)
+    expect(getterFns.findPublishedComponentIri.value(newDraftIri)).toBeUndefined()
+    state.current.publishableMapping.push({ publishedIri, draftIri: newDraftIri })
+    expect(getterFns.findPublishedComponentIri.value(newDraftIri)).toBe(publishedIri)
+  })
+})

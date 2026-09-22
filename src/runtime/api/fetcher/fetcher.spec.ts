@@ -50,7 +50,7 @@ function delay(time: number, returnValue: any = undefined) {
   })
 }
 
-function createFetcher(query?: { [key: string]: string }): Fetcher {
+function createFetcher(query?: Record<string, string | null | (string | null)[]>): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
@@ -666,11 +666,11 @@ describe('Fetcher -> fetch', () => {
       return `${path}?query=value`
     })
     const fetchResourceEvent = {
-      path: '/mock-path',
+      path: '/component/collections/1',
       token: 'any',
     }
     await fetcher.fetchResource(fetchResourceEvent)
-    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/mock-path?query=value')
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/component/collections/1?query=value')
     expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][1]).toStrictEqual({ headers: { someHeader: 'someValue' } })
     expect(CwaFetch.mock.results[0].value.fetch.raw.mock.invocationCallOrder[0]).toBeGreaterThan(fetcher.appendQueryToPath.mock.invocationCallOrder[0])
   })
@@ -700,10 +700,10 @@ describe('Fetcher -> appendQueryToPath', () => {
 
   test
     .each([
-      { query: { something: 1 }, path: '/mock-path', result: '/mock-path?something=1' },
-      { query: { something: 1 }, path: '/mock-path?existing=1', result: '/mock-path?existing=1&something=1' },
-      { query: undefined, path: '/mock-path', result: '/mock-path' },
-      { query: {}, path: '/mock-path', result: '/mock-path' },
+      { query: { something: 1 }, path: '/component/collections/1', result: '/component/collections/1?something=1' },
+      { query: { something: 1 }, path: '/component/collections/1?existing=1', result: '/component/collections/1?existing=1&something=1' },
+      { query: undefined, path: '/component/collections/1', result: '/component/collections/1' },
+      { query: {}, path: '/component/collections/1', result: '/component/collections/1' },
     ])('If query parameters are \'$query\' and the fetch path is $path we should call a fetch to the url $result', async ({
       query,
       path,
@@ -718,6 +718,72 @@ describe('Fetcher -> appendQueryToPath', () => {
       await fetcher.fetchResource(fetchResourceEvent)
       expect(fetcher.appendQueryToPath).toReturnWith(result)
     })
+})
+
+describe('Fetcher -> page query forwarding', () => {
+  afterEach(() => {
+    ResourceTypeFromIri.setPathPrefix(undefined)
+    vi.clearAllMocks()
+  })
+
+  function fetchedUrl(query: Record<string, string | null | (string | null)[]>, path: string, prefix?: string) {
+    ResourceTypeFromIri.setPathPrefix(prefix)
+    const fetcher = createFetcher(query)
+    vi.spyOn(fetcher, 'createRequestHeaders').mockImplementation(() => ({}))
+    fetcher.fetch({ path })
+    return CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]
+  }
+
+  test.each([
+    '/_/routes//blog',
+    '/_/resource_manifest//blog',
+    '/_/layouts/1',
+    '/_/pages/1',
+    '/page_data/blog_articles/1',
+    '/_/component_groups/1',
+    '/_/component_positions/1',
+    '/component/html_contents/1',
+  ])('a tracking query on the page is not sent with %s, so the shared cache entry is reused', (path) => {
+    expect(fetchedUrl({ utm_source: 'newsletter', fbclid: 'abc' }, path)).toBe(path)
+  })
+
+  test('a resource asking for its published version keeps its own query and gains nothing from the page', () => {
+    expect(fetchedUrl({ utm_source: 'newsletter' }, '/component/html_contents/1?published=true')).toBe('/component/html_contents/1?published=true')
+  })
+
+  test('a collection still receives the page query so it can filter and paginate', () => {
+    expect(fetchedUrl({ page: '2', search: 'cats' }, '/_api/component/collections/1', '/_api')).toBe('/_api/component/collections/1?page=2&search=cats')
+  })
+
+  test('a collection on a bare-host API still receives the page query', () => {
+    expect(fetchedUrl({ page: '2' }, '/component/collections/1', '/')).toBe('/component/collections/1?page=2')
+  })
+
+  test('a valueless page parameter is not sent as the string null', () => {
+    expect(fetchedUrl({ k1185: null }, '/component/collections/1')).toBe('/component/collections/1?k1185=')
+  })
+
+  test('page query values are encoded so they arrive as they were on the page', () => {
+    const url = fetchedUrl({ search: 'a&b=c #d' }, '/component/collections/1')
+    expect(new URLSearchParams(url.split('?')[1]).get('search')).toBe('a&b=c #d')
+    expect([...new URLSearchParams(url.split('?')[1]).keys()]).toEqual(['search'])
+  })
+
+  test('repeated page parameters are each sent', () => {
+    const url = fetchedUrl({ 'tags[]': ['a', 'b'] }, '/component/collections/1')
+    expect(new URLSearchParams(url.split('?')[1]).getAll('tags[]')).toEqual(['a', 'b'])
+  })
+
+  test('the path\'s own query wins over a page parameter of the same name', () => {
+    expect(fetchedUrl({ published: 'false', page: '2' }, '/component/collections/1?published=true')).toBe('/component/collections/1?published=true&page=2')
+  })
+
+  test('noQuery still skips the page query for a collection', () => {
+    const fetcher = createFetcher({ page: '2' })
+    vi.spyOn(fetcher, 'createRequestHeaders').mockImplementation(() => ({}))
+    fetcher.fetch({ path: '/component/collections/1', noQuery: true })
+    expect(CwaFetch.mock.results[0].value.fetch.raw.mock.calls[0][0]).toBe('/component/collections/1')
+  })
 })
 
 describe('Fetcher -> createRequestHeaders', () => {

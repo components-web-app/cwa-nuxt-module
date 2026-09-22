@@ -1,6 +1,7 @@
 import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
+import { defu } from 'defu'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
 import {
@@ -29,6 +30,15 @@ declare module 'nuxt/schema' {
     cwa: {
       apiUrl: string
       apiUrlBrowser: string
+    }
+  }
+  interface RuntimeConfig {
+    cwa: {
+      pageCacheWarm: {
+        concurrency: number
+        timeout: number
+        origin: string
+      }
     }
   }
 }
@@ -319,6 +329,14 @@ declare module 'vue-router' {
           mode: 'server',
         })
         addServerPlugin(resolve('./runtime/server/page-cache-plugin'))
+        nuxt.options.runtimeConfig.cwa = defu(nuxt.options.runtimeConfig.cwa, {
+          pageCacheWarm: { concurrency: 3, timeout: 30000, origin: '' },
+        })
+        addServerHandler({
+          route: '/_cwa/page-cache/warm',
+          method: 'post',
+          handler: resolve('./runtime/server/cwa-page-cache-warm.post'),
+        })
       }
 
       addServerTemplate({

@@ -1485,6 +1485,14 @@ describe('Resources', () => {
       const { resources } = createResources(undefined, mockStore)
       expect(resources.hasNewResources).toBe(true)
     })
+
+    test('getPendingResource returns the pending update staged for an iri', () => {
+      const pending = { resource: { '@id': '/_/component_positions/a', 'sortValue': 3 }, path: '/' }
+      const mockStore = { new: { byId: { '/_/component_positions/a': pending }, allIds: ['/_/component_positions/a'] } }
+      const { resources } = createResources(undefined, mockStore)
+      expect(resources.getPendingResource('/_/component_positions/a')).toBe(pending)
+      expect(resources.getPendingResource('/_/component_positions/b')).toBeUndefined()
+    })
   })
 
   describe('isPageDataResource', () => {

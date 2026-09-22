@@ -159,6 +159,39 @@ describe('API Documentation getApiDocumentation functionality', () => {
   })
 })
 
+describe('API Documentation after a failed fetch', () => {
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.apiDocumentation': {
+          docsPath: 'https://some-domain/docs.jsonld',
+        },
+      },
+    })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+  })
+
+  test('the next call fetches the API documentation again', async () => {
+    const apiDocumentation = createApiDocumentation()
+    vi.mocked(cwaFetchInstance.fetch).mockImplementationOnce(async () => {
+      throw new Error('Failed to fetch')
+    })
+
+    await expect(apiDocumentation.getApiDocumentation(true)).rejects.toThrow('Failed to fetch')
+    vi.mocked(cwaFetchInstance.fetch).mockClear()
+
+    const docs = await apiDocumentation.getApiDocumentation(true)
+    expect(cwaFetchInstance.fetch).toHaveBeenCalledTimes(3)
+    expect(docs).toEqual({
+      docs: 'response from https://some-domain/docs.jsonld',
+      entrypoint: 'response from /',
+      pageDataMetadata: 'response from /_/page_data_metadatas',
+    })
+  })
+})
+
 describe('API Documentation getComponentMetadata functionality', () => {
   beforeEach(() => {
     const pinia = createTestingPinia({ createSpy: vi.fn })

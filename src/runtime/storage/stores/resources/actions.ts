@@ -19,8 +19,10 @@ import type {
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 import { navigateTo, showError, useRequestURL, useResponseHeader } from 'nuxt/app'
+import type { NuxtApp } from 'nuxt/app'
 import { parse as parseCookie } from 'set-cookie-parser'
 import { type SetCookie, stringifySetCookie } from 'cookie'
+import { useProcess } from '#cwa/composables/process'
 
 export interface SaveResourceEvent { resource: CwaResource, isNew?: undefined | false }
 export interface SaveNewResourceEvent { resource: CwaResource, isNew: true, path: string | undefined }
@@ -47,7 +49,7 @@ export interface SetResourceResetStatusEvent {
 }
 declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent | SetResourceCompletedStatusEvent | SetResourceResetStatusEvent
 
-export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, showErrorPage?: boolean }
+export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, showErrorPage?: boolean, nuxtApp: NuxtApp }
 
 interface InitResourceEvent {
   iri: string
@@ -564,7 +566,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
       data.apiState = newApiState
     },
-    async setResourceFetchError({ iri, error, isCurrent, showErrorPage }: SetResourceFetchErrorEvent): Promise<void> {
+    async setResourceFetchError({ iri, error, isCurrent, showErrorPage, nuxtApp }: SetResourceFetchErrorEvent): Promise<void> {
       const data = initResource({
         resourcesState,
         iri,
@@ -578,31 +580,33 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
 
       if (showErrorPage && error) {
-        if (error?.setCookieHeaders && error.setCookieHeaders.length) {
-          const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
-          const currentSetCookieHeader = useResponseHeader('Set-Cookie')
-          currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
-            return stringifySetCookie(cookie as SetCookie)
-          })
-          if (import.meta.server && (error.statusCode === 401 || error.statusCode === 403)) {
-            const url = useRequestURL()
-            await navigateTo(url.pathname + url.search, { redirectCode: 302 })
-            return
+        await nuxtApp.runWithContext(async () => {
+          if (error?.setCookieHeaders && error.setCookieHeaders.length) {
+            const parsedSetCookiesHeaders = parseCookie(error.setCookieHeaders)
+            const currentSetCookieHeader = useResponseHeader('Set-Cookie')
+            currentSetCookieHeader.value = parsedSetCookiesHeaders.map(function (cookie) {
+              return stringifySetCookie(cookie as SetCookie)
+            })
+            if (useProcess().isServer && (error.statusCode === 401 || error.statusCode === 403)) {
+              const url = useRequestURL()
+              await navigateTo(url.pathname + url.search, { redirectCode: 302 })
+              return
+            }
           }
-        }
 
-        const h3Error = createError<typeof error>({
-          name: 'cwa-resource-error',
-          statusCode: error.statusCode,
-          statusMessage: error.statusMessage,
-          message: error.statusMessage,
-          cause: 'Resource store returned a bad status code on a primary fetch',
-          data: error,
+          const h3Error = createError<typeof error>({
+            name: 'cwa-resource-error',
+            statusCode: error.statusCode,
+            statusMessage: error.statusMessage,
+            message: error.statusMessage,
+            cause: 'Resource store returned a bad status code on a primary fetch',
+            data: error,
+          })
+          consola.info(h3Error)
+          // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
+          // users to see this on the error page - especially for the 404 endpoint
+          showError(h3Error)
         })
-        consola.info(h3Error)
-        // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for
-        // users to see this on the error page - especially for the 404 endpoint
-        showError(h3Error)
       }
     },
     saveResource,

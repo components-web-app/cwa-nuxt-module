@@ -386,6 +386,23 @@ This exists because a resource can shape every page without the front end ever h
 
 The key is only emitted on a page the module actually caches; a declined or unstorable render carries no key at all. Purging it drops every cached page at once and the traffic lands on SSR together, which is why the bundle's class list that triggers it should stay short, and why this is driven by a write on an already-secured resource rather than by a purge endpoint anyone could call.
 
+### Warming the page cache ([#315](https://github.com/components-web-app/cwa-nuxt-module/issues/315))
+
+Site settings has a **Warm page cache** button beside purge, calling `POST /_cwa/page-cache/warm` (`server/cwa-page-cache-warm.post.ts`, registered only when `pageCache.enabled`).
+
+- **Anonymous and server-side, by necessity.** Requests from the admin's browser would carry the auth cookie, and the edge bypasses the cache for signed-in requests, so they would store nothing.
+- **Pages come from the same list as the sitemap.** `fetchCwaPagePaths()` (`server/cwa-page-paths.ts`) is shared by the sitemap handler and the warm route. It is fetched anonymously, so ancestor-gated routes are already excluded (#234). It deliberately ignores `sitemapEnabled`.
+- **Each page is requested at the `apiUrl` origin** (the in-cluster Caddy the SSR API calls already reach) **with `Host` set to the admin's public host**, so the response is stored under the same key visitors hit, and the request never leaves the cluster. Page requests carry no cookie or authorization, forward the admin's `accept` / `accept-encoding`, and don't follow redirects; only a 200 counts as warmed.
+- **Admin gate:** the incoming cookie is forwarded to the API's `/me`, which verifies the JWT, and `ROLE_ADMIN` or `ROLE_SUPER_ADMIN` is required. `server-middleware.ts` only decodes the JWT without verifying it, which is too weak to guard a route that fans one request out into many renders.
+- **Single-flight per pod** (a concurrent request gets 409). Limits live in private `runtimeConfig.cwa.pageCacheWarm` (`concurrency` 3 with a hard ceiling of 10, `timeout` 30s per page, `origin`), so each environment can override them with `NUXT_CWA_PAGE_CACHE_WARM_*`.
+- **Progress streams as NDJSON** on the same POST (`start`, one `page` line per page, then `done`), with `application/x-ndjson` and `X-Accel-Buffering: no`. A client disconnect aborts the warm. **Streaming is proven in tests but not yet on a deployment:** whether Caddy and the ingress flush each line promptly still needs checking. The fallback if they don't is a synchronous JSON summary with a page cap (not built).
+- **Local dev:** the playground's `apiUrl` is `https://localhost`, so a local warm fails its certificate check against the self-signed certificate unless `origin` is set to a plain `http://` URL.
+- **Deploys don't use it.** The template's CI warm step (components-web-app#80) stays separate: it has no admin credential, and it also measures time to first byte through the ingress.
+
+**Trap: Node's global `fetch` (undici) silently replaces a `Host` header you set**, so the warm would have stored every page under the wrong key. A real-server test caught it (`expected '127.0.0.1:56720' to be 'www.example.com'`). Anything that needs a specific `Host` must use `node:http` / `node:https`.
+
+**Trap: in streaming tests, page timeouts must outlast the test's own timeout.** A test that held one response open with a 1s page timeout failed to catch fully buffered output, because the held request timed out and flushed everything.
+
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
 
 ---
@@ -704,6 +721,30 @@ Fixed 2026-07-16. `CwaFetch`'s ofetch `onRequest` interceptor called `useRequest
 
 ---
 
+## Bug: under concurrent SSR, one request's error status landed on another's response ✅ Fixed ([#313](https://github.com/components-web-app/cwa-nuxt-module/issues/313), [#314](https://github.com/components-web-app/cwa-nuxt-module/issues/314))
+
+Under concurrent server renders, a 404 for one request could be set on a **different** request's response: a real page went out with a 404 status and its correct content, and the non-existent page got a 200. The page cache could then store the wrong status. Reproduced with a built playground under load: 16–20 of 20 concurrent rounds wrong, always correct when run sequentially.
+
+**The mechanism — worse than #263.** Our route middleware is `unctx`-transformed, so after `await fetchRoute` its `__restore()` sets unctx's **module-level** `currentInstance` to its own app and **never clears it**. Any later implicit-context composable in **untransformed** code — store actions, `FetchStatusManager`, `Auth` — then resolves **whichever request resumed last**. #263 was this mechanism with nothing leaked, so it threw `NUXT_E1001`; here a concurrent request has leaked its app, so it silently resolves the wrong one.
+
+**Two sites, and they must be fixed together.**
+- `setResourceFetchError` (`storage/stores/resources/actions.ts`) called `showError`, `useResponseHeader('Set-Cookie')`, `useRequestURL()` and `navigateTo(…, 302)`.
+- The primary-fetch **success** path in `FetchStatusManager` called `useError()` / `clearError()`, so one request's success could clear another's error page.
+- Fixing only the first resets the context, and the second's `useError()` then throws, turning real pages into **500s**.
+
+**The fix, same pattern as #263:** `Cwa`'s constructor captures `useNuxtApp()` while the context is live (one `Cwa` per request) and passes it to `FetchStatusManager`, which hands it to the action through `SetResourceFetchErrorEvent.nuxtApp`. Both sites run inside `nuxtApp.runWithContext(...)`. The app lives **only** on per-request instances — never in store state (it is serialised into the payload) and never at module scope. The same fix closes the unconfirmed variant where one visitor's response received another's `Set-Cookie` or 302. **#314** applies it to `Auth.clearSession`, which read `_processingMiddleware`, `useRoute()` and `useRouter()` after an `await`: `Auth` captures its own app in its constructor, and `runWithContext` returns a Promise on the server, so the existing try/catch stays **inside** the callback and results are written to locals.
+
+**`runWithContext` is fine in a store action.** #263 rejected it only inside an ofetch **interceptor**, where it forces the interceptor async; an action is already async and the callback runs synchronously.
+
+**Testing — three traps:**
+- **vitest takes Nuxt's client branch**, where `runWithContext` calls `set()` and throws `Context conflict` whenever another app is current. Regression tests need a stand-in with **server semantics**: `(fn) => getContext(id).callAsync(app, fn)`, with the other request leaking its context via `executeAsync` + `__restore` (`test/integration/ssr-request-isolation.spec.ts`).
+- `finishFetchShowError` is called **twice** in `finishFetchResource`, so a `mockImplementationOnce` on it is consumed before the success-path check. Use `mockReturnValue`.
+- Unconsumed `mockImplementationOnce` queues on `showError` leak across describes in `actions.spec.ts`; `vi.restoreAllMocks()` in `beforeEach` clears them.
+
+**The only test that exercises the real renderer is `pnpm run test:e2e`**, kept out of `pnpm run test` because it builds the playground. It serves a stub API (`test/e2e/stub-api.mjs`), fires a real page, a 404 and a non-CWA page concurrently for 20 rounds, and asserts each response carries its own status; a sequential control run proves the setup. Pre-fix it failed 8/20; fixed it passes 0/20. Run it after any change to the SSR fetch or error path.
+
+---
+
 ## Bug: dynamic position loses its `component` after an SSR load of a nested page ✅ Fixed ([#261](https://github.com/components-web-app/cwa-nuxt-module/issues/261))
 
 **Reported from:** SRNTE (a nested static page whose parent is a data page using the dynamic page template). Fixed 2026-07-16.
@@ -995,6 +1036,61 @@ The module fix above means any API-driven redirect Route resource is robust with
 
 ### Follow-up (separate) — [#245](https://github.com/components-web-app/cwa-nuxt-module/issues/245) ✅ Resolved — no bug
 The original `route-middleware.ts:64` todo — "redirects do not work if clicking a redirect route quickly multiple times" — was reproduced against the #246 harness and **does not happen**: rapid repeat clicks always redirect and land on the target. The todo is deleted and #245 closed; static tracing's read that the redirect *resolution* logic is correct was right, and the suspected `waitForMiddleware` / `_processingMiddleware` race was disproved (a redirect landing mid-navigation is deferred, then fired). See the #245 entry under `## Open GitHub Issues` for the mechanisms and the real-timer testing gotcha.
+
+---
+
+## A component still being added takes changes as merge-patch ([#319](https://github.com/components-web-app/cwa-nuxt-module/issues/319))
+
+While a component is being added (`_metadata.persisted === false`), `ResourcesManager.updateResource` applies a change to the local copy instead of PATCHing. Its `mergeWith` customiser used to **join arrays** (`b.concat(a)`), so selecting a second style stored the first twice, deselecting never removed anything, and choosing Default (`null`) threw. It now mirrors the API's merge-patch: an array or `null` replaces the stored value, and objects merge field by field. Every caller already sends the complete array, so nothing relied on joining.
+
+---
+
+## The page query is only forwarded to Collection fetches ([#318](https://github.com/components-web-app/cwa-nuxt-module/issues/318))
+
+`Fetcher.fetch()` used to copy the **whole page query** onto every API request, so any `?utm_source=`, `?fbclid=` or cache-buster made every route, manifest, layout, page, group, position and component fetch for that render a distinct shared-cache key, and a valueless `?k` was sent as `k=null` with values unencoded.
+
+Now the page query is added only to **Collection component** fetches (`{prefix}/component/collections/…`) — the only API response it changes (`CollectionApiEventListener` reads the main request's query to filter and paginate). Every other query the module sends is set on the path itself (`?published=true|false` from `useCwaResourceEndpoint`, `ResourcesManager`, and the fetcher's `publishedResource` fetch), and a path's own query is kept as it is. On a Collection, a path parameter wins over a page parameter of the same name; values are serialised with `URLSearchParams`, so a valueless parameter becomes `k=` and values are encoded. `noQuery` still skips it.
+
+If the API ever reads the page query for another resource type, add that type to `consumesPageQuery` in `fetcher.ts`.
+
+---
+
+## `CwaComponentGroup` resolves `location` to the published IRI ([#317](https://github.com/components-web-app/cwa-nuxt-module/issues/317))
+
+A nested group's `location` may be the component's draft `iri` or its `publishedIri`; both now resolve to the same group. `ComponentGroup.vue` derives `resolvedLocation = findPublishedComponentIri(location) ?? location` and uses it for the group reference, the location lookup, the not-a-current-resource alert, the disabled check and the synchroniser. Before, passing the draft `iri` looked up a different group and the synchroniser could create a stray empty group against the draft.
+
+`findPublishedComponentIri` treats a non-publishable resource as published and returns it unchanged, and returns `undefined` for a never-published draft, so pages, layouts and never-published drafts keep their own IRI. `hasLocation` (#276) and `isNewPosition` still read the raw prop. The getter itself had no tests; `getters.spec.ts` now pins its behaviour.
+
+---
+
+## Reordering positions in a group ([#316](https://github.com/components-web-app/cwa-nuxt-module/issues/316))
+
+Positions could land in the wrong order after reordering. From consistent data a single move was always correct; it went wrong when the local copy had drifted: duplicate `sortValue`s, a failed PATCH that was still mirrored locally, another editor's pending updates, and two moves inside one debounce window (only the last was sent).
+
+`ComponentGroup.Util.Positions.ts` now:
+
+- **One serialised queue per group** — one 1s debounce, each flush chained behind the previous one. Display numbers are cleared after every flush (including one that sends nothing) unless another reorder arrived during it.
+- **Base order** is the local `sortValue` order at flush time, **target order** the display order; the positions moved are those outside the longest increasing subsequence, preferring the ones the editor moved. A single move is still **1 PATCH**, so Mercure volume is unchanged.
+- **The local mirror is an exact port of the API's by-value shift** (`ComponentPositionSortValueHelper::calculateSortValue`, move branch). Do not go back to ±1 by index — it diverges as soon as values have gaps.
+- **Duplicates are repaired** when detected: target values are computed in `sortValue` order and only positions whose value must change are PATCHed, highest first.
+- **A failed PATCH is never mirrored**; the remaining moves and the queued debounce are dropped and display numbers cleared.
+- **Pending (Mercure-staged) updates contribute only `sortValue`**, read via `Resources.getPendingResource(iri)`; everything else is re-staged. When another editor has reordered the group, the order this editor sees wins.
+- An empty or non-numeric Order-field `location` is ignored.
+
+**Trap:** storing a resource without `isNew` clears its pending update, so pending updates must be read *before* display numbers are stored on the reorder event.
+
+Tests: the "group reorder queue against the server" describe in `ComponentGroup.Util.Positions.spec.ts` runs the real stores against a ported server-move helper.
+
+---
+
+## A failed API docs fetch no longer leaves the Add component dialog spinning ([#322](https://github.com/components-web-app/cwa-nuxt-module/issues/322))
+
+Found through components-web-app#83. There, SSR stored an `http://` `docsPath`, so the browser blocked the docs fetch as mixed content. Any failed docs fetch had the same effect: the dialog stayed on its spinner until a full page reload.
+
+- `ApiDocumentation.fetchAllApiDocumentation` clears `apiDocPromise` in `.finally()`. It used to be cleared only on success, so every later call, including `refresh = true`, rethrew the first failure.
+- `AddComponentDialog` sets its loading state on every open. A failure now shows "Could not load the available components" and logs the cause. Reopening the dialog is the retry.
+
+Deliberately out of scope: a timeout on the wait for `docsPath`, resolving `docsPath` against `apiUrlBrowser`, and requesting `''` instead of `'/'` for the entrypoint (the API answers `'/'` with a trailing-slash 301).
 
 ---
 

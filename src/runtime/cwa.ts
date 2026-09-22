@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { useCookie, useRuntimeConfig } from '#imports'
+import { useCookie, useNuxtApp, useRuntimeConfig } from '#imports'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { CwaModuleOptions, CwaResourcesMeta } from '#cwa/types'
 import { Storage } from './storage/storage'
@@ -72,7 +72,7 @@ export default class Cwa {
     this.siteConfig = new SiteConfig(this.cwaFetch, this.storage.stores.siteConfig, this.options.siteConfig)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
-    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit)
+    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit, useNuxtApp())
 
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources)
 

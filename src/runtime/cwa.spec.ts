@@ -163,7 +163,9 @@ vi.mock('./admin/navigation-guard', function () {
 
 const storeName = 'dummystore'
 const $router = vi.fn()
+const requestNuxtApp = { name: 'REQUEST_NUXT_APP' }
 function createCwa(opts: CwaModuleOptions = { storeName }) {
+  vi.spyOn(nuxtApp, 'useNuxtApp').mockReturnValue(requestNuxtApp as never)
   vi.spyOn(nuxtApp, 'useRuntimeConfig').mockImplementation(() => ({
     public: {
       cwa: {
@@ -250,7 +252,8 @@ describe('Cwa class test', () => {
   test('FetchStatusManager is initialised', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(FetchStatusManager).toBeCalledWith(stores.fetcher, Mercure.mock.results[0].value, ApiDocumentation.mock.results[0].value, stores.resources, undefined)
+    expect(FetchStatusManager).toBeCalledWith(stores.fetcher, Mercure.mock.results[0].value, ApiDocumentation.mock.results[0].value, stores.resources, undefined, requestNuxtApp)
+    expect(nuxtApp.useNuxtApp).toHaveBeenCalled()
   })
 
   test('Fetcher is initialised', () => {

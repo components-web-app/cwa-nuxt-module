@@ -182,7 +182,7 @@ export default class Forms {
         body: bracketToNested(body),
       })
       if (response?.['@id']) {
-        this._resourcesStore.saveResource({ resource: response })
+        this._resourcesStore.saveResource({ resource: this.normalizeFormResponseId(response) })
       }
       return { success: true }
     }

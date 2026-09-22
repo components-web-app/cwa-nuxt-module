@@ -189,13 +189,23 @@
               <p class="cwa:text-sm cwa:text-stone-400">
                 Visitors are served a cached copy of each page. Purging drops every cached page at once, and each one is rebuilt the next time it is visited. No content is lost. You do not need to do this after ordinary edits, because those refresh the cache automatically.
               </p>
-              <div>
+              <p class="cwa:text-sm cwa:text-stone-400">
+                Warming loads every public page into the cache ahead of visitors, for example after a purge.
+              </p>
+              <div class="cwa:flex cwa:flex-wrap cwa:gap-4">
                 <CwaUiFormButton
                   :disabled="purgingPageCache"
                   type="button"
                   @click="purgePageCache"
                 >
                   {{ purgingPageCache ? 'Purging…' : 'Purge page cache' }}
+                </CwaUiFormButton>
+                <CwaUiFormButton
+                  :disabled="warmingPageCache"
+                  type="button"
+                  @click="warmPageCache"
+                >
+                  {{ warmPageCacheLabel }}
                 </CwaUiFormButton>
               </div>
               <p
@@ -209,6 +219,13 @@
                 class="cwa:text-sm cwa:text-danger cwa:font-bold"
               >
                 {{ purgePageCacheResult.message }}
+              </p>
+              <p
+                v-if="warmPageCacheResult"
+                class="cwa:text-sm cwa:font-bold"
+                :class="{ 'cwa:text-danger': !warmPageCacheResult.success }"
+              >
+                {{ warmPageCacheResult.message }}
               </p>
             </div>
           </div>
@@ -280,6 +297,8 @@ import CwaCode from '#cwa/templates/components/core/admin/CwaCode.vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { resolvePageCacheOptions } from '#cwa/api/http-cache'
+import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
+import type { PageCacheWarmFailure, PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 import { options } from '#build/cwa-options'
 
 const $cwa = useCwa()
@@ -444,6 +463,75 @@ async function purgePageCache() {
   }
   finally {
     purgingPageCache.value = false
+  }
+}
+
+const warmingPageCache = ref(false)
+const warmPageCacheProgress = ref<PageCacheWarmProgress>()
+const warmPageCacheResult = ref<{ success: boolean, message: string }>()
+
+const warmPageCacheLabel = computed(() => {
+  if (!warmingPageCache.value) {
+    return 'Warm page cache'
+  }
+  const progress = warmPageCacheProgress.value
+  return progress ? `Warming… ${progress.completed} of ${progress.total}` : 'Warming…'
+})
+
+function describeWarmFailure(failure: PageCacheWarmFailure) {
+  if (failure.error === 'timeout') {
+    return `${failure.path} (timed out)`
+  }
+  if (failure.error === 'network') {
+    return `${failure.path} (no response)`
+  }
+  return `${failure.path} (${failure.status})`
+}
+
+function warmPageCacheSummaryResult(summary: PageCacheWarmSummary) {
+  if (!summary.failed.length) {
+    return { success: true, message: `The page cache has been warmed. All ${summary.total} pages were loaded.` }
+  }
+  return { success: false, message: `${summary.total} pages were checked, but ${summary.failed.length} could not be warmed: ${summary.failed.map(describeWarmFailure).join(', ')}.` }
+}
+
+function warmPageCacheFailureMessage(error: unknown) {
+  if (error instanceof PageCacheWarmInterruptedError) {
+    return `Warming stopped before it finished (${error.progress.completed} of ${error.progress.total} pages). Please try again.`
+  }
+  const statusCode = (error as { statusCode?: number } | undefined)?.statusCode
+  if (statusCode === 401 || statusCode === 403) {
+    return 'The page cache could not be warmed: your account does not have permission to do this.'
+  }
+  if (statusCode === 409) {
+    return 'The page cache is already being warmed. Please wait for it to finish.'
+  }
+  return `The page cache could not be warmed (${statusCode || 'network error'}). Please try again.`
+}
+
+async function warmPageCache() {
+  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const { isCanceled } = await dialog.reveal({
+    title: 'Warm the page cache?',
+    content: '<p>Every public page will be loaded and stored in the page cache, so visitors get fast responses straight away. Pages are loaded a few at a time, which can take a few minutes on a large site. Keep this page open until it finishes.</p>',
+  })
+  if (isCanceled) {
+    return
+  }
+  warmPageCacheResult.value = undefined
+  warmPageCacheProgress.value = undefined
+  warmingPageCache.value = true
+  try {
+    const summary = await $cwa.siteConfig.warmPageCache((progress) => {
+      warmPageCacheProgress.value = progress
+    })
+    warmPageCacheResult.value = warmPageCacheSummaryResult(summary)
+  }
+  catch (error) {
+    warmPageCacheResult.value = { success: false, message: warmPageCacheFailureMessage(error) }
+  }
+  finally {
+    warmingPageCache.value = false
   }
 }
 

@@ -9,6 +9,9 @@
       v-if="loadingComponents"
       :show="true"
     />
+    <CwaUiAlertWarning v-else-if="loadError">
+      Could not load the available components
+    </CwaUiAlertWarning>
     <template v-else-if="displayData">
       <div class="cwa:flex cwa:gap-x-4">
         <div class="cwa:flex cwa:flex-col cwa:w-4/12 cwa:gap-y-3 cwa:min-h-64">
@@ -62,6 +65,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { consola as logger } from 'consola'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
 import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
@@ -100,6 +104,7 @@ const $cwa = useCwa()
 const { getTypeOptions, getPropertyOptions } = useDynamicPositionSelectOptions($cwa)
 
 const loadingComponents = ref(true)
+const loadError = ref(false)
 // We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
 const displayData = ref<DisplayDataI>()
 const selectedComponent = ref<string | undefined>()
@@ -288,7 +293,18 @@ watch(open, async (isOpen: boolean) => {
     return
   }
   selectComponent()
-  displayData.value = await createDisplayData()
-  loadingComponents.value = false
+  loadingComponents.value = true
+  loadError.value = false
+  try {
+    displayData.value = await createDisplayData()
+  }
+  catch (error) {
+    displayData.value = undefined
+    loadError.value = true
+    logger.error('[CWA] Could not load the available components', error)
+  }
+  finally {
+    loadingComponents.value = false
+  }
 })
 </script>

@@ -4,11 +4,13 @@ import { computed, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import SettingsPage from './settings.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 
-const { mockOptions, mockReveal, mockPurgePageCache } = vi.hoisted(() => ({
+const { mockOptions, mockReveal, mockPurgePageCache, mockWarmPageCache } = vi.hoisted(() => ({
   mockOptions: { pageCache: undefined as undefined | { enabled?: boolean } },
   mockReveal: vi.fn(),
   mockPurgePageCache: vi.fn(),
+  mockWarmPageCache: vi.fn(),
 }))
 
 vi.mock('#build/cwa-options', () => ({
@@ -45,6 +47,7 @@ async function setup() {
       totalRequests: computed(() => 0),
       apiState: { hasError: ref(false) },
       purgePageCache: mockPurgePageCache,
+      warmPageCache: mockWarmPageCache,
     },
     getApiDocumentation: vi.fn().mockResolvedValue(undefined),
     currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
@@ -159,5 +162,152 @@ describe('Site settings page cache purge', () => {
     const wrapper = await setup()
     await clickPurge(wrapper)
     expect(wrapper.text()).toContain('The page cache could not be purged (network error). Please try again.')
+  })
+})
+
+function warmButton(wrapper: Wrapper) {
+  return wrapper.findAll('button').find(b => b.text() === 'Warm page cache' || b.text().startsWith('Warming…'))
+}
+
+async function clickWarm(wrapper: Wrapper) {
+  await warmButton(wrapper)!.trigger('click')
+  await flushPromises()
+}
+
+describe('Site settings page cache warm', () => {
+  beforeEach(() => {
+    mockOptions.pageCache = undefined
+    mockReveal.mockResolvedValue({ isCanceled: false })
+    mockWarmPageCache.mockResolvedValue({ total: 36, warmed: 36, failed: [] })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    mockReveal.mockReset()
+    mockWarmPageCache.mockReset()
+  })
+
+  test('offers warming beside purge when page caching is on', async () => {
+    const wrapper = await setup()
+    expect(warmButton(wrapper)!.text()).toBe('Warm page cache')
+    expect(purgeButton(wrapper)).toBeDefined()
+  })
+
+  test('does not offer warming when page caching is disabled', async () => {
+    mockOptions.pageCache = { enabled: false }
+    const wrapper = await setup()
+    expect(warmButton(wrapper)).toBeUndefined()
+  })
+
+  test('explains warming in the page cache section, leaving the purge explanation as it was', async () => {
+    const wrapper = await setup()
+    expect(wrapper.text()).toContain('Warming loads every public page into the cache ahead of visitors, for example after a purge.')
+    expect(wrapper.text()).toContain('Visitors are served a cached copy of each page. Purging drops every cached page at once, and each one is rebuilt the next time it is visited. No content is lost. You do not need to do this after ordinary edits, because those refresh the cache automatically.')
+  })
+
+  test('confirms before warming with the approved wording', async () => {
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(mockReveal).toHaveBeenCalledWith({
+      title: 'Warm the page cache?',
+      content: '<p>Every public page will be loaded and stored in the page cache, so visitors get fast responses straight away. Pages are loaded a few at a time, which can take a few minutes on a large site. Keep this page open until it finishes.</p>',
+    })
+  })
+
+  test('does not warm when the confirmation is cancelled', async () => {
+    mockReveal.mockResolvedValue({ isCanceled: true })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(mockWarmPageCache).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('The page cache has been warmed')
+  })
+
+  test('counts progress up on the button while warming', async () => {
+    let onProgress!: (progress: { completed: number, total: number }) => void
+    let finish!: () => void
+    mockWarmPageCache.mockImplementation((callback) => {
+      onProgress = callback
+      return new Promise((resolve) => {
+        finish = () => resolve({ total: 36, warmed: 36, failed: [] })
+      })
+    })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(warmButton(wrapper)!.text()).toBe('Warming…')
+    expect(warmButton(wrapper)!.attributes('disabled')).toBeDefined()
+
+    onProgress({ completed: 0, total: 36 })
+    await flushPromises()
+    expect(warmButton(wrapper)!.text()).toBe('Warming… 0 of 36')
+
+    onProgress({ completed: 12, total: 36 })
+    await flushPromises()
+    expect(warmButton(wrapper)!.text()).toBe('Warming… 12 of 36')
+
+    finish()
+    await flushPromises()
+    expect(warmButton(wrapper)!.text()).toBe('Warm page cache')
+    expect(warmButton(wrapper)!.attributes('disabled')).toBeUndefined()
+  })
+
+  test('reports a warm where every page loaded', async () => {
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(mockWarmPageCache).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('The page cache has been warmed. All 36 pages were loaded.')
+  })
+
+  test('lists the pages that could not be warmed', async () => {
+    mockWarmPageCache.mockResolvedValue({
+      total: 36,
+      warmed: 34,
+      failed: [{ path: '/a', status: 404 }, { path: '/b', status: 0, error: 'timeout' }],
+    })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('36 pages were checked, but 2 could not be warmed: /a (404), /b (timed out).')
+    expect(wrapper.text()).not.toContain('The page cache has been warmed')
+  })
+
+  test('describes a page with no response', async () => {
+    mockWarmPageCache.mockResolvedValue({ total: 2, warmed: 1, failed: [{ path: '/c', status: 0, error: 'network' }] })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /c (no response).')
+  })
+
+  test('explains a warm refused for lack of permission', async () => {
+    mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Forbidden'), { statusCode: 403 }))
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('The page cache could not be warmed: your account does not have permission to do this.')
+  })
+
+  test('explains that a warm is already running', async () => {
+    mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Conflict'), { statusCode: 409 }))
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('The page cache is already being warmed. Please wait for it to finish.')
+  })
+
+  test('explains a warm that stopped part way through', async () => {
+    mockWarmPageCache.mockRejectedValue(new PageCacheWarmInterruptedError({ completed: 12, total: 36 }))
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('Warming stopped before it finished (12 of 36 pages). Please try again.')
+  })
+
+  test('explains any other failed warm with its status code', async () => {
+    mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Server Error'), { statusCode: 500 }))
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('The page cache could not be warmed (500). Please try again.')
+  })
+
+  test('explains a failed warm with no response as a network error', async () => {
+    mockWarmPageCache.mockRejectedValue(new TypeError('Failed to fetch'))
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('The page cache could not be warmed (network error). Please try again.')
   })
 })

@@ -35,7 +35,7 @@
     <!--cwa-start-->
     <div>
       <CwaUiAlertWarning>
-        The location provided `{{ location }}` is not a current resource
+        The location provided `{{ resolvedLocation }}` is not a current resource
       </CwaUiAlertWarning>
     </div>
     <!--cwa-end-->
@@ -46,7 +46,7 @@
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"
-        :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, location)"
+        :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, resolvedLocation)"
       />
     </div>
     <!--cwa-end-->
@@ -97,17 +97,24 @@ const emit = defineEmits<{
   componentsUpdated: [pairs: CwaComponentGroupPair[]]
 }>()
 
-const locationResource = computed(() => {
+const resolvedLocation = computed(() => {
   if (props.location === undefined) {
     return
   }
-  return $cwa.resources.getResource(props.location).value
+  return $cwa.resources.findPublishedComponentIri(props.location).value ?? props.location
+})
+
+const locationResource = computed(() => {
+  if (resolvedLocation.value === undefined) {
+    return
+  }
+  return $cwa.resources.getResource(resolvedLocation.value).value
 })
 
 const fullReference = computed(() => {
   // do not use reference as configured by the user as this can change, so use IRI as reference here
   // const locationResourceReference = locationResource.value.data?.reference
-  return `${props.reference}_${props.locationReference || props.location}`
+  return `${props.reference}_${props.locationReference || resolvedLocation.value}`
 })
 
 const resource = computed(() => {
@@ -164,7 +171,7 @@ onMounted(() => {
   if (isNewPosition.value) {
     return
   }
-  watch(() => props.location, (location) => {
+  watch(resolvedLocation, (location) => {
     if (syncWatcherStarted || location === undefined) {
       return
     }

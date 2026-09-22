@@ -14,7 +14,13 @@ const nuxtMockState = vi.hoisted(() => ({
   nuxtAppThrows: false,
   route: { meta: {} } as any,
   routerReplace: vi.fn(),
+  contextApp: undefined as any,
+  calls: [] as { name: string, inContext: boolean }[],
 }))
+
+function recordCall(name: string) {
+  nuxtMockState.calls.push({ name, inContext: nuxtMockState.contextApp !== undefined })
+}
 
 vi.mock('#app/nuxt', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#app/nuxt')>()
@@ -24,10 +30,11 @@ vi.mock('#app/nuxt', async (importOriginal) => {
       if (!nuxtMockState.enabled) {
         return (actual.useNuxtApp as any)(...args)
       }
+      recordCall('useNuxtApp')
       if (nuxtMockState.nuxtAppThrows) {
         throw new Error('useNuxtApp unavailable')
       }
-      return nuxtMockState.nuxtApp
+      return nuxtMockState.contextApp ?? nuxtMockState.nuxtApp
     },
   }
 })
@@ -36,8 +43,20 @@ vi.mock('#app/composables/router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#app/composables/router')>()
   return {
     ...actual,
-    useRoute: (...args: any[]) => (nuxtMockState.enabled ? nuxtMockState.route : (actual.useRoute as any)(...args)),
-    useRouter: (...args: any[]) => (nuxtMockState.enabled ? { replace: nuxtMockState.routerReplace } : (actual.useRouter as any)(...args)),
+    useRoute: (...args: any[]) => {
+      if (!nuxtMockState.enabled) {
+        return (actual.useRoute as any)(...args)
+      }
+      recordCall('useRoute')
+      return nuxtMockState.route
+    },
+    useRouter: (...args: any[]) => {
+      if (!nuxtMockState.enabled) {
+        return (actual.useRouter as any)(...args)
+      }
+      recordCall('useRouter')
+      return { replace: nuxtMockState.routerReplace }
+    },
   }
 })
 
@@ -47,8 +66,33 @@ afterEach(() => {
   nuxtMockState.nuxtAppThrows = false
   nuxtMockState.route = { meta: {} }
   nuxtMockState.routerReplace = vi.fn()
+  nuxtMockState.contextApp = undefined
+  nuxtMockState.calls = []
   vi.restoreAllMocks()
 })
+
+function createCapturedApp(processingMiddleware: boolean) {
+  const app: any = { _processingMiddleware: processingMiddleware }
+  app.runWithContext = vi.fn((fn: () => unknown) => {
+    const previous = nuxtMockState.contextApp
+    nuxtMockState.contextApp = app
+    try {
+      return fn()
+    }
+    finally {
+      nuxtMockState.contextApp = previous
+    }
+  })
+  return app
+}
+
+function createAuthWithCapturedApp(capturedApp: any, otherApp: any) {
+  nuxtMockState.enabled = true
+  nuxtMockState.nuxtApp = capturedApp
+  const created = createAuth()
+  nuxtMockState.nuxtApp = otherApp
+  return created
+}
 
 function createAuth() {
   const mockUserData = {
@@ -853,6 +897,56 @@ describe('Auth', () => {
       expect(resourcesStore.useStore().clearResources).toHaveBeenCalled()
       expect(replaceSpy).toHaveBeenCalledWith('/')
       expect(fetcher.fetchRoute).not.toHaveBeenCalled()
+    })
+
+    test('resolves useNuxtApp, useRoute and useRouter through the captured app', async () => {
+      const capturedApp = createCapturedApp(false)
+      const { auth, fetcher } = createAuthWithCapturedApp(capturedApp, { _processingMiddleware: false })
+      nuxtMockState.route = { meta: { cwa: { admin: true } } }
+      nuxtMockState.calls = []
+
+      await auth.clearSession()
+
+      expect(capturedApp.runWithContext).toHaveBeenCalled()
+      expect(nuxtMockState.calls.map(call => call.name)).toEqual(['useNuxtApp', 'useRoute', 'useRouter'])
+      expect(nuxtMockState.calls.every(call => call.inContext)).toBe(true)
+      expect(nuxtMockState.routerReplace).toHaveBeenCalledWith('/')
+      expect(fetcher.fetchRoute).not.toHaveBeenCalled()
+    })
+
+    test('resolves the route to re-fetch through the captured app', async () => {
+      const capturedApp = createCapturedApp(false)
+      const { auth, fetcher } = createAuthWithCapturedApp(capturedApp, { _processingMiddleware: false })
+      nuxtMockState.calls = []
+
+      await auth.clearSession()
+
+      expect(capturedApp.runWithContext).toHaveBeenCalled()
+      expect(nuxtMockState.calls.map(call => call.name)).toEqual(['useNuxtApp', 'useRoute'])
+      expect(nuxtMockState.calls.every(call => call.inContext)).toBe(true)
+      expect(fetcher.fetchRoute).toHaveBeenCalledWith(nuxtMockState.route)
+    })
+
+    test('returns early when the captured app is processing middleware and another app is not', async () => {
+      const capturedApp = createCapturedApp(true)
+      const { auth, mercure, fetcher } = createAuthWithCapturedApp(capturedApp, { _processingMiddleware: false })
+
+      await auth.clearSession()
+
+      expect(mercure.init).not.toHaveBeenCalled()
+      expect(fetcher.fetchRoute).not.toHaveBeenCalled()
+      expect(capturedApp.runWithContext).toHaveBeenCalled()
+    })
+
+    test('carries on when another app is processing middleware and the captured app is not', async () => {
+      const capturedApp = createCapturedApp(false)
+      const { auth, mercure, fetcher } = createAuthWithCapturedApp(capturedApp, { _processingMiddleware: true })
+
+      await auth.clearSession()
+
+      expect(mercure.init).toHaveBeenCalledWith(true)
+      expect(fetcher.fetchRoute).toHaveBeenCalledWith(nuxtMockState.route)
+      expect(capturedApp.runWithContext).toHaveBeenCalled()
     })
   })
 

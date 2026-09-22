@@ -176,6 +176,7 @@ export default class ApiDocumentation {
         },
       })
       logger.debug('New API Documentation Saved')
+    }).finally(() => {
       this.apiDocPromise = undefined
     })
     await this.apiDocPromise
