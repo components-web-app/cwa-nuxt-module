@@ -15,8 +15,9 @@ vi.mock('vue', async () => {
 
 vi.mock('vuejs-confirm-dialog', () => ({ createConfirmDialog: vi.fn() }))
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+const mockComponentFocusRedraw = vi.hoisted(() => vi.fn())
 vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
-  default: { name: 'ComponentFocus', render: () => null },
+  default: { name: 'ComponentFocus', render: () => null, methods: { redraw: mockComponentFocusRedraw } },
 }))
 
 const mockVueAppContainer = vi.hoisted(() => ({ value: null as null | HTMLElement }))
@@ -979,24 +980,24 @@ describe('Resource Manager', () => {
       document.body.appendChild(mockVueAppContainer.value)
     })
 
-    test('returns early without mounting when there is no current iri / stack item', () => {
+    test('returns early without mounting when there is no current iri / stack item', async () => {
       const manager = createManagerForFocus()
       manager.showManager.value = false
       const removeSpy = vi.spyOn(manager as any, 'removeFocusComponent')
 
-      ;(manager as any).createFocusComponent()
+      await (manager as any).createFocusComponent()
 
       expect(removeSpy).toHaveBeenCalledOnce()
       expect((manager as any).focusComponent).toBeUndefined()
       expect((manager as any).focusWrapper).toBeUndefined()
     })
 
-    test('mounts a focus component into the vue app container when an iri and stack item exist', () => {
+    test('mounts a focus component into the vue app container when an iri and stack item exist', async () => {
       const manager = createManagerForFocus()
       manager.showManager.value = true
       ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([]), childIris: ref([]) }]
 
-      ;(manager as any).createFocusComponent()
+      await (manager as any).createFocusComponent()
 
       expect((manager as any).focusComponent).toBeDefined()
       expect((manager as any).focusProxy).toBeDefined()
@@ -1004,6 +1005,33 @@ describe('Resource Manager', () => {
       expect(wrapper).toBeDefined()
       expect(wrapper.className).toContain('cwa:focus-wrapper')
       expect(mockVueAppContainer.value!.contains(wrapper)).toBe(true)
+
+      ;(manager as any).removeFocusComponent()
+    })
+
+    test('mounts nothing when the focus is removed while the component is still loading', async () => {
+      const manager = createManagerForFocus()
+      manager.showManager.value = true
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([]), childIris: ref([]) }]
+
+      const pending = (manager as any).createFocusComponent()
+      ;(manager as any).removeFocusComponent()
+      await pending
+
+      expect((manager as any).focusComponent).toBeUndefined()
+      expect((manager as any).focusWrapper).toBeUndefined()
+      expect(mockVueAppContainer.value!.children).toHaveLength(0)
+    })
+
+    test('mounts the component itself so redrawFocus reaches its exposed redraw', async () => {
+      const manager = createManagerForFocus()
+      manager.showManager.value = true
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([]), childIris: ref([]) }]
+
+      await (manager as any).createFocusComponent()
+      manager.redrawFocus()
+
+      expect(mockComponentFocusRedraw).toHaveBeenCalledOnce()
 
       ;(manager as any).removeFocusComponent()
     })

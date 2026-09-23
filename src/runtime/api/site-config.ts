@@ -1,6 +1,5 @@
 import { updateSiteConfig } from '#imports'
 import { computed, ref } from 'vue'
-import { XMLValidator } from 'fast-xml-parser'
 import { consola } from 'consola'
 import type {
   CwaSiteConfigStoreInterface,
@@ -56,12 +55,13 @@ export default class SiteConfig {
     return resolvedConfig
   }
 
-  public saveConfig(newConfig: Partial<SiteConfigParams>) {
+  public async saveConfig(newConfig: Partial<SiteConfigParams>) {
     const returnData = {
       totalConfigsChanged: 0,
     }
 
     if (newConfig.sitemapXml) {
+      const { XMLValidator } = await import('fast-xml-parser')
       const validationResult = XMLValidator.validate(newConfig.sitemapXml)
       if (validationResult !== true) {
         consola.error(validationResult)

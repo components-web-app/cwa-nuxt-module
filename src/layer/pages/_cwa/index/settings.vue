@@ -612,7 +612,7 @@ async function processChanges() {
     consola.error(formErrors.value)
     return
   }
-  const { totalConfigsChanged } = $cwa.siteConfig.saveConfig(allSettings.value)
+  const { totalConfigsChanged } = await $cwa.siteConfig.saveConfig(allSettings.value)
   showUpdateProgress.value = totalConfigsChanged > 0
   updatingCount.value = totalConfigsChanged
 }

@@ -433,6 +433,31 @@ Site settings has a **Purge all cached data** action calling `SiteConfig.purgeHt
 
 ---
 
+## Admin-only code is kept out of the entry chunk ([#331](https://github.com/components-web-app/cwa-nuxt-module/issues/331))
+
+The runtime singletons are constructed for every visitor, so anything they import at module scope lands in the Nuxt app entry and is `modulepreload`ed on every page. They were statically importing the confirm dialog, the component-focus overlay, `luxon` and an XML validator; Nuxt additionally imports the layer's `error.vue` statically (`nuxt-root.vue`: `import ErrorComponent from '#build/error-component.mjs'` — unavoidable), which pulled in the full-screen error page and its WebGL particle animation.
+
+**Measured on the playground** by reading the Nuxt app entry's `preload` set out of `.output/server/chunks/virtual/precomputed.mjs` and summing the real chunk files: **36 chunks / 643,720 B raw / 227,115 B gzip → 18 chunks / 427,905 B raw / 152,556 B gzip**, i.e. **−215,815 B raw (−33.5 %), −74,559 B gzip**. The issue's own figures were taken on the components-web-app template, whose entry is larger, so the absolute numbers there differ; every relative claim held.
+
+What moved, and why each is safe:
+
+- **`luxon` → `new Date().toISOString()`** (`resources/resources-manager.ts`, `…/cta/CurrentResourceCta.vue`). Both uses were `DateTime.local().toUTC().toISO()`, which emits `…Z`, not `…+00:00` — byte-identical to `toISOString()`. That matters because `resources-manager.ts:210` **string-compares** `publishedAt` against now, so a format change would silently stop a just-published resource counting as published. `luxon` and `@types/luxon` are gone from `package.json`.
+- **`ConfirmDialog` → `await import()`** in `confirmDelete`, `confirmDiscardAddingResource` and `confirmStackChange`, all already `async` and all immediately `await dialog.reveal(...)`. This is what drags `@headlessui/vue` (via `DialogBox`'s auto-imported `<CwaUiFormButton>`) and `@popperjs/core` in.
+- **`ComponentFocus` → `await import()`** in `ResourceStackManager.createFocusComponent`, now `async`. With the confirm dialog this also removes the last entry-graph edge to `@vueuse/core`.
+- **`<LazyCwaErrorPage>`** in `layer/error.vue`. Nuxt renders the error component inside `nuxt-root`'s `<Suspense>`, so it still server-renders; a client-side `showError()` now fetches the chunk first.
+- **`fast-xml-parser` → `await import()`** inside the `sitemapXml` branch, which makes `SiteConfig.saveConfig` **`async`** — a deliberate public-API change, one in-repo caller (`settings.vue`), already `async`.
+- **`LazyCwaAdminResourceManagerLayoutPageOverlay`** in `CwaRootLayout.vue`. `OutdatedContentNotice` beside it is deliberately left static: it renders in the **`v-else`, non-admin** branch, so making it lazy would cost every anonymous visitor a request.
+
+**The `createApp`/`defineExpose` trap.** `createApp(defineAsyncComponent(() => import(…)))` looks like the obvious fix and is wrong: `mount()` then returns the *async wrapper's* proxy, while `ComponentFocus`'s `defineExpose({ redraw })` is on the inner component — so `redrawFocus()`'s `focusProxy.redraw()` throws. Use `await import()` and pass the resolved component to `createApp`.
+
+**The staleness guard.** The `await` opens a window in which `removeFocusComponent()` can run (the `showManager` watcher does exactly that), which would leave an orphan overlay mounted after the focus was dismissed. `removeFocusComponent` increments `focusGeneration`; `createFocusComponent` captures it after its own leading `removeFocusComponent()` and bails if it changed. This also makes two overlapping calls safe.
+
+**`useNuxtApp()` is read before the `await`, deliberately.** This path is client-only today (`document.createElement`), and on the client Nuxt sets the app context permanently, so resolving it after an await would work — but hoisting it costs nothing and removes any chance of a #263/#313 repeat if the path ever runs server-side.
+
+**The build-output guard** (`test/e2e/entry-bundle-markers.mjs`, folded into `pnpm run test:e2e`) is the only thing that can catch a regression: bundle size is not unit-testable, and a static import added anywhere in the singletons' graph reintroduces this silently. It resolves the entry's `preload` set from the built manifest and fails on marker strings — `Invalid DateTime`, `InvalidXml`, `headlessui`, `preventOverflow`, `OES_texture_half_float`. Markers, not a byte budget, so dependency bumps don't produce false failures. `OES_texture_half_float` is a WebGL literal inside `BackgroundParticles.vue` rather than the component name, which a compiler change could stop emitting. `ssr-concurrent-status.mjs` additionally asserts the 404 page server-renders its `<canvas>` — proven non-vacuous, since no non-error page contains one — because the lazy error page is the one change that could break SSR while every status stayed correct.
+
+---
+
 ## Admin updates are a merge-patch: only changed fields are sent
 
 `useItemPage.saveResource` sends an update as `application/merge-patch+json` containing **only the fields where `localResourceData` differs from the stored resource** (deep comparison, lodash `isEqual`), plus any `extraData`. Creating still sends the full body. If nothing changed, no request is made and the stored resource is returned.

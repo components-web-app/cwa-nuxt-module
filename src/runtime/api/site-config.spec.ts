@@ -102,81 +102,81 @@ describe('SiteConfig', () => {
   })
 
   describe('saveConfig', () => {
-    test('returns 0 changed when no keys differ from saved config', () => {
+    test('returns 0 changed when no keys differ from saved config', async () => {
       const { siteConfig } = buildSiteConfig({
         serverConfig: { siteName: 'CWA Web App' },
       })
-      const result = siteConfig.saveConfig({ siteName: 'CWA Web App' })
+      const result = await siteConfig.saveConfig({ siteName: 'CWA Web App' })
       expect(result.totalConfigsChanged).toBe(0)
     })
 
-    test('returns count of changed keys', () => {
+    test('returns count of changed keys', async () => {
       const { siteConfig } = buildSiteConfig({
         serverConfig: { siteName: 'Old Name' },
       })
-      const result = siteConfig.saveConfig({ siteName: 'New Name' })
+      const result = await siteConfig.saveConfig({ siteName: 'New Name' })
       expect(result.totalConfigsChanged).toBe(1)
     })
 
-    test('returns 0 and skips when requests are in progress', () => {
+    test('returns 0 and skips when requests are in progress', async () => {
       const { siteConfig, mockFetch } = buildSiteConfig({
         serverConfig: { siteName: 'Old' },
       })
-      siteConfig.saveConfig({ siteName: 'New' })
-      const result = siteConfig.saveConfig({ siteName: 'Another' })
+      await siteConfig.saveConfig({ siteName: 'New' })
+      const result = await siteConfig.saveConfig({ siteName: 'Another' })
       expect(result.totalConfigsChanged).toBe(0)
       expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
-    test('returns 0 when savedSiteConfig is null', () => {
+    test('returns 0 when savedSiteConfig is null', async () => {
       const { siteConfig, mockFetch } = buildSiteConfig({ serverConfig: null })
-      const result = siteConfig.saveConfig({ siteName: 'New' })
+      const result = await siteConfig.saveConfig({ siteName: 'New' })
       expect(result.totalConfigsChanged).toBe(0)
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    test('uses POST when key does not exist in serverConfig', () => {
+    test('uses POST when key does not exist in serverConfig', async () => {
       const { siteConfig, mockGetRequestOptions } = buildSiteConfig({
         serverConfig: {},
       })
-      siteConfig.saveConfig({ siteName: 'New' })
+      await siteConfig.saveConfig({ siteName: 'New' })
       expect(mockGetRequestOptions).toHaveBeenCalledWith('POST')
     })
 
-    test('uses PATCH when key already exists in serverConfig', () => {
+    test('uses PATCH when key already exists in serverConfig', async () => {
       const { siteConfig, mockGetRequestOptions } = buildSiteConfig({
         serverConfig: { siteName: 'Old' },
       })
-      siteConfig.saveConfig({ siteName: 'New' })
+      await siteConfig.saveConfig({ siteName: 'New' })
       expect(mockGetRequestOptions).toHaveBeenCalledWith('PATCH')
     })
 
-    test('serialises boolean value to JSON string', () => {
+    test('serialises boolean value to JSON string', async () => {
       const { siteConfig, mockFetch } = buildSiteConfig({
         serverConfig: { indexable: true },
       })
-      siteConfig.saveConfig({ indexable: false })
+      await siteConfig.saveConfig({ indexable: false })
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({ body: { key: 'indexable', value: 'false' } }),
       )
     })
 
-    test('returns early with error when sitemapXml is invalid XML', () => {
+    test('returns early with error when sitemapXml is invalid XML', async () => {
       const { siteConfig, mockPatch, mockFetch } = buildSiteConfig({
         serverConfig: {},
       })
-      const result = siteConfig.saveConfig({ sitemapXml: 'not xml <<' })
+      const result = await siteConfig.saveConfig({ sitemapXml: 'not xml <<' })
       expect(result.totalConfigsChanged).toBe(0)
       expect(mockFetch).not.toHaveBeenCalled()
       expect(mockPatch).toHaveBeenCalledWith({ isLoading: false })
     })
 
-    test('proceeds when sitemapXml is valid XML', () => {
+    test('proceeds when sitemapXml is valid XML', async () => {
       const { siteConfig, mockFetch } = buildSiteConfig({
         serverConfig: {},
       })
-      siteConfig.saveConfig({ sitemapXml: '<urlset></urlset>' })
+      await siteConfig.saveConfig({ sitemapXml: '<urlset></urlset>' })
       expect(mockFetch).toHaveBeenCalled()
     })
 
@@ -185,7 +185,7 @@ describe('SiteConfig', () => {
         serverConfig: { siteName: 'Old Name' },
         fetchResponse: { key: 'siteName', value: 'New Name' },
       })
-      siteConfig.saveConfig({ siteName: 'New Name' })
+      await siteConfig.saveConfig({ siteName: 'New Name' })
       await vi.waitFor(() => expect(mockUpdateSiteConfig).toHaveBeenCalledTimes(1))
       expect(mockUpdateSiteConfig).toHaveBeenCalledWith(expect.objectContaining({ name: 'New Name' }))
       expect(siteConfig.apiState.hasError.value).toBe(false)
@@ -198,9 +198,9 @@ describe('SiteConfig', () => {
       expect(siteConfig.totalRequests.value).toBe(0)
     })
 
-    test('increases after saveConfig with changes', () => {
+    test('increases after saveConfig with changes', async () => {
       const { siteConfig } = buildSiteConfig({ serverConfig: { siteName: 'Old' } })
-      siteConfig.saveConfig({ siteName: 'New' })
+      await siteConfig.saveConfig({ siteName: 'New' })
       expect(siteConfig.totalRequests.value).toBe(1)
     })
   })
