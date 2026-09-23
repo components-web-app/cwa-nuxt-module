@@ -458,6 +458,24 @@ What moved, and why each is safe:
 
 ---
 
+## The layer is published as the `@cwa/nuxt/layer` subpath export
+
+An application should extend the layer by its **package specifier**, not by a path into `node_modules`:
+
+```ts
+extends: ['@cwa/nuxt/layer']
+```
+
+The export names the config file, not the directory — `"./layer": "./dist/layer/nuxt.config.ts"` — because an `exports` map cannot name a directory and does not need to. `@nuxt/kit`'s `extends` resolver only intercepts filesystem paths and `~`/`@` aliases, so a bare specifier falls through to c12, which resolves it with exsolve and sets the layer's `cwd` to the resolved file's **dirname**. Node applies `realpath` on the way, which is what makes this matter: a layer resolved this way has a real `cwd`, so nuxt#36401 never applies to it. The old path form still works — it is a filesystem path, so the `exports` map never applies — and an application that keeps it keeps the prefetch bug, which is why the `pages:extend` workaround above stays until every application has moved.
+
+**The two are complementary, not alternatives.** The workaround fixes every application without a config change; the export removes the cause for an application that adopts it and is a no-op for the workaround, since realpathing an already-real path returns the same string.
+
+**Upgrading is one-directional:** the export exists only from this build onwards, so an application changing `extends` must take the module upgrade at the same time. The reverse is safe — upgrade first, change `extends` later.
+
+Closes the layer half of [#273](https://github.com/components-web-app/cwa-nuxt-module/issues/273); the `.` subpath is still the only other export.
+
+---
+
 ## Every public page prefetched the admin and auth pages ([#329](https://github.com/components-web-app/cwa-nuxt-module/issues/329))
 
 Nuxt removes page chunks from the app entry's `dynamicImports` in `build:manifest`, so pages are not prefetched. It builds the exclusion list with `relative(srcDir, page.file)` and compares it against Vite's manifest keys — and when a layer is extended by a **filesystem path that goes through a symlink**, those two strings are different spellings of the same file. `page.file` keeps the symlink path; Vite resolved the module through `realpath`. Nothing matches, so every `/_cwa` admin page and every auth page is a prefetch hint on every public page.

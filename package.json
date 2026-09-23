@@ -16,7 +16,8 @@
     ".": {
       "types": "./dist/types.d.mts",
       "import": "./dist/module.mjs"
-    }
+    },
+    "./layer": "./dist/layer/nuxt.config.ts"
   },
   "main": "./dist/module.mjs",
   "directories": {
