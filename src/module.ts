@@ -43,37 +43,32 @@ declare module 'nuxt/schema' {
   }
 }
 
+const CWA_PAGE_ROUTE_KEY = 'cwa-page'
+
 function createDefaultCwaPages(
   pages: NuxtPage[],
   pageComponentFilePath: string,
   maxDepth: number,
   layout?: string | undefined,
 ) {
-  function getPage(currentDepth: number): NuxtPage {
-    return {
-      name: `cwaPage${currentDepth}`,
-      path: currentDepth === 0 ? '/' : `:cwaPage${currentDepth}`,
+  const segments: string[] = []
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    if (depth > 0) {
+      segments.push(`:cwaPage${depth}`)
+    }
+    pages.push({
+      name: `cwaPage${depth}`,
+      path: `/${segments.join('/')}`,
       file: pageComponentFilePath,
       meta: {
         cwa: {
           disabled: false,
         },
         layout: layout || 'cwa-root-layout',
+        key: CWA_PAGE_ROUTE_KEY,
       },
-      children: [] as NuxtPage[],
-    }
+    })
   }
-
-  function createTree(currentDepth: number) {
-    const page = getPage(currentDepth)
-    if (currentDepth < maxDepth) {
-      const child = createTree(currentDepth + 1)
-      page.children = [child]
-    }
-    return page
-  }
-  // pages.push(getPage(0))
-  pages.push(createTree(0))
 }
 
 export const NAME = '@cwa/nuxt' as const

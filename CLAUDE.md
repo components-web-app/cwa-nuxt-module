@@ -1384,6 +1384,30 @@ Per call wins over the module default, which wins over the built-in defaults; an
 
 ---
 
+## CWA page routes are siblings, and their route key must stay constant ([#337](https://github.com/components-web-app/cwa-nuxt-module/issues/337))
+
+`createDefaultCwaPages` used to register the `pagesDepth` routes as a **nested chain** — `cwaPage0` with `cwaPage1` as its child, and so on — all rendering `cwa-page.vue`, which never renders a child `<NuxtPage>`. So any CWA URL below `/` matched two or more route records while only the first ever rendered, and Nuxt read that as "a nested `<NuxtPage>` will finish the job".
+
+**The chain, in the installed Nuxt 4.5.2:**
+
+- `pages/runtime/page.js:193-196` — `hasChildrenRoutes` is `matched.findIndex(m => m.components?.default === Component?.type) < matched.length - 1`. Its `if (!fork) return false` escape never applies, because `PageRouteSymbol` is provided app-wide by `app/components/nuxt-root.vue:47` and re-provided by `app/components/nuxt-layout.js:137`.
+- `page.js:94` and `page.js:146` are the only places `page:loading:end` is raised for a **successful** navigation (`pages/runtime/plugins/router.js:102` and `:190` fire it only on navigation failure or a router error), and both are gated on `!willRenderAnotherChild`.
+- `pages/runtime/router.options.js:24-38` — the default `scrollBehavior` returns a Promise resolved only inside `hookOnce('page:loading:end', …)`. Nothing resolved it, so **vue-router never scrolled at all**: a new page opened at the previous page's scroll offset. `router.options.js:23` (`from === START_LOCATION`) is why a hard load was always fine.
+
+**Every matched record resolves to the same component object**, verified by probing the real router: for `/a/b`, `matched[0..2].components.default` are identity-equal. So `findIndex` always returns `0`, at every level. **That is why rendering a nested `<NuxtPage />` from `cwa-page.vue` cannot fix this** — even the innermost one would compute `0 < matched.length - 1` and still decline to fire the hook. It would take a distinct component per depth, which is strictly worse than having no nesting.
+
+**The fix: flat sibling routes, one per depth** (`/`, `/:cwaPage1`, `/:cwaPage1/:cwaPage2`, …), so a CWA URL matches exactly one record and Nuxt fires the hook itself at `page.js:94`. The path strings, param names and `pagesDepth` cap — including the 404 for a URL deeper than it — are the same ones vue-router already derived from the nested tree, so matching and ranking are unchanged.
+
+**The `meta.key` is the load-bearing half.** `generateRouteKey` (`pages/runtime/utils.js:9-13`) also uses `matched.find(...)`, so under the nested tree the key was **accidentally the constant `/` for every CWA URL** — which is why `cwa-page.vue` was never remounted between CWA navigations, and why #256's navigation retention and the `KeepAlive` around `ResourceLoader` work. Flat routes make the key vary per path, which remounts the page component on every navigation and tears the held page down. A constant `meta.key` (`'cwa-page'`, deliberately not exported) restores exactly the old behaviour. The regression guard is that `page:finish` must **not** fire on a CWA→CWA navigation; drop the key and it fires.
+
+**`page:finish` never fired on CWA→CWA navigation either**, for the same reason — worth knowing, because a workaround built on it is relying on something that does not happen. `<NuxtLoadingIndicator>` was the second visible symptom: `app/composables/loading-indicator.js:86-89` subscribes to the same pair, so the bar started and never completed on any page below `/`.
+
+**No generated route may declare a `cwaPage0` param.** `api/fetcher/fetcher.ts:93` reads `route.params.cwaPage0` and treats it as a resource IRI — that param belongs to the layer route `/_cwa/:cwaPage0()` alone. A single catch-all named `:cwaPage0(.*)*` would re-create the bare-IRI 404 documented above, which is one reason the fix is N sibling routes rather than one catch-all; the other is that a catch-all makes depth unbounded.
+
+**Still broken, deliberately out of scope:** `page:loading:end` now fires on `nextTick`, which is **before CWA has fetched the page content**, so a restored `savedPosition` (Back/Forward) and a cross-page `#hash` are applied against a page that has not reached its real height and land short. Both were completely dead before this fix, so it is a strict improvement. Closing that gap needs the scroll deferred behind `$cwa.resources.isLoading` (already public) and is a separate issue — if it is ever shipped from the module, register it through the `pages:routerOptions` hook rather than a layer `app/router.options.ts`: `resolveRouterOptions` (`nuxt/dist/index.mjs:1253-1265`) unshifts per layer and the template spreads them in order (`:1666`), so an app's own file wins over a layer's, and the layer would additionally have to sit under whatever `srcDir`/`dir.app` resolves to for `src/layer`, which has no `app/` directory.
+
+---
+
 ## `allowedComponents` format contract
 
 The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.

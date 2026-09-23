@@ -608,9 +608,8 @@ declare module 'vue-router' {
       })
     })
 
-    test('should extend pages with 3 levels by default', async () => {
+    function capturePageCallbacks() {
       const callbacks: ((pages: any[]) => void)[] = []
-      const mockPages: any[] = []
       const mockResolver = vi.fn(path => path)
       vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
         resolve: mockResolver,
@@ -619,6 +618,12 @@ declare module 'vue-router' {
       vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
         callbacks.push(callback)
       })
+      return { callbacks, mockResolver }
+    }
+
+    test('registers sibling routes per depth so a CWA route matches a single record (#337)', async () => {
+      const { callbacks, mockResolver } = capturePageCallbacks()
+      const mockPages: any[] = []
 
       await prepareMockNuxt()
 
@@ -626,46 +631,39 @@ declare module 'vue-router' {
 
       callbacks[0](mockPages)
 
+      const meta = { cwa: { disabled: false }, layout: 'cwa-root-layout', key: 'cwa-page' }
+      const file = mockResolver('./runtime/templates')
+
       expect(mockPages).toEqual([
-        {
-          name: 'cwaPage0',
-          path: '/',
-          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-          file: mockResolver('./runtime/templates'),
-          children: [
-            {
-              name: 'cwaPage1',
-              path: ':cwaPage1',
-              meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-              file: mockResolver('./runtime/templates'),
-              children: [
-                {
-                  name: 'cwaPage2',
-                  path: ':cwaPage2',
-                  meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-                  file: mockResolver('./runtime/templates'),
-                  children: [
-                    {
-                      name: 'cwaPage3',
-                      path: ':cwaPage3',
-                      meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-                      file: mockResolver('./runtime/templates'),
-                      children: [
-                        {
-                          name: 'cwaPage4',
-                          path: ':cwaPage4',
-                          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-                          file: mockResolver('./runtime/templates'),
-                          children: [],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
+        { name: 'cwaPage0', path: '/', meta, file },
+        { name: 'cwaPage1', path: '/:cwaPage1', meta, file },
+        { name: 'cwaPage2', path: '/:cwaPage1/:cwaPage2', meta, file },
+        { name: 'cwaPage3', path: '/:cwaPage1/:cwaPage2/:cwaPage3', meta, file },
+        { name: 'cwaPage4', path: '/:cwaPage1/:cwaPage2/:cwaPage3/:cwaPage4', meta, file },
+      ])
+    })
+
+    test('no generated route declares a cwaPage0 param, which the fetcher reads as an IRI', async () => {
+      const { callbacks } = capturePageCallbacks()
+      const mockPages: any[] = []
+
+      await prepareMockNuxt()
+      callbacks[0](mockPages)
+
+      expect(mockPages.filter(page => page.path.includes(':cwaPage0'))).toEqual([])
+    })
+
+    test('pagesDepth limits how many path segments are matched', async () => {
+      const { callbacks } = capturePageCallbacks()
+      const mockPages: any[] = []
+
+      await prepareMockNuxt({ pagesDepth: 2 })
+      callbacks[0](mockPages)
+
+      expect(mockPages.map(page => page.path)).toEqual([
+        '/',
+        '/:cwaPage1',
+        '/:cwaPage1/:cwaPage2',
       ])
     })
 
